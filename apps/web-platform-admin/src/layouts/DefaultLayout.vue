@@ -5,7 +5,7 @@
       <div class="layout__logo">
         <span class="layout__logo-icon">玄</span>
         <transition name="fade">
-          <span v-if="!collapsed" class="layout__logo-text dfx-serif">平台总管理台</span>
+          <span v-if="!collapsed" class="layout__logo-text dfx-serif">问玄东方</span>
         </transition>
       </div>
       <el-scrollbar class="layout__menu-scroll">
