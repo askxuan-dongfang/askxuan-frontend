@@ -1,0 +1,98 @@
+# =====================================================
+# 问玄东方前端项目 .gitignore
+# 覆盖：Node / iOS / Expo / IDE / OS / 构建产物
+# =====================================================
+
+# ---------- 环境变量与密钥 ----------
+.env
+.env.*
+!.env.example
+!.env.template
+*.env.local
+*.pem
+*.key
+secrets/
+
+# ---------- Node.js ----------
+node_modules/
+dist/
+dist-ssr/
+.npm/
+.pnpm-store/
+.yarn/cache
+.yarn/install-state.gz
+.pnp.*
+coverage/
+*.lcov
+.nyc_output/
+.vite/
+.turbo/
+.parcel-cache/
+.next/
+.nuxt/
+.cache/
+
+# ---------- 日志 ----------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+.stylelintcache
+
+# ---------- iOS / macOS / Xcode ----------
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+xcuserdata/
+*.moved-aside
+DerivedData/
+build/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+.swiftpm/
+.build/
+Package.resolved
+Pods/
+Podfile.lock
+Carthage/Build/
+Carthage/Checkouts/
+
+# ---------- Expo / React Native ----------
+.expo/
+.expo-shared/
+*.jks
+*.keystore
+web-build/
+.expo/cache/
+
+# ---------- IDE ----------
+.idea/
+.vscode/
+!.vscode/settings.json
+!.vscode/launch.json
+*.swp
+*.swo
+*.bak
+*.tmp
+*.orig
+
+# ---------- 操作系统 ----------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ---------- 本地数据库/缓存 ----------
+*.sqlite
+*.sqlite3
+*.db

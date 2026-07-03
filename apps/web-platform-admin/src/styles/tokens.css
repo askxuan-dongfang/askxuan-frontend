@@ -1,0 +1,53 @@
+/* ================================================================
+   问玄东方App - Web Design Tokens (Auto-generated)
+   Source: packages/design-tokens/tokens.json
+   Do not edit manually; run `npm run gen:web` to regenerate.
+   ================================================================ */
+:root {
+  /* Bg */
+  --color-bg-primary: #1C1210;
+  --color-bg-secondary: #2A1E1A;
+  --color-bg-tertiary: #3A2C25;
+  --color-bg-elevated: #44342C;
+  /* Brand */
+  --color-brand-default: #C45A3C;
+  --color-brand: #C45A3C;
+  --color-brand-light: #D4735A;
+  --color-brand-dark: #A64830;
+  /* Accent */
+  --color-accent-default: #C8A96E;
+  --color-accent: #C8A96E;
+  --color-accent-light: #D4BC8A;
+  --color-accent-dark: #A88A50;
+  /* Cinnabar */
+  --color-cinnabar-default: #B5453A;
+  --color-cinnabar: #B5453A;
+  --color-cinnabar-light: #CC5A4F;
+  /* Text */
+  --color-text-primary: #F0E6DA;
+  --color-text-secondary: #C5B097;
+  --color-text-tertiary: #8A7A6A;
+  /* Border */
+  --color-border-default: rgba(200, 169, 110, 0.15);
+  --color-border: rgba(200, 169, 110, 0.15);
+  --color-border-strong: rgba(200, 169, 110, 0.3);
+  --color-border-divider: rgba(200, 169, 110, 0.08);
+  /* State */
+  --color-state-success: #5B8C5A;
+  --color-state-warning: #D4A843;
+  --color-state-error: #C45A3C;
+
+  /* Fonts */
+  --font-serif: 'Noto Serif SC', 'STSong', 'SimSun', serif;
+  --font-sans: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Spacing */
+  --spacing-nav-top: 44px;
+  --spacing-nav-bottom: 60px;
+}

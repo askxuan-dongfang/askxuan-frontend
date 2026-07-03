@@ -1,0 +1,18 @@
+{
+  "name": "@dongfang/design-tokens",
+  "version": "1.0.0",
+  "description": "问玄东方App 跨端共享 Design Token 系统",
+  "main": "tokens.json",
+  "scripts": {
+    "gen:ios": "node scripts/gen-ios-tokens.js",
+    "gen:web": "node scripts/gen-web-tokens.js",
+    "gen:mp": "node scripts/gen-mp-tokens.js",
+    "gen:all": "node scripts/gen-ios-tokens.js && node scripts/gen-web-tokens.js && node scripts/gen-mp-tokens.js",
+    "build": "node scripts/gen-ios-tokens.js && node scripts/gen-web-tokens.js && node scripts/gen-mp-tokens.js"
+  },
+  "files": [
+    "tokens.json",
+    "dist"
+  ],
+  "license": "MIT"
+}

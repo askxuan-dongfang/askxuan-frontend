@@ -1,0 +1,232 @@
+/* ============================================================
+   问玄东方 · 商城管理台 - 全局样式
+   引入 Design Tokens + Tailwind + Element Plus 主题覆盖
+   ============================================================ */
+
+/* Design Tokens（与 C 端 App 一致的品牌色/字体/圆角） */
+@import './tokens.css';
+
+/* Tailwind 三层 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   禅意主题变量（管理台浅色版）
+   ============================================================ */
+:root {
+  /* 品牌色 - 朱砂红 */
+  --primary: #c45a3c;
+  --primary-hover: #b54e33;
+  --primary-light: rgba(196, 90, 60, 0.1);
+  /* 强调色 - 琉璃金 */
+  --accent: #c8a96e;
+  --accent-light: rgba(200, 169, 110, 0.1);
+  /* 文字 */
+  --text-dark: #2a1e1a;
+  --text-medium: #6a5a4a;
+  --text-light: #9a8a7a;
+  /* 背景 */
+  --content-bg: #f5f0eb;
+  --card-bg: #ffffff;
+  --sidebar-bg: #1c1210;
+  --sidebar-text: #c5b097;
+  /* 边框 */
+  --border: #e8e0d8;
+  /* 状态色 */
+  --success: #5b8c5a;
+  --success-light: rgba(91, 140, 90, 0.1);
+  --warning: #d4a030;
+  --warning-light: rgba(212, 160, 48, 0.1);
+  --danger: #c45a3c;
+  --danger-light: rgba(196, 90, 60, 0.1);
+  --info: #5b7aaa;
+  --info-light: rgba(91, 122, 170, 0.1);
+  /* 尺寸 */
+  --sidebar-width: 240px;
+  --header-height: 64px;
+  /* 圆角 */
+  --radius: 8px;
+  --radius-sm: 4px;
+  --radius-lg: 12px;
+  /* 阴影 */
+  --shadow-sm: 0 1px 3px rgba(42, 30, 26, 0.06);
+  --shadow: 0 2px 8px rgba(42, 30, 26, 0.08);
+  --shadow-md: 0 4px 16px rgba(42, 30, 26, 0.1);
+  --transition: all 0.2s ease;
+
+  /* ===== Element Plus 主题覆盖 ===== */
+  --el-color-primary: #c45a3c;
+  --el-color-primary-light-3: #d47a5e;
+  --el-color-primary-light-5: #dc8f78;
+  --el-color-primary-light-7: #e6ad9a;
+  --el-color-primary-light-8: #edc1b3;
+  --el-color-primary-light-9: rgba(196, 90, 60, 0.1);
+  --el-color-primary-dark-2: #a64830;
+  --el-color-success: #5b8c5a;
+  --el-color-warning: #d4a030;
+  --el-color-danger: #c45a3c;
+  --el-color-error: #c45a3c;
+  --el-color-info: #6a5a4a;
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 4px;
+  --el-border-color: #e8e0d8;
+  --el-border-color-light: #f0ebe5;
+  --el-text-color-primary: #2a1e1a;
+  --el-text-color-regular: #6a5a4a;
+  --el-text-color-secondary: #9a8a7a;
+  --el-bg-color: #ffffff;
+  --el-bg-color-page: #f5f0eb;
+  --el-fill-color-light: #fdfbf9;
+  --el-font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* ============================================================
+   基础重置
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dark);
+  background: var(--content-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: var(--transition);
+}
+a:hover {
+  color: var(--primary-hover);
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-light);
+}
+
+/* ============================================================
+   通用工具类
+   ============================================================ */
+.font-serif {
+  font-family: 'Noto Serif SC', 'STSong', serif;
+}
+.text-muted {
+  color: var(--text-light);
+}
+.text-medium {
+  color: var(--text-medium);
+}
+
+/* 页面容器 */
+.page-container {
+  padding: 24px 32px;
+}
+
+/* 卡片 */
+.df-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 状态徽章圆点 */
+.df-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+/* ============================================================
+   Element Plus 组件细节微调
+   ============================================================ */
+
+/* 主按钮使用朱砂红渐变，增强禅意质感 */
+.el-button--primary {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.el-button--primary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+/* 菜单激活态朱砂红高亮 */
+.el-menu {
+  border-right: none;
+  background: transparent;
+}
+.el-menu-item.is-active {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* 表格表头浅米色 */
+.el-table th.el-table__cell {
+  background: #fafaf8;
+  color: var(--text-medium);
+  font-weight: 500;
+}
+
+/* 标签页下划线 */
+.el-tabs__active-bar {
+  background-color: var(--primary);
+}
+.el-tabs__item.is-active {
+  color: var(--primary);
+}
+.el-tabs__item:hover {
+  color: var(--primary);
+}
+
+/* 分页激活态 */
+.el-pagination.is-background .el-pager li.is-active {
+  background-color: var(--primary);
+}
+
+/* 输入框聚焦朱砂红 */
+.el-input__wrapper.is-focus,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--primary) inset !important;
+}
+
+/* 路由切换淡入动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}

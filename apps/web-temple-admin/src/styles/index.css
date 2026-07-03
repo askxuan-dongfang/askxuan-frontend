@@ -1,0 +1,113 @@
+/* 设计令牌（品牌色/字体/圆角 CSS 变量） */
+@import './tokens.css';
+
+/* Tailwind 原子化工具类（preflight 已在 tailwind.config 关闭） */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============ Element Plus 主题对齐问玄东方品牌 ============ */
+:root {
+  /* 主色：朱砂 */
+  --el-color-primary: #C45A3C;
+  --el-color-primary-light-3: #d07558;
+  --el-color-primary-light-5: #d98a6f;
+  --el-color-primary-light-7: #e3a088;
+  --el-color-primary-light-8: #e9b3a0;
+  --el-color-primary-light-9: #f5e0d6;
+  --el-color-primary-dark-2: #a64830;
+
+  /* 辅助色：金 */
+  --el-color-success: #5B8C5A;
+  --el-color-warning: #D4A843;
+  --el-color-danger: #C45A3C;
+  --el-color-info: #8A7A6A;
+
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 4px;
+  --el-font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* 文字/边框倾向暖灰 */
+  --el-text-color-primary: #2A1E1A;
+  --el-text-color-regular: #4A3A30;
+  --el-text-color-secondary: #6A5A4A;
+  --el-text-color-placeholder: #9A8A7A;
+  --el-border-color: #E8E0D8;
+  --el-border-color-light: #EFE9E1;
+  --el-border-color-lighter: #F5F0EB;
+  --el-fill-color-blank: #FFFFFF;
+  --el-bg-color: #FFFFFF;
+  --el-bg-color-page: #F5F0EB;
+}
+
+/* ============ 全局基础 ============ */
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #f5f0eb;
+  color: #2a1e1a;
+  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Noto Serif SC', 'STSong', 'SimSun', serif;
+  color: #2a1e1a;
+  margin: 0;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(196, 90, 60, 0.25);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(196, 90, 60, 0.45);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 卡片通用 */
+.df-card {
+  background: #ffffff;
+  border: 1px solid #e8e0d8;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(42, 30, 26, 0.04);
+}
+
+/* 页面内边距容器 */
+.df-page {
+  padding: 24px;
+}
+
+/* 品牌渐变标题装饰 */
+.df-title-bar {
+  display: inline-block;
+  width: 4px;
+  height: 18px;
+  background: linear-gradient(180deg, #c45a3c 0%, #c8a96e 100%);
+  border-radius: 2px;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+/* 表格表头暖色 */
+.el-table th.el-table__cell {
+  background-color: #faf6f0 !important;
+  color: #4a3a30;
+}

@@ -1,0 +1,92 @@
+@import './tokens.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Element Plus 深色主题变量覆盖 —— 问玄东方配色 */
+:root {
+  --el-color-primary: #C45A3C;
+  --el-color-primary-light-3: #D4735A;
+  --el-color-primary-light-5: #DB8A70;
+  --el-color-primary-light-7: #E2A18A;
+  --el-color-primary-light-8: #E8B49E;
+  --el-color-primary-light-9: #2A1E1A;
+  --el-color-primary-dark-2: #A64830;
+  --el-color-success: #5B8C5A;
+  --el-color-warning: #D4A843;
+  --el-color-danger: #C45A3C;
+  --el-color-error: #C45A3C;
+  --el-color-info: #8A7A6A;
+
+  --el-bg-color: #2A1E1A;
+  --el-bg-color-page: #1C1210;
+  --el-bg-color-overlay: #3A2C25;
+  --el-text-color-primary: #F0E6DA;
+  --el-text-color-regular: #C5B097;
+  --el-text-color-secondary: #8A7A6A;
+  --el-text-color-placeholder: #8A7A6A;
+  --el-border-color: rgba(200, 169, 110, 0.15);
+  --el-border-color-light: rgba(200, 169, 110, 0.12);
+  --el-border-color-lighter: rgba(200, 169, 110, 0.1);
+  --el-border-color-extra-light: rgba(200, 169, 110, 0.08);
+  --el-fill-color: #3A2C25;
+  --el-fill-color-light: #332620;
+  --el-fill-color-lighter: #2E2218;
+  --el-fill-color-extra-light: #2A1E1A;
+  --el-fill-color-blank: #2A1E1A;
+  --el-mask-color: rgba(28, 18, 16, 0.7);
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(200, 169, 110, 0.25);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(200, 169, 110, 0.4);
+}
+
+/* 通用卡片 */
+.dfx-card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+/* 页面容器 */
+.dfx-page {
+  padding: 20px 24px;
+}
+
+/* 标题字体 */
+.dfx-serif {
+  font-family: var(--font-serif);
+}
+
+/* Element Plus 表格行 hover 高亮 */
+.el-table__row:hover > td.el-table__cell {
+  background-color: var(--color-bg-tertiary) !important;
+}
