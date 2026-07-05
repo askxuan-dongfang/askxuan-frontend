@@ -195,6 +195,7 @@ struct MessagesView: View {
             }
             .padding(.bottom, 70)
         }
+        .softScrollEdge(.bottom)
     }
 
     private func noticeItem(_ m: MasterMessage) -> some View {
@@ -270,6 +271,7 @@ struct MessagesView: View {
             }
             .padding(.bottom, 70)
         }
+        .softScrollEdge(.bottom)
     }
 
     private func chatItem(_ m: MasterMessage) -> some View {

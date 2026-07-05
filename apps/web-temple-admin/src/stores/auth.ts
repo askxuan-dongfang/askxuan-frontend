@@ -3,11 +3,11 @@ import { ref, computed } from 'vue'
 import { adminLogin } from '@/api/auth'
 import type { UserInfo } from '@/types'
 
-const TOKEN_KEY = 'df_admin_token'
-const REFRESH_KEY = 'df_admin_refresh_token'
-const USER_KEY = 'df_admin_user'
-const TEMPLE_ID_KEY = 'df_admin_temple_id'
-const TEMPLE_NAME_KEY = 'df_admin_temple_name'
+const TOKEN_KEY = 'df_temple_admin_token'
+const REFRESH_KEY = 'df_temple_admin_refresh_token'
+const USER_KEY = 'df_temple_admin_user'
+const TEMPLE_ID_KEY = 'df_temple_admin_temple_id'
+const TEMPLE_NAME_KEY = 'df_temple_admin_temple_name'
 
 // Mock 账号 lingyin_admin 对应灵隐寺，默认 templeId 兜底
 const DEFAULT_TEMPLE_ID = 'T001'

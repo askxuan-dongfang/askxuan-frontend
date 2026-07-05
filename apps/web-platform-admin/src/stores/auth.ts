@@ -4,9 +4,9 @@ import { ref, computed } from 'vue'
 import { adminLogin, type AdminLoginParams } from '@/api/auth'
 import type { UserInfo } from '@/types'
 
-const TOKEN_KEY = 'df_admin_token'
-const REFRESH_KEY = 'df_admin_refresh_token'
-const USER_KEY = 'df_admin_user'
+const TOKEN_KEY = 'df_platform_admin_token'
+const REFRESH_KEY = 'df_platform_admin_refresh_token'
+const USER_KEY = 'df_platform_admin_user'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string>(localStorage.getItem(TOKEN_KEY) || '')

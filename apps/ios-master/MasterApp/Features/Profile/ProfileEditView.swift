@@ -58,6 +58,8 @@ struct ProfileEditView: View {
     let profile: MasterProfile?
     @StateObject private var viewModel: ProfileEditViewModel
     @Environment(\.dismiss) private var dismiss
+    // 特性 3：iOS 26+ 富文本编辑 —— AttributedString 支持加粗/斜体/下划线
+    @State private var bioAttributed: AttributedString = AttributedString()
 
     init(profile: MasterProfile?) {
         self.profile = profile
@@ -106,17 +108,33 @@ struct ProfileEditView: View {
                                 .font(.cardTitle)
                                 .foregroundStyle(.textPrimary)
                         }
-                        TextEditor(text: $viewModel.bio)
-                            .font(.body)
-                            .foregroundStyle(.textPrimary)
-                            .frame(minHeight: 100)
-                            .padding(AppSpacing.sm)
-                            .background(Color.bgTertiary)
-                            .cornerRadius(AppRadius.md)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AppRadius.md)
-                                    .stroke(Color.borderDefault, lineWidth: 1)
-                            )
+                        // 特性 3：iOS 26+ 富文本编辑 + 格式化工具栏
+                        if #available(iOS 26.0, *) {
+                            RichTextToolbar(attributedText: $bioAttributed)
+                            TextEditor(text: $bioAttributed)
+                                .font(.body)
+                                .foregroundStyle(.textPrimary)
+                                .frame(minHeight: 100)
+                                .padding(AppSpacing.sm)
+                                .background(Color.bgTertiary)
+                                .cornerRadius(AppRadius.md)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: AppRadius.md)
+                                        .stroke(Color.borderDefault, lineWidth: 1)
+                                )
+                        } else {
+                            TextEditor(text: $viewModel.bio)
+                                .font(.body)
+                                .foregroundStyle(.textPrimary)
+                                .frame(minHeight: 100)
+                                .padding(AppSpacing.sm)
+                                .background(Color.bgTertiary)
+                                .cornerRadius(AppRadius.md)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: AppRadius.md)
+                                        .stroke(Color.borderDefault, lineWidth: 1)
+                                )
+                        }
                     }
                 }
 
@@ -179,6 +197,10 @@ struct ProfileEditView: View {
 
                 PrimaryButton(title: "保存资料", icon: "checkmark.circle.fill",
                               isLoading: viewModel.isSaving) {
+                    // 特性 3：保存前将 AttributedString 转回 String
+                    if #available(iOS 26.0, *) {
+                        viewModel.bio = String(bioAttributed.characters)
+                    }
                     Task { await viewModel.save() }
                 }
             }
@@ -189,6 +211,64 @@ struct ProfileEditView: View {
         .navigationTitle("编辑资料")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
+        .onAppear {
+            // 特性 3：初始化 AttributedString
+            if #available(iOS 26.0, *) {
+                bioAttributed = AttributedString(viewModel.bio)
+            }
+        }
+    }
+}
+
+// MARK: - 特性 3：富文本格式化工具栏（iOS 26+）
+// 对整个文本应用加粗 / 斜体 / 下划线 / 清除格式
+@available(iOS 26.0, *)
+struct RichTextToolbar: View {
+    @Binding var attributedText: AttributedString
+
+    var body: some View {
+        HStack(spacing: 12) {
+            formatButton(icon: "bold", label: "加粗") {
+                var container = AttributeContainer()
+                container.font = .body.bold()
+                attributedText.mergeAttributes(container)
+            }
+            formatButton(icon: "italic", label: "斜体") {
+                var container = AttributeContainer()
+                container.font = .body.italic()
+                attributedText.mergeAttributes(container)
+            }
+            formatButton(icon: "underline", label: "下划线") {
+                var container = AttributeContainer()
+                container.underlineStyle = .single
+                attributedText.mergeAttributes(container)
+            }
+            Spacer()
+            formatButton(icon: "xmark.circle", label: "清除") {
+                attributedText = AttributedString(String(attributedText.characters))
+            }
+        }
+        .padding(.horizontal, AppSpacing.sm)
+        .padding(.vertical, 6)
+        .background(Color.bgTertiary.opacity(0.5))
+        .cornerRadius(AppRadius.sm)
+    }
+
+    private func formatButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 3) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .semibold))
+                Text(label)
+                    .font(.system(size: 11))
+            }
+            .foregroundStyle(Color.accentDefault)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.accentDefault.opacity(0.1))
+            .cornerRadius(6)
+        }
+        .buttonStyle(.plain)
     }
 }
 

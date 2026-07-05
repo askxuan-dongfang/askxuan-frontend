@@ -111,7 +111,11 @@ final class APIClient {
             if apiResponse.isSuccess, let result = apiResponse.data {
                 return result
             }
-            // code 非 0：业务错误
+            // code 非 0：业务错误。40101 表示 JWT 失效，触发登出
+            if apiResponse.code == 40101 {
+                await MainActor.run { self.onUnauthorized?() }
+                throw APIError.unauthorized
+            }
             throw APIError.serverError(apiResponse.code, apiResponse.message)
         } catch let error as APIError {
             throw error

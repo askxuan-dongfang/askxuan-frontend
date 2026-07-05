@@ -140,6 +140,7 @@ struct WorkspaceView: View {
             }
             .padding(.bottom, 70)
         }
+        .softScrollEdge(.bottom)
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
         .task { await viewModel.load() }

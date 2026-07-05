@@ -11,7 +11,15 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @State private var selectedTab: Int = 0
+    // 支持通过 launch argument 设置初始 Tab（用于截图）：xcrun simctl launch booted com.askxuan.master -tab 2
+    @State private var selectedTab: Int = {
+        let args = ProcessInfo.processInfo.arguments
+        if let idx = args.firstIndex(of: "-tab"), idx + 1 < args.count,
+           let tab = Int(args[idx + 1]), (0...3).contains(tab) {
+            return tab
+        }
+        return 0
+    }()
 
     init() {
         let appearance = UITabBarAppearance()
@@ -49,6 +57,8 @@ struct MainTabView: View {
         }
         .tint(.brandDefault)
         .animation(.easeInOut(duration: 0.25), value: selectedTab)
+        // 特性 7：iOS 26+ 滚动时液态玻璃 TabBar 自动最小化为浮动 dock
+        .tabBarMinimizeOnScroll()
     }
 }
 

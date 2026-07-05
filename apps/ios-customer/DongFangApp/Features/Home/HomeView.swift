@@ -10,6 +10,7 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
+    @EnvironmentObject private var authStore: AuthStore
     @State private var currentBanner: Int = 0
 
     var body: some View {
@@ -24,6 +25,7 @@ struct HomeView: View {
             }
             .padding(.top, AppSpacing.sm)
         }
+        .softScrollEdge(.bottom)
         .background(Color.bgPrimary)
         .navigationBarHidden(true)
         .safeAreaInset(edge: .top) {
@@ -47,35 +49,65 @@ struct HomeView: View {
             case .templeList:  TempleListView()
             case .masterList:  MasterListView()
             case .service(let type):
-                serviceDestination(for: type)
-            case .diyBracelet:  DiyBraceletView()
+                // 服务详情页需要登录
+                if authStore.isLoggedIn {
+                    serviceDestination(for: type)
+                } else {
+                    LoginRequiredView(
+                        icon: "sparkles",
+                        title: "登录后使用此服务",
+                        subtitle: "祈福 / 供灯 / 上香 / 超度 / 开光 / 化太岁",
+                        isPresented: .constant(false)
+                    )
+                }
+            case .diyBracelet:
+                // DIY 手串定制需要登录
+                if authStore.isLoggedIn {
+                    DiyBraceletView()
+                } else {
+                    LoginRequiredView(
+                        icon: "hand.point.up.left.fill",
+                        title: "登录后定制手串",
+                        subtitle: "选珠搭配，法师开光",
+                        isPresented: .constant(false)
+                    )
+                }
             case .booking(let master):
-                BookingView(master: master)
+                // 预约法师需要登录
+                if authStore.isLoggedIn {
+                    BookingView(master: master)
+                } else {
+                    LoginRequiredView(
+                        icon: "calendar.badge.plus",
+                        title: "登录后预约法师",
+                        subtitle: "在线预约，法师确认",
+                        isPresented: .constant(false)
+                    )
+                }
             }
         }
     }
 
-    // MARK: - 顶部品牌 + 搜索（对齐原型 header：sticky + blur + 品牌24px serif）
+    // MARK: - 顶部品牌 + 搜索（sticky + blur，品牌 18px serif 紧凑）
     private var headerSection: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             Text("问玄东方")
-                .font(.custom(AppFont.serif[0], size: 24).weight(.semibold))
+                .font(.custom(AppFont.serif[0], size: 18).weight(.semibold))
                 .foregroundStyle(Color.accentDefault)
+                .lineLimit(1)
 
             Spacer()
 
             NavigationLink(value: HomeRoute.templeList) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(Color.accentDefault)
-                    .frame(width: 36, height: 36)
-                    .background(Color.clear)
-                    .overlay(Circle().stroke(Color.accentDefault, lineWidth: 1.5))
+                    .frame(width: 30, height: 30)
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, AppSpacing.lg)
-        .padding(.vertical, AppSpacing.sm)
+        .padding(.vertical, 8)
     }
 
     // MARK: - Banner 轮播（对齐原型：200px高 + 图片 + 左侧渐变遮罩 + 圆点指示器）
@@ -178,24 +210,13 @@ struct HomeView: View {
         .contentShape(Rectangle())
     }
 
-    // MARK: - 热门服务（对齐原型：横向滚动 + 60px宽 + 44px圆形图标）
+    // MARK: - 热门服务（8 项全部展示，横滑，两侧不遮挡）
     private var hotServicesSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
-            HStack {
-                Text("热门服务")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Color.textPrimary)
-                Spacer()
-                NavigationLink(value: HomeRoute.service(.blessing)) {
-                    HStack(spacing: 2) {
-                        Text("更多").font(.system(size: 13))
-                        Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
-                    }
-                    .foregroundStyle(Color.accentDefault)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, AppSpacing.lg)
+            Text("热门服务")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Color.textPrimary)
+                .padding(.horizontal, AppSpacing.lg)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.md) {
@@ -238,13 +259,22 @@ struct HomeView: View {
         .frame(width: 60)
     }
 
-    // MARK: - 热门寺院（对齐原型：180x110图片 + 类型标签 + 名称+评分 + 地址 + 服务标签+服务数）
+    // MARK: - 热门寺院（横滑，标题可点击进完整列表）
     private var hotTemplesSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Text("热门寺院")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Color.textPrimary)
+            NavigationLink(value: HomeRoute.templeList) {
+                HStack {
+                    Text("热门寺院")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.textPrimary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.accentDefault)
+                }
                 .padding(.horizontal, AppSpacing.lg)
+            }
+            .buttonStyle(.plain)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.md) {
@@ -252,8 +282,6 @@ struct HomeView: View {
                         NavigationLink(value: temple) { templeCard(temple) }
                             .buttonStyle(CardPressButtonStyle())
                     }
-                    NavigationLink(value: HomeRoute.templeList) { moreCard(height: 200) }
-                        .buttonStyle(.plain)
                 }
                 .padding(.horizontal, AppSpacing.lg)
             }
@@ -264,7 +292,7 @@ struct HomeView: View {
         VStack(spacing: 0) {
             ZStack(alignment: .topLeading) {
                 RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.2")
-                    .frame(width: 180, height: 110)
+                    .frame(width: 160, height: 100)
                     .clipped()
                 Text(temple.type)
                     .font(.system(size: 10, weight: .medium))
@@ -319,10 +347,10 @@ struct HomeView: View {
             }
             .padding(10)
         }
-        .frame(width: 180)
+        .frame(width: 160)
         .background(Color.bgSecondary)
-        .cornerRadius(8)
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.borderDefault, lineWidth: 1))
+        .cornerRadius(12)
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1))
     }
 
     /// 寺院类型标签颜色：道教用紫色（对齐原型 #9E8FB2），其他用 brand
@@ -333,13 +361,22 @@ struct HomeView: View {
         return Color.brandDefault
     }
 
-    // MARK: - 热门师傅（对齐原型：155px宽 + 56px头像 + 法名+宗派标签+寺院+修行年+咨询数+评分+价格）
+    // MARK: - 热门师傅（横滑，标题可点击进完整列表）
     private var hotMastersSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Text("热门师傅")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Color.textPrimary)
+            NavigationLink(value: HomeRoute.masterList) {
+                HStack {
+                    Text("热门师傅")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.textPrimary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.accentDefault)
+                }
                 .padding(.horizontal, AppSpacing.lg)
+            }
+            .buttonStyle(.plain)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.md) {
@@ -347,8 +384,6 @@ struct HomeView: View {
                         NavigationLink(value: master) { masterCard(master) }
                             .buttonStyle(CardPressButtonStyle())
                     }
-                    NavigationLink(value: HomeRoute.masterList) { moreCard(height: 220) }
-                        .buttonStyle(.plain)
                 }
                 .padding(.horizontal, AppSpacing.lg)
             }
@@ -427,24 +462,9 @@ struct HomeView: View {
                 )
             }
         }
-        .frame(width: 155)
+        .frame(width: 160)
         .padding(.vertical, 12)
         .padding(.horizontal, 10)
-        .background(Color.bgSecondary)
-        .cornerRadius(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1))
-    }
-
-    private func moreCard(height: CGFloat) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: "chevron.right")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Color.brandDefault)
-            Text("查看更多")
-                .font(.system(size: 12))
-                .foregroundStyle(Color.brandDefault)
-        }
-        .frame(width: 80, height: height)
         .background(Color.bgSecondary)
         .cornerRadius(12)
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1))

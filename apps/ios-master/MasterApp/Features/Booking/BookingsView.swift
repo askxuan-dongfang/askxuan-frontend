@@ -183,6 +183,7 @@ struct BookingsView: View {
             .padding(.top, 10)
             .padding(.bottom, 70)
         }
+        .softScrollEdge(.bottom)
     }
 
     private func bookingCard(_ booking: MockBookingListCard) -> some View {

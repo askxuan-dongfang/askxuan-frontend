@@ -12,6 +12,7 @@ import SwiftUI
 
 struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
+    @EnvironmentObject private var authStore: AuthStore
 
     // MARK: - 从 ViewModel 派生的真实数据（无假数据；字段缺失时显示 "—" 占位）
 
@@ -70,6 +71,74 @@ struct ProfileView: View {
     ]
 
     var body: some View {
+        Group {
+            if authStore.isLoggedIn {
+                loggedInContent
+            } else {
+                guestContent
+            }
+        }
+        .background(Color.bgPrimary)
+        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    // MARK: - 未登录：登录引导
+    private var guestContent: some View {
+        VStack(spacing: 32) {
+            Spacer()
+
+            // 品牌 Logo
+            VStack(spacing: 16) {
+                Image(systemName: "person.crop.circle.badge.questionmark")
+                    .font(.system(size: 72))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color.accentDefault.opacity(0.6), Color.accentDefault],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+
+                Text("问玄东方")
+                    .font(.custom(AppFont.serif[0], size: 24).weight(.semibold))
+                    .foregroundStyle(Color.accentDefault)
+
+                Text("登录后即可管理您的预约、订单和地址")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.textTertiary)
+            }
+
+            VStack(spacing: 12) {
+                NavigationLink(value: AuthRoute.login) {
+                    Text("立即登录 / 注册")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.brandDefault, Color.brandLight],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(AppRadius.md)
+                }
+
+                Text("未注册手机号将自动创建账号")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.textTertiary)
+            }
+            .padding(.horizontal, 40)
+
+            Spacer()
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - 已登录：完整个人中心
+    private var loggedInContent: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
                 if let errorMessage = viewModel.errorMessage, !viewModel.hasAnyData {
@@ -84,8 +153,7 @@ struct ProfileView: View {
             }
             .padding(.bottom, AppSpacing.navBottom)
         }
-        .background(Color.bgPrimary)
-        .toolbar(.hidden, for: .navigationBar)
+        .softScrollEdge(.bottom)
         .task {
             if viewModel.profile == nil { await viewModel.load() }
         }

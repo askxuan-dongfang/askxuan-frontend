@@ -62,14 +62,17 @@ final class APIClient {
         let request = try buildRequest(endpoint)
         do {
             return try await perform(request: request)
-        } catch APIError.unauthorized where endpoint.shouldAttemptTokenRefresh {
-            guard let newToken = try await refreshAccessToken() else {
-                await MainActor.run { AuthStore.shared.logout() }
-                throw APIError.unauthorized
+        } catch APIError.unauthorized {
+            // 尝试刷新 token（仅支持刷新的端点）
+            if endpoint.shouldAttemptTokenRefresh,
+               let newToken = try? await refreshAccessToken() {
+                var retried = request
+                retried.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
+                return try await perform(request: retried)
             }
-            var retried = request
-            retried.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
-            return try await perform(request: retried)
+            // 刷新失败或不需要刷新：触发登出，UI 自动切换到未登录状态
+            await MainActor.run { AuthStore.shared.logout() }
+            throw APIError.unauthorized
         }
     }
 
@@ -104,6 +107,10 @@ final class APIClient {
             let apiResponse = try decoder.decode(APIResponse<T>.self, from: data)
             if apiResponse.isSuccess, let result = apiResponse.data {
                 return result
+            }
+            // 业务码 40101：未登录或登录已过期 → 触发登出
+            if apiResponse.code == 40101 {
+                throw APIError.unauthorized
             }
             // code 非 0：业务错误
             throw APIError.serverError(apiResponse.code, apiResponse.message)

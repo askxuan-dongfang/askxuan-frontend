@@ -11,6 +11,7 @@
 
 import SwiftUI
 import Combine
+import OpenIMSDKiOS
 
 @MainActor
 final class ChatViewModel: ObservableObject {
@@ -86,7 +87,7 @@ final class ChatViewModel: ObservableObject {
                                status: .sent)]
     }
 
-    // MARK: - 发送消息（通过 HTTP API，不再使用假回复）
+    // MARK: - 发送消息（通过 OpenIM SDK 发送给法师）
     func sendMessage() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, let conversation = currentConversation else { return }
@@ -100,16 +101,13 @@ final class ChatViewModel: ObservableObject {
         messages.append(bubble)
         inputText = ""
 
-        let req = SendMessageRequest(conversationId: conversation.id,
-                                     userId: authStore.userId,
-                                     content: text)
-        Task {
-            do {
-                let _: SendMessageResponse = try await apiClient.request(.sendMessage(req))
-                self.updateBubbleStatus(bubbleId, .sent)
-            } catch {
-                self.updateBubbleStatus(bubbleId, .failed)
-                self.errorMessage = "发送失败：\(error.localizedDescription)"
+        // 通过 OpenIM SDK 发送（法师 OpenIM userID 约定为 "m_" + masterId）
+        let recvID = "m_" + conversation.masterId
+        OpenIMManager.shared.sendMessage(text: text, to: recvID) { [weak self] success in
+            guard let self else { return }
+            self.updateBubbleStatus(bubbleId, success ? .sent : .failed)
+            if !success {
+                self.errorMessage = "发送失败"
             }
         }
     }
@@ -172,3 +170,19 @@ final class ChatViewModel: ObservableObject {
 
 /// 空响应占位
 struct EmptyResponse: Decodable {}
+
+// MARK: - OpenIM 消息接收
+extension ChatViewModel: OpenIMManagerDelegate {
+    func onRecvC2CMessage(_ message: OpenIMMessage) {
+        let bubble = ChatBubble(id: UUID().uuidString,
+                                text: message.text ?? "",
+                                isFromMe: false,
+                                time: AppDateFormatter.time.string(from: Date()),
+                                status: .sent)
+        messages.append(bubble)
+    }
+
+    func onConversationListUpdated(_ conversations: [OpenIMConversation]) {
+        // 预留：后续可在此刷新会话列表
+    }
+}

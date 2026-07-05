@@ -99,7 +99,7 @@ async function handleLogin() {
           <a href="#">忘记密码？</a>
         </div>
 
-        <div class="login-tip">Mock 账号：admin / 123456</div>
+        <div class="login-tip">默认账号：admin / 123456</div>
       </el-form>
     </div>
   </div>

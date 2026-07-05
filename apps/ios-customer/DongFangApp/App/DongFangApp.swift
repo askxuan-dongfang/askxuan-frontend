@@ -18,19 +18,18 @@ struct DongFangApp: App {
             KeychainHelper.readString(service: AppConfig.keychainService, key: AppConfig.tokenKey)
         }
         configureAppearance()
+        configureSmokeCredentials()
+        // 初始化 OpenIM SDK（App 启动一次）
+        OpenIMManager.shared.initialize()
     }
 
     var body: some Scene {
         WindowGroup {
-            if authStore.isLoggedIn {
-                MainTabView()
-                    .environmentObject(authStore)
-                    .preferredColorScheme(.dark)
-            } else {
-                LoginView()
-                    .environmentObject(authStore)
-                    .preferredColorScheme(.dark)
-            }
+            // 始终显示 MainTabView，游客可浏览首页/商城公共信息
+            // 需要登录的 Tab（对话/AI/我的）内部通过 requireAuth 拦截
+            MainTabView()
+                .environmentObject(authStore)
+                .preferredColorScheme(.dark)
         }
     }
 
@@ -56,5 +55,29 @@ struct DongFangApp: App {
         ]
         UINavigationBar.appearance().standardAppearance = navAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
+    }
+
+    private func configureSmokeCredentials() {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        guard let accessToken = value(after: "--smoke-token", in: args), !accessToken.isEmpty else {
+            return
+        }
+        AuthStore.shared.didLogin(
+            accessToken: accessToken,
+            refreshToken: value(after: "--smoke-refresh-token", in: args),
+            userId: value(after: "--smoke-user-id", in: args) ?? AppConfig.defaultUserId,
+            nickname: value(after: "--smoke-nickname", in: args) ?? "问玄用户",
+            avatar: nil,
+            mobile: value(after: "--smoke-mobile", in: args)
+        )
+        #endif
+    }
+
+    private func value(after key: String, in args: [String]) -> String? {
+        guard let index = args.firstIndex(of: key), index + 1 < args.count else {
+            return nil
+        }
+        return args[index + 1]
     }
 }

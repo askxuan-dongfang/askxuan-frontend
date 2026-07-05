@@ -14,6 +14,7 @@
 		0DE7B68416CAE8E679C26774 /* Temple.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9868540D689F7EA31B0C619C /* Temple.swift */; };
 		0EE177F7794C1CFF7E836842 /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE33612D2155FEDA901D3D8 /* ChatViewModel.swift */; };
 		0EF05DF1C4E58FE9FD15AA30 /* MasterProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4E5FAA5B507CCC9247021D4 /* MasterProfileView.swift */; };
+		0F55AE338593ED20CCD0C68E /* OpenIMSDKiOS in Frameworks */ = {isa = PBXBuildFile; productRef = 6CB8A33A2CE3D91A65F80749 /* OpenIMSDKiOS */; };
 		1326038FBE973B1514AF0DD2 /* ServiceVowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 576AED6FD494F52074FD9CA8 /* ServiceVowView.swift */; };
 		14308CE165488C4CA71E79BB /* MasterListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95B683B69A6B598E1BC6FA84 /* MasterListViewModel.swift */; };
 		17F3236A93A522F132A5503A /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA68B8CE6DA0E3B274EBA07 /* ProfileViewModel.swift */; };
@@ -22,6 +23,7 @@
 		388BB00B12C73D7CED013883 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746540EA9040535BB5DA0E12 /* HomeView.swift */; };
 		3980D1D3EAF34F9165A05CA6 /* DiyOrderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C90FB5FC146C32B7F608F0A /* DiyOrderView.swift */; };
 		410A707E969AD3BCB07889B3 /* TempleDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92542A7AC56799BC20F9544 /* TempleDetailViewModel.swift */; };
+		41E700E93396DB96237B2997 /* LoginRequiredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A7D526045E92370DDA8D508 /* LoginRequiredView.swift */; };
 		44BBB65AA886E6E4BA01D6A0 /* MasterProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89D472202BFAC67906844A14 /* MasterProfileViewModel.swift */; };
 		46F90EBD64A21089D2A1B25A /* Service.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193EEF8E131D20E2F4897CE0 /* Service.swift */; };
 		5152DE8AB826062170958CB4 /* DiyDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D959B591467788C8881269EE /* DiyDetailView.swift */; };
@@ -112,6 +114,7 @@
 		77F6C9921DE3DA835BB90207 /* GlassBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassBackground.swift; sourceTree = "<group>"; };
 		78233F2A18CCCCDF35390DB2 /* BookingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingView.swift; sourceTree = "<group>"; };
 		787EDD761D1A9D8D2F7853A8 /* AiDivinationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AiDivinationView.swift; sourceTree = "<group>"; };
+		7A7D526045E92370DDA8D508 /* LoginRequiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginRequiredView.swift; sourceTree = "<group>"; };
 		7E8B5D58C95EF253F44E0060 /* WebSocketManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketManager.swift; sourceTree = "<group>"; };
 		7EC4A691B775E127A0F1C1DD /* ServiceConsecrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceConsecrationView.swift; sourceTree = "<group>"; };
 		88E82F76143FF951B694E509 /* ChatDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatDetailView.swift; sourceTree = "<group>"; };
@@ -148,6 +151,17 @@
 		F92542A7AC56799BC20F9544 /* TempleDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempleDetailViewModel.swift; sourceTree = "<group>"; };
 		FB598B67C7D0B2F9D42CD48A /* TagPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagPill.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C69A5140590FFDEC2D1F1312 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0F55AE338593ED20CCD0C68E /* OpenIMSDKiOS in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		1319836857C925ED74239FB3 /* Service */ = {
@@ -396,6 +410,7 @@
 		FE6288A7821A0B2474D98032 /* Auth */ = {
 			isa = PBXGroup;
 			children = (
+				7A7D526045E92370DDA8D508 /* LoginRequiredView.swift */,
 				C321AEBD19A23F58E9FE7483 /* LoginView.swift */,
 			);
 			path = Auth;
@@ -410,6 +425,7 @@
 			buildPhases = (
 				B460FB33AFC5E1349A224921 /* Sources */,
 				5E7C6D1F3E0FF06E88048B91 /* Resources */,
+				C69A5140590FFDEC2D1F1312 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -417,6 +433,7 @@
 			);
 			name = DongFangApp;
 			packageProductDependencies = (
+				6CB8A33A2CE3D91A65F80749 /* OpenIMSDKiOS */,
 			);
 			productName = DongFangApp;
 			productReference = 19C4A2CA2A31EEAEEE340C69 /* DongFangApp.app */;
@@ -445,6 +462,9 @@
 			);
 			mainGroup = 589D86F0D400632D6369E525;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FA7ED586D6FB16D37B57E0B8 /* XCRemoteSwiftPackageReference "openim-sdk-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2212A00BAC87DC51EDA95F9C /* Products */;
 			projectDirPath = "";
@@ -503,6 +523,7 @@
 				E765E8D88CA7EADA4BF26F87 /* ImageMapper.swift in Sources */,
 				9FF1188411679345C8C92555 /* JSONHelper.swift in Sources */,
 				0868414B4C545596685E14CC /* LoadingView.swift in Sources */,
+				41E700E93396DB96237B2997 /* LoginRequiredView.swift in Sources */,
 				379E0BF411286D340A8362A0 /* LoginView.swift in Sources */,
 				57B146988753892ADAFF17C5 /* MainTabView.swift in Sources */,
 				7114168E304F9F18E61E16EB /* Master.swift in Sources */,
@@ -737,6 +758,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		FA7ED586D6FB16D37B57E0B8 /* XCRemoteSwiftPackageReference "openim-sdk-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/openimsdk/openim-sdk-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.8.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6CB8A33A2CE3D91A65F80749 /* OpenIMSDKiOS */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FA7ED586D6FB16D37B57E0B8 /* XCRemoteSwiftPackageReference "openim-sdk-ios" */;
+			productName = OpenIMSDKiOS;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 979E242E14369C61EE590076 /* Project object */;
 }

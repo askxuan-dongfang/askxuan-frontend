@@ -8,6 +8,20 @@
 
 import SwiftUI
 
+// MARK: - 特性 5：@Animatable 宏 —— 数字平滑插值动画
+// 普通视图的 Int 属性无法被 SwiftUI 插值（会跳变）。
+// @Animatable 宏（WWDC25 / iOS 26+）自动生成 animatableData，
+// 让 Float（VectorArithmetic）属性参与平滑动画 —— 数字从 0 滚动到目标值。
+@available(iOS 26.0, *)
+@Animatable
+struct AnimatedFortuneNumber: View {
+    var value: Float
+
+    var body: some View {
+        Text(value.formatted(.number.precision(.fractionLength(0))))
+    }
+}
+
 // MARK: - 术数技能模型
 
 struct DivinationSkill: Identifiable {
@@ -23,6 +37,8 @@ struct DivinationSkill: Identifiable {
 
 struct AiDivinationView: View {
     @State private var navigateToChat: Bool = false
+    // 特性 5：运势指数动画起始值（onAppear 后动画到 88）
+    @State private var fortuneValue: Float = 0
 
     private let skills: [DivinationSkill] = [
         DivinationSkill(id: "yinyuan", name: "姻缘测算", desc: "八字合婚、生肖配对、求签",
@@ -64,6 +80,12 @@ struct AiDivinationView: View {
         }
         .background(Color.bgPrimary)
         .navigationBarHidden(true)
+        .onAppear {
+            // 特性 5：触发运势指数数字滚动动画（0 → 88）
+            withAnimation(.easeOut(duration: 1.2)) {
+                fortuneValue = 88
+            }
+        }
         .navigationDestination(isPresented: $navigateToChat) {
             ChatDetailView(
                 conversation: ChatConversation(
@@ -136,6 +158,29 @@ struct AiDivinationView: View {
                     .foregroundStyle(Color.stateSuccess)
             }
             .padding(.top, 4)
+
+            // 特性 5：今日运势指数 —— @Animatable 数字从 0 平滑滚动到 88
+            if #available(iOS 26.0, *) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text("今日运势指数")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.textTertiary)
+                    AnimatedFortuneNumber(value: fortuneValue)
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.accentDefault, .brandDefault],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .animation(.easeOut(duration: 1.2), value: fortuneValue)
+                    Text("分")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.textTertiary)
+                }
+                .padding(.top, 10)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)

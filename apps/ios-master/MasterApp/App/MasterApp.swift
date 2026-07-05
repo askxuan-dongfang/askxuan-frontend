@@ -22,6 +22,9 @@ struct MasterApp: App {
         }
         // 配置深色禅意外观
         configureAppearance()
+        configureSmokeCredentials()
+        // 初始化 OpenIM SDK（App 启动一次）
+        OpenIMManager.shared.initialize()
     }
 
     var body: some Scene {
@@ -61,5 +64,25 @@ struct MasterApp: App {
         ]
         UINavigationBar.appearance().standardAppearance = navAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
+    }
+
+    private func configureSmokeCredentials() {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        guard let accessToken = value(after: "--smoke-token", in: args), !accessToken.isEmpty else {
+            return
+        }
+        AuthStore.shared.didLogin(
+            token: accessToken,
+            refreshToken: value(after: "--smoke-refresh-token", in: args)
+        )
+        #endif
+    }
+
+    private func value(after key: String, in args: [String]) -> String? {
+        guard let index = args.firstIndex(of: key), index + 1 < args.count else {
+            return nil
+        }
+        return args[index + 1]
     }
 }

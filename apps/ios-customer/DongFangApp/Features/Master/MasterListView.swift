@@ -10,24 +10,7 @@ import SwiftUI
 
 struct MasterListView: View {
     @StateObject private var viewModel = MasterListViewModel()
-
-    // 分类标签
-    private let categoryTags = ["全部", "汉传法师", "藏传堪布", "道教道长", "民间命理师"]
-    @State private var selectedCategoryTag: String = "全部"
-
-    // 左侧筛选组（对齐原型 filter-panel）
     @State private var expandedGroups: Set<String> = ["所属寺院"]
-    @State private var selectedTempleFilter: String = "全部"
-    @State private var selectedLevel: String = "全部"
-    @State private var selectedSpecialty: String = "全部"
-    @State private var selectedPriceRange: String = "全部"
-
-    private let filterGroups: [(title: String, options: [String])] = [
-        ("所属寺院", ["全部", "少林寺", "白云观", "大昭寺", "灵隐寺", "法门寺", "青羊宫"]),
-        ("修为等级", ["全部", "方丈", "住持", "高功", "法师"]),
-        ("擅长领域", ["全部", "禅修", "内丹", "藏密", "天台", "净土", "风水"]),
-        ("价格区间", ["全部", "¥0-200", "¥200-500", "¥500-1000", "¥1000+"])
-    ]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,9 +31,9 @@ struct MasterListView: View {
             // 2. 分类标签横滑
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.sm) {
-                    ForEach(categoryTags, id: \.self) { tag in
-                        tagPill(title: tag, isSelected: selectedCategoryTag == tag) {
-                            selectedCategoryTag = tag
+                    ForEach(viewModel.categoryOptions, id: \.self) { tag in
+                        tagPill(title: tag, isSelected: viewModel.selectedCategory == tag) {
+                            viewModel.selectedCategory = tag
                         }
                     }
                 }
@@ -64,7 +47,7 @@ struct MasterListView: View {
                 // 左侧筛选面板（80pt，可折叠组）
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        ForEach(filterGroups, id: \.title) { group in
+                        ForEach(viewModel.filterGroups, id: \.title) { group in
                             filterGroup(title: group.title, options: group.options)
                         }
                     }
@@ -81,19 +64,7 @@ struct MasterListView: View {
                     DFEmptyState(icon: "person.2", title: "暂无法师", subtitle: "下拉刷新试试")
                         .frame(maxWidth: .infinity)
                 } else {
-                    ScrollView(showsIndicators: false) {
-                        LazyVStack(spacing: AppSpacing.md) {
-                            ForEach(viewModel.filteredMasters) { master in
-                                NavigationLink(value: master) {
-                                    masterCard(master)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.horizontal, AppSpacing.md)
-                        .padding(.top, AppSpacing.sm)
-                        .padding(.bottom, AppSpacing.xl)
-                    }
+                    masterListContent
                 }
             }
         }
@@ -105,6 +76,53 @@ struct MasterListView: View {
         .refreshable { await viewModel.load() }
         .navigationDestination(for: Master.self) { master in
             MasterProfileView(masterId: master.id)
+        }
+    }
+
+    // MARK: - 法师列表内容
+    // 特性 4：iOS 26+ 使用 List + sectionIndexTitles 索引条，低版本回退 ScrollView
+    @ViewBuilder
+    private var masterListContent: some View {
+        let grouped = Dictionary(grouping: viewModel.filteredMasters, by: { $0.sect })
+        let sortedSects = grouped.keys.sorted()
+        if #available(iOS 26.0, *) {
+            List {
+                ForEach(sortedSects, id: \.self) { sect in
+                    Section {
+                        ForEach(grouped[sect] ?? []) { master in
+                            NavigationLink(value: master) {
+                                masterCard(master)
+                            }
+                            .buttonStyle(.plain)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
+                        }
+                    } header: {
+                        Text(sect)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.textTertiary)
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(Color.bgPrimary)
+            .softScrollEdge(.bottom)
+        } else {
+            ScrollView(showsIndicators: false) {
+                LazyVStack(spacing: AppSpacing.md) {
+                    ForEach(viewModel.filteredMasters) { master in
+                        NavigationLink(value: master) {
+                            masterCard(master)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, AppSpacing.md)
+                .padding(.top, AppSpacing.sm)
+                .padding(.bottom, AppSpacing.xl)
+            }
         }
     }
 
@@ -253,23 +271,23 @@ struct MasterListView: View {
         .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
     }
 
-    // MARK: - 筛选值管理
+    // MARK: - 筛选值管理（绑定到 ViewModel）
     private func selectedValue(for group: String) -> String {
         switch group {
-        case "所属寺院": return selectedTempleFilter
-        case "修为等级": return selectedLevel
-        case "擅长领域": return selectedSpecialty
-        case "价格区间": return selectedPriceRange
+        case "所属寺院": return viewModel.selectedTemple
+        case "修为等级": return viewModel.selectedLevel
+        case "擅长领域": return viewModel.selectedSpecialty
+        case "价格区间": return viewModel.selectedPriceRange
         default: return "全部"
         }
     }
 
     private func setSelectedValue(_ value: String, for group: String) {
         switch group {
-        case "所属寺院": selectedTempleFilter = value
-        case "修为等级": selectedLevel = value
-        case "擅长领域": selectedSpecialty = value
-        case "价格区间": selectedPriceRange = value
+        case "所属寺院":   viewModel.selectedTemple = value
+        case "修为等级":   viewModel.selectedLevel = value
+        case "擅长领域":   viewModel.selectedSpecialty = value
+        case "价格区间":   viewModel.selectedPriceRange = value
         default: break
         }
     }

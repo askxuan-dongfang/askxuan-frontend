@@ -17,7 +17,7 @@ const instance = axios.create({
 // 请求拦截器：注入 token
 instance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('df_admin_token')
+    const token = localStorage.getItem('df_shop_admin_token')
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -31,7 +31,7 @@ instance.interceptors.request.use(
 )
 
 async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = localStorage.getItem('df_admin_refresh_token')
+  const refreshToken = localStorage.getItem('df_shop_admin_refresh_token')
   if (!refreshToken) return null
   const { data } = await axios.post<ApiResponse<{ accessToken: string }>>(
     '/api/v1/auth/refresh',
@@ -45,7 +45,7 @@ async function refreshAccessToken(): Promise<string | null> {
     }
   )
   if (data.code !== 0 || !data.data?.accessToken) return null
-  localStorage.setItem('df_admin_token', data.data.accessToken)
+  localStorage.setItem('df_shop_admin_token', data.data.accessToken)
   return data.data.accessToken
 }
 
@@ -53,8 +53,19 @@ async function refreshAccessToken(): Promise<string | null> {
 instance.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
     const res = response.data
-    // 非 0 code 视为业务错误
+    // 兼容 message-service 等返回原始 JSON（无 code 字段）的场景：直接透传
+    if (res === null || typeof res !== 'object' || !('code' in res)) {
+      return res as any
+    }
+    // 非 0 code 视为业务错误；40101 表示 JWT 失效，触发登出
     if (res.code !== 0) {
+      if (res.code === 40101) {
+        localStorage.removeItem('df_shop_admin_token')
+        localStorage.removeItem('df_shop_admin_refresh_token')
+        ElMessage.error('登录已过期，请重新登录')
+        window.location.href = '/login'
+        return Promise.reject(new Error(res.message || '未登录或登录已过期'))
+      }
       ElMessage.error(res.message || '请求失败')
       return Promise.reject(new Error(res.message || 'Error'))
     }
@@ -78,8 +89,8 @@ instance.interceptors.response.use(
     }
     if (error.response?.status === 401) {
       ElMessage.error('登录已过期，请重新登录')
-      localStorage.removeItem('df_admin_token')
-      localStorage.removeItem('df_admin_refresh_token')
+      localStorage.removeItem('df_shop_admin_token')
+      localStorage.removeItem('df_shop_admin_refresh_token')
       window.location.href = '/login'
     } else {
       ElMessage.error(error.response?.data?.message || error.message || '网络异常')

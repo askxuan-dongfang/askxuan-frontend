@@ -254,6 +254,17 @@ struct LoginView: View {
                     mobile: resp.userInfo?.mobile ?? phone
                 )
             }
+            // 登录成功后，用 imToken 登录 OpenIM（C 端 userID 约定为 "u_" + userId）
+            if let imToken = resp.imToken, !imToken.isEmpty {
+                let openimUserID = "u_" + userId
+                OpenIMManager.shared.login(userID: openimUserID, token: imToken) { success, error in
+                    if success {
+                        print("✅ OpenIM 登录成功")
+                    } else {
+                        print("❌ OpenIM 登录失败: \(error?.localizedDescription ?? "")")
+                    }
+                }
+            }
             await registerMockDeviceToken(userId: userId)
             return .success
         } catch let APIError.serverError(code, message) {

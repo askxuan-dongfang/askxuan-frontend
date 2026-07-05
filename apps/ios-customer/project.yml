@@ -31,6 +31,11 @@ configs:
   Debug: debug
   Release: release
 
+packages:
+  OpenIMSDKiOS:
+    url: https://github.com/openimsdk/openim-sdk-ios.git
+    from: 3.8.0
+
 targets:
   DongFangApp:
     type: application
@@ -39,6 +44,8 @@ targets:
       - path: DongFangApp
         excludes:
           - "Resources/Info.plist"
+    dependencies:
+      - package: OpenIMSDKiOS
     settings:
       base:
         INFOPLIST_FILE: DongFangApp/Resources/Info.plist

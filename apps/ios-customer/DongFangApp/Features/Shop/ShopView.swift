@@ -23,6 +23,7 @@ struct ShopView: View {
                 }
                 .padding(.bottom, AppSpacing.navBottom)
             }
+            .softScrollEdge(.bottom)
         }
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)

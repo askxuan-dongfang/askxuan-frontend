@@ -1,0 +1,13 @@
+{
+  "name": "@askxuan/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:web": "playwright test",
+    "test:web:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.45.0"
+  }
+}

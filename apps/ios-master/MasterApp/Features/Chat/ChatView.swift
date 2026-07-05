@@ -9,6 +9,7 @@
 //
 
 import SwiftUI
+import OpenIMSDKiOS
 
 struct ChatBubble: Identifiable, Hashable {
     let id = UUID()
@@ -31,13 +32,22 @@ final class ChatViewModel: ObservableObject {
             bubbles.append(ChatBubble(text: m.content, isMe: false,
                                       time: DFDateFormatter.friendly(m.createdAt)))
         }
+        // 接收 OpenIM 实时消息
+        OpenIMManager.shared.delegate = self
     }
 
+    /// 发送消息（通过 OpenIM SDK 发送给信众）
     func send() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        bubbles.append(ChatBubble(text: text, isMe: true, time: "刚刚"))
-        inputText = ""
+        // 信众 OpenIM userID 约定为 "u_" + userId（站内消息发送者）
+        guard let userID = message?.userId, !userID.isEmpty else { return }
+        let recvID = "u_" + userID
+        OpenIMManager.shared.sendMessage(text: text, to: recvID) { [weak self] success in
+            guard success else { return }
+            self?.bubbles.append(ChatBubble(text: text, isMe: true, time: "刚刚"))
+            self?.inputText = ""
+        }
     }
 }
 
@@ -134,6 +144,17 @@ struct ChatView: View {
             }
             if !bubble.isMe { Spacer(minLength: 60) }
         }
+    }
+}
+
+// MARK: - OpenIM 消息接收
+extension ChatViewModel: OpenIMManagerDelegate {
+    func onRecvC2CMessage(_ msg: OpenIMMessage) {
+        bubbles.append(ChatBubble(text: msg.text ?? "", isMe: false, time: "刚刚"))
+    }
+
+    func onConversationListUpdated(_ conversations: [OpenIMConversation]) {
+        // 预留：后续可在此刷新会话列表
     }
 }
 

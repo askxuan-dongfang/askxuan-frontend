@@ -59,6 +59,18 @@ final class LoginViewModel: ObservableObject {
             let resp: LoginResponse = try await apiClient.request(.adminLogin(req))
             // 保存 Token 并解析 JWT Claims（masterId 等）
             AuthStore.shared.didLogin(token: resp.accessToken, refreshToken: resp.refreshToken)
+            // 登录成功后，用 imToken 登录 OpenIM（法师端 userID 约定为 "m_" + masterId）
+            if let imToken = resp.imToken, !imToken.isEmpty,
+               let masterID = AuthStore.shared.masterId, !masterID.isEmpty {
+                let openimUserID = "m_" + masterID
+                OpenIMManager.shared.login(userID: openimUserID, token: imToken) { success, error in
+                    if success {
+                        print("✅ OpenIM 登录成功")
+                    } else {
+                        print("❌ OpenIM 登录失败: \(error?.localizedDescription ?? "")")
+                    }
+                }
+            }
             await registerMockDeviceToken()
         } catch let error as APIError {
             errorMessage = error.errorDescription

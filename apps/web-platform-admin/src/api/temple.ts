@@ -22,8 +22,20 @@ export function getTempleList(params: TempleListParams) {
 }
 
 /** 寺院详情（C端接口） */
-export function getTempleDetail(id: string) {
-  return client.get<TempleDetail>(`/temples/${id}`)
+export async function getTempleDetail(id: string): Promise<TempleDetail> {
+  const data = await client.get<TempleDetail | Temple>(`/temples/${id}`)
+  if ('temple' in data) {
+    return {
+      temple: data.temple,
+      images: data.images ?? [],
+      services: data.services ?? []
+    }
+  }
+  return {
+    temple: data,
+    images: [],
+    services: []
+  }
 }
 
 /** 寺院入驻审核列表 */

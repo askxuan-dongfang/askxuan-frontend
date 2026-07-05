@@ -37,3 +37,28 @@ struct CardPressButtonStyle: ButtonStyle {
             .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
     }
 }
+
+// MARK: - iOS 26 新特性适配扩展
+extension View {
+    /// 特性 7：TabBar 滚动最小化（iOS 26+）。
+    /// 向下滚动内容时，液态玻璃 TabBar 自动收缩为浮动 dock 小球，腾出阅读空间。
+    @ViewBuilder
+    func tabBarMinimizeOnScroll() -> some View {
+        if #available(iOS 26.0, *) {
+            self.tabBarMinimizeBehavior(.onScrollDown)
+        } else {
+            self
+        }
+    }
+
+    /// 特性 8：ScrollView 边缘柔化效果（iOS 26+）。
+    /// 在指定边缘（默认底部）添加柔和渐变，让滚动内容与浮动 TabBar 自然过渡，避免硬切。
+    @ViewBuilder
+    func softScrollEdge(_ edge: Edge.Set = .bottom) -> some View {
+        if #available(iOS 26.0, *) {
+            self.scrollEdgeEffectStyle(.soft, for: edge)
+        } else {
+            self
+        }
+    }
+}

@@ -10,15 +10,6 @@ import SwiftUI
 
 struct TempleListView: View {
     @StateObject private var viewModel = TempleListViewModel()
-    @State private var selectedService: String = "全部"
-
-    // 教派分类标签（对齐原型 category-row）
-    private let sectTags = ["汉传佛教", "南传佛教", "藏传密宗", "道教道观", "民间地方信仰"]
-    @State private var selectedSectTag: String = "汉传佛教"
-
-    // 左侧服务筛选选项（对齐原型 filter-panel）
-    private let serviceFilters = ["全部", "求姻缘", "求财运", "求事业", "求风水",
-                                   "求健康", "求学业", "祈福平安", "超度祭祖", "开光加持"]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -39,9 +30,9 @@ struct TempleListView: View {
             // 2. 教派标签横滑
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.sm) {
-                    ForEach(sectTags, id: \.self) { tag in
-                        tagPill(title: tag, isSelected: selectedSectTag == tag) {
-                            selectedSectTag = tag
+                    ForEach(viewModel.sectOptions, id: \.self) { tag in
+                        tagPill(title: tag, isSelected: viewModel.selectedSect == tag) {
+                            viewModel.selectedSect = tag
                         }
                     }
                 }
@@ -55,9 +46,9 @@ struct TempleListView: View {
                 // 左侧筛选面板（80pt）
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        ForEach(serviceFilters, id: \.self) { filter in
-                            filterOption(title: filter, isSelected: selectedService == filter) {
-                                selectedService = filter
+                        ForEach(viewModel.serviceFilters, id: \.self) { filter in
+                            filterOption(title: filter, isSelected: viewModel.selectedService == filter) {
+                                viewModel.selectedService = filter
                             }
                         }
                     }
@@ -74,19 +65,7 @@ struct TempleListView: View {
                     DFEmptyState(icon: "building.2", title: "暂无寺院", subtitle: "下拉刷新试试")
                         .frame(maxWidth: .infinity)
                 } else {
-                    ScrollView(showsIndicators: false) {
-                        LazyVStack(spacing: AppSpacing.md) {
-                            ForEach(viewModel.filteredTemples) { temple in
-                                NavigationLink(value: temple) {
-                                    templeCard(temple)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.horizontal, AppSpacing.md)
-                        .padding(.top, AppSpacing.sm)
-                        .padding(.bottom, AppSpacing.xl)
-                    }
+                    templeListContent
                 }
             }
         }
@@ -98,6 +77,53 @@ struct TempleListView: View {
         .refreshable { await viewModel.load() }
         .navigationDestination(for: Temple.self) { temple in
             TempleDetailView(templeId: temple.id, templeName: temple.name)
+        }
+    }
+
+    // MARK: - 寺院列表内容
+    // 特性 4：iOS 26+ 使用 List + sectionIndexTitles 索引条，低版本回退 ScrollView
+    @ViewBuilder
+    private var templeListContent: some View {
+        let grouped = Dictionary(grouping: viewModel.filteredTemples, by: { $0.sect })
+        let sortedSects = grouped.keys.sorted()
+        if #available(iOS 26.0, *) {
+            List {
+                ForEach(sortedSects, id: \.self) { sect in
+                    Section {
+                        ForEach(grouped[sect] ?? []) { temple in
+                            NavigationLink(value: temple) {
+                                templeCard(temple)
+                            }
+                            .buttonStyle(.plain)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
+                        }
+                    } header: {
+                        Text(sect)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.textTertiary)
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(Color.bgPrimary)
+            .softScrollEdge(.bottom)
+        } else {
+            ScrollView(showsIndicators: false) {
+                LazyVStack(spacing: AppSpacing.md) {
+                    ForEach(viewModel.filteredTemples) { temple in
+                        NavigationLink(value: temple) {
+                            templeCard(temple)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, AppSpacing.md)
+                .padding(.top, AppSpacing.sm)
+                .padding(.bottom, AppSpacing.xl)
+            }
         }
     }
 

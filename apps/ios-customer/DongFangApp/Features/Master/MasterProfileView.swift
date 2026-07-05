@@ -11,8 +11,10 @@ struct MasterProfileView: View {
     let masterId: String
 
     @StateObject private var viewModel = MasterProfileViewModel()
+    @EnvironmentObject private var authStore: AuthStore
     @Environment(\.dismiss) private var dismiss
     @State private var showBooking = false
+    @State private var showLoginPrompt = false
 
     private let tabs = ["资质", "预约", "文创", "视频", "咨询"]
 
@@ -39,6 +41,12 @@ struct MasterProfileView: View {
         .sheet(isPresented: $showBooking) {
             if let master = viewModel.master {
                 NavigationStack { BookingView(master: master) }
+            }
+        }
+        .sheet(isPresented: $showLoginPrompt) {
+            NavigationStack {
+                LoginView()
+                    .environmentObject(authStore)
             }
         }
     }
@@ -299,8 +307,20 @@ struct MasterProfileView: View {
     // MARK: - 底部操作栏
     private var bottomActionBar: some View {
         HStack(spacing: AppSpacing.md) {
-            DFSecondaryButton(title: "立即咨询") {}
-            DFPrimaryButton(title: "预约服务") { showBooking = true }
+            DFSecondaryButton(title: "立即咨询") {
+                if authStore.isLoggedIn {
+                    // TODO: 跳转聊天
+                } else {
+                    showLoginPrompt = true
+                }
+            }
+            DFPrimaryButton(title: "预约服务") {
+                if authStore.isLoggedIn {
+                    showBooking = true
+                } else {
+                    showLoginPrompt = true
+                }
+            }
         }
         .padding(.horizontal, AppSpacing.lg)
         .padding(.vertical, AppSpacing.md)

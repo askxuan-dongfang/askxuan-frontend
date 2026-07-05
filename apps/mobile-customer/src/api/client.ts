@@ -26,7 +26,7 @@ function getRouterReplace() {
   return routerReplace;
 }
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3001/api/v1';
+const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1';
 
 const client: AxiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -61,8 +61,8 @@ client.interceptors.response.use(
       if (body.code === 0) {
         return body.data; // 直接返回 data 字段
       }
-      // 业务错误（含 401 token 失效）
-      if (body.code === 401) {
+      // 业务错误（含 40101 token 失效）
+      if (body.code === 40101) {
         handleUnauthorized();
       }
       return Promise.reject(new Error(body?.message || '请求失败'));

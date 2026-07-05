@@ -7,6 +7,14 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+// 分页结果（后端统一返回 { total, list, page, size }）
+export interface PagedResult<T> {
+  total: number;
+  list: T[];
+  page: number;
+  size: number;
+}
+
 // 寺院
 export interface Temple {
   id: string;
@@ -78,16 +86,17 @@ export interface Booking {
 
 // 创建预约的入参
 export interface CreateBookingInput {
+  userId: string; // 后端 CreateReq 必填
   templeId: string;
-  templeName: string;
+  templeName?: string;
   masterId: string;
-  masterName: string;
-  serviceId: string;
-  serviceName: string;
+  masterName?: string;
+  serviceId?: string;
+  serviceName?: string;
   bookingDate: string;
-  timeSlot: string;
-  meritMoney: number;
-  meritMoneyTier: string;
+  timeSlot?: string;
+  meritMoney?: number;
+  meritMoneyTier?: string;
   note?: string;
 }
 
@@ -100,10 +109,17 @@ export interface User {
   createdAt: string;
 }
 
-// 登录响应
+// 登录响应（与后端 auth-service LoginResp 对齐）
 export interface LoginResult {
-  token: string;
-  user: User;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  userInfo: {
+    userId: number;
+    nickname: string;
+    mobile: string;
+    avatar?: string;
+  };
 }
 
 // 轮播图

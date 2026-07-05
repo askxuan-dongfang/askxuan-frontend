@@ -61,16 +61,7 @@ async function onSubmit() {
       const redirect = (route.query.redirect as string) || '/dashboard'
       router.push(redirect)
     } catch (e: any) {
-      // 后端未启动时，演示账号走本地桩
-      if (form.account === 'admin' && form.password === '123456' && (e?.message === 'Network Error' || e?.response?.status === 404)) {
-        const mockUser = { userId: 1, nickname: '平台超管', avatar: '', mobile: '188****8888' }
-        auth.token = 'mock-platform-admin-token'
-        auth.userInfo = mockUser
-        localStorage.setItem('df_admin_token', auth.token)
-        localStorage.setItem('df_admin_user', JSON.stringify(mockUser))
-        ElMessage.success('登录成功（演示模式）')
-        router.push('/dashboard')
-      }
+      ElMessage.error(e?.message || '登录失败，请检查账号密码')
     } finally {
       loading.value = false
     }

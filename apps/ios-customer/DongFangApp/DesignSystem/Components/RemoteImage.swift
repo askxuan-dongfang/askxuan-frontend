@@ -4,11 +4,30 @@
 //
 //  图片加载组件：
 //  - 有 scheme（http/https）→ AsyncImage 远程加载
-//  - 无 scheme → 视为本地 asset 名，用 Image(name) 加载
+//  - /assets/xxx.jpg → 提取 asset 名 xxx，用 Image(name) 加载
+//  - 纯 asset 名 → 直接用 Image(name) 加载
 //  - 加载失败时显示占位 SF Symbol
 //
 
 import SwiftUI
+
+/// 从后端返回的图片路径中提取本地 asset 名
+/// - /assets/temple-card-lingyinsi.jpg → temple-card-lingyinsi
+/// - temple-card-lingyinsi → temple-card-lingyinsi（已经是 asset 名）
+private func extractAssetName(_ urlString: String) -> String {
+    var name = urlString
+    if name.hasPrefix("/assets/") {
+        name = String(name.dropFirst("/assets/".count))
+    }
+    // 去掉文件扩展名
+    for ext in [".jpg", ".jpeg", ".png", ".webp"] {
+        if name.lowercased().hasSuffix(ext) {
+            name = String(name.dropLast(ext.count))
+            break
+        }
+    }
+    return name
+}
 
 /// 图片加载（远程 URL 或本地 asset 名）
 struct RemoteImage: View {
@@ -34,8 +53,8 @@ struct RemoteImage: View {
                     }
                 }
             } else {
-                // 无 scheme：本地 asset 名
-                Image(urlString)
+                // 无 scheme：/assets/xxx.jpg 或纯 asset 名
+                Image(extractAssetName(urlString))
                     .resizable()
                     .aspectRatio(contentMode: contentMode)
             }
@@ -82,8 +101,8 @@ struct RemoteAvatar: View {
                 }
                 .frame(width: size, height: size)
             } else {
-                // 无 scheme：本地 asset 名
-                Image(urlString)
+                // 无 scheme：/assets/xxx.jpg 或纯 asset 名
+                Image(extractAssetName(urlString))
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: size, height: size)

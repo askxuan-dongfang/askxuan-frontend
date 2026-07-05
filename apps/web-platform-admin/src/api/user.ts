@@ -15,8 +15,12 @@ export function getUserList(params: UserListParams) {
 }
 
 /** 用户详情 */
-export function getUserDetail(id: number | string) {
-  return client.get<AdminUserDetailResp>(`/admin/users/${id}`)
+export async function getUserDetail(id: number | string): Promise<AdminUserDetailResp> {
+  const data = await client.get<AdminUserDetailResp>(`/admin/users/${id}`)
+  return {
+    ...data,
+    preferenceTags: data.preferenceTags ?? []
+  }
 }
 
 /** 更新用户状态 */
