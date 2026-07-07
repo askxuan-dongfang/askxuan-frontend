@@ -42,7 +42,7 @@ async function handleLogin() {
     <div class="login-bg"></div>
     <div class="login-card df-card">
       <div class="login-brand">
-        <div class="login-mark">寺</div>
+        <img class="login-mark" src="/logos/logo-temple.jpg" alt="问玄东方寺院管理台" />
         <div>
           <div class="login-title">问玄东方</div>
           <div class="login-sub">寺院管理台</div>
@@ -139,14 +139,9 @@ async function handleLogin() {
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #c45a3c 0%, #c8a96e 100%);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Noto Serif SC', serif;
-  font-weight: 700;
-  font-size: 22px;
+  object-fit: cover;
+  border: 1px solid #e8d5b8;
+  flex-shrink: 0;
 }
 .login-title {
   font-family: 'Noto Serif SC', serif;

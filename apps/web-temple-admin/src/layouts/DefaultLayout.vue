@@ -38,7 +38,7 @@ function handleLogout() {
     <!-- 侧边栏 -->
     <el-aside width="220px" class="df-aside">
       <div class="df-logo">
-        <span class="df-logo-mark">寺</span>
+        <img class="df-logo-mark" src="/logos/logo-temple.jpg" alt="问玄东方寺院管理台" />
         <div class="df-logo-text">
           <div class="df-logo-title">问玄东方</div>
           <div class="df-logo-sub">寺院管理台</div>
@@ -140,15 +140,10 @@ function handleLogout() {
 .df-logo-mark {
   width: 34px;
   height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   border-radius: 8px;
-  background: linear-gradient(135deg, #c45a3c 0%, #c8a96e 100%);
-  color: #fff;
-  font-family: 'Noto Serif SC', serif;
-  font-weight: 700;
-  font-size: 18px;
+  object-fit: cover;
+  border: 1px solid rgba(200, 169, 110, 0.35);
+  flex-shrink: 0;
 }
 .df-logo-title {
   font-family: 'Noto Serif SC', serif;

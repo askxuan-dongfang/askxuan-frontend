@@ -103,10 +103,15 @@ struct LoginView: View {
             VStack(spacing: AppSpacing.xl) {
                 // 顶部品牌区
                 VStack(spacing: AppSpacing.sm) {
-                    Image(systemName: "circle.hexagonpath.fill")
-                        .font(.system(size: 56))
-                        .foregroundStyle(LinearGradient(colors: [.brandDefault, .accentDefault],
-                                                        startPoint: .top, endPoint: .bottom))
+                    Image("brand-logo")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 72, height: 72)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(Color.accentDefault.opacity(0.35), lineWidth: 1)
+                        )
                         .padding(.bottom, AppSpacing.xs)
                     Text("问玄东方")
                         .font(.brandTitle)

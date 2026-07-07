@@ -8,7 +8,7 @@
 
     <div class="login__panel dfx-card">
       <div class="login__brand">
-        <div class="login__seal">玄</div>
+        <img class="login__seal" src="/logos/logo-platform.jpg" alt="问玄东方平台总管理台" />
         <h1 class="login__title dfx-serif">问玄东方</h1>
         <p class="login__subtitle">P05 · 平台总管理台</p>
       </div>
@@ -127,18 +127,13 @@ async function onSubmit() {
   margin-bottom: 32px;
 }
 .login__seal {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
   width: 56px;
   height: 56px;
   margin-bottom: 16px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--color-cinnabar), var(--color-brand-dark));
-  color: var(--color-text-primary);
-  font-family: var(--font-serif);
-  font-weight: 900;
-  font-size: 30px;
+  object-fit: cover;
+  border: 1px solid var(--color-border-strong);
   box-shadow: 0 6px 20px rgba(181, 69, 58, 0.4);
 }
 .login__title {

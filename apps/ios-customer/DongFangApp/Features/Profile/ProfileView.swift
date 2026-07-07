@@ -89,15 +89,12 @@ struct ProfileView: View {
 
             // 品牌 Logo
             VStack(spacing: 16) {
-                Image(systemName: "person.crop.circle.badge.questionmark")
-                    .font(.system(size: 72))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color.accentDefault.opacity(0.6), Color.accentDefault],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+                Image("brand-logo")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 88, height: 88)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.accentDefault.opacity(0.35), lineWidth: 1.5))
 
                 Text("问玄东方")
                     .font(.custom(AppFont.serif[0], size: 24).weight(.semibold))

@@ -876,13 +876,12 @@ struct AboutView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: AppSpacing.lg) {
                 VStack(spacing: AppSpacing.sm) {
-                    ZStack {
-                        Circle().fill(Color.bgTertiary).frame(width: 84, height: 84)
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 36))
-                            .foregroundStyle(Color.accentDefault)
-                    }
-                    .overlay(Circle().stroke(Color.accentDefault, lineWidth: 2).frame(width: 84, height: 84))
+                    Image("brand-logo")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 84, height: 84)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(Color.accentDefault, lineWidth: 2))
                     Text("问玄东方")
                         .font(.custom(AppFont.serif[0], size: 20).weight(.bold))
                         .foregroundStyle(Color.accentDefault)

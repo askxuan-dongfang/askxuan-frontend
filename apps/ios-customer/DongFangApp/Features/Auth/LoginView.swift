@@ -70,9 +70,10 @@ struct LoginView: View {
                     )
                     .overlay(Circle().stroke(Color.accentDefault.opacity(0.3), lineWidth: 1.5))
 
-                Image(systemName: "leaf.circle.fill")
-                    .font(.system(size: 44))
-                    .foregroundStyle(Color.accentDefault)
+                Image("brand-logo")
+                    .resizable()
+                    .scaledToFill()
+                    .clipShape(Circle())
             }
             .frame(width: 88, height: 88)
 

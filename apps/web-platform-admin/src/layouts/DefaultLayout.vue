@@ -3,7 +3,7 @@
     <!-- 侧边栏 -->
     <el-aside :width="collapsed ? '64px' : '230px'" class="layout__aside">
       <div class="layout__logo">
-        <span class="layout__logo-icon">玄</span>
+        <img class="layout__logo-icon" src="/logos/logo-platform.jpg" alt="问玄东方平台总管理台" />
         <transition name="fade">
           <span v-if="!collapsed" class="layout__logo-text dfx-serif">问玄东方</span>
         </transition>
@@ -189,17 +189,11 @@ async function onCommand(cmd: string) {
   flex-shrink: 0;
 }
 .layout__logo-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 32px;
   height: 32px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--color-brand), var(--color-cinnabar));
-  color: var(--color-text-primary);
-  font-family: var(--font-serif);
-  font-weight: 900;
-  font-size: 18px;
+  object-fit: cover;
+  border: 1px solid var(--color-border-strong);
   flex-shrink: 0;
 }
 .layout__logo-text {

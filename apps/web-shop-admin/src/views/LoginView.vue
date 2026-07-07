@@ -51,7 +51,7 @@ async function handleLogin() {
 
     <div class="login-card">
       <div class="login-logo">
-        <div class="login-symbol">卍</div>
+        <img class="login-symbol" src="/logos/logo-shop.jpg" alt="问玄东方商城管理台" />
         <h1>问玄东方</h1>
         <p>商城管理台</p>
       </div>
@@ -157,10 +157,13 @@ async function handleLogin() {
   margin-bottom: 36px;
 }
 .login-symbol {
-  font-size: 36px;
-  color: var(--accent);
-  margin-bottom: 8px;
-  opacity: 0.8;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(200, 169, 110, 0.28);
+  margin: 0 auto 12px;
+  display: block;
 }
 .login-logo h1 {
   font-family: 'Noto Serif SC', serif;

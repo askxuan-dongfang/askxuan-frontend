@@ -56,8 +56,11 @@ async function handleLogout() {
     <!-- 左侧菜单栏 -->
     <aside class="sidebar">
       <div class="sidebar-logo">
-        <h1>问玄东方</h1>
-        <p>商城管理台</p>
+        <img class="sidebar-logo-img" src="/logos/logo-shop.jpg" alt="问玄东方商城管理台" />
+        <div>
+          <h1>问玄东方</h1>
+          <p>商城管理台</p>
+        </div>
       </div>
 
       <el-menu
@@ -176,13 +179,25 @@ async function handleLogout() {
 }
 
 .sidebar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   padding: 24px 20px;
   border-bottom: 1px solid rgba(197, 176, 151, 0.15);
-  text-align: center;
+  text-align: left;
+}
+.sidebar-logo-img {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(197, 176, 151, 0.24);
+  flex-shrink: 0;
 }
 .sidebar-logo h1 {
   font-family: 'Noto Serif SC', serif;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--accent);
   margin: 0 0 4px;
