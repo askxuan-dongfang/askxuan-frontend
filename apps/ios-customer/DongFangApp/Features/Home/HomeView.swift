@@ -14,23 +14,32 @@ struct HomeView: View {
     @State private var currentBanner: Int = 0
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: AppSpacing.lg) {
-                bannerSection
-                entryCardsSection
-                hotServicesSection
-                hotTemplesSection
-                hotMastersSection
-                Spacer(minLength: AppSpacing.navBottom + 16)
+        GeometryReader { geometry in
+            let viewportWidth = geometry.size.width
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: AppSpacing.lg) {
+                    bannerSection
+                    entryCardsSection
+                    hotServicesSection
+                    hotTemplesSection
+                    hotMastersSection
+                    Color.clear.frame(height: AppSpacing.navBottom + 32)
+                }
+                .padding(.top, AppSpacing.sm)
+                .frame(width: viewportWidth, alignment: .top)
             }
-            .padding(.top, AppSpacing.sm)
-        }
-        .softScrollEdge(.bottom)
-        .background(Color.bgPrimary)
-        .navigationBarHidden(true)
-        .safeAreaInset(edge: .top) {
-            headerSection
-                .liquidGlassBackground(0.92)
+            .scrollClipDisabled(false)
+            .softScrollEdge(.bottom)
+            .background(Color.bgPrimary)
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationBarHidden(true)
+            .navigationBarBackButtonHidden(true)
+            .safeAreaInset(edge: .top) {
+                headerSection
+                    .frame(width: viewportWidth)
+                    .liquidGlassBackground(0.92)
+            }
         }
         .task {
             if viewModel.hotTemples.isEmpty {
@@ -106,23 +115,28 @@ struct HomeView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, AppSpacing.lg)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .frame(minHeight: 48)
     }
 
     // MARK: - Banner 轮播（对齐原型：200px高 + 图片 + 左侧渐变遮罩 + 圆点指示器）
     private var bannerSection: some View {
         VStack(spacing: 10) {
-            TabView(selection: $currentBanner) {
-                ForEach(Array(viewModel.banners.enumerated()), id: \.element.id) { index, banner in
-                    bannerSlide(banner)
-                        .tag(index)
+            GeometryReader { proxy in
+                TabView(selection: $currentBanner) {
+                    ForEach(Array(viewModel.banners.enumerated()), id: \.element.id) { index, banner in
+                        bannerSlide(banner)
+                            .frame(width: proxy.size.width, height: 200)
+                            .tag(index)
+                    }
                 }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .frame(width: proxy.size.width, height: 200)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
             .frame(height: 200)
-            .cornerRadius(10)
-            .padding(.horizontal, AppSpacing.lg)
+            .padding(.horizontal, 20)
 
             // 圆点指示器（对齐原型：6px圆点，active 18px长条 brand色）
             HStack(spacing: 6) {
@@ -168,17 +182,25 @@ struct HomeView: View {
 
     // MARK: - 双入口卡片（对齐原型：120px高 + 图片背景 + 渐变遮罩 + 图标+文字居中）
     private var entryCardsSection: some View {
-        HStack(spacing: AppSpacing.md) {
-            NavigationLink(value: HomeRoute.templeList) {
-                entryCard(icon: "building.2.fill", title: "找寺院", asset: ImageMapper.entryTemple)
+        GeometryReader { proxy in
+            let horizontalInset: CGFloat = 20
+            let cardWidth = (proxy.size.width - horizontalInset * 2 - AppSpacing.md) / 2
+
+            HStack(spacing: AppSpacing.md) {
+                NavigationLink(value: HomeRoute.templeList) {
+                    entryCard(icon: "building.2.fill", title: "找寺院", asset: ImageMapper.entryTemple)
+                        .frame(width: cardWidth)
+                }
+                .buttonStyle(CardPressButtonStyle())
+                NavigationLink(value: HomeRoute.masterList) {
+                    entryCard(icon: "person.circle.fill", title: "找师傅", asset: ImageMapper.entryMaster)
+                        .frame(width: cardWidth)
+                }
+                .buttonStyle(CardPressButtonStyle())
             }
-            .buttonStyle(CardPressButtonStyle())
-            NavigationLink(value: HomeRoute.masterList) {
-                entryCard(icon: "person.circle.fill", title: "找师傅", asset: ImageMapper.entryMaster)
-            }
-            .buttonStyle(CardPressButtonStyle())
+            .padding(.horizontal, horizontalInset)
         }
-        .padding(.horizontal, AppSpacing.lg)
+        .frame(height: 120)
     }
 
     private func entryCard(icon: String, title: String, asset: String) -> some View {
@@ -216,7 +238,7 @@ struct HomeView: View {
             Text("热门服务")
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(Color.textPrimary)
-                .padding(.horizontal, AppSpacing.lg)
+                .padding(.horizontal, 20)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.md) {
@@ -227,7 +249,7 @@ struct HomeView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, AppSpacing.lg)
+                .padding(.horizontal, 20)
             }
         }
     }
@@ -272,7 +294,7 @@ struct HomeView: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(Color.accentDefault)
                 }
-                .padding(.horizontal, AppSpacing.lg)
+                .padding(.horizontal, 20)
             }
             .buttonStyle(.plain)
 
@@ -283,7 +305,7 @@ struct HomeView: View {
                             .buttonStyle(CardPressButtonStyle())
                     }
                 }
-                .padding(.horizontal, AppSpacing.lg)
+                .padding(.horizontal, 20)
             }
         }
     }
@@ -292,7 +314,7 @@ struct HomeView: View {
         VStack(spacing: 0) {
             ZStack(alignment: .topLeading) {
                 RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.2")
-                    .frame(width: 160, height: 100)
+                    .frame(width: 168, height: 100)
                     .clipped()
                 Text(temple.type)
                     .font(.system(size: 10, weight: .medium))
@@ -309,6 +331,7 @@ struct HomeView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                     Spacer()
                     Text("★ \(temple.ratingText)")
                         .font(.system(size: 11, weight: .medium))
@@ -321,6 +344,8 @@ struct HomeView: View {
                     Text(temple.region)
                         .font(.system(size: 11))
                         .foregroundStyle(Color.textTertiary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                     Spacer()
                 }
                 if !temple.serviceTagsText.isEmpty || temple.serviceCountText != nil {
@@ -329,7 +354,7 @@ struct HomeView: View {
                             Text(temple.serviceTagsText)
                                 .font(.system(size: 10))
                                 .foregroundStyle(Color.textSecondary)
-                                .lineLimit(1)
+                                .lineLimit(2)
                         }
                         Spacer()
                         if let countText = temple.serviceCountText {
@@ -347,7 +372,7 @@ struct HomeView: View {
             }
             .padding(10)
         }
-        .frame(width: 160)
+        .frame(width: 168)
         .background(Color.bgSecondary)
         .cornerRadius(12)
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1))
@@ -374,7 +399,7 @@ struct HomeView: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(Color.accentDefault)
                 }
-                .padding(.horizontal, AppSpacing.lg)
+                .padding(.horizontal, 20)
             }
             .buttonStyle(.plain)
 
@@ -385,7 +410,7 @@ struct HomeView: View {
                             .buttonStyle(CardPressButtonStyle())
                     }
                 }
-                .padding(.horizontal, AppSpacing.lg)
+                .padding(.horizontal, 20)
             }
         }
     }
@@ -398,6 +423,7 @@ struct HomeView: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Color.textPrimary)
                 .lineLimit(1)
+                .minimumScaleFactor(0.85)
 
             // 宗派标签 + 寺院
             HStack(spacing: 4) {
@@ -412,6 +438,7 @@ struct HomeView: View {
                     .font(.system(size: 10))
                     .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.85)
             }
 
             // 修行年 + 咨询数
@@ -446,13 +473,15 @@ struct HomeView: View {
                         Text(master.specialtiesText)
                             .font(.system(size: 10))
                             .foregroundStyle(Color.textSecondary)
-                            .lineLimit(1)
+                            .lineLimit(2)
                     }
                     Spacer()
                     if let price = master.startPriceText {
                         Text(price)
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(Color.brandDefault)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                     }
                 }
                 .padding(.top, 4)
@@ -462,7 +491,7 @@ struct HomeView: View {
                 )
             }
         }
-        .frame(width: 160)
+        .frame(width: 168)
         .padding(.vertical, 12)
         .padding(.horizontal, 10)
         .background(Color.bgSecondary)

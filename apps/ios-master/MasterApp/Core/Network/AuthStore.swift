@@ -38,28 +38,38 @@ final class AuthStore: ObservableObject {
     /// RefreshToken
     @Published private(set) var refreshToken: String? = nil
 
+    /// OpenIM IM Token（用于 SDK 登录，持久化到 Keychain 以便 app 重启后恢复）
+    @Published private(set) var imToken: String? = nil
+
     // MARK: - Keychain
 
     private let service = "com.askxuan.master"
     private let tokenKey = "df_master_token"
     private let refreshTokenKey = "df_master_refresh_token"
+    private let imTokenKey = "df_master_im_token"
 
     private init() {
         if let saved = readToken() {
             self.token = saved
             self.refreshToken = readRefreshToken()
             self.applyClaims(from: saved)
+            self.imToken = readIMToken()
             self.isLoggedIn = (saved.isEmpty == false && masterId != nil)
         }
     }
 
     /// 登录成功后保存 Token 并解析 Claims
-    /// - Parameter token: 后端返回的 accessToken
-    func didLogin(token: String, refreshToken: String?) {
+    /// - Parameters:
+    ///   - token: 后端返回的 accessToken
+    ///   - refreshToken: 后端返回的 refreshToken
+    ///   - imToken: OpenIM 登录用的 IM Token（可选，默认 nil 保持向后兼容）
+    func didLogin(token: String, refreshToken: String?, imToken: String? = nil) {
         self.token = token
         self.refreshToken = refreshToken
         saveRefreshToken(refreshToken)
         self.applyClaims(from: token)
+        self.imToken = imToken
+        saveIMToken(imToken)
         self.isLoggedIn = (masterId != nil)
     }
 
@@ -77,9 +87,11 @@ final class AuthStore: ObservableObject {
         self.masterId = nil
         self.userId = nil
         self.nickname = nil
+        self.imToken = nil
         self.isLoggedIn = false
         deleteToken()
         deleteRefreshToken()
+        deleteIMToken()
     }
 
     /// APIClient 注入用 token 提供者（非 isolated 读取，避免 MainActor 跨界）
@@ -142,6 +154,22 @@ final class AuthStore: ObservableObject {
 
     private func deleteRefreshToken() {
         KeychainHelper.shared.delete(service: service, key: refreshTokenKey)
+    }
+
+    private func saveIMToken(_ token: String?) {
+        if let token, !token.isEmpty {
+            KeychainHelper.shared.set(token, service: service, key: imTokenKey)
+        } else {
+            deleteIMToken()
+        }
+    }
+
+    nonisolated private func readIMToken() -> String? {
+        KeychainHelper.shared.read(service: service, key: imTokenKey)
+    }
+
+    private func deleteIMToken() {
+        KeychainHelper.shared.delete(service: service, key: imTokenKey)
     }
 }
 

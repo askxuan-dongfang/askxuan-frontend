@@ -89,7 +89,7 @@ final class HomeViewModel: ObservableObject {
     private func fetchTemples() async -> Result<[Temple], Error> {
         do {
             let resp: PageResponse<Temple> = try await apiClient.request(
-                .temples(sect: nil, type: nil, page: 1, size: 6))
+                .temples(sect: nil, type: nil, serviceCode: nil, page: 1, size: 6))
             return .success(resp.list)
         } catch {
             return .failure(error)

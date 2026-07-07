@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		05958CA11E4669D23E2BB14D /* OpenIMSDKiOS in Frameworks */ = {isa = PBXBuildFile; productRef = 8849B0B4BC5FDD5630558B87 /* OpenIMSDKiOS */; };
 		08B89D072F082BC21BE2755E /* DateFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15F330D9EBC23F172E5C8D73 /* DateFormatter.swift */; };
 		096475C2218BCBDDCD4C7599 /* Review.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFBFFE694B85B18E8EE8A464 /* Review.swift */; };
 		18B3A6DA9E4C003A3FCFB5DA /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F891FC0C6DBBF8634C714DD /* ChatView.swift */; };
@@ -33,6 +32,7 @@
 		8736E2A36389ED17A31AB795 /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2ECDD4D04158DEF9F38E93BF /* StatusBadge.swift */; };
 		89D7BBFC4E2F2E6D840641D4 /* ReviewsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3026C9DC1087AC58ADEC51B9 /* ReviewsView.swift */; };
 		9A7DB57BAEEA3865A094411D /* Earnings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38F985729DB8F65B54C97E03 /* Earnings.swift */; };
+		A5506D1DECDBB4320542718E /* Pods_MasterApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77C1BE90D433B89031873D4D /* Pods_MasterApp.framework */; };
 		A978F55AF8627E8504E8D723 /* Withdrawal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EB5A36CFF824BB1C39E4F07 /* Withdrawal.swift */; };
 		ACA2F2A516B4E7E34582395D /* BlessingTasksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5636A8918EB1CFB94FC4F61C /* BlessingTasksView.swift */; };
 		B15AB1796B7EA133D0D3B88B /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECB7504D8D30BE0BD2E3F1B /* LoginView.swift */; };
@@ -41,6 +41,7 @@
 		BBD51F322A9E511427266A2E /* PricingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FFB5D411A7EA26538BFFFA /* PricingView.swift */; };
 		C9921DF9A1A7F314B89B56DD /* MasterTopNavBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B76AC9AF5F7ADA5DF9CAEA60 /* MasterTopNavBar.swift */; };
 		C9CF302CA0062EDBB0FCCB14 /* MasterBottomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25948AEA2C41B259710EF0CA /* MasterBottomTabBar.swift */; };
+		D0D565E17D40295FC3041F9F /* OpenIMManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBF136A072F2CEB2A097FF4C /* OpenIMManager.swift */; };
 		D11E93879C84E88484F0F5C5 /* Booking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46CD85C8AE5D21F67C8E6BD0 /* Booking.swift */; };
 		D950C7387F9E0BBD8C246111 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA2672C09B8030E0DC0CDBC /* Tokens.swift */; };
 		DEB81846F4CF10F6C34B535F /* JSONHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C5831F8CA301D517AC0775 /* JSONHelper.swift */; };
@@ -50,11 +51,13 @@
 		F1E117240EA0E03EDEA065F4 /* MasterProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117AC1A1E7E1366FE627EB3A /* MasterProfile.swift */; };
 		F71A5213ABF488A6AA8657B0 /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF7347A424F372232E7A162 /* CalendarView.swift */; };
 		FD109E64B5C5E531902E6FE8 /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE37F18E7F2177EAD5C86FF7 /* Card.swift */; };
+		B1C2D3E4F5A6B7C8D9E0F1A2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		08FFB5D411A7EA26538BFFFA /* PricingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingView.swift; sourceTree = "<group>"; };
 		0CF7347A424F372232E7A162 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
+		0ECD4F137986813CD2EE5108 /* Pods-MasterApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MasterApp.release.xcconfig"; path = "Target Support Files/Pods-MasterApp/Pods-MasterApp.release.xcconfig"; sourceTree = "<group>"; };
 		117AC1A1E7E1366FE627EB3A /* MasterProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterProfile.swift; sourceTree = "<group>"; };
 		15F330D9EBC23F172E5C8D73 /* DateFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatter.swift; sourceTree = "<group>"; };
 		1B7ACB17DC4F75A3226C6F24 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
@@ -72,6 +75,7 @@
 		67CE46785FAD34C06035563D /* Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
 		6D4AE240EEF4162EEEFF2542 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		6FBFDC3C10932AC277DEE16B /* BlessingTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlessingTask.swift; sourceTree = "<group>"; };
+		77C1BE90D433B89031873D4D /* Pods_MasterApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MasterApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		79EB2DCF3A26790FD0045B82 /* MessagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagesView.swift; sourceTree = "<group>"; };
 		7AA2672C09B8030E0DC0CDBC /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
 		7B9B17619C2DAD4EB81DC70B /* APIResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIResponse.swift; sourceTree = "<group>"; };
@@ -82,6 +86,7 @@
 		989CCF92D975A7BDE5A6B6FB /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		9C8978EDA5C0EC0A6EE28D1E /* BookingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingDetailView.swift; sourceTree = "<group>"; };
 		9E26F25318ECFCF2694656F6 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
+		AB102AEB2698D19EE0F7FCB8 /* Pods-MasterApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MasterApp.debug.xcconfig"; path = "Target Support Files/Pods-MasterApp/Pods-MasterApp.debug.xcconfig"; sourceTree = "<group>"; };
 		AB57476E20D9D853F9357955 /* StatCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatCard.swift; sourceTree = "<group>"; };
 		AECF1AA54256AF55D010E22C /* EmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyState.swift; sourceTree = "<group>"; };
 		AF1204FC48A5BE263D3D4DEF /* WorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceView.swift; sourceTree = "<group>"; };
@@ -94,20 +99,33 @@
 		DD0CC2D117C0F4925E9A00D3 /* Endpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Endpoint.swift; sourceTree = "<group>"; };
 		E901E7A8208DE7E7196905CB /* GlassBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassBackground.swift; sourceTree = "<group>"; };
 		EB0AB53E985870DCBDE1435E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		EBF136A072F2CEB2A097FF4C /* OpenIMManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenIMManager.swift; sourceTree = "<group>"; };
 		ED213CAB1B21D786432BE9E4 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		EFBFFE694B85B18E8EE8A464 /* Review.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Review.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		C5A0C64FBC5EDC3193034F29 /* Frameworks */ = {
+		182B4EAFD7C4F7B956AF079C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				05958CA11E4669D23E2BB14D /* OpenIMSDKiOS in Frameworks */,
+				A5506D1DECDBB4320542718E /* Pods_MasterApp.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E1F2A3B4C5D6E7F8A9B0C1D2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1C2D3E4F5A6B7C8D9E0F1A2 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXGroup section */
 		09C904C53D5CDE87752E0DC2 /* Utils */ = {
@@ -117,6 +135,14 @@
 				97C5831F8CA301D517AC0775 /* JSONHelper.swift */,
 			);
 			path = Utils;
+			sourceTree = "<group>";
+		};
+		11D1C87C4E585F0BE9F247C0 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				77C1BE90D433B89031873D4D /* Pods_MasterApp.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		19CFEE8C7E906AD23DC0FF29 /* Calendar */ = {
@@ -155,6 +181,7 @@
 				E130A223468B8BD5C78AB235 /* DesignSystem */,
 				F0702F3C472DA1610411E864 /* Features */,
 				E03C464EEEE92B6B2C0CE3DA /* Models */,
+				D1E2F3A4B5C6D7E8F9A0B1C2 /* Resources */,
 				09C904C53D5CDE87752E0DC2 /* Utils */,
 			);
 			path = MasterApp;
@@ -187,6 +214,16 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		6D477A41695719F82A30C837 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				AB102AEB2698D19EE0F7FCB8 /* Pods-MasterApp.debug.xcconfig */,
+				0ECD4F137986813CD2EE5108 /* Pods-MasterApp.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		7EAB87D572B419223AB26B4E /* Network */ = {
 			isa = PBXGroup;
 			children = (
@@ -194,6 +231,7 @@
 				7B9B17619C2DAD4EB81DC70B /* APIResponse.swift */,
 				C3D076D59FF3810052A8C9E3 /* AuthStore.swift */,
 				DD0CC2D117C0F4925E9A00D3 /* Endpoint.swift */,
+				EBF136A072F2CEB2A097FF4C /* OpenIMManager.swift */,
 				3CB14D64C5E7CB18BA8DD83E /* WebSocketManager.swift */,
 			);
 			path = Network;
@@ -238,6 +276,8 @@
 			children = (
 				2E2F261EBBC51D711208BF54 /* MasterApp */,
 				5D732DA65FE8D0F7FA25FB7A /* Products */,
+				6D477A41695719F82A30C837 /* Pods */,
+				11D1C87C4E585F0BE9F247C0 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -295,6 +335,14 @@
 			path = Chat;
 			sourceTree = "<group>";
 		};
+		D1E2F3A4B5C6D7E8F9A0B1C2 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F60718293A4B5C /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -302,17 +350,17 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 089EE079B027D359B9892005 /* Build configuration list for PBXNativeTarget "MasterApp" */;
 			buildPhases = (
+				FBE39E95F1B95E9BB2B8A119 /* [CP] Check Pods Manifest.lock */,
 				C75AFCBEFCB45EBB6C0F2D05 /* Sources */,
-				C5A0C64FBC5EDC3193034F29 /* Frameworks */,
+				182B4EAFD7C4F7B956AF079C /* Frameworks */,
+				E1F2A3B4C5D6E7F8A9B0C1D2 /* Resources */,
+				D74E155DCC870D8B96FBA5DF /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			name = MasterApp;
-			packageProductDependencies = (
-				8849B0B4BC5FDD5630558B87 /* OpenIMSDKiOS */,
-			);
 			productName = MasterApp;
 			productReference = 829AE82CD7FDAB4E3FD82B10 /* MasterApp.app */;
 			productType = "com.apple.product-type.application";
@@ -340,9 +388,6 @@
 			);
 			mainGroup = BC321B93ADAC90848CD425D7;
 			minimizedProjectReferenceProxies = 1;
-			packageReferences = (
-				4815D5CE769D152C0C705A75 /* XCRemoteSwiftPackageReference "openim-sdk-ios" */,
-			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5D732DA65FE8D0F7FA25FB7A /* Products */;
 			projectDirPath = "";
@@ -352,6 +397,48 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		D74E155DCC870D8B96FBA5DF /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-MasterApp/Pods-MasterApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-MasterApp/Pods-MasterApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MasterApp/Pods-MasterApp-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		FBE39E95F1B95E9BB2B8A119 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-MasterApp-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		C75AFCBEFCB45EBB6C0F2D05 /* Sources */ = {
@@ -387,6 +474,7 @@
 				C9921DF9A1A7F314B89B56DD /* MasterTopNavBar.swift in Sources */,
 				24950F2C669DD0D16017E3CB /* Message.swift in Sources */,
 				523B4322828D696A1A1C58B3 /* MessagesView.swift in Sources */,
+				D0D565E17D40295FC3041F9F /* OpenIMManager.swift in Sources */,
 				BBD51F322A9E511427266A2E /* PricingView.swift in Sources */,
 				4AEE91A845C1A45468C26917 /* PrimaryButton.swift in Sources */,
 				75EA497D7F22228CB972B433 /* ProfileEditView.swift in Sources */,
@@ -547,6 +635,7 @@
 		};
 		2D7B9044EF5B939C5FEAFECD /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AB102AEB2698D19EE0F7FCB8 /* Pods-MasterApp.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -564,6 +653,7 @@
 		};
 		37DC07D5C41A0FEC1123E7CB /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0ECD4F137986813CD2EE5108 /* Pods-MasterApp.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -599,25 +689,6 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		4815D5CE769D152C0C705A75 /* XCRemoteSwiftPackageReference "openim-sdk-ios" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/openimsdk/openim-sdk-ios.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 3.8.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		8849B0B4BC5FDD5630558B87 /* OpenIMSDKiOS */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4815D5CE769D152C0C705A75 /* XCRemoteSwiftPackageReference "openim-sdk-ios" */;
-			productName = OpenIMSDKiOS;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 55426556900FE5FD31D7D7E8 /* Project object */;
 }

@@ -14,7 +14,6 @@
 		0DE7B68416CAE8E679C26774 /* Temple.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9868540D689F7EA31B0C619C /* Temple.swift */; };
 		0EE177F7794C1CFF7E836842 /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE33612D2155FEDA901D3D8 /* ChatViewModel.swift */; };
 		0EF05DF1C4E58FE9FD15AA30 /* MasterProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4E5FAA5B507CCC9247021D4 /* MasterProfileView.swift */; };
-		0F55AE338593ED20CCD0C68E /* OpenIMSDKiOS in Frameworks */ = {isa = PBXBuildFile; productRef = 6CB8A33A2CE3D91A65F80749 /* OpenIMSDKiOS */; };
 		1326038FBE973B1514AF0DD2 /* ServiceVowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 576AED6FD494F52074FD9CA8 /* ServiceVowView.swift */; };
 		14308CE165488C4CA71E79BB /* MasterListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95B683B69A6B598E1BC6FA84 /* MasterListViewModel.swift */; };
 		17F3236A93A522F132A5503A /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA68B8CE6DA0E3B274EBA07 /* ProfileViewModel.swift */; };
@@ -40,11 +39,13 @@
 		7114168E304F9F18E61E16EB /* Master.swift in Sources */ = {isa = PBXBuildFile; fileRef = A03E43A4788113300BE29D77 /* Master.swift */; };
 		84B5E75095A9D37B696B6713 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C010CD5681C8EF44E54E513F /* APIClient.swift */; };
 		84F998F328F8B5EA59A5CF1F /* BookingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78233F2A18CCCCDF35390DB2 /* BookingView.swift */; };
+		8B737C59F986FA76F40DDA12 /* Pods_DongFangApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 330B4D56D19C2FD76494465E /* Pods_DongFangApp.framework */; };
 		8BA9CE40B114C6365F998545 /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DC8C8E33F8CCD3F87412A11 /* StatusBadge.swift */; };
 		90FE6999E8BBDF5CA5622022 /* MasterListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A977054AC6636024946C93 /* MasterListView.swift */; };
 		929252235D6B2452438425AF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6A5A6DB8CDF1D86AFAD4F519 /* Assets.xcassets */; };
 		95CB52E2500A3A223AC906BC /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25E69079EF146EC3781FA552 /* ChatView.swift */; };
 		9DCAC833291B1ACFBB60789D /* EmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616449B3D7AA309EDF8D62DD /* EmptyState.swift */; };
+		9F7CF3BFD9FF110C82111947 /* OpenIMManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3274EF1FAB07EA6E889B2C4 /* OpenIMManager.swift */; };
 		9FF1188411679345C8C92555 /* JSONHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1A4F5DC44274685E3D28B6 /* JSONHelper.swift */; };
 		A31DEA88CCCB3DE7FF454C25 /* Endpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC696A95190CFDED2073D457 /* Endpoint.swift */; };
 		A98A05A40D9DF09AADD47588 /* ServiceIncenseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FBD28CBB485AB876AA47DD9 /* ServiceIncenseView.swift */; };
@@ -87,13 +88,16 @@
 		19C4A2CA2A31EEAEEE340C69 /* DongFangApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = DongFangApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1AF936000A9D7B1EC00D512D /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		1BE33612D2155FEDA901D3D8 /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
+		1DC616CE352DC70C2DD8795A /* Pods-DongFangApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DongFangApp.debug.xcconfig"; path = "Target Support Files/Pods-DongFangApp/Pods-DongFangApp.debug.xcconfig"; sourceTree = "<group>"; };
 		2431C78E9C9239620D33AC8B /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		24DD6432C6363432E718D930 /* DiyOrder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyOrder.swift; sourceTree = "<group>"; };
 		256B49BC8EC19FDE6447F528 /* Announcement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Announcement.swift; sourceTree = "<group>"; };
 		25E69079EF146EC3781FA552 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		25FDFC04252F879AB3493443 /* TempleDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempleDetailView.swift; sourceTree = "<group>"; };
 		2E5A6AA366BD8DB9094DBFD1 /* BookingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingViewModel.swift; sourceTree = "<group>"; };
+		330B4D56D19C2FD76494465E /* Pods_DongFangApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DongFangApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		389090D2C716583E337285CD /* DongFangApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DongFangApp.swift; sourceTree = "<group>"; };
+		40FDBB41EB6F5E6CFFE3A3F0 /* Pods-DongFangApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DongFangApp.release.xcconfig"; path = "Target Support Files/Pods-DongFangApp/Pods-DongFangApp.release.xcconfig"; sourceTree = "<group>"; };
 		41C2E5B48BC2E74108354D27 /* ServiceBlessingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceBlessingView.swift; sourceTree = "<group>"; };
 		47FA318687B4947262CFF8DD /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		4BA68B8CE6DA0E3B274EBA07 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
@@ -138,6 +142,7 @@
 		C7A6F924ADE80A4DCF100DF1 /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
 		C8A977054AC6636024946C93 /* MasterListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterListView.swift; sourceTree = "<group>"; };
 		CB0018C29D0DC4CD63F43199 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
+		D3274EF1FAB07EA6E889B2C4 /* OpenIMManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenIMManager.swift; sourceTree = "<group>"; };
 		D3D257EEFF4EAD94AEBC2472 /* ShopProduct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopProduct.swift; sourceTree = "<group>"; };
 		D959B591467788C8881269EE /* DiyDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyDetailView.swift; sourceTree = "<group>"; };
 		DA98EDFCAA4C436931ED0222 /* BottomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomTabBar.swift; sourceTree = "<group>"; };
@@ -153,11 +158,11 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		C69A5140590FFDEC2D1F1312 /* Frameworks */ = {
+		1DEE56B1902DEE70714BAD63 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0F55AE338593ED20CCD0C68E /* OpenIMSDKiOS in Frameworks */,
+				8B737C59F986FA76F40DDA12 /* Pods_DongFangApp.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -224,6 +229,8 @@
 			children = (
 				54015560DB363C65EC81DB3F /* DongFangApp */,
 				2212A00BAC87DC51EDA95F9C /* Products */,
+				8C67A2BF9E790F4FEF592279 /* Pods */,
+				DAB61869CAEBD92B585A39C1 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -269,6 +276,7 @@
 				5F42ECA2DB16A4249D38183C /* APIResponse.swift */,
 				6031FC8114555CAC9A2010E3 /* AuthStore.swift */,
 				DC696A95190CFDED2073D457 /* Endpoint.swift */,
+				D3274EF1FAB07EA6E889B2C4 /* OpenIMManager.swift */,
 				7E8B5D58C95EF253F44E0060 /* WebSocketManager.swift */,
 			);
 			path = Network;
@@ -292,6 +300,16 @@
 				E40BE52F2D940C20FBCBB17D /* TempleListViewModel.swift */,
 			);
 			path = Temple;
+			sourceTree = "<group>";
+		};
+		8C67A2BF9E790F4FEF592279 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				1DC616CE352DC70C2DD8795A /* Pods-DongFangApp.debug.xcconfig */,
+				40FDBB41EB6F5E6CFFE3A3F0 /* Pods-DongFangApp.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 		94AE1BDB7D029095782BEB6D /* Resources */ = {
@@ -347,6 +365,14 @@
 				4BA68B8CE6DA0E3B274EBA07 /* ProfileViewModel.swift */,
 			);
 			path = Profile;
+			sourceTree = "<group>";
+		};
+		DAB61869CAEBD92B585A39C1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				330B4D56D19C2FD76494465E /* Pods_DongFangApp.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		DB7342E51D35969B42CE4283 /* Master */ = {
@@ -423,18 +449,17 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 05A92618F7F09E6AB3E25CDE /* Build configuration list for PBXNativeTarget "DongFangApp" */;
 			buildPhases = (
+				D8AFCE1D52F54A99A5851368 /* [CP] Check Pods Manifest.lock */,
 				B460FB33AFC5E1349A224921 /* Sources */,
 				5E7C6D1F3E0FF06E88048B91 /* Resources */,
-				C69A5140590FFDEC2D1F1312 /* Frameworks */,
+				1DEE56B1902DEE70714BAD63 /* Frameworks */,
+				FF1158D8BCE135B48DA2C929 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			name = DongFangApp;
-			packageProductDependencies = (
-				6CB8A33A2CE3D91A65F80749 /* OpenIMSDKiOS */,
-			);
 			productName = DongFangApp;
 			productReference = 19C4A2CA2A31EEAEEE340C69 /* DongFangApp.app */;
 			productType = "com.apple.product-type.application";
@@ -462,9 +487,6 @@
 			);
 			mainGroup = 589D86F0D400632D6369E525;
 			minimizedProjectReferenceProxies = 1;
-			packageReferences = (
-				FA7ED586D6FB16D37B57E0B8 /* XCRemoteSwiftPackageReference "openim-sdk-ios" */,
-			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2212A00BAC87DC51EDA95F9C /* Products */;
 			projectDirPath = "";
@@ -485,6 +507,48 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		D8AFCE1D52F54A99A5851368 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-DongFangApp-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		FF1158D8BCE135B48DA2C929 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-DongFangApp/Pods-DongFangApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-DongFangApp/Pods-DongFangApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-DongFangApp/Pods-DongFangApp-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		B460FB33AFC5E1349A224921 /* Sources */ = {
@@ -531,6 +595,7 @@
 				14308CE165488C4CA71E79BB /* MasterListViewModel.swift in Sources */,
 				0EF05DF1C4E58FE9FD15AA30 /* MasterProfileView.swift in Sources */,
 				44BBB65AA886E6E4BA01D6A0 /* MasterProfileViewModel.swift in Sources */,
+				9F7CF3BFD9FF110C82111947 /* OpenIMManager.swift in Sources */,
 				06F52E38224283AD3D9B67C4 /* PrimaryButton.swift in Sources */,
 				695BB1CBB602AAC1393D6EDF /* ProfileSubPages.swift in Sources */,
 				0219386E4E4B912F99D9A121 /* ProfileView.swift in Sources */,
@@ -706,6 +771,7 @@
 		};
 		C67451B6D6166B1A2C33FBB7 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1DC616CE352DC70C2DD8795A /* Pods-DongFangApp.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -723,6 +789,7 @@
 		};
 		E7D322DE557066C3CFD1C183 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 40FDBB41EB6F5E6CFFE3A3F0 /* Pods-DongFangApp.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -758,25 +825,6 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		FA7ED586D6FB16D37B57E0B8 /* XCRemoteSwiftPackageReference "openim-sdk-ios" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/openimsdk/openim-sdk-ios.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 3.8.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		6CB8A33A2CE3D91A65F80749 /* OpenIMSDKiOS */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = FA7ED586D6FB16D37B57E0B8 /* XCRemoteSwiftPackageReference "openim-sdk-ios" */;
-			productName = OpenIMSDKiOS;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 979E242E14369C61EE590076 /* Project object */;
 }

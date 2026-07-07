@@ -10,6 +10,7 @@ import SwiftUI
 
 struct LoginView: View {
     @EnvironmentObject private var authStore: AuthStore
+    @Environment(\.dismiss) private var dismiss
 
     @State private var phone: String = ""
     @State private var code: String = ""
@@ -201,10 +202,11 @@ struct LoginView: View {
         errorMessage = nil
 
         // 先尝试登录，若用户不存在则自动注册后再登录
+        var loginSucceeded = false
         let loginResult = await tryLogin()
         switch loginResult {
         case .success:
-            break
+            loginSucceeded = true
         case .userNotFound:
             // 自动注册
             let regResult = await tryRegister()
@@ -212,7 +214,9 @@ struct LoginView: View {
             case .success:
                 // 注册成功后再次登录
                 let retryResult = await tryLogin()
-                if case .failure(let msg) = retryResult {
+                if case .success = retryResult {
+                    loginSucceeded = true
+                } else if case .failure(let msg) = retryResult {
                     errorMessage = msg
                 }
             case .failure(let msg):
@@ -224,6 +228,10 @@ struct LoginView: View {
 
         await MainActor.run {
             isLoading = false
+            // 登录成功后自动 dismiss 回到来源页（TabView 会因 isLoggedIn 变化刷新）
+            if loginSucceeded {
+                dismiss()
+            }
         }
     }
 
@@ -251,7 +259,8 @@ struct LoginView: View {
                     userId: userId,
                     nickname: resp.userInfo?.nickname,
                     avatar: resp.userInfo?.avatar,
-                    mobile: resp.userInfo?.mobile ?? phone
+                    mobile: resp.userInfo?.mobile ?? phone,
+                    imToken: resp.imToken
                 )
             }
             // 登录成功后，用 imToken 登录 OpenIM（C 端 userID 约定为 "u_" + userId）

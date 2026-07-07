@@ -11,7 +11,6 @@
 
 import SwiftUI
 import Combine
-import OpenIMSDKiOS
 
 @MainActor
 final class ChatViewModel: ObservableObject {
@@ -53,6 +52,9 @@ final class ChatViewModel: ObservableObject {
             await self?.loadConversations(silent: true)
             await self?.loadNotifications(silent: true)
         }
+
+        // 设置 OpenIM 消息接收代理（修复 delegate 缺失，确保 SDK 接入后能收到消息）
+        OpenIMManager.shared.delegate = self
 
         // 启动实时消息（HTTP 轮询）
         socketManager.connect()

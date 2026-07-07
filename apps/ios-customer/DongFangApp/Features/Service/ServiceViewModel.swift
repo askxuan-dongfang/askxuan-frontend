@@ -91,7 +91,7 @@ final class ServiceViewModel: ObservableObject {
         // 暂用第一个寺院的服务列表作为服务数据源
         do {
             let templeResp: PageResponse<Temple> = try await apiClient.request(
-                .temples(sect: nil, type: nil, page: 1, size: 1))
+                .temples(sect: nil, type: nil, serviceCode: nil, page: 1, size: 1))
             guard let templeId = templeResp.list.first?.id else {
                 return .success([])
             }

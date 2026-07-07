@@ -57,8 +57,8 @@ final class LoginViewModel: ObservableObject {
             let req = AdminLoginRequest(account: account.trimmingCharacters(in: .whitespaces),
                                         password: password)
             let resp: LoginResponse = try await apiClient.request(.adminLogin(req))
-            // 保存 Token 并解析 JWT Claims（masterId 等）
-            AuthStore.shared.didLogin(token: resp.accessToken, refreshToken: resp.refreshToken)
+            // 保存 Token 并解析 JWT Claims（masterId 等），同时持久化 imToken 以便 app 重启后恢复 OpenIM 登录
+            AuthStore.shared.didLogin(token: resp.accessToken, refreshToken: resp.refreshToken, imToken: resp.imToken)
             // 登录成功后，用 imToken 登录 OpenIM（法师端 userID 约定为 "m_" + masterId）
             if let imToken = resp.imToken, !imToken.isEmpty,
                let masterID = AuthStore.shared.masterId, !masterID.isEmpty {

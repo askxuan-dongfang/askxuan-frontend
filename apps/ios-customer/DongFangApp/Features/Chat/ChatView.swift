@@ -18,12 +18,12 @@ struct ChatView: View {
 
     // MARK: - Mock 数据
     private let followedMasters: [(id: String, name: String, temple: String, avatar: String, isOnline: Bool)] = [
-        ("M001", "释明远法师", "少林寺", "master-avatar-shimingyuan", true),
+        ("M001", "智海法师", "灵隐寺", "master-avatar-zhihai", true),
         ("M002", "清风道长", "白云观", "master-avatar-qingfeng", false),
-        ("M004", "智海法师", "灵隐寺", "master-avatar-zhihai", true),
-        ("M003", "扎西多吉", "大昭寺", "master-avatar-zhaxiduoji", false),
-        ("M005", "妙音法师", "法门寺", "master-avatar-miaoyin", false),
-        ("M006", "法海法师", "金山寺", "master-avatar-fahai", true)
+        ("M003", "释延心法师", "少林寺", "master-avatar-shimingyuan", true),
+        ("M004", "扎西多吉活佛", "大昭寺", "master-avatar-zhaxiduoji", false),
+        ("M005", "慧明法师", "普陀山", "master-avatar-miaoyin", false),
+        ("M006", "真武道长", "武当山", "master-avatar-zhangzhishun", true)
     ]
 
     private let callRecords: [(masterId: String, name: String, avatar: String, time: String, duration: String, isVideo: Bool)] = [
@@ -32,12 +32,11 @@ struct ChatView: View {
     ]
 
     private let videoFeed: [(masterId: String, master: String, avatar: String, desc: String, likes: String, comments: String)] = [
-        ("M001", "释明远法师", "master-avatar-shimingyuan", "禅修入门：观呼吸法门 | 三分钟学会止观", "2.3万", "186"),
-        ("M004", "智海法师", "master-avatar-zhihai", "天台止观禅修实修引导", "1.8万", "324"),
-        ("M001", "释明远法师", "master-avatar-shimingyuan", "少林禅武合一演示", "5.1万", "892"),
+        ("M001", "智海法师", "master-avatar-zhihai", "禅修入门：观呼吸法门 | 三分钟学会止观", "2.3万", "186"),
+        ("M003", "释延心法师", "master-avatar-shimingyuan", "少林禅武合一演示", "5.1万", "892"),
         ("M002", "清风道长", "master-avatar-qingfeng", "道家内丹术基础讲解", "9686", "156"),
-        ("M003", "扎西多吉", "master-avatar-zhaxiduoji", "藏密灌顶加持法会纪实", "3.4万", "445"),
-        ("M005", "妙音法师", "master-avatar-miaoyin", "净土念佛法门开示", "1.2万", "267")
+        ("M004", "扎西多吉活佛", "master-avatar-zhaxiduoji", "藏密灌顶加持法会纪实", "3.4万", "445"),
+        ("M005", "慧明法师", "master-avatar-miaoyin", "净土念佛法门开示", "1.2万", "267")
     ]
 
     var body: some View {

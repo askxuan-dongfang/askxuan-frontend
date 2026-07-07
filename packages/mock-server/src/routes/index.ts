@@ -21,8 +21,15 @@ function fail(res: Response, code: number, message: string) {
 }
 
 // ========== 寺院 ==========
-router.get('/temples', (_req: Request, res: Response) => {
-  success(res, temples);
+router.get('/temples', (req: Request, res: Response) => {
+  const { sect, type, serviceCode } = req.query;
+  const list = temples.filter((t) => {
+    if (typeof sect === 'string' && sect && t.sect !== sect) return false;
+    if (typeof type === 'string' && type && t.type !== type) return false;
+    if (typeof serviceCode === 'string' && serviceCode && !t.serviceCodes.includes(serviceCode)) return false;
+    return true;
+  });
+  success(res, list);
 });
 
 router.get('/temples/:id', (req: Request, res: Response) => {
@@ -32,8 +39,15 @@ router.get('/temples/:id', (req: Request, res: Response) => {
 });
 
 // ========== 法师 ==========
-router.get('/masters', (_req: Request, res: Response) => {
-  success(res, masters);
+router.get('/masters', (req: Request, res: Response) => {
+  const { sect, type, templeId } = req.query;
+  const list = masters.filter((m) => {
+    if (typeof sect === 'string' && sect && m.sect !== sect) return false;
+    if (typeof type === 'string' && type && m.type !== type) return false;
+    if (typeof templeId === 'string' && templeId && m.templeId !== templeId) return false;
+    return true;
+  });
+  success(res, list);
 });
 
 router.get('/masters/:id', (req: Request, res: Response) => {

@@ -1,0 +1,22 @@
+# 问玄东方 C端 iOS App - CocoaPods 依赖配置
+# 使用方式：
+#   1. xcodegen generate   # 生成 DongFangApp.xcodeproj
+#   2. pod install          # 安装依赖，生成 DongFangApp.xcworkspace
+#   3. 用 DongFangApp.xcworkspace 打开项目
+
+platform :ios, '17.0'
+use_frameworks!
+
+target 'DongFangApp' do
+  # OpenIM 即时通讯 SDK（3.8.3+）
+  pod 'OpenIMSDK', '~> 3.8.3'
+end
+
+# Xcode 27 要求最低 deployment target 15.0；强制所有 Pods target 提升至 17.0
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
+    end
+  end
+end

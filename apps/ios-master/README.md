@@ -87,10 +87,10 @@ make start-all              # 启动 18 个微服务 + 1 网关
 
 验证网关可达：`curl http://localhost:8080/api/v1/health`
 
-### 2. 安装 XcodeGen
+### 2. 安装 XcodeGen 和 CocoaPods
 
 ```bash
-brew install xcodegen
+brew install xcodegen cocoapods
 ```
 
 ### 3. 生成 Xcode 工程
@@ -102,21 +102,31 @@ xcodegen generate
 
 执行后会生成 `MasterApp.xcodeproj`。
 
-### 4. 打开并运行
+### 4. 安装 Pod 依赖
 
 ```bash
-open MasterApp.xcodeproj
+pod install
 ```
+
+执行后会生成 `MasterApp.xcworkspace`（含 OpenIMSDK 等依赖）。
+
+### 5. 打开并运行
+
+```bash
+open MasterApp.xcworkspace
+```
+
+> ⚠️ 务必用 `.xcworkspace` 打开（而非 `.xcodeproj`），否则 Pod 依赖不生效。
 
 - 选择模拟器（推荐 iPhone 17 Pro），点击 ▶ Run（或 `Cmd + R`）。
 - Debug 环境默认连接本地后端 `http://localhost:8080/api/v1`。
 - Info.plist 已配置 `NSAllowsLocalNetworking=true`，允许 HTTP localhost 连接。
 
-### 5. 命令行编译与运行（可选）
+### 6. 命令行编译与运行（可选）
 
 ```bash
-# 编译
-xcodebuild -project MasterApp.xcodeproj \
+# 编译（使用 workspace）
+xcodebuild -workspace MasterApp.xcworkspace \
   -scheme MasterApp \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   -derivedDataPath ./build \
@@ -128,11 +138,11 @@ xcrun simctl install booted ./build/Build/Products/Debug-iphonesimulator/MasterA
 xcrun simctl launch booted com.askxuan.master
 ```
 
-### 6. 登录说明
+### 7. 登录说明
 
 使用后端管理台账号（role=master）登录，账号 + 密码方式。登录成功后 JWT 存入 Keychain（key=`df_master_token`），法师 ID 从 JWT Claims 解析。
 
-### 7. 真机调试（可选）
+### 8. 真机调试（可选）
 
 - 需要 Apple Developer 账号
 - USB 连接 iPhone，在 Xcode > Signing & Capabilities 配置签名

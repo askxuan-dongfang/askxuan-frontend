@@ -2,8 +2,7 @@
 //  MasterListView.swift
 //  DongFangApp
 //
-//  法师列表页：对齐 master-list.html 原型。
-//  顶部导航 + 分类标签 + 两栏布局（左侧可折叠筛选组 + 右侧法师卡片）。
+//  法师列表页：顶部导航 + 分类标签 + 左侧分组筛选 + 法师卡片。
 //
 
 import SwiftUI
@@ -42,9 +41,7 @@ struct MasterListView: View {
             }
             .background(Color.bgPrimary)
 
-            // 3. 两栏布局
             HStack(spacing: 0) {
-                // 左侧筛选面板（80pt，可折叠组）
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
                         ForEach(viewModel.filterGroups, id: \.title) { group in
@@ -56,13 +53,12 @@ struct MasterListView: View {
                 .background(Color.bgSecondary)
                 .overlay(Rectangle().fill(Color.borderDivider).frame(width: 1), alignment: .trailing)
 
-                // 右侧法师卡片列表
                 if viewModel.isLoading {
                     DFLoadingView()
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.filteredMasters.isEmpty {
                     DFEmptyState(icon: "person.2", title: "暂无法师", subtitle: "下拉刷新试试")
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     masterListContent
                 }
@@ -80,50 +76,22 @@ struct MasterListView: View {
     }
 
     // MARK: - 法师列表内容
-    // 特性 4：iOS 26+ 使用 List + sectionIndexTitles 索引条，低版本回退 ScrollView
-    @ViewBuilder
     private var masterListContent: some View {
-        let grouped = Dictionary(grouping: viewModel.filteredMasters, by: { $0.sect })
-        let sortedSects = grouped.keys.sorted()
-        if #available(iOS 26.0, *) {
-            List {
-                ForEach(sortedSects, id: \.self) { sect in
-                    Section {
-                        ForEach(grouped[sect] ?? []) { master in
-                            NavigationLink(value: master) {
-                                masterCard(master)
-                            }
-                            .buttonStyle(.plain)
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
-                        }
-                    } header: {
-                        Text(sect)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.textTertiary)
+        ScrollView(showsIndicators: false) {
+            LazyVStack(spacing: AppSpacing.md) {
+                ForEach(viewModel.filteredMasters) { master in
+                    NavigationLink(value: master) {
+                        masterCard(master)
+                            .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(CardPressButtonStyle())
                 }
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(Color.bgPrimary)
-            .softScrollEdge(.bottom)
-        } else {
-            ScrollView(showsIndicators: false) {
-                LazyVStack(spacing: AppSpacing.md) {
-                    ForEach(viewModel.filteredMasters) { master in
-                        NavigationLink(value: master) {
-                            masterCard(master)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, AppSpacing.md)
-                .padding(.top, AppSpacing.sm)
-                .padding(.bottom, AppSpacing.xl)
-            }
+            .padding(.horizontal, 20)
+            .padding(.top, AppSpacing.sm)
+            .padding(.bottom, AppSpacing.navBottom + 32)
         }
+        .softScrollEdge(.bottom)
     }
 
     // MARK: - 教派标签胶囊
@@ -145,7 +113,6 @@ struct MasterListView: View {
     private func filterGroup(title: String, options: [String]) -> some View {
         let isExpanded = expandedGroups.contains(title)
         VStack(spacing: 0) {
-            // 组标题
             Button {
                 if isExpanded {
                     expandedGroups.remove(title)
@@ -167,7 +134,6 @@ struct MasterListView: View {
             }
             .buttonStyle(.plain)
 
-            // 组选项
             if isExpanded {
                 ForEach(options, id: \.self) { option in
                     filterOption(title: option, group: title, isSelected: selectedValue(for: title) == option) {
@@ -216,9 +182,23 @@ struct MasterListView: View {
 
             // 信息区
             VStack(alignment: .leading, spacing: 0) {
-                Text(master.dharmaName)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Color.textPrimary)
+                HStack(spacing: 8) {
+                    Text(master.dharmaName)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(Color.textPrimary)
+
+                    HStack(spacing: 4) {
+                        Text(master.type)
+                        Text(master.sect)
+                        Text(master.position)
+                    }
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(masterTypeColor(for: master).opacity(0.95))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(masterTypeColor(for: master).opacity(0.12))
+                    .clipShape(Capsule())
+                }
 
                 Text("\(master.templeName) · \(master.position)")
                     .font(.system(size: 13))
@@ -269,6 +249,17 @@ struct MasterListView: View {
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.md)
         .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
+        .contentShape(Rectangle())
+    }
+
+    private func masterTypeColor(for master: Master) -> Color {
+        if master.type.contains("道") || master.sect.contains("全真") {
+            return Color.accentDefault
+        }
+        if master.sect.contains("藏") {
+            return Color(red: 158/255, green: 143/255, blue: 178/255)
+        }
+        return Color.brandDefault
     }
 
     // MARK: - 筛选值管理（绑定到 ViewModel）

@@ -27,6 +27,9 @@ export interface Temple {
   coverImage: string;
   rating: number;
   description: string;
+  serviceCodes?: string[];
+  serviceTags?: string[];
+  serviceCount?: number;
 }
 
 // 师傅/法师

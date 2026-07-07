@@ -21,7 +21,7 @@ enum HTTPMethod: String {
 /// API 端点枚举
 enum Endpoint {
     // MARK: - 寺院
-    case temples(sect: String?, type: String?, page: Int, size: Int)
+    case temples(sect: String?, type: String?, serviceCode: String?, page: Int, size: Int)
     case templeById(String)
     case templeServices(String)         // GET /temples/{id}/services
 
@@ -153,11 +153,12 @@ enum Endpoint {
     /// 查询参数
     var queryItems: [URLQueryItem]? {
         switch self {
-        case .temples(let sect, let type, let page, let size):
+        case .temples(let sect, let type, let serviceCode, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
                          URLQueryItem(name: "size", value: "\(size)")]
             if let sect, !sect.isEmpty { items.append(URLQueryItem(name: "sect", value: sect)) }
             if let type, !type.isEmpty { items.append(URLQueryItem(name: "type", value: type)) }
+            if let serviceCode, !serviceCode.isEmpty { items.append(URLQueryItem(name: "serviceCode", value: serviceCode)) }
             return items
         case .masters(let type, let templeId, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),

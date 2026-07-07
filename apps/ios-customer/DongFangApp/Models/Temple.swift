@@ -79,38 +79,38 @@ struct Temple: Codable, Identifiable, Hashable {
 }
 
 extension Temple {
-    /// 对齐原型 home.html 热门寺院（白马寺/少林寺/灵隐寺/青羊宫/法门寺/大昭寺）
+    /// 对齐后端统一寺院字典（T001~T006）和 temple_service 服务标签。
     static let mockData: [Temple] = [
-        Temple(id: "T001", name: "白马寺", region: "洛阳·河南", type: "汉传佛教",
-               sect: "禅宗", status: "正常", address: "河南省洛阳市洛龙区白马寺路",
-               coverImage: "temple-card-baimasi", rating: 4.9,
-               description: "中国第一古刹，佛教传入中国后兴建的第一座官办寺院，有「中国第一古刹」之称。",
-               serviceTags: ["法事", "祈福", "供灯", "开光"], serviceCount: 5),
-        Temple(id: "T002", name: "少林寺", region: "登封·河南", type: "汉传佛教",
-               sect: "禅宗", status: "正常", address: "河南省郑州市登封市嵩山少林景区",
-               coverImage: "temple-card-shaolinsi", rating: 4.8,
-               description: "禅宗祖庭，少林武术发源地，以禅修、武术、超度、开光法事闻名。",
-               serviceTags: ["法事", "禅修", "开光", "超度"], serviceCount: 6),
-        Temple(id: "T003", name: "灵隐寺", region: "杭州·浙江", type: "汉传佛教",
+        Temple(id: "T001", name: "灵隐寺", region: "浙江杭州", type: "汉传佛教",
                sect: "禅宗", status: "正常", address: "杭州市西湖区灵隐路法云弄1号",
                coverImage: "temple-card-lingyinsi", rating: 4.9,
                description: "杭州最早的名刹，江南禅宗五大名山之一，以禅修、祈福、开光法事闻名。",
-               serviceTags: ["祈福", "供灯", "开光", "法事"], serviceCount: 5),
-        Temple(id: "T004", name: "青羊宫", region: "成都·四川", type: "道教",
-               sect: "全真派", status: "正常", address: "四川省成都市青羊区一环路西二段",
-               coverImage: "temple-card-qingyanggong", rating: 4.7,
-               description: "道教全真派圣地，成都历史最悠久的道观之一，以道教科仪、化太岁闻名。",
-               serviceTags: ["祈福", "法事", "供灯"], serviceCount: 4),
-        Temple(id: "T005", name: "法门寺", region: "宝鸡·陕西", type: "汉传佛教",
-               sect: "净土宗", status: "正常", address: "陕西省宝鸡市扶风县法门镇",
-               coverImage: "temple-card-famensi", rating: 4.8,
-               description: "供奉释迦牟尼佛指骨舍利的佛教圣地，以祈福、开光、法事闻名。",
-               serviceTags: ["祈福", "开光", "法事"], serviceCount: 4),
-        Temple(id: "T006", name: "大昭寺", region: "拉萨·西藏", type: "藏传佛教",
+               serviceTags: ["祈福", "供灯", "开光", "求姻缘", "求健康"], serviceCount: 5),
+        Temple(id: "T002", name: "白云观", region: "北京", type: "道教",
+               sect: "全真派", status: "正常", address: "北京市西城区白云观街1号",
+               coverImage: "temple-card-baimasi", rating: 4.7,
+               description: "道教全真派三大祖庭之一，北京最大道观，以道教科仪、祈福、化太岁闻名。",
+               serviceTags: ["祈福", "上香", "化太岁", "求财运", "求风水"], serviceCount: 5),
+        Temple(id: "T003", name: "少林寺", region: "河南嵩山", type: "汉传佛教",
+               sect: "禅宗", status: "正常", address: "河南省郑州市登封市嵩山少林景区",
+               coverImage: "temple-card-shaolinsi", rating: 4.8,
+               description: "禅宗祖庭，少林武术发源地，以禅修、武术、超度、开光法事闻名。",
+               serviceTags: ["祈福", "超度", "开光", "求事业", "求学业"], serviceCount: 5),
+        Temple(id: "T004", name: "大昭寺", region: "西藏拉萨", type: "藏传佛教",
                sect: "格鲁派", status: "正常", address: "拉萨市城关区八廓街",
                coverImage: "temple-card-dazhaosi", rating: 4.9,
                description: "藏传佛教圣地，以藏密仪轨、灌顶、超度、祈福闻名。",
-               serviceTags: ["灌顶", "加持", "祈福"], serviceCount: 4)
+               serviceTags: ["祈福", "供灯", "超度", "求健康"], serviceCount: 4),
+        Temple(id: "T005", name: "普陀山", region: "浙江舟山", type: "汉传佛教",
+               sect: "禅宗", status: "待审核", address: "舟山市普陀区普陀山",
+               coverImage: "temple-card-famensi", rating: 4.6,
+               description: "观音菩萨道场，佛教四大名山之一，以净土法门、观音法门、祈福闻名。",
+               serviceTags: ["祈福", "供灯", "求姻缘", "求学业"], serviceCount: 4),
+        Temple(id: "T006", name: "武当山", region: "湖北十堰", type: "道教",
+               sect: "正一派", status: "正常", address: "十堰市丹江口市武当山特区",
+               coverImage: "temple-card-qingyanggong", rating: 4.7,
+               description: "道教圣地，真武大帝道场，以内丹、太极、风水、化太岁闻名。",
+               serviceTags: ["祈福", "上香", "化太岁", "求事业", "求风水"], serviceCount: 5)
     ]
 }
 

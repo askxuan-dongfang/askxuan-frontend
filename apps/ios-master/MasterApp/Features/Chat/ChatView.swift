@@ -9,7 +9,6 @@
 //
 
 import SwiftUI
-import OpenIMSDKiOS
 
 struct ChatBubble: Identifiable, Hashable {
     let id = UUID()

@@ -57,7 +57,7 @@ final class TempleListViewModel: ObservableObject {
         errorMessage = nil
         do {
             let resp: PageResponse<Temple> = try await apiClient.request(
-                .temples(sect: nil, type: nil, page: 1, size: 20))
+                .temples(sect: nil, type: nil, serviceCode: nil, page: 1, size: 20))
             self.temples = resp.list
         } catch {
             self.temples = Temple.mockData

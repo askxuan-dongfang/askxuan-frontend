@@ -24,6 +24,7 @@ ios-customer/
 - Xcode 15+
 - iOS 16.0+ 模拟器
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen)（可选，用于生成 .xcodeproj）
+- [CocoaPods](https://cocoapods.org/)（必需，安装 OpenIMSDK 等依赖）
 
 ## 快速开始
 
@@ -38,10 +39,10 @@ make start-all              # 启动 18 个微服务 + 1 网关
 
 验证网关可达：`curl http://localhost:8080/api/v1/health`
 
-### 2. 安装 XcodeGen（如未安装）
+### 2. 安装 XcodeGen 和 CocoaPods（如未安装）
 
 ```bash
-brew install xcodegen
+brew install xcodegen cocoapods
 ```
 
 ### 3. 生成 Xcode 工程
@@ -53,22 +54,32 @@ xcodegen generate
 
 执行后会生成 `DongFangApp.xcodeproj`。
 
-### 4. 打开并运行
+### 4. 安装 Pod 依赖
 
 ```bash
-open DongFangApp.xcodeproj
+pod install
 ```
+
+执行后会生成 `DongFangApp.xcworkspace`（含 OpenIMSDK 等依赖）。
+
+### 5. 打开并运行
+
+```bash
+open DongFangApp.xcworkspace
+```
+
+> ⚠️ 务必用 `.xcworkspace` 打开（而非 `.xcodeproj`），否则 Pod 依赖不生效。
 
 在 Xcode 中：
 - 选择模拟器（推荐 iPhone 17 Pro）
 - 按 `Cmd + R` 运行
 - 模拟器启动后 App 自动安装并运行
 
-### 5. 命令行编译与运行（可选）
+### 6. 命令行编译与运行（可选）
 
 ```bash
-# 编译
-xcodebuild -project DongFangApp.xcodeproj \
+# 编译（使用 workspace）
+xcodebuild -workspace DongFangApp.xcworkspace \
   -scheme DongFangApp \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   -derivedDataPath ./build \

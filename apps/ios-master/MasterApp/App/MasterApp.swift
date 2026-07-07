@@ -25,6 +25,9 @@ struct MasterApp: App {
         configureSmokeCredentials()
         // 初始化 OpenIM SDK（App 启动一次）
         OpenIMManager.shared.initialize()
+        // 如果已登录且有持久化的 imToken，自动恢复 OpenIM SDK 登录
+        // 避免 app 重启后 WS 连接断开导致消息收发失败
+        restoreOpenIMLoginIfNeeded()
     }
 
     var body: some Scene {
@@ -84,5 +87,23 @@ struct MasterApp: App {
             return nil
         }
         return args[index + 1]
+    }
+
+    /// app 重启后自动恢复 OpenIM SDK 登录（如有持久化的 imToken）
+    /// 大师端 OpenIM userID 约定为 "m_" + masterId
+    private func restoreOpenIMLoginIfNeeded() {
+        guard AuthStore.shared.isLoggedIn,
+              let imToken = AuthStore.shared.imToken, !imToken.isEmpty,
+              let masterID = AuthStore.shared.masterId, !masterID.isEmpty else {
+            return
+        }
+        let openimUserID = "m_" + masterID
+        OpenIMManager.shared.login(userID: openimUserID, token: imToken) { success, error in
+            if success {
+                print("✅ OpenIM 登录恢复成功")
+            } else {
+                print("⚠️ OpenIM 登录恢复失败: \(error?.localizedDescription ?? "")，需重新登录")
+            }
+        }
     }
 }

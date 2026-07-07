@@ -2,8 +2,7 @@
 //  TempleListView.swift
 //  DongFangApp
 //
-//  寺院列表页：对齐 temple-list.html 原型。
-//  顶部导航 + 教派标签横滑 + 两栏布局（左侧服务筛选 + 右侧寺院卡片）。
+//  寺院列表页：顶部导航 + 教派标签横滑 + 左侧服务筛选 + 寺院卡片。
 //
 
 import SwiftUI
@@ -41,9 +40,7 @@ struct TempleListView: View {
             }
             .background(Color.bgPrimary)
 
-            // 3. 两栏布局：左侧筛选 + 右侧列表
             HStack(spacing: 0) {
-                // 左侧筛选面板（80pt）
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
                         ForEach(viewModel.serviceFilters, id: \.self) { filter in
@@ -57,13 +54,12 @@ struct TempleListView: View {
                 .background(Color.bgSecondary)
                 .overlay(Rectangle().fill(Color.borderDivider).frame(width: 1), alignment: .trailing)
 
-                // 右侧寺院卡片列表
                 if viewModel.isLoading {
                     DFLoadingView()
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.filteredTemples.isEmpty {
                     DFEmptyState(icon: "building.2", title: "暂无寺院", subtitle: "下拉刷新试试")
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     templeListContent
                 }
@@ -81,50 +77,22 @@ struct TempleListView: View {
     }
 
     // MARK: - 寺院列表内容
-    // 特性 4：iOS 26+ 使用 List + sectionIndexTitles 索引条，低版本回退 ScrollView
-    @ViewBuilder
     private var templeListContent: some View {
-        let grouped = Dictionary(grouping: viewModel.filteredTemples, by: { $0.sect })
-        let sortedSects = grouped.keys.sorted()
-        if #available(iOS 26.0, *) {
-            List {
-                ForEach(sortedSects, id: \.self) { sect in
-                    Section {
-                        ForEach(grouped[sect] ?? []) { temple in
-                            NavigationLink(value: temple) {
-                                templeCard(temple)
-                            }
-                            .buttonStyle(.plain)
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
-                        }
-                    } header: {
-                        Text(sect)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.textTertiary)
+        ScrollView(showsIndicators: false) {
+            LazyVStack(spacing: AppSpacing.md) {
+                ForEach(viewModel.filteredTemples) { temple in
+                    NavigationLink(value: temple) {
+                        templeCard(temple)
+                            .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(CardPressButtonStyle())
                 }
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(Color.bgPrimary)
-            .softScrollEdge(.bottom)
-        } else {
-            ScrollView(showsIndicators: false) {
-                LazyVStack(spacing: AppSpacing.md) {
-                    ForEach(viewModel.filteredTemples) { temple in
-                        NavigationLink(value: temple) {
-                            templeCard(temple)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, AppSpacing.md)
-                .padding(.top, AppSpacing.sm)
-                .padding(.bottom, AppSpacing.xl)
-            }
+            .padding(.horizontal, 20)
+            .padding(.top, AppSpacing.sm)
+            .padding(.bottom, AppSpacing.navBottom + 32)
         }
+        .softScrollEdge(.bottom)
     }
 
     // MARK: - 教派标签胶囊
@@ -162,30 +130,27 @@ struct TempleListView: View {
     // MARK: - 寺院卡片（垂直布局：图片+body）
     private func templeCard(_ temple: Temple) -> some View {
         VStack(spacing: 0) {
-            // 图片 + 分类标签
-            ZStack(alignment: .topLeading) {
-                RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.2")
-                    .frame(height: 120)
-                    .frame(maxWidth: .infinity)
-                    .clipped()
-
-                Text(temple.type)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(categoryBadgeColor(for: temple.type).opacity(0.85))
-                    .clipShape(Capsule())
-                    .padding(8)
-            }
+            RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.2")
+                .frame(height: 136)
+                .frame(maxWidth: .infinity)
+                .clipped()
 
             // 卡片 body
             VStack(spacing: 0) {
-                // 名称 + 评分
-                HStack {
+                HStack(alignment: .center, spacing: 8) {
                     Text(temple.name)
                         .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(Color.textPrimary)
+                    HStack(spacing: 4) {
+                        Text(temple.type)
+                        Text(temple.sect)
+                    }
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(categoryBadgeColor(for: temple.type))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(categoryBadgeColor(for: temple.type).opacity(0.12))
+                    .clipShape(Capsule())
                     Spacer()
                     HStack(spacing: 3) {
                         Image(systemName: "star.fill")
@@ -241,6 +206,7 @@ struct TempleListView: View {
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.md)
         .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
+        .contentShape(Rectangle())
     }
 
     // MARK: - 辅助

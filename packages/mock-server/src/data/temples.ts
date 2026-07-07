@@ -12,6 +12,9 @@ export interface Temple {
   coverImage: string;
   rating: number;
   description: string;
+  serviceCodes: string[];
+  serviceTags: string[];
+  serviceCount: number;
 }
 
 export const temples: Temple[] = [
@@ -25,7 +28,10 @@ export const temples: Temple[] = [
     address: '杭州市西湖区灵隐路法云弄1号',
     coverImage: '/assets/temple-card-lingyinsi.jpg',
     rating: 4.9,
-    description: '杭州最早的名刹，江南禅宗五大名山之一，以禅修、祈福、开光法事闻名。'
+    description: '杭州最早的名刹，江南禅宗五大名山之一，以禅修、祈福、开光法事闻名。',
+    serviceCodes: ['S001', 'S002', 'S006', 'S008', 'S012'],
+    serviceTags: ['祈福', '供灯', '开光', '求姻缘', '求健康'],
+    serviceCount: 5
   },
   {
     id: 'T002',
@@ -37,7 +43,10 @@ export const temples: Temple[] = [
     address: '北京市西城区白云观街1号',
     coverImage: '/assets/temple-card-baimasi.jpg',
     rating: 4.7,
-    description: '道教全真派三大祖庭之一，北京最大道观，以道教科仪、祈福、化太岁闻名。'
+    description: '道教全真派三大祖庭之一，北京最大道观，以道教科仪、祈福、化太岁闻名。',
+    serviceCodes: ['S001', 'S003', 'S007', 'S009', 'S011'],
+    serviceTags: ['祈福', '上香', '化太岁', '求财运', '求风水'],
+    serviceCount: 5
   },
   {
     id: 'T003',
@@ -49,7 +58,10 @@ export const temples: Temple[] = [
     address: '河南省郑州市登封市嵩山少林景区',
     coverImage: '/assets/temple-card-shaolinsi.jpg',
     rating: 4.8,
-    description: '禅宗祖庭，少林武术发源地，以禅修、武术、超度、开光法事闻名。'
+    description: '禅宗祖庭，少林武术发源地，以禅修、武术、超度、开光法事闻名。',
+    serviceCodes: ['S001', 'S005', 'S006', 'S010', 'S013'],
+    serviceTags: ['祈福', '超度', '开光', '求事业', '求学业'],
+    serviceCount: 5
   },
   {
     id: 'T004',
@@ -61,7 +73,10 @@ export const temples: Temple[] = [
     address: '拉萨市城关区八廓街',
     coverImage: '/assets/temple-card-dazhaosi.jpg',
     rating: 4.9,
-    description: '藏传佛教圣地，拉萨城市中心，以藏密仪轨、灌顶、超度、祈福闻名。'
+    description: '藏传佛教圣地，拉萨城市中心，以藏密仪轨、灌顶、超度、祈福闻名。',
+    serviceCodes: ['S001', 'S002', 'S005', 'S012'],
+    serviceTags: ['祈福', '供灯', '超度', '求健康'],
+    serviceCount: 4
   },
   {
     id: 'T005',
@@ -73,7 +88,10 @@ export const temples: Temple[] = [
     address: '舟山市普陀区普陀山',
     coverImage: '/assets/temple-card-famensi.jpg',
     rating: 4.6,
-    description: '观音菩萨道场，佛教四大名山之一，以净土法门、观音法门、祈福闻名。'
+    description: '观音菩萨道场，佛教四大名山之一，以净土法门、观音法门、祈福闻名。',
+    serviceCodes: ['S001', 'S002', 'S008', 'S013'],
+    serviceTags: ['祈福', '供灯', '求姻缘', '求学业'],
+    serviceCount: 4
   },
   {
     id: 'T006',
@@ -85,6 +103,9 @@ export const temples: Temple[] = [
     address: '十堰市丹江口市武当山特区',
     coverImage: '/assets/temple-card-qingyanggong.jpg',
     rating: 4.7,
-    description: '道教圣地，真武大帝道场，以内丹、太极、风水、化太岁闻名。'
+    description: '道教圣地，真武大帝道场，以内丹、太极、风水、化太岁闻名。',
+    serviceCodes: ['S001', 'S003', 'S007', 'S010', 'S011'],
+    serviceTags: ['祈福', '上香', '化太岁', '求事业', '求风水'],
+    serviceCount: 5
   }
 ];

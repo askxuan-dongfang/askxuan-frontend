@@ -22,7 +22,7 @@ export interface BlessingService {
   description: string;
 }
 
-// 用户端 7 种服务
+// 用户端服务
 export const services: Service[] = [
   {
     id: 'S001',
@@ -79,6 +79,54 @@ export const services: Service[] = [
     priceRange: '¥200-800',
     masterIds: ['M002', 'M006'],
     description: '化解太岁冲犯，保佑流年顺利平安。'
+  },
+  {
+    id: 'S008',
+    name: '求姻缘',
+    type: '祈愿',
+    priceRange: '¥100-500',
+    masterIds: ['M001', 'M005'],
+    description: '祈求良缘和合、感情顺遂。'
+  },
+  {
+    id: 'S009',
+    name: '求财运',
+    type: '祈愿',
+    priceRange: '¥100-800',
+    masterIds: ['M002', 'M006'],
+    description: '祈求财运通达、事业经营顺利。'
+  },
+  {
+    id: 'S010',
+    name: '求事业',
+    type: '祈愿',
+    priceRange: '¥100-600',
+    masterIds: ['M003', 'M006'],
+    description: '祈求事业进阶、贵人扶持。'
+  },
+  {
+    id: 'S011',
+    name: '求风水',
+    type: '咨询',
+    priceRange: '¥200-1000',
+    masterIds: ['M002', 'M006'],
+    description: '结合道教科仪与环境格局提供风水咨询。'
+  },
+  {
+    id: 'S012',
+    name: '求健康',
+    type: '祈愿',
+    priceRange: '¥100-600',
+    masterIds: ['M001', 'M004'],
+    description: '祈求身心康泰、消灾延寿。'
+  },
+  {
+    id: 'S013',
+    name: '求学业',
+    type: '祈愿',
+    priceRange: '¥100-500',
+    masterIds: ['M003', 'M005'],
+    description: '祈求学业精进、考试顺遂。'
   }
 ];
 

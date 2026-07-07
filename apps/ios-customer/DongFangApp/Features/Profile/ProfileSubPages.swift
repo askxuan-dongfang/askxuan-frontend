@@ -29,7 +29,7 @@ struct OrderListView: View {
     ]
 
     private let mockOrders: [(id: Int, type: String, title: String, desc: String, amount: String, status: String)] = [
-        (1001, "pending",  "祈福法事 · 普佛", "灵隐寺 · 妙音法师", "¥388.00", "待确认"),
+        (1001, "pending",  "祈福法事 · 普佛", "灵隐寺 · 智海法师", "¥388.00", "待确认"),
         (1002, "shipping", "檀木念珠（18mm）", "东方文创商城", "¥128.00", "待收货"),
         (1003, "diy",      "DIY 手串定制", "8mm 砗磲 + 蜜蜡", "¥256.00", "制作中"),
         (1004, "booking",  "法师预约 · 咨询", "智海法师 · 30分钟", "¥99.00", "待进行"),
@@ -122,10 +122,10 @@ struct OrderListView: View {
 // MARK: - 2. 收藏列表
 struct FavoritesView: View {
     private let mockItems: [(icon: String, name: String, subtitle: String, tag: String)] = [
-        ("person.crop.circle", "妙音法师", "灵隐寺 · 监院", "法师"),
-        ("person.crop.circle", "智海法师", "普陀山 · 知客", "法师"),
+        ("person.crop.circle", "智海法师", "灵隐寺 · 住持", "法师"),
+        ("person.crop.circle", "慧明法师", "普陀山 · 副住持", "法师"),
         ("building.2", "灵隐寺", "浙江杭州", "寺院"),
-        ("building.2", "法门寺", "陕西宝鸡", "寺院")
+        ("building.2", "普陀山", "浙江舟山", "寺院")
     ]
 
     var body: some View {
@@ -465,11 +465,11 @@ struct PointsView: View {
 // MARK: - 8. 浏览记录
 struct HistoryView: View {
     private let mockItems: [(icon: String, title: String, subtitle: String, time: String)] = [
-        ("person.crop.circle", "妙音法师", "灵隐寺 · 监院", "10分钟前"),
+        ("person.crop.circle", "智海法师", "灵隐寺 · 住持", "10分钟前"),
         ("building.2", "灵隐寺", "浙江杭州", "1小时前"),
         ("bag", "檀木念珠（18mm）", "东方文创商城", "昨天"),
         ("doc.text", "祈福法事 · 普佛", "灵隐寺", "昨天"),
-        ("building.2", "法门寺", "陕西宝鸡", "2天前")
+        ("building.2", "普陀山", "浙江舟山", "2天前")
     ]
 
     var body: some View {
@@ -515,7 +515,7 @@ struct HistoryView: View {
 // MARK: - 9. 通话记录
 struct CallHistoryView: View {
     private let mockRecords: [(name: String, duration: String, time: String, incoming: Bool)] = [
-        ("妙音法师", "12:30", "今天 10:20", false),
+        ("慧明法师", "12:30", "今天 10:20", false),
         ("智海法师", "08:15", "昨天 15:42", false),
         ("客户回拨", "00:00", "2天前", true)
     ]

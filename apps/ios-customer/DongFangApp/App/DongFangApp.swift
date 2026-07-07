@@ -21,6 +21,9 @@ struct DongFangApp: App {
         configureSmokeCredentials()
         // 初始化 OpenIM SDK（App 启动一次）
         OpenIMManager.shared.initialize()
+        // 如果已登录且有持久化的 imToken，自动恢复 OpenIM SDK 登录
+        // 避免 app 重启后 WS 连接断开导致消息发送失败
+        restoreOpenIMLoginIfNeeded()
     }
 
     var body: some Scene {
@@ -79,5 +82,22 @@ struct DongFangApp: App {
             return nil
         }
         return args[index + 1]
+    }
+
+    /// app 重启后自动恢复 OpenIM SDK 登录（如有持久化的 imToken）
+    private func restoreOpenIMLoginIfNeeded() {
+        guard AuthStore.shared.isLoggedIn,
+              let imToken = AuthStore.shared.imToken, !imToken.isEmpty,
+              AuthStore.shared.userId != AppConfig.defaultUserId else {
+            return
+        }
+        let openimUserID = "u_" + AuthStore.shared.userId
+        OpenIMManager.shared.login(userID: openimUserID, token: imToken) { success, error in
+            if success {
+                print("✅ OpenIM 登录恢复成功")
+            } else {
+                print("⚠️ OpenIM 登录恢复失败: \(error?.localizedDescription ?? "")，需重新登录")
+            }
+        }
     }
 }
