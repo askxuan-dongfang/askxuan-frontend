@@ -73,8 +73,8 @@ struct BlessingTasksView: View {
         (nil, "全部"),
         (.assigned, "待接单"),
         (.accepted, "已接单"),
-        (.doing, "进行中"),
-        (.done, "已完成"),
+        (.inProgress, "进行中"),
+        (.completed, "已完成"),
         (.rejected, "已拒绝")
     ]
 

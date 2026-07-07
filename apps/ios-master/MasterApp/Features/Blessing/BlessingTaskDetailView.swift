@@ -223,7 +223,7 @@ struct BlessingTaskDetailView: View {
         } else {
             VStack(spacing: AppSpacing.md) {
                 // 完成前需要填写证书 URL
-                if status == .doing {
+                if status == .inProgress {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("加持证书 URL（多个用逗号分隔）")
                             .font(.caption)

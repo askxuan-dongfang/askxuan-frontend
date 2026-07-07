@@ -24,32 +24,32 @@ struct BlessingTask: Identifiable, Decodable {
 
 /// 加持任务状态
 enum BlessingTaskStatus: String, Decodable {
-    case assigned  = "assigned"   // 待接单
-    case accepted  = "accepted"   // 已接单
-    case doing     = "doing"      // 进行中
-    case done      = "done"       // 已完成
-    case rejected  = "rejected"   // 已拒绝
+    case assigned     = "assigned"      // 待接单
+    case accepted     = "accepted"      // 已接单
+    case inProgress   = "in_progress"   // 进行中
+    case completed    = "completed"     // 已完成
+    case rejected     = "rejected"      // 已拒绝
 
     /// 是否终态
-    var isTerminal: Bool { self == .done || self == .rejected }
+    var isTerminal: Bool { self == .completed || self == .rejected }
 
     /// 是否可接单
     var canAccept: Bool { self == .assigned }
     /// 是否可开始
     var canStart: Bool { self == .accepted }
     /// 是否可完成
-    var canComplete: Bool { self == .doing }
+    var canComplete: Bool { self == .inProgress }
     /// 是否可拒绝
     var canReject: Bool { self == .assigned }
 
     /// 徽章文案与配色
     var badgeInfo: (text: String, color: Color) {
         switch self {
-        case .assigned: return ("待接单", .stateWarning)
-        case .accepted: return ("已接单", .accentDefault)
-        case .doing:    return ("进行中", .brandLight)
-        case .done:     return ("已完成", .stateSuccess)
-        case .rejected: return ("已拒绝", .textTertiary)
+        case .assigned:    return ("待接单", .stateWarning)
+        case .accepted:    return ("已接单", .accentDefault)
+        case .inProgress:  return ("进行中", .brandLight)
+        case .completed:   return ("已完成", .stateSuccess)
+        case .rejected:    return ("已拒绝", .textTertiary)
         }
     }
 
@@ -74,7 +74,7 @@ extension BlessingTask {
     /// 是否可开始
     var canStart: Bool { statusEnum == .accepted }
     /// 是否可完成
-    var canComplete: Bool { statusEnum == .doing }
+    var canComplete: Bool { statusEnum == .inProgress }
     /// 是否可拒绝
     var canReject: Bool { statusEnum == .assigned }
 }

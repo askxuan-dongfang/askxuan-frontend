@@ -34,7 +34,7 @@ export const bookings: Booking[] = [
     timeSlot: '09:00-10:00',
     meritMoney: 200,
     meritMoneyTier: '大额',
-    status: '待确认',
+    status: 'pending',
     createdAt: '2026-06-30 08:30:00',
     note: '为家人祈求平安健康。'
   },
@@ -51,7 +51,7 @@ export const bookings: Booking[] = [
     timeSlot: '14:00-15:30',
     meritMoney: 500,
     meritMoneyTier: '不限额',
-    status: '已确认',
+    status: 'confirmed',
     createdAt: '2026-06-28 16:20:00',
     note: '为先人超度往生，请法师主持法事。'
   },
@@ -68,7 +68,7 @@ export const bookings: Booking[] = [
     timeSlot: '10:00-11:00',
     meritMoney: 100,
     meritMoneyTier: '中额',
-    status: '已完成',
+    status: 'completed',
     createdAt: '2026-06-15 19:45:00',
     note: '本命年化太岁，祈求流年顺利。'
   }

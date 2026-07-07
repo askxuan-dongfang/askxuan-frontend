@@ -4,7 +4,7 @@
 //
 //  API 端点定义：路径、HTTP 方法、查询参数、请求体。
 //  路径均为相对路径（不含 /api/v1 前缀，BaseURL 已包含）。
-//  RESTful 复数：/temples, /masters, /booking（booking 后端为单数）。
+//  RESTful 复数：/temples, /masters, /bookings。
 //
 
 import Foundation
@@ -29,7 +29,7 @@ enum Endpoint {
     case masters(type: String?, templeId: String?, page: Int, size: Int)
     case masterById(String)
 
-    // MARK: - 预约（后端单数 /booking）
+    // MARK: - 预约（后端复数 /bookings）
     case bookings(userId: String?, status: String?, page: Int, size: Int)
     case bookingById(String)
     case createBooking(CreateBookingRequest)
@@ -85,11 +85,11 @@ enum Endpoint {
         // 法师
         case .masters:                  return "masters"
         case .masterById(let id):       return "masters/\(id)"
-        // 预约（后端单数 booking）
-        case .bookings:                 return "booking"
-        case .bookingById(let id):      return "booking/\(id)"
-        case .createBooking:            return "booking"
-        case .updateBookingStatus(let id, _): return "booking/\(id)/status"
+        // 预约（后端复数 bookings）
+        case .bookings:                 return "bookings"
+        case .bookingById(let id):      return "bookings/\(id)"
+        case .createBooking:            return "bookings"
+        case .updateBookingStatus(let id, _): return "bookings/\(id)/status"
         // DIY
         case .diyDesigns:               return "diy/designs"
         case .diyDesignSave:            return "diy/designs"

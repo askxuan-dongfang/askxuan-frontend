@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { getMaster } from '../../src/api/master';
 import { getTemple } from '../../src/api/temple';
 import { createBooking } from '../../src/api/booking';
+import { useAuthStore } from '../../src/stores/auth';
 import { DFTopNavBar } from '../../src/components/DFTopNavBar';
 import { DFPrimaryButton } from '../../src/components/DFPrimaryButton';
 import { colors, radius, spacing, fontFamilies } from '../../src/theme/tokens';
@@ -67,6 +68,7 @@ export default function BookingScreen() {
   }>();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const user = useAuthStore((s) => s.user);
 
   const masterId = params.masterId || 'M001';
   const templeId = params.templeId || 'T001';
@@ -104,7 +106,12 @@ export default function BookingScreen() {
   });
 
   const handleConfirm = () => {
+    if (!user?.userId) {
+      Alert.alert('请先登录', '登录后才能预约服务');
+      return;
+    }
     const input: CreateBookingInput = {
+      userId: user.userId,
       templeId,
       templeName: temple?.name || '',
       masterId,
