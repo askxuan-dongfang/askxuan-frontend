@@ -33,7 +33,7 @@ src/
 # 安装依赖
 npm install
 
-# 启动开发服务器（默认端口 5174，代理 /api → localhost:3001）
+# 启动开发服务器（默认端口 5174，代理 /api → localhost:8080）
 npm run dev
 
 # 构建生产包
@@ -51,7 +51,7 @@ npm run preview
 - 字体：Noto Serif SC（标题）+ Noto Sans SC（正文）
 - Design Tokens 来源：`packages/design-tokens/dist/web/`
 
-## Mock API
+## API 代理
 
-开发环境通过 Vite proxy 代理至 `http://localhost:3001/api/v1`，
+开发环境通过 Vite proxy 代理至 `http://localhost:8080/api/v1`，
 统一响应格式：`{ code: 0, message: "success", data: ... }`。

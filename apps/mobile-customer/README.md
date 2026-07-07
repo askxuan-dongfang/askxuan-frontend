@@ -23,10 +23,10 @@ npx expo start --web       # Web 预览
 复制 `.env.example` 为 `.env`，配置后端地址：
 
 ```
-EXPO_PUBLIC_API_BASE_URL=http://localhost:3001/api/v1
+EXPO_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
 ```
 
-> 真机调试时需改为电脑局域网 IP，例如 `http://192.168.x.x:3001/api/v1`。
+> 真机调试时需改为电脑局域网 IP，例如 `http://192.168.x.x:8080/api/v1`。
 
 ## 目录结构
 
