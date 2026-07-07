@@ -12,7 +12,7 @@ export function logout(): Promise<void> {
   return Promise.resolve();
 }
 
-// 刷新 token（后端暂未实现，占位）
-export function refresh(): Promise<{ token: string }> {
-  return client.post('/auth/refresh') as unknown as Promise<{ token: string }>;
+// 刷新 token
+export function refresh(): Promise<{ accessToken: string; expiresIn: number }> {
+  return client.post('/auth/refresh') as unknown as Promise<{ accessToken: string; expiresIn: number }>;
 }
