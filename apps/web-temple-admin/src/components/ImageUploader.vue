@@ -7,7 +7,7 @@ import client from '@/api/client'
 
 const props = withDefaults(
   defineProps<{ modelValue?: string; action?: string; hint?: string }>(),
-  { modelValue: '', action: '/api/v1/file/upload', hint: '建议尺寸 800×600，单张不超过 2MB' }
+  { modelValue: '', action: '/api/v1/files/upload', hint: '建议尺寸 800×600，单张不超过 2MB' }
 )
 const emit = defineEmits<{ 'update:modelValue': [val: string] }>()
 

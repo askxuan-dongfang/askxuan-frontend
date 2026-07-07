@@ -103,8 +103,8 @@ enum Endpoint {
         case .productById(let id):      return "products/\(id)"
         case .productCategories:        return "products/categories"
         // 消息（message-service 单数前缀）
-        case .messages:                 return "message/list"
-        case .messageRead(let id):      return "message/\(id)/read"
+        case .messages:                 return "messages/list"
+        case .messageRead(let id):      return "messages/\(id)/read"
         case .unreadCount:              return "messages/unread-count"
         case .readAllMessages:          return "messages/read-all"
         case .deleteMessage(let id):    return "messages/\(id)"
@@ -114,16 +114,16 @@ enum Endpoint {
         case .announcements:            return "announcements/list"
         // 认证
         case .authLogin:                return "auth/login"
-        case .authRegister:             return "user/register"
+        case .authRegister:             return "users/register"
         case .authRefresh:              return "auth/refresh"
         case .authLogout:               return "auth/logout"
         // 用户
-        case .userProfile:              return "user/profile"
-        case .updateProfile:            return "user/profile"
-        case .addressList:              return "user/addresses"
-        case .addressCreate:            return "user/addresses"
-        case .addressUpdate(let id, _): return "user/addresses/\(id)"
-        case .addressDelete(let id):    return "user/addresses/\(id)"
+        case .userProfile:              return "users/profile"
+        case .updateProfile:            return "users/profile"
+        case .addressList:              return "users/addresses"
+        case .addressCreate:            return "users/addresses"
+        case .addressUpdate(let id, _): return "users/addresses/\(id)"
+        case .addressDelete(let id):    return "users/addresses/\(id)"
         }
     }
 

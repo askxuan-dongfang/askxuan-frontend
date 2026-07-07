@@ -75,7 +75,7 @@ function handleRemove(_file: UploadFile, files: UploadFiles) {
   emitFromList()
 }
 
-// 阻止真实上传（避免发请求到 /api/v1/file），仅做本地占位
+// 阻止真实上传（避免发请求到 /api/v1/files），仅做本地占位
 function handlePreview(file: UploadFile) {
   window.open(file.url, '_blank')
 }
@@ -104,7 +104,7 @@ function handlePreview(file: UploadFile) {
       />
       <el-button size="small" type="primary" plain @click="handleAddUrl">添加</el-button>
     </div>
-    <p class="tips">提示：当前为 URL 录入模式，可后续接入 /api/v1/file 真实上传。</p>
+    <p class="tips">提示：当前为 URL 录入模式，可后续接入 /api/v1/files 真实上传。</p>
   </div>
 </template>
 
