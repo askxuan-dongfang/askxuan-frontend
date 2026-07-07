@@ -23,16 +23,19 @@ struct Temple: Codable, Identifiable, Hashable {
     var serviceTags: [String]?
     /// 服务数量（对齐原型 home.html 寺院卡片「5项服务」）
     var serviceCount: Int?
+    /// 服务编码列表（对齐 temple-service ServiceCodes []string）
+    var serviceCodes: [String]?
 
     enum CodingKeys: String, CodingKey {
         case id, name, region, type, sect, status, address, rating, description, images
-        case coverImage, serviceTags, serviceCount
+        case coverImage, serviceTags, serviceCount, serviceCodes
     }
 
     init(id: String, name: String, region: String, type: String, sect: String,
          status: String, address: String, coverImage: String, rating: Double,
          description: String, images: [String]? = nil,
-         serviceTags: [String]? = nil, serviceCount: Int? = nil) {
+         serviceTags: [String]? = nil, serviceCount: Int? = nil,
+         serviceCodes: [String]? = nil) {
         self.id = id
         self.name = name
         self.region = region
@@ -46,6 +49,7 @@ struct Temple: Codable, Identifiable, Hashable {
         self.images = images
         self.serviceTags = serviceTags
         self.serviceCount = serviceCount
+        self.serviceCodes = serviceCodes
     }
 
     init(from decoder: Decoder) throws {
@@ -63,6 +67,7 @@ struct Temple: Codable, Identifiable, Hashable {
         self.images = try c.decodeIfPresent([String].self, forKey: .images)
         self.serviceTags = try c.decodeIfPresent([String].self, forKey: .serviceTags)
         self.serviceCount = try c.decodeIfPresent(Int.self, forKey: .serviceCount)
+        self.serviceCodes = try c.decodeIfPresent([String].self, forKey: .serviceCodes)
     }
 
     /// 评分展示文本

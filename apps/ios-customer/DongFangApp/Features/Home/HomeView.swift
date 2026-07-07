@@ -441,20 +441,12 @@ struct HomeView: View {
                     .minimumScaleFactor(0.85)
             }
 
-            // 修行年 + 咨询数
-            HStack(spacing: 6) {
-                if let years = master.yearsText {
-                    Text(years)
-                }
-                if master.yearsText != nil && master.consultationText != nil {
-                    Text("|").foregroundStyle(Color.accentDefault.opacity(0.2))
-                }
-                if let consult = master.consultationText {
-                    Text(consult)
-                }
-            }
-            .font(.system(size: 10))
-            .foregroundStyle(Color.textSecondary)
+            // 专长标签
+            Text(master.specialtiesText)
+                .font(.system(size: 10))
+                .foregroundStyle(Color.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
 
             // 评分
             HStack(spacing: 2) {
