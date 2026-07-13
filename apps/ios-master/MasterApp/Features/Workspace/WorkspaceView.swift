@@ -391,6 +391,8 @@ struct WorkspaceView: View {
 @MainActor
 private final class MediaStudioViewModel: ObservableObject {
     @Published var media: MediaAsset?
+    @Published var imageMedia: [MediaAsset] = []
+    @Published var posts: [MasterCommunityPost] = []
     @Published var capabilities: LiveCapabilities?
     @Published var room: LiveRoom?
     @Published var isUploading = false
@@ -399,6 +401,15 @@ private final class MediaStudioViewModel: ObservableObject {
     func loadCapabilities() async {
         do {
             capabilities = try await APIClient.shared.request(.liveCapabilities)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func loadPosts() async {
+        do {
+            let response: MasterCommunityPostList = try await APIClient.shared.request(.masterCommunityPosts(status: nil, page: 1, size: 50))
+            posts = response.list
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -419,6 +430,64 @@ private final class MediaStudioViewModel: ObservableObject {
             media = try await uploadAsset(
                 data: video, fileName: "video.mov", mediaType: "video", contentType: "video/quicktime", coverMediaId: coverId
             )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func upload(images: [Data]) async {
+        isUploading = true
+        errorMessage = nil
+        defer { isUploading = false }
+        do {
+            var uploaded: [MediaAsset] = []
+            for (index, data) in images.prefix(9).enumerated() {
+                uploaded.append(try await uploadAsset(
+                    data: data, fileName: "article-\(index + 1).jpg", mediaType: "image", contentType: "image/jpeg", coverMediaId: nil
+                ))
+            }
+            imageMedia = uploaded
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func savePost(id: String?, type: String, title: String, content: String, beliefCode: String, submit: Bool) async -> Bool {
+        let assets: [MasterContentAsset]
+        let coverMediaId: Int64?
+        if type == "video", let media {
+            assets = [.init(mediaId: media.id, assetType: "video", sort: 0)]
+            coverMediaId = media.coverMediaId > 0 ? media.coverMediaId : nil
+        } else {
+            assets = imageMedia.enumerated().map { .init(mediaId: $0.element.id, assetType: "image", sort: $0.offset) }
+            coverMediaId = imageMedia.first?.id
+        }
+        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !assets.isEmpty else {
+            errorMessage = "请填写标题并上传内容素材"
+            return false
+        }
+        let request = MasterContentCreateRequest(
+            type: type, title: title, content: content, coverMediaId: coverMediaId,
+            beliefCode: beliefCode.isEmpty ? nil : beliefCode, assets: assets, submit: submit
+        )
+        do {
+            if let id {
+                let _: MasterCommunityPost = try await APIClient.shared.request(.masterCommunityPostUpdate(id: id, request))
+            } else {
+                let _: MasterCommunityPost = try await APIClient.shared.request(.masterCommunityPostCreate(request))
+            }
+            await loadPosts()
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    func changeStatus(_ post: MasterCommunityPost, status: String) async {
+        do {
+            let _: MasterCommunityPost = try await APIClient.shared.request(.masterCommunityPostStatus(id: post.id, status: status))
+            await loadPosts()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -455,32 +524,106 @@ private struct MediaStudioView: View {
     @State private var coverItem: PhotosPickerItem?
     @State private var videoData: Data?
     @State private var coverData: Data?
+    @State private var imageItems: [PhotosPickerItem] = []
+    @State private var imageData: [Data] = []
+    @State private var postType = "video"
+    @State private var postTitle = ""
+    @State private var postContent = ""
+    @State private var beliefCode = ""
+    @State private var editingId: String?
     @State private var liveTitle = "线上开示"
     @State private var openIMGroupId = ""
 
     var body: some View {
         Form {
-            Section("短视频") {
-                PhotosPicker(selection: $coverItem, matching: .images) {
-                    Label(coverData == nil ? "选择封面" : "已选择封面", systemImage: "photo")
+            Section("发布内容") {
+                Picker("类型", selection: $postType) {
+                    Text("短视频").tag("video")
+                    Text("图文").tag("article")
                 }
-                PhotosPicker(selection: $videoItem, matching: .videos) {
-                    Label(videoData == nil ? "选择视频" : "已选择视频", systemImage: "video")
+                .pickerStyle(.segmented)
+                TextField("标题", text: $postTitle)
+                TextField("正文", text: $postContent, axis: .vertical)
+                Picker("信仰流派", selection: $beliefCode) {
+                    Text("不限定").tag("")
+                    Text("汉传佛教").tag("han_buddhism")
+                    Text("藏传佛教").tag("tibetan_buddhism")
+                    Text("道教").tag("daoism")
+                    Text("民间信仰").tag("folk")
                 }
-                Button {
-                    guard let videoData else { return }
-                    Task { await viewModel.upload(video: videoData, cover: coverData) }
-                } label: {
-                    Label(viewModel.isUploading ? "上传中" : "上传", systemImage: "arrow.up.circle")
-                }
-                .disabled(videoData == nil || viewModel.isUploading)
 
-                if let media = viewModel.media {
-                    Text(media.status == "ready" ? "可播放 · 审核\(media.auditStatus)" : media.status)
-                    if media.status == "ready", let url = URL(string: media.playbackUrl), !media.playbackUrl.isEmpty {
-                        VideoPlayer(player: AVPlayer(url: url))
-                            .frame(minHeight: 220)
+                if postType == "video" {
+                    PhotosPicker(selection: $coverItem, matching: .images) {
+                        Label(coverData == nil ? "选择封面" : "已选择封面", systemImage: "photo")
                     }
+                    PhotosPicker(selection: $videoItem, matching: .videos) {
+                        Label(videoData == nil ? "选择视频" : "已选择视频", systemImage: "video")
+                    }
+                    Button {
+                        guard let videoData else { return }
+                        Task { await viewModel.upload(video: videoData, cover: coverData) }
+                    } label: {
+                        Label(viewModel.isUploading ? "上传中" : "上传", systemImage: "arrow.up.circle")
+                    }
+                    .disabled(videoData == nil || viewModel.isUploading)
+
+                    if let media = viewModel.media {
+                        Text(media.status == "ready" ? "可播放 · 审核\(media.auditStatus)" : media.status)
+                        if media.status == "ready", let url = URL(string: media.playbackUrl), !media.playbackUrl.isEmpty {
+                            VideoPlayer(player: AVPlayer(url: url))
+                                .frame(minHeight: 220)
+                        }
+                    }
+                } else {
+                    PhotosPicker(selection: $imageItems, maxSelectionCount: 9, matching: .images) {
+                        Label(imageData.isEmpty ? "选择图片（最多 9 张）" : "已选择 \(imageData.count) 张", systemImage: "photo.stack")
+                    }
+                    Button {
+                        Task { await viewModel.upload(images: imageData) }
+                    } label: {
+                        Label(viewModel.isUploading ? "上传中" : "上传图片", systemImage: "arrow.up.circle")
+                    }
+                    .disabled(imageData.isEmpty || viewModel.isUploading)
+                    if !viewModel.imageMedia.isEmpty {
+                        Text("已上传 \(viewModel.imageMedia.count) 张图片").foregroundStyle(.secondary)
+                    }
+                }
+
+                HStack {
+                    Button("保存草稿") { Task { await save(submit: false) } }
+                    Button("提交审核") { Task { await save(submit: true) } }
+                        .buttonStyle(.borderedProminent)
+                }
+                if editingId != nil {
+                    Button("取消编辑") { resetEditor() }.foregroundStyle(.secondary)
+                }
+            }
+
+            Section("我的内容") {
+                if viewModel.posts.isEmpty { Text("暂无内容").foregroundStyle(.secondary) }
+                ForEach(viewModel.posts) { post in
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text(post.title).font(.headline)
+                            Spacer()
+                            Text(statusText(post.status)).font(.caption).foregroundStyle(statusColor(post.status))
+                        }
+                        Text("点赞 \(post.likeCount) · 评论 \(post.commentCount)").font(.caption).foregroundStyle(.secondary)
+                        if let remark = post.auditRemark, !remark.isEmpty {
+                            Text("驳回原因：\(remark)").font(.caption).foregroundStyle(.red)
+                        }
+                        HStack {
+                            if ["draft", "rejected"].contains(post.status) {
+                                Button { beginEditing(post) } label: { Label("编辑", systemImage: "pencil") }
+                                Button("提交") { Task { await viewModel.changeStatus(post, status: "submit") } }
+                            }
+                            if post.status == "approved" {
+                                Button("下架", role: .destructive) { Task { await viewModel.changeStatus(post, status: "off_shelf") } }
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .padding(.vertical, 4)
                 }
             }
 
@@ -508,12 +651,75 @@ private struct MediaStudioView: View {
             }
         }
         .navigationTitle("内容与直播")
-        .task { await viewModel.loadCapabilities() }
+        .task {
+            await viewModel.loadCapabilities()
+            await viewModel.loadPosts()
+        }
         .onChange(of: coverItem) { _, item in
             Task { coverData = try? await item?.loadTransferable(type: Data.self) }
         }
         .onChange(of: videoItem) { _, item in
             Task { videoData = try? await item?.loadTransferable(type: Data.self) }
+        }
+        .onChange(of: imageItems) { _, items in
+            Task {
+                var values: [Data] = []
+                for item in items {
+                    if let data = try? await item.loadTransferable(type: Data.self) { values.append(data) }
+                }
+                imageData = values
+            }
+        }
+    }
+
+    private func save(submit: Bool) async {
+        if await viewModel.savePost(id: editingId, type: postType, title: postTitle, content: postContent, beliefCode: beliefCode, submit: submit) {
+            resetEditor()
+        }
+    }
+
+    private func beginEditing(_ post: MasterCommunityPost) {
+        editingId = post.id
+        postType = post.type
+        postTitle = post.title
+        postContent = post.content
+        beliefCode = post.beliefCode
+        if post.type == "video", let asset = post.assets.first {
+            Task { viewModel.media = try? await APIClient.shared.request(.mediaDetail(id: asset.mediaId)) }
+        } else {
+            Task {
+                var values: [MediaAsset] = []
+                for asset in post.assets {
+                    if let media: MediaAsset = try? await APIClient.shared.request(.mediaDetail(id: asset.mediaId)) { values.append(media) }
+                }
+                viewModel.imageMedia = values
+            }
+        }
+    }
+
+    private func resetEditor() {
+        editingId = nil
+        postTitle = ""
+        postContent = ""
+        beliefCode = ""
+        videoData = nil
+        coverData = nil
+        imageData = []
+        imageItems = []
+        viewModel.media = nil
+        viewModel.imageMedia = []
+    }
+
+    private func statusText(_ status: String) -> String {
+        ["draft": "草稿", "pending": "审核中", "approved": "已发布", "rejected": "已驳回", "off_shelf": "已下架"][status] ?? status
+    }
+
+    private func statusColor(_ status: String) -> Color {
+        switch status {
+        case "approved": return .green
+        case "rejected": return .red
+        case "pending": return .orange
+        default: return .secondary
         }
     }
 }

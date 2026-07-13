@@ -351,9 +351,45 @@ struct MasterContentCreateRequest: Encodable {
     let type: String
     let title: String
     let content: String?
-    let coverUrl: String?
-    let videoUrl: String?
-    let tags: [String]?
+    let coverMediaId: Int64?
+    let beliefCode: String?
+    let assets: [MasterContentAsset]
+    let submit: Bool
+}
+
+struct MasterContentAsset: Codable, Identifiable {
+    let id: Int64
+    let mediaId: Int64
+    let assetType: String
+    let sort: Int
+
+    init(id: Int64 = 0, mediaId: Int64, assetType: String, sort: Int) {
+        self.id = id
+        self.mediaId = mediaId
+        self.assetType = assetType
+        self.sort = sort
+    }
+}
+
+struct MasterCommunityPost: Decodable, Identifiable {
+    let id: String
+    let masterId: String
+    let type: String
+    let title: String
+    let content: String
+    let coverMediaId: Int64
+    let beliefCode: String
+    let status: String
+    let auditRemark: String?
+    let likeCount: Int64
+    let commentCount: Int64
+    let assets: [MasterContentAsset]
+    let createTime: String
+}
+
+struct MasterCommunityPostList: Decodable {
+    let total: Int64
+    let list: [MasterCommunityPost]
 }
 
 struct MediaUploadCredentialRequest: Encodable {

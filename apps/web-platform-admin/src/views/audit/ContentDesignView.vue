@@ -1,6 +1,6 @@
 <template>
   <div class="dfx-page">
-    <PageHeader title="素材审核" subtitle="DIY 设计 / 素材内容审核队列">
+    <PageHeader title="帖子审核" subtitle="大师广场图文与视频内容">
       <template #actions>
         <el-button :icon="Refresh" @click="loadData">刷新</el-button>
       </template>
@@ -16,27 +16,19 @@
 
     <div class="dfx-card table-wrap">
       <DataTable :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
-        <el-table-column label="编号" prop="id" width="80" />
-        <el-table-column label="设计ID" prop="bizId" width="120" />
-        <el-table-column label="提交人" prop="submitterId" width="120" />
-        <el-table-column label="素材预览" min-width="240">
+        <el-table-column label="帖子ID" prop="id" width="190" show-overflow-tooltip />
+        <el-table-column label="法师" prop="masterId" width="110" />
+        <el-table-column label="类型" width="90">
+          <template #default="{ row }">{{ row.type === 'video' ? '视频' : '图文' }}</template>
+        </el-table-column>
+        <el-table-column label="内容" min-width="280">
           <template #default="{ row }">
-            <div class="design-preview">
-              <el-image
-                v-for="(url, i) in imageUrls(row.contentSnapshot)"
-                :key="i"
-                :src="url"
-                fit="cover"
-                class="design-img"
-                :preview-src-list="imageUrls(row.contentSnapshot)"
-                :initial-index="i"
-                preview-teleported
-              >
-                <template #error><div class="design-img design-img--fallback">图</div></template>
-              </el-image>
-              <span v-if="!imageUrls(row.contentSnapshot).length" class="muted">{{ parseSnapshot(row.contentSnapshot) }}</span>
-            </div>
+            <strong>{{ row.title }}</strong>
+            <div class="content-preview">{{ row.content || '-' }}</div>
           </template>
+        </el-table-column>
+        <el-table-column label="互动" width="120">
+          <template #default="{ row }">{{ row.likeCount }} 赞 · {{ row.commentCount }} 评</template>
         </el-table-column>
         <el-table-column label="状态" width="110">
           <template #default="{ row }"><StatusTag :status="row.status" /></template>
@@ -63,39 +55,21 @@ import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import AuditAction from '@/components/AuditAction.vue'
-import { getAuditQueue, approveAudit, rejectAudit } from '@/api/audit'
+import { getCommunityPosts, reviewCommunityPost } from '@/api/community'
 import { useAuthStore } from '@/stores/auth'
-import { formatDate, safeJsonParse } from '@/utils/format'
-import type { AuditQueue } from '@/types'
+import { formatDate } from '@/utils/format'
+import type { CommunityPost } from '@/api/community'
 
 const auth = useAuthStore()
-const BIZ_TYPE = 'design'
-
 const loading = ref(false)
-const list = ref<AuditQueue[]>([])
+const list = ref<CommunityPost[]>([])
 const total = ref(0)
 const query = reactive({ status: '', page: 1, size: 20 })
-
-function imageUrls(snapshot: string): string[] {
-  const obj = safeJsonParse<any>(snapshot, null)
-  if (!obj) return []
-  if (Array.isArray(obj)) return obj
-  if (obj.imageUrl) return [obj.imageUrl]
-  if (obj.images) return obj.images
-  if (obj.url) return [obj.url]
-  return []
-}
-
-function parseSnapshot(snapshot: string): string {
-  const obj = safeJsonParse<any>(snapshot, null)
-  if (!obj) return snapshot || '-'
-  return obj.name || obj.title || JSON.stringify(obj)
-}
 
 async function loadData() {
   loading.value = true
   try {
-    const res = await getAuditQueue({ ...query, bizType: BIZ_TYPE })
+    const res = await getCommunityPosts(query)
     list.value = res.list || []
     total.value = res.total || 0
   } finally {
@@ -108,10 +82,9 @@ function onSearch() {
   loadData()
 }
 
-async function doAudit(row: AuditQueue, action: 'approve' | 'reject', remark: string) {
+async function doAudit(row: CommunityPost, action: 'approve' | 'reject', remark: string) {
   const auditorId = String(auth.userInfo?.userId || '0')
-  if (action === 'approve') await approveAudit(row.id, { auditorId, remark })
-  else await rejectAudit(row.id, { auditorId, remark })
+  await reviewCommunityPost(row.id, action, { auditorId, remark })
 }
 
 onMounted(loadData)
@@ -127,23 +100,13 @@ onMounted(loadData)
 .table-wrap {
   padding: 16px;
 }
-.design-preview {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.design-img {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-sm);
-}
-.design-img--fallback {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-tertiary);
-  font-size: 12px;
+.content-preview {
+  margin-top: 4px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .muted {
   color: var(--color-text-tertiary);

@@ -33,12 +33,6 @@ struct ChatView: View {
         ("M004", "智海法师", "master-avatar-zhihai", "12/15", "视频通话 25分18秒", true)
     ]
 
-    private let videoFeed: [(mediaId: Int64, masterId: String, master: String, avatar: String, desc: String, likes: String, comments: String)] = [
-        (1, "M001", "智海法师", "master-avatar-zhihai", "禅修入门：观呼吸法门 | 三分钟学会止观", "2.3万", "186"),
-        (2, "M003", "释延心法师", "master-avatar-shimingyuan", "少林禅武合一演示", "5.1万", "892"),
-        (3, "M002", "清风道长", "master-avatar-qingfeng", "道家内丹术基础讲解", "9686", "156")
-    ]
-
     var body: some View {
         VStack(spacing: 0) {
             topNav
@@ -351,106 +345,297 @@ struct ChatView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Panel 3: 大师广场（视频信息流）
+    // MARK: - Panel 3: 大师广场
     private var plazaPanel: some View {
+        CommunityPlazaView(liveRooms: liveRooms)
+    }
+}
+
+@MainActor
+private final class CommunityPlazaViewModel: ObservableObject {
+    @Published var posts: [CommunityPost] = []
+    @Published var message: String?
+
+    func load() async {
+        do {
+            let response: CommunityPostListResponse = try await APIClient.shared.request(.communityFeed(type: nil, beliefCode: nil, page: 1, size: 30))
+            posts = response.list
+            message = nil
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+}
+
+private struct CommunityPlazaView: View {
+    let liveRooms: [LiveRoom]
+    @StateObject private var viewModel = CommunityPlazaViewModel()
+    private let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
+
+    var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 0) {
+            VStack(spacing: 12) {
                 ForEach(liveRooms) { room in
                     NavigationLink { LiveViewerView(room: room) } label: {
-                        HStack {
-                            Image(systemName: "dot.radiowaves.left.and.right")
-                                .foregroundStyle(Color.stateError)
-                            Text(room.title).foregroundStyle(Color.textPrimary)
+                        HStack(spacing: 10) {
+                            Image(systemName: "dot.radiowaves.left.and.right").foregroundStyle(Color.stateError)
+                            Text(room.title).font(.subheadline.weight(.semibold)).foregroundStyle(Color.textPrimary)
                             Spacer()
                             Text("直播中").font(.caption).foregroundStyle(Color.stateError)
                         }
-                        .padding(AppSpacing.lg)
+                        .padding(.horizontal, AppSpacing.lg)
+                        .frame(height: 46)
                     }
                     .buttonStyle(.plain)
                 }
-                ForEach(Array(videoFeed.enumerated()), id: \.offset) { _, video in
-                    videoCard(video)
+
+                if !viewModel.posts.filter({ $0.type == "video" }).isEmpty {
+                    NavigationLink { CommunityVideoFeedView(posts: viewModel.posts.filter { $0.type == "video" }) } label: {
+                        Label("全屏视频", systemImage: "play.rectangle.fill")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .padding(.horizontal, AppSpacing.lg)
+                    }
+                }
+
+                LazyVGrid(columns: columns, spacing: 10) {
+                    ForEach(viewModel.posts) { post in
+                        NavigationLink { CommunityPostDetailView(postId: post.id) } label: {
+                            CommunityPostCard(post: post)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, AppSpacing.lg)
+
+                if viewModel.posts.isEmpty, let message = viewModel.message {
+                    ContentUnavailableView("内容加载失败", systemImage: "wifi.exclamationmark", description: Text(message))
                 }
                 Color.clear.frame(height: AppSpacing.navBottom)
             }
         }
+        .task { await viewModel.load() }
+        .refreshable { await viewModel.load() }
     }
+}
 
-    private func videoCard(_ video: (mediaId: Int64, masterId: String, master: String, avatar: String, desc: String, likes: String, comments: String)) -> some View {
-        NavigationLink {
-            MediaPlaybackView(mediaId: video.mediaId, title: video.desc)
-        } label: {
-            ZStack(alignment: .bottom) {
-                // 视频缩略图占位
-                LinearGradient(
-                    colors: [Color.bgTertiary, Color.bgSecondary],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .aspectRatio(1, contentMode: .fit)
-                .frame(maxWidth: .infinity)
+private struct CommunityPostCard: View {
+    let post: CommunityPost
+    @State private var media: MediaAsset?
 
-                // 播放图标
-                Image(systemName: "play.circle.fill")
-                    .font(.system(size: 44))
-                    .foregroundStyle(Color.white.opacity(0.8))
-                    .frame(maxHeight: .infinity)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ZStack {
+                Color.bgTertiary
+                if let urlString = media?.coverUrl.isEmpty == false ? media?.coverUrl : media?.playbackUrl,
+                   let url = URL(string: urlString) {
+                    AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { ProgressView() }
+                } else {
+                    Image(systemName: post.type == "video" ? "video" : "photo.on.rectangle")
+                        .font(.title2).foregroundStyle(Color.textTertiary)
+                }
+                if post.type == "video" {
+                    Image(systemName: "play.circle.fill").font(.title).foregroundStyle(.white)
+                }
+            }
+            .frame(height: post.type == "video" ? 210 : 150)
+            .clipped()
 
-                // 底部信息覆盖层
-                VStack(alignment: .leading, spacing: 10) {
-                    // 法师信息行
-                    HStack(spacing: 10) {
-                        RemoteAvatar(urlString: video.avatar, size: 36)
-                        Text(video.master)
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(Color.textPrimary)
-                        Spacer()
-                        Text("关注")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color.white)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 4)
-                            .background(Color.brandDefault)
-                            .clipShape(Capsule())
+            Text(post.title).font(.subheadline.weight(.semibold)).foregroundStyle(Color.textPrimary).lineLimit(2)
+            HStack {
+                Text("大师 \(post.masterId)").font(.caption).foregroundStyle(Color.textTertiary).lineLimit(1)
+                Spacer()
+                Label("\(post.likeCount)", systemImage: "heart").font(.caption2).foregroundStyle(Color.textSecondary)
+            }
+        }
+        .background(Color.bgSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .task {
+            let id = post.coverMediaId > 0 ? post.coverMediaId : (post.assets.first?.mediaId ?? 0)
+            if id > 0 { media = try? await APIClient.shared.request(.mediaDetail(id)) }
+        }
+    }
+}
+
+private struct CommunityPostDetailView: View {
+    let postId: String
+    @State private var post: CommunityPost?
+    @State private var comments: [CommunityComment] = []
+    @State private var media: [Int64: MediaAsset] = [:]
+    @State private var commentText = ""
+    @State private var liked = false
+    @State private var likeCount: Int64 = 0
+    @State private var following = false
+    @State private var message: String?
+
+    var body: some View {
+        ScrollView {
+            if let post {
+                VStack(alignment: .leading, spacing: 16) {
+                    if post.type == "video", let asset = post.assets.first(where: { $0.assetType == "video" }) {
+                        CommunityVideoPlayer(media: media[asset.mediaId])
+                            .frame(height: 480)
+                    } else {
+                        TabView {
+                            ForEach(post.assets.filter { $0.assetType == "image" }) { asset in
+                                CommunityImage(media: media[asset.mediaId])
+                            }
+                        }
+                        .tabViewStyle(.page(indexDisplayMode: .automatic))
+                        .frame(height: 360)
                     }
 
-                    // 描述
-                    Text(video.desc)
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color.textPrimary)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
+                    Text(post.title).font(.title3.weight(.bold)).foregroundStyle(Color.textPrimary)
+                    Text(post.content).font(.body).foregroundStyle(Color.textSecondary)
 
-                    // 互动栏
-                    HStack(spacing: 20) {
-                        interactionItem(icon: "heart", text: video.likes)
-                        interactionItem(icon: "message", text: video.comments)
-                        interactionItem(icon: "square.and.arrow.up", text: "分享")
+                    HStack(spacing: 12) {
+                        Button { Task { await toggleLike() } } label: {
+                            Label("\(likeCount)", systemImage: liked ? "heart.fill" : "heart")
+                        }
+                        Button { Task { await toggleFollow() } } label: {
+                            Label(following ? "已关注" : "关注大师", systemImage: following ? "person.crop.circle.badge.checkmark" : "person.crop.circle.badge.plus")
+                        }
+                    }
+                    .buttonStyle(.bordered)
+
+                    Divider()
+                    Text("评论").font(.headline)
+                    HStack {
+                        TextField("写下评论，审核通过后展示", text: $commentText, axis: .vertical)
+                            .textFieldStyle(.roundedBorder)
+                        Button { Task { await submitComment() } } label: { Image(systemName: "paperplane.fill") }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(commentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                    ForEach(comments) { comment in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(comment.content).foregroundStyle(Color.textPrimary)
+                            Text("用户 \(comment.userId)").font(.caption).foregroundStyle(Color.textTertiary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 6)
+                    }
+                    if let message { Text(message).font(.caption).foregroundStyle(Color.stateWarning) }
+                }
+                .padding(AppSpacing.lg)
+            } else if let message {
+                ContentUnavailableView("内容暂不可用", systemImage: "doc.text.magnifyingglass", description: Text(message))
+            } else {
+                ProgressView().frame(maxWidth: .infinity).padding(.top, 80)
+            }
+        }
+        .navigationTitle("大师广场")
+        .task { await load() }
+    }
+
+    private func load() async {
+        do {
+            let detail: CommunityPost = try await APIClient.shared.request(.communityPostById(postId))
+            post = detail
+            liked = detail.liked
+            likeCount = detail.likeCount
+            for asset in detail.assets {
+                media[asset.mediaId] = try? await APIClient.shared.request(.mediaDetail(asset.mediaId))
+            }
+            let response: CommunityCommentListResponse = try await APIClient.shared.request(.communityComments(postId: postId, page: 1, size: 50))
+            comments = response.list
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    private func toggleLike() async {
+        do {
+            let response: CommunityLikeResponse = try await APIClient.shared.request(liked ? .communityPostUnlike(postId) : .communityPostLike(postId))
+            liked = response.liked
+            likeCount = response.likeCount
+        } catch { message = error.localizedDescription }
+    }
+
+    private func toggleFollow() async {
+        guard let masterId = post?.masterId else { return }
+        do {
+            let response: CommunityFollowResponse = try await APIClient.shared.request(following ? .communityMasterUnfollow(masterId) : .communityMasterFollow(masterId))
+            following = response.following
+        } catch { message = error.localizedDescription }
+    }
+
+    private func submitComment() async {
+        let content = commentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !content.isEmpty else { return }
+        do {
+            let _: CommunityComment = try await APIClient.shared.request(.communityCommentCreate(postId: postId, .init(content: content)))
+            commentText = ""
+            message = "评论已提交，审核通过后展示"
+        } catch { message = error.localizedDescription }
+    }
+}
+
+private struct CommunityImage: View {
+    let media: MediaAsset?
+    var body: some View {
+        ZStack {
+            Color.bgTertiary
+            if let media, let url = URL(string: media.playbackUrl), !media.playbackUrl.isEmpty {
+                AsyncImage(url: url) { image in image.resizable().scaledToFit() } placeholder: { ProgressView() }
+            } else { ProgressView() }
+        }
+    }
+}
+
+private struct CommunityVideoPlayer: View {
+    let media: MediaAsset?
+    var body: some View {
+        if let media, media.status == "ready", let url = URL(string: media.playbackUrl), !media.playbackUrl.isEmpty {
+            VideoPlayer(player: AVPlayer(url: url))
+        } else {
+            ContentUnavailableView("视频处理中", systemImage: "video.badge.clock")
+        }
+    }
+}
+
+private struct CommunityVideoFeedView: View {
+    let posts: [CommunityPost]
+    var body: some View {
+        GeometryReader { proxy in
+            ScrollView(.vertical) {
+                LazyVStack(spacing: 0) {
+                    ForEach(posts) { post in
+                        CommunityVideoPage(post: post)
+                            .frame(width: proxy.size.width, height: proxy.size.height)
                     }
                 }
-                .padding(16)
-                .background(
-                    LinearGradient(
-                        colors: [Color.black.opacity(0.75), Color.black.opacity(0.3), Color.clear],
-                        startPoint: .bottom,
-                        endPoint: .top
-                    )
-                )
+                .scrollTargetLayout()
             }
-            .frame(maxWidth: .infinity)
-            .clipped()
+            .scrollIndicators(.hidden)
+            .scrollTargetBehavior(.paging)
         }
-        .buttonStyle(.plain)
+        .background(.black)
+        .navigationTitle("视频")
+        .navigationBarTitleDisplayMode(.inline)
     }
+}
 
-    private func interactionItem(icon: String, text: String) -> some View {
-        HStack(spacing: 5) {
-            Image(systemName: icon)
-                .font(.system(size: 18))
-                .foregroundStyle(Color.textPrimary)
-            Text(text)
-                .font(.system(size: 12))
-                .foregroundStyle(Color.textSecondary)
+private struct CommunityVideoPage: View {
+    let post: CommunityPost
+    @State private var media: MediaAsset?
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            CommunityVideoPlayer(media: media)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("大师 \(post.masterId)").font(.subheadline.weight(.semibold))
+                Text(post.title).font(.headline)
+                Label("\(post.likeCount)", systemImage: "heart.fill").font(.caption)
+            }
+            .foregroundStyle(.white)
+            .padding(20)
+            .background(.black.opacity(0.45))
+        }
+        .task {
+            if let id = post.assets.first(where: { $0.assetType == "video" })?.mediaId {
+                media = try? await APIClient.shared.request(.mediaDetail(id))
+            }
         }
     }
 }

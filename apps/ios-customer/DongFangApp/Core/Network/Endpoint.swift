@@ -48,6 +48,61 @@ struct LiveRoomListResponse: Decodable {
     let list: [LiveRoom]
 }
 
+struct CommunityAsset: Decodable, Identifiable {
+    let id: Int64
+    let mediaId: Int64
+    let assetType: String
+    let sort: Int
+}
+
+struct CommunityPost: Decodable, Identifiable, Hashable {
+    let id: String
+    let masterId: String
+    let type: String
+    let title: String
+    let content: String
+    let coverMediaId: Int64
+    let beliefCode: String
+    let status: String
+    let likeCount: Int64
+    let commentCount: Int64
+    let liked: Bool
+    let assets: [CommunityAsset]
+    let createTime: String
+
+    static func == (lhs: CommunityPost, rhs: CommunityPost) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
+}
+
+struct CommunityPostListResponse: Decodable {
+    let total: Int64
+    let list: [CommunityPost]
+    let page: Int
+    let size: Int
+}
+
+struct CommunityComment: Decodable, Identifiable {
+    let id: String
+    let postId: String
+    let userId: String
+    let content: String
+    let status: String
+    let createTime: String
+}
+
+struct CommunityCommentListResponse: Decodable {
+    let total: Int64
+    let list: [CommunityComment]
+}
+
+struct CommunityLikeResponse: Decodable {
+    let liked: Bool
+    let likeCount: Int64
+}
+
+struct CommunityFollowResponse: Decodable { let following: Bool }
+struct CommunityCommentCreateRequest: Encodable { let content: String }
+
 /// API 端点枚举
 enum Endpoint {
     // MARK: - 寺院
@@ -90,10 +145,14 @@ enum Endpoint {
     case aiRetryMessage(sessionId: String, messageId: Int64, userId: String)
 
     // MARK: - 社区内容 / 大师广场
-    case communityFeed(type: String?, sect: String?, page: Int, size: Int)
+    case communityFeed(type: String?, beliefCode: String?, page: Int, size: Int)
     case communityPostById(String)
     case communityPostLike(String)
+    case communityPostUnlike(String)
     case communityComments(postId: String, page: Int, size: Int)
+    case communityCommentCreate(postId: String, CommunityCommentCreateRequest)
+    case communityMasterFollow(String)
+    case communityMasterUnfollow(String)
 
     // MARK: - 媒体与直播
     case mediaDetail(Int64)
@@ -172,8 +231,10 @@ enum Endpoint {
         // 社区内容
         case .communityFeed:            return "community/feed"
         case .communityPostById(let id): return "community/posts/\(id)"
-        case .communityPostLike(let id): return "community/posts/\(id)/like"
+        case .communityPostLike(let id), .communityPostUnlike(let id): return "community/posts/\(id)/like"
         case .communityComments(let postId, _, _): return "community/posts/\(postId)/comments"
+        case .communityCommentCreate(let postId, _): return "community/posts/\(postId)/comments"
+        case .communityMasterFollow(let id), .communityMasterUnfollow(let id): return "community/masters/\(id)/follow"
         case .mediaDetail(let id):       return "media/\(id)"
         case .liveRooms:                 return "live/rooms"
         case .liveRoomById(let id):      return "live/rooms/\(id)"
@@ -225,13 +286,14 @@ enum Endpoint {
             return .GET
         case .createBooking, .diyDesignSave, .diyOrderCreate, .diyOrderCreateFromDesign, .paymentCreate,
              .aiSessionCreate, .aiSendMessage, .aiRetryMessage, .communityPostLike,
+             .communityCommentCreate, .communityMasterFollow,
              .authLogin, .authRegister, .authRefresh, .authLogout,
              .addressCreate, .sendMessage, .registerDeviceToken:
             return .POST
         case .updateBookingStatus, .messageRead, .readAllMessages,
              .updateProfile, .addressUpdate:
             return .PUT
-        case .deleteMessage, .addressDelete:
+        case .deleteMessage, .addressDelete, .communityPostUnlike, .communityMasterUnfollow:
             return .DELETE
         }
     }
@@ -284,11 +346,11 @@ enum Endpoint {
             return [URLQueryItem(name: "userId", value: userId),
                     URLQueryItem(name: "page", value: "\(page)"),
                     URLQueryItem(name: "size", value: "\(size)")]
-        case .communityFeed(let type, let sect, let page, let size):
+        case .communityFeed(let type, let beliefCode, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
                          URLQueryItem(name: "size", value: "\(size)")]
             if let type, !type.isEmpty { items.append(URLQueryItem(name: "type", value: type)) }
-            if let sect, !sect.isEmpty { items.append(URLQueryItem(name: "sect", value: sect)) }
+            if let beliefCode, !beliefCode.isEmpty { items.append(URLQueryItem(name: "beliefCode", value: beliefCode)) }
             return items
         case .communityComments(_, let page, let size):
             return [URLQueryItem(name: "page", value: "\(page)"),
@@ -339,6 +401,9 @@ enum Endpoint {
         case .aiSessionCreate(let req):        return AnyEncodable(req)
         case .aiSendMessage(let req):          return AnyEncodable(req)
         case .aiRetryMessage(_, _, let userId): return AnyEncodable(["userId": userId])
+        case .communityPostLike, .communityPostUnlike, .communityMasterFollow, .communityMasterUnfollow:
+            return AnyEncodable([String: String]())
+        case .communityCommentCreate(_, let req): return AnyEncodable(req)
         case .authLogin(let req):              return AnyEncodable(req)
         case .authRegister(let req):           return AnyEncodable(req)
         case .authRefresh(let refresh):        return AnyEncodable(["refreshToken": refresh])

@@ -31,33 +31,45 @@ const diyDesigns = [
 const communityPosts = [
   {
     id: 'P001',
+    ownerId: 'U001',
     type: 'video',
-    sect: '禅宗',
+    beliefCode: 'han_buddhism',
     masterId: 'M001',
-    masterName: '智海法师',
     title: '三分钟观呼吸入门',
-    coverUrl: '/assets/temple-card-lingyinsi.jpg',
-    videoUrl: '',
+    content: '从自然呼吸开始，逐步安住当下。',
+    coverMediaId: 2,
+    assets: [{ id: 1, mediaId: 1, assetType: 'video', sort: 0 }],
     likeCount: 23000,
     commentCount: 186,
-    auditStatus: 'approved',
+    liked: false,
+    status: 'approved',
+    auditRemark: '',
     createTime: '2026-07-09 09:30:00'
   },
   {
     id: 'P002',
+    ownerId: 'U002',
     type: 'article',
-    sect: '全真派',
+    beliefCode: 'daoism',
     masterId: 'M002',
-    masterName: '清风道长',
     title: '化太岁前需要准备什么',
-    coverUrl: '/assets/temple-card-qingyanggong.jpg',
-    videoUrl: '',
+    content: '保持恭敬与清净心，按预约提示准备即可。',
+    coverMediaId: 2,
+    assets: [{ id: 2, mediaId: 2, assetType: 'image', sort: 0 }],
     likeCount: 9686,
     commentCount: 156,
-    auditStatus: 'approved',
+    liked: false,
+    status: 'approved',
+    auditRemark: '',
     createTime: '2026-07-08 18:20:00'
   }
 ];
+
+const communityComments = [
+  { id: 'C001', postId: 'P001', userId: 'U003', content: '讲得很清楚。', status: 'approved', auditRemark: '', createTime: '2026-07-09 11:00:00' }
+];
+const communityLikes = new Set<string>();
+const communityFollows = new Set<string>();
 
 const intentionItems = [
   { code: 'peace', title: '求平安', serviceCode: 'S001', productTags: ['开光', '平安'], sects: ['禅宗', '格鲁派'] },
@@ -205,7 +217,8 @@ type MockMedia = {
 };
 
 const mockMedia: MockMedia[] = [
-  { id: 1, mediaNo: 'MED20260713001', ownerId: 'U001', mediaType: 'video', status: 'ready', auditStatus: 'approved', playbackUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', coverUrl: '', coverMediaId: 0, duration: 12, fileSize: 1024, errorMessage: '' }
+  { id: 1, mediaNo: 'MED20260713001', ownerId: 'U001', mediaType: 'video', status: 'ready', auditStatus: 'approved', playbackUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', coverUrl: '/assets/temple-card-lingyinsi.jpg', coverMediaId: 2, duration: 12, fileSize: 1024, errorMessage: '' },
+  { id: 2, mediaNo: 'MED20260713002', ownerId: 'U001', mediaType: 'image', status: 'ready', auditStatus: 'approved', playbackUrl: '/assets/temple-card-lingyinsi.jpg', coverUrl: '/assets/temple-card-lingyinsi.jpg', coverMediaId: 0, duration: 0, fileSize: 512, errorMessage: '' }
 ];
 
 // 统一成功响应
@@ -532,29 +545,126 @@ router.post('/ai/sessions/:id/messages/:messageId/retry', (req: Request, res: Re
 
 // ========== 社区内容 / 大师广场 ==========
 router.get('/community/feed', (req: Request, res: Response) => {
-  const { type, sect } = req.query;
+  const { type, beliefCode } = req.query;
   const list = communityPosts.filter((p) => {
+    if (p.status !== 'approved') return false;
     if (typeof type === 'string' && type && p.type !== type) return false;
-    if (typeof sect === 'string' && sect && p.sect !== sect) return false;
+    if (typeof beliefCode === 'string' && beliefCode && p.beliefCode !== beliefCode) return false;
     return true;
-  });
+  }).map(({ ownerId: _ownerId, auditRemark: _auditRemark, ...post }) => post);
   success(res, page(list, req));
 });
 
 router.get('/community/posts/:id', (req: Request, res: Response) => {
   const post = communityPosts.find((p) => p.id === req.params.id);
-  if (!post) return fail(res, 404, '内容不存在');
-  success(res, post);
+  if (!post || post.status !== 'approved') return fail(res, 404, '内容不存在');
+  const { ownerId: _ownerId, auditRemark: _auditRemark, ...publicPost } = post;
+  success(res, publicPost);
 });
 
 router.post('/community/posts/:id/like', (req: Request, res: Response) => {
-  success(res, { id: req.params.id, liked: true });
+  const post = communityPosts.find((item) => item.id === req.params.id && item.status === 'approved');
+  if (!post) return fail(res, 40440, '社区内容不存在或状态已变化');
+  const key = `${req.params.id}:${req.body?.userId || 'mock-user'}`;
+  if (!communityLikes.has(key)) {
+    communityLikes.add(key);
+    post.likeCount += 1;
+  }
+  success(res, { liked: true, likeCount: post.likeCount });
+});
+
+router.delete('/community/posts/:id/like', (req: Request, res: Response) => {
+  const post = communityPosts.find((item) => item.id === req.params.id && item.status === 'approved');
+  if (!post) return fail(res, 40440, '社区内容不存在或状态已变化');
+  const key = `${req.params.id}:${req.body?.userId || 'mock-user'}`;
+  if (communityLikes.delete(key)) post.likeCount = Math.max(0, post.likeCount - 1);
+  success(res, { liked: false, likeCount: post.likeCount });
 });
 
 router.get('/community/posts/:id/comments', (req: Request, res: Response) => {
-  success(res, page([
-    { id: 'C001', postId: req.params.id, userName: '善信弟子', content: '讲得很清楚。', createTime: '2026-07-09 11:00:00' }
-  ], req));
+  success(res, page(communityComments.filter((item) => item.postId === req.params.id && item.status === 'approved'), req));
+});
+
+router.post('/community/posts/:id/comments', (req: Request, res: Response) => {
+  const post = communityPosts.find((item) => item.id === req.params.id && item.status === 'approved');
+  if (!post) return fail(res, 40440, '社区内容不存在或状态已变化');
+  const content = String(req.body?.content || '').trim();
+  if (!content) return fail(res, 40001, '评论不能为空');
+  const comment = { id: `C${Date.now()}`, postId: post.id, userId: req.body?.userId || 'mock-user', content, status: 'pending', auditRemark: '', createTime: new Date().toISOString() };
+  communityComments.push(comment);
+  success(res, comment);
+});
+
+router.post('/community/masters/:id/follow', (req: Request, res: Response) => {
+  communityFollows.add(`${req.params.id}:${req.body?.userId || 'mock-user'}`);
+  success(res, { following: true });
+});
+
+router.delete('/community/masters/:id/follow', (req: Request, res: Response) => {
+  communityFollows.delete(`${req.params.id}:${req.body?.userId || 'mock-user'}`);
+  success(res, { following: false });
+});
+
+router.get('/admin/masters/community/posts', (req: Request, res: Response) => {
+  const status = typeof req.query.status === 'string' ? req.query.status : '';
+  success(res, page(communityPosts.filter((item) => !status || item.status === status), req));
+});
+
+router.post('/admin/masters/community/posts', (req: Request, res: Response) => {
+  const post = {
+    id: `P${Date.now()}`, ownerId: 'U001', masterId: 'M001', type: req.body.type,
+    title: req.body.title, content: req.body.content || '', coverMediaId: Number(req.body.coverMediaId || 0),
+    beliefCode: req.body.beliefCode || '', assets: req.body.assets || [], likeCount: 0, commentCount: 0,
+    liked: false, status: req.body.submit ? 'pending' : 'draft', auditRemark: '', createTime: new Date().toISOString()
+  };
+  communityPosts.unshift(post);
+  success(res, post);
+});
+
+router.put('/admin/masters/community/posts/:id', (req: Request, res: Response) => {
+  const post = communityPosts.find((item) => item.id === req.params.id);
+  if (!post || !['draft', 'rejected'].includes(post.status)) return fail(res, 40440, '内容不存在或状态已变化');
+  Object.assign(post, req.body, { status: req.body.submit ? 'pending' : 'draft', auditRemark: '' });
+  success(res, post);
+});
+
+router.put('/admin/masters/community/posts/:id/status', (req: Request, res: Response) => {
+  const post = communityPosts.find((item) => item.id === req.params.id);
+  if (!post) return fail(res, 40440, '内容不存在');
+  if (req.body.status === 'submit' && ['draft', 'rejected'].includes(post.status)) post.status = 'pending';
+  else if (req.body.status === 'off_shelf' && post.status === 'approved') post.status = 'off_shelf';
+  else return fail(res, 40440, '状态已变化');
+  success(res, post);
+});
+
+router.get('/admin/platform/community/posts', (req: Request, res: Response) => {
+  const status = typeof req.query.status === 'string' ? req.query.status : '';
+  success(res, page(communityPosts.filter((item) => !status || item.status === status), req));
+});
+
+router.put('/admin/platform/community/posts/:id/:action(approve|reject)', (req: Request, res: Response) => {
+  const post = communityPosts.find((item) => item.id === req.params.id);
+  if (!post || post.status !== 'pending') return fail(res, 40440, '内容不存在或状态已变化');
+  post.status = req.params.action === 'approve' ? 'approved' : 'rejected';
+  post.auditRemark = req.body?.remark || '';
+  success(res, post);
+});
+
+router.get('/admin/platform/community/comments', (req: Request, res: Response) => {
+  const status = typeof req.query.status === 'string' ? req.query.status : '';
+  success(res, page(communityComments.filter((item) => !status || item.status === status), req));
+});
+
+router.put('/admin/platform/community/comments/:id/:action(approve|reject)', (req: Request, res: Response) => {
+  const comment = communityComments.find((item) => item.id === req.params.id);
+  if (!comment || comment.status !== 'pending') return fail(res, 40440, '评论不存在或状态已变化');
+  comment.status = req.params.action === 'approve' ? 'approved' : 'rejected';
+  comment.auditRemark = req.body?.remark || '';
+  if (comment.status === 'approved') {
+    const post = communityPosts.find((item) => item.id === comment.postId);
+    if (post) post.commentCount += 1;
+  }
+  success(res, comment);
 });
 
 // ========== 意图聚合 ==========

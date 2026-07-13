@@ -1,6 +1,6 @@
 <template>
   <div class="dfx-page">
-    <PageHeader title="评价审核" subtitle="用户评价内容审核队列">
+    <PageHeader title="评论审核" subtitle="大师广场评论先审后显">
       <template #actions>
         <el-button :icon="Refresh" @click="loadData">刷新</el-button>
       </template>
@@ -16,14 +16,10 @@
 
     <div class="dfx-card table-wrap">
       <DataTable :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
-        <el-table-column label="编号" prop="id" width="80" />
-        <el-table-column label="业务ID" prop="bizId" width="120" />
-        <el-table-column label="提交人" prop="submitterId" width="120" />
-        <el-table-column label="内容快照" min-width="260">
-          <template #default="{ row }">
-            <div class="snapshot">{{ parseSnapshot(row.contentSnapshot) }}</div>
-          </template>
-        </el-table-column>
+        <el-table-column label="评论ID" prop="id" width="190" show-overflow-tooltip />
+        <el-table-column label="帖子ID" prop="postId" width="190" show-overflow-tooltip />
+        <el-table-column label="用户" prop="userId" width="130" />
+        <el-table-column label="评论内容" prop="content" min-width="280" show-overflow-tooltip />
         <el-table-column label="状态" width="110">
           <template #default="{ row }"><StatusTag :status="row.status" /></template>
         </el-table-column>
@@ -49,29 +45,21 @@ import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import AuditAction from '@/components/AuditAction.vue'
-import { getAuditQueue, approveAudit, rejectAudit } from '@/api/audit'
+import { getCommunityComments, reviewCommunityComment } from '@/api/community'
 import { useAuthStore } from '@/stores/auth'
-import { formatDate, safeJsonParse } from '@/utils/format'
-import type { AuditQueue } from '@/types'
+import { formatDate } from '@/utils/format'
+import type { CommunityComment } from '@/api/community'
 
 const auth = useAuthStore()
-const BIZ_TYPE = 'comment'
-
 const loading = ref(false)
-const list = ref<AuditQueue[]>([])
+const list = ref<CommunityComment[]>([])
 const total = ref(0)
 const query = reactive({ status: '', page: 1, size: 20 })
-
-function parseSnapshot(snapshot: string): string {
-  const obj = safeJsonParse<any>(snapshot, null)
-  if (!obj) return snapshot || '-'
-  return obj.content || obj.text || JSON.stringify(obj)
-}
 
 async function loadData() {
   loading.value = true
   try {
-    const res = await getAuditQueue({ ...query, bizType: BIZ_TYPE })
+    const res = await getCommunityComments(query)
     list.value = res.list || []
     total.value = res.total || 0
   } finally {
@@ -84,10 +72,9 @@ function onSearch() {
   loadData()
 }
 
-async function doAudit(row: AuditQueue, action: 'approve' | 'reject', remark: string) {
+async function doAudit(row: CommunityComment, action: 'approve' | 'reject', remark: string) {
   const auditorId = String(auth.userInfo?.userId || '0')
-  if (action === 'approve') await approveAudit(row.id, { auditorId, remark })
-  else await rejectAudit(row.id, { auditorId, remark })
+  await reviewCommunityComment(row.id, action, { auditorId, remark })
 }
 
 onMounted(loadData)
