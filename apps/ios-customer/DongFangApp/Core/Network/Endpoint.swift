@@ -18,6 +18,36 @@ enum HTTPMethod: String {
     case PATCH
 }
 
+struct MediaAsset: Decodable, Identifiable {
+    let id: Int64
+    let mediaNo: String
+    let mediaType: String
+    let status: String
+    let auditStatus: String
+    let playbackUrl: String
+    let coverUrl: String
+    let coverMediaId: Int64
+    let duration: Double
+    let fileSize: Int64
+    let errorMessage: String
+}
+
+struct LiveRoom: Decodable, Identifiable {
+    let id: Int64
+    let roomNo: String
+    let ownerId: String
+    let masterId: String
+    let title: String
+    let status: String
+    let openimGroupId: String
+    let pushUrl: String
+    let watchUrl: String
+}
+
+struct LiveRoomListResponse: Decodable {
+    let list: [LiveRoom]
+}
+
 /// API 端点枚举
 enum Endpoint {
     // MARK: - 寺院
@@ -64,6 +94,11 @@ enum Endpoint {
     case communityPostById(String)
     case communityPostLike(String)
     case communityComments(postId: String, page: Int, size: Int)
+
+    // MARK: - 媒体与直播
+    case mediaDetail(Int64)
+    case liveRooms(masterId: String?, limit: Int)
+    case liveRoomById(Int64)
 
     // MARK: - 原型聚合入口
     case intentionHub(code: String?, page: Int, size: Int)
@@ -139,6 +174,9 @@ enum Endpoint {
         case .communityPostById(let id): return "community/posts/\(id)"
         case .communityPostLike(let id): return "community/posts/\(id)/like"
         case .communityComments(let postId, _, _): return "community/posts/\(postId)/comments"
+        case .mediaDetail(let id):       return "media/\(id)"
+        case .liveRooms:                 return "live/rooms"
+        case .liveRoomById(let id):      return "live/rooms/\(id)"
         // 原型聚合入口
         case .intentionHub:             return "intentions"
         // 商城
@@ -179,6 +217,7 @@ enum Endpoint {
              .diyDesigns, .diyDesignById, .diyMaterials, .diyOrders, .diyOrderById, .paymentById,
              .aiSessions, .aiMessages,
              .communityFeed, .communityPostById, .communityComments,
+             .mediaDetail, .liveRooms, .liveRoomById,
              .intentionHub,
              .products, .productById, .productCategories,
              .messages, .unreadCount, .announcements,
@@ -254,6 +293,12 @@ enum Endpoint {
         case .communityComments(_, let page, let size):
             return [URLQueryItem(name: "page", value: "\(page)"),
                     URLQueryItem(name: "size", value: "\(size)")]
+        case .liveRooms(let masterId, let limit):
+            var items = [URLQueryItem(name: "limit", value: "\(limit)")]
+            if let masterId, !masterId.isEmpty {
+                items.append(URLQueryItem(name: "masterId", value: masterId))
+            }
+            return items
         case .intentionHub(let code, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
                          URLQueryItem(name: "size", value: "\(size)")]

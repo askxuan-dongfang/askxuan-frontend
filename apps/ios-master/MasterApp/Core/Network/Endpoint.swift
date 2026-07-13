@@ -90,6 +90,16 @@ enum Endpoint {
     /// PUT admin/masters/community/posts/{id}/status
     case masterCommunityPostStatus(id: String, status: String)
 
+    // MARK: - 媒体与直播
+    case mediaUploadCredential(MediaUploadCredentialRequest)
+    case mediaComplete(id: Int64, coverMediaId: Int64?)
+    case mediaDetail(id: Int64)
+    case liveCapabilities
+    case liveRoomCreate(LiveRoomCreateRequest)
+    case liveRoomBindOpenIM(id: Int64, groupId: String)
+    case liveRoomStart(id: Int64)
+    case liveRoomClose(id: Int64)
+
     // MARK: - 提现（finance-service，JWT 保护路由）
     /// POST admin/finance/withdrawals/apply
     case withdrawalApply(WithdrawalApplyRequest)
@@ -158,6 +168,22 @@ enum Endpoint {
             return "admin/masters/community/posts/\(id)"
         case .masterCommunityPostStatus(let id, _):
             return "admin/masters/community/posts/\(id)/status"
+        case .mediaUploadCredential:
+            return "media/uploads/credentials"
+        case .mediaComplete(let id, _):
+            return "media/\(id)/complete"
+        case .mediaDetail(let id):
+            return "media/\(id)"
+        case .liveCapabilities:
+            return "live/capabilities"
+        case .liveRoomCreate:
+            return "live/rooms"
+        case .liveRoomBindOpenIM(let id, _):
+            return "live/rooms/\(id)/openim"
+        case .liveRoomStart(let id):
+            return "live/rooms/\(id)/start"
+        case .liveRoomClose(let id):
+            return "live/rooms/\(id)/close"
         // 提现
         case .withdrawalApply:
             return "admin/finance/withdrawals/apply"
@@ -168,12 +194,14 @@ enum Endpoint {
     var httpMethod: HTTPMethod {
         switch self {
         case .adminLogin, .authRefresh, .withdrawalApply, .registerDeviceToken,
-             .masterCommunityPostCreate:
+             .masterCommunityPostCreate, .mediaUploadCredential, .mediaComplete,
+             .liveRoomCreate, .liveRoomStart, .liveRoomClose:
             return .POST
         case .masterScheduleUpdate, .masterProfileUpdate,
              .masterBookingConfirm, .masterBookingComplete,
              .blessingTaskAccept, .blessingTaskStart, .blessingTaskComplete, .blessingTaskReject,
-             .masterMessageRead, .masterCommunityPostUpdate, .masterCommunityPostStatus:
+             .masterMessageRead, .masterCommunityPostUpdate, .masterCommunityPostStatus,
+             .liveRoomBindOpenIM:
             return .PUT
         default:
             return .GET
@@ -271,6 +299,16 @@ enum Endpoint {
             return AnyEncodable(req)
         case .masterCommunityPostStatus(_, let status):
             return AnyEncodable(["status": status])
+        case .mediaUploadCredential(let request):
+            return AnyEncodable(request)
+        case .mediaComplete(_, let coverMediaId):
+            return AnyEncodable(MediaUploadCompleteRequest(coverMediaId: coverMediaId))
+        case .liveRoomCreate(let request):
+            return AnyEncodable(request)
+        case .liveRoomBindOpenIM(_, let groupId):
+            return AnyEncodable(["openimGroupId": groupId])
+        case .liveRoomStart, .liveRoomClose:
+            return AnyEncodable([String: String]())
         default:
             return nil
         }
@@ -316,6 +354,64 @@ struct MasterContentCreateRequest: Encodable {
     let coverUrl: String?
     let videoUrl: String?
     let tags: [String]?
+}
+
+struct MediaUploadCredentialRequest: Encodable {
+    let fileName: String
+    let mediaType: String
+    let contentType: String
+    let fileSize: Int64
+}
+
+struct MediaUploadCompleteRequest: Encodable {
+    let coverMediaId: Int64?
+}
+
+struct MediaUploadCredential: Decodable {
+    let mediaId: Int64
+    let uploadUrl: String
+    let objectName: String
+    let expiresIn: Int64
+    let uploadHeaders: [String: String]
+}
+
+struct MediaAsset: Decodable, Identifiable {
+    let id: Int64
+    let mediaNo: String
+    let mediaType: String
+    let status: String
+    let auditStatus: String
+    let playbackUrl: String
+    let coverUrl: String
+    let coverMediaId: Int64
+    let duration: Double
+    let fileSize: Int64
+    let errorMessage: String
+}
+
+struct LiveCapabilities: Decodable {
+    let enabled: Bool
+    let provider: String
+    let configured: Bool
+    let canStart: Bool
+}
+
+struct LiveRoomCreateRequest: Encodable {
+    let title: String
+    let coverMediaId: Int64?
+    let openimGroupId: String?
+}
+
+struct LiveRoom: Decodable, Identifiable {
+    let id: Int64
+    let roomNo: String
+    let ownerId: String
+    let masterId: String
+    let title: String
+    let status: String
+    let openimGroupId: String
+    let pushUrl: String
+    let watchUrl: String
 }
 
 /// 法师资料更新请求

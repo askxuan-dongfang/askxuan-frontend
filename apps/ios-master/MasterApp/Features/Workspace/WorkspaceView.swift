@@ -7,6 +7,8 @@
 //
 
 import SwiftUI
+import PhotosUI
+import AVKit
 
 @MainActor
 final class WorkspaceViewModel: ObservableObject {
@@ -135,6 +137,7 @@ struct WorkspaceView: View {
                 greetingSection
                 statsRow
                 quickActionsSection
+                mediaStudioSection
                 todayBookingsSection
                 blessingTaskSection
             }
@@ -145,6 +148,36 @@ struct WorkspaceView: View {
         .toolbar(.hidden, for: .navigationBar)
         .task { await viewModel.load() }
         .refreshable { await viewModel.load() }
+    }
+
+    private var mediaStudioSection: some View {
+        NavigationLink {
+            MediaStudioView()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "video.badge.plus")
+                    .font(.system(size: 20))
+                    .foregroundStyle(.accentDefault)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("内容与直播")
+                        .font(.headline)
+                        .foregroundStyle(.textPrimary)
+                    Text("上传短视频并管理直播状态")
+                        .font(.caption)
+                        .foregroundStyle(.textSecondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(.textTertiary)
+            }
+            .padding(AppSpacing.lg)
+            .background(Color.bgSecondary)
+            .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault))
+            .cornerRadius(AppRadius.md)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, AppSpacing.pageHorizontal)
+        .padding(.bottom, AppSpacing.lg)
     }
 
     // MARK: - 问候区
@@ -351,6 +384,136 @@ struct WorkspaceView: View {
                 .padding(.horizontal, AppSpacing.pageHorizontal)
             }
             .buttonStyle(.plain)
+        }
+    }
+}
+
+@MainActor
+private final class MediaStudioViewModel: ObservableObject {
+    @Published var media: MediaAsset?
+    @Published var capabilities: LiveCapabilities?
+    @Published var room: LiveRoom?
+    @Published var isUploading = false
+    @Published var errorMessage: String?
+
+    func loadCapabilities() async {
+        do {
+            capabilities = try await APIClient.shared.request(.liveCapabilities)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func upload(video: Data, cover: Data?) async {
+        isUploading = true
+        errorMessage = nil
+        defer { isUploading = false }
+        do {
+            var coverId: Int64?
+            if let cover {
+                let uploadedCover = try await uploadAsset(
+                    data: cover, fileName: "cover.jpg", mediaType: "image", contentType: "image/jpeg", coverMediaId: nil
+                )
+                coverId = uploadedCover.id
+            }
+            media = try await uploadAsset(
+                data: video, fileName: "video.mov", mediaType: "video", contentType: "video/quicktime", coverMediaId: coverId
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func createAndStartLive(title: String, groupId: String) async {
+        guard capabilities?.canStart == true else { return }
+        do {
+            var created: LiveRoom = try await APIClient.shared.request(
+                .liveRoomCreate(LiveRoomCreateRequest(title: title, coverMediaId: media?.coverMediaId, openimGroupId: nil))
+            )
+            created = try await APIClient.shared.request(.liveRoomBindOpenIM(id: created.id, groupId: groupId))
+            room = try await APIClient.shared.request(.liveRoomStart(id: created.id))
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func uploadAsset(data: Data, fileName: String, mediaType: String, contentType: String, coverMediaId: Int64?) async throws -> MediaAsset {
+        let credential: MediaUploadCredential = try await APIClient.shared.request(
+            .mediaUploadCredential(MediaUploadCredentialRequest(
+                fileName: fileName, mediaType: mediaType, contentType: contentType, fileSize: Int64(data.count)
+            ))
+        )
+        guard let uploadURL = URL(string: credential.uploadUrl) else { throw APIError.invalidURL }
+        try await APIClient.shared.upload(data, to: uploadURL, headers: credential.uploadHeaders)
+        return try await APIClient.shared.request(.mediaComplete(id: credential.mediaId, coverMediaId: coverMediaId))
+    }
+}
+
+private struct MediaStudioView: View {
+    @StateObject private var viewModel = MediaStudioViewModel()
+    @State private var videoItem: PhotosPickerItem?
+    @State private var coverItem: PhotosPickerItem?
+    @State private var videoData: Data?
+    @State private var coverData: Data?
+    @State private var liveTitle = "线上开示"
+    @State private var openIMGroupId = ""
+
+    var body: some View {
+        Form {
+            Section("短视频") {
+                PhotosPicker(selection: $coverItem, matching: .images) {
+                    Label(coverData == nil ? "选择封面" : "已选择封面", systemImage: "photo")
+                }
+                PhotosPicker(selection: $videoItem, matching: .videos) {
+                    Label(videoData == nil ? "选择视频" : "已选择视频", systemImage: "video")
+                }
+                Button {
+                    guard let videoData else { return }
+                    Task { await viewModel.upload(video: videoData, cover: coverData) }
+                } label: {
+                    Label(viewModel.isUploading ? "上传中" : "上传", systemImage: "arrow.up.circle")
+                }
+                .disabled(videoData == nil || viewModel.isUploading)
+
+                if let media = viewModel.media {
+                    Text(media.status == "ready" ? "可播放 · 审核\(media.auditStatus)" : media.status)
+                    if media.status == "ready", let url = URL(string: media.playbackUrl), !media.playbackUrl.isEmpty {
+                        VideoPlayer(player: AVPlayer(url: url))
+                            .frame(minHeight: 220)
+                    }
+                }
+            }
+
+            Section("直播") {
+                if viewModel.capabilities?.canStart == true {
+                    TextField("直播标题", text: $liveTitle)
+                    TextField("OpenIM 群组 ID", text: $openIMGroupId)
+                    Button {
+                        Task { await viewModel.createAndStartLive(title: liveTitle, groupId: openIMGroupId) }
+                    } label: {
+                        Label("开始直播", systemImage: "dot.radiowaves.left.and.right")
+                    }
+                    .disabled(liveTitle.isEmpty || openIMGroupId.isEmpty)
+                } else {
+                    Label("直播能力未开放", systemImage: "video.slash")
+                        .foregroundStyle(.secondary)
+                }
+                if let room = viewModel.room {
+                    Text("房间 \(room.roomNo) · \(room.status)")
+                }
+            }
+
+            if let message = viewModel.errorMessage {
+                Section { Text(message).foregroundStyle(.red) }
+            }
+        }
+        .navigationTitle("内容与直播")
+        .task { await viewModel.loadCapabilities() }
+        .onChange(of: coverItem) { _, item in
+            Task { coverData = try? await item?.loadTransferable(type: Data.self) }
+        }
+        .onChange(of: videoItem) { _, item in
+            Task { videoData = try? await item?.loadTransferable(type: Data.self) }
         }
     }
 }

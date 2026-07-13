@@ -119,6 +119,16 @@ final class OpenIMManager: NSObject {
         )
     }
 
+    func sendGroupMessage(text: String, groupID: String, completion: @escaping (Bool) -> Void) {
+        let message = OIMMessageInfo.createTextMessage(text)
+        OIMManager.manager.sendMessage(message, recvID: nil, groupID: groupID,
+            offlinePushInfo: nil,
+            onSuccess: { _ in DispatchQueue.main.async { completion(true) } },
+            onProgress: { _ in },
+            onFailure: { _, _ in DispatchQueue.main.async { completion(false) } }
+        )
+    }
+
     /// 拉取历史消息
     func getHistoryMessages(conversationID: String, startMsg: OpenIMMessage?,
                             count: Int, completion: @escaping ([OpenIMMessage]) -> Void) {

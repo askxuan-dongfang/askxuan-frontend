@@ -8,11 +8,13 @@
 //
 
 import SwiftUI
+import AVKit
 
 struct ChatView: View {
     @StateObject private var viewModel = ChatViewModel()
     @State private var selectedTab: Int = 0
     @State private var searchText: String = ""
+    @State private var liveRooms: [LiveRoom] = []
 
     private let tabTitles = ["我的收藏", "我的私聊", "大师广场"]
 
@@ -31,12 +33,10 @@ struct ChatView: View {
         ("M004", "智海法师", "master-avatar-zhihai", "12/15", "视频通话 25分18秒", true)
     ]
 
-    private let videoFeed: [(masterId: String, master: String, avatar: String, desc: String, likes: String, comments: String)] = [
-        ("M001", "智海法师", "master-avatar-zhihai", "禅修入门：观呼吸法门 | 三分钟学会止观", "2.3万", "186"),
-        ("M003", "释延心法师", "master-avatar-shimingyuan", "少林禅武合一演示", "5.1万", "892"),
-        ("M002", "清风道长", "master-avatar-qingfeng", "道家内丹术基础讲解", "9686", "156"),
-        ("M004", "扎西多吉活佛", "master-avatar-zhaxiduoji", "藏密灌顶加持法会纪实", "3.4万", "445"),
-        ("M005", "慧明法师", "master-avatar-miaoyin", "净土念佛法门开示", "1.2万", "267")
+    private let videoFeed: [(mediaId: Int64, masterId: String, master: String, avatar: String, desc: String, likes: String, comments: String)] = [
+        (1, "M001", "智海法师", "master-avatar-zhihai", "禅修入门：观呼吸法门 | 三分钟学会止观", "2.3万", "186"),
+        (2, "M003", "释延心法师", "master-avatar-shimingyuan", "少林禅武合一演示", "5.1万", "892"),
+        (3, "M002", "清风道长", "master-avatar-qingfeng", "道家内丹术基础讲解", "9686", "156")
     ]
 
     var body: some View {
@@ -52,6 +52,9 @@ struct ChatView: View {
                 await viewModel.loadConversations()
             }
             await viewModel.loadUnreadCount()
+            if let response: LiveRoomListResponse = try? await APIClient.shared.request(.liveRooms(masterId: nil, limit: 10)) {
+                liveRooms = response.list
+            }
         }
         .refreshable {
             if selectedTab == 1 {
@@ -352,6 +355,19 @@ struct ChatView: View {
     private var plazaPanel: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
+                ForEach(liveRooms) { room in
+                    NavigationLink { LiveViewerView(room: room) } label: {
+                        HStack {
+                            Image(systemName: "dot.radiowaves.left.and.right")
+                                .foregroundStyle(Color.stateError)
+                            Text(room.title).foregroundStyle(Color.textPrimary)
+                            Spacer()
+                            Text("直播中").font(.caption).foregroundStyle(Color.stateError)
+                        }
+                        .padding(AppSpacing.lg)
+                    }
+                    .buttonStyle(.plain)
+                }
                 ForEach(Array(videoFeed.enumerated()), id: \.offset) { _, video in
                     videoCard(video)
                 }
@@ -360,9 +376,9 @@ struct ChatView: View {
         }
     }
 
-    private func videoCard(_ video: (masterId: String, master: String, avatar: String, desc: String, likes: String, comments: String)) -> some View {
+    private func videoCard(_ video: (mediaId: Int64, masterId: String, master: String, avatar: String, desc: String, likes: String, comments: String)) -> some View {
         NavigationLink {
-            MasterProfileView(masterId: video.masterId)
+            MediaPlaybackView(mediaId: video.mediaId, title: video.desc)
         } label: {
             ZStack(alignment: .bottom) {
                 // 视频缩略图占位
@@ -436,6 +452,71 @@ struct ChatView: View {
                 .font(.system(size: 12))
                 .foregroundStyle(Color.textSecondary)
         }
+    }
+}
+
+private struct MediaPlaybackView: View {
+    let mediaId: Int64
+    let title: String
+    @State private var media: MediaAsset?
+    @State private var message: String?
+
+    var body: some View {
+        VStack(spacing: AppSpacing.lg) {
+            if let media, media.status == "ready", let url = URL(string: media.playbackUrl), !media.playbackUrl.isEmpty {
+                VideoPlayer(player: AVPlayer(url: url))
+                    .aspectRatio(9 / 16, contentMode: .fit)
+                Text(title).font(.headline).frame(maxWidth: .infinity, alignment: .leading)
+                Text("审核状态：\(media.auditStatus)").font(.caption).foregroundStyle(.secondary)
+            } else if let message {
+                ContentUnavailableView("视频暂不可用", systemImage: "video.slash", description: Text(message))
+            } else {
+                ProgressView()
+            }
+        }
+        .padding()
+        .navigationTitle("短视频")
+        .task {
+            do {
+                media = try await APIClient.shared.request(.mediaDetail(mediaId))
+            } catch {
+                message = error.localizedDescription
+            }
+        }
+    }
+}
+
+private struct LiveViewerView: View {
+    let room: LiveRoom
+    @State private var chatText = ""
+    @State private var sendState = ""
+
+    var body: some View {
+        VStack(spacing: 12) {
+            if let url = URL(string: room.watchUrl), !room.watchUrl.isEmpty {
+                VideoPlayer(player: AVPlayer(url: url))
+                    .aspectRatio(9 / 16, contentMode: .fit)
+            } else {
+                ContentUnavailableView("直播流暂不可用", systemImage: "video.slash")
+            }
+            HStack {
+                TextField("发送群聊消息", text: $chatText)
+                    .textFieldStyle(.roundedBorder)
+                Button {
+                    let text = chatText
+                    OpenIMManager.shared.sendGroupMessage(text: text, groupID: room.openimGroupId) { success in
+                        sendState = success ? "已发送" : "发送失败"
+                        if success { chatText = "" }
+                    }
+                } label: {
+                    Image(systemName: "paperplane.fill")
+                }
+                .disabled(chatText.isEmpty || room.openimGroupId.isEmpty)
+            }
+            if !sendState.isEmpty { Text(sendState).font(.caption).foregroundStyle(.secondary) }
+        }
+        .padding()
+        .navigationTitle(room.title)
     }
 }
 

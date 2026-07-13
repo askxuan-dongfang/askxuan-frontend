@@ -76,6 +76,17 @@ final class APIClient {
         }
     }
 
+    func upload(_ data: Data, to url: URL, headers: [String: String]) async throws {
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        headers.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
+        let (_, response) = try await session.upload(for: request, from: data)
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200..<300).contains(httpResponse.statusCode) else {
+            throw APIError.networkError(URLError(.cannotWriteToFile))
+        }
+    }
+
     private func perform<T: Decodable>(request: URLRequest) async throws -> T {
         let data: Data
         let response: URLResponse

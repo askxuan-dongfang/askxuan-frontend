@@ -1,7 +1,7 @@
 // 路由定义 - 所有 API 路由统一挂载于此
 // 统一响应格式：{ code: 0, message: "success", data: ... }
 
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, raw } from 'express';
 import { temples } from '../data/temples.js';
 import { masters } from '../data/masters.js';
 import { services, blessingServices } from '../data/services.js';
@@ -188,6 +188,25 @@ type MockPayment = {
 
 const mockDiyOrders: MockDiyOrder[] = [];
 const mockPayments: MockPayment[] = [];
+
+type MockMedia = {
+  id: number;
+  mediaNo: string;
+  ownerId: string;
+  mediaType: string;
+  status: string;
+  auditStatus: string;
+  playbackUrl: string;
+  coverUrl: string;
+  coverMediaId: number;
+  duration: number;
+  fileSize: number;
+  errorMessage: string;
+};
+
+const mockMedia: MockMedia[] = [
+  { id: 1, mediaNo: 'MED20260713001', ownerId: 'U001', mediaType: 'video', status: 'ready', auditStatus: 'approved', playbackUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', coverUrl: '', coverMediaId: 0, duration: 12, fileSize: 1024, errorMessage: '' }
+];
 
 // 统一成功响应
 function success<T>(res: Response, data: T) {
@@ -631,6 +650,55 @@ router.get('/messages', (_req: Request, res: Response) => {
     }
   ];
   success(res, messages);
+});
+
+// ========== 媒体与直播 ==========
+router.post('/media/uploads/credentials', (req: Request, res: Response) => {
+  const { fileName, mediaType, contentType } = req.body ?? {};
+  if (!fileName || !['image', 'video', 'audio'].includes(mediaType) || !contentType) {
+    return fail(res, 40001, '媒体参数错误');
+  }
+  const id = Math.max(0, ...mockMedia.map((item) => item.id)) + 1;
+  mockMedia.push({ id, mediaNo: `MED-MOCK-${id}`, ownerId: 'U001', mediaType, status: 'uploading', auditStatus: 'pending', playbackUrl: '', coverUrl: '', coverMediaId: 0, duration: 0, fileSize: 0, errorMessage: '' });
+  success(res, {
+    mediaId: id,
+    uploadUrl: `http://localhost:3001/api/v1/media/mock-upload/${id}`,
+    objectName: `${mediaType}/mock-${id}`,
+    expiresIn: 900,
+    uploadHeaders: { 'Content-Type': contentType }
+  });
+});
+
+router.put('/media/mock-upload/:id', raw({ type: '*/*', limit: '100mb' }), (req: Request, res: Response) => {
+  const media = mockMedia.find((item) => item.id === Number(req.params.id));
+  if (!media) return fail(res, 40420, '媒体不存在');
+  media.fileSize = Buffer.isBuffer(req.body) ? req.body.length : 0;
+  res.status(200).send();
+});
+
+router.post('/media/:id/complete', (req: Request, res: Response) => {
+  const media = mockMedia.find((item) => item.id === Number(req.params.id));
+  if (!media) return fail(res, 40420, '媒体不存在');
+  media.status = 'ready';
+  media.coverMediaId = Number(req.body?.coverMediaId || 0);
+  media.playbackUrl = media.mediaType === 'video' ? 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' : '/assets/temple-card-lingyinsi.jpg';
+  success(res, media);
+});
+
+router.get('/media/:id', (req: Request, res: Response) => {
+  const media = mockMedia.find((item) => item.id === Number(req.params.id));
+  if (!media) return fail(res, 40420, '媒体不存在');
+  success(res, media);
+});
+
+router.get('/live/capabilities', (_req: Request, res: Response) => {
+  success(res, { enabled: false, provider: 'disabled', configured: false, canStart: false });
+});
+
+router.get('/live/rooms', (_req: Request, res: Response) => success(res, { list: [] }));
+
+router.post('/live/rooms/:id/start', (_req: Request, res: Response) => {
+  fail(res, 50320, '直播能力未配置');
 });
 
 export default router;
