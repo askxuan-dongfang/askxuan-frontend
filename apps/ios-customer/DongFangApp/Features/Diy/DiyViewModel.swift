@@ -17,6 +17,7 @@ final class DiyViewModel: ObservableObject {
     @Published var orders: [DiyOrder] = []
     @Published var currentDesign: DiyDesign? = nil
     @Published var currentOrder: DiyOrder? = nil
+    @Published var currentPayment: PaymentRecord? = nil
 
     // MARK: - 编辑器状态
     @Published var selectedCategory: String = "main_bead"
@@ -261,6 +262,38 @@ final class DiyViewModel: ObservableObject {
         }
     }
 
+    func createPayment(for order: DiyOrder, channel: String) async -> PaymentCreateResult? {
+        isSubmitting = true
+        errorMessage = nil
+        defer { isSubmitting = false }
+        do {
+            let result: PaymentCreateResult = try await apiClient.request(
+                .paymentCreate(PaymentCreateRequest(
+                    orderType: "diy_order",
+                    orderNo: order.orderNo,
+                    amount: order.totalFee,
+					channel: channel,
+					userId: authStore.userId
+				))
+			)
+			return result
+        } catch {
+            errorMessage = error.localizedDescription
+            return nil
+        }
+    }
+
+    func loadPayment(id: Int64) async -> PaymentRecord? {
+        do {
+            let payment: PaymentRecord = try await apiClient.request(.paymentById(id))
+            currentPayment = payment
+            return payment
+        } catch {
+            errorMessage = error.localizedDescription
+            return nil
+        }
+    }
+
     // MARK: - 私有辅助
     private func encodeDesignData() -> String {
         let items = cartItems.map { item -> [String: Any] in
@@ -299,7 +332,10 @@ extension DiyOrder {
     static let mockOrder = DiyOrder(
         id: 1001, orderNo: "D20260701001", userId: "U001",
         designId: 1, materialFee: 388, blessFee: 100, totalFee: 488,
-        status: "pending", addressId: 1, items: nil, blessingTask: nil,
+        status: "pending_review", paymentStatus: "pending", addressId: 1, source: "design_square",
+        creatorId: "U002", creatorShareRate: 0, originalMaterialFee: 388,
+        priceChanged: false, designSnapshot: nil, pricingSnapshot: nil,
+        items: nil, blessingTask: nil,
         createTime: "2026-07-01"
     )
 }

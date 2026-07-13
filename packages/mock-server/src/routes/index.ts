@@ -151,6 +151,44 @@ const diyMaterials = materials.map((m) => ({
   status: 'on_shelf'
 }));
 
+type MockDiyOrder = {
+  id: number;
+  orderNo: string;
+  userId: string;
+  designId: number;
+  materialFee: number;
+  blessFee: number;
+  totalFee: number;
+  status: string;
+  paymentStatus: string;
+  addressId: number;
+  source: string;
+  creatorId: string;
+  creatorShareRate: number;
+  originalMaterialFee: number;
+  priceChanged: boolean;
+  designSnapshot: string;
+  pricingSnapshot: string;
+  items: Array<Record<string, unknown>>;
+  blessingTask: null;
+  createTime: string;
+};
+
+type MockPayment = {
+  id: number;
+  paymentNo: string;
+  orderType: string;
+  orderNo: string;
+  amount: number;
+  channel: string;
+  status: string;
+  tradeNo: string;
+  createTime: string;
+};
+
+const mockDiyOrders: MockDiyOrder[] = [];
+const mockPayments: MockPayment[] = [];
+
 // 统一成功响应
 function success<T>(res: Response, data: T) {
   return res.json({ code: 0, message: 'success', data });
@@ -277,19 +315,113 @@ router.get('/diy/designs/:id', (req: Request, res: Response) => {
 router.post('/diy/designs/:id/order', (req: Request, res: Response) => {
   const design = diyDesigns.find((d) => String(d.id) === req.params.id);
   if (!design) return fail(res, 404, '设计不存在');
-  success(res, {
-    id: Date.now(),
-    orderNo: `DIY${Date.now()}`,
+  if (design.status !== 'public' && design.status !== 'approved') return fail(res, 40907, '作品尚未上架，无法下单');
+  let snapshotItems: Array<{ materialId: number; unitPrice: number; quantity: number; spec?: string }>;
+  try {
+    snapshotItems = JSON.parse(design.designData);
+  } catch {
+    return fail(res, 40001, '设计材料快照无效');
+  }
+  const pricedItems: Array<Record<string, unknown>> = [];
+  const requestedStock = new Map<number, number>();
+  let originalMaterialFee = 0;
+  let materialFee = 0;
+  for (const item of snapshotItems) {
+    const current = diyMaterials.find((material) => material.id === item.materialId);
+    if (!current || current.status !== 'on_shelf') return fail(res, 40907, '材料已下架或规格不可用，请重新选择');
+    const requested = (requestedStock.get(current.id) ?? 0) + item.quantity;
+    if (item.quantity <= 0 || current.stock < requested) return fail(res, 40905, '库存不足');
+    requestedStock.set(current.id, requested);
+    originalMaterialFee += item.unitPrice * item.quantity;
+    materialFee += current.unitPrice * item.quantity;
+    pricedItems.push({
+      id: Date.now() + pricedItems.length + 1,
+      orderId: 0,
+      materialId: current.id,
+      skuId: 0,
+      materialName: current.name,
+      spec: item.spec || current.spec,
+      unitPrice: current.unitPrice,
+      quantity: item.quantity,
+      subtype: current.category
+    });
+  }
+  requestedStock.forEach((quantity, materialId) => {
+    const material = diyMaterials.find((item) => item.id === materialId);
+    if (material) material.stock -= quantity;
+  });
+  const now = Date.now();
+  const blessFee = req.body?.blessServiceCode ? 100 : 0;
+  const order: MockDiyOrder = {
+    id: now,
+    orderNo: `DIY${now}`,
     userId: req.body?.userId ?? 'U001',
     designId: design.id,
-    materialFee: design.totalPrice,
-    blessFee: req.body?.blessServiceCode ? 100 : 0,
-    totalFee: design.totalPrice + (req.body?.blessServiceCode ? 100 : 0),
+    materialFee,
+    blessFee,
+    totalFee: materialFee + blessFee,
     status: 'pending_review',
+    paymentStatus: 'pending',
     addressId: req.body?.addressId ?? 1,
-    items: JSON.parse(design.designData),
+    source: 'design_square',
+    creatorId: design.userId,
+    creatorShareRate: 0,
+    originalMaterialFee,
+    priceChanged: Math.abs(originalMaterialFee - materialFee) >= 0.005,
+    designSnapshot: JSON.stringify(design),
+    pricingSnapshot: JSON.stringify({ originalMaterialFee, materialFee, blessFee, totalFee: materialFee + blessFee, items: pricedItems }),
+    items: pricedItems,
+    blessingTask: null,
     createTime: new Date().toISOString().replace('T', ' ').slice(0, 19)
-  });
+  };
+  order.items.forEach((item) => { item.orderId = order.id; });
+  mockDiyOrders.unshift(order);
+  success(res, order);
+});
+
+router.get('/diy/orders/:id', (req: Request, res: Response) => {
+  const order = mockDiyOrders.find((item) => String(item.id) === req.params.id);
+  if (!order) return fail(res, 404, 'DIY订单不存在');
+  success(res, order);
+});
+
+router.get('/diy/orders', (req: Request, res: Response) => {
+  const userId = typeof req.query.userId === 'string' ? req.query.userId : '';
+  success(res, page(mockDiyOrders.filter((order) => !userId || order.userId === userId), req));
+});
+
+router.post('/payments', (req: Request, res: Response) => {
+  const order = mockDiyOrders.find((item) => item.orderNo === req.body?.orderNo);
+  if (!order) return fail(res, 404, '订单不存在');
+  if (order.userId !== req.body?.userId) return fail(res, 40301, '无权支付该DIY订单');
+  if (order.status !== 'pending_review' || order.paymentStatus === 'success') return fail(res, 40906, 'DIY订单当前状态不可支付');
+  if (Number(req.body?.amount) !== order.totalFee) return fail(res, 40906, '支付金额与订单不一致');
+  const now = Date.now();
+  const payment: MockPayment = {
+    id: now,
+    paymentNo: `PAY${now}`,
+    orderType: req.body?.orderType ?? 'diy_order',
+    orderNo: order.orderNo,
+    amount: order.totalFee,
+    channel: req.body?.channel ?? 'wechat',
+    status: 'pending',
+    tradeNo: '',
+    createTime: new Date().toISOString().replace('T', ' ').slice(0, 19)
+  };
+  mockPayments.unshift(payment);
+  success(res, { id: payment.id, paymentNo: payment.paymentNo, payUrl: `https://mock-pay.example.com/pay/${payment.paymentNo}` });
+});
+
+router.get('/payments/:id', (req: Request, res: Response) => {
+  const payment = mockPayments.find((item) => String(item.id) === req.params.id);
+  if (!payment) return fail(res, 404, '支付单不存在');
+  if (payment.status === 'pending') {
+    payment.status = 'success';
+    payment.tradeNo = `MOCK${Date.now()}`;
+    const order = mockDiyOrders.find((item) => item.orderNo === payment.orderNo);
+    if (order) order.paymentStatus = 'success';
+  }
+  success(res, payment);
 });
 
 router.get('/diy/materials', (req: Request, res: Response) => {

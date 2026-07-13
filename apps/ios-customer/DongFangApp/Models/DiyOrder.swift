@@ -35,23 +35,36 @@ struct DiyOrder: Codable, Identifiable, Hashable {
     let blessFee: Double
     let totalFee: Double
     let status: String
+    let paymentStatus: String?
     let addressId: Int64?
+    let source: String?
+    let creatorId: String?
+    let creatorShareRate: Double?
+    let originalMaterialFee: Double?
+    let priceChanged: Bool?
+    let designSnapshot: String?
+    let pricingSnapshot: String?
     var items: [DiyOrderItem]?
     var blessingTask: BlessingTask?
     let createTime: String?
 
     enum CodingKeys: String, CodingKey {
         case id, orderNo, userId, designId, materialFee, blessFee
-        case totalFee, status, addressId, items, blessingTask, createTime
+        case totalFee, status, paymentStatus, addressId, source, creatorId, creatorShareRate
+        case originalMaterialFee, priceChanged, designSnapshot, pricingSnapshot
+        case items, blessingTask, createTime
     }
 
     var totalFeeText: String { "¥\(Int(totalFee))" }
     var statusDisplayText: String {
+        if status == "pending_review" {
+            return paymentStatus == "success" ? "待审核" : "待付款"
+        }
         switch status {
-        case "pending":        return "待付款"
+        case "pending": return "待付款"
         case "paid":           return "已付款"
-        case "making":         return "制作中"
-        case "blessing":       return "加持中"
+        case "making", "in_making": return "制作中"
+        case "blessing", "awaiting_blessing", "blessing_in_progress": return "加持中"
         case "shipped":        return "已发货"
         case "completed":      return "已完成"
         case "cancelled":      return "已取消"
@@ -65,6 +78,7 @@ struct DiyOrderItem: Codable, Identifiable, Hashable {
     let id: Int64?
     let orderId: Int64?
     let materialId: Int64
+    let skuId: Int64?
     let materialName: String
     let spec: String
     let unitPrice: Double
@@ -72,7 +86,7 @@ struct DiyOrderItem: Codable, Identifiable, Hashable {
     let subtype: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, orderId, materialId, materialName, spec
+        case id, orderId, materialId, skuId, materialName, spec
         case unitPrice, quantity, subtype
     }
 
@@ -81,6 +95,7 @@ struct DiyOrderItem: Codable, Identifiable, Hashable {
         self.id = nil
         self.orderId = nil
         self.materialId = materialId
+        self.skuId = nil
         self.materialName = materialName
         self.spec = spec
         self.unitPrice = unitPrice
@@ -148,6 +163,32 @@ struct DiyOrderCreateRequest: Codable {
     let items: [DiyOrderItem]
     let blessServiceCode: String?
     let addressId: Int64
+}
+
+struct PaymentCreateRequest: Codable {
+    let orderType: String
+    let orderNo: String
+    let amount: Double
+    let channel: String
+    let userId: String
+}
+
+struct PaymentCreateResult: Codable {
+    let id: Int64
+    let paymentNo: String
+    let payUrl: String?
+}
+
+struct PaymentRecord: Codable, Identifiable {
+    let id: Int64
+    let paymentNo: String
+    let orderType: String
+    let orderNo: String
+    let amount: Double
+    let channel: String
+    let status: String
+    let tradeNo: String?
+    let createTime: String
 }
 
 // MARK: - Mock 数据

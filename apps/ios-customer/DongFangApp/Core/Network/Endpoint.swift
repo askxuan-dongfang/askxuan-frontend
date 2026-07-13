@@ -48,6 +48,10 @@ enum Endpoint {
     case diyOrders(userId: String, status: String?, page: Int, size: Int)
     case diyOrderById(Int64)
 
+    // MARK: - 支付
+    case paymentCreate(PaymentCreateRequest)
+    case paymentById(Int64)
+
     // MARK: - AI 问事
     case aiSessions(userId: String, page: Int, size: Int)
     case aiSessionCreate(AiSessionCreateRequest)
@@ -122,6 +126,8 @@ enum Endpoint {
         case .diyOrderCreateFromDesign(let id, _): return "diy/designs/\(id)/order"
         case .diyOrders:                return "diy/orders"
         case .diyOrderById(let id):     return "diy/orders/\(id)"
+        case .paymentCreate:            return "payments"
+        case .paymentById(let id):      return "payments/\(id)"
         // AI 问事
         case .aiSessions:               return "ai/sessions"
         case .aiSessionCreate:          return "ai/sessions"
@@ -170,7 +176,7 @@ enum Endpoint {
         case .temples, .templesByBelief, .templeById, .templeServices, .belief,
              .masters, .mastersByBelief, .masterById,
              .bookings, .bookingById,
-             .diyDesigns, .diyDesignById, .diyMaterials, .diyOrders, .diyOrderById,
+             .diyDesigns, .diyDesignById, .diyMaterials, .diyOrders, .diyOrderById, .paymentById,
              .aiSessions, .aiMessages,
              .communityFeed, .communityPostById, .communityComments,
              .intentionHub,
@@ -178,7 +184,7 @@ enum Endpoint {
              .messages, .unreadCount, .announcements,
              .userProfile, .addressList:
             return .GET
-        case .createBooking, .diyDesignSave, .diyOrderCreate, .diyOrderCreateFromDesign,
+        case .createBooking, .diyDesignSave, .diyOrderCreate, .diyOrderCreateFromDesign, .paymentCreate,
              .aiSessionCreate, .aiSendMessage, .aiRetryMessage, .communityPostLike,
              .authLogin, .authRegister, .authRefresh, .authLogout,
              .addressCreate, .sendMessage, .registerDeviceToken:
@@ -284,6 +290,7 @@ enum Endpoint {
         case .diyDesignSave(let req):          return AnyEncodable(req)
         case .diyOrderCreate(let req):         return AnyEncodable(req)
         case .diyOrderCreateFromDesign(_, let req): return AnyEncodable(req)
+        case .paymentCreate(let req):          return AnyEncodable(req)
         case .aiSessionCreate(let req):        return AnyEncodable(req)
         case .aiSendMessage(let req):          return AnyEncodable(req)
         case .aiRetryMessage(_, _, let userId): return AnyEncodable(["userId": userId])
