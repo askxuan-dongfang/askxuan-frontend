@@ -16,6 +16,12 @@ const formRef = ref<FormInstance>()
 const loading = ref(false)
 const saving = ref(false)
 const categories = ref<ProductCategory[]>([])
+const intentOptions = [
+  { label: '求平安', value: 'peace' }, { label: '求财运', value: 'wealth' },
+  { label: '求姻缘', value: 'love' }, { label: '求事业', value: 'career' },
+  { label: '求学业', value: 'study' }, { label: '化太岁', value: 'taisui' },
+  { label: '定手串', value: 'diy' }, { label: '做法事', value: 'rite' }
+]
 
 const isEdit = computed(() => !!route.params.id)
 const productId = computed(() => Number(route.params.id) || 0)
@@ -29,6 +35,7 @@ const form = reactive<ProductSaveParams>({
   marketPrice: 0,
   stock: 0,
   tags: '',
+  intentTags: [],
   freightTemplateId: 0
 })
 
@@ -63,6 +70,7 @@ async function loadDetail() {
       marketPrice: detail.marketPrice,
       stock: detail.stock,
       tags: detail.tags,
+      intentTags: detail.intentTags || [],
       freightTemplateId: detail.freightTemplateId
     })
   } finally {
@@ -147,6 +155,12 @@ onMounted(() => {
 
         <el-form-item label="标签">
           <el-input v-model="form.tags" placeholder="多个标签用逗号分隔，如：祈福,开光,禅意" style="width: 480px" />
+        </el-form-item>
+
+        <el-form-item label="诉求标签">
+          <el-select v-model="form.intentTags" multiple placeholder="选择要进入的诉求聚合" style="width: 480px">
+            <el-option v-for="item in intentOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
         </el-form-item>
 
         <el-form-item label="运费模板">

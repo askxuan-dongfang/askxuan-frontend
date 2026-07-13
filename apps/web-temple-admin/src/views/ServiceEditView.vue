@@ -21,7 +21,8 @@ const form = reactive({
   serviceCode: '',
   serviceName: '',
   price: 0,
-  timeSlots: [] as string[]
+  timeSlots: [] as string[],
+  intentTags: [] as string[]
 })
 
 const rules: FormRules = {
@@ -31,6 +32,12 @@ const rules: FormRules = {
 }
 
 const slotPresets = ['06:00-07:00', '08:00-09:00', '09:00-10:00', '10:00-11:00', '14:00-15:00', '15:00-16:00']
+const intentOptions = [
+  { label: '求平安', value: 'peace' }, { label: '求财运', value: 'wealth' },
+  { label: '求姻缘', value: 'love' }, { label: '求事业', value: 'career' },
+  { label: '求学业', value: 'study' }, { label: '化太岁', value: 'taisui' },
+  { label: '定手串', value: 'diy' }, { label: '做法事', value: 'rite' }
+]
 
 async function loadService() {
   if (!serviceId.value) return
@@ -47,6 +54,7 @@ async function loadService() {
     form.serviceName = s.serviceName
     form.price = s.price
     form.timeSlots = s.timeSlots || []
+    form.intentTags = s.intentTags || []
   } finally {
     loading.value = false
   }
@@ -62,7 +70,8 @@ async function handleSubmit() {
         await updateService(Number(serviceId.value), {
           serviceName: form.serviceName,
           price: form.price,
-          timeSlots: form.timeSlots
+          timeSlots: form.timeSlots,
+          intentTags: form.intentTags
         })
         ElMessage.success('服务已更新')
       } else {
@@ -70,7 +79,8 @@ async function handleSubmit() {
           serviceCode: form.serviceCode,
           serviceName: form.serviceName,
           price: form.price,
-          timeSlots: form.timeSlots
+          timeSlots: form.timeSlots,
+          intentTags: form.intentTags
         })
         ElMessage.success('服务已创建')
       }
@@ -113,6 +123,11 @@ onMounted(loadService)
             style="width: 100%"
           >
             <el-option v-for="s in slotPresets" :key="s" :label="s" :value="s" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="诉求标签">
+          <el-select v-model="form.intentTags" multiple placeholder="选择要进入的诉求聚合" style="width: 100%">
+            <el-option v-for="item in intentOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
       </el-form>

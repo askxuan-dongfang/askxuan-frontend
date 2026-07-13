@@ -14,13 +14,14 @@ export function createService(data: {
   serviceName: string
   price: number
   timeSlots: string[]
+  intentTags?: string[]
 }): Promise<{ id: number }> {
   return client.post<{ id: number }>('/admin/temples/services', data)
 }
 
 export function updateService(
   id: number,
-  data: { serviceName?: string; price?: number; timeSlots?: string[] }
+  data: { serviceName?: string; price?: number; timeSlots?: string[]; intentTags?: string[] }
 ): Promise<TempleService> {
   return client.put<TempleService>(`/admin/temples/services/${id}`, data)
 }

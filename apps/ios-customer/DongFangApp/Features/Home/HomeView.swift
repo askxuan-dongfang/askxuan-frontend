@@ -101,16 +101,7 @@ struct HomeView: View {
             case .masterBelief(let code):
                 MasterListView(initialBeliefCode: code)
             case .intention(let entry):
-                if authStore.isLoggedIn {
-                    serviceDestination(for: entry.service)
-                } else {
-                    LoginRequiredView(
-                        icon: entry.service.iconName,
-                        title: "登录后使用\(entry.title)",
-                        subtitle: "从意图入口进入对应服务",
-                        isPresented: .constant(false)
-                    )
-                }
+                IntentionHubView(entry: entry)
             }
         }
     }
@@ -561,6 +552,127 @@ struct HomeView: View {
         case .taisui:       ServiceTaisuiView()
         case .vow:          ServiceVowView()
         case .diy:          DiyBraceletView()
+        }
+    }
+}
+
+@MainActor
+private final class IntentionHubViewModel: ObservableObject {
+    @Published var tags: [IntentionTag] = []
+    @Published var resources: [IntentionResource] = []
+    @Published var selectedCode: String
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+
+    init(code: String) { selectedCode = code }
+
+    func load() async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+        do {
+            let response: IntentionHubResponse = try await APIClient.shared.request(.intentionHub(code: selectedCode, page: 1, size: 30))
+            tags = response.tags
+            resources = response.list
+        } catch {
+            errorMessage = error.localizedDescription
+            resources = []
+        }
+    }
+}
+
+private struct IntentionHubView: View {
+    let entry: IntentionEntry
+    @StateObject private var viewModel: IntentionHubViewModel
+
+    init(entry: IntentionEntry) {
+        self.entry = entry
+        _viewModel = StateObject(wrappedValue: IntentionHubViewModel(code: entry.id))
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(viewModel.tags) { tag in
+                            Button {
+                                viewModel.selectedCode = tag.code
+                                Task { await viewModel.load() }
+                            } label: {
+                                Label(tag.name, systemImage: tag.icon)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(viewModel.selectedCode == tag.code ? Color.white : Color.textPrimary)
+                                    .padding(.horizontal, 12).frame(height: 36)
+                                    .background(viewModel.selectedCode == tag.code ? Color.brandDefault : Color.bgSecondary)
+                                    .clipShape(Capsule())
+                            }
+                        }
+                    }.padding(.horizontal, 20)
+                }
+
+                if viewModel.isLoading && viewModel.resources.isEmpty {
+                    ProgressView().frame(maxWidth: .infinity).padding(.top, 60)
+                } else if let message = viewModel.errorMessage {
+                    ContentUnavailableView("暂时无法读取", systemImage: "wifi.exclamationmark", description: Text(message))
+                    Button("重试") { Task { await viewModel.load() } }
+                        .buttonStyle(.borderedProminent).frame(maxWidth: .infinity)
+                } else if viewModel.resources.isEmpty {
+                    ContentUnavailableView("暂无匹配内容", systemImage: "square.grid.2x2")
+                } else {
+                    LazyVStack(spacing: 10) {
+                        ForEach(viewModel.resources) { item in
+                            NavigationLink { destination(for: item) } label: { resourceRow(item) }
+                                .buttonStyle(.plain)
+                        }
+                    }.padding(.horizontal, 20)
+                }
+            }.padding(.vertical, 12)
+        }
+        .navigationTitle(entry.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await viewModel.load() }
+    }
+
+    private func resourceRow(_ item: IntentionResource) -> some View {
+        HStack(spacing: 12) {
+            RemoteImage(urlString: item.image, placeholderIcon: item.resourceType == "product" ? "shippingbox" : "building.columns")
+                .frame(width: 86, height: 86).clipShape(RoundedRectangle(cornerRadius: 6))
+            VStack(alignment: .leading, spacing: 6) {
+                Text(item.resourceType == "product" ? "商品" : "寺院服务")
+                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(Color.accentDefault)
+                Text(item.title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.textPrimary).lineLimit(2)
+                Text(item.subtitle).font(.system(size: 12)).foregroundStyle(Color.textSecondary).lineLimit(1)
+                Text("¥\(Int(item.price))").font(.system(size: 15, weight: .bold)).foregroundStyle(Color.brandDefault)
+            }
+            Spacer()
+            Image(systemName: "chevron.right").font(.system(size: 12)).foregroundStyle(Color.textTertiary)
+        }
+        .padding(10).background(Color.bgSecondary)
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.borderDefault, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    @ViewBuilder
+    private func destination(for item: IntentionResource) -> some View {
+        if item.resourceType == "product" {
+            ShopView()
+        } else {
+            serviceView(for: item.serviceCode)
+        }
+    }
+
+    @ViewBuilder
+    private func serviceView(for code: String?) -> some View {
+        switch code {
+        case "S002", "S008": ServiceLampView()
+        case "S003", "S009": ServiceIncenseView()
+        case "S004", "S013": ServiceVowView()
+        case "S005": ServiceRiteView()
+        case "S006", "S010", "S011": ServiceConsecrationView()
+        case "S007": ServiceTaisuiView()
+        case "DIY": DiyBraceletView()
+        default: ServiceBlessingView()
         }
     }
 }

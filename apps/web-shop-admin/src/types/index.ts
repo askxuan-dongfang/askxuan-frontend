@@ -70,6 +70,7 @@ export interface Product {
   marketPrice: number
   stock: number
   tags: string
+  intentTags: string[]
   freightTemplateId: number
   skus?: ProductSku[]
   images?: ProductImage[]

@@ -169,6 +169,31 @@ router.get('/masters/:id', (req: Request, res: Response) => {
 
 // ========== 服务 ==========
 // GET /services 返回用户端服务 + 加持服务
+const intentTags = [
+  { code: 'peace', name: '求平安', description: '祈福、护佑与健康', icon: 'shield.lefthalf.filled', sort: 10 },
+  { code: 'wealth', name: '求财运', description: '财运与供养', icon: 'banknote.fill', sort: 20 },
+  { code: 'love', name: '求姻缘', description: '姻缘与家庭', icon: 'heart.fill', sort: 30 },
+  { code: 'career', name: '求事业', description: '事业与开光', icon: 'briefcase.fill', sort: 40 },
+  { code: 'study', name: '求学业', description: '学业与智慧', icon: 'book.fill', sort: 50 },
+  { code: 'taisui', name: '化太岁', description: '本命年与化太岁', icon: 'circle.hexagongrid.fill', sort: 60 },
+  { code: 'diy', name: '定手串', description: '手串材料与定制', icon: 'circle.grid.cross.fill', sort: 70 },
+  { code: 'rite', name: '做法事', description: '超度等法事', icon: 'hands.sparkles.fill', sort: 80 }
+];
+const intentionResources = [
+  { resourceType: 'product', sourceId: '1', title: '小叶紫檀108颗佛珠', subtitle: '精选小叶紫檀，手工打磨', price: 388, image: '/assets/product-xiaoyezitan.jpg', orderTarget: 'product:1', intentCodes: ['peace', 'diy'] },
+  { resourceType: 'product', sourceId: '2', title: '星月菩提手串', subtitle: '顺白高密星月菩提', price: 198, image: '/assets/product-xingyueputi.jpg', orderTarget: 'product:2', intentCodes: ['diy'] },
+  { resourceType: 'service', sourceId: '1', title: '灵隐寺 · 祈福', subtitle: '寺院祈福服务', price: 200, image: '/assets/temple-card-lingyinsi.jpg', orderTarget: 'service:T001:S001', templeCode: 'T001', serviceCode: 'S001', intentCodes: ['peace'] },
+  { resourceType: 'service', sourceId: '2', title: '白云观 · 化太岁', subtitle: '道教科仪服务', price: 300, image: '/assets/temple-card-baimasi.jpg', orderTarget: 'service:T002:S007', templeCode: 'T002', serviceCode: 'S007', intentCodes: ['taisui'] },
+  { resourceType: 'service', sourceId: '3', title: '少林寺 · 超度', subtitle: '寺院法事服务', price: 500, image: '/assets/temple-card-shaolinsi.jpg', orderTarget: 'service:T003:S005', templeCode: 'T003', serviceCode: 'S005', intentCodes: ['rite'] }
+];
+
+router.get('/intentions', (req: Request, res: Response) => {
+  const code = typeof req.query.code === 'string' ? req.query.code : '';
+  const filtered = intentionResources.filter((item) => !code || item.intentCodes.includes(code));
+  const payload = page(filtered.map(({ intentCodes: _intentCodes, ...item }) => item), req);
+  success(res, { tags: intentTags, ...payload });
+});
+
 router.get('/services', (_req: Request, res: Response) => {
   success(res, { services, blessingServices, meritMoneyTiers });
 });

@@ -71,6 +71,7 @@ export interface TempleService {
   serviceName: string
   price: number
   timeSlots: string[]
+  intentTags: string[]
   status: string // on_shelf/off_shelf
   createTime: string
 }

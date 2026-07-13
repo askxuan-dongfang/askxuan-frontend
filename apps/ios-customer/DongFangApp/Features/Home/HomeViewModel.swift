@@ -146,6 +146,36 @@ struct IntentionEntry: Identifiable, Hashable {
     let service: ServiceType
 }
 
+struct IntentionTag: Codable, Identifiable, Hashable {
+    let code: String
+    let name: String
+    let description: String
+    let icon: String
+    let sort: Int
+    var id: String { code }
+}
+
+struct IntentionResource: Codable, Identifiable, Hashable {
+    let resourceType: String
+    let sourceId: String
+    let title: String
+    let subtitle: String
+    let price: Double
+    let image: String
+    let orderTarget: String
+    let templeCode: String?
+    let serviceCode: String?
+    var id: String { "\(resourceType):\(sourceId)" }
+}
+
+struct IntentionHubResponse: Codable {
+    let tags: [IntentionTag]
+    let total: Int
+    let list: [IntentionResource]
+    let page: Int
+    let size: Int
+}
+
 /// Banner 数据模型
 struct BannerItem: Identifiable, Hashable {
     let id: String
