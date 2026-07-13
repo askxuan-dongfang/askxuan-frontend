@@ -21,6 +21,7 @@
             <div class="detail-info__meta">
               <StatusTag :status="detail.temple.status" />
               <el-tag size="small" effect="plain">{{ detail.temple.type }}</el-tag>
+              <el-tag size="small" effect="plain" type="success">{{ detail.temple.beliefCode }}</el-tag>
               <el-tag size="small" effect="plain" type="warning">{{ detail.temple.sect }}</el-tag>
               <span class="star">★ {{ detail.temple.rating?.toFixed(1) }}</span>
             </div>

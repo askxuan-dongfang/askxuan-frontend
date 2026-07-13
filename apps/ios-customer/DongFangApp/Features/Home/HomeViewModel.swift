@@ -28,10 +28,10 @@ final class HomeViewModel: ObservableObject {
 
     /// 信仰入口（对齐新版原型：先按信仰/宗派找到寺院和法师）
     let beliefEntries: [BeliefEntry] = [
-        BeliefEntry(id: "han-buddhism", title: "汉传佛教", subtitle: "礼佛祈福", iconName: "leaf.fill", sect: "禅宗"),
-        BeliefEntry(id: "daoism", title: "道教道观", subtitle: "科仪化煞", iconName: "sparkles", sect: "全真派"),
-        BeliefEntry(id: "tibetan", title: "藏传佛教", subtitle: "灌顶供灯", iconName: "flame.fill", sect: "格鲁派"),
-        BeliefEntry(id: "folk", title: "地方信仰", subtitle: "民俗祈愿", iconName: "seal.fill", sect: nil)
+        BeliefEntry(id: "han_buddhism", title: "汉传佛教", subtitle: "礼佛祈福", iconName: "leaf.fill"),
+        BeliefEntry(id: "daoism", title: "道教", subtitle: "科仪修持", iconName: "sparkles"),
+        BeliefEntry(id: "tibetan_buddhism", title: "藏传佛教", subtitle: "传承修持", iconName: "flame.fill"),
+        BeliefEntry(id: "folk", title: "民间信仰", subtitle: "民俗祈愿", iconName: "seal.fill")
     ]
 
     /// 意图入口（把服务、商品、寺院筛选统一为用户意图）
@@ -127,7 +127,15 @@ struct BeliefEntry: Identifiable, Hashable {
     let title: String
     let subtitle: String
     let iconName: String
-    let sect: String?
+}
+
+struct BeliefProfile: Codable {
+    let code: String
+    let name: String
+    let summary: String
+    let description: String
+    let coverImage: String
+    let sort: Int
 }
 
 /// 首页意图入口

@@ -1,8 +1,9 @@
 // 寺院服务 API
 import client from './client'
-import type { Temple, TempleDetail, TempleAudit, PageResult } from '@/types'
+import type { Temple, TempleDetail, TempleAudit, BeliefProfile, PageResult } from '@/types'
 
 export interface TempleListParams {
+  beliefCode?: string
   sect?: string
   type?: string
   region?: string
@@ -61,4 +62,12 @@ export function templeAuditReject(id: number, auditRemark?: string) {
 /** 平台寺院状态变更 */
 export function updateTempleStatus(id: string, status: string) {
   return client.put<{ id: string; status: string }>(`/admin/platform/temples/${id}/status`, { status })
+}
+
+export function getBelief(code: string) {
+  return client.get<BeliefProfile>(`/beliefs/${code}`)
+}
+
+export function updateBelief(code: string, data: Omit<BeliefProfile, 'code'>) {
+  return client.put<BeliefProfile>(`/admin/platform/beliefs/${code}`, data)
 }

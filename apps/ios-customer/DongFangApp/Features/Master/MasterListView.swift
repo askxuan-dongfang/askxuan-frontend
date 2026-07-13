@@ -8,8 +8,12 @@
 import SwiftUI
 
 struct MasterListView: View {
-    @StateObject private var viewModel = MasterListViewModel()
+    @StateObject private var viewModel: MasterListViewModel
     @State private var expandedGroups: Set<String> = ["所属寺院"]
+
+    init(initialBeliefCode: String? = nil) {
+        _viewModel = StateObject(wrappedValue: MasterListViewModel(initialBeliefCode: initialBeliefCode))
+    }
 
     var body: some View {
         VStack(spacing: 0) {

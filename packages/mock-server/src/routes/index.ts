@@ -118,14 +118,15 @@ function page<T>(list: T[], req: Request) {
 
 // ========== 寺院 ==========
 router.get('/temples', (req: Request, res: Response) => {
-  const { sect, type, serviceCode } = req.query;
+  const { beliefCode, sect, type, serviceCode } = req.query;
   const list = temples.filter((t) => {
+    if (typeof beliefCode === 'string' && beliefCode && t.beliefCode !== beliefCode) return false;
     if (typeof sect === 'string' && sect && t.sect !== sect) return false;
     if (typeof type === 'string' && type && t.type !== type) return false;
     if (typeof serviceCode === 'string' && serviceCode && !t.serviceCodes.includes(serviceCode)) return false;
     return true;
   });
-  success(res, list);
+  success(res, page(list, req));
 });
 
 router.get('/temples/:id', (req: Request, res: Response) => {
@@ -136,14 +137,28 @@ router.get('/temples/:id', (req: Request, res: Response) => {
 
 // ========== 法师 ==========
 router.get('/masters', (req: Request, res: Response) => {
-  const { sect, type, templeId } = req.query;
+  const { beliefCode, sect, type, templeId } = req.query;
   const list = masters.filter((m) => {
+    if (typeof beliefCode === 'string' && beliefCode && m.beliefCode !== beliefCode) return false;
     if (typeof sect === 'string' && sect && m.sect !== sect) return false;
     if (typeof type === 'string' && type && m.type !== type) return false;
     if (typeof templeId === 'string' && templeId && m.templeId !== templeId) return false;
     return true;
   });
-  success(res, list);
+  success(res, page(list, req));
+});
+
+const beliefs = [
+  { code: 'han_buddhism', name: '汉传佛教', summary: '慈悲与智慧并行', description: '汉传佛教在中国长期发展，形成禅、净土、天台、华严等具体宗派。', coverImage: '', sort: 10 },
+  { code: 'tibetan_buddhism', name: '藏传佛教', summary: '传承、修持与慈悲', description: '藏传佛教具有清晰的传承体系，包含格鲁、宁玛、噶举、萨迦等具体宗派。', coverImage: '', sort: 20 },
+  { code: 'daoism', name: '道教', summary: '道法自然，清静修持', description: '道教是中国本土宗教传统，包含全真、正一等具体宗派。', coverImage: '', sort: 30 },
+  { code: 'folk', name: '民间信仰', summary: '乡土传统与民俗传承', description: '民间信仰承载地域性祭祀、祈愿和文化传统。', coverImage: '', sort: 40 }
+];
+
+router.get('/beliefs/:code', (req: Request, res: Response) => {
+  const belief = beliefs.find((item) => item.code === req.params.code);
+  if (!belief) return fail(res, 404, '信仰流派不存在');
+  success(res, belief);
 });
 
 router.get('/masters/:id', (req: Request, res: Response) => {

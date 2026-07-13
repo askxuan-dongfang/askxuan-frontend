@@ -8,6 +8,7 @@ export interface Master {
   templeId: string;
   templeName: string;
   position: string;
+  beliefCode: string;
   sect: string;
   type: string;
   authStatus: string;
@@ -24,6 +25,7 @@ export const masters: Master[] = [
     templeId: 'T001',
     templeName: '灵隐寺',
     position: '住持',
+    beliefCode: 'han_buddhism',
     sect: '汉传佛教',
     type: '佛教',
     authStatus: '已认证',
@@ -38,6 +40,7 @@ export const masters: Master[] = [
     templeId: 'T002',
     templeName: '白云观',
     position: '监院',
+    beliefCode: 'daoism',
     sect: '全真道派',
     type: '道教',
     authStatus: '已认证',
@@ -52,6 +55,7 @@ export const masters: Master[] = [
     templeId: 'T003',
     templeName: '少林寺',
     position: '首座',
+    beliefCode: 'han_buddhism',
     sect: '禅宗',
     type: '佛教',
     authStatus: '已认证',
@@ -66,6 +70,7 @@ export const masters: Master[] = [
     templeId: 'T004',
     templeName: '大昭寺',
     position: '活佛',
+    beliefCode: 'tibetan_buddhism',
     sect: '藏密佛教',
     type: '佛教',
     authStatus: '已认证',
@@ -80,6 +85,7 @@ export const masters: Master[] = [
     templeId: 'T005',
     templeName: '普陀山',
     position: '副住持',
+    beliefCode: 'han_buddhism',
     sect: '汉传佛教',
     type: '佛教',
     authStatus: '待审核',
@@ -94,6 +100,7 @@ export const masters: Master[] = [
     templeId: 'T006',
     templeName: '武当山',
     position: '知客',
+    beliefCode: 'daoism',
     sect: '正一派',
     type: '道教',
     authStatus: '已认证',

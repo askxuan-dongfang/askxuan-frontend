@@ -31,13 +31,16 @@ final class MasterListViewModel: ObservableObject {
     ]
 
     private let apiClient: APIClient
+    private let beliefCode: String?
 
-    init(apiClient: APIClient = .shared) {
+    init(initialBeliefCode: String? = nil, apiClient: APIClient = .shared) {
         self.apiClient = apiClient
+        self.beliefCode = initialBeliefCode
     }
 
     var filteredMasters: [Master] {
         masters.filter { m in
+            (beliefCode == nil || m.beliefCode == beliefCode) &&
             matchCategory(m, selectedCategory) &&
             matchTemple(m, selectedTemple) &&
             matchLevel(m, selectedLevel) &&
@@ -89,8 +92,9 @@ final class MasterListViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         do {
-            let resp: PageResponse<Master> = try await apiClient.request(
-                .masters(type: nil, templeId: nil, page: 1, size: 20))
+            let endpoint: Endpoint = beliefCode.map { .mastersByBelief($0, page: 1, size: 20) }
+                ?? .masters(type: nil, templeId: nil, page: 1, size: 20)
+            let resp: PageResponse<Master> = try await apiClient.request(endpoint)
             self.masters = resp.list
         } catch {
             self.masters = Master.mockData

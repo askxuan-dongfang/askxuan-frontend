@@ -23,9 +23,11 @@ final class TempleListViewModel: ObservableObject {
                                      "求健康", "求学业", "祈福平安", "超度祭祖", "开光加持"]
 
     private let apiClient: APIClient
+    private let beliefCode: String?
 
-    init(initialSect: String? = nil, apiClient: APIClient = .shared) {
+    init(initialSect: String? = nil, initialBeliefCode: String? = nil, apiClient: APIClient = .shared) {
         self.apiClient = apiClient
+        self.beliefCode = initialBeliefCode
         if let initialSect {
             self.selectedSect = Self.normalizedSect(initialSect)
         }
@@ -33,6 +35,7 @@ final class TempleListViewModel: ObservableObject {
 
     var filteredTemples: [Temple] {
         temples.filter { t in
+            (beliefCode == nil || t.beliefCode == beliefCode) &&
             matchSect(t, selectedSect) &&
             matchService(t, selectedService)
         }
@@ -75,8 +78,9 @@ final class TempleListViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         do {
-            let resp: PageResponse<Temple> = try await apiClient.request(
-                .temples(sect: nil, type: nil, serviceCode: nil, page: 1, size: 20))
+            let endpoint: Endpoint = beliefCode.map { .templesByBelief($0, page: 1, size: 20) }
+                ?? .temples(sect: nil, type: nil, serviceCode: nil, page: 1, size: 20)
+            let resp: PageResponse<Temple> = try await apiClient.request(endpoint)
             self.temples = resp.list
         } catch {
             self.temples = Temple.mockData

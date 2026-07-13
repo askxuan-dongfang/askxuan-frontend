@@ -22,11 +22,14 @@ enum HTTPMethod: String {
 enum Endpoint {
     // MARK: - 寺院
     case temples(sect: String?, type: String?, serviceCode: String?, page: Int, size: Int)
+    case templesByBelief(String, page: Int, size: Int)
     case templeById(String)
     case templeServices(String)         // GET /temples/{id}/services
+    case belief(String)
 
     // MARK: - 法师
     case masters(type: String?, templeId: String?, page: Int, size: Int)
+    case mastersByBelief(String, page: Int, size: Int)
     case masterById(String)
 
     // MARK: - 预约（后端复数 /bookings）
@@ -96,10 +99,13 @@ enum Endpoint {
         switch self {
         // 寺院
         case .temples:                  return "temples"
+        case .templesByBelief:          return "temples"
         case .templeById(let id):       return "temples/\(id)"
         case .templeServices(let id):   return "temples/\(id)/services"
+        case .belief(let code):         return "beliefs/\(code)"
         // 法师
         case .masters:                  return "masters"
+        case .mastersByBelief:          return "masters"
         case .masterById(let id):       return "masters/\(id)"
         // 预约（后端复数 bookings）
         case .bookings:                 return "bookings"
@@ -159,8 +165,8 @@ enum Endpoint {
     /// HTTP 方法
     var httpMethod: HTTPMethod {
         switch self {
-        case .temples, .templeById, .templeServices,
-             .masters, .masterById,
+        case .temples, .templesByBelief, .templeById, .templeServices, .belief,
+             .masters, .mastersByBelief, .masterById,
              .bookings, .bookingById,
              .diyDesigns, .diyDesignById, .diyMaterials, .diyOrders, .diyOrderById,
              .aiSessions, .aiMessages,
@@ -193,6 +199,10 @@ enum Endpoint {
             if let type, !type.isEmpty { items.append(URLQueryItem(name: "type", value: type)) }
             if let serviceCode, !serviceCode.isEmpty { items.append(URLQueryItem(name: "serviceCode", value: serviceCode)) }
             return items
+        case .templesByBelief(let code, let page, let size), .mastersByBelief(let code, let page, let size):
+            return [URLQueryItem(name: "beliefCode", value: code),
+                    URLQueryItem(name: "page", value: "\(page)"),
+                    URLQueryItem(name: "size", value: "\(size)")]
         case .masters(let type, let templeId, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
                          URLQueryItem(name: "size", value: "\(size)")]

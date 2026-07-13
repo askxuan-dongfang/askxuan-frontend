@@ -95,7 +95,11 @@ struct HomeView: View {
                     )
                 }
             case .belief(let entry):
-                TempleListView(initialSect: entry.sect)
+                BeliefTopicView(entry: entry)
+            case .templeBelief(let code):
+                TempleListView(initialBeliefCode: code)
+            case .masterBelief(let code):
+                MasterListView(initialBeliefCode: code)
             case .intention(let entry):
                 if authStore.isLoggedIn {
                     serviceDestination(for: entry.service)
@@ -561,6 +565,110 @@ struct HomeView: View {
     }
 }
 
+@MainActor
+private final class BeliefTopicViewModel: ObservableObject {
+    @Published var profile: BeliefProfile?
+    @Published var temples: [Temple] = []
+    @Published var masters: [Master] = []
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+
+    func load(code: String) async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            async let profileRequest: BeliefProfile = APIClient.shared.request(.belief(code))
+            async let templeRequest: PageResponse<Temple> = APIClient.shared.request(.templesByBelief(code, page: 1, size: 6))
+            async let masterRequest: PageResponse<Master> = APIClient.shared.request(.mastersByBelief(code, page: 1, size: 6))
+            let (profile, templePage, masterPage) = try await (profileRequest, templeRequest, masterRequest)
+            self.profile = profile
+            temples = templePage.list
+            masters = masterPage.list
+        } catch {
+            errorMessage = error.localizedDescription
+            temples = Temple.mockData.filter { $0.beliefCode == code }
+            masters = Master.mockData.filter { $0.beliefCode == code }
+        }
+    }
+}
+
+private struct BeliefTopicView: View {
+    let entry: BeliefEntry
+    @StateObject private var viewModel = BeliefTopicViewModel()
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AppSpacing.lg) {
+                VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                    Image(systemName: entry.iconName)
+                        .font(.system(size: 30))
+                        .foregroundStyle(Color.accentDefault)
+                    Text(viewModel.profile?.name ?? entry.title)
+                        .font(.custom(AppFont.serif[0], size: 28).weight(.bold))
+                    Text(viewModel.profile?.summary ?? entry.subtitle)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.accentDefault)
+                    Text(viewModel.profile?.description ?? "正在读取流派简介")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.textSecondary)
+                        .lineSpacing(5)
+                }
+                .padding(.horizontal, 20)
+
+                topicSection(title: "该流派大师", more: .masterBelief(entry.id)) {
+                    ForEach(viewModel.masters.prefix(4)) { master in
+                        NavigationLink(value: master) {
+                            HStack(spacing: 12) {
+                                RemoteImage(urlString: master.avatar, placeholderIcon: "person.fill")
+                                    .frame(width: 52, height: 52).clipShape(Circle())
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(master.dharmaName).font(.system(size: 15, weight: .semibold))
+                                    Text("\(master.sect) · \(master.templeName)").font(.system(size: 12)).foregroundStyle(Color.textTertiary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right").foregroundStyle(Color.textTertiary)
+                            }.padding(.vertical, 6)
+                        }.buttonStyle(.plain)
+                    }
+                }
+
+                topicSection(title: "该流派寺庙", more: .templeBelief(entry.id)) {
+                    ForEach(viewModel.temples.prefix(4)) { temple in
+                        NavigationLink(value: temple) {
+                            HStack(spacing: 12) {
+                                RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.2.fill")
+                                    .frame(width: 72, height: 52).clipShape(RoundedRectangle(cornerRadius: 6))
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(temple.name).font(.system(size: 15, weight: .semibold))
+                                    Text("\(temple.region) · \(temple.sect)").font(.system(size: 12)).foregroundStyle(Color.textTertiary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right").foregroundStyle(Color.textTertiary)
+                            }.padding(.vertical, 6)
+                        }.buttonStyle(.plain)
+                    }
+                }
+            }.padding(.vertical, 20)
+        }
+        .background(Color.bgPrimary)
+        .navigationTitle(entry.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .overlay { if viewModel.isLoading { ProgressView() } }
+        .task { await viewModel.load(code: entry.id) }
+    }
+
+    private func topicSection<Content: View>(title: String, more: HomeRoute, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(title).font(.custom(AppFont.serif[0], size: 19).weight(.semibold))
+                Spacer()
+                NavigationLink(value: more) { Text("更多").font(.system(size: 13)).foregroundStyle(Color.accentDefault) }
+            }
+            content()
+        }.padding(.horizontal, 20)
+    }
+}
+
 /// 首页导航路由
 enum HomeRoute: Hashable {
     case templeList
@@ -569,6 +677,8 @@ enum HomeRoute: Hashable {
     case diyBracelet
     case booking(Master)
     case belief(BeliefEntry)
+    case templeBelief(String)
+    case masterBelief(String)
     case intention(IntentionEntry)
 }
 

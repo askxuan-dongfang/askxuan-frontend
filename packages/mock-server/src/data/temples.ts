@@ -6,6 +6,7 @@ export interface Temple {
   name: string;
   region: string;
   type: string;
+  beliefCode: string;
   sect: string;
   status: string;
   address: string;
@@ -23,6 +24,7 @@ export const temples: Temple[] = [
     name: '灵隐寺',
     region: '浙江杭州',
     type: '汉传佛教',
+    beliefCode: 'han_buddhism',
     sect: '禅宗',
     status: '正常',
     address: '杭州市西湖区灵隐路法云弄1号',
@@ -38,6 +40,7 @@ export const temples: Temple[] = [
     name: '白云观',
     region: '北京',
     type: '道教',
+    beliefCode: 'daoism',
     sect: '全真派',
     status: '正常',
     address: '北京市西城区白云观街1号',
@@ -53,6 +56,7 @@ export const temples: Temple[] = [
     name: '少林寺',
     region: '河南嵩山',
     type: '汉传佛教',
+    beliefCode: 'han_buddhism',
     sect: '禅宗',
     status: '正常',
     address: '河南省郑州市登封市嵩山少林景区',
@@ -68,6 +72,7 @@ export const temples: Temple[] = [
     name: '大昭寺',
     region: '西藏拉萨',
     type: '藏传佛教',
+    beliefCode: 'tibetan_buddhism',
     sect: '格鲁派',
     status: '正常',
     address: '拉萨市城关区八廓街',
@@ -83,6 +88,7 @@ export const temples: Temple[] = [
     name: '普陀山',
     region: '浙江舟山',
     type: '汉传佛教',
+    beliefCode: 'han_buddhism',
     sect: '禅宗',
     status: '待审核',
     address: '舟山市普陀区普陀山',
@@ -98,6 +104,7 @@ export const temples: Temple[] = [
     name: '武当山',
     region: '湖北十堰',
     type: '道教',
+    beliefCode: 'daoism',
     sect: '正一派',
     status: '正常',
     address: '十堰市丹江口市武当山特区',

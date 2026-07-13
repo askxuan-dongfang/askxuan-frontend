@@ -106,12 +106,22 @@ export interface Temple {
   name: string
   region: string
   type: string
+  beliefCode: string
   sect: string
   status: string
   address: string
   coverImage: string
   rating: number
   description: string
+}
+
+export interface BeliefProfile {
+  code: string
+  name: string
+  summary: string
+  description: string
+  coverImage: string
+  sort: number
 }
 
 export interface TempleImage {
@@ -160,6 +170,7 @@ export interface Master {
   templeId: string
   templeName: string
   position: string
+  beliefCode: string
   sect: string
   type: string
   authStatus: string

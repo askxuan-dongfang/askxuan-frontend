@@ -12,6 +12,7 @@ struct Temple: Codable, Identifiable, Hashable {
     let name: String
     let region: String
     let type: String       // 汉传佛教/藏传佛教/道教
+    let beliefCode: String // 一级信仰流派
     let sect: String       // 禅宗/全真派/格鲁派
     let status: String
     let address: String
@@ -27,11 +28,11 @@ struct Temple: Codable, Identifiable, Hashable {
     var serviceCodes: [String]?
 
     enum CodingKeys: String, CodingKey {
-        case id, name, region, type, sect, status, address, rating, description, images
+        case id, name, region, type, beliefCode, sect, status, address, rating, description, images
         case coverImage, serviceTags, serviceCount, serviceCodes
     }
 
-    init(id: String, name: String, region: String, type: String, sect: String,
+    init(id: String, name: String, region: String, type: String, beliefCode: String? = nil, sect: String,
          status: String, address: String, coverImage: String, rating: Double,
          description: String, images: [String]? = nil,
          serviceTags: [String]? = nil, serviceCount: Int? = nil,
@@ -40,6 +41,7 @@ struct Temple: Codable, Identifiable, Hashable {
         self.name = name
         self.region = region
         self.type = type
+        self.beliefCode = beliefCode ?? Self.inferBelief(type: type, sect: sect)
         self.sect = sect
         self.status = status
         self.address = address
@@ -59,6 +61,7 @@ struct Temple: Codable, Identifiable, Hashable {
         self.region = try c.decodeIfPresent(String.self, forKey: .region) ?? ""
         self.type = try c.decodeIfPresent(String.self, forKey: .type) ?? ""
         self.sect = try c.decodeIfPresent(String.self, forKey: .sect) ?? ""
+        self.beliefCode = try c.decodeIfPresent(String.self, forKey: .beliefCode) ?? Self.inferBelief(type: type, sect: sect)
         self.status = try c.decodeIfPresent(String.self, forKey: .status) ?? "正常"
         self.address = try c.decodeIfPresent(String.self, forKey: .address) ?? ""
         self.coverImage = try c.decodeIfPresent(String.self, forKey: .coverImage) ?? ""
@@ -68,6 +71,13 @@ struct Temple: Codable, Identifiable, Hashable {
         self.serviceTags = try c.decodeIfPresent([String].self, forKey: .serviceTags)
         self.serviceCount = try c.decodeIfPresent(Int.self, forKey: .serviceCount)
         self.serviceCodes = try c.decodeIfPresent([String].self, forKey: .serviceCodes)
+    }
+
+    private static func inferBelief(type: String, sect: String) -> String {
+        if type.contains("藏") || sect.contains("格鲁") { return "tibetan_buddhism" }
+        if type.contains("道") || sect.contains("全真") || sect.contains("正一") { return "daoism" }
+        if type.contains("民间") { return "folk" }
+        return "han_buddhism"
     }
 
     /// 评分展示文本

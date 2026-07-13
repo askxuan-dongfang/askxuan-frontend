@@ -14,6 +14,7 @@ struct Master: Codable, Identifiable, Hashable {
     let templeId: String
     let templeName: String
     let position: String
+    let beliefCode: String
     let sect: String
     let type: String          // 佛教/道教
     let authStatus: String
@@ -26,12 +27,12 @@ struct Master: Codable, Identifiable, Hashable {
     var shelfStatus: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, dharmaName, layName, templeId, templeName, position, sect, type
+        case id, dharmaName, layName, templeId, templeName, position, beliefCode, sect, type
         case authStatus, specialties, avatar, rating, isOnline, startPrice, shelfStatus
     }
 
     init(id: String, dharmaName: String, layName: String, templeId: String,
-         templeName: String, position: String, sect: String, type: String,
+         templeName: String, position: String, beliefCode: String? = nil, sect: String, type: String,
          authStatus: String, specialties: [String], avatar: String, rating: Double,
          isOnline: Bool? = true, startPrice: Double? = nil,
          shelfStatus: String? = nil) {
@@ -41,6 +42,7 @@ struct Master: Codable, Identifiable, Hashable {
         self.templeId = templeId
         self.templeName = templeName
         self.position = position
+        self.beliefCode = beliefCode ?? Self.inferBelief(type: type, sect: sect)
         self.sect = sect
         self.type = type
         self.authStatus = authStatus
@@ -62,6 +64,7 @@ struct Master: Codable, Identifiable, Hashable {
         self.position = try c.decodeIfPresent(String.self, forKey: .position) ?? ""
         self.sect = try c.decodeIfPresent(String.self, forKey: .sect) ?? ""
         self.type = try c.decodeIfPresent(String.self, forKey: .type) ?? ""
+        self.beliefCode = try c.decodeIfPresent(String.self, forKey: .beliefCode) ?? Self.inferBelief(type: type, sect: sect)
         self.authStatus = try c.decodeIfPresent(String.self, forKey: .authStatus) ?? "已认证"
         self.specialties = try c.decodeIfPresent([String].self, forKey: .specialties) ?? []
         self.avatar = try c.decodeIfPresent(String.self, forKey: .avatar) ?? ""
@@ -72,6 +75,13 @@ struct Master: Codable, Identifiable, Hashable {
     }
 
     var ratingText: String { String(format: "%.1f", rating) }
+
+    private static func inferBelief(type: String, sect: String) -> String {
+        if type.contains("藏") || sect.contains("格鲁") || sect.contains("藏") { return "tibetan_buddhism" }
+        if type.contains("道") || sect.contains("全真") || sect.contains("正一") { return "daoism" }
+        if type.contains("民间") { return "folk" }
+        return "han_buddhism"
+    }
     var startPriceText: String? {
         guard let price = startPrice, price > 0 else { return nil }
         return "¥\(Int(price))起"

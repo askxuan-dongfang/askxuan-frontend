@@ -17,6 +17,7 @@ export function createMaster(data: {
   templeId: string
   templeName?: string
   position: string
+  beliefCode: string
   sect: string
   type: string
   specialties: string[]
@@ -27,7 +28,7 @@ export function createMaster(data: {
 
 export function updateMaster(
   id: string,
-  data: { dharmaName?: string; layName?: string; position?: string; specialties?: string[]; avatar?: string }
+  data: { dharmaName?: string; layName?: string; position?: string; beliefCode?: string; sect?: string; specialties?: string[]; avatar?: string }
 ): Promise<Master> {
   return client.put<Master>(`/admin/temples/masters/${id}`, data)
 }

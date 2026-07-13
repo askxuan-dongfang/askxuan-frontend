@@ -10,8 +10,8 @@ import SwiftUI
 struct TempleListView: View {
     @StateObject private var viewModel: TempleListViewModel
 
-    init(initialSect: String? = nil) {
-        _viewModel = StateObject(wrappedValue: TempleListViewModel(initialSect: initialSect))
+    init(initialSect: String? = nil, initialBeliefCode: String? = nil) {
+        _viewModel = StateObject(wrappedValue: TempleListViewModel(initialSect: initialSect, initialBeliefCode: initialBeliefCode))
     }
 
     var body: some View {

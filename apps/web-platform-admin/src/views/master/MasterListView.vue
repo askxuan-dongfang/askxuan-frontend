@@ -7,6 +7,12 @@
     </PageHeader>
 
     <div class="dfx-card filter-bar">
+      <el-select v-model="query.beliefCode" placeholder="一级流派" clearable style="width: 140px">
+        <el-option label="汉传佛教" value="han_buddhism" />
+        <el-option label="藏传佛教" value="tibetan_buddhism" />
+        <el-option label="道教" value="daoism" />
+        <el-option label="民间信仰" value="folk" />
+      </el-select>
       <el-input v-model="query.templeId" placeholder="寺院编码" clearable style="width: 140px" />
       <el-select v-model="query.sect" placeholder="宗派" clearable style="width: 140px">
         <el-option v-for="s in sects" :key="s" :label="s" :value="s" />
@@ -79,7 +85,7 @@ const sects = ['禅宗', '净土宗', '天台宗', '律宗', '全真派', '正�
 const loading = ref(false)
 const list = ref<Master[]>([])
 const total = ref(0)
-const query = reactive({ templeId: '', sect: '', type: '', page: 1, size: 20 })
+const query = reactive({ beliefCode: '', templeId: '', sect: '', type: '', page: 1, size: 20 })
 
 async function loadData() {
   loading.value = true
@@ -97,6 +103,7 @@ function onSearch() {
   loadData()
 }
 function onReset() {
+  query.beliefCode = ''
   query.templeId = ''
   query.sect = ''
   query.type = ''

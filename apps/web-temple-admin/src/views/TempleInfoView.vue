@@ -17,6 +17,9 @@ const form = reactive({
   id: '',
   name: '',
   region: '',
+  type: '',
+  beliefCode: '',
+  sect: '',
   address: '',
   coverImage: '',
   description: ''
@@ -30,6 +33,9 @@ async function load() {
     form.id = t.id
     form.name = t.name
     form.region = t.region
+    form.type = t.type
+    form.beliefCode = t.beliefCode
+    form.sect = t.sect
     form.address = t.address
     form.coverImage = t.coverImage
     form.description = t.description
@@ -48,6 +54,9 @@ async function handleSave() {
         id: form.id,
         name: form.name,
         region: form.region,
+        type: form.type,
+        beliefCode: form.beliefCode,
+        sect: form.sect,
         address: form.address,
         coverImage: form.coverImage,
         description: form.description
@@ -81,11 +90,19 @@ onMounted(load)
           <el-form-item label="详细地址">
             <el-input v-model="form.address" placeholder="请输入详细地址" />
           </el-form-item>
-          <el-form-item label="宗派">
-            <el-input :model-value="temple?.sect" disabled />
+          <el-form-item label="一级流派" prop="beliefCode" required>
+            <el-select v-model="form.beliefCode" style="width: 100%">
+              <el-option label="汉传佛教" value="han_buddhism" />
+              <el-option label="藏传佛教" value="tibetan_buddhism" />
+              <el-option label="道教" value="daoism" />
+              <el-option label="民间信仰" value="folk" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="具体宗派" prop="sect" required>
+            <el-input v-model="form.sect" placeholder="如 禅宗、全真派、格鲁派" />
           </el-form-item>
           <el-form-item label="类型">
-            <el-input :model-value="temple?.type" disabled />
+            <el-input v-model="form.type" placeholder="如 汉传佛教、道教" />
           </el-form-item>
           <el-form-item label="运营状态">
             <StatusTag v-if="temple" :status="temple.status" kind="temple" />
