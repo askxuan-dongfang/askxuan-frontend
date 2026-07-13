@@ -47,7 +47,7 @@ struct DiyDetailView: View {
         }
         .sheet(isPresented: $showOrderPage) {
             NavigationStack {
-                DiyOrderView(designId: designId, viewModel: viewModel)
+                DiyOrderView(designId: designId, viewModel: viewModel, orderSource: .design)
             }
         }
     }

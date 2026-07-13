@@ -71,7 +71,7 @@ function handleLogout() {
         </el-menu-item>
         <el-menu-item index="/reviews">
           <el-icon><ChatDotRound /></el-icon>
-          <span>评价管理</span>
+          <span>评价/内容互动</span>
         </el-menu-item>
         <el-menu-item index="/report">
           <el-icon><TrendCharts /></el-icon>

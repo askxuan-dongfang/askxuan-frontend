@@ -237,13 +237,37 @@ final class DiyViewModel: ObservableObject {
         }
     }
 
+    func createOrderFromDesign(designId: Int64, addressId: Int64,
+                               blessServiceCode: String?) async -> DiyOrder? {
+        isSubmitting = true
+        errorMessage = nil
+
+        let request = DiyDesignOrderCreateRequest(
+            userId: authStore.userId,
+            blessServiceCode: blessServiceCode,
+            addressId: addressId
+        )
+
+        do {
+            let order: DiyOrder = try await apiClient.request(.diyOrderCreateFromDesign(designId, request))
+            self.currentOrder = order
+            self.successMessage = "订单已创建"
+            isSubmitting = false
+            return order
+        } catch {
+            self.errorMessage = error.localizedDescription
+            isSubmitting = false
+            return nil
+        }
+    }
+
     // MARK: - 私有辅助
     private func encodeDesignData() -> String {
         let items = cartItems.map { item -> [String: Any] in
             [
                 "materialId": item.material.id,
-                "name": item.material.name,
-                "category": item.material.category,
+                "materialName": item.material.name,
+                "subtype": item.material.category,
                 "spec": item.material.spec,
                 "unitPrice": item.material.unitPrice,
                 "quantity": item.quantity

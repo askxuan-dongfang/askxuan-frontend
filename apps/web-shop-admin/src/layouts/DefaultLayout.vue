@@ -92,7 +92,7 @@ async function handleLogout() {
         </el-menu-item>
         <el-menu-item index="/services">
           <el-icon><MagicStick /></el-icon>
-          <span>祈福服务</span>
+          <span>DIY加持服务</span>
         </el-menu-item>
 
         <div class="sidebar-section">订单运营</div>
@@ -102,7 +102,7 @@ async function handleLogout() {
         </el-menu-item>
         <el-menu-item index="/diy-orders">
           <el-icon><MagicStick /></el-icon>
-          <span>DIY 订单</span>
+          <span>DIY设计/订单</span>
         </el-menu-item>
         <el-menu-item index="/logistics">
           <el-icon><Van /></el-icon>

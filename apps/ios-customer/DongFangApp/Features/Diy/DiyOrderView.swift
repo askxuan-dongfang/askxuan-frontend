@@ -7,8 +7,14 @@
 
 import SwiftUI
 
+enum DiyOrderSource {
+    case cart
+    case design
+}
+
 struct DiyOrderView: View {
     let designId: Int64
+    let orderSource: DiyOrderSource
 
     @StateObject private var viewModel: DiyViewModel
     @State private var selectedAddress: UserAddress? = UserAddress.mockAddresses.first
@@ -16,8 +22,9 @@ struct DiyOrderView: View {
     @State private var showSuccess: Bool = false
     @Environment(\.dismiss) private var dismiss
 
-    init(designId: Int64, viewModel: DiyViewModel? = nil) {
+    init(designId: Int64, viewModel: DiyViewModel? = nil, orderSource: DiyOrderSource = .cart) {
         self.designId = designId
+        self.orderSource = orderSource
         if let viewModel = viewModel {
             _viewModel = StateObject(wrappedValue: viewModel)
         } else {
@@ -90,7 +97,7 @@ struct DiyOrderView: View {
                 Text("编号：\(viewModel.currentDesign?.designNo ?? "—")")
                     .font(.system(size: 11))
                     .foregroundStyle(Color.textTertiary)
-                Text("\(viewModel.totalQuantity) 种材料")
+                Text(materialSummaryText)
                     .font(.system(size: 12))
                     .foregroundStyle(Color.textSecondary)
             }
@@ -284,6 +291,13 @@ struct DiyOrderView: View {
         return "¥\(Int(material + bless))"
     }
 
+    private var materialSummaryText: String {
+        if viewModel.totalQuantity > 0 {
+            return "\(viewModel.totalQuantity) 种材料"
+        }
+        return orderSource == .design ? "按设计方案下单" : "未选择材料"
+    }
+
     // MARK: - 底部提交栏
     private var submitBar: some View {
         HStack(spacing: AppSpacing.md) {
@@ -301,12 +315,8 @@ struct DiyOrderView: View {
                             isEnabled: selectedAddress != nil,
                             isLoading: viewModel.isSubmitting) {
                 Task {
-                    let _ = await viewModel.createOrder(
-                        designId: designId,
-                        addressId: selectedAddress?.id ?? 1,
-                        blessServiceCode: needBlessing ? "BLESS_DIY" : nil
-                    )
-                    if viewModel.currentOrder != nil {
+                    let order = await submitOrder()
+                    if order != nil {
                         showSuccess = true
                     }
                 }
@@ -321,6 +331,25 @@ struct DiyOrderView: View {
                 .ignoresSafeArea(edges: .bottom)
         )
         .overlay(alignment: .top) { Rectangle().fill(Color.borderDivider).frame(height: 1) }
+    }
+
+    private func submitOrder() async -> DiyOrder? {
+        let addressId = selectedAddress?.id ?? 1
+        let blessServiceCode = needBlessing ? "BLESS_DIY" : nil
+        switch orderSource {
+        case .cart:
+            return await viewModel.createOrder(
+                designId: designId,
+                addressId: addressId,
+                blessServiceCode: blessServiceCode
+            )
+        case .design:
+            return await viewModel.createOrderFromDesign(
+                designId: designId,
+                addressId: addressId,
+                blessServiceCode: blessServiceCode
+            )
+        }
     }
 }
 

@@ -118,7 +118,7 @@ const menuGroups = [
     icon: 'Checked',
     children: [
       { path: '/audit/comment', title: '评价审核' },
-      { path: '/audit/design', title: '素材审核' },
+      { path: '/audit/design', title: '社区/短视频审核' },
       { path: '/audit/report', title: '举报处理' }
     ]
   },

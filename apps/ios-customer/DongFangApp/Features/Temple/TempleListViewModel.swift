@@ -24,8 +24,11 @@ final class TempleListViewModel: ObservableObject {
 
     private let apiClient: APIClient
 
-    init(apiClient: APIClient = .shared) {
+    init(initialSect: String? = nil, apiClient: APIClient = .shared) {
         self.apiClient = apiClient
+        if let initialSect {
+            self.selectedSect = Self.normalizedSect(initialSect)
+        }
     }
 
     var filteredTemples: [Temple] {
@@ -44,6 +47,22 @@ final class TempleListViewModel: ObservableObject {
         if sect.contains("道教") { return t.type.contains("道") }
         if sect.contains("民间") { return t.type.contains("民间") }
         return true
+    }
+
+    private static func normalizedSect(_ sect: String) -> String {
+        if sect.contains("禅") || sect.contains("汉传") {
+            return "汉传佛教"
+        }
+        if sect.contains("格鲁") || sect.contains("藏") {
+            return "藏传密宗"
+        }
+        if sect.contains("全真") || sect.contains("正一") || sect.contains("道") {
+            return "道教道观"
+        }
+        if sect.contains("地方") || sect.contains("民间") {
+            return "民间地方信仰"
+        }
+        return "全部"
     }
 
     private func matchService(_ t: Temple, _ service: String) -> Bool {

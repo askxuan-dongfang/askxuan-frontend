@@ -41,8 +41,24 @@ enum Endpoint {
     case diyDesignById(Int64)
     case diyMaterials(category: String?, page: Int, size: Int)
     case diyOrderCreate(DiyOrderCreateRequest)
+    case diyOrderCreateFromDesign(Int64, DiyDesignOrderCreateRequest)
     case diyOrders(userId: String, status: String?, page: Int, size: Int)
     case diyOrderById(Int64)
+
+    // MARK: - AI 问事
+    case aiSessions(userId: String, page: Int, size: Int)
+    case aiSessionCreate(AiSessionCreateRequest)
+    case aiMessages(sessionId: String, page: Int, size: Int)
+    case aiSendMessage(AiMessageSendRequest)
+
+    // MARK: - 社区内容 / 大师广场
+    case communityFeed(type: String?, sect: String?, page: Int, size: Int)
+    case communityPostById(String)
+    case communityPostLike(String)
+    case communityComments(postId: String, page: Int, size: Int)
+
+    // MARK: - 原型聚合入口
+    case intentionHub(code: String?, page: Int, size: Int)
 
     // MARK: - 商城
     case products(categoryId: Int64?, keyword: String?, page: Int, size: Int)
@@ -96,8 +112,21 @@ enum Endpoint {
         case .diyDesignById(let id):    return "diy/designs/\(id)"
         case .diyMaterials:             return "diy/materials"
         case .diyOrderCreate:           return "diy/orders"
+        case .diyOrderCreateFromDesign(let id, _): return "diy/designs/\(id)/order"
         case .diyOrders:                return "diy/orders"
         case .diyOrderById(let id):     return "diy/orders/\(id)"
+        // AI 问事
+        case .aiSessions:               return "ai/sessions"
+        case .aiSessionCreate:          return "ai/sessions"
+        case .aiMessages(let sessionId, _, _): return "ai/sessions/\(sessionId)/messages"
+        case .aiSendMessage(let req):   return "ai/sessions/\(req.sessionId)/messages"
+        // 社区内容
+        case .communityFeed:            return "community/feed"
+        case .communityPostById(let id): return "community/posts/\(id)"
+        case .communityPostLike(let id): return "community/posts/\(id)/like"
+        case .communityComments(let postId, _, _): return "community/posts/\(postId)/comments"
+        // 原型聚合入口
+        case .intentionHub:             return "intentions"
         // 商城
         case .products:                 return "products"
         case .productById(let id):      return "products/\(id)"
@@ -134,11 +163,15 @@ enum Endpoint {
              .masters, .masterById,
              .bookings, .bookingById,
              .diyDesigns, .diyDesignById, .diyMaterials, .diyOrders, .diyOrderById,
+             .aiSessions, .aiMessages,
+             .communityFeed, .communityPostById, .communityComments,
+             .intentionHub,
              .products, .productById, .productCategories,
              .messages, .unreadCount, .announcements,
              .userProfile, .addressList:
             return .GET
-        case .createBooking, .diyDesignSave, .diyOrderCreate,
+        case .createBooking, .diyDesignSave, .diyOrderCreate, .diyOrderCreateFromDesign,
+             .aiSessionCreate, .aiSendMessage, .communityPostLike,
              .authLogin, .authRegister, .authRefresh, .authLogout,
              .addressCreate, .sendMessage, .registerDeviceToken:
             return .POST
@@ -186,6 +219,27 @@ enum Endpoint {
                          URLQueryItem(name: "size", value: "\(size)")]
             if let status, !status.isEmpty { items.append(URLQueryItem(name: "status", value: status)) }
             return items
+        case .aiSessions(let userId, let page, let size):
+            return [URLQueryItem(name: "userId", value: userId),
+                    URLQueryItem(name: "page", value: "\(page)"),
+                    URLQueryItem(name: "size", value: "\(size)")]
+        case .aiMessages(_, let page, let size):
+            return [URLQueryItem(name: "page", value: "\(page)"),
+                    URLQueryItem(name: "size", value: "\(size)")]
+        case .communityFeed(let type, let sect, let page, let size):
+            var items = [URLQueryItem(name: "page", value: "\(page)"),
+                         URLQueryItem(name: "size", value: "\(size)")]
+            if let type, !type.isEmpty { items.append(URLQueryItem(name: "type", value: type)) }
+            if let sect, !sect.isEmpty { items.append(URLQueryItem(name: "sect", value: sect)) }
+            return items
+        case .communityComments(_, let page, let size):
+            return [URLQueryItem(name: "page", value: "\(page)"),
+                    URLQueryItem(name: "size", value: "\(size)")]
+        case .intentionHub(let code, let page, let size):
+            var items = [URLQueryItem(name: "page", value: "\(page)"),
+                         URLQueryItem(name: "size", value: "\(size)")]
+            if let code, !code.isEmpty { items.append(URLQueryItem(name: "code", value: code)) }
+            return items
         case .products(let categoryId, let keyword, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
                          URLQueryItem(name: "size", value: "\(size)")]
@@ -216,6 +270,9 @@ enum Endpoint {
         case .updateBookingStatus(_, let status): return AnyEncodable(["status": status])
         case .diyDesignSave(let req):          return AnyEncodable(req)
         case .diyOrderCreate(let req):         return AnyEncodable(req)
+        case .diyOrderCreateFromDesign(_, let req): return AnyEncodable(req)
+        case .aiSessionCreate(let req):        return AnyEncodable(req)
+        case .aiSendMessage(let req):          return AnyEncodable(req)
         case .authLogin(let req):              return AnyEncodable(req)
         case .authRegister(let req):           return AnyEncodable(req)
         case .authRefresh(let refresh):        return AnyEncodable(["refreshToken": refresh])
@@ -255,6 +312,26 @@ struct AnyEncodable: Encodable {
     func encode(to encoder: Encoder) throws {
         try _encode(encoder)
     }
+}
+
+// MARK: - AI / 社区请求体
+
+struct AiSessionCreateRequest: Encodable {
+    let userId: String
+    let skillCode: String
+    let question: String?
+}
+
+struct AiMessageSendRequest: Encodable {
+    let sessionId: String
+    let userId: String
+    let content: String
+}
+
+struct DiyDesignOrderCreateRequest: Codable {
+    let userId: String
+    let blessServiceCode: String?
+    let addressId: Int64
 }
 
 // MARK: - 消息发送请求/响应

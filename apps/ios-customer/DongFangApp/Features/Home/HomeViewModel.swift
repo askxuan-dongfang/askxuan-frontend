@@ -2,7 +2,7 @@
 //  HomeViewModel.swift
 //  DongFangApp
 //
-//  首页 ViewModel：加载热门寺院 / 热门法师，提供 8 宫格服务入口。
+//  首页 ViewModel：加载热门寺院 / 热门法师，提供信仰与意图聚合入口。
 //  Banner 使用本地 asset（对齐原型 home.html）。
 //
 
@@ -26,10 +26,24 @@ final class HomeViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
 
-    /// 热门服务 8 宫格（DIY/祈福/供灯/上香/还愿/超度/开光/化太岁）
-    let hotServices: [ServiceType] = [
-        .diy, .blessing, .lamp, .incense,
-        .vow, .rite, .consecration, .taisui
+    /// 信仰入口（对齐新版原型：先按信仰/宗派找到寺院和法师）
+    let beliefEntries: [BeliefEntry] = [
+        BeliefEntry(id: "han-buddhism", title: "汉传佛教", subtitle: "礼佛祈福", iconName: "leaf.fill", sect: "禅宗"),
+        BeliefEntry(id: "daoism", title: "道教道观", subtitle: "科仪化煞", iconName: "sparkles", sect: "全真派"),
+        BeliefEntry(id: "tibetan", title: "藏传佛教", subtitle: "灌顶供灯", iconName: "flame.fill", sect: "格鲁派"),
+        BeliefEntry(id: "folk", title: "地方信仰", subtitle: "民俗祈愿", iconName: "seal.fill", sect: nil)
+    ]
+
+    /// 意图入口（把服务、商品、寺院筛选统一为用户意图）
+    let intentionEntries: [IntentionEntry] = [
+        IntentionEntry(id: "peace", title: "求平安", iconName: "shield.lefthalf.filled", service: .blessing),
+        IntentionEntry(id: "wealth", title: "求财运", iconName: "banknote.fill", service: .incense),
+        IntentionEntry(id: "love", title: "求姻缘", iconName: "heart.fill", service: .lamp),
+        IntentionEntry(id: "career", title: "求事业", iconName: "briefcase.fill", service: .consecration),
+        IntentionEntry(id: "study", title: "求学业", iconName: "book.fill", service: .vow),
+        IntentionEntry(id: "taisui", title: "化太岁", iconName: "circle.hexagongrid.fill", service: .taisui),
+        IntentionEntry(id: "diy", title: "定手串", iconName: "circle.grid.cross.fill", service: .diy),
+        IntentionEntry(id: "rite", title: "做法事", iconName: "hands.sparkles.fill", service: .rite)
     ]
 
     private let apiClient: APIClient
@@ -105,6 +119,23 @@ final class HomeViewModel: ObservableObject {
             return .failure(error)
         }
     }
+}
+
+/// 首页信仰入口
+struct BeliefEntry: Identifiable, Hashable {
+    let id: String
+    let title: String
+    let subtitle: String
+    let iconName: String
+    let sect: String?
+}
+
+/// 首页意图入口
+struct IntentionEntry: Identifiable, Hashable {
+    let id: String
+    let title: String
+    let iconName: String
+    let service: ServiceType
 }
 
 /// Banner 数据模型

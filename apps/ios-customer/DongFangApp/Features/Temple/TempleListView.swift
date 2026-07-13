@@ -8,7 +8,11 @@
 import SwiftUI
 
 struct TempleListView: View {
-    @StateObject private var viewModel = TempleListViewModel()
+    @StateObject private var viewModel: TempleListViewModel
+
+    init(initialSect: String? = nil) {
+        _viewModel = StateObject(wrappedValue: TempleListViewModel(initialSect: initialSect))
+    }
 
     var body: some View {
         VStack(spacing: 0) {

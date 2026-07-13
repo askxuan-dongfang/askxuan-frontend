@@ -80,6 +80,16 @@ enum Endpoint {
     /// GET admin/masters/reviews
     case masterReviews(rating: Int?, page: Int, size: Int)
 
+    // MARK: - 社区内容 / 大师广场
+    /// GET admin/masters/community/posts
+    case masterCommunityPosts(status: String?, page: Int, size: Int)
+    /// POST admin/masters/community/posts
+    case masterCommunityPostCreate(MasterContentCreateRequest)
+    /// PUT admin/masters/community/posts/{id}
+    case masterCommunityPostUpdate(id: String, MasterContentCreateRequest)
+    /// PUT admin/masters/community/posts/{id}/status
+    case masterCommunityPostStatus(id: String, status: String)
+
     // MARK: - 提现（finance-service，JWT 保护路由）
     /// POST admin/finance/withdrawals/apply
     case withdrawalApply(WithdrawalApplyRequest)
@@ -139,6 +149,15 @@ enum Endpoint {
         // 评价
         case .masterReviews:
             return "admin/masters/reviews"
+        // 社区内容
+        case .masterCommunityPosts:
+            return "admin/masters/community/posts"
+        case .masterCommunityPostCreate:
+            return "admin/masters/community/posts"
+        case .masterCommunityPostUpdate(let id, _):
+            return "admin/masters/community/posts/\(id)"
+        case .masterCommunityPostStatus(let id, _):
+            return "admin/masters/community/posts/\(id)/status"
         // 提现
         case .withdrawalApply:
             return "admin/finance/withdrawals/apply"
@@ -148,12 +167,13 @@ enum Endpoint {
     /// HTTP 方法
     var httpMethod: HTTPMethod {
         switch self {
-        case .adminLogin, .authRefresh, .withdrawalApply, .registerDeviceToken:
+        case .adminLogin, .authRefresh, .withdrawalApply, .registerDeviceToken,
+             .masterCommunityPostCreate:
             return .POST
         case .masterScheduleUpdate, .masterProfileUpdate,
              .masterBookingConfirm, .masterBookingComplete,
              .blessingTaskAccept, .blessingTaskStart, .blessingTaskComplete, .blessingTaskReject,
-             .masterMessageRead:
+             .masterMessageRead, .masterCommunityPostUpdate, .masterCommunityPostStatus:
             return .PUT
         default:
             return .GET
@@ -214,6 +234,15 @@ enum Endpoint {
                 items.append(URLQueryItem(name: "rating", value: String(rating)))
             }
             return items
+        case .masterCommunityPosts(let status, let page, let size):
+            var items = [
+                URLQueryItem(name: "page", value: String(page)),
+                URLQueryItem(name: "size", value: String(size))
+            ]
+            if let status, !status.isEmpty {
+                items.append(URLQueryItem(name: "status", value: status))
+            }
+            return items
         default:
             return nil
         }
@@ -238,6 +267,10 @@ enum Endpoint {
             return AnyEncodable(req)
         case .registerDeviceToken(let req):
             return AnyEncodable(req)
+        case .masterCommunityPostCreate(let req), .masterCommunityPostUpdate(_, let req):
+            return AnyEncodable(req)
+        case .masterCommunityPostStatus(_, let status):
+            return AnyEncodable(["status": status])
         default:
             return nil
         }
@@ -273,6 +306,16 @@ struct DeviceTokenRegisterRequest: Encodable {
 struct DeviceTokenResponse: Decodable {
     let id: Int64
     let status: String
+}
+
+/// 法师内容发布请求（短视频/图文，提交后进入平台审核）
+struct MasterContentCreateRequest: Encodable {
+    let type: String
+    let title: String
+    let content: String?
+    let coverUrl: String?
+    let videoUrl: String?
+    let tags: [String]?
 }
 
 /// 法师资料更新请求

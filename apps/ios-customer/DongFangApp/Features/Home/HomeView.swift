@@ -3,7 +3,7 @@
 //  DongFangApp
 //
 //  首页（对齐原型 home.html）：
-//  品牌名「问玄东方」+ 搜索 + Banner轮播 + 双入口 + 热门服务横滑 + 热门寺院 + 热门师傅。
+//  品牌名「问玄东方」+ 搜索 + Banner轮播 + 双入口 + 信仰/意图入口 + 热门寺院 + 热门师傅。
 //
 
 import SwiftUI
@@ -21,7 +21,8 @@ struct HomeView: View {
                 VStack(spacing: AppSpacing.lg) {
                     bannerSection
                     entryCardsSection
-                    hotServicesSection
+                    beliefSection
+                    intentionSection
                     hotTemplesSection
                     hotMastersSection
                     Color.clear.frame(height: AppSpacing.navBottom + 32)
@@ -90,6 +91,19 @@ struct HomeView: View {
                         icon: "calendar.badge.plus",
                         title: "登录后预约法师",
                         subtitle: "在线预约，法师确认",
+                        isPresented: .constant(false)
+                    )
+                }
+            case .belief(let entry):
+                TempleListView(initialSect: entry.sect)
+            case .intention(let entry):
+                if authStore.isLoggedIn {
+                    serviceDestination(for: entry.service)
+                } else {
+                    LoginRequiredView(
+                        icon: entry.service.iconName,
+                        title: "登录后使用\(entry.title)",
+                        subtitle: "从意图入口进入对应服务",
                         isPresented: .constant(false)
                     )
                 }
@@ -232,19 +246,19 @@ struct HomeView: View {
         .contentShape(Rectangle())
     }
 
-    // MARK: - 热门服务（8 项全部展示，横滑，两侧不遮挡）
-    private var hotServicesSection: some View {
+    // MARK: - 信仰入口
+    private var beliefSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Text("热门服务")
+            Text("按信仰找")
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(Color.textPrimary)
                 .padding(.horizontal, 20)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.md) {
-                    ForEach(viewModel.hotServices) { service in
-                        NavigationLink(value: HomeRoute.service(service)) {
-                            serviceItem(service)
+                    ForEach(viewModel.beliefEntries) { entry in
+                        NavigationLink(value: HomeRoute.belief(entry)) {
+                            beliefItem(entry)
                         }
                         .buttonStyle(.plain)
                     }
@@ -254,31 +268,71 @@ struct HomeView: View {
         }
     }
 
-    private func serviceItem(_ service: ServiceType) -> some View {
-        VStack(spacing: 6) {
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.brandDefault.opacity(0.2),
-                                Color.accentDefault.opacity(0.15)
-                            ],
-                            startPoint: .topLeading, endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(Circle().stroke(Color.borderDefault, lineWidth: 1))
-                Image(systemName: service.iconName)
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color.accentDefault)
-            }
-            .frame(width: 44, height: 44)
+    private func beliefItem(_ entry: BeliefEntry) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: entry.iconName)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(Color.accentDefault)
+                .frame(width: 34, height: 34)
+                .background(Color.accentDefault.opacity(0.12))
+                .clipShape(Circle())
 
-            Text(service.rawValue)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(entry.title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.textPrimary)
+                Text(entry.subtitle)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.textTertiary)
+            }
+        }
+        .frame(width: 132, height: 58, alignment: .leading)
+        .padding(.horizontal, 10)
+        .background(Color.bgSecondary)
+        .cornerRadius(10)
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.borderDefault, lineWidth: 1))
+    }
+
+    // MARK: - 意图入口
+    private var intentionSection: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.md) {
+            Text("按心愿办")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Color.textPrimary)
+                .padding(.horizontal, 20)
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: AppSpacing.sm), count: 4), spacing: AppSpacing.sm) {
+                ForEach(viewModel.intentionEntries) { entry in
+                    NavigationLink(value: HomeRoute.intention(entry)) {
+                        intentionItem(entry)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+
+    private func intentionItem(_ entry: IntentionEntry) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: entry.iconName)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(Color.brandDefault)
+                .frame(width: 36, height: 36)
+                .background(Color.brandDefault.opacity(0.1))
+                .clipShape(Circle())
+
+            Text(entry.title)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(Color.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
         }
-        .frame(width: 60)
+        .frame(maxWidth: .infinity)
+        .frame(height: 68)
+        .background(Color.bgSecondary)
+        .cornerRadius(10)
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.borderDefault, lineWidth: 1))
     }
 
     // MARK: - 热门寺院（横滑，标题可点击进完整列表）
@@ -514,6 +568,8 @@ enum HomeRoute: Hashable {
     case service(ServiceType)
     case diyBracelet
     case booking(Master)
+    case belief(BeliefEntry)
+    case intention(IntentionEntry)
 }
 
 #Preview {
