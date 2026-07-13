@@ -51,8 +51,9 @@ enum Endpoint {
     // MARK: - AI 问事
     case aiSessions(userId: String, page: Int, size: Int)
     case aiSessionCreate(AiSessionCreateRequest)
-    case aiMessages(sessionId: String, page: Int, size: Int)
+    case aiMessages(sessionId: String, userId: String, page: Int, size: Int)
     case aiSendMessage(AiMessageSendRequest)
+    case aiRetryMessage(sessionId: String, messageId: Int64, userId: String)
 
     // MARK: - 社区内容 / 大师广场
     case communityFeed(type: String?, sect: String?, page: Int, size: Int)
@@ -124,8 +125,9 @@ enum Endpoint {
         // AI 问事
         case .aiSessions:               return "ai/sessions"
         case .aiSessionCreate:          return "ai/sessions"
-        case .aiMessages(let sessionId, _, _): return "ai/sessions/\(sessionId)/messages"
+        case .aiMessages(let sessionId, _, _, _): return "ai/sessions/\(sessionId)/messages"
         case .aiSendMessage(let req):   return "ai/sessions/\(req.sessionId)/messages"
+        case .aiRetryMessage(let sessionId, let messageId, _): return "ai/sessions/\(sessionId)/messages/\(messageId)/retry"
         // 社区内容
         case .communityFeed:            return "community/feed"
         case .communityPostById(let id): return "community/posts/\(id)"
@@ -177,7 +179,7 @@ enum Endpoint {
              .userProfile, .addressList:
             return .GET
         case .createBooking, .diyDesignSave, .diyOrderCreate, .diyOrderCreateFromDesign,
-             .aiSessionCreate, .aiSendMessage, .communityPostLike,
+             .aiSessionCreate, .aiSendMessage, .aiRetryMessage, .communityPostLike,
              .authLogin, .authRegister, .authRefresh, .authLogout,
              .addressCreate, .sendMessage, .registerDeviceToken:
             return .POST
@@ -233,8 +235,9 @@ enum Endpoint {
             return [URLQueryItem(name: "userId", value: userId),
                     URLQueryItem(name: "page", value: "\(page)"),
                     URLQueryItem(name: "size", value: "\(size)")]
-        case .aiMessages(_, let page, let size):
-            return [URLQueryItem(name: "page", value: "\(page)"),
+        case .aiMessages(_, let userId, let page, let size):
+            return [URLQueryItem(name: "userId", value: userId),
+                    URLQueryItem(name: "page", value: "\(page)"),
                     URLQueryItem(name: "size", value: "\(size)")]
         case .communityFeed(let type, let sect, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
@@ -283,6 +286,7 @@ enum Endpoint {
         case .diyOrderCreateFromDesign(_, let req): return AnyEncodable(req)
         case .aiSessionCreate(let req):        return AnyEncodable(req)
         case .aiSendMessage(let req):          return AnyEncodable(req)
+        case .aiRetryMessage(_, _, let userId): return AnyEncodable(["userId": userId])
         case .authLogin(let req):              return AnyEncodable(req)
         case .authRegister(let req):           return AnyEncodable(req)
         case .authRefresh(let refresh):        return AnyEncodable(["refreshToken": refresh])
@@ -328,7 +332,7 @@ struct AnyEncodable: Encodable {
 
 struct AiSessionCreateRequest: Encodable {
     let userId: String
-    let skillCode: String
+    let skillCode: String?
     let question: String?
 }
 

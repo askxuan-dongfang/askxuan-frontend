@@ -67,6 +67,7 @@ const intentionItems = [
 ];
 
 const aiSkills = [
+  { id: 8, code: 'general', name: '直接问事', description: '不限定术数方向的日常问事入口', icon: '/icons/general.png', promptTemplate: '', status: 'enabled', createdAt: '2026-07-13 10:00:00' },
   { id: 1, code: 'bazi', name: '八字命理', description: '依据生辰八字推演命格运势', icon: '/icons/bazi.png', promptTemplate: '', status: 'enabled', createdAt: '2026-06-28 10:00:00' },
   { id: 2, code: 'marriage', name: '姻缘测算', description: '测算姻缘婚恋走势', icon: '/icons/marriage.png', promptTemplate: '', status: 'enabled', createdAt: '2026-06-28 10:00:00' },
   { id: 3, code: 'tarot', name: '塔罗牌', description: '塔罗牌占卜指引', icon: '/icons/tarot.png', promptTemplate: '', status: 'enabled', createdAt: '2026-06-28 10:00:00' },
@@ -75,6 +76,57 @@ const aiSkills = [
   { id: 6, code: 'ziwei', name: '紫微斗数', description: '紫微斗数命盘解析', icon: '/icons/ziwei.png', promptTemplate: '', status: 'enabled', createdAt: '2026-06-28 10:00:00' },
   { id: 7, code: 'liuyao', name: '六爻梅花', description: '六爻梅花易数占断', icon: '/icons/liuyao.png', promptTemplate: '', status: 'enabled', createdAt: '2026-06-28 10:00:00' }
 ];
+
+type MockAiSession = {
+  id: number;
+  sessionNo: string;
+  userId: string;
+  skillCode: string;
+  title: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type MockAiMessage = {
+  id: number;
+  sessionId: number;
+  role: 'user' | 'assistant';
+  content: string;
+  tokens: number;
+  status: 'pending' | 'completed' | 'failed';
+  errorMessage: string;
+  retryable: boolean;
+  createdAt: string;
+};
+
+const mockAiSessions: MockAiSession[] = [{
+  id: 1,
+  sessionNo: 'AI20260709001',
+  userId: 'U001',
+  skillCode: 'general',
+  title: '最近事业如何？',
+  status: 'active',
+  createdAt: '2026-07-09 08:00:00',
+  updatedAt: '2026-07-09 08:01:05'
+}];
+
+const mockAiMessages: MockAiMessage[] = [
+  { id: 1, sessionId: 1, role: 'user', content: '最近事业如何？', tokens: 0, status: 'completed', errorMessage: '', retryable: false, createdAt: '2026-07-09 08:01:00' },
+  { id: 2, sessionId: 1, role: 'assistant', content: '适合稳中求进，先整理资源，再择机推进。', tokens: 0, status: 'completed', errorMessage: '', retryable: false, createdAt: '2026-07-09 08:01:05' }
+];
+
+function mockAiSession(id: number) {
+  return mockAiSessions.find((session) => session.id === id);
+}
+
+function aiOwnerMatches(session: MockAiSession, requested: unknown) {
+  return typeof requested !== 'string' || requested === '' || requested === session.userId;
+}
+
+function mockAiAnswer(content: string) {
+  return `[本地开发模拟] 已收到：${content}。请结合实际情况理性判断。`;
+}
 
 function mapDiyCategory(material: { name: string; category: string }) {
   if (material.category === '主珠') return 'main_bead';
@@ -254,34 +306,77 @@ router.get('/ai/skills', (req: Request, res: Response) => {
 });
 
 router.get('/ai/sessions', (req: Request, res: Response) => {
-  success(res, page([
-    { id: 1, sessionNo: 'AI20260709001', userId: req.query.userId ?? 'U001', skillCode: 'bazi', status: 'active', createdAt: '2026-07-09 08:00:00', updatedAt: '2026-07-09 08:00:00' }
-  ], req));
+  const userId = typeof req.query.userId === 'string' ? req.query.userId : 'U001';
+  success(res, page(mockAiSessions.filter((session) => session.userId === userId), req));
 });
 
 router.post('/ai/sessions', (req: Request, res: Response) => {
-  success(res, { id: Date.now(), sessionNo: `AI${Date.now()}`, skillCode: req.body?.skillCode ?? 'bazi', status: 'active' });
+  const now = Date.now();
+  const question = typeof req.body?.question === 'string' ? req.body.question.trim() : '';
+  const session: MockAiSession = {
+    id: now,
+    sessionNo: `AI${now}`,
+    userId: req.body?.userId ?? 'U001',
+    skillCode: req.body?.skillCode || 'general',
+    title: question || '新对话',
+    status: 'active',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  mockAiSessions.unshift(session);
+  if (question) {
+    mockAiMessages.push(
+      { id: now + 1, sessionId: now, role: 'user', content: question, tokens: 0, status: 'completed', errorMessage: '', retryable: false, createdAt: session.createdAt },
+      { id: now + 2, sessionId: now, role: 'assistant', content: mockAiAnswer(question), tokens: 0, status: 'completed', errorMessage: '', retryable: false, createdAt: session.createdAt }
+    );
+  }
+  success(res, { id: session.id, sessionNo: session.sessionNo, skillCode: session.skillCode, status: session.status });
 });
 
 router.get('/ai/sessions/:id', (req: Request, res: Response) => {
-  success(res, {
-    session: { id: Number(req.params.id) || 1, sessionNo: 'AI20260709001', userId: req.query.userId ?? 'U001', skillCode: 'bazi', status: 'active', createdAt: '2026-07-09 08:00:00', updatedAt: '2026-07-09 08:00:00' },
-    messages: [
-      { id: 1, sessionId: Number(req.params.id) || 1, role: 'user', content: '最近事业如何？', tokens: 0, createdAt: '2026-07-09 08:01:00' },
-      { id: 2, sessionId: Number(req.params.id) || 1, role: 'assistant', content: '适合稳中求进，先整理资源，再择机推进。', tokens: 0, createdAt: '2026-07-09 08:01:05' }
-    ]
-  });
+  const id = Number(req.params.id);
+  const session = mockAiSession(id);
+  if (!session) return fail(res, 404, '会话不存在');
+  if (!aiOwnerMatches(session, req.query.userId)) return fail(res, 403, '无权限访问');
+  success(res, { session, messages: mockAiMessages.filter((message) => message.sessionId === id) });
 });
 
 router.get('/ai/sessions/:id/messages', (req: Request, res: Response) => {
-  success(res, page([
-    { id: 1, sessionId: Number(req.params.id) || 1, role: 'user', content: '最近事业如何？', tokens: 0, createdAt: '2026-07-09 08:01:00' },
-    { id: 2, sessionId: Number(req.params.id) || 1, role: 'assistant', content: '适合稳中求进，先整理资源，再择机推进。', tokens: 0, createdAt: '2026-07-09 08:01:05' }
-  ], req));
+  const id = Number(req.params.id);
+  const session = mockAiSession(id);
+  if (!session) return fail(res, 404, '会话不存在');
+  if (!aiOwnerMatches(session, req.query.userId)) return fail(res, 403, '无权限访问');
+  success(res, page(mockAiMessages.filter((message) => message.sessionId === id), req));
 });
 
 router.post('/ai/sessions/:id/messages', (req: Request, res: Response) => {
-  success(res, { sessionId: Number(req.params.id) || 1, status: 'accepted' });
+  const id = Number(req.params.id);
+  const session = mockAiSession(id);
+  if (!session) return fail(res, 404, '会话不存在');
+  if (!aiOwnerMatches(session, req.body?.userId)) return fail(res, 403, '无权限访问');
+  const content = typeof req.body?.content === 'string' ? req.body.content.trim() : '';
+  if (!content) return fail(res, 400, '消息不能为空');
+  const messageId = Date.now() + 1;
+  mockAiMessages.push(
+    { id: messageId - 1, sessionId: id, role: 'user', content, tokens: 0, status: 'completed', errorMessage: '', retryable: false, createdAt: new Date().toISOString() },
+    { id: messageId, sessionId: id, role: 'assistant', content: mockAiAnswer(content), tokens: 0, status: 'completed', errorMessage: '', retryable: false, createdAt: new Date().toISOString() }
+  );
+  success(res, { sessionId: id, messageId, status: 'completed' });
+});
+
+router.post('/ai/sessions/:id/messages/:messageId/retry', (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const session = mockAiSession(id);
+  if (!session) return fail(res, 404, '会话不存在');
+  if (!aiOwnerMatches(session, req.body?.userId)) return fail(res, 403, '无权限访问');
+  const message = mockAiMessages.find((item) => item.id === Number(req.params.messageId) && item.sessionId === id);
+  if (!message || message.role !== 'assistant' || message.status !== 'failed') return fail(res, 400, '消息不可重试');
+  const userMessage = [...mockAiMessages].reverse().find((item) => item.sessionId === id && item.role === 'user' && item.id < message.id);
+  message.status = 'completed';
+  message.errorMessage = '';
+  message.retryable = false;
+  message.content = mockAiAnswer(userMessage?.content ?? '请继续回答');
+  success(res, { sessionId: id, messageId: message.id, status: message.status });
 });
 
 // ========== 社区内容 / 大师广场 ==========
