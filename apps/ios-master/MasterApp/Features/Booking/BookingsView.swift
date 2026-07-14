@@ -66,21 +66,9 @@ final class BookingsViewModel: ObservableObject {
     }
 }
 
-// MARK: - Mock 数据
-
-private struct MockBookingListCard {
-    let name: String
-    let serviceName: String
-    let serviceBadgeColor: Color
-    let dateTime: String
-    let amount: String
-    let statusText: String
-    let statusColor: Color
-}
-
 private struct TabFilterItem {
     let title: String
-    let count: Int
+    let status: BookingStatus?
 }
 
 struct BookingsView: View {
@@ -88,25 +76,11 @@ struct BookingsView: View {
     @State private var selectedTabIndex: Int = 0
 
     private let tabs: [TabFilterItem] = [
-        TabFilterItem(title: "待处理", count: 3),
-        TabFilterItem(title: "已确认", count: 5),
-        TabFilterItem(title: "已完成", count: 12),
-        TabFilterItem(title: "已取消", count: 1)
-    ]
-
-    private let mockBookings: [MockBookingListCard] = [
-        MockBookingListCard(name: "张三", serviceName: "祈福法会",
-                            serviceBadgeColor: .accentDefault,
-                            dateTime: "2026-06-29 09:00-10:00 · 灵隐寺",
-                            amount: "¥200", statusText: "待处理", statusColor: .stateWarning),
-        MockBookingListCard(name: "王五", serviceName: "开光加持",
-                            serviceBadgeColor: .brandDefault,
-                            dateTime: "2026-06-29 16:00-17:00 · 灵隐寺",
-                            amount: "¥168", statusText: "待处理", statusColor: .stateWarning),
-        MockBookingListCard(name: "赵六", serviceName: "命理咨询",
-                            serviceBadgeColor: Color(hex: "5B7AAA"),
-                            dateTime: "2026-06-30 10:00-11:00 · 线上视频",
-                            amount: "¥100", statusText: "待处理", statusColor: .stateWarning)
+        TabFilterItem(title: "全部", status: nil),
+        TabFilterItem(title: "待确认", status: .pending),
+        TabFilterItem(title: "已确认", status: .confirmed),
+        TabFilterItem(title: "进行中", status: .inProgress),
+        TabFilterItem(title: "已完成", status: .completed)
     ]
 
     var body: some View {
@@ -132,15 +106,15 @@ struct BookingsView: View {
                         Text(tab.title)
                             .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
                             .foregroundStyle(isSelected ? .brandDefault : .textTertiary)
-                        Text("\(tab.count)")
+                        if isSelected {
+                            Text("\(viewModel.total)")
                             .font(.system(size: 10))
-                            .foregroundStyle(isSelected ? .brandDefault : .textTertiary)
+                            .foregroundStyle(.brandDefault)
                             .padding(.horizontal, 4)
                             .padding(.vertical, 1)
-                            .background(
-                                (isSelected ? Color.brandDefault : Color.textTertiary).opacity(0.15)
-                            )
+                            .background(Color.brandDefault.opacity(0.15))
                             .cornerRadius(AppRadius.sm)
+                        }
                     }
                     .padding(.vertical, 12)
                     // 底部下划线
@@ -152,7 +126,9 @@ struct BookingsView: View {
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
                 .onTapGesture {
+                    guard selectedTabIndex != index else { return }
                     selectedTabIndex = index
+                    Task { await viewModel.switchStatus(tab.status) }
                 }
             }
         }
@@ -168,26 +144,45 @@ struct BookingsView: View {
 
     @ViewBuilder
     private var bookingList: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                ForEach(mockBookings.indices, id: \.self) { index in
-                    let booking = mockBookings[index]
-                    NavigationLink {
-                        BookingDetailView(bookingId: "mock-\(index)")
-                    } label: {
-                        bookingCard(booking)
-                    }
-                    .buttonStyle(.plain)
-                }
+        if viewModel.isLoading && viewModel.bookings.isEmpty {
+            LoadingView(fullScreen: true)
+        } else if let error = viewModel.errorMessage, viewModel.bookings.isEmpty {
+            EmptyState(icon: "exclamationmark.triangle.fill", title: "加载失败", message: error) {
+                Task { await viewModel.load() }
             }
-            .padding(.top, 10)
-            .padding(.bottom, 70)
+        } else if viewModel.bookings.isEmpty {
+            EmptyState(icon: "calendar.badge.checkmark", title: "暂无预约", message: "当前状态下没有预约记录")
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(viewModel.bookings) { booking in
+                        NavigationLink {
+                            BookingDetailView(bookingId: booking.id)
+                        } label: {
+                            bookingCard(booking)
+                        }
+                        .buttonStyle(.plain)
+                        .onAppear {
+                            guard booking.id == viewModel.bookings.last?.id else { return }
+                            Task { await viewModel.loadMore() }
+                        }
+                    }
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .tint(.brandDefault)
+                            .padding(.vertical, AppSpacing.lg)
+                    }
+                }
+                .padding(.top, 10)
+                .padding(.bottom, 70)
+            }
+            .softScrollEdge(.bottom)
         }
-        .softScrollEdge(.bottom)
     }
 
-    private func bookingCard(_ booking: MockBookingListCard) -> some View {
-        HStack(alignment: .center, spacing: 12) {
+    private func bookingCard(_ booking: Booking) -> some View {
+        let badge = booking.statusEnum.badgeInfo
+        return HStack(alignment: .center, spacing: 12) {
             // 头像
             Image(systemName: "person.fill")
                 .font(.system(size: 20))
@@ -199,49 +194,37 @@ struct BookingsView: View {
             // 中间信息
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    Text(booking.name)
+                    Text(booking.userId.isEmpty ? "匿名信众" : booking.userId)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.textPrimary)
                     Text(booking.serviceName)
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(booking.serviceBadgeColor)
+                        .foregroundStyle(.accentDefault)
                         .padding(.horizontal, AppSpacing.sm)
                         .padding(.vertical, 2)
-                        .background(booking.serviceBadgeColor.opacity(0.15))
+                        .background(Color.accentDefault.opacity(0.15))
                         .cornerRadius(AppRadius.sm)
                 }
-                Text(booking.dateTime)
+                Text("\(booking.bookingDate) \(booking.timeSlot) · \(booking.templeName)")
                     .font(.system(size: 12))
                     .foregroundStyle(.textSecondary)
-                // 查看详情按钮
-                    NavigationLink {
-                        BookingDetailView(bookingId: "mock-detail")
-                    } label: {
-                        Text("查看详情")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 12)
-                            .frame(height: 30)
-                            .background(
-                                LinearGradient(colors: [.brandDefault, .brandDark],
-                                               startPoint: .leading, endPoint: .trailing)
-                            )
-                            .cornerRadius(AppRadius.sm)
-                    }
+                Text("查看详情")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.brandDefault)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             // 右侧金额和状态
             VStack(alignment: .trailing, spacing: 4) {
-                Text(booking.amount)
+                Text(booking.meritMoneyText)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.accentDefault)
-                Text(booking.statusText)
+                Text(badge.text)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(booking.statusColor)
+                    .foregroundStyle(badge.color)
                     .padding(.horizontal, AppSpacing.sm)
                     .padding(.vertical, 3)
-                    .background(booking.statusColor.opacity(0.15))
+                    .background(badge.color.opacity(0.15))
                     .cornerRadius(AppRadius.sm)
             }
         }
