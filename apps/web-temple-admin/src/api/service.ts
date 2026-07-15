@@ -1,5 +1,5 @@
 import client from './client'
-import type { TempleService, TempleServiceListResp } from '@/types'
+import type { TempleService, TempleServiceListResp, TempleServiceSlot } from '@/types'
 
 /**
  * 寺院服务管理（路由 /admin/temples/services → temple-service）
@@ -14,6 +14,7 @@ export function createService(data: {
   serviceName: string
   price: number
   timeSlots: string[]
+	slots: TempleServiceSlot[]
   intentTags?: string[]
 }): Promise<{ id: number }> {
   return client.post<{ id: number }>('/admin/temples/services', data)
@@ -21,7 +22,7 @@ export function createService(data: {
 
 export function updateService(
   id: number,
-  data: { serviceName?: string; price?: number; timeSlots?: string[]; intentTags?: string[] }
+	data: { serviceName?: string; price?: number; timeSlots?: string[]; slots?: TempleServiceSlot[]; intentTags?: string[] }
 ): Promise<TempleService> {
   return client.put<TempleService>(`/admin/temples/services/${id}`, data)
 }

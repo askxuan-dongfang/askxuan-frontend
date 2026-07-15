@@ -11,18 +11,10 @@ import SwiftUI
 struct BookingView: View {
     @StateObject private var viewModel: BookingViewModel
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedTimeIndex: Int = 0
 
     init(master: Master) {
         _viewModel = StateObject(wrappedValue: BookingViewModel(master: master))
     }
-
-    // 时段（对齐 HTML：上午/下午/晚上）
-    private let timeSlots: [(label: String, range: String, icon: String, value: String)] = [
-        ("上午", "9:00-12:00", "sun.max", "09:00-12:00"),
-        ("下午", "14:00-17:00", "sun.and.horizon", "14:00-17:00"),
-        ("晚上", "19:00-21:00", "moon", "19:00-21:00")
-    ]
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -46,9 +38,10 @@ struct BookingView: View {
         }
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
-        .onAppear {
-            viewModel.selectedTimeSlot = timeSlots[selectedTimeIndex].value
-        }
+		.task { await viewModel.loadServices() }
+		.onChange(of: viewModel.selectedServiceId) { _, _ in
+			Task { await viewModel.refreshAvailability() }
+		}
         .alert("提交失败", isPresented: .init(
             get: { viewModel.errorMessage != nil },
             set: { if !$0 { viewModel.errorMessage = nil } }
@@ -60,7 +53,7 @@ struct BookingView: View {
         .alert("预约成功", isPresented: $viewModel.showSuccess) {
             Button("好的") { dismiss() }
         } message: {
-            Text("已为您预约，请耐心等待法师确认。")
+			Text(viewModel.submittedBooking?.simulated == true ? "模拟支付成功，预约已进入寺院待确认。" : "预约已提交，请完成支付。")
         }
     }
 
@@ -142,22 +135,26 @@ struct BookingView: View {
                 .foregroundStyle(Color.textPrimary)
 
             VStack(spacing: 10) {
-                ForEach(viewModel.serviceOptions) { service in
+				ForEach(viewModel.services) { service in
                     serviceCard(service)
                 }
+				if viewModel.services.isEmpty && !viewModel.isLoading {
+					Text("该寺院暂无可预约服务")
+						.font(.system(size: 14))
+						.foregroundStyle(Color.textTertiary)
+				}
             }
         }
         .padding(.horizontal, AppSpacing.lg)
         .padding(.top, 20)
     }
 
-    private func serviceCard(_ service: ServiceType) -> some View {
-        let isSelected = viewModel.selectedService == service
-        let display = serviceDisplay(service)
+	private func serviceCard(_ service: TempleServiceInfo) -> some View {
+		let isSelected = viewModel.selectedServiceId == service.serviceCode
 
         return Button {
             withAnimation(.easeInOut(duration: 0.15)) {
-                viewModel.selectedService = service
+				viewModel.selectedServiceId = service.serviceCode
             }
         } label: {
             HStack(spacing: 12) {
@@ -174,10 +171,10 @@ struct BookingView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(service.rawValue)
+					Text(service.serviceName)
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(Color.textPrimary)
-                    Text(display.duration)
+					Text("以寺院实时可用时段为准")
                         .font(.system(size: 13))
                         .foregroundStyle(Color.textTertiary)
                 }
@@ -185,7 +182,7 @@ struct BookingView: View {
                 Spacer()
 
                 HStack(spacing: 0) {
-                    Text("¥\(display.price)")
+					Text("¥\(Int(service.price))")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Color.brandDefault)
                     Text("/次")
@@ -202,19 +199,6 @@ struct BookingView: View {
             )
         }
         .buttonStyle(.plain)
-    }
-
-    private func serviceDisplay(_ s: ServiceType) -> (duration: String, price: Int) {
-        switch s {
-        case .blessing:     return ("60分钟", 388)
-        case .lamp:         return ("30分钟", 168)
-        case .incense:      return ("20分钟", 99)
-        case .vow:          return ("45分钟", 288)
-        case .rite:         return ("90分钟", 688)
-        case .consecration: return ("20分钟", 268)
-        case .taisui:       return ("60分钟", 388)
-        case .diy:          return ("—", 0)
-        }
     }
 
     // MARK: - 日期 + 时段
@@ -250,29 +234,29 @@ struct BookingView: View {
                             withAnimation(.easeInOut(duration: 0.15)) {
                                 viewModel.selectedDateIndex = index
                             }
+							Task { await viewModel.refreshAvailability() }
                         }
                     }
                 }
             }
 
             // 时段网格
-            HStack(spacing: AppSpacing.sm) {
-                ForEach(Array(timeSlots.enumerated()), id: \.offset) { index, slot in
-                    let isSelected = selectedTimeIndex == index
+			LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: AppSpacing.sm)], spacing: AppSpacing.sm) {
+				ForEach(viewModel.availableSlots) { slot in
+					let isSelected = viewModel.selectedSlotCode == slot.slotCode
                     Button {
                         withAnimation(.easeInOut(duration: 0.15)) {
-                            selectedTimeIndex = index
-                            viewModel.selectedTimeSlot = slot.value
+							viewModel.selectedSlotCode = slot.slotCode
                         }
                     } label: {
                         VStack(spacing: 4) {
-                            Image(systemName: slot.icon)
+							Image(systemName: slot.timeRange.hasPrefix("0") ? "sun.max" : "clock")
                                 .font(.system(size: 18))
                                 .foregroundStyle(isSelected ? Color.brandDefault : Color.accentDefault)
-                            Text(slot.label)
+							Text(slot.label)
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary)
-                            Text(slot.range)
+							Text("\(slot.timeRange) · 余\(slot.remaining)")
                                 .font(.system(size: 11))
                                 .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                         }
@@ -286,8 +270,15 @@ struct BookingView: View {
                         )
                     }
                     .buttonStyle(.plain)
+					.disabled(!slot.available)
+					.opacity(slot.available ? 1 : 0.45)
                 }
             }
+			if viewModel.availableSlots.isEmpty {
+				Text("当日暂无可预约时段")
+					.font(.system(size: 13))
+					.foregroundStyle(Color.textTertiary)
+			}
         }
         .padding(.horizontal, AppSpacing.lg)
         .padding(.top, 20)
@@ -369,7 +360,7 @@ struct BookingView: View {
 
     // MARK: - 价格汇总
     private var priceSummary: some View {
-        let serviceFee = serviceDisplay(viewModel.selectedService).price
+		let serviceFee = Int(viewModel.serviceFee)
         let merit = viewModel.finalMeritMoney
         let total = serviceFee + Int(merit)
 
@@ -426,7 +417,7 @@ struct BookingView: View {
 
     // MARK: - 底部 CTA
     private var bottomCTA: some View {
-        let serviceFee = serviceDisplay(viewModel.selectedService).price
+		let serviceFee = Int(viewModel.serviceFee)
         let merit = viewModel.finalMeritMoney
         let total = serviceFee + Int(merit)
 

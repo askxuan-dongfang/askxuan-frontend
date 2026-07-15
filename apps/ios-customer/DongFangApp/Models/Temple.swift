@@ -151,6 +151,24 @@ struct TempleServiceInfo: Codable, Identifiable, Hashable {
     let serviceName: String
     let price: Double
     let timeSlots: [String]?
+	let slots: [TempleServiceSlot]?
     let status: String
     let createTime: String?
+}
+
+struct TempleServiceSlot: Codable, Identifiable, Hashable {
+	let code: String
+	let label: String
+	let startTime: String
+	let endTime: String
+	let capacity: Int
+	let status: String
+	let sort: Int
+
+	var id: String { code }
+	var timeRange: String { "\(startTime)-\(endTime)" }
+}
+
+struct TempleServiceListResponse: Codable {
+	let list: [TempleServiceInfo]
 }

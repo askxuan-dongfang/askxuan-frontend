@@ -89,7 +89,8 @@ export interface Booking {
 
 // 创建预约的入参
 export interface CreateBookingInput {
-  userId: string; // 后端 CreateReq 必填
+	requestId: string;
+	userId?: string; // 兼容字段，真实身份由 JWT 决定
   templeId: string;
   templeName?: string;
   masterId: string;
@@ -97,10 +98,42 @@ export interface CreateBookingInput {
   serviceId?: string;
   serviceName?: string;
   bookingDate: string;
+	slotCode: string;
   timeSlot?: string;
   meritMoney?: number;
   meritMoneyTier?: string;
   note?: string;
+}
+
+export interface TempleBookingService {
+	id: number;
+	templeCode: string;
+	serviceCode: string;
+	serviceName: string;
+	price: number;
+	status: string;
+	timeSlots: string[];
+	slots: { code: string; label: string; startTime: string; endTime: string; capacity: number; status: string; sort: number }[];
+}
+
+export interface BookingAvailability {
+	templeId: string;
+	serviceId: string;
+	serviceName: string;
+	bookingDate: string;
+	serviceFee: number;
+	slots: { slotCode: string; label: string; timeRange: string; capacity: number; remaining: number; available: boolean }[];
+}
+
+export interface CreateBookingResult {
+	id: string;
+	status: string;
+	paymentStatus: string;
+	paymentNo: string;
+	serviceFee: number;
+	meritMoney: number;
+	totalFee: number;
+	simulated: boolean;
 }
 
 // 用户

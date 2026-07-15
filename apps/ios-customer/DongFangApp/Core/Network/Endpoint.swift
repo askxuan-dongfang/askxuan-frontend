@@ -121,6 +121,7 @@ enum Endpoint {
     case bookings(userId: String?, status: String?, page: Int, size: Int)
     case bookingById(String)
     case createBooking(CreateBookingRequest)
+	case bookingAvailability(templeId: String, serviceId: String, date: String)
     case updateBookingStatus(id: String, status: String)
 
     // MARK: - DIY
@@ -210,6 +211,7 @@ enum Endpoint {
         case .bookings:                 return "bookings"
         case .bookingById(let id):      return "bookings/\(id)"
         case .createBooking:            return "bookings"
+		case .bookingAvailability:       return "bookings/availability"
         case .updateBookingStatus(let id, _): return "bookings/\(id)/status"
         // DIY
         case .diyDesigns:               return "diy/designs"
@@ -274,7 +276,7 @@ enum Endpoint {
         switch self {
         case .temples, .templesByBelief, .templeById, .templeServices, .belief,
              .masters, .mastersByBelief, .masterById,
-             .bookings, .bookingById,
+			 .bookings, .bookingById, .bookingAvailability,
              .diyDesigns, .diyDesignById, .diyMaterials, .diyOrders, .diyOrderById, .paymentById,
              .aiSessions, .aiMessages,
              .communityFeed, .communityPostById, .communityComments,
@@ -324,6 +326,10 @@ enum Endpoint {
             if let userId, !userId.isEmpty { items.append(URLQueryItem(name: "userId", value: userId)) }
             if let status, !status.isEmpty { items.append(URLQueryItem(name: "status", value: status)) }
             return items
+		case .bookingAvailability(let templeId, let serviceId, let date):
+			return [URLQueryItem(name: "templeId", value: templeId),
+					URLQueryItem(name: "serviceId", value: serviceId),
+					URLQueryItem(name: "date", value: date)]
         case .diyDesigns(let page, let size):
             return [URLQueryItem(name: "page", value: "\(page)"),
                     URLQueryItem(name: "size", value: "\(size)")]

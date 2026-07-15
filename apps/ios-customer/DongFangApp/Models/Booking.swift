@@ -11,20 +11,24 @@ import Foundation
 
 /// 预约状态枚举（snake_case，与后端对齐）
 enum BookingStatus: String, Codable, Hashable, CaseIterable {
+	case pendingPayment = "pending_payment"
     case pending      = "pending"
     case confirmed    = "confirmed"
     case inProgress   = "in_progress"
     case reviewed     = "reviewed"
     case cancelled    = "cancelled"
+	case completed    = "completed"
 
     /// 中文展示文本
     var displayText: String {
         switch self {
+		case .pendingPayment: return "待支付"
         case .pending:     return "待确认"
         case .confirmed:   return "已确认"
         case .inProgress:  return "进行中"
         case .reviewed:    return "已评价"
         case .cancelled:   return "已取消"
+		case .completed:   return "已完成"
         }
     }
 
@@ -113,6 +117,7 @@ struct Booking: Codable, Identifiable, Hashable {
 
 /// 创建预约请求体（POST /booking）
 struct CreateBookingRequest: Codable {
+	let requestId: String
     let templeId: String
     let templeName: String
     let masterId: String
@@ -120,28 +125,62 @@ struct CreateBookingRequest: Codable {
     let serviceId: String
     let serviceName: String
     let bookingDate: String
+	let slotCode: String
     let timeSlot: String
     let meritMoney: Double
     let meritMoneyTier: String
     let note: String
     let userId: String?
 
-    init(templeId: String, templeName: String, masterId: String, masterName: String,
-         serviceId: String, serviceName: String, bookingDate: String, timeSlot: String,
+	init(requestId: String, templeId: String, templeName: String, masterId: String, masterName: String,
+		 serviceId: String, serviceName: String, bookingDate: String, slotCode: String, timeSlot: String,
          meritMoney: Double, meritMoneyTier: String, note: String, userId: String? = nil) {
-        self.templeId = templeId
+		self.requestId = requestId
+		self.templeId = templeId
         self.templeName = templeName
         self.masterId = masterId
         self.masterName = masterName
         self.serviceId = serviceId
         self.serviceName = serviceName
         self.bookingDate = bookingDate
+		self.slotCode = slotCode
         self.timeSlot = timeSlot
         self.meritMoney = meritMoney
         self.meritMoneyTier = meritMoneyTier
         self.note = note
         self.userId = userId
     }
+}
+
+struct CreateBookingResponse: Codable {
+	let id: String
+	let status: String
+	let paymentStatus: String
+	let paymentNo: String
+	let serviceFee: Double
+	let meritMoney: Double
+	let totalFee: Double
+	let simulated: Bool
+}
+
+struct BookingAvailabilityResponse: Codable {
+	let templeId: String
+	let serviceId: String
+	let serviceName: String
+	let bookingDate: String
+	let serviceFee: Double
+	let slots: [AvailableBookingSlot]
+}
+
+struct AvailableBookingSlot: Codable, Identifiable, Hashable {
+	let slotCode: String
+	let label: String
+	let timeRange: String
+	let capacity: Int
+	let remaining: Int
+	let available: Bool
+
+	var id: String { slotCode }
 }
 
 extension Booking {

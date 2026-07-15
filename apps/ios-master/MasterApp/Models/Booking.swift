@@ -21,8 +21,13 @@ struct Booking: Identifiable, Decodable {
     let serviceId: String
     let serviceName: String
     let bookingDate: String
+	let slotCode: String?
     let timeSlot: String
+	let serviceFee: Double?
     let meritMoney: Double
+	let totalFee: Double?
+	let paymentStatus: String?
+	let paymentNo: String?
     let meritMoneyTier: String
     let status: String
     let note: String
@@ -31,6 +36,7 @@ struct Booking: Identifiable, Decodable {
 
 /// 预约状态
 enum BookingStatus: String, Decodable {
+	case pendingPayment = "pending_payment" // 待支付，不可确认
     case pending       = "pending"        // 待确认
     case confirmed     = "confirmed"      // 已确认
     case inProgress    = "in_progress"    // 进行中
@@ -44,6 +50,7 @@ enum BookingStatus: String, Decodable {
     /// 徽章文案与配色
     var badgeInfo: (text: String, color: Color) {
         switch self {
+		case .pendingPayment: return ("待支付", .textTertiary)
         case .pending:    return ("待确认", .stateWarning)
         case .confirmed:  return ("已确认", .accentDefault)
         case .inProgress: return ("进行中", .brandLight)

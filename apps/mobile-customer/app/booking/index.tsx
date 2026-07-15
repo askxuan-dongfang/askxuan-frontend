@@ -1,5 +1,5 @@
 // 预约下单：服务摘要 + 服务项单选 + 日期/时段 + 功德金 + 备注 + 提交
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,26 +15,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getMaster } from '../../src/api/master';
-import { getTemple } from '../../src/api/temple';
-import { createBooking } from '../../src/api/booking';
+import { getTemple, getTempleServices } from '../../src/api/temple';
+import { createBooking, getBookingAvailability } from '../../src/api/booking';
 import { useAuthStore } from '../../src/stores/auth';
 import { DFTopNavBar } from '../../src/components/DFTopNavBar';
 import { DFPrimaryButton } from '../../src/components/DFPrimaryButton';
 import { colors, radius, spacing, fontFamilies } from '../../src/theme/tokens';
-import type { CreateBookingInput } from '../../src/types';
+import type { BookingAvailability, CreateBookingInput, TempleBookingService } from '../../src/types';
 
-// 服务项
-const SERVICE_OPTIONS = [
-  { id: 'S001', name: '祈福', price: 100 },
-  { id: 'S002', name: '供灯', price: 50 },
-  { id: 'S003', name: '上香', price: 38 },
-  { id: 'S004', name: '开光', price: 200 },
-  { id: 'S005', name: '超度', price: 500 },
-  { id: 'S007', name: '化太岁', price: 168 },
-];
-
-// 时段
-const TIME_SLOTS = ['上午', '下午', '晚上'];
+type AvailableSlot = BookingAvailability['slots'][number];
 
 // 功德金档位
 const MERIT_TIERS = [
@@ -83,16 +72,35 @@ export default function BookingScreen() {
     queryFn: () => getTemple(templeId),
     enabled: !!templeId,
   });
+	const { data: services = [] } = useQuery({
+		queryKey: ['temple-services', templeId],
+		queryFn: () => getTempleServices(templeId),
+		enabled: !!templeId,
+	});
 
   const days = useMemo(getNext7Days, []);
-  const [selectedService, setSelectedService] = useState(SERVICE_OPTIONS[0]);
+	const [selectedService, setSelectedService] = useState<TempleBookingService>();
   const [selectedDate, setSelectedDate] = useState(days[0]);
-  const [selectedSlot, setSelectedSlot] = useState(TIME_SLOTS[0]);
+	const [selectedSlotCode, setSelectedSlotCode] = useState('');
   const [selectedMerit, setSelectedMerit] = useState(MERIT_TIERS[0]);
   const [note, setNote] = useState('');
 
-  // 价格汇总：服务价 + 功德金
-  const totalPrice = selectedService.price + selectedMerit.amount;
+	useEffect(() => {
+		if (!selectedService || !services.some((service: TempleBookingService) => service.serviceCode === selectedService.serviceCode)) setSelectedService(services[0]);
+	}, [services, selectedService]);
+
+	const { data: availability } = useQuery({
+		queryKey: ['booking-availability', templeId, selectedService?.serviceCode, selectedDate.date],
+		queryFn: () => getBookingAvailability({ templeId, serviceId: selectedService!.serviceCode, date: selectedDate.date }),
+		enabled: !!selectedService,
+	});
+	const availableSlots = availability?.slots ?? [];
+	useEffect(() => {
+		if (!availableSlots.some((slot: AvailableSlot) => slot.slotCode === selectedSlotCode && slot.available)) setSelectedSlotCode(availableSlots.find((slot: AvailableSlot) => slot.available)?.slotCode ?? '');
+	}, [availability, selectedSlotCode]);
+	const selectedSlot = availableSlots.find((slot: AvailableSlot) => slot.slotCode === selectedSlotCode);
+	const serviceFee = availability?.serviceFee ?? selectedService?.price ?? 0;
+	const totalPrice = serviceFee + selectedMerit.amount;
 
   // 提交预约
   const mutation = useMutation({
@@ -110,16 +118,22 @@ export default function BookingScreen() {
       Alert.alert('请先登录', '登录后才能预约服务');
       return;
     }
-    const input: CreateBookingInput = {
+		if (!selectedService || !selectedSlot) {
+			Alert.alert('暂无时段', '请选择有剩余容量的服务时段');
+			return;
+		}
+		const input: CreateBookingInput = {
+			requestId: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       userId: user.userId,
       templeId,
       templeName: temple?.name || '',
       masterId,
       masterName: master?.dharmaName || '',
-      serviceId: selectedService.id,
-      serviceName: selectedService.name,
+			serviceId: selectedService.serviceCode,
+			serviceName: selectedService.serviceName,
       bookingDate: selectedDate.date,
-      timeSlot: selectedSlot,
+			slotCode: selectedSlot.slotCode,
+			timeSlot: selectedSlot.timeRange,
       meritMoney: selectedMerit.amount,
       meritMoneyTier: selectedMerit.tier,
       note,
@@ -165,7 +179,7 @@ export default function BookingScreen() {
               <Text style={styles.summaryMeta}>
                 {master?.templeName} · {master?.position}
               </Text>
-              <Text style={styles.summaryService}>服务：{selectedService.name}</Text>
+			  <Text style={styles.summaryService}>服务：{selectedService?.serviceName ?? '加载中'}</Text>
             </View>
           </View>
         </View>
@@ -174,11 +188,11 @@ export default function BookingScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>选择服务</Text>
           <View style={styles.serviceGrid}>
-            {SERVICE_OPTIONS.map((svc) => {
-              const active = selectedService.id === svc.id;
+			{services.map((svc: TempleBookingService) => {
+			  const active = selectedService?.serviceCode === svc.serviceCode;
               return (
                 <TouchableOpacity
-                  key={svc.id}
+				  key={svc.serviceCode}
                   onPress={() => setSelectedService(svc)}
                   style={[styles.serviceOption, active && styles.serviceOptionActive]}
                 >
@@ -188,7 +202,7 @@ export default function BookingScreen() {
                       active && styles.serviceOptionNameActive,
                     ]}
                   >
-                    {svc.name}
+					{svc.serviceName}
                   </Text>
                   <Text
                     style={[
@@ -232,16 +246,16 @@ export default function BookingScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>选择时段</Text>
           <View style={styles.slotRow}>
-            {TIME_SLOTS.map((slot) => {
-              const active = selectedSlot === slot;
+			{availableSlots.map((slot: AvailableSlot) => {
+			  const active = selectedSlotCode === slot.slotCode;
               return (
                 <TouchableOpacity
-                  key={slot}
-                  onPress={() => setSelectedSlot(slot)}
+				  key={slot.slotCode}
+				  onPress={() => slot.available && setSelectedSlotCode(slot.slotCode)}
                   style={[styles.slotItem, active && styles.slotItemActive]}
                 >
                   <Text style={[styles.slotText, active && styles.slotTextActive]}>
-                    {slot}
+					{slot.label} {slot.timeRange} · 余{slot.remaining}
                   </Text>
                 </TouchableOpacity>
               );
@@ -291,7 +305,7 @@ export default function BookingScreen() {
         <View style={styles.section}>
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>服务费</Text>
-            <Text style={styles.priceValue}>¥{selectedService.price}</Text>
+			<Text style={styles.priceValue}>¥{serviceFee}</Text>
           </View>
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>功德金</Text>

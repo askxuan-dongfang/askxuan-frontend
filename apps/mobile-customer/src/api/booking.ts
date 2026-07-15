@@ -1,10 +1,14 @@
 // 预约接口
 import client from './client';
-import type { Booking, CreateBookingInput, PagedResult } from '../types';
+import type { Booking, BookingAvailability, CreateBookingInput, CreateBookingResult, PagedResult } from '../types';
 
 // 创建预约
-export function createBooking(data: CreateBookingInput): Promise<Booking> {
-  return client.post('/bookings', data) as unknown as Promise<Booking>;
+export function createBooking(data: CreateBookingInput): Promise<CreateBookingResult> {
+	return client.post('/bookings', data) as unknown as Promise<CreateBookingResult>;
+}
+
+export function getBookingAvailability(params: { templeId: string; serviceId: string; date: string }): Promise<BookingAvailability> {
+	return client.get('/bookings/availability', { params }) as unknown as Promise<BookingAvailability>;
 }
 
 // 获取预约列表（后端返回分页对象 { total, list, page, size }）

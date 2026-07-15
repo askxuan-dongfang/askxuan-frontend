@@ -129,6 +129,12 @@ onMounted(load)
               <span class="price">{{ formatMoney(booking.meritMoney) }}</span>
               <el-tag v-if="booking.meritMoneyTier" size="small" effect="plain" class="ml-2">{{ booking.meritMoneyTier }}</el-tag>
             </el-descriptions-item>
+			<el-descriptions-item label="服务费"><span class="price">{{ formatMoney(booking.serviceFee) }}</span></el-descriptions-item>
+			<el-descriptions-item label="合计"><span class="price">{{ formatMoney(booking.totalFee) }}</span></el-descriptions-item>
+			<el-descriptions-item label="支付状态">
+			  <el-tag :type="booking.paymentStatus === 'success' ? 'success' : 'warning'">{{ booking.paymentStatus }}</el-tag>
+			</el-descriptions-item>
+			<el-descriptions-item label="支付单号">{{ booking.paymentNo || '-' }}</el-descriptions-item>
             <el-descriptions-item label="提交时间">{{ formatDate(booking.createdAt) }}</el-descriptions-item>
             <el-descriptions-item label="用户ID" :span="2">{{ booking.userId }}</el-descriptions-item>
             <el-descriptions-item label="备注" :span="2">{{ booking.note || '-' }}</el-descriptions-item>

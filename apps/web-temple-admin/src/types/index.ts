@@ -71,9 +71,20 @@ export interface TempleService {
   serviceName: string
   price: number
   timeSlots: string[]
+	slots: TempleServiceSlot[]
   intentTags: string[]
   status: string // on_shelf/off_shelf
   createTime: string
+}
+
+export interface TempleServiceSlot {
+	code: string
+	label: string
+	startTime: string
+	endTime: string
+	capacity: number
+	status: 'enabled' | 'disabled'
+	sort: number
 }
 
 export interface TempleServiceListResp {
@@ -108,8 +119,13 @@ export interface Booking {
   serviceId: string
   serviceName: string
   bookingDate: string
+	slotCode: string
   timeSlot: string
+	serviceFee: number
   meritMoney: number
+	totalFee: number
+	paymentStatus: string
+	paymentNo: string
   meritMoneyTier: string
   status: string
   note: string

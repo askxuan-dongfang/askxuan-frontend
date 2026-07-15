@@ -78,6 +78,17 @@ const intentionItems = [
   { code: 'taisui', title: '化太岁', serviceCode: 'S007', productTags: ['太岁', '符牌'], sects: ['全真派', '正一派'] }
 ];
 
+const templeBookingServices = [
+	{ id: 1, templeCode: 'T001', serviceCode: 'S001', serviceName: '祈福', price: 200, status: 'on_shelf', timeSlots: ['09:00-12:00', '13:00-17:00'], slots: [
+		{ code: 'slot_01', label: '上午', startTime: '09:00', endTime: '12:00', capacity: 10, status: 'enabled', sort: 1 },
+		{ code: 'slot_02', label: '下午', startTime: '13:00', endTime: '17:00', capacity: 10, status: 'enabled', sort: 2 }
+	] },
+	{ id: 2, templeCode: 'T001', serviceCode: 'S002', serviceName: '供灯', price: 80, status: 'on_shelf', timeSlots: ['10:00-11:00'], slots: [
+		{ code: 'slot_01', label: '午前', startTime: '10:00', endTime: '11:00', capacity: 5, status: 'enabled', sort: 1 }
+	] }
+];
+const bookingRequestResults = new Map<string, Record<string, unknown>>();
+
 const aiSkills = [
   { id: 8, code: 'general', name: '直接问事', description: '不限定术数方向的日常问事入口', icon: '/icons/general.png', promptTemplate: '', status: 'enabled', createdAt: '2026-07-13 10:00:00' },
   { id: 1, code: 'bazi', name: '八字命理', description: '依据生辰八字推演命格运势', icon: '/icons/bazi.png', promptTemplate: '', status: 'enabled', createdAt: '2026-06-28 10:00:00' },
@@ -249,6 +260,11 @@ router.get('/temples', (req: Request, res: Response) => {
     return true;
   });
   success(res, page(list, req));
+});
+
+router.get('/temples/:id/services', (req: Request, res: Response) => {
+	const list = templeBookingServices.map((service) => ({ ...service, templeCode: req.params.id }));
+	success(res, { list });
 });
 
 router.get('/temples/:id', (req: Request, res: Response) => {
@@ -679,6 +695,20 @@ router.get('/bookings', (_req: Request, res: Response) => {
   success(res, bookings);
 });
 
+router.get('/bookings/availability', (req: Request, res: Response) => {
+	const templeId = String(req.query.templeId ?? '');
+	const serviceId = String(req.query.serviceId ?? '');
+	const date = String(req.query.date ?? '');
+	const service = templeBookingServices.find((item) => item.serviceCode === serviceId);
+	if (!service) return fail(res, 40414, '寺院未提供该服务');
+	const slots = service.slots.map((slot) => {
+		const reserved = bookings.filter((booking) => booking.templeId === templeId && booking.serviceId === serviceId && booking.bookingDate === date && booking.timeSlot === `${slot.startTime}-${slot.endTime}` && booking.status !== 'cancelled').length;
+		const remaining = Math.max(slot.capacity - reserved, 0);
+		return { slotCode: slot.code, label: slot.label, timeRange: `${slot.startTime}-${slot.endTime}`, capacity: slot.capacity, remaining, available: slot.status === 'enabled' && remaining > 0 };
+	});
+	success(res, { templeId, serviceId, serviceName: service.serviceName, bookingDate: date, serviceFee: service.price, slots });
+});
+
 router.get('/bookings/:id', (req: Request, res: Response) => {
   const booking = bookings.find((b) => b.id === req.params.id);
   if (!booking) return fail(res, 404, '订单不存在');
@@ -687,6 +717,11 @@ router.get('/bookings/:id', (req: Request, res: Response) => {
 
 router.post('/bookings', (req: Request, res: Response) => {
   const body = req.body ?? {};
+	if (body.requestId && bookingRequestResults.has(body.requestId)) return success(res, bookingRequestResults.get(body.requestId));
+	const service = templeBookingServices.find((item) => item.serviceCode === body.serviceId);
+	if (!service) return fail(res, 40414, '寺院未提供该服务');
+	const slot = service.slots.find((item) => item.code === body.slotCode && item.status === 'enabled');
+	if (!slot) return fail(res, 40415, '预约时段不存在或已停用');
   const now = new Date();
   const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
   const newBooking: Booking = {
@@ -707,7 +742,9 @@ router.post('/bookings', (req: Request, res: Response) => {
     note: body.note ?? ''
   };
   bookings.push(newBooking);
-  success(res, newBooking);
+	const result = { id: newBooking.id, status: 'pending', paymentStatus: 'success', paymentNo: `MOCKPAY${Date.now()}`, serviceFee: service.price, meritMoney: newBooking.meritMoney, totalFee: service.price + newBooking.meritMoney, simulated: true };
+	if (body.requestId) bookingRequestResults.set(body.requestId, result);
+	success(res, result);
 });
 
 // ========== 认证 ==========

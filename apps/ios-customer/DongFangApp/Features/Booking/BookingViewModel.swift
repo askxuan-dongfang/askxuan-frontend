@@ -14,9 +14,11 @@ final class BookingViewModel: ObservableObject {
     let master: Master
 
     // MARK: - 表单字段
-    @Published var selectedService: ServiceType = .blessing
+	@Published var services: [TempleServiceInfo] = []
+	@Published var selectedServiceId: String = ""
     @Published var selectedDateIndex: Int = 0
-    @Published var selectedTimeSlot: String = "09:00-10:00"
+	@Published var availableSlots: [AvailableBookingSlot] = []
+	@Published var selectedSlotCode: String = ""
     @Published var selectedMeritTier: MeritTier = .medium
     @Published var customMeritMoney: String = ""
     @Published var note: String = ""
@@ -25,16 +27,10 @@ final class BookingViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var isSubmitting: Bool = false
     @Published var errorMessage: String? = nil
-    @Published var submittedBooking: Booking? = nil
+	@Published var submittedBooking: CreateBookingResponse? = nil
     @Published var showSuccess: Bool = false
 
     // MARK: - 选项数据
-    let serviceOptions: [ServiceType] = ServiceType.allCases.filter { $0 != .diy }
-    let timeSlots: [String] = [
-        "06:00-07:00", "08:00-09:00", "09:00-10:00", "10:00-11:00",
-        "11:00-12:00", "13:00-14:00", "14:00-15:00", "15:00-16:00",
-        "16:00-17:00", "18:00-19:00"
-    ]
     let meritTiers: [MeritTier] = MeritTier.allCases
 
     /// 可选日期（未来 14 天）
@@ -74,8 +70,45 @@ final class BookingViewModel: ObservableObject {
     }
 
     var canSubmit: Bool {
-        !isSubmitting && !selectedTimeSlot.isEmpty
+		!isSubmitting && selectedService != nil && selectedSlot != nil
     }
+
+	var selectedService: TempleServiceInfo? { services.first { $0.serviceCode == selectedServiceId } }
+	var selectedSlot: AvailableBookingSlot? { availableSlots.first { $0.slotCode == selectedSlotCode && $0.available } }
+	var serviceFee: Double { selectedService == nil ? 0 : (availabilityServiceFee ?? selectedService?.price ?? 0) }
+	private var availabilityServiceFee: Double?
+
+	func loadServices() async {
+		isLoading = true
+		defer { isLoading = false }
+		do {
+			let response: TempleServiceListResponse = try await apiClient.request(.templeServices(master.templeId))
+			services = response.list.filter { $0.status == "on_shelf" }
+			if !services.contains(where: { $0.serviceCode == selectedServiceId }) {
+				selectedServiceId = services.first?.serviceCode ?? ""
+			}
+			await refreshAvailability()
+		} catch {
+			errorMessage = error.localizedDescription
+		}
+	}
+
+	func refreshAvailability() async {
+		guard !selectedServiceId.isEmpty else { availableSlots = []; return }
+		do {
+			let date = AppDateFormatter.day.string(from: selectedDate)
+			let response: BookingAvailabilityResponse = try await apiClient.request(.bookingAvailability(templeId: master.templeId, serviceId: selectedServiceId, date: date))
+			availabilityServiceFee = response.serviceFee
+			availableSlots = response.slots
+			if !availableSlots.contains(where: { $0.slotCode == selectedSlotCode && $0.available }) {
+				selectedSlotCode = availableSlots.first(where: { $0.available })?.slotCode ?? ""
+			}
+		} catch {
+			availableSlots = []
+			selectedSlotCode = ""
+			errorMessage = error.localizedDescription
+		}
+	}
 
     // MARK: - 提交
     func submit() async {
@@ -84,15 +117,18 @@ final class BookingViewModel: ObservableObject {
         errorMessage = nil
 
         let bookingDate = AppDateFormatter.day.string(from: selectedDate)
-        let request = CreateBookingRequest(
+		guard let service = selectedService, let slot = selectedSlot else { isSubmitting = false; return }
+		let request = CreateBookingRequest(
+			requestId: UUID().uuidString,
             templeId: master.templeId,
             templeName: master.templeName,
             masterId: master.id,
             masterName: master.dharmaName,
-            serviceId: selectedService.id,
-            serviceName: selectedService.rawValue,
+			serviceId: service.serviceCode,
+			serviceName: service.serviceName,
             bookingDate: bookingDate,
-            timeSlot: selectedTimeSlot,
+			slotCode: slot.slotCode,
+			timeSlot: slot.timeRange,
             meritMoney: finalMeritMoney,
             meritMoneyTier: selectedMeritTier.rawValue,
             note: note,
@@ -100,7 +136,7 @@ final class BookingViewModel: ObservableObject {
         )
 
         do {
-            let booking: Booking = try await apiClient.request(.createBooking(request))
+			let booking: CreateBookingResponse = try await apiClient.request(.createBooking(request))
             self.submittedBooking = booking
             self.showSuccess = true
         } catch {

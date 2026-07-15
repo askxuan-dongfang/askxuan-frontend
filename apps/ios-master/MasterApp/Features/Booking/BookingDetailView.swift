@@ -61,8 +61,10 @@ final class BookingDetailViewModel: ObservableObject {
             if var b = booking {
                 b = Booking(id: b.id, userId: b.userId, templeId: b.templeId, templeName: b.templeName,
                             masterId: b.masterId, masterName: b.masterName, serviceId: b.serviceId,
-                            serviceName: b.serviceName, bookingDate: b.bookingDate, timeSlot: b.timeSlot,
-                            meritMoney: b.meritMoney, meritMoneyTier: b.meritMoneyTier,
+                            serviceName: b.serviceName, bookingDate: b.bookingDate, slotCode: b.slotCode,
+                            timeSlot: b.timeSlot, serviceFee: b.serviceFee, meritMoney: b.meritMoney,
+                            totalFee: b.totalFee, paymentStatus: b.paymentStatus, paymentNo: b.paymentNo,
+                            meritMoneyTier: b.meritMoneyTier,
                             status: resp.status, note: b.note, createdAt: b.createdAt)
                 booking = b
             }
