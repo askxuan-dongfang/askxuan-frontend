@@ -10,6 +10,10 @@ use_frameworks!
 target 'DongFangApp' do
   # OpenIM 即时通讯 SDK（3.8.3+）
   pod 'OpenIMSDK', '~> 3.8.3'
+
+  target 'DongFangAppTests' do
+    inherit! :search_paths
+  end
 end
 
 # Xcode 27 要求最低 deployment target 15.0；强制所有 Pods target 提升至 17.0

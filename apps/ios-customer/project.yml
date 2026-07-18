@@ -65,3 +65,17 @@ targets:
             localhost:
               NSExceptionAllowsInsecureHTTPLoads: true
               NSIncludesSubdomains: true
+
+  DongFangAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: DongFangAppTests
+    dependencies:
+      - target: DongFangApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dongfang.customer.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/DongFangApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DongFangApp"
+        BUNDLE_LOADER: "$(TEST_HOST)"

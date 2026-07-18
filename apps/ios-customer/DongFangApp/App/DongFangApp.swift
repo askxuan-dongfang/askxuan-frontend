@@ -28,11 +28,19 @@ struct DongFangApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // 始终显示 MainTabView，游客可浏览首页/商城公共信息
-            // 需要登录的 Tab（对话/AI/我的）内部通过 requireAuth 拦截
-            MainTabView()
-                .environmentObject(authStore)
-                .preferredColorScheme(.dark)
+            Group {
+                #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("--diy-screenshot") {
+                    DiyScreenshotRootView()
+                } else {
+                    MainTabView()
+                }
+                #else
+                MainTabView()
+                #endif
+            }
+            .environmentObject(authStore)
+            .preferredColorScheme(.dark)
         }
     }
 
@@ -101,3 +109,37 @@ struct DongFangApp: App {
         }
     }
 }
+
+#if DEBUG
+/// Deterministic editor fixture for screenshots and visual regression checks.
+private struct DiyScreenshotRootView: View {
+    @StateObject private var viewModel: DiyViewModel
+
+    init() {
+        let defaults = UserDefaults(suiteName: "askxuan.diy.screenshot")!
+        defaults.removePersistentDomain(forName: "askxuan.diy.screenshot")
+
+        let viewModel = DiyViewModel(draftStore: defaults)
+        viewModel.materials = Material.mockMaterials
+
+        let pattern = [2, 2, 6, 2, 2, 2, 6, 2, 2, 10, 2, 2, 6, 2, 2, 6]
+        for materialId in pattern {
+            if let material = Material.mockMaterials.first(where: { $0.id == materialId }) {
+                viewModel.addBead(material)
+            }
+        }
+        if let cord = Material.mockMaterials.first(where: { $0.category == "cord" }) {
+            viewModel.setCord(cord)
+        }
+        viewModel.setWristSize(160)
+        viewModel.selectBead(nil)
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    var body: some View {
+        NavigationStack {
+            DiyDesignView(viewModel: viewModel)
+        }
+    }
+}
+#endif

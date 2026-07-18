@@ -37,10 +37,11 @@
 		6CB8C86D488358AA9ACC986C /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB0018C29D0DC4CD63F43199 /* UserProfile.swift */; };
 		6DCE915F1F7510E6EFBB1991 /* ServiceTaisuiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0EFC7436BB112169EF54B6F /* ServiceTaisuiView.swift */; };
 		7114168E304F9F18E61E16EB /* Master.swift in Sources */ = {isa = PBXBuildFile; fileRef = A03E43A4788113300BE29D77 /* Master.swift */; };
+		7CB2CC82E35E865D239F2E30 /* Pods_DongFangAppTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C46B2E3B157332FB2B9D170C /* Pods_DongFangAppTests.framework */; };
 		84B5E75095A9D37B696B6713 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C010CD5681C8EF44E54E513F /* APIClient.swift */; };
 		84F998F328F8B5EA59A5CF1F /* BookingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78233F2A18CCCCDF35390DB2 /* BookingView.swift */; };
-		8B737C59F986FA76F40DDA12 /* Pods_DongFangApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 330B4D56D19C2FD76494465E /* Pods_DongFangApp.framework */; };
 		8BA9CE40B114C6365F998545 /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DC8C8E33F8CCD3F87412A11 /* StatusBadge.swift */; };
+		8C2BD7EBA97EE7FB4FEE6EFD /* DiyEditorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CAF6EB22243DA0583289CD /* DiyEditorTests.swift */; };
 		90FE6999E8BBDF5CA5622022 /* MasterListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A977054AC6636024946C93 /* MasterListView.swift */; };
 		929252235D6B2452438425AF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6A5A6DB8CDF1D86AFAD4F519 /* Assets.xcassets */; };
 		95CB52E2500A3A223AC906BC /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25E69079EF146EC3781FA552 /* ChatView.swift */; };
@@ -56,6 +57,7 @@
 		B3EAA3277CE211284149DB37 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6031FC8114555CAC9A2010E3 /* AuthStore.swift */; };
 		B4EFC27D7AA2D9FE4E9C684D /* BottomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA98EDFCAA4C436931ED0222 /* BottomTabBar.swift */; };
 		BE234FC62A4A6EFFB20595A0 /* Announcement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 256B49BC8EC19FDE6447F528 /* Announcement.swift */; };
+		C751FF7D0683A989D221245E /* Pods_DongFangApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1146E8AE880745088DA214F6 /* Pods_DongFangApp.framework */; };
 		C78940F3C6C9789E10C8EE67 /* ServiceLampView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DDC649DCC534DC4F787CD65 /* ServiceLampView.swift */; };
 		C84CB7A281B7808A3AF0BAB8 /* WebSocketManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E8B5D58C95EF253F44E0060 /* WebSocketManager.swift */; };
 		C8FA7A5209B8A256BE11299C /* ServiceConsecrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EC4A691B775E127A0F1C1DD /* ServiceConsecrationView.swift */; };
@@ -80,24 +82,32 @@
 		FD62D7B13DCFE5C4B52992F0 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FF6AD3EC1893B3135324CFB /* RemoteImage.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		2D45A256A76EC6A1357216FE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 979E242E14369C61EE590076 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5AF635CBD5ECAC5958791088;
+			remoteInfo = DongFangApp;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		006294936C9F9297CF0B3D70 /* Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
 		03F6BFA411B06AC33CCF6FF2 /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
 		0DDC649DCC534DC4F787CD65 /* ServiceLampView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceLampView.swift; sourceTree = "<group>"; };
+		1146E8AE880745088DA214F6 /* Pods_DongFangApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DongFangApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		193EEF8E131D20E2F4897CE0 /* Service.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Service.swift; sourceTree = "<group>"; };
 		19C4A2CA2A31EEAEEE340C69 /* DongFangApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = DongFangApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1AF936000A9D7B1EC00D512D /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		1BE33612D2155FEDA901D3D8 /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
-		1DC616CE352DC70C2DD8795A /* Pods-DongFangApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DongFangApp.debug.xcconfig"; path = "Target Support Files/Pods-DongFangApp/Pods-DongFangApp.debug.xcconfig"; sourceTree = "<group>"; };
 		2431C78E9C9239620D33AC8B /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		24DD6432C6363432E718D930 /* DiyOrder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyOrder.swift; sourceTree = "<group>"; };
 		256B49BC8EC19FDE6447F528 /* Announcement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Announcement.swift; sourceTree = "<group>"; };
 		25E69079EF146EC3781FA552 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		25FDFC04252F879AB3493443 /* TempleDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempleDetailView.swift; sourceTree = "<group>"; };
 		2E5A6AA366BD8DB9094DBFD1 /* BookingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingViewModel.swift; sourceTree = "<group>"; };
-		330B4D56D19C2FD76494465E /* Pods_DongFangApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DongFangApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		389090D2C716583E337285CD /* DongFangApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DongFangApp.swift; sourceTree = "<group>"; };
-		40FDBB41EB6F5E6CFFE3A3F0 /* Pods-DongFangApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DongFangApp.release.xcconfig"; path = "Target Support Files/Pods-DongFangApp/Pods-DongFangApp.release.xcconfig"; sourceTree = "<group>"; };
 		41C2E5B48BC2E74108354D27 /* ServiceBlessingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceBlessingView.swift; sourceTree = "<group>"; };
 		47FA318687B4947262CFF8DD /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		4BA68B8CE6DA0E3B274EBA07 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
@@ -105,6 +115,7 @@
 		50321C15C1346E3FF7B838C4 /* ShopViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopViewModel.swift; sourceTree = "<group>"; };
 		50FD827D80189BE654949DBE /* TopNavBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopNavBar.swift; sourceTree = "<group>"; };
 		576AED6FD494F52074FD9CA8 /* ServiceVowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceVowView.swift; sourceTree = "<group>"; };
+		5B57228DAF219B76F0CEC6BB /* Pods-DongFangApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DongFangApp.debug.xcconfig"; path = "Target Support Files/Pods-DongFangApp/Pods-DongFangApp.debug.xcconfig"; sourceTree = "<group>"; };
 		5DC8C8E33F8CCD3F87412A11 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		5F42ECA2DB16A4249D38183C /* APIResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIResponse.swift; sourceTree = "<group>"; };
 		5FBD28CBB485AB876AA47DD9 /* ServiceIncenseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceIncenseView.swift; sourceTree = "<group>"; };
@@ -121,6 +132,7 @@
 		7A7D526045E92370DDA8D508 /* LoginRequiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginRequiredView.swift; sourceTree = "<group>"; };
 		7E8B5D58C95EF253F44E0060 /* WebSocketManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketManager.swift; sourceTree = "<group>"; };
 		7EC4A691B775E127A0F1C1DD /* ServiceConsecrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceConsecrationView.swift; sourceTree = "<group>"; };
+		7F85AC8B53E15CEDD9522D5E /* DongFangAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DongFangAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		88E82F76143FF951B694E509 /* ChatDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatDetailView.swift; sourceTree = "<group>"; };
 		8973AE6B8C93BC3385082D4E /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		89D472202BFAC67906844A14 /* MasterProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterProfileViewModel.swift; sourceTree = "<group>"; };
@@ -130,15 +142,19 @@
 		95B683B69A6B598E1BC6FA84 /* MasterListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterListViewModel.swift; sourceTree = "<group>"; };
 		9868540D689F7EA31B0C619C /* Temple.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Temple.swift; sourceTree = "<group>"; };
 		989347BF6A366E3E13B3BDDA /* TempleListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempleListView.swift; sourceTree = "<group>"; };
+		9A76CCE15D08FF347105A308 /* Pods-DongFangAppTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DongFangAppTests.release.xcconfig"; path = "Target Support Files/Pods-DongFangAppTests/Pods-DongFangAppTests.release.xcconfig"; sourceTree = "<group>"; };
 		9FF6AD3EC1893B3135324CFB /* RemoteImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteImage.swift; sourceTree = "<group>"; };
 		A03E43A4788113300BE29D77 /* Master.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Master.swift; sourceTree = "<group>"; };
 		A0D047F538ABC13EAC55361D /* ShopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopView.swift; sourceTree = "<group>"; };
+		A1CAF6EB22243DA0583289CD /* DiyEditorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyEditorTests.swift; sourceTree = "<group>"; };
 		A99546E19EF4027BB49DBB2B /* ServiceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceViewModel.swift; sourceTree = "<group>"; };
 		AB1A4F5DC44274685E3D28B6 /* JSONHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONHelper.swift; sourceTree = "<group>"; };
 		AD74EC54937E0812B49D310C /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
 		B0138C84F23ED0F852535C5D /* AiResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AiResult.swift; sourceTree = "<group>"; };
+		B2A96CF5313F198ED89AB1DA /* Pods-DongFangAppTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DongFangAppTests.debug.xcconfig"; path = "Target Support Files/Pods-DongFangAppTests/Pods-DongFangAppTests.debug.xcconfig"; sourceTree = "<group>"; };
 		C010CD5681C8EF44E54E513F /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		C321AEBD19A23F58E9FE7483 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		C46B2E3B157332FB2B9D170C /* Pods_DongFangAppTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DongFangAppTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C7A6F924ADE80A4DCF100DF1 /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
 		C8A977054AC6636024946C93 /* MasterListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterListView.swift; sourceTree = "<group>"; };
 		CB0018C29D0DC4CD63F43199 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
@@ -151,6 +167,7 @@
 		E40BE52F2D940C20FBCBB17D /* TempleListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempleListViewModel.swift; sourceTree = "<group>"; };
 		E4E5FAA5B507CCC9247021D4 /* MasterProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterProfileView.swift; sourceTree = "<group>"; };
 		E9446383FCD8C80FAC5035CE /* DiyViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyViewModel.swift; sourceTree = "<group>"; };
+		EE55E657E1C568460C3EB674 /* Pods-DongFangApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DongFangApp.release.xcconfig"; path = "Target Support Files/Pods-DongFangApp/Pods-DongFangApp.release.xcconfig"; sourceTree = "<group>"; };
 		F11CE18D20DCCAB6C048E0ED /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
 		F14481BA1F32CB1D766AFB69 /* DiyBraceletView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyBraceletView.swift; sourceTree = "<group>"; };
 		F92542A7AC56799BC20F9544 /* TempleDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempleDetailViewModel.swift; sourceTree = "<group>"; };
@@ -158,11 +175,19 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		1DEE56B1902DEE70714BAD63 /* Frameworks */ = {
+		C24B5B62FCC689A6409C61F8 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8B737C59F986FA76F40DDA12 /* Pods_DongFangApp.framework in Frameworks */,
+				C751FF7D0683A989D221245E /* Pods_DongFangApp.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E088612E4350176871D15C3C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7CB2CC82E35E865D239F2E30 /* Pods_DongFangAppTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -188,6 +213,7 @@
 			isa = PBXGroup;
 			children = (
 				19C4A2CA2A31EEAEEE340C69 /* DongFangApp.app */,
+				7F85AC8B53E15CEDD9522D5E /* DongFangAppTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -201,6 +227,14 @@
 			path = DesignSystem;
 			sourceTree = "<group>";
 		};
+		34B14828F46AA518999A56FE /* DongFangAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				A1CAF6EB22243DA0583289CD /* DiyEditorTests.swift */,
+			);
+			path = DongFangAppTests;
+			sourceTree = "<group>";
+		};
 		4975BAA5847955355B5BAD29 /* Shop */ = {
 			isa = PBXGroup;
 			children = (
@@ -208,6 +242,15 @@
 				50321C15C1346E3FF7B838C4 /* ShopViewModel.swift */,
 			);
 			path = Shop;
+			sourceTree = "<group>";
+		};
+		52DE4B16BCAAE2E4A1D7E2D7 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1146E8AE880745088DA214F6 /* Pods_DongFangApp.framework */,
+				C46B2E3B157332FB2B9D170C /* Pods_DongFangAppTests.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		54015560DB363C65EC81DB3F /* DongFangApp */ = {
@@ -228,9 +271,10 @@
 			isa = PBXGroup;
 			children = (
 				54015560DB363C65EC81DB3F /* DongFangApp */,
+				34B14828F46AA518999A56FE /* DongFangAppTests */,
 				2212A00BAC87DC51EDA95F9C /* Products */,
-				8C67A2BF9E790F4FEF592279 /* Pods */,
-				DAB61869CAEBD92B585A39C1 /* Frameworks */,
+				D3350D6DEA9950266AD2FDD6 /* Pods */,
+				52DE4B16BCAAE2E4A1D7E2D7 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -302,16 +346,6 @@
 			path = Temple;
 			sourceTree = "<group>";
 		};
-		8C67A2BF9E790F4FEF592279 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				1DC616CE352DC70C2DD8795A /* Pods-DongFangApp.debug.xcconfig */,
-				40FDBB41EB6F5E6CFFE3A3F0 /* Pods-DongFangApp.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
-			sourceTree = "<group>";
-		};
 		94AE1BDB7D029095782BEB6D /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -357,6 +391,18 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
+		D3350D6DEA9950266AD2FDD6 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				5B57228DAF219B76F0CEC6BB /* Pods-DongFangApp.debug.xcconfig */,
+				EE55E657E1C568460C3EB674 /* Pods-DongFangApp.release.xcconfig */,
+				B2A96CF5313F198ED89AB1DA /* Pods-DongFangAppTests.debug.xcconfig */,
+				9A76CCE15D08FF347105A308 /* Pods-DongFangAppTests.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		D40B2AC7C4B397DD2C99CF31 /* Profile */ = {
 			isa = PBXGroup;
 			children = (
@@ -365,14 +411,6 @@
 				4BA68B8CE6DA0E3B274EBA07 /* ProfileViewModel.swift */,
 			);
 			path = Profile;
-			sourceTree = "<group>";
-		};
-		DAB61869CAEBD92B585A39C1 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				330B4D56D19C2FD76494465E /* Pods_DongFangApp.framework */,
-			);
-			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		DB7342E51D35969B42CE4283 /* Master */ = {
@@ -449,11 +487,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 05A92618F7F09E6AB3E25CDE /* Build configuration list for PBXNativeTarget "DongFangApp" */;
 			buildPhases = (
-				D8AFCE1D52F54A99A5851368 /* [CP] Check Pods Manifest.lock */,
+				4C8A5C81EBCE85E0268482D4 /* [CP] Check Pods Manifest.lock */,
 				B460FB33AFC5E1349A224921 /* Sources */,
 				5E7C6D1F3E0FF06E88048B91 /* Resources */,
-				1DEE56B1902DEE70714BAD63 /* Frameworks */,
-				FF1158D8BCE135B48DA2C929 /* [CP] Embed Pods Frameworks */,
+				C24B5B62FCC689A6409C61F8 /* Frameworks */,
+				09A59323E7688EEE4CCD71D1 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -463,6 +501,24 @@
 			productName = DongFangApp;
 			productReference = 19C4A2CA2A31EEAEEE340C69 /* DongFangApp.app */;
 			productType = "com.apple.product-type.application";
+		};
+		5B81FAA01FB75ACFF0F58E79 /* DongFangAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 70D21C060570BECCF74BE42C /* Build configuration list for PBXNativeTarget "DongFangAppTests" */;
+			buildPhases = (
+				ECFBC220B8DF25D1233AB859 /* [CP] Check Pods Manifest.lock */,
+				CE46390B74454125FB7DE15A /* Sources */,
+				E088612E4350176871D15C3C /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4BB845C315F06C46549D9328 /* PBXTargetDependency */,
+			);
+			name = DongFangAppTests;
+			productName = DongFangAppTests;
+			productReference = 7F85AC8B53E15CEDD9522D5E /* DongFangAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -474,6 +530,9 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					5AF635CBD5ECAC5958791088 = {
+						DevelopmentTeam = "";
+					};
+					5B81FAA01FB75ACFF0F58E79 = {
 						DevelopmentTeam = "";
 					};
 				};
@@ -493,6 +552,7 @@
 			projectRoot = "";
 			targets = (
 				5AF635CBD5ECAC5958791088 /* DongFangApp */,
+				5B81FAA01FB75ACFF0F58E79 /* DongFangAppTests */,
 			);
 		};
 /* End PBXProject section */
@@ -509,7 +569,24 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		D8AFCE1D52F54A99A5851368 /* [CP] Check Pods Manifest.lock */ = {
+		09A59323E7688EEE4CCD71D1 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-DongFangApp/Pods-DongFangApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-DongFangApp/Pods-DongFangApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-DongFangApp/Pods-DongFangApp-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		4C8A5C81EBCE85E0268482D4 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -531,21 +608,26 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		FF1158D8BCE135B48DA2C929 /* [CP] Embed Pods Frameworks */ = {
+		ECFBC220B8DF25D1233AB859 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-DongFangApp/Pods-DongFangApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			name = "[CP] Embed Pods Frameworks";
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-DongFangApp/Pods-DongFangApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-DongFangAppTests-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-DongFangApp/Pods-DongFangApp-frameworks.sh\"\n";
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -627,7 +709,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CE46390B74454125FB7DE15A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8C2BD7EBA97EE7FB4FEE6EFD /* DiyEditorTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		4BB845C315F06C46549D9328 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5AF635CBD5ECAC5958791088 /* DongFangApp */;
+			targetProxy = 2D45A256A76EC6A1357216FE /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		140CEA6EF6734803ECA4DE47 /* Debug */ = {
@@ -769,9 +867,45 @@
 			};
 			name = Release;
 		};
+		5874BB8521C9204D36CD6F79 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9A76CCE15D08FF347105A308 /* Pods-DongFangAppTests.release.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dongfang.customer.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DongFangApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DongFangApp";
+			};
+			name = Release;
+		};
+		5B032A07CDB8B7B53C1AF86B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B2A96CF5313F198ED89AB1DA /* Pods-DongFangAppTests.debug.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dongfang.customer.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DongFangApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DongFangApp";
+			};
+			name = Debug;
+		};
 		C67451B6D6166B1A2C33FBB7 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1DC616CE352DC70C2DD8795A /* Pods-DongFangApp.debug.xcconfig */;
+			baseConfigurationReference = 5B57228DAF219B76F0CEC6BB /* Pods-DongFangApp.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -789,7 +923,7 @@
 		};
 		E7D322DE557066C3CFD1C183 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 40FDBB41EB6F5E6CFFE3A3F0 /* Pods-DongFangApp.release.xcconfig */;
+			baseConfigurationReference = EE55E657E1C568460C3EB674 /* Pods-DongFangApp.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -820,6 +954,15 @@
 			buildConfigurations = (
 				140CEA6EF6734803ECA4DE47 /* Debug */,
 				208D3574BE70156F4D1BEE9D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		70D21C060570BECCF74BE42C /* Build configuration list for PBXNativeTarget "DongFangAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5B032A07CDB8B7B53C1AF86B /* Debug */,
+				5874BB8521C9204D36CD6F79 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
