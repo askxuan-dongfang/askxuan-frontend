@@ -12,6 +12,7 @@ final class ProfileViewModel: ObservableObject {
     @Published var profile: UserProfile?
     @Published var recentBookings: [Booking] = []
     @Published var addresses: [UserAddress] = []
+    @Published var coupons: [UserCoupon] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
 
@@ -52,6 +53,8 @@ final class ProfileViewModel: ObservableObject {
     /// 地址总数
     var addressCount: Int { addresses.count }
 
+    var availableCouponCount: Int { coupons.filter { $0.status == "unused" }.count }
+
     /// 默认地址
     var defaultAddress: UserAddress? { addresses.first(where: { $0.isDefault }) }
 
@@ -79,8 +82,9 @@ final class ProfileViewModel: ObservableObject {
         async let profileResult = fetchProfile()
         async let bookingsResult = fetchRecentBookings(userId: userId)
         async let addressesResult = fetchAddresses()
+        async let couponsResult = fetchCoupons(userId: userId)
 
-        let (p, b, a) = await (profileResult, bookingsResult, addressesResult)
+        let (p, b, a, c) = await (profileResult, bookingsResult, addressesResult, couponsResult)
 
         // API 失败时不再回退 Mock 数据：置空并记录错误，由 View 展示空状态/错误提示
         var failedParts: [String] = []
@@ -109,6 +113,14 @@ final class ProfileViewModel: ObservableObject {
             failedParts.append("地址")
         }
 
+        switch c {
+        case .success(let list):
+            self.coupons = list
+        case .failure:
+            self.coupons = []
+            failedParts.append("优惠券")
+        }
+
         if !failedParts.isEmpty {
             self.errorMessage = "加载失败：\(failedParts.joined(separator: "、"))"
         }
@@ -121,6 +133,7 @@ final class ProfileViewModel: ObservableObject {
         self.profile = nil
         self.recentBookings = []
         self.addresses = []
+        self.coupons = []
     }
 
     // MARK: - 网络请求
@@ -147,6 +160,17 @@ final class ProfileViewModel: ObservableObject {
     private func fetchAddresses() async -> Result<[UserAddress], Error> {
         do {
             let resp: ListResponse<UserAddress> = try await apiClient.request(.addressList)
+            return .success(resp.list)
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    private func fetchCoupons(userId: String) async -> Result<[UserCoupon], Error> {
+        do {
+            let resp: PageResponse<UserCoupon> = try await apiClient.request(
+                .myCoupons(userId: userId, status: nil, page: 1, size: 100)
+            )
             return .success(resp.list)
         } catch {
             return .failure(error)

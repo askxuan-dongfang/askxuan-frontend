@@ -34,10 +34,36 @@ enum AppConfig {
     /// - Debug：本地后端（模拟器走 localhost，真机联调需改为 Mac 局域网 IP）
     /// - Release：线上生产域名
     static let baseURL: URL = {
+        if let value = Bundle.main.object(forInfoDictionaryKey: "ASKXUAN_API_BASE_URL") as? String,
+           let url = URL(string: value), !value.isEmpty {
+            return url
+        }
         #if DEBUG
         return URL(string: "http://localhost:8080/api/v1")!
         #else
         return URL(string: "https://api.askxuan.com/api/v1")!
+        #endif
+    }()
+
+    static let openIMAPIURL: String = {
+        if let value = Bundle.main.object(forInfoDictionaryKey: "OPENIM_API_URL") as? String, !value.isEmpty {
+            return value
+        }
+        #if DEBUG
+        return "http://localhost:10002"
+        #else
+        return "https://im-api.askxuan.com"
+        #endif
+    }()
+
+    static let openIMWebSocketURL: String = {
+        if let value = Bundle.main.object(forInfoDictionaryKey: "OPENIM_WS_URL") as? String, !value.isEmpty {
+            return value
+        }
+        #if DEBUG
+        return "ws://localhost:10001"
+        #else
+        return "wss://im-ws.askxuan.com"
         #endif
     }()
 

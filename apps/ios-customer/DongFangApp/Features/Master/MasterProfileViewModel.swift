@@ -27,7 +27,7 @@ final class MasterProfileViewModel: ObservableObject {
             let detail: Master = try await apiClient.request(.masterById(id))
             self.master = detail
         } catch {
-            self.master = Master.mockData.first(where: { $0.id == id })
+            self.master = nil
             self.errorMessage = error.localizedDescription
         }
         isLoading = false

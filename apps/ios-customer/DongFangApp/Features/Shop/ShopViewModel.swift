@@ -16,7 +16,6 @@ final class ShopViewModel: ObservableObject {
     @Published var keyword: String = ""
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
-    @Published var cartCount: Int = 3
 
     /// 商城分类（含「全部」，对齐 shop.html 原型 8 个分类 + 全部）
     let shopCategories: [ShopCategory] = ShopCategory.all
@@ -45,15 +44,16 @@ final class ShopViewModel: ObservableObject {
         case .success(let list):
             self.products = list
         case .failure(let error):
-            self.products = ShopViewModel.mockProducts
+            self.products = []
             self.errorMessage = error.localizedDescription
         }
 
         switch categoriesRes {
         case .success(let list):
             self.categories = list
-        case .failure:
-            self.categories = mockCategories
+        case .failure(let error):
+            self.categories = []
+            if self.errorMessage == nil { self.errorMessage = error.localizedDescription }
         }
 
         isLoading = false
@@ -107,21 +107,7 @@ final class ShopViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Mock 兜底（对齐 shop.html 原型商品）
-    private var mockCategories: [ProductCategory] {
-        [
-            ProductCategory(id: 1, parentId: nil, name: "佛珠", level: 1, sort: 1, children: nil),
-            ProductCategory(id: 2, parentId: nil, name: "香道", level: 1, sort: 2, children: nil),
-            ProductCategory(id: 3, parentId: nil, name: "经书", level: 1, sort: 3, children: nil),
-            ProductCategory(id: 4, parentId: nil, name: "护身符", level: 1, sort: 4, children: nil),
-            ProductCategory(id: 5, parentId: nil, name: "法器", level: 1, sort: 5, children: nil),
-            ProductCategory(id: 6, parentId: nil, name: "禅茶", level: 1, sort: 6, children: nil),
-            ProductCategory(id: 7, parentId: nil, name: "文具", level: 1, sort: 7, children: nil),
-            ProductCategory(id: 8, parentId: nil, name: "定制", level: 1, sort: 8, children: nil),
-        ]
-    }
-
-    static let mockProducts: [ShopProduct] = [
+    static let previewProducts: [ShopProduct] = [
         ShopProduct(id: 1, productNo: "P001", name: "灵隐檀香佛珠",
                     categoryId: 1, categoryName: "佛珠",
                     description: "精选檀香木，法师开光加持。",
@@ -159,6 +145,185 @@ final class ShopViewModel: ObservableObject {
                     stock: 2710, tags: "热销", skus: nil, images: nil,
                     createTime: "2026-06-01", updateTime: "2026-06-01"),
     ]
+}
+
+@MainActor
+final class ShopCartStore: ObservableObject {
+    static let shared = ShopCartStore()
+
+    @Published private(set) var items: [ShopCartItem] = [] {
+        didSet { persist() }
+    }
+
+    private let storageKey = "shop.cart.items.v1"
+
+    private init() {
+        guard let data = UserDefaults.standard.data(forKey: storageKey),
+              let decoded = try? JSONDecoder().decode([ShopCartItem].self, from: data) else { return }
+        items = decoded.filter { $0.quantity > 0 }
+    }
+
+    var itemCount: Int { items.reduce(0) { $0 + $1.quantity } }
+    var total: Double { items.reduce(0) { $0 + $1.subtotal } }
+
+    func add(product: ShopProduct, sku: ProductSku?, quantity: Int) {
+        let skuId = sku?.id ?? 0
+        let key = "\(product.id):\(skuId)"
+        let safeQuantity = max(1, min(quantity, sku?.stock ?? product.stock))
+        if let index = items.firstIndex(where: { $0.id == key }) {
+            var updated = items[index]
+            updated.quantity = min(updated.stock, updated.quantity + safeQuantity)
+            items[index] = updated
+            return
+        }
+        items.append(ShopCartItem(
+            productId: product.id,
+            skuId: skuId,
+            productName: product.name,
+            skuSpec: sku.map { "\($0.specName)：\($0.specValue)" } ?? "默认规格",
+            image: product.mainImage,
+            unitPrice: sku?.price ?? product.price,
+            quantity: safeQuantity,
+            stock: sku?.stock ?? product.stock
+        ))
+    }
+
+    func setQuantity(for id: String, quantity: Int) {
+        guard let index = items.firstIndex(where: { $0.id == id }) else { return }
+        if quantity <= 0 {
+            items.remove(at: index)
+        } else {
+            items[index].quantity = min(items[index].stock, quantity)
+        }
+    }
+
+    func remove(_ item: ShopCartItem) { items.removeAll { $0.id == item.id } }
+    func clear() { items.removeAll() }
+
+    private func persist() {
+        guard let data = try? JSONEncoder().encode(items) else { return }
+        UserDefaults.standard.set(data, forKey: storageKey)
+    }
+}
+
+@MainActor
+final class ShopProductDetailViewModel: ObservableObject {
+    @Published var product: ShopProduct
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+
+    private let apiClient: APIClient
+
+    init(product: ShopProduct, apiClient: APIClient = .shared) {
+        self.product = product
+        self.apiClient = apiClient
+    }
+
+    func load() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            product = try await apiClient.request(.productById(product.id))
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+}
+
+@MainActor
+final class ShopCheckoutViewModel: ObservableObject {
+    @Published var addresses: [UserAddress] = []
+    @Published var selectedAddressId: Int64?
+    @Published var note = ""
+    @Published var isLoading = false
+    @Published var isSubmitting = false
+    @Published var errorMessage: String?
+    @Published var completedOrder: ShopOrder?
+    @Published var payment: PaymentRecord?
+
+    private let apiClient: APIClient
+    private let authStore: AuthStore
+
+    init(apiClient: APIClient = .shared, authStore: AuthStore = .shared) {
+        self.apiClient = apiClient
+        self.authStore = authStore
+    }
+
+    func loadAddresses() async {
+        guard authStore.isLoggedIn else { return }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let response: ListResponse<UserAddress> = try await apiClient.request(.addressList)
+            addresses = response.list
+            selectedAddressId = response.list.first(where: { $0.isDefault })?.id ?? response.list.first?.id
+            errorMessage = nil
+        } catch {
+            addresses = []
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func submit(items: [ShopCartItem]) async -> Bool {
+        guard !isSubmitting, let addressId = selectedAddressId, !items.isEmpty else { return false }
+        isSubmitting = true
+        errorMessage = nil
+        defer { isSubmitting = false }
+
+        let request = ShopOrderCreateRequest(
+            requestId: UUID().uuidString.lowercased(),
+            userId: authStore.userId,
+            addressId: addressId,
+            note: note.trimmingCharacters(in: .whitespacesAndNewlines),
+            items: items.map {
+                ShopOrderItemRequest(productId: $0.productId, skuId: $0.skuId,
+                                     quantity: $0.quantity, productName: $0.productName,
+                                     skuSpec: $0.skuSpec, price: $0.unitPrice, image: $0.image)
+            }
+        )
+
+        do {
+            let created: ShopOrderCreateResult = try await apiClient.request(.shopOrderCreate(request))
+            let order: ShopOrder = try await apiClient.request(.shopOrderById(created.id))
+            let paymentResult: PaymentCreateResult = try await apiClient.request(
+                .paymentCreate(PaymentCreateRequest(orderType: "shop_order", orderNo: order.orderNo,
+                                                     amount: order.payAmount, channel: "mock",
+                                                     userId: authStore.userId))
+            )
+            let paymentRecord: PaymentRecord = try await apiClient.request(.paymentById(paymentResult.id))
+            completedOrder = order
+            payment = paymentRecord
+            return paymentRecord.status == "success"
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+}
+
+@MainActor
+final class ShopOrderListViewModel: ObservableObject {
+    @Published var orders: [ShopOrder] = []
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+
+    private let apiClient: APIClient
+
+    init(apiClient: APIClient = .shared) { self.apiClient = apiClient }
+
+    func load(status: String? = nil) async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let response: PageResponse<ShopOrder> = try await apiClient.request(.shopOrders(status: status, page: 1, size: 50))
+            orders = response.list
+            errorMessage = nil
+        } catch {
+            orders = []
+            errorMessage = error.localizedDescription
+        }
+    }
 }
 
 // MARK: - 商城分类（含图标，对齐 shop.html）

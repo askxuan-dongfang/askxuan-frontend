@@ -68,6 +68,94 @@ struct ProductCategory: Codable, Identifiable, Hashable {
     var children: [ProductCategory]?
 }
 
+// MARK: - Cart and order contracts
+
+struct ShopCartItem: Codable, Identifiable, Hashable {
+    var id: String { "\(productId):\(skuId)" }
+    let productId: Int64
+    let skuId: Int64
+    let productName: String
+    let skuSpec: String
+    let image: String
+    let unitPrice: Double
+    var quantity: Int
+    let stock: Int
+
+    var subtotal: Double { unitPrice * Double(quantity) }
+}
+
+struct ShopOrderItemRequest: Codable {
+    let productId: Int64
+    let skuId: Int64
+    let quantity: Int
+    // Compatibility snapshots. The server recalculates these fields.
+    let productName: String
+    let skuSpec: String
+    let price: Double
+    let image: String
+}
+
+struct ShopOrderCreateRequest: Codable {
+    let requestId: String
+    let userId: String
+    let addressId: Int64
+    let note: String
+    let items: [ShopOrderItemRequest]
+}
+
+struct ShopOrderCreateResult: Codable {
+    let id: Int64
+    let orderNo: String
+    let totalAmount: Double?
+    let payAmount: Double?
+}
+
+struct ShopOrder: Codable, Identifiable, Hashable {
+    let id: Int64
+    let orderNo: String
+    let userId: String
+    let totalAmount: Double
+    let payAmount: Double
+    let status: String
+    let addressId: Int64
+    let note: String
+    let items: [ShopOrderItem]?
+    let logistics: ShopOrderLogistics?
+    let createTime: String
+
+    var statusText: String {
+        switch status {
+        case "pending_payment": return "待付款"
+        case "paid": return "待发货"
+        case "shipped": return "待收货"
+        case "completed": return "已完成"
+        case "cancelled": return "已取消"
+        case "in_return": return "售后中"
+        default: return status
+        }
+    }
+}
+
+struct ShopOrderItem: Codable, Identifiable, Hashable {
+    let id: Int64
+    let orderId: Int64?
+    let productId: Int64
+    let skuId: Int64?
+    let productName: String
+    let skuSpec: String?
+    let price: Double
+    let quantity: Int
+    let image: String?
+}
+
+struct ShopOrderLogistics: Codable, Hashable {
+    let id: Int64
+    let orderId: Int64
+    let expressCompany: String
+    let trackingNo: String
+    let shipTime: String
+}
+
 extension ShopProduct {
     static let mockProducts: [ShopProduct] = [
         ShopProduct(id: 1, productNo: "P001", name: "天然星月菩提手串",

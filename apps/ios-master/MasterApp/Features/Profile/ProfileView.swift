@@ -35,9 +35,7 @@ final class ProfileViewModel: ObservableObject {
     }
 }
 
-// MARK: - Mock 数据
-
-private struct MockMenuItem {
+private struct ProfileMenuItem {
     let icon: String
     let label: String
     let iconColor: Color
@@ -48,28 +46,28 @@ private struct MockMenuItem {
 struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
 
-    private let mockMenuItems: [MockMenuItem] = [
-        MockMenuItem(icon: "person.fill", label: "个人资料",
+    private let menuItems: [ProfileMenuItem] = [
+        ProfileMenuItem(icon: "person.fill", label: "个人资料",
                      iconColor: .accentDefault,
                      iconBgColor: Color.accentDefault.opacity(0.12),
                      extra: nil),
-        MockMenuItem(icon: "star.fill", label: "专长管理",
+        ProfileMenuItem(icon: "star.fill", label: "专长管理",
                      iconColor: Color(hex: "5B7AAA"),
                      iconBgColor: Color(hex: "5B7AAA").opacity(0.12),
                      extra: nil),
-        MockMenuItem(icon: "yensign", label: "服务定价",
+        ProfileMenuItem(icon: "yensign", label: "服务定价",
                      iconColor: .brandDefault,
                      iconBgColor: Color.brandDefault.opacity(0.12),
                      extra: nil),
-        MockMenuItem(icon: "creditcard.fill", label: "收入管理",
+        ProfileMenuItem(icon: "creditcard.fill", label: "收入管理",
                      iconColor: .stateWarning,
                      iconBgColor: Color.stateWarning.opacity(0.12),
-                     extra: "¥8,560"),
-        MockMenuItem(icon: "bubble.left.fill", label: "评价管理",
+                     extra: nil),
+        ProfileMenuItem(icon: "bubble.left.fill", label: "评价管理",
                      iconColor: .stateSuccess,
                      iconBgColor: Color.stateSuccess.opacity(0.12),
-                     extra: "98.5%"),
-        MockMenuItem(icon: "gearshape.fill", label: "设置",
+                     extra: nil),
+        ProfileMenuItem(icon: "gearshape.fill", label: "设置",
                      iconColor: .textTertiary,
                      iconBgColor: Color.textTertiary.opacity(0.15),
                      extra: nil)
@@ -95,9 +93,15 @@ struct ProfileView: View {
     private var profileCard: some View {
         VStack(spacing: 0) {
             // 头像
-            Image(systemName: "person.fill")
-                .font(.system(size: 36))
-                .foregroundStyle(.accentDefault)
+            AsyncImage(url: URL(string: viewModel.profile?.avatar ?? "")) { phase in
+                if case .success(let image) = phase {
+                    image.resizable().scaledToFill()
+                } else {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.accentDefault)
+                }
+            }
                 .frame(width: 80, height: 80)
                 .background(Color.bgTertiary)
                 .clipShape(Circle())
@@ -107,21 +111,21 @@ struct ProfileView: View {
                 )
 
             // 名字
-            Text("智海法师")
+            Text(viewModel.profile?.dharmaName ?? "法师资料")
                 .font(.pageTitle)
                 .foregroundStyle(.textPrimary)
                 .padding(.top, AppSpacing.md)
 
             // 寺院 + 已认证 badge
             HStack(spacing: AppSpacing.sm) {
-                Text("灵隐寺")
+                Text(viewModel.profile?.templeId ?? "未关联寺院")
                     .font(.caption)
                     .foregroundStyle(.textSecondary)
                 HStack(spacing: 4) {
                     Image(systemName: "star.fill")
                         .font(.system(size: 10))
                         .foregroundStyle(.accentDefault)
-                    Text("已认证")
+                    Text(viewModel.profile?.authStatusText ?? "未认证")
                         .font(.micro)
                         .foregroundStyle(.accentDefault)
                 }
@@ -141,7 +145,7 @@ struct ProfileView: View {
             .padding(.top, AppSpacing.sm)
 
             // 角色
-            Text("住持")
+            Text(viewModel.profile?.position ?? "")
                 .font(.caption)
                 .foregroundStyle(.textSecondary)
                 .padding(.top, 4)
@@ -163,9 +167,9 @@ struct ProfileView: View {
 
     private var menuGroup: some View {
         VStack(spacing: 0) {
-            ForEach(mockMenuItems.indices, id: \.self) { index in
-                let item = mockMenuItems[index]
-                menuRow(item, isLast: index == mockMenuItems.count - 1, index: index)
+            ForEach(menuItems.indices, id: \.self) { index in
+                let item = menuItems[index]
+                menuRow(item, isLast: index == menuItems.count - 1, index: index)
             }
         }
         .background(Color.bgSecondary)
@@ -178,7 +182,7 @@ struct ProfileView: View {
         .padding(.top, AppSpacing.lg)
     }
 
-    private func menuRow(_ item: MockMenuItem, isLast: Bool, index: Int) -> some View {
+    private func menuRow(_ item: ProfileMenuItem, isLast: Bool, index: Int) -> some View {
         NavigationLink {
             menuDestination(for: index)
         } label: {
@@ -234,10 +238,7 @@ struct ProfileView: View {
         case 0:
             ProfileEditView(profile: viewModel.profile)
         case 1:
-            // 专长管理 - 暂用占位
-            Text("功能开发中")
-                .navigationTitle("专长管理")
-                .foregroundStyle(.textSecondary)
+            ProfileEditView(profile: viewModel.profile)
         case 2:
             PricingView()
         case 3:

@@ -1,19 +1,17 @@
 <template>
   <div class="dfx-page">
-    <PageHeader title="数据备份" subtitle="数据库快照与恢复（前端桩实现）">
+    <PageHeader title="数据备份" subtitle="数据库快照、下载与受控恢复">
       <template #actions>
         <el-button type="primary" :icon="Plus" :loading="backing" @click="createBackup">立即备份</el-button>
         <el-button :icon="Refresh" @click="loadData">刷新</el-button>
       </template>
     </PageHeader>
 
-    <el-alert title="本页面为前端桩实现，备份数据仅作演示，未对接后端存储。" type="warning" :closable="false" show-icon style="margin-bottom: 16px" />
-
     <div class="stat-row">
       <StatCard label="备份总数" :value="backups.length" icon="Files" icon-color="#C8A96E" suffix=" 份" />
       <StatCard label="最近备份" :value="lastBackupTime" icon="Clock" icon-color="#5B8C5A" />
       <StatCard label="占用空间" :value="totalSize" icon="Coin" icon-color="#C45A3C" suffix=" MB" />
-      <StatCard label="自动备份" value="每日 03:00" icon="Calendar" icon-color="#D4A843" />
+      <StatCard label="存储位置" value="私有对象存储" icon="Calendar" icon-color="#D4A843" />
     </div>
 
     <div class="dfx-card table-wrap">
@@ -23,9 +21,7 @@
         <el-table-column label="大小（MB）" prop="size" width="120" align="right" />
         <el-table-column label="类型" width="120">
           <template #default="{ row }">
-            <el-tag size="small" :type="row.type === 'auto' ? 'info' : 'warning'" effect="dark">
-              {{ row.type === 'auto' ? '自动' : '手动' }}
-            </el-tag>
+            <el-tag size="small" type="warning" effect="dark">手动全量</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="状态" width="110">
@@ -54,15 +50,7 @@ import DataTable from '@/components/DataTable.vue'
 import StatCard from '@/components/StatCard.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import { formatDate } from '@/utils/format'
-
-interface BackupItem {
-  id: string
-  filename: string
-  size: number
-  type: 'auto' | 'manual'
-  status: string
-  time: string
-}
+import { getBackups, createBackup as requestBackup, getBackupDownload, restoreBackup, type BackupItem } from '@/api/system'
 
 const loading = ref(false)
 const backing = ref(false)
@@ -71,49 +59,40 @@ const backups = ref<BackupItem[]>([])
 const lastBackupTime = computed(() => (backups.value.length ? formatDate(backups.value[0].time) : '-'))
 const totalSize = computed(() => backups.value.reduce((sum, b) => sum + b.size, 0).toFixed(1))
 
-// 前端桩：生成 mock 数据
-function genMock(): BackupItem[] {
-  const now = Date.now()
-  return [
-    { id: 'BK20260702001', filename: 'df_platform_20260702_030000.sql.gz', size: 128.5, type: 'auto', status: 'success', time: new Date(now - 3600 * 1000).toISOString() },
-    { id: 'BK20260701001', filename: 'df_platform_20260701_030000.sql.gz', size: 125.8, type: 'auto', status: 'success', time: new Date(now - 86400 * 1000).toISOString() },
-    { id: 'BK20260630001', filename: 'df_platform_20260630_142030.sql.gz', size: 124.2, type: 'manual', status: 'success', time: new Date(now - 86400 * 2 * 1000).toISOString() },
-    { id: 'BK20260629001', filename: 'df_platform_20260629_030000.sql.gz', size: 122.1, type: 'auto', status: 'success', time: new Date(now - 86400 * 3 * 1000).toISOString() }
-  ]
-}
-
-function loadData() {
+async function loadData() {
   loading.value = true
-  // 模拟异步加载
-  setTimeout(() => {
-    backups.value = genMock()
+  try {
+    const response = await getBackups()
+    backups.value = response.list || []
+  } finally {
     loading.value = false
-  }, 300)
+  }
 }
 
 async function createBackup() {
   backing.value = true
-  await new Promise((r) => setTimeout(r, 800))
-  const id = `BK${Date.now()}`
-  backups.value.unshift({
-    id,
-    filename: `df_platform_${formatDate(Date.now(), 'YYYYMMDD_HHmmss')}.sql.gz`,
-    size: Number((120 + Math.random() * 10).toFixed(1)),
-    type: 'manual',
-    status: 'success',
-    time: new Date().toISOString()
-  })
-  backing.value = false
-  ElMessage.success('备份完成（桩）')
+  try {
+    await requestBackup()
+    ElMessage.success('备份完成')
+    await loadData()
+  } finally {
+    backing.value = false
+  }
 }
 
-function onDownload(row: BackupItem) {
-  ElMessage.info(`下载备份：${row.filename}（桩，未实际下载）`)
+async function onDownload(row: BackupItem) {
+  const response = await getBackupDownload(row.filename)
+  window.open(response.url, '_blank', 'noopener,noreferrer')
 }
 
 async function onRestore(row: BackupItem) {
-  await ElMessageBox.confirm(`确认从备份「${row.filename}」恢复数据库？该操作不可逆。`, '恢复确认', { type: 'warning' })
-  ElMessage.success('恢复指令已提交（桩）')
+  const result = await ElMessageBox.prompt(
+    `恢复会覆盖当前数据库。请输入完整文件名 ${row.filename} 继续。`,
+    '恢复确认',
+    { type: 'warning', confirmButtonText: '恢复', inputPattern: new RegExp(`^${row.filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`), inputErrorMessage: '文件名不匹配' }
+  )
+  const response = await restoreBackup(row.filename, result.value)
+  ElMessage.success(response.message || '恢复完成')
 }
 
 onMounted(loadData)

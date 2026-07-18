@@ -160,6 +160,48 @@ struct AddressUpdateRequest: Codable {
     let isDefault: Bool?
 }
 
+struct UserReview: Codable, Identifiable {
+    let id: Int64
+    let reviewNo: String
+    let userId: String
+    let targetType: String
+    let targetId: String
+    let masterCode: String
+    let rating: Int
+    let content: String
+    let images: String
+    let status: String
+    let createTime: String
+}
+
+struct UserCoupon: Codable, Identifiable {
+    let id: Int64
+    let couponId: Int64
+    let couponNo: String
+    let userId: String
+    let status: String
+    let orderNo: String
+    let useTime: String
+    let createdAt: String
+    let name: String
+    let type: String
+    let value: Double
+    let minAmount: Double
+    let endTime: String
+
+    var valueText: String {
+        type == "discount" ? "\(Int(value * 10))折" : String(format: "¥%.0f", value)
+    }
+
+    var statusText: String {
+        switch status {
+        case "used": return "已使用"
+        case "expired": return "已过期"
+        default: return "可使用"
+        }
+    }
+}
+
 /// 未读数响应
 struct UnreadCountResponse: Codable {
     let count: Int64

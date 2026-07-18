@@ -55,8 +55,8 @@
         <el-form-item label="标题">
           <el-input v-model="dialog.form.title" placeholder="请输入标题" />
         </el-form-item>
-        <el-form-item label="图片地址">
-          <el-input v-model="dialog.form.imageUrl" placeholder="https://..." />
+        <el-form-item label="Banner 图片">
+          <ImageUploader v-model="dialog.form.imageUrl" />
         </el-form-item>
         <el-form-item label="链接类型">
           <el-select v-model="dialog.form.linkType" style="width: 100%">
@@ -88,6 +88,7 @@ import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
+import ImageUploader from '@/components/ImageUploader.vue'
 import { getBanners, createBanner, updateBanner } from '@/api/marketing'
 import type { Banner } from '@/types'
 

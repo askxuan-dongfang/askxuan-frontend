@@ -97,7 +97,7 @@ final class MasterListViewModel: ObservableObject {
             let resp: PageResponse<Master> = try await apiClient.request(endpoint)
             self.masters = resp.list
         } catch {
-            self.masters = Master.mockData
+            self.masters = []
             self.errorMessage = error.localizedDescription
         }
         isLoading = false

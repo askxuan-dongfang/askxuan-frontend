@@ -163,6 +163,16 @@ final class AuthStore: ObservableObject {
         self.accessToken = token
     }
 
+    func updateCachedProfile(nickname: String, avatar: String, mobile: String) {
+        self.nickname = nickname
+        self.avatar = avatar
+        self.mobile = mobile
+        let ud = UserDefaults.standard
+        ud.set(nickname, forKey: UDKey.nickname)
+        ud.set(avatar, forKey: UDKey.avatar)
+        ud.set(mobile, forKey: UDKey.mobile)
+    }
+
     /// 登出：清除所有凭据
     func logout() {
         KeychainHelper.delete(service: AppConfig.keychainService, key: AppConfig.tokenKey)

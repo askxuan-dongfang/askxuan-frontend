@@ -83,7 +83,7 @@ final class TempleListViewModel: ObservableObject {
             let resp: PageResponse<Temple> = try await apiClient.request(endpoint)
             self.temples = resp.list
         } catch {
-            self.temples = Temple.mockData
+            self.temples = []
             self.errorMessage = error.localizedDescription
         }
         isLoading = false

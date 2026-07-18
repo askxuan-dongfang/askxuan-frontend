@@ -29,7 +29,7 @@ final class ServiceViewModel: ObservableObject {
     var priceRangeText: String {
         let prices = blessingServices.map { $0.price }.filter { $0 > 0 }
         guard let min = prices.min(), let max = prices.max() else {
-            return "¥\(defaultMin) - ¥\(defaultMax)"
+            return "暂无报价"
         }
         return min == max ? "¥\(Int(min))" : "¥\(Int(min)) - ¥\(Int(max))"
     }
@@ -61,16 +61,17 @@ final class ServiceViewModel: ObservableObject {
         case .success(let list):
             self.masters = list
             self.selectedMasterId = list.first?.id
-        case .failure:
-            self.masters = Master.mockData
-            self.selectedMasterId = Master.mockData.first?.id
+        case .failure(let error):
+            self.masters = []
+            self.selectedMasterId = nil
+            self.errorMessage = error.localizedDescription
         }
 
         switch servicesRes {
         case .success(let list):
             self.blessingServices = list
         case .failure(let error):
-            self.blessingServices = mockServices
+            self.blessingServices = []
             self.errorMessage = error.localizedDescription
         }
 
@@ -117,29 +118,4 @@ final class ServiceViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Mock 数据兜底
-    private var mockServices: [BlessingService] {
-        [
-            BlessingService(id: 1, serviceCode: "S001",
-                            serviceName: "\(serviceType.rawValue)·基础",
-                            templeCode: "T001", templeName: "灵隐寺",
-                            masterCode: "M001", masterName: "智海法师",
-                            price: defaultMin, description: "基础 \(serviceType.rawValue) 法事",
-                            status: "on_shelf"),
-            BlessingService(id: 2, serviceCode: "S002",
-                            serviceName: "\(serviceType.rawValue)·标准",
-                            templeCode: "T002", templeName: "白云观",
-                            masterCode: "M002", masterName: "清风道长",
-                            price: defaultMin * 2,
-                            description: "标准 \(serviceType.rawValue) 法事，含完整仪轨",
-                            status: "on_shelf"),
-            BlessingService(id: 3, serviceCode: "S003",
-                            serviceName: "\(serviceType.rawValue)·尊享",
-                            templeCode: "T004", templeName: "大昭寺",
-                            masterCode: "M004", masterName: "扎西多吉活佛",
-                            price: defaultMax,
-                            description: "尊享 \(serviceType.rawValue) 法事，活佛主持",
-                            status: "on_shelf")
-        ]
-    }
 }

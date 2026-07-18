@@ -15,6 +15,8 @@ final class DiyViewModel: ObservableObject {
     @Published var designs: [DiyDesign] = []
     @Published var materials: [Material] = []
     @Published var orders: [DiyOrder] = []
+    @Published var addresses: [UserAddress] = []
+    @Published var blessingServices: [BlessingService] = []
     @Published var currentDesign: DiyDesign? = nil
     @Published var currentOrder: DiyOrder? = nil
     @Published var currentPayment: PaymentRecord? = nil
@@ -76,7 +78,7 @@ final class DiyViewModel: ObservableObject {
                 .diyDesigns(page: 1, size: 20))
             self.designs = resp.list
         } catch {
-            self.designs = DiyDesign.mockDesigns
+            self.designs = []
             self.errorMessage = error.localizedDescription
         }
         isLoading = false
@@ -91,7 +93,7 @@ final class DiyViewModel: ObservableObject {
                 .diyMaterials(category: nil, page: 1, size: 100))
             self.materials = resp.list
         } catch {
-            self.materials = Material.mockMaterials
+            self.materials = []
             self.errorMessage = error.localizedDescription
         }
         isLoading = false
@@ -106,7 +108,7 @@ final class DiyViewModel: ObservableObject {
             self.currentDesign = design
             // 解析 designData 还原购物车（简化：跳过 JSON 解析）
         } catch {
-            self.currentDesign = DiyDesign.mockDesigns.first(where: { $0.id == id })
+            self.currentDesign = nil
             self.errorMessage = error.localizedDescription
         }
         isLoading = false
@@ -120,7 +122,7 @@ final class DiyViewModel: ObservableObject {
             let order: DiyOrder = try await apiClient.request(.diyOrderById(id))
             self.currentOrder = order
         } catch {
-            self.currentOrder = DiyOrder.mockOrder
+            self.currentOrder = nil
             self.errorMessage = error.localizedDescription
         }
         isLoading = false
@@ -135,10 +137,34 @@ final class DiyViewModel: ObservableObject {
                 .diyOrders(userId: authStore.userId, status: nil, page: 1, size: 20))
             self.orders = resp.list
         } catch {
-            self.orders = [DiyOrder.mockOrder]
+            self.orders = []
             self.errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    func loadCheckoutOptions() async {
+        guard authStore.isLoggedIn else {
+            addresses = []
+            blessingServices = []
+            errorMessage = "请先登录后下单"
+            return
+        }
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+        do {
+            async let addressResponse: ListResponse<UserAddress> = apiClient.request(.addressList)
+            async let serviceResponse: PageResponse<BlessingService> = apiClient.request(
+                .diyBlessingServices(page: 1, size: 50))
+            let (addressResult, serviceResult) = try await (addressResponse, serviceResponse)
+            addresses = addressResult.list
+            blessingServices = serviceResult.list.filter { $0.status == nil || $0.status == "on_shelf" }
+        } catch {
+            addresses = []
+            blessingServices = []
+            errorMessage = error.localizedDescription
+        }
     }
 
     // MARK: - 编辑器操作
@@ -325,17 +351,4 @@ private extension Data {
     func asString() -> String? {
         String(data: self, encoding: .utf8)
     }
-}
-
-// MARK: - DiyOrder Mock
-extension DiyOrder {
-    static let mockOrder = DiyOrder(
-        id: 1001, orderNo: "D20260701001", userId: "U001",
-        designId: 1, materialFee: 388, blessFee: 100, totalFee: 488,
-        status: "pending_review", paymentStatus: "pending", addressId: 1, source: "design_square",
-        creatorId: "U002", creatorShareRate: 0, originalMaterialFee: 388,
-        priceChanged: false, designSnapshot: nil, pricingSnapshot: nil,
-        items: nil, blessingTask: nil,
-        createTime: "2026-07-01"
-    )
 }

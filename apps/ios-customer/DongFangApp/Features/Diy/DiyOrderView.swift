@@ -17,8 +17,8 @@ struct DiyOrderView: View {
     let orderSource: DiyOrderSource
 
     @StateObject private var viewModel: DiyViewModel
-    @State private var selectedAddress: UserAddress? = UserAddress.mockAddresses.first
-    @State private var needBlessing: Bool = true
+    @State private var selectedAddress: UserAddress?
+    @State private var selectedBlessingService: BlessingService?
     @State private var checkoutOrder: DiyOrder?
 
     init(designId: Int64, viewModel: DiyViewModel? = nil, orderSource: DiyOrderSource = .cart) {
@@ -30,8 +30,6 @@ struct DiyOrderView: View {
             _viewModel = StateObject(wrappedValue: DiyViewModel())
         }
     }
-
-    private let blessingFee: Double = 100
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -67,6 +65,14 @@ struct DiyOrderView: View {
         .sheet(item: $checkoutOrder) { order in
             NavigationStack {
                 DiyPaymentFlowView(order: order, viewModel: viewModel)
+            }
+        }
+        .task {
+            await viewModel.loadCheckoutOptions()
+            selectedAddress = viewModel.addresses.first(where: { $0.isDefault }) ?? viewModel.addresses.first
+            selectedBlessingService = viewModel.blessingServices.first
+            if orderSource == .design, viewModel.currentDesign?.id != designId {
+                await viewModel.loadDesign(id: designId)
             }
         }
     }
@@ -156,8 +162,8 @@ struct DiyOrderView: View {
                 .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
                 .padding(.horizontal, AppSpacing.lg)
             } else {
-                Button {
-                    // 跳转地址管理（简化）
+                NavigationLink {
+                    AddressListView()
                 } label: {
                     HStack {
                         Image(systemName: "plus.circle.fill")
@@ -179,7 +185,7 @@ struct DiyOrderView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.sm) {
-                    ForEach(UserAddress.mockAddresses) { addr in
+                    ForEach(viewModel.addresses) { addr in
                         let isSelected = selectedAddress?.id == addr.id
                         Text(addr.name + " " + addr.district)
                             .font(.system(size: 11))
@@ -212,37 +218,63 @@ struct DiyOrderView: View {
             .padding(.horizontal, AppSpacing.lg)
 
             HStack(spacing: AppSpacing.md) {
-                Image(systemName: needBlessing ? "checkmark.circle.fill" : "circle")
+                Image(systemName: selectedBlessingService == nil ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 20))
-                    .foregroundStyle(needBlessing ? Color.brandDefault : Color.textTertiary)
+                    .foregroundStyle(selectedBlessingService == nil ? Color.brandDefault : Color.textTertiary)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("法师开光加持服务")
+                    Text("不需要加持")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.textPrimary)
-                    Text("由法师诵经开光加持，使法物更具灵性。")
+                    Text("订单只包含材料和制作费用")
                         .font(.system(size: 12))
                         .foregroundStyle(Color.textTertiary)
-                        .lineSpacing(3)
                 }
                 Spacer()
-                Text("+¥\(Int(blessingFee))")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color.brandDefault)
             }
             .padding(AppSpacing.md)
-            .background(needBlessing ? Color.brandDefault.opacity(0.08) : Color.bgSecondary)
+            .background(selectedBlessingService == nil ? Color.brandDefault.opacity(0.08) : Color.bgSecondary)
             .cornerRadius(AppRadius.md)
             .overlay(
                 RoundedRectangle(cornerRadius: AppRadius.md)
-                    .stroke(needBlessing ? Color.brandDefault : Color.borderDefault, lineWidth: 1)
+                    .stroke(selectedBlessingService == nil ? Color.brandDefault : Color.borderDefault, lineWidth: 1)
             )
             .contentShape(Rectangle())
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.15)) {
-                    needBlessing.toggle()
+                    selectedBlessingService = nil
                 }
             }
             .padding(.horizontal, AppSpacing.lg)
+
+            ForEach(viewModel.blessingServices) { service in
+                let isSelected = selectedBlessingService?.id == service.id
+                HStack(spacing: AppSpacing.md) {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 20))
+                        .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(service.serviceName)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Color.textPrimary)
+                        Text(service.description)
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.textTertiary)
+                            .lineLimit(2)
+                    }
+                    Spacer()
+                    Text("+\(service.priceText)")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(Color.brandDefault)
+                }
+                .padding(AppSpacing.md)
+                .background(isSelected ? Color.brandDefault.opacity(0.08) : Color.bgSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
+                .overlay(RoundedRectangle(cornerRadius: AppRadius.md)
+                    .stroke(isSelected ? Color.brandDefault : Color.borderDefault, lineWidth: 1))
+                .contentShape(Rectangle())
+                .onTapGesture { selectedBlessingService = service }
+                .padding(.horizontal, AppSpacing.lg)
+            }
         }
     }
 
@@ -252,7 +284,7 @@ struct DiyOrderView: View {
             feeRow(label: "材料费",
                    value: "¥\(Int(viewModel.currentDesign?.totalPrice ?? viewModel.totalPrice))")
             feeRow(label: "加持费",
-                   value: needBlessing ? "¥\(Int(blessingFee))" : "¥0")
+                   value: selectedBlessingService?.priceText ?? "¥0")
             feeRow(label: "运费", value: "包邮")
             feeRow(label: "合计",
                    value: totalFeeText,
@@ -286,7 +318,7 @@ struct DiyOrderView: View {
 
     private var totalFeeText: String {
         let material = viewModel.currentDesign?.totalPrice ?? viewModel.totalPrice
-        let bless = needBlessing ? blessingFee : 0
+        let bless = selectedBlessingService?.price ?? 0
         return "¥\(Int(material + bless))"
     }
 
@@ -301,7 +333,7 @@ struct DiyOrderView: View {
     private var submitBar: some View {
         HStack(spacing: AppSpacing.md) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("应付")
+                Text("预估应付")
                     .font(.system(size: 11))
                     .foregroundStyle(Color.textTertiary)
                 Text(totalFeeText)
@@ -333,8 +365,11 @@ struct DiyOrderView: View {
     }
 
     private func submitOrder() async -> DiyOrder? {
-        let addressId = selectedAddress?.id ?? 1
-        let blessServiceCode = needBlessing ? "BLESS_DIY" : nil
+        guard let addressId = selectedAddress?.id else {
+            viewModel.errorMessage = "请选择收货地址"
+            return nil
+        }
+        let blessServiceCode = selectedBlessingService?.serviceCode
         switch orderSource {
         case .cart:
             return await viewModel.createOrder(
@@ -356,7 +391,6 @@ private struct DiyPaymentFlowView: View {
     let order: DiyOrder
     @ObservedObject var viewModel: DiyViewModel
 
-    @State private var channel = "wechat"
     @State private var paymentResult: PaymentCreateResult?
     @State private var payment: PaymentRecord?
     @State private var showOrderDetail = false
@@ -439,12 +473,13 @@ private struct DiyPaymentFlowView: View {
             Text("支付方式")
                 .font(.cardTitle)
                 .foregroundStyle(Color.textPrimary)
-            Picker("支付方式", selection: $channel) {
-                Text("微信支付").tag("wechat")
-                Text("支付宝").tag("alipay")
-            }
-            .pickerStyle(.segmented)
-            .disabled(paymentResult != nil)
+            Label("本地模拟支付（仅开发/测试）", systemImage: "testtube.2")
+                .font(.system(size: 14))
+                .foregroundStyle(Color.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(AppSpacing.md)
+                .background(Color.bgSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -490,13 +525,13 @@ private struct DiyPaymentFlowView: View {
             } else {
                 Button {
                     Task {
-                        paymentResult = await viewModel.createPayment(for: order, channel: channel)
+                        paymentResult = await viewModel.createPayment(for: order, channel: "mock")
                         if let paymentResult {
                             payment = await viewModel.loadPayment(id: paymentResult.id)
                         }
                     }
                 } label: {
-                    Text("确认支付 ¥\(String(format: "%.2f", order.totalFee))")
+                    Text("模拟支付 ¥\(String(format: "%.2f", order.totalFee))")
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .frame(height: 46)

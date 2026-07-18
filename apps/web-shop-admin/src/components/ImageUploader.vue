@@ -1,24 +1,21 @@
 <script setup lang="ts">
-// 简易图片上传组件
-// MVP 阶段未对接真实文件服务，提供 URL 输入与图片预览；
-// 通过 fileList 双向绑定，调用方可以直接保存 URL 列表。
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import type { UploadFile, UploadFiles, UploadUserFile } from 'element-plus'
+import type { UploadFile, UploadFiles, UploadRequestOptions, UploadUserFile } from 'element-plus'
+import client from '@/api/client'
 
 const props = withDefaults(
   defineProps<{
     modelValue: string | string[]
     multiple?: boolean
     limit?: number
-    /** 占位提示，可用于指示文件服务上传方式 */
     placeholder?: string
   }>(),
   {
     multiple: false,
     limit: 8,
-    placeholder: '粘贴图片 URL 或后续接入文件服务'
+    placeholder: '或粘贴图片 URL'
   }
 )
 
@@ -29,7 +26,6 @@ const emit = defineEmits<{
 const urlInput = ref('')
 const fileList = ref<UploadUserFile[]>([])
 
-// 由 modelValue 同步到 fileList
 function syncFromFileList(urls: string | string[]) {
   const arr = Array.isArray(urls) ? urls : urls ? [urls] : []
   fileList.value = arr.map((url, idx) => ({
@@ -44,7 +40,6 @@ watch(
   { immediate: true }
 )
 
-// 由 fileList 同步到 modelValue
 function emitFromList() {
   const urls = fileList.value.map((f) => f.url || '').filter(Boolean)
   if (props.multiple) {
@@ -75,9 +70,44 @@ function handleRemove(_file: UploadFile, files: UploadFiles) {
   emitFromList()
 }
 
-// 阻止真实上传（避免发请求到 /api/v1/files），仅做本地占位
 function handlePreview(file: UploadFile) {
-  window.open(file.url, '_blank')
+  if (file.url) window.open(file.url, '_blank')
+}
+
+async function httpRequest(options: UploadRequestOptions) {
+  const form = new FormData()
+  form.append('file', options.file)
+  try {
+    const response = await client.post<{ url: string }>('/files/upload', form, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    options.onSuccess(response)
+  } catch (error) {
+    options.onError(error as any)
+  }
+}
+
+function handleSuccess(response: { url?: string }, file: UploadFile, files: UploadFiles) {
+  if (!response?.url) {
+    ElMessage.error('上传成功但未返回文件地址')
+    return
+  }
+  file.url = response.url
+  fileList.value = files as UploadUserFile[]
+  emitFromList()
+  ElMessage.success('上传成功')
+}
+
+function beforeUpload(file: File) {
+  if (!file.type.startsWith('image/')) {
+    ElMessage.warning('请选择图片文件')
+    return false
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    ElMessage.warning('单张图片不能超过 10MB')
+    return false
+  }
+  return true
 }
 </script>
 
@@ -86,8 +116,11 @@ function handlePreview(file: UploadFile) {
     <el-upload
       v-model:file-list="fileList"
       list-type="picture-card"
-      :auto-upload="false"
+      accept="image/*"
       :limit="limit"
+      :http-request="httpRequest"
+      :before-upload="beforeUpload"
+      :on-success="handleSuccess"
       :on-remove="handleRemove"
       :on-preview="handlePreview"
     >
@@ -104,7 +137,7 @@ function handlePreview(file: UploadFile) {
       />
       <el-button size="small" type="primary" plain @click="handleAddUrl">添加</el-button>
     </div>
-    <p class="tips">提示：当前为 URL 录入模式，可后续接入 /api/v1/files 真实上传。</p>
+    <p class="tips">支持 JPG、PNG、WebP，单张不超过 10MB。</p>
   </div>
 </template>
 

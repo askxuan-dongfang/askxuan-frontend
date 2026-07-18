@@ -43,8 +43,8 @@ final class OpenIMManager: NSObject {
 
     weak var delegate: OpenIMManagerDelegate?
 
-    private let wsURL = "ws://127.0.0.1:10001"
-    private let apiURL = "http://127.0.0.1:10002"
+    private let wsURL = AppConfig.openIMWebSocketURL
+    private let apiURL = AppConfig.openIMAPIURL
     private var isInitialized = false
 
     private override init() {

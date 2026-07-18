@@ -21,7 +21,7 @@ struct ProfileView: View {
     private var stats: [(label: String, value: String)] {
         let merit = viewModel.profile?.meritValueText ?? "—"
         let points = viewModel.profile?.pointsText ?? "—"
-        let coupons = viewModel.profile?.couponCountText ?? "—"
+        let coupons = "\(viewModel.availableCouponCount)"
         return [("功德值", merit), ("积分", points), ("优惠券", coupons)]
     }
 
@@ -42,7 +42,7 @@ struct ProfileView: View {
     private var assets: [(label: String, value: String?, icon: String?)] {
         [
             ("功德金余额", viewModel.profile?.meritBalanceText ?? "—", nil),
-            ("优惠券", viewModel.profile?.couponCountText ?? "—", nil),
+            ("优惠券", "\(viewModel.availableCouponCount)", nil),
             ("积分明细", nil, "chart.line.uptrend.xyaxis")
         ]
     }
@@ -240,48 +240,61 @@ struct ProfileView: View {
     private var orderCenterSection: some View {
         VStack(spacing: 14) {
             HStack {
-                Text("订单中心")
-                    .font(.cardTitle)
-                    .foregroundStyle(Color.textPrimary)
+                NavigationLink {
+                    OrderListView()
+                } label: {
+                    Text("订单中心")
+                        .font(.cardTitle)
+                        .foregroundStyle(Color.textPrimary)
+                }
                 Spacer()
-                HStack(spacing: 2) {
-                    Text("查看全部")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color.textTertiary)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.textTertiary)
+                NavigationLink {
+                    OrderListView()
+                } label: {
+                    HStack(spacing: 2) {
+                        Text("查看全部")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.textTertiary)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.textTertiary)
+                    }
                 }
             }
 
             HStack(alignment: .top, spacing: 0) {
                 ForEach(Array(orderEntries.enumerated()), id: \.offset) { _, entry in
-                    VStack(spacing: 8) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.bgTertiary)
-                                .frame(width: 40, height: 40)
-                            Image(systemName: entry.icon)
-                                .font(.system(size: 18))
-                                .foregroundStyle(Color.textTertiary)
-                        }
-                        .overlay(alignment: .topTrailing) {
-                            if let badge = entry.badge {
-                                Text(badge)
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundStyle(Color.white)
-                                    .padding(.horizontal, 5)
-                                    .padding(.vertical, 2)
-                                    .background(Color.brandDefault)
-                                    .clipShape(Capsule())
-                                    .offset(x: 8, y: -4)
+                    NavigationLink {
+                        OrderListView(initialStatus: orderTab(for: entry.title))
+                    } label: {
+                        VStack(spacing: 8) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.bgTertiary)
+                                    .frame(width: 40, height: 40)
+                                Image(systemName: entry.icon)
+                                    .font(.system(size: 18))
+                                    .foregroundStyle(Color.textTertiary)
                             }
+                            .overlay(alignment: .topTrailing) {
+                                if let badge = entry.badge {
+                                    Text(badge)
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundStyle(Color.white)
+                                        .padding(.horizontal, 5)
+                                        .padding(.vertical, 2)
+                                        .background(Color.brandDefault)
+                                        .clipShape(Capsule())
+                                        .offset(x: 8, y: -4)
+                                }
+                            }
+                            Text(entry.title)
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.textSecondary)
                         }
-                        Text(entry.title)
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.textSecondary)
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.vertical, 18)
@@ -298,26 +311,31 @@ struct ProfileView: View {
     private var assetsSection: some View {
         HStack(spacing: 10) {
             ForEach(Array(assets.enumerated()), id: \.offset) { _, asset in
-                VStack(spacing: 6) {
-                    if let icon = asset.icon {
-                        Image(systemName: icon)
-                            .font(.system(size: 20))
-                            .foregroundStyle(Color.accentDefault)
-                    } else if let value = asset.value {
-                        Text(value)
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(Color.accentDefault)
-                            .monospacedDigit()
+                NavigationLink {
+                    assetDestination(asset.label)
+                } label: {
+                    VStack(spacing: 6) {
+                        if let icon = asset.icon {
+                            Image(systemName: icon)
+                                .font(.system(size: 20))
+                                .foregroundStyle(Color.accentDefault)
+                        } else if let value = asset.value {
+                            Text(value)
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(Color.accentDefault)
+                                .monospacedDigit()
+                        }
+                        Text(asset.label)
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.textTertiary)
                     }
-                    Text(asset.label)
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.textTertiary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.bgSecondary)
+                    .cornerRadius(AppRadius.lg)
+                    .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color.bgSecondary)
-                .cornerRadius(AppRadius.lg)
-                .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
+                .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, AppSpacing.lg)
@@ -329,27 +347,32 @@ struct ProfileView: View {
         VStack(spacing: 0) {
             ForEach(Array(serviceItems.enumerated()), id: \.offset) { index, item in
                 if index > 0 { rowDivider }
-                HStack(spacing: 12) {
-                    Image(systemName: item.icon)
-                        .font(.system(size: 18))
-                        .foregroundStyle(Color.textTertiary)
-                        .frame(width: 24)
-                    Text(item.title)
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color.textPrimary)
-                    Spacer()
-                    if let trailing = item.trailing {
-                        Text(trailing)
-                            .font(.system(size: 13))
+                NavigationLink {
+                    serviceDestination(item.title)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: item.icon)
+                            .font(.system(size: 18))
+                            .foregroundStyle(Color.textTertiary)
+                            .frame(width: 24)
+                        Text(item.title)
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color.textPrimary)
+                        Spacer()
+                        if let trailing = item.trailing {
+                            Text(trailing)
+                                .font(.system(size: 13))
+                                .foregroundStyle(Color.textTertiary)
+                        }
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
                             .foregroundStyle(Color.textTertiary)
                     }
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color.textTertiary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .contentShape(Rectangle())
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
             }
         }
         .background(Color.bgSecondary)
@@ -364,22 +387,27 @@ struct ProfileView: View {
         VStack(spacing: 0) {
             ForEach(Array(systemItems.enumerated()), id: \.offset) { index, item in
                 if index > 0 { rowDivider }
-                HStack(spacing: 12) {
-                    Image(systemName: item.icon)
-                        .font(.system(size: 18))
-                        .foregroundStyle(Color.textTertiary)
-                        .frame(width: 24)
-                    Text(item.title)
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color.textPrimary)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color.textTertiary)
+                NavigationLink {
+                    systemDestination(item.title)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: item.icon)
+                            .font(.system(size: 18))
+                            .foregroundStyle(Color.textTertiary)
+                            .frame(width: 24)
+                        Text(item.title)
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color.textPrimary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color.textTertiary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .contentShape(Rectangle())
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
             }
 
             rowDivider
@@ -415,6 +443,45 @@ struct ProfileView: View {
             .fill(Color.borderDivider)
             .frame(height: 1)
             .padding(.leading, 52)
+    }
+
+    private func orderTab(for title: String) -> String {
+        switch title {
+        case "商城订单": return "shop"
+        case "DIY手串": return "diy"
+        default: return "booking"
+        }
+    }
+
+    @ViewBuilder
+    private func assetDestination(_ title: String) -> some View {
+        switch title {
+        case "优惠券": CouponView()
+        case "积分明细": PointsView()
+        default: WalletView()
+        }
+    }
+
+    @ViewBuilder
+    private func serviceDestination(_ title: String) -> some View {
+        switch title {
+        case "我的收藏": FavoritesView()
+        case "浏览记录": HistoryView()
+        case "我的评价": ReviewListView()
+        case "收货地址": AddressListView()
+        case "通话记录": CallHistoryView()
+        default: HelpView()
+        }
+    }
+
+    @ViewBuilder
+    private func systemDestination(_ title: String) -> some View {
+        switch title {
+        case "个人资料": ProfileEditView()
+        case "消息通知": NotificationSettingsView()
+        case "账号安全": SecurityView()
+        default: AboutView()
+        }
     }
 }
 

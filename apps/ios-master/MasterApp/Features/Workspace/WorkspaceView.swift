@@ -12,12 +12,12 @@ import AVKit
 
 @MainActor
 final class WorkspaceViewModel: ObservableObject {
-    /// 待确认预约数
+    @Published var allBookings: [Booking] = []
     @Published var pendingBookings: [Booking] = []
-    /// 待接单加持任务数
     @Published var assignedTasks: [BlessingTask] = []
-    /// 收益概览
     @Published var earnings: EarningsSummary?
+    @Published var reviewTotal: Int64 = 0
+    @Published var positiveReviewTotal: Int64 = 0
 
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
@@ -30,6 +30,22 @@ final class WorkspaceViewModel: ObservableObject {
 
     /// 待办总数
     var todoCount: Int { pendingBookings.count + assignedTasks.count }
+    var todayBookings: [Booking] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let today = formatter.string(from: Date())
+        return allBookings.filter { $0.bookingDate == today }
+    }
+    var monthBookingCount: Int {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        let month = formatter.string(from: Date())
+        return allBookings.filter { $0.bookingDate.hasPrefix(month) }.count
+    }
+    var positiveReviewRate: Double {
+        guard reviewTotal > 0 else { return 0 }
+        return Double(positiveReviewTotal) / Double(reviewTotal) * 100
+    }
 
     func load() async {
         isLoading = true
@@ -38,12 +54,17 @@ final class WorkspaceViewModel: ObservableObject {
         async let bookingsResult = fetchBookings()
         async let tasksResult = fetchBlessingTasks()
         async let earningsResult = fetchEarnings()
+        async let reviewsResult = fetchReviewStats()
 
-        let (b, t, e) = await (bookingsResult, tasksResult, earningsResult)
+        let (b, t, e, r) = await (bookingsResult, tasksResult, earningsResult, reviewsResult)
 
         switch b {
-        case .success(let list): self.pendingBookings = list
-        case .failure: self.pendingBookings = []
+        case .success(let list):
+            self.allBookings = list
+            self.pendingBookings = list.filter { $0.statusEnum == .pending }
+        case .failure:
+            self.allBookings = []
+            self.pendingBookings = []
         }
         switch t {
         case .success(let list): self.assignedTasks = list
@@ -53,6 +74,14 @@ final class WorkspaceViewModel: ObservableObject {
         case .success(let summary): self.earnings = summary
         case .failure: self.earnings = nil
         }
+        switch r {
+        case .success(let stats):
+            self.reviewTotal = stats.total
+            self.positiveReviewTotal = stats.positive
+        case .failure:
+            self.reviewTotal = 0
+            self.positiveReviewTotal = 0
+        }
 
         isLoading = false
     }
@@ -60,7 +89,7 @@ final class WorkspaceViewModel: ObservableObject {
     private func fetchBookings() async -> Result<[Booking], Error> {
         do {
             let resp: BookingListResponse = try await apiClient.request(
-                .masterBookings(status: BookingStatus.pending.rawValue, page: 1, size: 50)
+                .masterBookings(status: nil, page: 1, size: 100)
             )
             return .success(resp.list)
         } catch { return .failure(error) }
@@ -81,23 +110,22 @@ final class WorkspaceViewModel: ObservableObject {
             return .success(summary)
         } catch { return .failure(error) }
     }
+
+    private func fetchReviewStats() async -> Result<(total: Int64, positive: Int64), Error> {
+        do {
+            async let all: ReviewListResponse = apiClient.request(.masterReviews(rating: nil, page: 1, size: 1))
+            async let four: ReviewListResponse = apiClient.request(.masterReviews(rating: 4, page: 1, size: 1))
+            async let five: ReviewListResponse = apiClient.request(.masterReviews(rating: 5, page: 1, size: 1))
+            let values = try await (all, four, five)
+            return .success((values.0.total, values.1.total + values.2.total))
+        } catch { return .failure(error) }
+    }
 }
 
-// MARK: - Mock 数据
-
-private struct MockStat {
+private struct WorkspaceStat {
     let value: String
     let label: String
     let highlight: Bool
-}
-
-private struct MockBookingItem {
-    let startTime: String
-    let endTime: String
-    let title: String
-    let user: String
-    let statusText: String
-    let statusColor: Color
 }
 
 private struct QuickAction {
@@ -108,21 +136,6 @@ private struct QuickAction {
 struct WorkspaceView: View {
     @StateObject private var viewModel = WorkspaceViewModel()
     @EnvironmentObject private var authStore: AuthStore
-
-    private let mockStats: [MockStat] = [
-        MockStat(value: "28", label: "本月预约", highlight: false),
-        MockStat(value: "¥8,560", label: "本月收入", highlight: true),
-        MockStat(value: "98.5%", label: "好评率", highlight: false)
-    ]
-
-    private let mockBookings: [MockBookingItem] = [
-        MockBookingItem(startTime: "09:00", endTime: "10:00", title: "祈福法会",
-                        user: "张三 · 灵隐寺大雄宝殿", statusText: "待处理", statusColor: .stateWarning),
-        MockBookingItem(startTime: "14:00", endTime: "15:00", title: "命理咨询",
-                        user: "李四 · 线上视频", statusText: "已确认", statusColor: Color(hex: "5B7AAA")),
-        MockBookingItem(startTime: "16:00", endTime: "17:00", title: "开光加持",
-                        user: "王五 · 灵隐寺", statusText: "待处理", statusColor: .stateWarning)
-    ]
 
     private let quickActions: [QuickAction] = [
         QuickAction(icon: "calendar", label: "设置日程"),
@@ -187,7 +200,7 @@ struct WorkspaceView: View {
             Text("阿弥陀佛，\(authStore.nickname ?? "智海法师")")
                 .font(.pageTitle)
                 .foregroundStyle(.textPrimary)
-            Text("今日有 3 个预约待处理，1 个加持任务")
+            Text("今日有 \(viewModel.pendingBookings.count) 个预约待处理，\(viewModel.assignedTasks.count) 个加持任务")
                 .font(.caption)
                 .foregroundStyle(.textSecondary)
         }
@@ -200,9 +213,14 @@ struct WorkspaceView: View {
     // MARK: - 统计行
 
     private var statsRow: some View {
-        HStack(spacing: 10) {
-            ForEach(mockStats.indices, id: \.self) { index in
-                let stat = mockStats[index]
+        let stats = [
+            WorkspaceStat(value: "\(viewModel.monthBookingCount)", label: "本月预约", highlight: false),
+            WorkspaceStat(value: String(format: "¥%.2f", viewModel.earnings?.monthIncome ?? 0), label: "本月收入", highlight: true),
+            WorkspaceStat(value: String(format: "%.1f%%", viewModel.positiveReviewRate), label: "好评率", highlight: false)
+        ]
+        return HStack(spacing: 10) {
+            ForEach(stats.indices, id: \.self) { index in
+                let stat = stats[index]
                 VStack(spacing: 4) {
                     Text(stat.value)
                         .font(.system(size: stat.highlight ? 18 : 22, weight: .bold))
@@ -227,7 +245,7 @@ struct WorkspaceView: View {
     // MARK: - 快捷操作
 
     private var quickActionsSection: some View {
-        HStack(spacing: 12) {
+        return HStack(spacing: 12) {
             ForEach(quickActions.indices, id: \.self) { index in
                 let action = quickActions[index]
                 quickActionItem(action)
@@ -237,22 +255,33 @@ struct WorkspaceView: View {
     }
 
     private func quickActionItem(_ action: QuickAction) -> some View {
-        VStack(spacing: AppSpacing.sm) {
-            Image(systemName: action.icon)
-                .font(.system(size: 22))
-                .foregroundStyle(.accentDefault)
-                .frame(width: 48, height: 48)
-                .background(Color.bgSecondary)
-                .cornerRadius(AppRadius.md)
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppRadius.md)
-                        .stroke(Color.borderDefault, lineWidth: 1)
-                )
-            Text(action.label)
-                .font(.micro)
-                .foregroundStyle(.textSecondary)
+        NavigationLink {
+            quickActionDestination(action.label)
+        } label: {
+            VStack(spacing: AppSpacing.sm) {
+                Image(systemName: action.icon)
+                    .font(.system(size: 22))
+                    .foregroundStyle(.accentDefault)
+                    .frame(width: 48, height: 48)
+                    .background(Color.bgSecondary)
+                    .cornerRadius(AppRadius.md)
+                    .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault))
+                Text(action.label)
+                    .font(.micro)
+                    .foregroundStyle(.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity)
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func quickActionDestination(_ label: String) -> some View {
+        switch label {
+        case "设置日程", "休息请假": CalendarView()
+        case "个人主页": ProfileView()
+        default: EarningsView()
+        }
     }
 
     // MARK: - 今日预约
@@ -265,7 +294,7 @@ struct WorkspaceView: View {
                     .foregroundStyle(.textPrimary)
                 Spacer()
                 NavigationLink {
-                    BlessingTasksView()
+                    BookingsView()
                 } label: {
                     Text("查看全部")
                         .font(.caption)
@@ -276,10 +305,16 @@ struct WorkspaceView: View {
             .padding(.top, AppSpacing.lg)
             .padding(.bottom, AppSpacing.sm)
 
-            ForEach(mockBookings.indices, id: \.self) { index in
-                let booking = mockBookings[index]
+            if viewModel.todayBookings.isEmpty {
+                Text("今日暂无预约")
+                    .font(.caption)
+                    .foregroundStyle(.textTertiary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, AppSpacing.lg)
+            }
+            ForEach(viewModel.todayBookings) { booking in
                 NavigationLink {
-                    BookingDetailView(bookingId: "mock-\(index)")
+                    BookingDetailView(bookingId: booking.id)
                 } label: {
                     bookingCard(booking)
                 }
@@ -288,14 +323,16 @@ struct WorkspaceView: View {
         }
     }
 
-    private func bookingCard(_ booking: MockBookingItem) -> some View {
-        HStack(spacing: 12) {
+    private func bookingCard(_ booking: Booking) -> some View {
+        let times = booking.timeSlot.split(separator: "-", maxSplits: 1).map(String.init)
+        let badge = booking.statusEnum.badgeInfo
+        return HStack(spacing: 12) {
             // 时间块
             VStack(spacing: 2) {
-                Text(booking.startTime)
+                Text(times.first ?? booking.timeSlot)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.textPrimary)
-                Text(booking.endTime)
+                Text(times.count > 1 ? times[1] : "")
                     .font(.micro)
                     .foregroundStyle(.textTertiary)
             }
@@ -303,22 +340,22 @@ struct WorkspaceView: View {
 
             // 预约信息
             VStack(alignment: .leading, spacing: 2) {
-                Text(booking.title)
+                Text(booking.serviceName)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.textPrimary)
-                Text(booking.user)
+                Text("\(booking.userId) · \(booking.templeName)")
                     .font(.system(size: 12))
                     .foregroundStyle(.textSecondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             // 状态徽章
-            Text(booking.statusText)
+            Text(badge.text)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(booking.statusColor)
+                .foregroundStyle(badge.color)
                 .padding(.horizontal, AppSpacing.sm)
                 .padding(.vertical, 3)
-                .background(booking.statusColor.opacity(0.15))
+                .background(badge.color.opacity(0.15))
                 .cornerRadius(AppRadius.sm)
         }
         .padding(14)
@@ -353,20 +390,21 @@ struct WorkspaceView: View {
             .padding(.top, 16)
             .padding(.bottom, 10)
 
-            NavigationLink {
-                BlessingTaskDetailView(taskId: 0)
-            } label: {
+            if let task = viewModel.assignedTasks.first {
+                NavigationLink {
+                    BlessingTaskDetailView(taskId: task.id)
+                } label: {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("紫檀·静心 · 开光加持")
+                        Text("加持任务 \(task.taskNo)")
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(.textPrimary)
-                        Text("用户·王芳 | 今天 15:00")
+                        Text("订单 \(task.diyOrderNo) · \(task.assignTime)")
                             .font(.micro)
                             .foregroundStyle(.textTertiary)
                     }
                     Spacer()
-                    Text("待处理")
+                    Text(task.statusEnum.badgeInfo.text)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.brandDefault)
                         .padding(.horizontal, AppSpacing.sm)
@@ -384,6 +422,13 @@ struct WorkspaceView: View {
                 .padding(.horizontal, AppSpacing.pageHorizontal)
             }
             .buttonStyle(.plain)
+            } else {
+                Text("暂无待接单加持任务")
+                    .font(.caption)
+                    .foregroundStyle(.textTertiary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, AppSpacing.lg)
+            }
         }
     }
 }

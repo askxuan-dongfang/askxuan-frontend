@@ -698,8 +698,9 @@ private final class BeliefTopicViewModel: ObservableObject {
             masters = masterPage.list
         } catch {
             errorMessage = error.localizedDescription
-            temples = Temple.mockData.filter { $0.beliefCode == code }
-            masters = Master.mockData.filter { $0.beliefCode == code }
+            profile = nil
+            temples = []
+            masters = []
         }
     }
 }

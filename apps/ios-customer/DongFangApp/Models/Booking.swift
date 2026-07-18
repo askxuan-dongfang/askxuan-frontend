@@ -183,6 +183,27 @@ struct AvailableBookingSlot: Codable, Identifiable, Hashable {
 	var id: String { slotCode }
 }
 
+struct BookingReviewCreateRequest: Codable {
+    let rating: Int
+    let content: String
+    let images: [String]
+}
+
+struct BookingReviewCreateResponse: Codable {
+    let reviewId: Int64
+}
+
+struct BookingReview: Codable, Identifiable {
+    let id: Int64
+    let bookingId: String
+    let userId: String
+    let rating: Int
+    let content: String
+    let images: [String]
+    let masterReply: String
+    let createTime: String
+}
+
 extension Booking {
     static let mockData: [Booking] = [
         Booking(id: "B20260701001", userId: "U001", templeId: "T001",

@@ -263,7 +263,7 @@ struct TempleDetailView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.md) {
-                    ForEach(viewModel.masters.isEmpty ? Array(Master.mockData.prefix(4)) : Array(viewModel.masters.prefix(4))) { master in
+                    ForEach(Array(viewModel.masters.prefix(4))) { master in
                         NavigationLink(value: master) {
                             VStack(spacing: 6) {
                                 RemoteAvatar(urlString: master.avatar, size: 64)
@@ -300,11 +300,15 @@ struct TempleDetailView: View {
                 .padding(.horizontal, AppSpacing.lg)
                 .padding(.top, AppSpacing.md)
 
-            Text("敬请期待")
-                .font(.caption)
-                .foregroundStyle(Color.textTertiary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, AppSpacing.xl)
+            NavigationLink {
+                ShopView()
+            } label: {
+                Label("浏览商城法物", systemImage: "bag")
+                    .font(.caption)
+                    .foregroundStyle(Color.brandDefault)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, AppSpacing.lg)
+            }
         }
     }
 

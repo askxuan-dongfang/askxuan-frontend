@@ -35,15 +35,17 @@ final class TempleDetailViewModel: ObservableObject {
             self.temple = detail.temple
             self.services = detail.services ?? []
         case .failure(let error):
-            self.temple = Temple.mockData.first(where: { $0.id == id })
+            self.temple = nil
+            self.services = []
             self.errorMessage = error.localizedDescription
         }
 
         switch mastersRes {
         case .success(let list):
             self.masters = list
-        case .failure:
-            self.masters = Master.mockData
+        case .failure(let error):
+            self.masters = []
+            if self.errorMessage == nil { self.errorMessage = error.localizedDescription }
         }
 
         isLoading = false

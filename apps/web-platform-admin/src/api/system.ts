@@ -14,3 +14,34 @@ export function getOperationLogs(params: { bizType?: string; status?: string; pa
 }
 
 export type { Role, Permission, SensitiveWord, AuditQueue }
+
+export interface BackupItem {
+  id: string
+  filename: string
+  size: number
+  sizeBytes: number
+  type: 'auto' | 'manual'
+  status: string
+  time: string
+  objectName: string
+}
+
+export function getBackups() {
+  return client.get<{ list: BackupItem[] }>('/admin/files/backups')
+}
+
+export function createBackup() {
+  return client.post<BackupItem>('/admin/files/backups', undefined, { timeout: 660_000 })
+}
+
+export function getBackupDownload(filename: string) {
+  return client.get<{ url: string; expiresIn: number }>(`/admin/files/backups/${encodeURIComponent(filename)}/download`)
+}
+
+export function restoreBackup(filename: string, confirm: string) {
+  return client.post<{ success: boolean; message: string }>(
+    `/admin/files/backups/${encodeURIComponent(filename)}/restore`,
+    { confirm },
+    { timeout: 660_000 }
+  )
+}

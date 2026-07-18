@@ -66,15 +66,16 @@ final class HomeViewModel: ObservableObject {
             // 优先用 ImageMapper 匹配本地 asset，确保图片内容与寺院名称对应
             self.hotTemples = Array(list.prefix(6)).map { applyLocalTempleImage($0) }
         case .failure(let error):
-            self.hotTemples = Temple.mockData
+            self.hotTemples = []
             self.errorMessage = error.localizedDescription
         }
 
         switch mastersRes {
         case .success(let list):
             self.hotMasters = Array(list.prefix(6)).map { applyLocalMasterAvatar($0) }
-        case .failure:
-            self.hotMasters = Master.mockData
+        case .failure(let error):
+            self.hotMasters = []
+            if self.errorMessage == nil { self.errorMessage = error.localizedDescription }
         }
 
         isLoading = false
