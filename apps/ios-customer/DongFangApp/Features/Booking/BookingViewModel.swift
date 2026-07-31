@@ -41,10 +41,10 @@ final class BookingViewModel: ObservableObject {
 
     init(master: Master,
          apiClient: APIClient = .shared,
-         authStore: AuthStore = .shared) {
+         authStore: AuthStore? = nil) {
         self.master = master
         self.apiClient = apiClient
-        self.authStore = authStore
+        self.authStore = authStore ?? .shared
     }
 
     // MARK: - 计算属性

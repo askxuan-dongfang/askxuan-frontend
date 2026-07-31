@@ -298,7 +298,11 @@ struct HomeView: View {
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: AppSpacing.sm), count: 4), spacing: AppSpacing.sm) {
                 ForEach(viewModel.intentionEntries) { entry in
-                    NavigationLink(value: HomeRoute.intention(entry)) {
+                    NavigationLink(
+                        value: entry.service == .diy
+                            ? HomeRoute.diyBracelet
+                            : HomeRoute.intention(entry)
+                    ) {
                         intentionItem(entry)
                     }
                     .buttonStyle(.plain)
@@ -593,6 +597,8 @@ private struct IntentionHubView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                intentionHero
+
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(viewModel.tags) { tag in
@@ -620,6 +626,11 @@ private struct IntentionHubView: View {
                 } else if viewModel.resources.isEmpty {
                     ContentUnavailableView("暂无匹配内容", systemImage: "square.grid.2x2")
                 } else {
+                    Text("相关寺院服务与商品")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.textPrimary)
+                        .padding(.horizontal, 20)
+
                     LazyVStack(spacing: 10) {
                         ForEach(viewModel.resources) { item in
                             NavigationLink { destination(for: item) } label: { resourceRow(item) }
@@ -632,6 +643,45 @@ private struct IntentionHubView: View {
         .navigationTitle(entry.title)
         .navigationBarTitleDisplayMode(.inline)
         .task { await viewModel.load() }
+    }
+
+    private var intentionHero: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                Image(systemName: entry.iconName)
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(Color.brandDefault)
+                    .frame(width: 48, height: 48)
+                    .background(Color.brandDefault.opacity(0.12))
+                    .clipShape(Circle())
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(entry.title)
+                        .font(.custom(AppFont.serif[0], size: 22).weight(.bold))
+                        .foregroundStyle(Color.textPrimary)
+                    Text(entry.summary)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.textSecondary)
+                        .lineSpacing(4)
+                }
+            }
+
+            NavigationLink(value: HomeRoute.service(entry.service)) {
+                Label(entry.actionTitle, systemImage: "arrow.right.circle.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(Color.brandDefault)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(16)
+        .background(Color.bgSecondary)
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.borderDefault, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .padding(.horizontal, 20)
     }
 
     private func resourceRow(_ item: IntentionResource) -> some View {

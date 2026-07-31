@@ -73,7 +73,7 @@ struct ChatView: View {
                     .padding(.horizontal, AppSpacing.pageHorizontal)
                     .padding(.vertical, AppSpacing.lg)
                 }
-                .onChange(of: viewModel.bubbles.count) { _ in
+                .onChange(of: viewModel.bubbles.count) { _, _ in
                     if let last = viewModel.bubbles.last {
                         withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
                     }

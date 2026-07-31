@@ -31,6 +31,7 @@ struct OpenIMConversation {
 
 // MARK: - OpenIM 消息回调代理
 
+@MainActor
 protocol OpenIMManagerDelegate: AnyObject {
     func onRecvC2CMessage(_ message: OpenIMMessage)
     func onConversationListUpdated(_ conversations: [OpenIMConversation])
@@ -180,7 +181,7 @@ final class OpenIMManager: NSObject {
 
 extension OpenIMManager: OIMAdvancedMsgListener {
     /// 接收新消息（C2C 和 Group 都会触发）
-    func onRecvNewMessage(_ msg: OIMMessageInfo!) {
+    func onRecvNewMessage(_ msg: OIMMessageInfo) {
         guard let message = toBusinessMessage(msg) else { return }
         DispatchQueue.main.async { [weak self] in
             self?.delegate?.onRecvC2CMessage(message)
@@ -192,16 +193,16 @@ extension OpenIMManager: OIMAdvancedMsgListener {
 
 extension OpenIMManager: OIMConversationListener {
     /// 会话变更
-    func onConversationChanged(_ conversations: [OIMConversationInfo]!) {
-        let converted = conversations?.compactMap { toBusinessConversation($0) } ?? []
+    func onConversationChanged(_ conversations: [OIMConversationInfo]) {
+        let converted = conversations.compactMap { toBusinessConversation($0) }
         DispatchQueue.main.async { [weak self] in
             self?.delegate?.onConversationListUpdated(converted)
         }
     }
 
     /// 新会话
-    func onNewConversation(_ conversations: [OIMConversationInfo]!) {
-        let converted = conversations?.compactMap { toBusinessConversation($0) } ?? []
+    func onNewConversation(_ conversations: [OIMConversationInfo]) {
+        let converted = conversations.compactMap { toBusinessConversation($0) }
         DispatchQueue.main.async { [weak self] in
             self?.delegate?.onConversationListUpdated(converted)
         }

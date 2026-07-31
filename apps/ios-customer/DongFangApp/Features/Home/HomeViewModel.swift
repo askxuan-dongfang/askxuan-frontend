@@ -145,6 +145,32 @@ struct IntentionEntry: Identifiable, Hashable {
     let title: String
     let iconName: String
     let service: ServiceType
+
+    var summary: String {
+        switch id {
+        case "peace": "祈福、供灯与护佑相关服务，适合本人或家人祈愿平安健康。"
+        case "wealth": "聚合财运祈福、供香供灯及相关法物，由寺院和法师提供真实服务。"
+        case "love": "查找姻缘祈愿、和合供灯及相关法物，按寺院服务流程办理。"
+        case "career": "聚合事业祈愿、开光与助运服务，支持选择寺院、法师和预约时段。"
+        case "study": "查找文昌祈愿、学业供灯和许愿服务，为学业与考试祈福。"
+        case "taisui": "按当年值年太岁办理化太岁服务，并查看对应寺院与可预约时段。"
+        case "rite": "按具体事项选择法事类型、寺院和法师，确认日期、费用与功德回向。"
+        default: "按当前心愿查找适合的寺院服务与商品。"
+        }
+    }
+
+    var actionTitle: String {
+        switch id {
+        case "peace": "办理平安祈福"
+        case "wealth": "办理财运祈福"
+        case "love": "办理姻缘供灯"
+        case "career": "办理事业开光"
+        case "study": "办理学业许愿"
+        case "taisui": "办理化太岁"
+        case "rite": "预约法事"
+        default: "立即办理"
+        }
+    }
 }
 
 struct IntentionTag: Codable, Identifiable, Hashable {

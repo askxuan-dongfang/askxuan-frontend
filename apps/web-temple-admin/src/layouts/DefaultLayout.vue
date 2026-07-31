@@ -7,6 +7,7 @@ import {
   Odometer,
   Coin,
   Calendar,
+  MagicStick,
   ChatDotRound,
   TrendCharts,
   Setting,
@@ -68,6 +69,10 @@ function handleLogout() {
         <el-menu-item index="/bookings">
           <el-icon><Calendar /></el-icon>
           <span>预约管理</span>
+        </el-menu-item>
+        <el-menu-item index="/blessing-tasks">
+          <el-icon><MagicStick /></el-icon>
+          <span>加持任务</span>
         </el-menu-item>
         <el-menu-item index="/reviews">
           <el-icon><ChatDotRound /></el-icon>

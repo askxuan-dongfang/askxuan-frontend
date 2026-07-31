@@ -30,11 +30,11 @@ final class APIClient {
 
     /// JWT Token 提供者（从 AuthStore/Keychain 读取，线程安全）
     var tokenProvider: () -> String? = {
-        AuthStore.shared.tokenProvider()
+        KeychainHelper.shared.read(service: "com.askxuan.master", key: "df_master_token")
     }
 
     var refreshTokenProvider: () -> String? = {
-        AuthStore.shared.refreshTokenProvider()
+        KeychainHelper.shared.read(service: "com.askxuan.master", key: "df_master_refresh_token")
     }
 
     /// 401 未授权回调（由 App 层注册，触发返回登录页）

@@ -101,7 +101,7 @@ struct LoginView: View {
                     .keyboardType(.numberPad)
                     .font(.system(size: 16))
                     .foregroundStyle(Color.textPrimary)
-                    .onChange(of: phone) { newValue in
+                    .onChange(of: phone) { _, newValue in
                         if newValue.count > 11 {
                             phone = String(newValue.prefix(11))
                         }
@@ -127,7 +127,7 @@ struct LoginView: View {
                     .keyboardType(.numberPad)
                     .font(.system(size: 16))
                     .foregroundStyle(Color.textPrimary)
-                    .onChange(of: code) { newValue in
+                    .onChange(of: code) { _, newValue in
                         if newValue.count > 6 {
                             code = String(newValue.prefix(6))
                         }

@@ -33,6 +33,8 @@ enum Endpoint {
     case masterBookingDetail(id: String)
     /// PUT admin/masters/bookings/{id}/confirm
     case masterBookingConfirm(id: String, remark: String?)
+    /// PUT admin/masters/bookings/{id}/start
+    case masterBookingStart(id: String, remark: String?)
     /// PUT admin/masters/bookings/{id}/complete
     case masterBookingComplete(id: String, remark: String?)
 
@@ -119,6 +121,8 @@ enum Endpoint {
             return "admin/masters/bookings/\(id)"
         case .masterBookingConfirm(let id, _):
             return "admin/masters/bookings/\(id)/confirm"
+        case .masterBookingStart(let id, _):
+            return "admin/masters/bookings/\(id)/start"
         case .masterBookingComplete(let id, _):
             return "admin/masters/bookings/\(id)/complete"
         // 加持任务
@@ -198,7 +202,7 @@ enum Endpoint {
              .liveRoomCreate, .liveRoomStart, .liveRoomClose:
             return .POST
         case .masterScheduleUpdate, .masterProfileUpdate,
-             .masterBookingConfirm, .masterBookingComplete,
+             .masterBookingConfirm, .masterBookingStart, .masterBookingComplete,
              .blessingTaskAccept, .blessingTaskStart, .blessingTaskComplete, .blessingTaskReject,
              .masterMessageRead, .masterCommunityPostUpdate, .masterCommunityPostStatus,
              .liveRoomBindOpenIM:
@@ -283,7 +287,8 @@ enum Endpoint {
             return AnyEncodable(req)
         case .authRefresh(let refresh):
             return AnyEncodable(["refreshToken": refresh])
-        case .masterBookingConfirm(_, let remark), .masterBookingComplete(_, let remark):
+        case .masterBookingConfirm(_, let remark), .masterBookingStart(_, let remark),
+             .masterBookingComplete(_, let remark):
             return AnyEncodable(RemarkBody(remark: remark))
         case .blessingTaskComplete(_, let urls):
             return AnyEncodable(CertificateBody(certificateUrls: urls))

@@ -38,10 +38,11 @@ final class ChatViewModel: ObservableObject {
     let socketManager: WebSocketManager
 
     init(apiClient: APIClient = .shared,
-         authStore: AuthStore = .shared) {
+         authStore: AuthStore? = nil) {
         self.apiClient = apiClient
-        self.authStore = authStore
-        self.socketManager = WebSocketManager(apiClient: apiClient, authStore: authStore)
+        let resolvedAuthStore = authStore ?? .shared
+        self.authStore = resolvedAuthStore
+        self.socketManager = WebSocketManager(apiClient: apiClient, authStore: resolvedAuthStore)
 
         // 将 WebSocketManager 的状态 / 未读数同步到本 VM
         socketManager.$connectionState.assign(to: &$connectionState)

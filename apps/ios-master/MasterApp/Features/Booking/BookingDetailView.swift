@@ -2,9 +2,10 @@
 //  BookingDetailView.swift
 //  MasterApp
 //
-//  预约详情（页面 4）：含确认/接单、完成操作。
+//  预约详情（页面 4）：含确认、开始、完成操作。
 //  GET admin/masters/bookings/:id
 //  PUT admin/masters/bookings/:id/confirm
+//  PUT admin/masters/bookings/:id/start
 //  PUT admin/masters/bookings/:id/complete
 //
 
@@ -46,8 +47,13 @@ final class BookingDetailViewModel: ObservableObject {
     }
 
     func complete() async {
-        guard let b = booking, b.statusEnum == .inProgress || b.statusEnum == .confirmed else { return }
+        guard let b = booking, b.statusEnum == .inProgress else { return }
         await runAction(.masterBookingComplete(id: bookingId, remark: nil), successText: "已完成服务")
+    }
+
+    func start() async {
+        guard let b = booking, b.statusEnum == .confirmed else { return }
+        await runAction(.masterBookingStart(id: bookingId, remark: nil), successText: "服务已开始")
     }
 
     private func runAction(_ endpoint: Endpoint, successText: String) async {
@@ -211,7 +217,13 @@ struct BookingDetailView: View {
                         Task { await viewModel.confirm() }
                     }
                 }
-                if status == .confirmed || status == .inProgress {
+                if status == .confirmed {
+                    PrimaryButton(title: "开始服务", icon: "play.circle.fill",
+                                  isLoading: viewModel.isActionLoading) {
+                        Task { await viewModel.start() }
+                    }
+                }
+                if status == .inProgress {
                     PrimaryButton(title: "完成服务", icon: "checkmark.seal.fill",
                                   isLoading: viewModel.isActionLoading) {
                         Task { await viewModel.complete() }

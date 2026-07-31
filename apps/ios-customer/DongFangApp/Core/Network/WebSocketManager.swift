@@ -45,9 +45,9 @@ final class WebSocketManager: ObservableObject {
     private var pollTask: Task<Void, Never>?
     private var failStreak: Int = 0
 
-    init(apiClient: APIClient = .shared, authStore: AuthStore = .shared) {
+    init(apiClient: APIClient = .shared, authStore: AuthStore? = nil) {
         self.apiClient = apiClient
-        self.authStore = authStore
+        self.authStore = authStore ?? .shared
     }
 
     /// 启动实时消息（HTTP 轮询）

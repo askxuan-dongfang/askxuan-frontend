@@ -245,9 +245,9 @@ final class ShopCheckoutViewModel: ObservableObject {
     private let apiClient: APIClient
     private let authStore: AuthStore
 
-    init(apiClient: APIClient = .shared, authStore: AuthStore = .shared) {
+    init(apiClient: APIClient = .shared, authStore: AuthStore? = nil) {
         self.apiClient = apiClient
-        self.authStore = authStore
+        self.authStore = authStore ?? .shared
     }
 
     func loadAddresses() async {

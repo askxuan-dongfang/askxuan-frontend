@@ -103,7 +103,9 @@ export function reviewStatusType(status: string): TagProps['type'] {
 export function blessingStatusText(status: string): string {
   const map: Record<string, string> = {
     pending: '待处理',
+    dispatched: '待分配',
     assigned: '已分配',
+    accepted: '已接单',
     in_progress: '进行中',
     completed: '已完成',
     rejected: '已拒绝'

@@ -96,7 +96,7 @@ struct ChatDetailView: View {
                 .padding(.top, AppSpacing.md)
                 .padding(.bottom, AppSpacing.md)
             }
-            .onChange(of: viewModel.messages.count) { _ in
+            .onChange(of: viewModel.messages.count) { _, _ in
                 withAnimation(.easeOut(duration: 0.2)) {
                     proxy.scrollTo("bottom", anchor: .bottom)
                 }

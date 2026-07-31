@@ -19,9 +19,9 @@ final class ProfileViewModel: ObservableObject {
     private let apiClient: APIClient
     private let authStore: AuthStore
 
-    init(apiClient: APIClient = .shared, authStore: AuthStore = .shared) {
+    init(apiClient: APIClient = .shared, authStore: AuthStore? = nil) {
         self.apiClient = apiClient
-        self.authStore = authStore
+        self.authStore = authStore ?? .shared
     }
 
     /// 是否已登录

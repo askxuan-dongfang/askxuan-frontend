@@ -63,6 +63,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '预约详情' }
       },
       {
+        path: 'blessing-tasks',
+        name: 'blessing-task-list',
+        component: () => import('@/views/BlessingTaskListView.vue'),
+        meta: { title: '加持任务' }
+      },
+      {
+        path: 'blessing-tasks/:id',
+        name: 'blessing-task-detail',
+        component: () => import('@/views/BlessingTaskDetailView.vue'),
+        meta: { title: '加持任务详情' }
+      },
+      {
         path: 'reviews',
         name: 'review-list',
         component: () => import('@/views/ReviewListView.vue'),

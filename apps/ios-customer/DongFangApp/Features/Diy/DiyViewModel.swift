@@ -86,10 +86,10 @@ final class DiyViewModel: ObservableObject {
     private var redoStack: [DiyEditorSnapshot] = []
 
     init(apiClient: APIClient = .shared,
-         authStore: AuthStore = .shared,
+         authStore: AuthStore? = nil,
          draftStore: UserDefaults = .standard) {
         self.apiClient = apiClient
-        self.authStore = authStore
+        self.authStore = authStore ?? .shared
         self.draftStore = draftStore
         restoreLocalDraft()
     }
