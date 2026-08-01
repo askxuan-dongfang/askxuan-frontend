@@ -96,7 +96,7 @@ struct ChatView: View {
     private var connectionDotColor: Color {
         switch viewModel.connectionState {
         case .connected:    return Color.stateSuccess
-        case .reconnecting: return Color.stateWarning
+        case .connecting:   return Color.stateWarning
         case .disconnected: return Color.textTertiary
         }
     }
@@ -104,7 +104,7 @@ struct ChatView: View {
     private var connectionText: String {
         switch viewModel.connectionState {
         case .connected:    return "已连接"
-        case .reconnecting: return "重连中"
+        case .connecting:   return "连接中"
         case .disconnected: return "未连接"
         }
     }
@@ -239,9 +239,13 @@ struct ChatView: View {
                     .buttonStyle(.plain)
                 }
 
-                // 通话记录
-                ForEach(Array(callRecords.enumerated()), id: \.offset) { _, record in
-                    callRecordRow(record)
+                if viewModel.conversations.isEmpty && !viewModel.isLoading {
+                    ContentUnavailableView(
+                        "暂无可用私聊",
+                        systemImage: "bubble.left.and.exclamationmark.bubble.right",
+                        description: Text(viewModel.errorMessage ?? "预约并完成支付后，可在这里与对应法师沟通")
+                    )
+                    .padding(.top, 48)
                 }
                 Color.clear.frame(height: AppSpacing.navBottom)
             }
@@ -297,7 +301,7 @@ struct ChatView: View {
 
     private func callRecordRow(_ record: (masterId: String, name: String, avatar: String, time: String, duration: String, isVideo: Bool)) -> some View {
         let conversation = ChatConversation(
-            id: "call-\(record.masterId)",
+            bookingId: "call-\(record.masterId)",
             masterId: record.masterId,
             masterName: record.name,
             masterAvatar: record.avatar,

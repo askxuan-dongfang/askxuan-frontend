@@ -64,16 +64,6 @@ struct ChatDetailView: View {
             }
 
             Spacer()
-
-            Button {
-                // 跳转法师主页（简化）
-            } label: {
-                Image(systemName: "person.circle")
-                    .font(.system(size: 18))
-                    .foregroundStyle(Color.accentDefault)
-                    .frame(width: 36, height: 36)
-            }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, AppSpacing.lg)
         .frame(height: AppSpacing.navTop)
@@ -178,15 +168,6 @@ struct ChatDetailView: View {
     private var inputBar: some View {
         VStack(spacing: 0) {
             HStack(spacing: AppSpacing.sm) {
-                Button {
-                    // 附加功能（简化）
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(Color.accentDefault)
-                }
-                .buttonStyle(.plain)
-
                 HStack(spacing: 8) {
                     TextField("输入消息...", text: $viewModel.inputText, axis: .vertical)
                         .lineLimit(1...4)

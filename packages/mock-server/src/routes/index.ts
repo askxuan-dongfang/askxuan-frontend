@@ -88,6 +88,12 @@ const templeBookingServices = [
 	] }
 ];
 const bookingRequestResults = new Map<string, Record<string, unknown>>();
+const bookingChatMessages = new Map<string, Array<Record<string, unknown>>>([
+  ['B20260630001', [
+    { id: 1, bookingId: 'B20260630001', clientMessageId: 'mock-chat-1', senderType: 'customer', senderId: 'u_U001', receiverId: 'm_1', content: '法师您好，请问法会需要提前准备什么？', status: 'sent', createTime: '2026-07-31 10:20:00' },
+    { id: 2, bookingId: 'B20260630001', clientMessageId: 'mock-chat-2', senderType: 'master', senderId: 'm_1', receiverId: 'u_U001', content: '已收到您的预约，保持恭敬心按时到场即可。', status: 'sent', createTime: '2026-07-31 10:21:00' }
+  ]]
+]);
 
 const aiSkills = [
   { id: 8, code: 'general', name: '直接问事', description: '不限定术数方向的日常问事入口', icon: '/icons/general.png', promptTemplate: '', status: 'enabled', createdAt: '2026-07-13 10:00:00' },
@@ -707,6 +713,47 @@ router.get('/bookings/availability', (req: Request, res: Response) => {
 		return { slotCode: slot.code, label: slot.label, timeRange: `${slot.startTime}-${slot.endTime}`, capacity: slot.capacity, remaining, available: slot.status === 'enabled' && remaining > 0 };
 	});
 	success(res, { templeId, serviceId, serviceName: service.serviceName, bookingDate: date, serviceFee: service.price, slots });
+});
+
+router.get('/bookings/chats', (req: Request, res: Response) => {
+  const list = bookings.filter((booking) => booking.id === 'B20260630001').map((booking) => {
+    const messages = bookingChatMessages.get(booking.id) ?? [];
+    const last = messages[messages.length - 1];
+    return {
+      bookingId: booking.id,
+      peerId: booking.masterId,
+      peerName: booking.masterName,
+      peerAvatar: '',
+      templeName: booking.templeName,
+      serviceName: booking.serviceName,
+      bookingDate: booking.bookingDate,
+      lastMessage: String(last?.content ?? '付款成功，可开始对话'),
+      lastMessageAt: String(last?.createTime ?? booking.createdAt),
+      canChat: true
+    };
+  });
+  success(res, page(list, req));
+});
+
+router.get('/bookings/:id/chat/messages', (req: Request, res: Response) => {
+  const bookingId = String(req.params.id);
+  const messages = bookingChatMessages.get(bookingId);
+  if (!messages) return fail(res, 40909, '付款成功后才能与法师对话');
+  success(res, page(messages, req));
+});
+
+router.post('/bookings/:id/chat/messages', (req: Request, res: Response) => {
+  const bookingId = String(req.params.id);
+  const messages = bookingChatMessages.get(bookingId);
+  if (!messages) return fail(res, 40909, '付款成功后才能与法师对话');
+  const content = String(req.body?.content ?? '').trim();
+  if (!content) return fail(res, 40003, '消息内容不能为空');
+  const clientMessageId = String(req.body?.clientMessageId ?? `mock-${Date.now()}`);
+  const existing = messages.find((message) => message.clientMessageId === clientMessageId);
+  if (existing) return success(res, existing);
+  const message = { id: messages.length + 1, bookingId, clientMessageId, senderType: 'customer', senderId: 'u_U001', receiverId: 'm_1', content, status: 'sent', createTime: new Date().toISOString().replace('T', ' ').slice(0, 19) };
+  messages.push(message);
+  success(res, message);
 });
 
 router.get('/bookings/:id', (req: Request, res: Response) => {

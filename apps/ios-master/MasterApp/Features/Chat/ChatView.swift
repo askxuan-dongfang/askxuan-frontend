@@ -3,9 +3,7 @@
 //  MasterApp
 //
 //  对话（页面 8）。
-//  信众咨询对话界面：消息气泡 + 输入栏。从站内消息进入时展示该消息上下文。
-//  说明：当前后端 message-service 未提供 IM 长连接对话接口，此页为本地会话 UI，
-//  发送的消息追加到本地列表，便于后续接入 IM（imToken 已由登录接口下发）。
+//  已支付预约对话：booking-service 权限校验/历史，OpenIM 实时到达。
 //
 
 import SwiftUI
@@ -22,41 +20,57 @@ final class ChatViewModel: ObservableObject {
     @Published var bubbles: [ChatBubble] = []
     @Published var inputText: String = ""
 
-    let message: MasterMessage?
+    @Published var errorMessage: String?
+    let conversation: MasterBookingChatConversation
+    private let apiClient: APIClient
 
-    init(message: MasterMessage?) {
-        self.message = message
-        // 以进入消息作为会话起点
-        if let m = message {
-            bubbles.append(ChatBubble(text: m.content, isMe: false,
-                                      time: DFDateFormatter.friendly(m.createdAt)))
-        }
-        // 接收 OpenIM 实时消息
+    init(conversation: MasterBookingChatConversation, apiClient: APIClient = .shared) {
+        self.conversation = conversation
+        self.apiClient = apiClient
         OpenIMManager.shared.delegate = self
     }
 
-    /// 发送消息（通过 OpenIM SDK 发送给信众）
+    func load() async {
+        do {
+            let response: MasterBookingChatMessageListResponse = try await apiClient.request(
+                .bookingChatMessages(id: conversation.bookingId, page: 1, size: 100))
+            bubbles = response.list.map {
+                ChatBubble(text: $0.content,
+                           isMe: $0.senderType == "master",
+                           time: DFDateFormatter.friendly($0.createTime))
+            }
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func send() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        // 信众 OpenIM userID 约定为 "u_" + userId（站内消息发送者）
-        guard let userID = message?.userId, !userID.isEmpty else { return }
-        let recvID = "u_" + userID
-        OpenIMManager.shared.sendMessage(text: text, to: recvID) { [weak self] success in
-            guard success else { return }
-            self?.bubbles.append(ChatBubble(text: text, isMe: true, time: "刚刚"))
-            self?.inputText = ""
+        let clientMessageId = UUID().uuidString
+        inputText = ""
+        Task {
+            do {
+                let _: MasterBookingChatMessage = try await apiClient.request(
+                    .bookingChatSend(id: conversation.bookingId,
+                                     MasterBookingChatSendRequest(clientMessageId: clientMessageId, content: text)))
+                await load()
+            } catch {
+                inputText = text
+                errorMessage = error.localizedDescription
+            }
         }
     }
 }
 
 struct ChatView: View {
-    let message: MasterMessage?
+    let conversation: MasterBookingChatConversation
     @StateObject private var viewModel: ChatViewModel
 
-    init(message: MasterMessage?) {
-        self.message = message
-        _viewModel = StateObject(wrappedValue: ChatViewModel(message: message))
+    init(conversation: MasterBookingChatConversation) {
+        self.conversation = conversation
+        _viewModel = StateObject(wrappedValue: ChatViewModel(conversation: conversation))
     }
 
     var body: some View {
@@ -116,9 +130,18 @@ struct ChatView: View {
             .background(Color.bgSecondary)
         }
         .background(Color.bgPrimary)
-        .navigationTitle(message?.title ?? "对话")
+        .navigationTitle(conversation.peerName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
+        .task { await viewModel.load() }
+        .alert("消息发送失败", isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
+        )) {
+            Button("知道了", role: .cancel) {}
+        } message: {
+            Text(viewModel.errorMessage ?? "请稍后重试")
+        }
     }
 
     private func bubbleRow(_ bubble: ChatBubble) -> some View {
@@ -149,7 +172,7 @@ struct ChatView: View {
 // MARK: - OpenIM 消息接收
 extension ChatViewModel: OpenIMManagerDelegate {
     func onRecvC2CMessage(_ msg: OpenIMMessage) {
-        bubbles.append(ChatBubble(text: msg.text ?? "", isMe: false, time: "刚刚"))
+        Task { await load() }
     }
 
     func onConversationListUpdated(_ conversations: [OpenIMConversation]) {
@@ -159,7 +182,10 @@ extension ChatViewModel: OpenIMManagerDelegate {
 
 #Preview {
     NavigationStack {
-        ChatView(message: nil)
+        ChatView(conversation: MasterBookingChatConversation(
+            bookingId: "B001", peerId: "1", peerName: "预约用户", peerAvatar: "",
+            templeName: "灵隐寺", serviceName: "祈福", bookingDate: "2026-07-31",
+            lastMessage: "您好", lastMessageAt: "2026-07-31 10:00:00", canChat: true))
     }
     .preferredColorScheme(.dark)
 }

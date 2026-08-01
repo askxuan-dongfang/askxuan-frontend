@@ -15,6 +15,10 @@ struct MasterProfileView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showBooking = false
     @State private var showLoginPrompt = false
+    @State private var paidConversation: ChatConversation?
+    @State private var isResolvingConversation = false
+    @State private var consultMessage = ""
+    @State private var showConsultMessage = false
 
     private let tabs = ["资质", "预约", "文创", "视频", "咨询"]
 
@@ -48,6 +52,16 @@ struct MasterProfileView: View {
                 LoginView()
                     .environmentObject(authStore)
             }
+        }
+        .sheet(item: $paidConversation) { conversation in
+            NavigationStack {
+                ChatDetailView(conversation: conversation, viewModel: ChatViewModel())
+            }
+        }
+        .alert("暂时无法发起咨询", isPresented: $showConsultMessage) {
+            Button("我知道了", role: .cancel) {}
+        } message: {
+            Text(consultMessage)
         }
     }
 
@@ -300,6 +314,11 @@ struct MasterProfileView: View {
                 .foregroundStyle(Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, AppSpacing.xl)
+            Text("预约并完成支付后，可与对应法师进行文字沟通。")
+                .font(.caption)
+                .foregroundStyle(Color.textTertiary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, AppSpacing.xl)
         }
         .frame(maxWidth: .infinity)
     }
@@ -307,9 +326,10 @@ struct MasterProfileView: View {
     // MARK: - 底部操作栏
     private var bottomActionBar: some View {
         HStack(spacing: AppSpacing.md) {
-            DFSecondaryButton(title: "立即咨询") {
+            DFSecondaryButton(title: isResolvingConversation ? "查询中..." : "立即咨询") {
                 if authStore.isLoggedIn {
-                    // TODO: 跳转聊天
+                    guard !isResolvingConversation else { return }
+                    Task { await openPaidConversation() }
                 } else {
                     showLoginPrompt = true
                 }
@@ -330,6 +350,24 @@ struct MasterProfileView: View {
                 .ignoresSafeArea(edges: .bottom)
         )
         .overlay(alignment: .top) { Rectangle().fill(Color.borderDivider).frame(height: 1) }
+    }
+
+    @MainActor
+    private func openPaidConversation() async {
+        isResolvingConversation = true
+        defer { isResolvingConversation = false }
+        do {
+            let response: BookingChatListResponse = try await APIClient.shared.request(.bookingChats(page: 1, size: 100))
+            if let conversation = response.list.first(where: { $0.masterId == masterId && $0.canChat }) {
+                paidConversation = conversation
+            } else {
+                consultMessage = "请先预约该法师的服务并完成支付，支付成功后即可开始文字沟通。"
+                showConsultMessage = true
+            }
+        } catch {
+            consultMessage = error.localizedDescription
+            showConsultMessage = true
+        }
     }
 }
 

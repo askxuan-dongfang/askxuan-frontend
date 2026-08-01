@@ -150,9 +150,14 @@ export default function MasterProfileScreen() {
               <Text style={styles.emptyText}>点击底部"预约服务"立即预约</Text>
             </View>
           )}
-          {(activeTab === '文创' || activeTab === '视频' || activeTab === '咨询') && (
+          {(activeTab === '文创' || activeTab === '视频') && (
             <View style={styles.emptyTab}>
               <Text style={styles.emptyText}>敬请期待</Text>
+            </View>
+          )}
+          {activeTab === '咨询' && (
+            <View style={styles.emptyTab}>
+              <Text style={styles.emptyText}>预约并完成支付后，可与该法师进行文字沟通</Text>
             </View>
           )}
         </View>
@@ -163,7 +168,7 @@ export default function MasterProfileScreen() {
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 8 }]}>
         <DFSecondaryButton
           title="立即咨询"
-          onPress={() => {}}
+          onPress={() => router.push('/(tabs)/chat')}
           style={{ flex: 1, marginRight: spacing.sm }}
         />
         <DFPrimaryButton

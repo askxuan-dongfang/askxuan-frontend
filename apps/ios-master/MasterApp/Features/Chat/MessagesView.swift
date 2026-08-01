@@ -16,6 +16,7 @@ import Combine
 @MainActor
 final class MessagesViewModel: ObservableObject {
     @Published var messages: [MasterMessage] = []
+    @Published var chats: [MasterBookingChatConversation] = []
     @Published var filter: Int = -1      // -1 全部 / 0 未读 / 1 已读
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
@@ -39,6 +40,7 @@ final class MessagesViewModel: ObservableObject {
         // 轮询到新数据时刷新消息列表
         socketManager.onDataRefresh = { [weak self] in
             await self?.load(reset: true)
+            await self?.loadChats()
         }
 
         // 启动实时消息（HTTP 轮询）
@@ -69,6 +71,16 @@ final class MessagesViewModel: ObservableObject {
             errorMessage = "加载失败：\(error.localizedDescription)"
         }
         isLoading = false
+    }
+
+    func loadChats() async {
+        do {
+            let resp: MasterBookingChatListResponse = try await apiClient.request(.bookingChats(page: 1, size: 50))
+            chats = resp.list
+        } catch {
+            chats = []
+            errorMessage = error.localizedDescription
+        }
     }
 
     func loadMore() async {
@@ -103,11 +115,6 @@ struct MessagesView: View {
     @StateObject private var viewModel = MessagesViewModel()
     @State private var selectedTab: Int = 0  // 0=通知, 1=咨询
 
-    /// 咨询列表：取 bizType == "consult" 的消息
-    private var consults: [MasterMessage] {
-        viewModel.messages.filter { $0.bizType == "consult" }
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             subTabs
@@ -119,8 +126,14 @@ struct MessagesView: View {
         }
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
-        .task { await viewModel.load() }
-        .refreshable { await viewModel.load() }
+        .task {
+            await viewModel.load()
+            await viewModel.loadChats()
+        }
+        .refreshable {
+            await viewModel.load()
+            await viewModel.loadChats()
+        }
     }
 
     // MARK: - 子 Tab
@@ -179,17 +192,9 @@ struct MessagesView: View {
                         .padding(.top, 60)
                 } else {
                     ForEach(viewModel.messages) { message in
-                        NavigationLink {
-                            ChatView(message: message)
-                        } label: {
-                            noticeItem(message)
-                        }
-                        .buttonStyle(.plain)
-                        .simultaneousGesture(
-                            TapGesture().onEnded {
-                                Task { await viewModel.markRead(message) }
-                            }
-                        )
+                        noticeItem(message)
+                            .contentShape(Rectangle())
+                            .onTapGesture { Task { await viewModel.markRead(message) } }
                     }
                 }
             }
@@ -243,29 +248,24 @@ struct MessagesView: View {
         }
     }
 
-    // MARK: - 咨询列表（真实数据：bizType == consult）
+    // MARK: - 已付费预约会话
 
     private var chatList: some View {
         ScrollView {
             VStack(spacing: 0) {
-                if consults.isEmpty && !viewModel.isLoading {
+                if viewModel.chats.isEmpty && !viewModel.isLoading {
                     EmptyState(icon: "bubble.left.slash",
                                title: "暂无咨询",
-                               message: "暂无咨询消息")
+                               message: viewModel.errorMessage ?? "信众完成预约支付后，对话会显示在这里")
                         .padding(.top, 60)
                 } else {
-                    ForEach(consults) { message in
+                    ForEach(viewModel.chats) { conversation in
                         NavigationLink {
-                            ChatView(message: message)
+                            ChatView(conversation: conversation)
                         } label: {
-                            chatItem(message)
+                            chatItem(conversation)
                         }
                         .buttonStyle(.plain)
-                        .simultaneousGesture(
-                            TapGesture().onEnded {
-                                Task { await viewModel.markRead(message) }
-                            }
-                        )
                     }
                 }
             }
@@ -274,7 +274,7 @@ struct MessagesView: View {
         .softScrollEdge(.bottom)
     }
 
-    private func chatItem(_ m: MasterMessage) -> some View {
+    private func chatItem(_ conversation: MasterBookingChatConversation) -> some View {
         HStack(spacing: 12) {
             // 头像
             Image(systemName: "person.fill")
@@ -287,31 +287,24 @@ struct MessagesView: View {
             // 内容
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(m.title)
+                    Text(conversation.peerName)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.textPrimary)
                     Spacer()
-                    Text(DFDateFormatter.friendly(m.createdAt))
+                    Text(DFDateFormatter.friendly(conversation.lastMessageAt))
                         .font(.micro)
                         .foregroundStyle(.textTertiary)
                 }
-                Text(m.content)
+                Text(conversation.lastMessage)
                     .font(.system(size: 12))
                     .foregroundStyle(.textSecondary)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            // 未读数
-            if m.isRead == 0 {
-                Text("1")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(minWidth: 18, minHeight: 18)
-                    .padding(.horizontal, 5)
-                    .background(Color.brandDefault)
-                    .clipShape(Capsule())
-            }
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.textTertiary)
         }
         .padding(.horizontal, AppSpacing.lg)
         .padding(.vertical, 14)

@@ -10,6 +10,7 @@
 //
 
 import Foundation
+import Combine
 import OpenIMSDK
 
 // MARK: - 业务模型（对上层暴露，隔离 SDK 类型）
@@ -39,8 +40,16 @@ protocol OpenIMManagerDelegate: AnyObject {
 
 // MARK: - OpenIM SDK 封装单例
 
-final class OpenIMManager: NSObject {
+final class OpenIMManager: NSObject, ObservableObject {
     static let shared = OpenIMManager()
+
+    enum ConnectionState: Equatable {
+        case disconnected
+        case connecting
+        case connected
+    }
+
+    @Published private(set) var connectionState: ConnectionState = .disconnected
 
     weak var delegate: OpenIMManagerDelegate?
 
@@ -61,18 +70,18 @@ final class OpenIMManager: NSObject {
         config.wsAddr = wsURL
         config.logLevel = 6
 
-        OIMManager.manager.initSDK(with: config) {
-            // onConnecting: SDK 正在连接 IM 服务器
-        } onConnectFailure: { code, msg in
-            // 连接失败
-        } onConnectSuccess: {
-            // 连接成功
-        } onKickedOffline: {
-            // 被踢下线
-        } onUserTokenExpired: {
-            // Token 过期，需重新登录
-        } onUserTokenInvalid: { errMsg in
-            // Token 无效
+        OIMManager.manager.initSDK(with: config) { [weak self] in
+            self?.publishConnectionState(.connecting)
+        } onConnectFailure: { [weak self] _, _ in
+            self?.publishConnectionState(.disconnected)
+        } onConnectSuccess: { [weak self] in
+            self?.publishConnectionState(.connected)
+        } onKickedOffline: { [weak self] in
+            self?.publishConnectionState(.disconnected)
+        } onUserTokenExpired: { [weak self] in
+            self?.publishConnectionState(.disconnected)
+        } onUserTokenInvalid: { [weak self] _ in
+            self?.publishConnectionState(.disconnected)
         }
 
         OIMManager.callbacker.addAdvancedMsgListener(listener: self)
@@ -88,8 +97,10 @@ final class OpenIMManager: NSObject {
             return
         }
         OIMManager.manager.login(userID, token: token, onSuccess: { _ in
+            self.publishConnectionState(.connected)
             DispatchQueue.main.async { completion(true, nil) }
         }, onFailure: { code, msg in
+            self.publishConnectionState(.disconnected)
             let error = NSError(domain: "OpenIM", code: Int(code),
                                 userInfo: [NSLocalizedDescriptionKey: msg ?? "登录失败"])
             DispatchQueue.main.async { completion(false, error) }
@@ -99,10 +110,15 @@ final class OpenIMManager: NSObject {
     /// 登出
     func logout(completion: @escaping (Bool) -> Void) {
         OIMManager.manager.logoutWith(onSuccess: { _ in
+            self.publishConnectionState(.disconnected)
             DispatchQueue.main.async { completion(true) }
         }, onFailure: { _, _ in
             DispatchQueue.main.async { completion(false) }
         })
+    }
+
+    private func publishConnectionState(_ state: ConnectionState) {
+        DispatchQueue.main.async { [weak self] in self?.connectionState = state }
     }
 
     /// 发送文本消息
@@ -144,7 +160,7 @@ final class OpenIMManager: NSObject {
             }
             let messages = result.messageList
             let converted = messages.map { msg in
-                OpenIMMessage(text: msg.content, msgID: msg.clientMsgID,
+                OpenIMMessage(text: msg.textElem?.content ?? msg.content, msgID: msg.clientMsgID,
                               sendID: msg.sendID, recvID: msg.recvID)
             }
             DispatchQueue.main.async { completion(converted) }
@@ -164,7 +180,7 @@ final class OpenIMManager: NSObject {
     /// OIMMessageInfo → OpenIMMessage
     private func toBusinessMessage(_ msg: OIMMessageInfo?) -> OpenIMMessage? {
         guard let msg = msg else { return nil }
-        return OpenIMMessage(text: msg.content, msgID: msg.clientMsgID,
+        return OpenIMMessage(text: msg.textElem?.content ?? msg.content, msgID: msg.clientMsgID,
                              sendID: msg.sendID, recvID: msg.recvID)
     }
 

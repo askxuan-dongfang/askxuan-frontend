@@ -125,6 +125,9 @@ enum Endpoint {
     case updateBookingStatus(id: String, status: String)
     case bookingReviewCreate(id: String, BookingReviewCreateRequest)
     case bookingReviewById(String)
+    case bookingChats(page: Int, size: Int)
+    case bookingChatMessages(id: String, page: Int, size: Int)
+    case bookingChatSend(id: String, BookingChatMessageSendRequest)
 
     // MARK: - DIY
     case diyDesigns(page: Int, size: Int)
@@ -181,7 +184,6 @@ enum Endpoint {
     case unreadCount(userId: String)                                   // GET /messages/unread-count
     case readAllMessages(userId: String)                               // PUT /messages/read-all
     case deleteMessage(String)                                         // DELETE /messages/{id}
-    case sendMessage(SendMessageRequest)                               // POST /messages/send（C 端发送咨询消息）
     case registerDeviceToken(DeviceTokenRegisterRequest)               // POST /messages/device-token
 
     // MARK: - 公告
@@ -224,6 +226,9 @@ enum Endpoint {
         case .updateBookingStatus(let id, _): return "bookings/\(id)/status"
         case .bookingReviewCreate(let id, _): return "bookings/\(id)/review"
         case .bookingReviewById(let id):      return "bookings/\(id)/review"
+        case .bookingChats:                   return "bookings/chats"
+        case .bookingChatMessages(let id, _, _), .bookingChatSend(let id, _):
+            return "bookings/\(id)/chat/messages"
         // DIY
         case .diyDesigns:               return "diy/designs"
         case .diyDesignSave:            return "diy/designs"
@@ -267,7 +272,6 @@ enum Endpoint {
         case .unreadCount:              return "messages/unread-count"
         case .readAllMessages:          return "messages/read-all"
         case .deleteMessage(let id):    return "messages/\(id)"
-        case .sendMessage:              return "messages/send"
         case .registerDeviceToken:      return "messages/device-token"
         // 公告
         case .announcements:            return "announcements/list"
@@ -293,7 +297,7 @@ enum Endpoint {
         switch self {
         case .temples, .templesByBelief, .templeById, .templeServices, .belief,
              .masters, .mastersByBelief, .masterById,
-			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById,
+			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById, .bookingChats, .bookingChatMessages,
              .diyDesigns, .diyDesignById, .diyMaterials, .diyBlessingServices, .diyOrders, .diyOrderById, .paymentById,
              .aiSessions, .aiMessages,
              .communityFeed, .communityPostById, .communityComments,
@@ -304,12 +308,12 @@ enum Endpoint {
              .messages, .unreadCount, .announcements,
              .userProfile, .addressList, .reviews, .myCoupons:
             return .GET
-        case .createBooking, .bookingReviewCreate, .diyDesignSave, .diyOrderCreate, .diyOrderCreateFromDesign, .paymentCreate,
+        case .createBooking, .bookingReviewCreate, .bookingChatSend, .diyDesignSave, .diyOrderCreate, .diyOrderCreateFromDesign, .paymentCreate,
              .shopOrderCreate,
              .aiSessionCreate, .aiSendMessage, .aiRetryMessage, .communityPostLike,
              .communityCommentCreate, .communityMasterFollow,
              .authLogin, .authRegister, .authRefresh, .authLogout,
-             .addressCreate, .sendMessage, .registerDeviceToken:
+             .addressCreate, .registerDeviceToken:
             return .POST
         case .updateBookingStatus, .shopOrderConfirm, .messageRead, .readAllMessages,
              .updateProfile, .addressUpdate:
@@ -345,6 +349,9 @@ enum Endpoint {
             if let userId, !userId.isEmpty { items.append(URLQueryItem(name: "userId", value: userId)) }
             if let status, !status.isEmpty { items.append(URLQueryItem(name: "status", value: status)) }
             return items
+		case .bookingChats(let page, let size), .bookingChatMessages(_, let page, let size):
+			return [URLQueryItem(name: "page", value: "\(page)"),
+					URLQueryItem(name: "size", value: "\(size)")]
 		case .bookingAvailability(let templeId, let serviceId, let date):
 			return [URLQueryItem(name: "templeId", value: templeId),
 					URLQueryItem(name: "serviceId", value: serviceId),
@@ -440,6 +447,7 @@ enum Endpoint {
         case .createBooking(let req):          return AnyEncodable(req)
         case .updateBookingStatus(_, let status): return AnyEncodable(["status": status])
         case .bookingReviewCreate(_, let request): return AnyEncodable(request)
+        case .bookingChatSend(_, let request): return AnyEncodable(request)
         case .diyDesignSave(let req):          return AnyEncodable(req)
         case .diyOrderCreate(let req):         return AnyEncodable(req)
         case .diyOrderCreateFromDesign(_, let req): return AnyEncodable(req)
@@ -462,7 +470,6 @@ enum Endpoint {
         case .addressCreate(let req):          return AnyEncodable(req)
         case .addressUpdate(_, let req):       return AnyEncodable(req)
         case .readAllMessages(let userId):     return AnyEncodable(["userId": userId])
-        case .sendMessage(let req):            return AnyEncodable(req)
         case .registerDeviceToken(let req):    return AnyEncodable(req)
         default:
             return nil
@@ -510,20 +517,6 @@ struct DiyDesignOrderCreateRequest: Codable {
     let userId: String
     let blessServiceCode: String?
     let addressId: Int64
-}
-
-// MARK: - 消息发送请求/响应
-
-/// C 端发送消息请求（向法师发送咨询消息）
-struct SendMessageRequest: Encodable {
-    let conversationId: String
-    let userId: String
-    let content: String
-}
-
-/// 发送消息响应
-struct SendMessageResponse: Decodable {
-    let id: Int64
 }
 
 /// APNs mock 设备 token 注册请求

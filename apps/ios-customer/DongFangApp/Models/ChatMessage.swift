@@ -27,8 +27,8 @@ struct ChatMessage: Codable, Identifiable, Hashable {
 }
 
 /// 对话会话（C端 IM 简化模型，用于对话列表）
-struct ChatConversation: Identifiable, Hashable {
-    let id: String
+struct ChatConversation: Identifiable, Hashable, Decodable {
+    let bookingId: String
     let masterId: String
     let masterName: String
     let masterAvatar: String
@@ -37,6 +37,80 @@ struct ChatConversation: Identifiable, Hashable {
     var lastTime: String
     var unreadCount: Int
     var isOnline: Bool
+    let serviceName: String
+    let bookingDate: String
+    let canChat: Bool
+
+    var id: String { bookingId }
+
+    enum CodingKeys: String, CodingKey {
+        case bookingId, peerId, peerName, peerAvatar, templeName
+        case lastMessage, lastMessageAt, serviceName, bookingDate, canChat
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        bookingId = try container.decode(String.self, forKey: .bookingId)
+        masterId = try container.decode(String.self, forKey: .peerId)
+        masterName = try container.decode(String.self, forKey: .peerName)
+        masterAvatar = try container.decodeIfPresent(String.self, forKey: .peerAvatar) ?? ""
+        templeName = try container.decodeIfPresent(String.self, forKey: .templeName) ?? ""
+        lastMessage = try container.decode(String.self, forKey: .lastMessage)
+        lastTime = AppDateFormatter.friendly(try container.decodeIfPresent(String.self, forKey: .lastMessageAt))
+        unreadCount = 0
+        isOnline = false
+        serviceName = try container.decodeIfPresent(String.self, forKey: .serviceName) ?? ""
+        bookingDate = try container.decodeIfPresent(String.self, forKey: .bookingDate) ?? ""
+        canChat = try container.decodeIfPresent(Bool.self, forKey: .canChat) ?? false
+    }
+
+    init(bookingId: String, masterId: String, masterName: String, masterAvatar: String,
+         templeName: String, lastMessage: String, lastTime: String, unreadCount: Int,
+         isOnline: Bool, serviceName: String = "", bookingDate: String = "", canChat: Bool = true) {
+        self.bookingId = bookingId
+        self.masterId = masterId
+        self.masterName = masterName
+        self.masterAvatar = masterAvatar
+        self.templeName = templeName
+        self.lastMessage = lastMessage
+        self.lastTime = lastTime
+        self.unreadCount = unreadCount
+        self.isOnline = isOnline
+        self.serviceName = serviceName
+        self.bookingDate = bookingDate
+        self.canChat = canChat
+    }
+}
+
+struct BookingChatListResponse: Decodable {
+    let total: Int64
+    let list: [ChatConversation]
+    let page: Int
+    let size: Int
+}
+
+struct BookingChatMessage: Decodable, Identifiable {
+    let id: Int64
+    let bookingId: String
+    let clientMessageId: String
+    let senderType: String
+    let senderId: String
+    let receiverId: String
+    let content: String
+    let status: String
+    let createTime: String
+}
+
+struct BookingChatMessageListResponse: Decodable {
+    let total: Int64
+    let list: [BookingChatMessage]
+    let page: Int
+    let size: Int
+}
+
+struct BookingChatMessageSendRequest: Encodable {
+    let clientMessageId: String
+    let content: String
 }
 
 /// 单条聊天消息（UI 用）
@@ -58,15 +132,15 @@ enum SendStatus: Hashable {
 
 extension ChatConversation {
     static let mockConversations: [ChatConversation] = [
-        ChatConversation(id: "C001", masterId: "M001", masterName: "智海法师",
+        ChatConversation(bookingId: "C001", masterId: "M001", masterName: "智海法师",
                          masterAvatar: "master-avatar-zhihai", templeName: "灵隐寺",
                          lastMessage: "阿弥陀佛，施主有何疑问？", lastTime: "10:23",
                          unreadCount: 2, isOnline: true),
-        ChatConversation(id: "C002", masterId: "M002", masterName: "清风道长",
+        ChatConversation(bookingId: "C002", masterId: "M002", masterName: "清风道长",
                          masterAvatar: "master-avatar-qingfeng", templeName: "白云观",
                          lastMessage: "贫道已为您安排祈福法事", lastTime: "昨天",
                          unreadCount: 0, isOnline: true),
-        ChatConversation(id: "C003", masterId: "M004", masterName: "扎西多吉活佛",
+        ChatConversation(bookingId: "C003", masterId: "M004", masterName: "扎西多吉活佛",
                          masterAvatar: "master-avatar-zhaxiduoji", templeName: "大昭寺",
                          lastMessage: "愿佛法加持，吉祥如意", lastTime: "06-28",
                          unreadCount: 0, isOnline: false)
@@ -80,21 +154,4 @@ extension ChatBubble {
         ChatBubble(id: "m3", text: "禅修重在调息调心，初学者可从数息观入手。先端坐放松，专注呼吸，从一数到十，反复循环。", isFromMe: false, time: "10:22"),
         ChatBubble(id: "m4", text: "明白，多谢法师指点", isFromMe: true, time: "10:23")
     ]
-}
-
-extension ChatConversation {
-    /// 由站内消息构造会话项
-    /// 说明：后端 message-service 无独立 IM 会话接口，
-    /// 这里以站内消息作为会话来源（每条消息对应一个会话行）。
-    init(from m: ChatMessage) {
-        self.init(id: "msg-\(m.id)",
-                  masterId: m.bizId ?? "",
-                  masterName: m.title,
-                  masterAvatar: "",
-                  templeName: m.bizType ?? "",
-                  lastMessage: m.content,
-                  lastTime: AppDateFormatter.friendly(m.createdAt),
-                  unreadCount: m.isRead == 0 ? 1 : 0,
-                  isOnline: false)
-    }
 }

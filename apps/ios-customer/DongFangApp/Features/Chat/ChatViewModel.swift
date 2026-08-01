@@ -3,8 +3,8 @@
 //  DongFangApp
 //
 //  对话共享 ViewModel：
-//  - 对话列表（ChatView）：来源于站内消息（message-service），不再使用 mock
-//  - 单聊消息流（ChatDetailView）：以站内消息作为会话上下文
+//  - 对话列表：仅来源于已支付预约
+//  - 单聊消息流：booking-service 持久化，OpenIM 实时通知
 //  - 站内消息（message-service）
 //  - 实时消息：通过 WebSocketManager（HTTP 轮询，后端暂无 WS）拉取未读数并刷新
 //
@@ -27,7 +27,7 @@ final class ChatViewModel: ObservableObject {
     @Published var unreadCount: Int = 0
 
     // MARK: - 实时连接状态
-    @Published var connectionState: WebSocketManager.ConnectionState = .disconnected
+    @Published var connectionState: OpenIMManager.ConnectionState = .disconnected
 
     // MARK: - UI 状态
     @Published var isLoading: Bool = false
@@ -44,8 +44,9 @@ final class ChatViewModel: ObservableObject {
         self.authStore = resolvedAuthStore
         self.socketManager = WebSocketManager(apiClient: apiClient, authStore: resolvedAuthStore)
 
-        // 将 WebSocketManager 的状态 / 未读数同步到本 VM
-        socketManager.$connectionState.assign(to: &$connectionState)
+        // 顶部连接指示使用真实 OpenIM WebSocket 状态。
+        OpenIMManager.shared.$connectionState.assign(to: &$connectionState)
+        // 站内通知未读数仍由 message-service 轮询。
         socketManager.$unreadCount.assign(to: &$unreadCount)
 
         // 轮询到新数据时静默刷新会话 / 通知列表
@@ -61,7 +62,7 @@ final class ChatViewModel: ObservableObject {
         socketManager.connect()
     }
 
-    // MARK: - 加载对话列表（来源于站内消息）
+    // MARK: - 加载已支付预约会话
     /// - Parameter silent: 静默模式（轮询触发），不切换 isLoading / errorMessage
     func loadConversations(silent: Bool = false) async {
         if !silent {
@@ -69,9 +70,8 @@ final class ChatViewModel: ObservableObject {
             errorMessage = nil
         }
         do {
-            let resp: PageResponse<ChatMessage> = try await apiClient.request(
-                .messages(userId: authStore.userId, isRead: -1, page: 1, size: 20))
-            self.conversations = resp.list.map { ChatConversation(from: $0) }
+            let resp: BookingChatListResponse = try await apiClient.request(.bookingChats(page: 1, size: 20))
+            self.conversations = resp.list
         } catch {
             self.conversations = []
             if !silent { self.errorMessage = error.localizedDescription }
@@ -79,18 +79,31 @@ final class ChatViewModel: ObservableObject {
         if !silent { isLoading = false }
     }
 
-    // MARK: - 进入会话（以站内消息内容作为会话上下文）
+    // MARK: - 进入会话
     func enterConversation(_ conversation: ChatConversation) {
         currentConversation = conversation
-        // 后端无 IM 历史接口，以该会话对应的站内消息作为起始消息
-        messages = [ChatBubble(id: UUID().uuidString,
-                               text: conversation.lastMessage,
-                               isFromMe: false,
-                               time: conversation.lastTime,
-                               status: .sent)]
+        messages = []
+        Task { await loadChatMessages(bookingId: conversation.bookingId) }
     }
 
-    // MARK: - 发送消息（通过 OpenIM SDK 发送给法师）
+    func loadChatMessages(bookingId: String) async {
+        do {
+            let resp: BookingChatMessageListResponse = try await apiClient.request(
+                .bookingChatMessages(id: bookingId, page: 1, size: 100))
+            guard currentConversation?.bookingId == bookingId else { return }
+            messages = resp.list.map {
+                ChatBubble(id: $0.clientMessageId,
+                           text: $0.content,
+                           isFromMe: $0.senderType == "customer",
+                           time: AppDateFormatter.friendly($0.createTime),
+                           status: $0.status == "sent" ? .sent : .failed)
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    // MARK: - 发送消息（后端校验付费资格并由 OpenIM 实时投递）
     func sendMessage() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, let conversation = currentConversation else { return }
@@ -104,13 +117,16 @@ final class ChatViewModel: ObservableObject {
         messages.append(bubble)
         inputText = ""
 
-        // 通过 OpenIM SDK 发送（法师 OpenIM userID 约定为 "m_" + masterId）
-        let recvID = "m_" + conversation.masterId
-        OpenIMManager.shared.sendMessage(text: text, to: recvID) { [weak self] success in
-            guard let self else { return }
-            self.updateBubbleStatus(bubbleId, success ? .sent : .failed)
-            if !success {
-                self.errorMessage = "发送失败"
+        Task {
+            do {
+                let _: BookingChatMessage = try await apiClient.request(
+                    .bookingChatSend(id: conversation.bookingId,
+                                     BookingChatMessageSendRequest(clientMessageId: bubbleId, content: text)))
+                updateBubbleStatus(bubbleId, .sent)
+                await loadConversations(silent: true)
+            } catch {
+                updateBubbleStatus(bubbleId, .failed)
+                errorMessage = error.localizedDescription
             }
         }
     }
@@ -177,12 +193,14 @@ struct EmptyResponse: Decodable {}
 // MARK: - OpenIM 消息接收
 extension ChatViewModel: OpenIMManagerDelegate {
     func onRecvC2CMessage(_ message: OpenIMMessage) {
-        let bubble = ChatBubble(id: UUID().uuidString,
-                                text: message.text ?? "",
-                                isFromMe: false,
-                                time: AppDateFormatter.time.string(from: Date()),
-                                status: .sent)
-        messages.append(bubble)
+        guard let bookingId = currentConversation?.bookingId else {
+            Task { await loadConversations(silent: true) }
+            return
+        }
+        Task {
+            await loadChatMessages(bookingId: bookingId)
+            await loadConversations(silent: true)
+        }
     }
 
     func onConversationListUpdated(_ conversations: [OpenIMConversation]) {
