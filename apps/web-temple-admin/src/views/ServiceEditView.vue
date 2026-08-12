@@ -5,6 +5,7 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { ArrowLeft, Check, Plus, Delete } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { listServices, createService, updateService } from '@/api/service'
+import { listIntentions, type IntentionOption } from '@/api/taxonomy'
 import type { TempleService, TempleServiceSlot } from '@/types'
 
 const route = useRoute()
@@ -32,12 +33,7 @@ const rules: FormRules = {
   price: [{ required: true, type: 'number', min: 0, message: '请输入有效价格', trigger: 'blur' }]
 }
 
-const intentOptions = [
-  { label: '求平安', value: 'peace' }, { label: '求财运', value: 'wealth' },
-  { label: '求姻缘', value: 'love' }, { label: '求事业', value: 'career' },
-  { label: '求学业', value: 'study' }, { label: '化太岁', value: 'taisui' },
-  { label: '定手串', value: 'diy' }, { label: '做法事', value: 'rite' }
-]
+const intentOptions = ref<IntentionOption[]>([])
 
 async function loadService() {
   if (!serviceId.value) return
@@ -108,7 +104,10 @@ function removeSlot(index: number) {
 	form.slots.splice(index, 1)
 }
 
-onMounted(loadService)
+onMounted(async () => {
+  intentOptions.value = await listIntentions()
+  await loadService()
+})
 </script>
 
 <template>
@@ -144,7 +143,7 @@ onMounted(loadService)
         </el-form-item>
         <el-form-item label="诉求标签">
           <el-select v-model="form.intentTags" multiple placeholder="选择要进入的诉求聚合" style="width: 100%">
-            <el-option v-for="item in intentOptions" :key="item.value" :label="item.label" :value="item.value" />
+            <el-option v-for="item in intentOptions" :key="item.code" :label="item.name" :value="item.code" />
           </el-select>
         </el-form-item>
       </el-form>

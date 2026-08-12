@@ -145,6 +145,7 @@ const menuGroups = [
     title: '系统设置',
     icon: 'Setting',
     children: [
+      { path: '/settings/taxonomy', title: '首页分类' },
       { path: '/settings/role', title: '角色权限' },
       { path: '/settings/dict', title: '数据字典' },
       { path: '/settings/log', title: '操作日志' },

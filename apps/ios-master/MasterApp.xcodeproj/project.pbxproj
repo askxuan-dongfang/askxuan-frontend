@@ -637,14 +637,18 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = AB102AEB2698D19EE0F7FCB8 /* Pods-MasterApp.debug.xcconfig */;
 			buildSettings = {
+				ASKXUAN_API_BASE_URL = "https://101.96.228.71/api/v1";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = DQ3YY8MTFW;
 				INFOPLIST_FILE = MasterApp/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				OTHER_SWIFT_FLAGS = "-DDEBUG";
+				OPENIM_API_URL = "https://101.96.228.71/openim-api";
+				OPENIM_WS_URL = "wss://101.96.228.71/openim-ws";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -655,13 +659,17 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0ECD4F137986813CD2EE5108 /* Pods-MasterApp.release.xcconfig */;
 			buildSettings = {
+				ASKXUAN_API_BASE_URL = "https://101.96.228.71/api/v1";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = DQ3YY8MTFW;
 				INFOPLIST_FILE = MasterApp/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				OPENIM_API_URL = "https://101.96.228.71/openim-api";
+				OPENIM_WS_URL = "wss://101.96.228.71/openim-ws";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

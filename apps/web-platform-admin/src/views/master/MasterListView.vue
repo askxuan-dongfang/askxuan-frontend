@@ -8,10 +8,7 @@
 
     <div class="dfx-card filter-bar">
       <el-select v-model="query.beliefCode" placeholder="一级流派" clearable style="width: 140px">
-        <el-option label="汉传佛教" value="han_buddhism" />
-        <el-option label="藏传佛教" value="tibetan_buddhism" />
-        <el-option label="道教" value="daoism" />
-        <el-option label="民间信仰" value="folk" />
+        <el-option v-for="item in beliefs" :key="item.code" :label="item.name" :value="item.code" />
       </el-select>
       <el-input v-model="query.templeId" placeholder="寺院编码" clearable style="width: 140px" />
       <el-select v-model="query.sect" placeholder="宗派" clearable style="width: 140px">
@@ -79,9 +76,11 @@ import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import { getMasterList, updateMasterStatus } from '@/api/master'
+import { taxonomyApi, type BeliefProfile } from '@/api/taxonomy'
 import type { Master } from '@/types'
 
-const sects = ['禅宗', '净土宗', '天台宗', '律宗', '全真派', '正一道']
+const beliefs = ref<BeliefProfile[]>([])
+const sects = ref<string[]>([])
 const loading = ref(false)
 const list = ref<Master[]>([])
 const total = ref(0)
@@ -92,6 +91,7 @@ async function loadData() {
   try {
     const res = await getMasterList(query)
     list.value = res.list || []
+    sects.value = [...new Set(list.value.map((item) => item.sect).filter(Boolean))]
     total.value = res.total || 0
   } finally {
     loading.value = false
@@ -119,7 +119,11 @@ async function onStatus(row: Master, status: string) {
   loadData()
 }
 
-onMounted(loadData)
+onMounted(async () => {
+  const response = await taxonomyApi.beliefs()
+  beliefs.value = response.list || []
+  await loadData()
+})
 </script>
 
 <style scoped>

@@ -11,13 +11,14 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons, Entypo } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { colors, radius, spacing, fontFamilies } from '../../src/theme/tokens';
 import { getTemples } from '../../src/api/temple';
 import { getMasters } from '../../src/api/master';
+import { getBeliefs, getIntentionTags } from '../../src/api/taxonomy';
 import { DFBannerCarousel } from '../../src/components/DFBannerCarousel';
-import type { Banner, Temple, Master } from '../../src/types';
+import type { Banner, BeliefProfile, IntentionTag, Temple, Master } from '../../src/types';
 
 // Banner 占位数据（渐变色块）
 const banners: Banner[] = [
@@ -38,25 +39,6 @@ const banners: Banner[] = [
   },
 ];
 
-// 热门服务 4x2 网格
-type IconLib = 'ion' | 'material' | 'entypo';
-interface HotService {
-  id: string;
-  name: string;
-  icon: string;
-  lib: IconLib;
-}
-const hotServices: HotService[] = [
-  { id: 'diy', name: 'DIY手串', icon: 'color-filter-outline', lib: 'ion' },
-  { id: 'blessing', name: '祈福', icon: 'heart-outline', lib: 'ion' },
-  { id: 'lamp', name: '供灯', icon: 'bulb-outline', lib: 'ion' },
-  { id: 'incense', name: '上香', icon: 'flame-outline', lib: 'ion' },
-  { id: 'vow', name: '还愿', icon: 'checkmark-done-outline', lib: 'ion' },
-  { id: 'rite', name: '超度', icon: 'water-outline', lib: 'ion' },
-  { id: 'consecration', name: '开光', icon: 'sparkles-outline', lib: 'ion' },
-  { id: 'taisui', name: '化太岁', icon: 'shield-checkmark-outline', lib: 'ion' },
-];
-
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -69,6 +51,14 @@ export default function HomeScreen() {
   const { data: masters, isLoading: mastersLoading } = useQuery({
     queryKey: ['masters', 'home'],
     queryFn: () => getMasters(),
+  });
+  const { data: beliefs = [] } = useQuery<BeliefProfile[]>({
+    queryKey: ['beliefs'],
+    queryFn: getBeliefs,
+  });
+  const { data: intentions = [], isLoading: intentionsLoading } = useQuery<IntentionTag[]>({
+    queryKey: ['intention-tags'],
+    queryFn: getIntentionTags,
   });
 
   return (
@@ -125,41 +115,37 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 热门服务 4x2 网格 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>热门服务</Text>
-          <View style={styles.serviceGrid}>
-            {hotServices.map((svc) => (
+          <Text style={styles.sectionTitle}>按信仰找</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.beliefRow}>
+            {beliefs.map((belief: BeliefProfile) => (
               <TouchableOpacity
-                key={svc.id}
+                key={belief.code}
+                style={styles.beliefChip}
+                activeOpacity={0.7}
+                onPress={() => router.push(`/temple?beliefCode=${belief.code}`)}
+              >
+                <Ionicons name="leaf-outline" size={18} color={colors.accent.default} />
+                <Text style={styles.beliefName}>{belief.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>按心愿办</Text>
+          <View style={styles.serviceGrid}>
+            {intentionsLoading ? <ActivityIndicator color={colors.accent.default} /> : intentions.map((item: IntentionTag) => (
+              <TouchableOpacity
+                key={item.code}
                 style={styles.serviceItem}
                 activeOpacity={0.7}
                 onPress={() => router.push('/temple')}
               >
                 <View style={styles.serviceIconWrap}>
-                  {svc.lib === 'ion' && (
-                    <Ionicons
-                      name={svc.icon as React.ComponentProps<typeof Ionicons>['name']}
-                      size={20}
-                      color={colors.brand.default}
-                    />
-                  )}
-                  {svc.lib === 'material' && (
-                    <MaterialCommunityIcons
-                      name={svc.icon as React.ComponentProps<typeof MaterialCommunityIcons>['name']}
-                      size={20}
-                      color={colors.accent.default}
-                    />
-                  )}
-                  {svc.lib === 'entypo' && (
-                    <Entypo
-                      name={svc.icon as React.ComponentProps<typeof Entypo>['name']}
-                      size={20}
-                      color={colors.brand.default}
-                    />
-                  )}
+                  <Ionicons name="sparkles-outline" size={20} color={colors.brand.default} />
                 </View>
-                <Text style={styles.serviceName}>{svc.name}</Text>
+                <Text style={styles.serviceName}>{item.name}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -336,6 +322,26 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: '600',
+    color: colors.text.primary,
+  },
+  beliefRow: {
+    gap: spacing.sm,
+    paddingTop: spacing.md,
+  },
+  beliefChip: {
+    minWidth: 92,
+    height: 68,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.bg.secondary,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  beliefName: {
+    fontSize: 12,
     color: colors.text.primary,
   },
   more: {

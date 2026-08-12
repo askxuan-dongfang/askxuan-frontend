@@ -36,10 +36,15 @@ struct HomeView: View {
             .toolbar(.hidden, for: .navigationBar)
             .navigationBarHidden(true)
             .navigationBarBackButtonHidden(true)
-            .safeAreaInset(edge: .top) {
+            .safeAreaInset(edge: .top, spacing: 0) {
                 headerSection
                     .frame(width: viewportWidth)
-                    .liquidGlassBackground(0.92)
+                    .background(Color.bgPrimary)
+                    .overlay(alignment: .bottom) {
+                        Rectangle()
+                            .fill(Color.borderDivider)
+                            .frame(height: 0.5)
+                    }
             }
         }
         .task {
@@ -106,7 +111,7 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - 顶部品牌 + 搜索（sticky + blur，品牌 18px serif 紧凑）
+    // MARK: - 顶部品牌 + 搜索
     private var headerSection: some View {
         HStack(spacing: 8) {
             Text("问玄东方")
@@ -125,8 +130,7 @@ struct HomeView: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .frame(minHeight: 48)
+        .frame(height: 52)
     }
 
     // MARK: - Banner 轮播（对齐原型：200px高 + 图片 + 左侧渐变遮罩 + 圆点指示器）
@@ -191,54 +195,58 @@ struct HomeView: View {
 
     // MARK: - 双入口卡片（对齐原型：120px高 + 图片背景 + 渐变遮罩 + 图标+文字居中）
     private var entryCardsSection: some View {
-        GeometryReader { proxy in
-            let horizontalInset: CGFloat = 20
-            let cardWidth = (proxy.size.width - horizontalInset * 2 - AppSpacing.md) / 2
-
-            HStack(spacing: AppSpacing.md) {
-                NavigationLink(value: HomeRoute.templeList) {
-                    entryCard(icon: "building.2.fill", title: "找寺院", asset: ImageMapper.entryTemple)
-                        .frame(width: cardWidth)
-                }
-                .buttonStyle(CardPressButtonStyle())
-                NavigationLink(value: HomeRoute.masterList) {
-                    entryCard(icon: "person.circle.fill", title: "找师傅", asset: ImageMapper.entryMaster)
-                        .frame(width: cardWidth)
-                }
-                .buttonStyle(CardPressButtonStyle())
+        LazyVGrid(
+            columns: [
+                GridItem(.flexible(minimum: 0), spacing: AppSpacing.md),
+                GridItem(.flexible(minimum: 0), spacing: AppSpacing.md)
+            ],
+            spacing: 0
+        ) {
+            NavigationLink(value: HomeRoute.templeList) {
+                entryCard(icon: "building.2.fill", title: "找寺院", asset: ImageMapper.entryTemple)
             }
-            .padding(.horizontal, horizontalInset)
+            .buttonStyle(CardPressButtonStyle())
+
+            NavigationLink(value: HomeRoute.masterList) {
+                entryCard(icon: "person.circle.fill", title: "找师傅", asset: ImageMapper.entryMaster)
+            }
+            .buttonStyle(CardPressButtonStyle())
         }
+        .padding(.horizontal, 20)
         .frame(height: 120)
     }
 
     private func entryCard(icon: String, title: String, asset: String) -> some View {
-        ZStack {
-            RemoteImage(urlString: asset, placeholderIcon: "building.2")
+        GeometryReader { proxy in
+            ZStack {
+                RemoteImage(urlString: asset, placeholderIcon: "building.2")
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .clipped()
 
-            // 渐变遮罩（对齐原型：135deg 0.65 → 0.35）
-            LinearGradient(
-                colors: [
-                    Color.bgPrimary.opacity(0.65),
-                    Color.bgPrimary.opacity(0.35)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+                // 渐变遮罩（对齐原型：135deg 0.65 → 0.35）
+                LinearGradient(
+                    colors: [
+                        Color.bgPrimary.opacity(0.65),
+                        Color.bgPrimary.opacity(0.35)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
 
-            VStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 28))
-                    .foregroundStyle(Color.accentDefault)
-                Text(title)
-                    .font(.custom(AppFont.serif[0], size: 16).weight(.semibold))
-                    .foregroundStyle(Color.accentDefault)
+                VStack(spacing: 8) {
+                    Image(systemName: icon)
+                        .font(.system(size: 28))
+                        .foregroundStyle(Color.accentDefault)
+                    Text(title)
+                        .font(.custom(AppFont.serif[0], size: 16).weight(.semibold))
+                        .foregroundStyle(Color.accentDefault)
+                }
             }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
-        .frame(maxWidth: .infinity)
         .frame(height: 120)
-        .cornerRadius(12)
-        .contentShape(Rectangle())
     }
 
     // MARK: - 信仰入口
@@ -299,7 +307,7 @@ struct HomeView: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: AppSpacing.sm), count: 4), spacing: AppSpacing.sm) {
                 ForEach(viewModel.intentionEntries) { entry in
                     NavigationLink(
-                        value: entry.service == .diy
+                        value: entry.landingType == "diy"
                             ? HomeRoute.diyBracelet
                             : HomeRoute.intention(entry)
                     ) {
@@ -666,22 +674,33 @@ private struct IntentionHubView: View {
                 }
             }
 
-            NavigationLink(value: HomeRoute.service(entry.service)) {
-                Label(entry.actionTitle, systemImage: "arrow.right.circle.fill")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-                    .background(Color.brandDefault)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            if entry.landingType == "diy" {
+                NavigationLink(value: HomeRoute.diyBracelet) {
+                    actionLabel
+                }
+                .buttonStyle(.plain)
+            } else if let service = entry.service {
+                NavigationLink(value: HomeRoute.service(service)) {
+                    actionLabel
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(16)
         .background(Color.bgSecondary)
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.borderDefault, lineWidth: 1))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .padding(.horizontal, 20)
+    }
+
+    private var actionLabel: some View {
+        Label(entry.actionTitle, systemImage: "arrow.right.circle.fill")
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(Color.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .background(Color.brandDefault)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     private func resourceRow(_ item: IntentionResource) -> some View {

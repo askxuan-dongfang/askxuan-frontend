@@ -33,9 +33,9 @@ struct TempleListView: View {
             // 2. 教派标签横滑
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.sm) {
-                    ForEach(viewModel.sectOptions, id: \.self) { tag in
-                        tagPill(title: tag, isSelected: viewModel.selectedSect == tag) {
-                            viewModel.selectedSect = tag
+                    ForEach(viewModel.beliefOptions) { option in
+                        tagPill(title: option.name, isSelected: viewModel.selectedBeliefCode == option.code) {
+                            viewModel.selectedBeliefCode = option.code
                         }
                     }
                 }

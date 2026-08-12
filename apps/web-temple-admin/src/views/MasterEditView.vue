@@ -6,6 +6,7 @@ import { ArrowLeft, Check, Close } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import { listMasters, createMaster, updateMaster } from '@/api/master'
+import { listBeliefs, type BeliefOption } from '@/api/taxonomy'
 import { useAuthStore } from '@/stores/auth'
 import type { Master } from '@/types'
 
@@ -22,12 +23,13 @@ const formRef = ref<FormInstance>()
 const loading = ref(false)
 const saving = ref(false)
 const tagInput = ref('')
+const beliefOptions = ref<BeliefOption[]>([])
 
 const form = reactive({
   dharmaName: '',
   layName: '',
   position: '',
-  beliefCode: 'han_buddhism',
+  beliefCode: '',
   sect: '',
   type: '佛教',
   specialties: [] as string[],
@@ -41,8 +43,6 @@ const rules: FormRules = {
   beliefCode: [{ required: true, message: '请选择一级流派', trigger: 'change' }],
   sect: [{ required: true, message: '请选择宗派', trigger: 'change' }]
 }
-
-const sectOptions = ['禅宗', '净土宗', '天台宗', '华严宗', '律宗', '密宗', '三论宗', '法相宗']
 
 async function loadMaster() {
   if (!masterId.value) return
@@ -118,7 +118,11 @@ async function handleSubmit() {
   })
 }
 
-onMounted(loadMaster)
+onMounted(async () => {
+  beliefOptions.value = await listBeliefs()
+  if (!isEdit.value && !form.beliefCode) form.beliefCode = beliefOptions.value[0]?.code || ''
+  await loadMaster()
+})
 </script>
 
 <template>
@@ -149,18 +153,13 @@ onMounted(loadMaster)
           <el-col :span="12">
             <el-form-item label="一级流派" prop="beliefCode">
               <el-select v-model="form.beliefCode" style="width: 100%">
-                <el-option label="汉传佛教" value="han_buddhism" />
-                <el-option label="藏传佛教" value="tibetan_buddhism" />
-                <el-option label="道教" value="daoism" />
-                <el-option label="民间信仰" value="folk" />
+                <el-option v-for="item in beliefOptions" :key="item.code" :label="item.name" :value="item.code" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="宗派" prop="sect">
-              <el-select v-model="form.sect" placeholder="请选择宗派" style="width: 100%">
-                <el-option v-for="s in sectOptions" :key="s" :label="s" :value="s" />
-              </el-select>
+              <el-input v-model="form.sect" placeholder="如 禅宗、全真派、格鲁派" />
             </el-form-item>
           </el-col>
           <el-col :span="12">

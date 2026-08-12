@@ -63,7 +63,7 @@ instance.interceptors.response.use(
         localStorage.removeItem('df_temple_admin_token')
         localStorage.removeItem('df_temple_admin_refresh_token')
         ElMessage.error('登录已过期，请重新登录')
-        window.location.href = '/login'
+        window.location.href = `${import.meta.env.BASE_URL}login`
         return Promise.reject(new Error(res.message || '未登录或登录已过期'))
       }
       ElMessage.error(res.message || '请求失败')
@@ -91,7 +91,7 @@ instance.interceptors.response.use(
       ElMessage.error('登录已过期，请重新登录')
       localStorage.removeItem('df_temple_admin_token')
       localStorage.removeItem('df_temple_admin_refresh_token')
-      window.location.href = '/login'
+      window.location.href = `${import.meta.env.BASE_URL}login`
     } else {
       ElMessage.error(error.response?.data?.message || error.message || '网络异常')
     }

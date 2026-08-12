@@ -12,7 +12,16 @@ import AVKit
 
 struct ChatView: View {
     @StateObject private var viewModel = ChatViewModel()
-    @State private var selectedTab: Int = 0
+    @State private var selectedTab: Int = {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if let index = args.firstIndex(of: "--smoke-chat-tab"), index + 1 < args.count,
+           let tab = Int(args[index + 1]), (0...2).contains(tab) {
+            return tab
+        }
+        #endif
+        return 0
+    }()
     @State private var searchText: String = ""
     @State private var liveRooms: [LiveRoom] = []
 

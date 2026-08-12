@@ -7,6 +7,7 @@ import path from 'node:path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: process.env.VITE_PUBLIC_BASE || '/',
   plugins: [
     vue(),
     // 自动导入 Vue / Vue Router / Pinia 的 API 与 Element Plus 的函数式组件

@@ -20,6 +20,20 @@ enum ServiceType: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    static func from(serviceCode: String) -> ServiceType? {
+        switch serviceCode {
+        case "S001", "S012": return .blessing
+        case "S002", "S008": return .lamp
+        case "S003", "S009": return .incense
+        case "S004", "S013": return .vow
+        case "S005": return .rite
+        case "S006", "S010", "S011": return .consecration
+        case "S007": return .taisui
+        case "DIY": return .diy
+        default: return nil
+        }
+    }
+
     /// 对应的 SF Symbol 图标
     var iconName: String {
         switch self {

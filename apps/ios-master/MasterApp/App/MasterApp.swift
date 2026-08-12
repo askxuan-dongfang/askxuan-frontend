@@ -77,7 +77,8 @@ struct MasterApp: App {
         }
         AuthStore.shared.didLogin(
             token: accessToken,
-            refreshToken: value(after: "--smoke-refresh-token", in: args)
+            refreshToken: value(after: "--smoke-refresh-token", in: args),
+            imToken: value(after: "--smoke-im-token", in: args) ?? AuthStore.shared.imToken
         )
         #endif
     }

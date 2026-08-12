@@ -15,57 +15,25 @@ final class TempleListViewModel: ObservableObject {
     @Published var errorMessage: String? = nil
 
     // 所有筛选状态集中管理
-    @Published var selectedSect: String = "全部"        // 顶部教派标签
+    @Published var selectedBeliefCode: String = ""
     @Published var selectedService: String = "全部"     // 左侧服务筛选
+    @Published var beliefOptions: [BeliefFilterOption] = []
 
-    let sectOptions: [String] = ["全部", "汉传佛教", "南传佛教", "藏传密宗", "道教道观", "民间地方信仰"]
-    let serviceFilters: [String] = ["全部", "求姻缘", "求财运", "求事业", "求风水",
-                                     "求健康", "求学业", "祈福平安", "超度祭祖", "开光加持"]
+    var serviceFilters: [String] {
+        ["全部"] + Array(Set(temples.flatMap { $0.serviceTags ?? [] })).sorted()
+    }
 
     private let apiClient: APIClient
-    private let beliefCode: String?
-
     init(initialSect: String? = nil, initialBeliefCode: String? = nil, apiClient: APIClient = .shared) {
         self.apiClient = apiClient
-        self.beliefCode = initialBeliefCode
-        if let initialSect {
-            self.selectedSect = Self.normalizedSect(initialSect)
-        }
+        self.selectedBeliefCode = initialBeliefCode ?? ""
     }
 
     var filteredTemples: [Temple] {
         temples.filter { t in
-            (beliefCode == nil || t.beliefCode == beliefCode) &&
-            matchSect(t, selectedSect) &&
+            (selectedBeliefCode.isEmpty || t.beliefCode == selectedBeliefCode) &&
             matchService(t, selectedService)
         }
-    }
-
-    // MARK: - 筛选匹配逻辑（模糊匹配）
-
-    private func matchSect(_ t: Temple, _ sect: String) -> Bool {
-        if sect == "全部" { return true }
-        if sect.contains("汉传") { return t.type.contains("汉传") || t.sect.contains("禅") }
-        if sect.contains("藏传") { return t.type.contains("藏") || t.sect.contains("藏") }
-        if sect.contains("道教") { return t.type.contains("道") }
-        if sect.contains("民间") { return t.type.contains("民间") }
-        return true
-    }
-
-    private static func normalizedSect(_ sect: String) -> String {
-        if sect.contains("禅") || sect.contains("汉传") {
-            return "汉传佛教"
-        }
-        if sect.contains("格鲁") || sect.contains("藏") {
-            return "藏传密宗"
-        }
-        if sect.contains("全真") || sect.contains("正一") || sect.contains("道") {
-            return "道教道观"
-        }
-        if sect.contains("地方") || sect.contains("民间") {
-            return "民间地方信仰"
-        }
-        return "全部"
     }
 
     private func matchService(_ t: Temple, _ service: String) -> Bool {
@@ -78,14 +46,22 @@ final class TempleListViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         do {
-            let endpoint: Endpoint = beliefCode.map { .templesByBelief($0, page: 1, size: 20) }
-                ?? .temples(sect: nil, type: nil, serviceCode: nil, page: 1, size: 20)
-            let resp: PageResponse<Temple> = try await apiClient.request(endpoint)
-            self.temples = resp.list
+            async let templeRequest: PageResponse<Temple> = apiClient.request(.temples(sect: nil, type: nil, serviceCode: nil, page: 1, size: 100))
+            async let beliefRequest: BeliefListResponse = apiClient.request(.beliefs)
+            let (templeResponse, beliefResponse) = try await (templeRequest, beliefRequest)
+            temples = templeResponse.list
+            beliefOptions = [BeliefFilterOption(code: "", name: "全部")] + beliefResponse.list.map { BeliefFilterOption(code: $0.code, name: $0.name) }
         } catch {
             self.temples = []
+            self.beliefOptions = [BeliefFilterOption(code: "", name: "全部")]
             self.errorMessage = error.localizedDescription
         }
         isLoading = false
     }
+}
+
+struct BeliefFilterOption: Identifiable, Hashable {
+    let code: String
+    let name: String
+    var id: String { code }
 }

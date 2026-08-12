@@ -34,9 +34,9 @@ struct MasterListView: View {
             // 2. 分类标签横滑
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.sm) {
-                    ForEach(viewModel.categoryOptions, id: \.self) { tag in
-                        tagPill(title: tag, isSelected: viewModel.selectedCategory == tag) {
-                            viewModel.selectedCategory = tag
+                    ForEach(viewModel.beliefOptions) { option in
+                        tagPill(title: option.name, isSelected: viewModel.selectedBeliefCode == option.code) {
+                            viewModel.selectedBeliefCode = option.code
                         }
                     }
                 }
@@ -270,9 +270,8 @@ struct MasterListView: View {
     private func selectedValue(for group: String) -> String {
         switch group {
         case "所属寺院": return viewModel.selectedTemple
-        case "修为等级": return viewModel.selectedLevel
+        case "职位": return viewModel.selectedLevel
         case "擅长领域": return viewModel.selectedSpecialty
-        case "价格区间": return viewModel.selectedPriceRange
         default: return "全部"
         }
     }
@@ -280,9 +279,8 @@ struct MasterListView: View {
     private func setSelectedValue(_ value: String, for group: String) {
         switch group {
         case "所属寺院":   viewModel.selectedTemple = value
-        case "修为等级":   viewModel.selectedLevel = value
+        case "职位":       viewModel.selectedLevel = value
         case "擅长领域":   viewModel.selectedSpecialty = value
-        case "价格区间":   viewModel.selectedPriceRange = value
         default: break
         }
     }

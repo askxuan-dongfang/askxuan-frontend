@@ -80,7 +80,8 @@ struct DongFangApp: App {
             userId: value(after: "--smoke-user-id", in: args) ?? AppConfig.defaultUserId,
             nickname: value(after: "--smoke-nickname", in: args) ?? "问玄用户",
             avatar: nil,
-            mobile: value(after: "--smoke-mobile", in: args)
+            mobile: value(after: "--smoke-mobile", in: args),
+            imToken: value(after: "--smoke-im-token", in: args) ?? AuthStore.shared.imToken
         )
         #endif
     }

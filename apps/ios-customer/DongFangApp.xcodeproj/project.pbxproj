@@ -98,7 +98,7 @@
 		0DDC649DCC534DC4F787CD65 /* ServiceLampView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceLampView.swift; sourceTree = "<group>"; };
 		1146E8AE880745088DA214F6 /* Pods_DongFangApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DongFangApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		193EEF8E131D20E2F4897CE0 /* Service.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Service.swift; sourceTree = "<group>"; };
-		19C4A2CA2A31EEAEEE340C69 /* DongFangApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = DongFangApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		19C4A2CA2A31EEAEEE340C69 /* DongFangApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DongFangApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1AF936000A9D7B1EC00D512D /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		1BE33612D2155FEDA901D3D8 /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
 		2431C78E9C9239620D33AC8B /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
@@ -132,7 +132,7 @@
 		7A7D526045E92370DDA8D508 /* LoginRequiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginRequiredView.swift; sourceTree = "<group>"; };
 		7E8B5D58C95EF253F44E0060 /* WebSocketManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketManager.swift; sourceTree = "<group>"; };
 		7EC4A691B775E127A0F1C1DD /* ServiceConsecrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceConsecrationView.swift; sourceTree = "<group>"; };
-		7F85AC8B53E15CEDD9522D5E /* DongFangAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DongFangAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7F85AC8B53E15CEDD9522D5E /* DongFangAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DongFangAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		88E82F76143FF951B694E509 /* ChatDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatDetailView.swift; sourceTree = "<group>"; };
 		8973AE6B8C93BC3385082D4E /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		89D472202BFAC67906844A14 /* MasterProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterProfileViewModel.swift; sourceTree = "<group>"; };
@@ -399,7 +399,6 @@
 				B2A96CF5313F198ED89AB1DA /* Pods-DongFangAppTests.debug.xcconfig */,
 				9A76CCE15D08FF347105A308 /* Pods-DongFangAppTests.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -529,9 +528,6 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
-					5AF635CBD5ECAC5958791088 = {
-						DevelopmentTeam = "";
-					};
 					5B81FAA01FB75ACFF0F58E79 = {
 						DevelopmentTeam = "";
 					};
@@ -577,9 +573,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-DongFangApp/Pods-DongFangApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-DongFangApp/Pods-DongFangApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -907,14 +907,18 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 5B57228DAF219B76F0CEC6BB /* Pods-DongFangApp.debug.xcconfig */;
 			buildSettings = {
+				ASKXUAN_API_BASE_URL = "https://101.96.228.71/api/v1";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = DQ3YY8MTFW;
 				INFOPLIST_FILE = DongFangApp/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				OTHER_SWIFT_FLAGS = "-DDEBUG";
+				OPENIM_API_URL = "https://101.96.228.71/openim-api";
+				OPENIM_WS_URL = "wss://101.96.228.71/openim-ws";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -925,13 +929,17 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = EE55E657E1C568460C3EB674 /* Pods-DongFangApp.release.xcconfig */;
 			buildSettings = {
+				ASKXUAN_API_BASE_URL = "https://101.96.228.71/api/v1";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = DQ3YY8MTFW;
 				INFOPLIST_FILE = DongFangApp/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				OPENIM_API_URL = "https://101.96.228.71/openim-api";
+				OPENIM_WS_URL = "wss://101.96.228.71/openim-ws";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

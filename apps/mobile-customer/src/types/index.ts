@@ -21,6 +21,7 @@ export interface Temple {
   name: string;
   region: string; // 地区，如 "浙江杭州"
   type: string; // 寺院类型：汉传佛教/藏传佛教/道教
+  beliefCode: string;
   sect: string; // 宗派：禅宗/净土宗/全真派等
   status: string; // 状态：正常/待审核
   address: string;
@@ -40,6 +41,7 @@ export interface Master {
   templeId: string;
   templeName: string;
   position: string; // 职位：住持/监院/首座等
+  beliefCode: string;
   sect: string; // 宗派
   type: string; // 类型：佛教/道教
   authStatus: string; // 认证状态
@@ -48,6 +50,29 @@ export interface Master {
   rating: number;
   isOnline?: boolean; // 在线状态（前端扩展，后端可选）
   startPrice?: number; // 起步价（前端扩展，后端可选）
+}
+
+export interface BeliefProfile {
+  code: string;
+  name: string;
+  summary: string;
+  description: string;
+  coverImage: string;
+  icon: string;
+  sort: number;
+  status: string;
+}
+
+export interface IntentionTag {
+  code: string;
+  name: string;
+  description: string;
+  icon: string;
+  landingType: 'aggregate' | 'service' | 'diy';
+  landingValue: string;
+  actionTitle: string;
+  sort: number;
+  status: string;
 }
 
 // 服务项

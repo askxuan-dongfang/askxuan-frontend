@@ -133,6 +133,12 @@ const routes: RouteRecordRaw[] = [
       },
       // 系统设置
       {
+        path: 'settings/taxonomy',
+        name: 'SettingsTaxonomy',
+        component: () => import('@/views/settings/SettingsTaxonomyView.vue'),
+        meta: { title: '首页分类', parent: '系统设置' }
+      },
+      {
         path: 'settings/role',
         name: 'SettingsRole',
         component: () => import('@/views/settings/SettingsRoleView.vue'),
@@ -162,7 +168,7 @@ const routes: RouteRecordRaw[] = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior: () => ({ top: 0 })
 })

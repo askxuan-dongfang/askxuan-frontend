@@ -26,25 +26,8 @@ final class HomeViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
 
-    /// 信仰入口（对齐新版原型：先按信仰/宗派找到寺院和法师）
-    let beliefEntries: [BeliefEntry] = [
-        BeliefEntry(id: "han_buddhism", title: "汉传佛教", subtitle: "礼佛祈福", iconName: "leaf.fill"),
-        BeliefEntry(id: "daoism", title: "道教", subtitle: "科仪修持", iconName: "sparkles"),
-        BeliefEntry(id: "tibetan_buddhism", title: "藏传佛教", subtitle: "传承修持", iconName: "flame.fill"),
-        BeliefEntry(id: "folk", title: "民间信仰", subtitle: "民俗祈愿", iconName: "seal.fill")
-    ]
-
-    /// 意图入口（把服务、商品、寺院筛选统一为用户意图）
-    let intentionEntries: [IntentionEntry] = [
-        IntentionEntry(id: "peace", title: "求平安", iconName: "shield.lefthalf.filled", service: .blessing),
-        IntentionEntry(id: "wealth", title: "求财运", iconName: "banknote.fill", service: .incense),
-        IntentionEntry(id: "love", title: "求姻缘", iconName: "heart.fill", service: .lamp),
-        IntentionEntry(id: "career", title: "求事业", iconName: "briefcase.fill", service: .consecration),
-        IntentionEntry(id: "study", title: "求学业", iconName: "book.fill", service: .vow),
-        IntentionEntry(id: "taisui", title: "化太岁", iconName: "circle.hexagongrid.fill", service: .taisui),
-        IntentionEntry(id: "diy", title: "定手串", iconName: "circle.grid.cross.fill", service: .diy),
-        IntentionEntry(id: "rite", title: "做法事", iconName: "hands.sparkles.fill", service: .rite)
-    ]
+    @Published var beliefEntries: [BeliefEntry] = []
+    @Published var intentionEntries: [IntentionEntry] = []
 
     private let apiClient: APIClient
 
@@ -58,8 +41,10 @@ final class HomeViewModel: ObservableObject {
 
         async let templesResult: Result<[Temple], Error> = fetchTemples()
         async let mastersResult: Result<[Master], Error> = fetchMasters()
+        async let beliefsResult: Result<[BeliefEntry], Error> = fetchBeliefs()
+        async let intentionsResult: Result<[IntentionEntry], Error> = fetchIntentions()
 
-        let (templesRes, mastersRes) = await (templesResult, mastersResult)
+        let (templesRes, mastersRes, beliefsRes, intentionsRes) = await (templesResult, mastersResult, beliefsResult, intentionsResult)
 
         switch templesRes {
         case .success(let list):
@@ -76,6 +61,20 @@ final class HomeViewModel: ObservableObject {
         case .failure(let error):
             self.hotMasters = []
             if self.errorMessage == nil { self.errorMessage = error.localizedDescription }
+        }
+
+        switch beliefsRes {
+        case .success(let list): beliefEntries = list
+        case .failure(let error):
+            beliefEntries = []
+            if errorMessage == nil { errorMessage = error.localizedDescription }
+        }
+
+        switch intentionsRes {
+        case .success(let list): intentionEntries = list
+        case .failure(let error):
+            intentionEntries = []
+            if errorMessage == nil { errorMessage = error.localizedDescription }
         }
 
         isLoading = false
@@ -120,6 +119,24 @@ final class HomeViewModel: ObservableObject {
             return .failure(error)
         }
     }
+
+    private func fetchBeliefs() async -> Result<[BeliefEntry], Error> {
+        do {
+            let response: BeliefListResponse = try await apiClient.request(.beliefs)
+            return .success(response.list.map(BeliefEntry.init))
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    private func fetchIntentions() async -> Result<[IntentionEntry], Error> {
+        do {
+            let response: IntentionTagListResponse = try await apiClient.request(.intentionTags)
+            return .success(response.list.map(IntentionEntry.init))
+        } catch {
+            return .failure(error)
+        }
+    }
 }
 
 /// 首页信仰入口
@@ -128,6 +145,13 @@ struct BeliefEntry: Identifiable, Hashable {
     let title: String
     let subtitle: String
     let iconName: String
+
+    init(profile: BeliefProfile) {
+        id = profile.code
+        title = profile.name
+        subtitle = profile.summary
+        iconName = profile.icon.isEmpty ? "sparkles" : profile.icon
+    }
 }
 
 struct BeliefProfile: Codable {
@@ -136,41 +160,34 @@ struct BeliefProfile: Codable {
     let summary: String
     let description: String
     let coverImage: String
+    let icon: String
     let sort: Int
+    let status: String
 }
+
+struct BeliefListResponse: Codable { let list: [BeliefProfile] }
 
 /// 首页意图入口
 struct IntentionEntry: Identifiable, Hashable {
     let id: String
     let title: String
     let iconName: String
-    let service: ServiceType
+    let summary: String
+    let landingType: String
+    let landingValue: String
+    let actionTitle: String
 
-    var summary: String {
-        switch id {
-        case "peace": "祈福、供灯与护佑相关服务，适合本人或家人祈愿平安健康。"
-        case "wealth": "聚合财运祈福、供香供灯及相关法物，由寺院和法师提供真实服务。"
-        case "love": "查找姻缘祈愿、和合供灯及相关法物，按寺院服务流程办理。"
-        case "career": "聚合事业祈愿、开光与助运服务，支持选择寺院、法师和预约时段。"
-        case "study": "查找文昌祈愿、学业供灯和许愿服务，为学业与考试祈福。"
-        case "taisui": "按当年值年太岁办理化太岁服务，并查看对应寺院与可预约时段。"
-        case "rite": "按具体事项选择法事类型、寺院和法师，确认日期、费用与功德回向。"
-        default: "按当前心愿查找适合的寺院服务与商品。"
-        }
+    init(tag: IntentionTag) {
+        id = tag.code
+        title = tag.name
+        iconName = tag.icon.isEmpty ? "sparkles" : tag.icon
+        summary = tag.description
+        landingType = tag.landingType
+        landingValue = tag.landingValue
+        actionTitle = tag.actionTitle.isEmpty ? "立即办理" : tag.actionTitle
     }
 
-    var actionTitle: String {
-        switch id {
-        case "peace": "办理平安祈福"
-        case "wealth": "办理财运祈福"
-        case "love": "办理姻缘供灯"
-        case "career": "办理事业开光"
-        case "study": "办理学业许愿"
-        case "taisui": "办理化太岁"
-        case "rite": "预约法事"
-        default: "立即办理"
-        }
-    }
+    var service: ServiceType? { ServiceType.from(serviceCode: landingValue) }
 }
 
 struct IntentionTag: Codable, Identifiable, Hashable {
@@ -178,9 +195,15 @@ struct IntentionTag: Codable, Identifiable, Hashable {
     let name: String
     let description: String
     let icon: String
+    let landingType: String
+    let landingValue: String
+    let actionTitle: String
     let sort: Int
+    let status: String
     var id: String { code }
 }
+
+struct IntentionTagListResponse: Codable { let list: [IntentionTag] }
 
 struct IntentionResource: Codable, Identifiable, Hashable {
     let resourceType: String

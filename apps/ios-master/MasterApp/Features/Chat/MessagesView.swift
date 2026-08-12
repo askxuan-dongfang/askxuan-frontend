@@ -6,8 +6,8 @@
 //  GET admin/messages/master（master-scoped from JWT）
 //  PUT  admin/messages/master/:id/read
 //
-//  通知列表 / 咨询列表均来源于 message-service 站内消息（真实 API）。
-//  实时新消息通过 WebSocketManager（HTTP 轮询，后端暂无 WS）拉取。
+//  通知列表来源于 message-service，咨询列表来源于 booking-service 的已支付预约（真实 API）。
+//  OpenIM 负责咨询消息实时到达，站内通知通过 WebSocketManager 的 HTTP 轮询刷新。
 //
 
 import SwiftUI
@@ -113,7 +113,16 @@ final class MessagesViewModel: ObservableObject {
 
 struct MessagesView: View {
     @StateObject private var viewModel = MessagesViewModel()
-    @State private var selectedTab: Int = 0  // 0=通知, 1=咨询
+    @State private var selectedTab: Int = {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if let index = args.firstIndex(of: "--smoke-message-tab"), index + 1 < args.count,
+           let tab = Int(args[index + 1]), (0...1).contains(tab) {
+            return tab
+        }
+        #endif
+        return 0
+    }() // 0=通知, 1=咨询
 
     var body: some View {
         VStack(spacing: 0) {

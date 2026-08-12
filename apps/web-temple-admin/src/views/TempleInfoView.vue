@@ -6,12 +6,14 @@ import PageHeader from '@/components/PageHeader.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import { getTempleInfo, updateTempleInfo } from '@/api/temple'
+import { listBeliefs, type BeliefOption } from '@/api/taxonomy'
 import type { Temple } from '@/types'
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 const saving = ref(false)
 const temple = ref<Temple | null>(null)
+const beliefOptions = ref<BeliefOption[]>([])
 
 const form = reactive({
   id: '',
@@ -69,7 +71,10 @@ async function handleSave() {
   })
 }
 
-onMounted(load)
+onMounted(async () => {
+  beliefOptions.value = await listBeliefs()
+  await load()
+})
 </script>
 
 <template>
@@ -92,10 +97,7 @@ onMounted(load)
           </el-form-item>
           <el-form-item label="一级流派" prop="beliefCode" required>
             <el-select v-model="form.beliefCode" style="width: 100%">
-              <el-option label="汉传佛教" value="han_buddhism" />
-              <el-option label="藏传佛教" value="tibetan_buddhism" />
-              <el-option label="道教" value="daoism" />
-              <el-option label="民间信仰" value="folk" />
+              <el-option v-for="item in beliefOptions" :key="item.code" :label="item.name" :value="item.code" />
             </el-select>
           </el-form-item>
           <el-form-item label="具体宗派" prop="sect" required>

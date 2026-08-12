@@ -2,7 +2,7 @@
 //  Configuration.swift
 //  MasterApp
 //
-//  环境与全局配置：DEBUG 指向本地后端（localhost:8080），Release 指向生产环境。
+//  环境与全局配置：构建设置指向公网 IP HTTPS Demo。
 //
 
 import Foundation
@@ -23,8 +23,8 @@ enum AppEnvironment {
 
     var displayName: String {
         switch self {
-        case .debug:   return "Debug（本地后端）"
-        case .release: return "Release（生产）"
+        case .debug:   return "Debug（公网 IP Demo）"
+        case .release: return "Release（公网 IP）"
         }
     }
 }
@@ -32,8 +32,7 @@ enum AppEnvironment {
 /// 全局配置
 enum AppConfig {
     /// API BaseURL（已包含版本前缀 /api/v1）
-    /// - Debug：本地后端（模拟器走 localhost，真机联调需改为 Mac 局域网 IP）
-    /// - Release：线上生产域名
+    /// - Debug/Release：构建设置中的公网 IP HTTPS 地址
     static let baseURL: URL = {
         if let value = Bundle.main.object(forInfoDictionaryKey: "ASKXUAN_API_BASE_URL") as? String,
            let url = URL(string: value), !value.isEmpty {
@@ -42,7 +41,7 @@ enum AppConfig {
         #if DEBUG
         return URL(string: "http://localhost:8080/api/v1")!
         #else
-        return URL(string: "https://api.askxuan.com/api/v1")!
+        return URL(string: "https://101.96.228.71/api/v1")!
         #endif
     }()
 
@@ -53,7 +52,7 @@ enum AppConfig {
         #if DEBUG
         return "http://localhost:10002"
         #else
-        return "https://im-api.askxuan.com"
+        return "https://101.96.228.71/openim-api"
         #endif
     }()
 
@@ -64,7 +63,7 @@ enum AppConfig {
         #if DEBUG
         return "ws://localhost:10001"
         #else
-        return "wss://im-ws.askxuan.com"
+        return "wss://101.96.228.71/openim-ws"
         #endif
     }()
 
@@ -76,7 +75,7 @@ enum AppConfig {
         #if DEBUG
         return "ws://localhost:8080/ws"
         #else
-        return "wss://api.askxuan.com/ws"
+        return "wss://101.96.228.71/ws"
         #endif
     }()
 

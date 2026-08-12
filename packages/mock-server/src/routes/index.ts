@@ -293,12 +293,13 @@ router.get('/masters', (req: Request, res: Response) => {
 });
 
 const beliefs = [
-  { code: 'han_buddhism', name: '汉传佛教', summary: '慈悲与智慧并行', description: '汉传佛教在中国长期发展，形成禅、净土、天台、华严等具体宗派。', coverImage: '', sort: 10 },
-  { code: 'tibetan_buddhism', name: '藏传佛教', summary: '传承、修持与慈悲', description: '藏传佛教具有清晰的传承体系，包含格鲁、宁玛、噶举、萨迦等具体宗派。', coverImage: '', sort: 20 },
-  { code: 'daoism', name: '道教', summary: '道法自然，清静修持', description: '道教是中国本土宗教传统，包含全真、正一等具体宗派。', coverImage: '', sort: 30 },
-  { code: 'folk', name: '民间信仰', summary: '乡土传统与民俗传承', description: '民间信仰承载地域性祭祀、祈愿和文化传统。', coverImage: '', sort: 40 }
+  { code: 'han_buddhism', name: '汉传佛教', summary: '慈悲与智慧并行', description: '汉传佛教在中国长期发展，形成禅、净土、天台、华严等具体宗派。', coverImage: '', icon: 'leaf.fill', sort: 10, status: 'enabled' },
+  { code: 'tibetan_buddhism', name: '藏传佛教', summary: '传承、修持与慈悲', description: '藏传佛教具有清晰的传承体系，包含格鲁、宁玛、噶举、萨迦等具体宗派。', coverImage: '', icon: 'flame.fill', sort: 20, status: 'enabled' },
+  { code: 'daoism', name: '道教', summary: '道法自然，清静修持', description: '道教是中国本土宗教传统，包含全真、正一等具体宗派。', coverImage: '', icon: 'sparkles', sort: 30, status: 'enabled' },
+  { code: 'folk', name: '民间信仰', summary: '乡土传统与民俗传承', description: '民间信仰承载地域性祭祀、祈愿和文化传统。', coverImage: '', icon: 'seal.fill', sort: 40, status: 'enabled' }
 ];
 
+router.get('/beliefs', (_req: Request, res: Response) => success(res, { list: beliefs.filter((item) => item.status === 'enabled') }));
 router.get('/beliefs/:code', (req: Request, res: Response) => {
   const belief = beliefs.find((item) => item.code === req.params.code);
   if (!belief) return fail(res, 404, '信仰流派不存在');
@@ -314,14 +315,14 @@ router.get('/masters/:id', (req: Request, res: Response) => {
 // ========== 服务 ==========
 // GET /services 返回用户端服务 + 加持服务
 const intentTags = [
-  { code: 'peace', name: '求平安', description: '祈福、护佑与健康', icon: 'shield.lefthalf.filled', sort: 10 },
-  { code: 'wealth', name: '求财运', description: '财运与供养', icon: 'banknote.fill', sort: 20 },
-  { code: 'love', name: '求姻缘', description: '姻缘与家庭', icon: 'heart.fill', sort: 30 },
-  { code: 'career', name: '求事业', description: '事业与开光', icon: 'briefcase.fill', sort: 40 },
-  { code: 'study', name: '求学业', description: '学业与智慧', icon: 'book.fill', sort: 50 },
-  { code: 'taisui', name: '化太岁', description: '本命年与化太岁', icon: 'circle.hexagongrid.fill', sort: 60 },
-  { code: 'diy', name: '定手串', description: '手串材料与定制', icon: 'circle.grid.cross.fill', sort: 70 },
-  { code: 'rite', name: '做法事', description: '超度等法事', icon: 'hands.sparkles.fill', sort: 80 }
+  { code: 'peace', name: '求平安', description: '祈福、护佑与健康', icon: 'shield.lefthalf.filled', landingType: 'service', landingValue: 'S001', actionTitle: '办理平安祈福', sort: 10, status: 'enabled' },
+  { code: 'wealth', name: '求财运', description: '财运与供养', icon: 'banknote.fill', landingType: 'service', landingValue: 'S009', actionTitle: '办理财运祈福', sort: 20, status: 'enabled' },
+  { code: 'love', name: '求姻缘', description: '姻缘与家庭', icon: 'heart.fill', landingType: 'service', landingValue: 'S008', actionTitle: '办理姻缘祈愿', sort: 30, status: 'enabled' },
+  { code: 'career', name: '求事业', description: '事业与开光', icon: 'briefcase.fill', landingType: 'service', landingValue: 'S010', actionTitle: '办理事业祈愿', sort: 40, status: 'enabled' },
+  { code: 'study', name: '求学业', description: '学业与智慧', icon: 'book.fill', landingType: 'service', landingValue: 'S013', actionTitle: '办理学业祈愿', sort: 50, status: 'enabled' },
+  { code: 'taisui', name: '化太岁', description: '本命年与化太岁', icon: 'circle.hexagongrid.fill', landingType: 'service', landingValue: 'S007', actionTitle: '办理化太岁', sort: 60, status: 'enabled' },
+  { code: 'diy', name: '定手串', description: '手串材料与定制', icon: 'circle.grid.cross.fill', landingType: 'diy', landingValue: '', actionTitle: '开始定制', sort: 70, status: 'enabled' },
+  { code: 'rite', name: '做法事', description: '超度等法事', icon: 'hands.sparkles.fill', landingType: 'service', landingValue: 'S005', actionTitle: '预约法事', sort: 80, status: 'enabled' }
 ];
 const intentionResources = [
   { resourceType: 'product', sourceId: '1', title: '小叶紫檀108颗佛珠', subtitle: '精选小叶紫檀，手工打磨', price: 388, image: '/assets/product-xiaoyezitan.jpg', orderTarget: 'product:1', intentCodes: ['peace', 'diy'] },
@@ -337,6 +338,16 @@ router.get('/intentions', (req: Request, res: Response) => {
   const payload = page(filtered.map(({ intentCodes: _intentCodes, ...item }) => item), req);
   success(res, { tags: intentTags, ...payload });
 });
+router.get('/intentions/tags', (_req: Request, res: Response) => success(res, { list: intentTags.filter((item) => item.status === 'enabled') }));
+
+router.get('/admin/platform/beliefs', (_req: Request, res: Response) => success(res, { list: beliefs }));
+router.post('/admin/platform/beliefs', (req: Request, res: Response) => { const item = { ...req.body, status: 'enabled' }; beliefs.push(item); success(res, item); });
+router.put('/admin/platform/beliefs/:code', (req: Request, res: Response) => { const item = beliefs.find((value) => value.code === req.params.code); if (!item) return fail(res, 404, '信仰流派不存在'); Object.assign(item, req.body); success(res, item); });
+router.put('/admin/platform/beliefs/:code/status', (req: Request, res: Response) => { const item = beliefs.find((value) => value.code === req.params.code); if (!item) return fail(res, 404, '信仰流派不存在'); item.status = req.body.status; success(res, item); });
+router.get('/admin/platform/intentions', (_req: Request, res: Response) => success(res, { list: intentTags }));
+router.post('/admin/platform/intentions', (req: Request, res: Response) => { const item = { ...req.body, status: 'enabled' }; intentTags.push(item); success(res, item); });
+router.put('/admin/platform/intentions/:code', (req: Request, res: Response) => { const item = intentTags.find((value) => value.code === req.params.code); if (!item) return fail(res, 404, '心愿不存在'); Object.assign(item, req.body); success(res, item); });
+router.put('/admin/platform/intentions/:code/status', (req: Request, res: Response) => { const item = intentTags.find((value) => value.code === req.params.code); if (!item) return fail(res, 404, '心愿不存在'); item.status = req.body.status; success(res, item); });
 
 router.get('/services', (_req: Request, res: Response) => {
   success(res, { services, blessingServices, meritMoneyTiers });
@@ -687,13 +698,6 @@ router.put('/admin/platform/community/comments/:id/:action(approve|reject)', (re
     if (post) post.commentCount += 1;
   }
   success(res, comment);
-});
-
-// ========== 意图聚合 ==========
-router.get('/intentions', (req: Request, res: Response) => {
-  const code = typeof req.query.code === 'string' ? req.query.code : '';
-  const list = code ? intentionItems.filter((item) => item.code === code) : intentionItems;
-  success(res, page(list, req));
 });
 
 // ========== 预约订单 ==========

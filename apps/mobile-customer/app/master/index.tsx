@@ -17,25 +17,25 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { DFTopNavBar } from '../../src/components/DFTopNavBar';
 import { DFTagPill } from '../../src/components/DFTagPill';
 import { getMasters } from '../../src/api/master';
+import { getBeliefs } from '../../src/api/taxonomy';
 import { colors, radius, spacing, fontFamilies } from '../../src/theme/tokens';
 import type { Master } from '../../src/types';
-
-const CATEGORIES = ['全部', '佛教', '道教'];
 
 export default function MasterListScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [activeCate, setActiveCate] = useState('全部');
+  const [activeCate, setActiveCate] = useState('');
 
   const { data: masters, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['masters', 'list'],
     queryFn: () => getMasters(),
   });
+  const { data: beliefs = [] } = useQuery({ queryKey: ['beliefs'], queryFn: getBeliefs });
 
   const filtered = useMemo(() => {
     if (!masters) return [];
-    if (activeCate === '全部') return masters;
-    return masters.filter((m: Master) => m.type === activeCate);
+    if (!activeCate) return masters;
+    return masters.filter((m: Master) => m.beliefCode === activeCate);
   }, [masters, activeCate]);
 
   const renderItem = ({ item }: { item: Master }) => (
@@ -92,12 +92,12 @@ export default function MasterListScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.cateRow}
       >
-        {CATEGORIES.map((cate) => (
+        {[{ code: '', name: '全部' }, ...beliefs].map((cate) => (
           <DFTagPill
-            key={cate}
-            label={cate}
-            active={activeCate === cate}
-            onPress={() => setActiveCate(cate)}
+            key={cate.code}
+            label={cate.name}
+            active={activeCate === cate.code}
+            onPress={() => setActiveCate(cate.code)}
           />
         ))}
       </ScrollView>

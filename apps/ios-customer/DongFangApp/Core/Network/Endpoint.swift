@@ -110,6 +110,7 @@ enum Endpoint {
     case templesByBelief(String, page: Int, size: Int)
     case templeById(String)
     case templeServices(String)         // GET /temples/{id}/services
+    case beliefs
     case belief(String)
 
     // MARK: - 法师
@@ -168,6 +169,7 @@ enum Endpoint {
 
     // MARK: - 原型聚合入口
     case intentionHub(code: String?, page: Int, size: Int)
+    case intentionTags
 
     // MARK: - 商城
     case products(categoryId: Int64?, keyword: String?, page: Int, size: Int)
@@ -213,6 +215,7 @@ enum Endpoint {
         case .templesByBelief:          return "temples"
         case .templeById(let id):       return "temples/\(id)"
         case .templeServices(let id):   return "temples/\(id)/services"
+        case .beliefs:                  return "beliefs"
         case .belief(let code):         return "beliefs/\(code)"
         // 法师
         case .masters:                  return "masters"
@@ -259,6 +262,7 @@ enum Endpoint {
         case .liveRoomById(let id):      return "live/rooms/\(id)"
         // 原型聚合入口
         case .intentionHub:             return "intentions"
+        case .intentionTags:            return "intentions/tags"
         // 商城
         case .products:                 return "products"
         case .productById(let id):      return "products/\(id)"
@@ -295,14 +299,14 @@ enum Endpoint {
     /// HTTP 方法
     var httpMethod: HTTPMethod {
         switch self {
-        case .temples, .templesByBelief, .templeById, .templeServices, .belief,
+        case .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief,
              .masters, .mastersByBelief, .masterById,
 			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById, .bookingChats, .bookingChatMessages,
              .diyDesigns, .diyDesignById, .diyMaterials, .diyBlessingServices, .diyOrders, .diyOrderById, .paymentById,
              .aiSessions, .aiMessages,
              .communityFeed, .communityPostById, .communityComments,
              .mediaDetail, .liveRooms, .liveRoomById,
-             .intentionHub,
+             .intentionHub, .intentionTags,
              .products, .productById, .productCategories,
              .shopOrders, .shopOrderById,
              .messages, .unreadCount, .announcements,

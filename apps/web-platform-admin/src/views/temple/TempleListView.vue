@@ -2,14 +2,13 @@
   <div class="dfx-page">
     <PageHeader title="寺院列表" subtitle="全平台寺院信息与状态管理">
       <template #actions>
-        <el-button :icon="Edit" @click="openBeliefEditor">流派资料</el-button>
         <el-button :icon="Refresh" @click="loadData">刷新</el-button>
       </template>
     </PageHeader>
 
     <div class="dfx-card filter-bar">
       <el-select v-model="query.beliefCode" placeholder="一级流派" clearable style="width: 140px">
-        <el-option v-for="item in beliefOptions" :key="item.value" :label="item.label" :value="item.value" />
+        <el-option v-for="item in beliefOptions" :key="item.code" :label="item.name" :value="item.code" />
       </el-select>
       <el-input v-model="query.region" placeholder="地区" clearable style="width: 140px" />
       <el-select v-model="query.sect" placeholder="宗派" clearable style="width: 140px">
@@ -70,57 +69,30 @@
         </el-table-column>
       </DataTable>
     </div>
-
-    <el-dialog v-model="beliefDialog" title="流派资料维护" width="620px">
-      <el-form :model="beliefForm" label-width="90px">
-        <el-form-item label="一级流派">
-          <el-select v-model="beliefForm.code" style="width: 100%" @change="loadBelief">
-            <el-option v-for="item in beliefOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="展示名称"><el-input v-model="beliefForm.name" /></el-form-item>
-        <el-form-item label="摘要"><el-input v-model="beliefForm.summary" /></el-form-item>
-        <el-form-item label="完整简介"><el-input v-model="beliefForm.description" type="textarea" :rows="5" /></el-form-item>
-        <el-form-item label="封面地址"><el-input v-model="beliefForm.coverImage" /></el-form-item>
-        <el-form-item label="排序"><el-input-number v-model="beliefForm.sort" :min="0" /></el-form-item>
-      </el-form>
-      <template #footer><el-button @click="beliefDialog = false">取消</el-button><el-button type="primary" @click="saveBelief">保存</el-button></template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { Search, Refresh, RefreshLeft, ArrowDown, Edit } from '@element-plus/icons-vue'
+import { ref, reactive, onMounted, computed } from 'vue'
+import { Search, Refresh, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
-import { getTempleList, updateTempleStatus, getBelief, updateBelief } from '@/api/temple'
+import { getTempleList, updateTempleStatus } from '@/api/temple'
+import { taxonomyApi, type BeliefProfile } from '@/api/taxonomy'
 import type { Temple } from '@/types'
 
-const sects = ['禅宗', '净土宗', '天台宗', '律宗', '全真派', '正一道']
-const types = ['佛教', '道教']
-const beliefOptions = [
-  { label: '汉传佛教', value: 'han_buddhism' }, { label: '藏传佛教', value: 'tibetan_buddhism' },
-  { label: '道教', value: 'daoism' }, { label: '民间信仰', value: 'folk' }
-]
-const beliefDialog = ref(false)
-const beliefForm = reactive({ code: 'han_buddhism', name: '', summary: '', description: '', coverImage: '', sort: 0 })
+const sects = computed(() => Array.from(new Set(list.value.map((item) => item.sect).filter(Boolean))).sort())
+const types = computed(() => Array.from(new Set(list.value.map((item) => item.type).filter(Boolean))).sort())
+const beliefOptions = ref<BeliefProfile[]>([])
 
 const loading = ref(false)
 const list = ref<Temple[]>([])
 const total = ref(0)
 const query = reactive({ beliefCode: '', region: '', sect: '', type: '', page: 1, size: 20 })
 
-function beliefName(code: string) { return beliefOptions.find((item) => item.value === code)?.label || code }
-async function loadBelief() { Object.assign(beliefForm, await getBelief(beliefForm.code)) }
-async function openBeliefEditor() { beliefDialog.value = true; await loadBelief() }
-async function saveBelief() {
-  const { code, ...data } = beliefForm
-  Object.assign(beliefForm, await updateBelief(code, data))
-  ElMessage.success('流派资料已保存')
-}
+function beliefName(code: string) { return beliefOptions.value.find((item) => item.code === code)?.name || code }
 
 async function loadData() {
   loading.value = true
@@ -131,6 +103,11 @@ async function loadData() {
   } finally {
     loading.value = false
   }
+}
+
+async function loadBeliefOptions() {
+  const response = await taxonomyApi.beliefs()
+  beliefOptions.value = response.list || []
 }
 
 function onSearch() {
@@ -153,7 +130,9 @@ async function onStatus(row: Temple, status: string) {
   loadData()
 }
 
-onMounted(loadData)
+onMounted(async () => {
+  await Promise.all([loadBeliefOptions(), loadData()])
+})
 </script>
 
 <style scoped>

@@ -11,33 +11,33 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { DFTopNavBar } from '../../src/components/DFTopNavBar';
 import { DFTagPill } from '../../src/components/DFTagPill';
 import { getTemples } from '../../src/api/temple';
+import { getBeliefs } from '../../src/api/taxonomy';
 import { colors, radius, spacing, fontFamilies } from '../../src/theme/tokens';
 import type { Temple } from '../../src/types';
-
-// 教派分类
-const CATEGORIES = ['全部', '汉传佛教', '藏传佛教', '道教'];
 
 export default function TempleListScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [activeCate, setActiveCate] = useState('全部');
+  const params = useLocalSearchParams<{ beliefCode?: string }>();
+  const [activeCate, setActiveCate] = useState(params.beliefCode || '');
 
   const { data: temples, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['temples', 'list'],
     queryFn: () => getTemples(),
   });
+  const { data: beliefs = [] } = useQuery({ queryKey: ['beliefs'], queryFn: getBeliefs });
 
   // 按教派分类筛选
   const filtered = useMemo(() => {
     if (!temples) return [];
-    if (activeCate === '全部') return temples;
-    return temples.filter((t: Temple) => t.type === activeCate);
+    if (!activeCate) return temples;
+    return temples.filter((t: Temple) => t.beliefCode === activeCate);
   }, [temples, activeCate]);
 
   const renderItem = ({ item }: { item: Temple }) => (
@@ -85,12 +85,12 @@ export default function TempleListScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.cateRow}
       >
-        {CATEGORIES.map((cate) => (
+        {[{ code: '', name: '全部' }, ...beliefs].map((cate) => (
           <DFTagPill
-            key={cate}
-            label={cate}
-            active={activeCate === cate}
-            onPress={() => setActiveCate(cate)}
+            key={cate.code}
+            label={cate.name}
+            active={activeCate === cate.code}
+            onPress={() => setActiveCate(cate.code)}
           />
         ))}
       </ScrollView>

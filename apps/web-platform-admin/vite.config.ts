@@ -4,6 +4,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 // 问玄东方 P05 平台总管理台 - Vite 配置
 export default defineConfig({
+  base: process.env.VITE_PUBLIC_BASE || '/',
   plugins: [vue()],
   resolve: {
     alias: {
