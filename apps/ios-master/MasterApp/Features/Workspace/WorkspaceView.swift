@@ -197,7 +197,7 @@ struct WorkspaceView: View {
 
     private var greetingSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("阿弥陀佛，\(authStore.nickname ?? "智海法师")")
+            Text("您好，\(authStore.nickname ?? "明觉法师（演示）")")
                 .font(.pageTitle)
                 .foregroundStyle(.textPrimary)
             Text("今日有 \(viewModel.pendingBookings.count) 个预约待处理，\(viewModel.assignedTasks.count) 个加持任务")

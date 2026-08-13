@@ -3,7 +3,7 @@
 //  DongFangApp
 //
 //  主 TabView 容器：5 个 Tab（首页/对话/AI问事/商城/我的），每个 Tab 内部用 NavigationStack。
-//  使用 SwiftUI 原生 TabView，push 到二级页面时 TabBar 自动隐藏。
+//  使用 SwiftUI 原生 TabView，Dock 仅在五个根页面显示。
 //  通过 UITabBarAppearance 配置深色样式，对齐产品原型 home.html 底部导航。
 //
 
@@ -40,6 +40,7 @@ struct MainTabView: View {
             // 首页：游客可访问（公共信息）
             NavigationStack {
                 HomeView()
+                    .rootTabPage()
                     .navigationDestination(for: AuthRoute.self) { _ in LoginView() }
             }
             .tabItem { Label("首页", systemImage: "house") }
@@ -48,6 +49,7 @@ struct MainTabView: View {
             // 对话：需要登录
             NavigationStack {
                 ChatView()
+                    .rootTabPage()
                     .requireAuth(
                         icon: "bubble.left.and.bubble.right.fill",
                         title: "登录后查看对话",
@@ -61,6 +63,7 @@ struct MainTabView: View {
             // AI问事：需要登录
             NavigationStack {
                 AiDivinationView()
+                    .rootTabPage()
                     .requireAuth(
                         icon: "sparkles",
                         title: "登录后开启 AI 问事",
@@ -74,6 +77,7 @@ struct MainTabView: View {
             // 商城：游客可浏览，下单时拦截
             NavigationStack {
                 ShopView()
+                    .rootTabPage()
                     .navigationDestination(for: AuthRoute.self) { _ in LoginView() }
             }
             .tabItem { Label("商城", systemImage: "bag") }
@@ -82,6 +86,7 @@ struct MainTabView: View {
             // 我的：未登录显示登录引导
             NavigationStack {
                 ProfileView()
+                    .rootTabPage()
                     .navigationDestination(for: AuthRoute.self) { _ in LoginView() }
             }
             .tabItem { Label("我的", systemImage: "person.crop.circle") }

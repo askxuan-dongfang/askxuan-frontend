@@ -138,9 +138,9 @@ export const blessingServices: BlessingService[] = [
     templeId: 'T001',
     templeName: '灵隐寺',
     masterId: 'M001',
-    masterName: '智海法师',
+    masterName: '明觉法师（演示）',
     price: 168,
-    description: '智海法师亲自为手串开光加持，注入禅宗正能量。'
+    description: '明觉法师（演示）提供线上祈愿礼仪服务。'
   },
   {
     id: 'E002',
@@ -148,9 +148,9 @@ export const blessingServices: BlessingService[] = [
     templeId: 'T002',
     templeName: '白云观',
     masterId: 'M002',
-    masterName: '清风道长',
+    masterName: '玄和道长（演示）',
     price: 128,
-    description: '清风道长以全真派科仪为手串祈福消灾。'
+    description: '玄和道长（演示）提供道教文化与祈愿礼仪服务。'
   },
   {
     id: 'E003',
@@ -158,9 +158,9 @@ export const blessingServices: BlessingService[] = [
     templeId: 'T003',
     templeName: '少林寺',
     masterId: 'M003',
-    masterName: '释延心法师',
+    masterName: '延澄法师（演示）',
     price: 198,
-    description: '释延心法师以少林禅功为手串加持护身。'
+    description: '延澄法师（演示）提供禅修文化与祈愿服务。'
   },
   {
     id: 'E004',
@@ -168,8 +168,8 @@ export const blessingServices: BlessingService[] = [
     templeId: 'T004',
     templeName: '大昭寺',
     masterId: 'M004',
-    masterName: '扎西多吉活佛',
+    masterName: '嘉措讲师（演示）',
     price: 268,
-    description: '扎西多吉活佛以藏密仪轨为手串灌顶加持。'
+    description: '嘉措讲师（演示）提供藏传佛教文化与祈愿礼仪讲解。'
   }
 ];

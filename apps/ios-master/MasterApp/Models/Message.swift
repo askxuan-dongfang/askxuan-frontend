@@ -34,6 +34,9 @@ struct MessageReadResponse: Decodable {
 }
 
 struct MasterBookingChatConversation: Identifiable, Decodable {
+    let conversationId: String
+    let sourceType: String
+    let sourceId: String
     let bookingId: String
     let peerId: String
     let peerName: String
@@ -44,8 +47,52 @@ struct MasterBookingChatConversation: Identifiable, Decodable {
     let lastMessage: String
     let lastMessageAt: String
     let canChat: Bool
+    let expiresAt: String
 
-    var id: String { bookingId }
+    var id: String { conversationId }
+
+    enum CodingKeys: String, CodingKey {
+        case conversationId, sourceType, sourceId, bookingId, peerId, peerName, peerAvatar
+        case templeName, serviceName, bookingDate, lastMessage, lastMessageAt, canChat, expiresAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        bookingId = try c.decodeIfPresent(String.self, forKey: .bookingId) ?? ""
+        sourceId = try c.decodeIfPresent(String.self, forKey: .sourceId) ?? bookingId
+        conversationId = try c.decodeIfPresent(String.self, forKey: .conversationId) ?? sourceId
+        sourceType = try c.decodeIfPresent(String.self, forKey: .sourceType) ?? "booking"
+        peerId = try c.decodeIfPresent(String.self, forKey: .peerId) ?? ""
+        peerName = try c.decodeIfPresent(String.self, forKey: .peerName) ?? "咨询用户"
+        peerAvatar = try c.decodeIfPresent(String.self, forKey: .peerAvatar) ?? ""
+        templeName = try c.decodeIfPresent(String.self, forKey: .templeName) ?? ""
+        serviceName = try c.decodeIfPresent(String.self, forKey: .serviceName) ?? ""
+        bookingDate = try c.decodeIfPresent(String.self, forKey: .bookingDate) ?? ""
+        lastMessage = try c.decodeIfPresent(String.self, forKey: .lastMessage) ?? ""
+        lastMessageAt = try c.decodeIfPresent(String.self, forKey: .lastMessageAt) ?? ""
+        canChat = try c.decodeIfPresent(Bool.self, forKey: .canChat) ?? false
+        expiresAt = try c.decodeIfPresent(String.self, forKey: .expiresAt) ?? ""
+    }
+
+    init(bookingId: String, peerId: String, peerName: String, peerAvatar: String,
+         templeName: String, serviceName: String, bookingDate: String,
+         lastMessage: String, lastMessageAt: String, canChat: Bool,
+         conversationId: String? = nil, sourceType: String = "booking", expiresAt: String = "") {
+        self.conversationId = conversationId ?? bookingId
+        self.sourceType = sourceType
+        self.sourceId = conversationId ?? bookingId
+        self.bookingId = bookingId
+        self.peerId = peerId
+        self.peerName = peerName
+        self.peerAvatar = peerAvatar
+        self.templeName = templeName
+        self.serviceName = serviceName
+        self.bookingDate = bookingDate
+        self.lastMessage = lastMessage
+        self.lastMessageAt = lastMessageAt
+        self.canChat = canChat
+        self.expiresAt = expiresAt
+    }
 }
 
 struct MasterBookingChatListResponse: Decodable {

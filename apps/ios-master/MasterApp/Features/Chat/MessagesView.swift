@@ -6,7 +6,7 @@
 //  GET admin/messages/master（master-scoped from JWT）
 //  PUT  admin/messages/master/:id/read
 //
-//  通知列表来源于 message-service，咨询列表来源于 booking-service 的已支付预约（真实 API）。
+//  通知列表来源于 message-service，咨询列表来源于 booking-service 的付费咨询与预约（真实 API）。
 //  OpenIM 负责咨询消息实时到达，站内通知通过 WebSocketManager 的 HTTP 轮询刷新。
 //
 
@@ -75,7 +75,7 @@ final class MessagesViewModel: ObservableObject {
 
     func loadChats() async {
         do {
-            let resp: MasterBookingChatListResponse = try await apiClient.request(.bookingChats(page: 1, size: 50))
+            let resp: MasterBookingChatListResponse = try await apiClient.request(.chats(page: 1, size: 50))
             chats = resp.list
         } catch {
             chats = []
@@ -265,7 +265,7 @@ struct MessagesView: View {
                 if viewModel.chats.isEmpty && !viewModel.isLoading {
                     EmptyState(icon: "bubble.left.slash",
                                title: "暂无咨询",
-                               message: viewModel.errorMessage ?? "信众完成预约支付后，对话会显示在这里")
+                               message: viewModel.errorMessage ?? "信众购买即时咨询或完成预约支付后，对话会显示在这里")
                         .padding(.top, 60)
                 } else {
                     ForEach(viewModel.chats) { conversation in

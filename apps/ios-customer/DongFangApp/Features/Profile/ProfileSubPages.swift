@@ -109,13 +109,18 @@ struct OrderListView: View {
             orderSectionTitle("服务与预约", count: bookings.count)
             ForEach(bookings) { booking in
                 VStack(spacing: AppSpacing.sm) {
-                    orderCard(
-                        icon: "calendar",
-                        title: booking.serviceName.isEmpty ? "预约服务" : booking.serviceName,
-                        desc: [booking.templeName, booking.masterName, booking.bookingDate].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "),
-                        amount: booking.meritMoneyText,
-                        status: booking.statusDisplayText
-                    )
+                    NavigationLink {
+                        CustomerBookingDetailView(bookingId: booking.id)
+                    } label: {
+                        orderCard(
+                            icon: "calendar",
+                            title: booking.serviceName.isEmpty ? "预约服务" : booking.serviceName,
+                            desc: [booking.templeName, booking.masterName, booking.bookingDate].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "),
+                            amount: booking.meritMoneyText,
+                            status: booking.statusDisplayText
+                        )
+                    }
+                    .buttonStyle(.plain)
                     if booking.statusEnum == .completed {
                         Button {
                             reviewBooking = booking
@@ -151,13 +156,18 @@ struct OrderListView: View {
         if selectedTab == "all" || selectedTab == "diy" {
             orderSectionTitle("DIY 手串", count: diyOrders.count)
             ForEach(diyOrders) { order in
-                orderCard(
-                    icon: "circle.grid.2x2",
-                    title: "DIY 手串 · \(order.orderNo)",
-                    desc: order.source == "design_square" ? "设计广场下单" : "自定义设计",
-                    amount: order.totalFeeText,
-                    status: order.statusDisplayText
-                )
+                NavigationLink {
+                    CustomerDiyOrderDetailView(orderId: order.id)
+                } label: {
+                    orderCard(
+                        icon: "circle.grid.2x2",
+                        title: "DIY 手串 · \(order.orderNo)",
+                        desc: order.source == "design_square" ? "设计广场下单" : "自定义设计",
+                        amount: order.totalFeeText,
+                        status: order.statusDisplayText
+                    )
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -203,6 +213,9 @@ struct OrderListView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(Color.stateWarning)
             }
+            Image(systemName: "chevron.right")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color.textTertiary)
         }
         .padding(AppSpacing.md)
         .background(Color.bgSecondary)
@@ -251,6 +264,128 @@ struct OrderListView: View {
             errorMessage = "未能加载：\(failures.joined(separator: "、"))订单"
         }
         isLoading = false
+    }
+}
+
+private struct CustomerBookingDetailView: View {
+    let bookingId: String
+    @State private var booking: Booking?
+    @State private var errorMessage: String?
+
+    var body: some View {
+        Group {
+            if let booking {
+                List {
+                    Section("预约") {
+                        detailRow("预约单号", booking.id)
+                        detailRow("状态", booking.statusDisplayText)
+                        detailRow("寺院", booking.templeName ?? booking.templeId)
+                        detailRow("大师", booking.masterName ?? booking.masterId)
+                        detailRow("服务", booking.serviceName)
+                        detailRow("日期", booking.bookingDate)
+                        detailRow("时段", booking.timeSlot)
+                    }
+                    Section("费用与备注") {
+                        detailRow("功德金", booking.meritMoneyText)
+                        if !booking.note.isEmpty {
+                            Text(booking.note).foregroundStyle(Color.textSecondary)
+                        }
+                    }
+                }
+                .scrollContentBackground(.hidden)
+            } else if let errorMessage {
+                DFEmptyState(icon: "exclamationmark.triangle", title: "预约加载失败", subtitle: errorMessage)
+            } else {
+                DFLoadingView()
+            }
+        }
+        .background(Color.bgPrimary)
+        .navigationTitle("预约详情")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await load() }
+    }
+
+    @MainActor
+    private func load() async {
+        do {
+            booking = try await APIClient.shared.request(.bookingById(bookingId))
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func detailRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .top) {
+            Text(label).foregroundStyle(Color.textSecondary)
+            Spacer()
+            Text(value.isEmpty ? "—" : value)
+                .foregroundStyle(Color.textPrimary)
+                .multilineTextAlignment(.trailing)
+        }
+    }
+}
+
+private struct CustomerDiyOrderDetailView: View {
+    let orderId: Int64
+    @State private var order: DiyOrder?
+    @State private var errorMessage: String?
+
+    var body: some View {
+        Group {
+            if let order {
+                List {
+                    Section("订单") {
+                        detailRow("订单号", order.orderNo)
+                        detailRow("状态", order.statusDisplayText)
+                        detailRow("材料费", String(format: "¥%.2f", order.materialFee))
+                        detailRow("加持费", String(format: "¥%.2f", order.blessFee))
+                        detailRow("合计", String(format: "¥%.2f", order.totalFee))
+                    }
+                    if let items = order.items, !items.isEmpty {
+                        Section("材料明细") {
+                            ForEach(items) { item in
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(item.materialName)
+                                        Text("\(item.spec) × \(item.quantity)")
+                                            .font(.caption)
+                                            .foregroundStyle(Color.textTertiary)
+                                    }
+                                    Spacer()
+                                    Text(String(format: "¥%.2f", item.unitPrice * Double(item.quantity)))
+                                }
+                            }
+                        }
+                    }
+                }
+                .scrollContentBackground(.hidden)
+            } else if let errorMessage {
+                DFEmptyState(icon: "exclamationmark.triangle", title: "DIY 订单加载失败", subtitle: errorMessage)
+            } else {
+                DFLoadingView()
+            }
+        }
+        .background(Color.bgPrimary)
+        .navigationTitle("DIY 订单详情")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await load() }
+    }
+
+    @MainActor
+    private func load() async {
+        do {
+            order = try await APIClient.shared.request(.diyOrderById(orderId))
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func detailRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label).foregroundStyle(Color.textSecondary)
+            Spacer()
+            Text(value).foregroundStyle(Color.textPrimary)
+        }
     }
 }
 
@@ -763,7 +898,7 @@ struct CouponView: View {
         defer { isLoading = false }
         do {
             let response: PageResponse<UserCoupon> = try await APIClient.shared.request(
-                .myCoupons(userId: authStore.userId, status: nil, page: 1, size: 50)
+                .myCoupons(status: nil, page: 1, size: 50)
             )
             coupons = response.list
         } catch {

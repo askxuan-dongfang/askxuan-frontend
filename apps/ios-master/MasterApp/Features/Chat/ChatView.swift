@@ -3,7 +3,7 @@
 //  MasterApp
 //
 //  对话（页面 8）。
-//  已支付预约对话：booking-service 权限校验/历史，OpenIM 实时到达。
+//  付费即时咨询或已支付预约对话：booking-service 权限校验/历史，OpenIM 实时到达。
 //
 
 import SwiftUI
@@ -33,7 +33,7 @@ final class ChatViewModel: ObservableObject {
     func load() async {
         do {
             let response: MasterBookingChatMessageListResponse = try await apiClient.request(
-                .bookingChatMessages(id: conversation.bookingId, page: 1, size: 100))
+                .chatMessages(id: conversation.id, page: 1, size: 100))
             bubbles = response.list.map {
                 ChatBubble(text: $0.content,
                            isMe: $0.senderType == "master",
@@ -53,8 +53,8 @@ final class ChatViewModel: ObservableObject {
         Task {
             do {
                 let _: MasterBookingChatMessage = try await apiClient.request(
-                    .bookingChatSend(id: conversation.bookingId,
-                                     MasterBookingChatSendRequest(clientMessageId: clientMessageId, content: text)))
+                    .chatSend(id: conversation.id,
+                              MasterBookingChatSendRequest(clientMessageId: clientMessageId, content: text)))
                 await load()
             } catch {
                 inputText = text
@@ -124,12 +124,14 @@ struct ChatView: View {
                         .clipShape(Circle())
                 }
                 .disabled(viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(!conversation.canChat)
             }
             .padding(.horizontal, AppSpacing.pageHorizontal)
             .padding(.vertical, AppSpacing.md)
             .background(Color.bgSecondary)
         }
         .background(Color.bgPrimary)
+        .secondaryPage()
         .navigationTitle(conversation.peerName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)

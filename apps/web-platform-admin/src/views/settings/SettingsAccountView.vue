@@ -70,7 +70,15 @@
           </el-select>
         </el-form-item>
         <el-form-item v-if="selectedRoleCode === 'master'" label="所属法师">
-          <el-input v-model="dialog.form.masterId" placeholder="请输入法师编码" />
+		  <el-select v-model="dialog.form.masterId" filterable style="width: 100%" placeholder="请选择已认证法师">
+			<el-option
+			  v-for="master in masters"
+			  :key="master.id"
+			  :label="`${master.dharmaName}（${master.id} · ${master.templeName}）`"
+			  :value="master.id"
+			  :disabled="master.authStatus !== '已认证' || master.platformStatus !== 'normal'"
+			/>
+		  </el-select>
         </el-form-item>
         <el-form-item v-if="selectedRoleCode === 'shop_admin'" label="所属商铺">
           <el-input-number v-model="dialog.form.shopId" :min="1" style="width: 100%" />
@@ -92,14 +100,16 @@ import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import { createAdminAccount, getAdminAccounts, getRoles, updateAdminAccount, updateAdminAccountStatus } from '@/api/auth'
 import { getTempleList } from '@/api/temple'
+import { getMasterList } from '@/api/master'
 import { formatDate } from '@/utils/format'
-import type { AdminAccount, Role, Temple } from '@/types'
+import type { AdminAccount, Master, Role, Temple } from '@/types'
 
 const loading = ref(false)
 const list = ref<AdminAccount[]>([])
 const total = ref(0)
 const roles = ref<Role[]>([])
 const temples = ref<Temple[]>([])
+const masters = ref<Master[]>([])
 const query = reactive({ keyword: '', status: '', page: 1, size: 20 })
 const emptyForm = () => ({ account: '', password: '', name: '', roleId: 2, templeId: '', masterId: '', shopId: 0 })
 const dialog = reactive({ visible: false, loading: false, isEdit: false, editId: 0, form: emptyForm() })
@@ -120,9 +130,10 @@ function onSearch() { query.page = 1; loadData() }
 function onReset() { query.keyword = ''; query.status = ''; onSearch() }
 function roleName(id: number) { return roles.value.find((role) => role.id === id)?.name || `角色 ${id}` }
 function templeName(id?: string) { return temples.value.find((temple) => temple.id === id)?.name || id || '' }
+function masterName(id?: string) { return masters.value.find((master) => master.id === id)?.dharmaName || id || '' }
 function bindingText(row: AdminAccount) {
+  if (row.masterId) return `${masterName(row.masterId)}（${row.masterId}）`
   if (row.templeId) return `${templeName(row.templeId)}（${row.templeId}）`
-  if (row.masterId) return `法师 ${row.masterId}`
   if (row.shopId) return `商铺 ${row.shopId}`
   return '全平台'
 }
@@ -165,9 +176,14 @@ async function toggleStatus(row: AdminAccount) {
 }
 
 onMounted(async () => {
-  const [roleList, templeList] = await Promise.all([getRoles(), getTempleList({ page: 1, size: 100 })])
+  const [roleList, templeList, masterList] = await Promise.all([
+	getRoles(),
+	getTempleList({ page: 1, size: 100 }),
+	getMasterList({ page: 1, size: 100 })
+  ])
   roles.value = roleList
   temples.value = templeList.list || []
+  masters.value = masterList.list || []
   await loadData()
 })
 </script>

@@ -48,8 +48,7 @@ final class HomeViewModel: ObservableObject {
 
         switch templesRes {
         case .success(let list):
-            // 优先用 ImageMapper 匹配本地 asset，确保图片内容与寺院名称对应
-            self.hotTemples = Array(list.prefix(6)).map { applyLocalTempleImage($0) }
+            self.hotTemples = Array(list.prefix(6))
         case .failure(let error):
             self.hotTemples = []
             self.errorMessage = error.localizedDescription
@@ -57,7 +56,7 @@ final class HomeViewModel: ObservableObject {
 
         switch mastersRes {
         case .success(let list):
-            self.hotMasters = Array(list.prefix(6)).map { applyLocalMasterAvatar($0) }
+            self.hotMasters = Array(list.prefix(6))
         case .failure(let error):
             self.hotMasters = []
             if self.errorMessage == nil { self.errorMessage = error.localizedDescription }
@@ -78,26 +77,6 @@ final class HomeViewModel: ObservableObject {
         }
 
         isLoading = false
-    }
-
-    /// 若 ImageMapper 能匹配到本地 asset，则用本地 asset 名替换 coverImage
-    private func applyLocalTempleImage(_ temple: Temple) -> Temple {
-        if let localAsset = ImageMapper.templeImage(for: temple.name) {
-            var t = temple
-            t.coverImage = localAsset
-            return t
-        }
-        return temple
-    }
-
-    /// 若 ImageMapper 能匹配到本地 asset，则用本地 asset 名替换 avatar
-    private func applyLocalMasterAvatar(_ master: Master) -> Master {
-        if let localAsset = ImageMapper.masterAvatar(for: master.dharmaName) {
-            var m = master
-            m.avatar = localAsset
-            return m
-        }
-        return master
     }
 
     private func fetchTemples() async -> Result<[Temple], Error> {

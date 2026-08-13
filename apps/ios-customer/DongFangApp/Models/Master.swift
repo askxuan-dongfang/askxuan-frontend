@@ -23,19 +23,25 @@ struct Master: Codable, Identifiable, Hashable {
     let rating: Double
     var isOnline: Bool?
     var startPrice: Double?
+    var consultEnabled: Bool
+    var consultFee: Double
+    var consultValidHours: Int
+    var consultResponseMinutes: Int
     /// 上下架状态（对齐 master-service ShelfStatus，on_shelf/off_shelf）
     var shelfStatus: String?
 
     enum CodingKeys: String, CodingKey {
         case id, dharmaName, layName, templeId, templeName, position, beliefCode, sect, type
         case authStatus, specialties, avatar, rating, isOnline, startPrice, shelfStatus
+        case consultEnabled, consultFee, consultValidHours, consultResponseMinutes
     }
 
     init(id: String, dharmaName: String, layName: String, templeId: String,
          templeName: String, position: String, beliefCode: String? = nil, sect: String, type: String,
          authStatus: String, specialties: [String], avatar: String, rating: Double,
          isOnline: Bool? = true, startPrice: Double? = nil,
-         shelfStatus: String? = nil) {
+         shelfStatus: String? = nil, consultEnabled: Bool = true, consultFee: Double = 39,
+         consultValidHours: Int = 72, consultResponseMinutes: Int = 30) {
         self.id = id
         self.dharmaName = dharmaName
         self.layName = layName
@@ -52,6 +58,10 @@ struct Master: Codable, Identifiable, Hashable {
         self.isOnline = isOnline
         self.startPrice = startPrice
         self.shelfStatus = shelfStatus
+        self.consultEnabled = consultEnabled
+        self.consultFee = consultFee
+        self.consultValidHours = consultValidHours
+        self.consultResponseMinutes = consultResponseMinutes
     }
 
     init(from decoder: Decoder) throws {
@@ -72,6 +82,10 @@ struct Master: Codable, Identifiable, Hashable {
         self.isOnline = try c.decodeIfPresent(Bool.self, forKey: .isOnline) ?? true
         self.startPrice = try c.decodeIfPresent(Double.self, forKey: .startPrice)
         self.shelfStatus = try c.decodeIfPresent(String.self, forKey: .shelfStatus)
+        self.consultEnabled = try c.decodeIfPresent(Bool.self, forKey: .consultEnabled) ?? false
+        self.consultFee = try c.decodeIfPresent(Double.self, forKey: .consultFee) ?? 0
+        self.consultValidHours = try c.decodeIfPresent(Int.self, forKey: .consultValidHours) ?? 72
+        self.consultResponseMinutes = try c.decodeIfPresent(Int.self, forKey: .consultResponseMinutes) ?? 30
     }
 
     var ratingText: String { String(format: "%.1f", rating) }
@@ -90,39 +104,43 @@ struct Master: Codable, Identifiable, Hashable {
     var isOnlineDisplay: Bool { isOnline ?? true }
     /// 是否已上架
     var isOnShelf: Bool { (shelfStatus ?? "on_shelf") == "on_shelf" }
+    var consultFeeText: String? {
+        guard consultEnabled, consultFee > 0 else { return nil }
+        return "¥\(Int(consultFee))"
+    }
 }
 
 extension Master {
     /// 对齐后端统一师傅字典；每位师傅只归属一个寺院。
     static let mockData: [Master] = [
-        Master(id: "M001", dharmaName: "智海法师", layName: "陈建华", templeId: "T001",
-               templeName: "灵隐寺", position: "住持", sect: "汉传佛教", type: "佛教",
-               authStatus: "已认证", specialties: ["佛学", "禅修", "开光", "祈福"],
+        Master(id: "M001", dharmaName: "明觉法师（演示）", layName: "林知远", templeId: "T001",
+               templeName: "灵隐寺", position: "客堂法师", sect: "禅宗", type: "佛教",
+               authStatus: "已认证", specialties: ["禅修入门", "佛教文化", "祈愿礼仪"],
                avatar: "master-avatar-zhihai", rating: 4.9, isOnline: true, startPrice: 328,
                shelfStatus: "on_shelf"),
-        Master(id: "M002", dharmaName: "清风道长", layName: "李信军", templeId: "T002",
-               templeName: "白云观", position: "监院", sect: "全真道派", type: "道教",
-               authStatus: "已认证", specialties: ["道学", "风水", "命理", "祈福"],
+        Master(id: "M002", dharmaName: "玄和道长（演示）", layName: "赵清远", templeId: "T002",
+               templeName: "北京白云观", position: "经师", sect: "全真派", type: "道教",
+               authStatus: "已认证", specialties: ["道教文化", "科仪讲解", "养生导引"],
                avatar: "master-avatar-qingfeng", rating: 4.8, isOnline: true, startPrice: 288,
                shelfStatus: "on_shelf"),
-        Master(id: "M003", dharmaName: "释延心法师", layName: "王建军", templeId: "T003",
-               templeName: "少林寺", position: "首座", sect: "禅宗", type: "佛教",
-               authStatus: "已认证", specialties: ["武术", "禅修", "超度", "开光"],
+        Master(id: "M003", dharmaName: "延澄法师（演示）", layName: "周安行", templeId: "T003",
+               templeName: "嵩山少林寺", position: "禅修讲师", sect: "禅宗", type: "佛教",
+               authStatus: "已认证", specialties: ["禅修指导", "少林文化", "静心课程"],
                avatar: "master-avatar-shimingyuan", rating: 4.8, isOnline: true, startPrice: 388,
                shelfStatus: "on_shelf"),
-        Master(id: "M004", dharmaName: "扎西多吉活佛", layName: "—", templeId: "T004",
-               templeName: "大昭寺", position: "活佛", sect: "藏密佛教", type: "佛教",
-               authStatus: "已认证", specialties: ["藏密仪轨", "灌顶", "超度", "祈福"],
+        Master(id: "M004", dharmaName: "嘉措讲师（演示）", layName: "", templeId: "T004",
+               templeName: "大昭寺", position: "文化讲师", sect: "各派共尊", type: "佛教",
+               authStatus: "已认证", specialties: ["藏传佛教文化", "寺院历史", "祈愿礼仪"],
                avatar: "master-avatar-zhaxiduoji", rating: 5.0, isOnline: true, startPrice: 458,
                shelfStatus: "on_shelf"),
-        Master(id: "M005", dharmaName: "慧明法师", layName: "周明华", templeId: "T005",
-               templeName: "普陀山", position: "副住持", sect: "汉传佛教", type: "佛教",
-               authStatus: "待审核", specialties: ["净土", "观音法门", "祈福"],
+        Master(id: "M005", dharmaName: "慧闻法师（演示）", layName: "孙明远", templeId: "T005",
+               templeName: "普济禅寺", position: "客堂法师", sect: "禅宗", type: "佛教",
+               authStatus: "待审核", specialties: ["观音文化", "佛教礼仪", "静心交流"],
                avatar: "master-avatar-miaoyin", rating: 4.5, isOnline: false, startPrice: 268,
                shelfStatus: "off_shelf"),
-        Master(id: "M006", dharmaName: "真武道长", layName: "张志远", templeId: "T006",
-               templeName: "武当山", position: "知客", sect: "正一派", type: "道教",
-               authStatus: "已认证", specialties: ["内丹修炼", "太极养生"],
+        Master(id: "M006", dharmaName: "守一道长（演示）", layName: "张云舟", templeId: "T006",
+               templeName: "武当山紫霄宫", position: "经师", sect: "武当道教", type: "道教",
+               authStatus: "已认证", specialties: ["武当文化", "太极养生", "道教礼仪"],
                avatar: "master-avatar-zhangzhishun", rating: 4.9, isOnline: false, startPrice: 518,
                shelfStatus: "on_shelf")
     ]

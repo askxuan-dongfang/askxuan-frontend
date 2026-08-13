@@ -12,6 +12,7 @@
 import Foundation
 import Combine
 import OpenIMSDK
+import UIKit
 
 // MARK: - 业务模型（对上层暴露，隔离 SDK 类型）
 
@@ -56,6 +57,10 @@ final class OpenIMManager: NSObject, ObservableObject {
     private let wsURL = AppConfig.openIMWebSocketURL
     private let apiURL = AppConfig.openIMAPIURL
     private var isInitialized = false
+    private var loginUserID: String?
+    private var loginToken: String?
+    private var reconnectAttempt = 0
+    private var reconnectWorkItem: DispatchWorkItem?
 
     private override init() {
         super.init()
@@ -74,8 +79,10 @@ final class OpenIMManager: NSObject, ObservableObject {
             self?.publishConnectionState(.connecting)
         } onConnectFailure: { [weak self] _, _ in
             self?.publishConnectionState(.disconnected)
+            self?.scheduleReconnect()
         } onConnectSuccess: { [weak self] in
             self?.publishConnectionState(.connected)
+            self?.resetReconnect()
         } onKickedOffline: { [weak self] in
             self?.publishConnectionState(.disconnected)
         } onUserTokenExpired: { [weak self] in
@@ -86,6 +93,12 @@ final class OpenIMManager: NSObject, ObservableObject {
 
         OIMManager.callbacker.addAdvancedMsgListener(listener: self)
         OIMManager.callbacker.addConversationListener(listener: self)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applicationDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
         isInitialized = true
     }
 
@@ -96,19 +109,57 @@ final class OpenIMManager: NSObject, ObservableObject {
                                       userInfo: [NSLocalizedDescriptionKey: "SDK 未初始化"]))
             return
         }
+        loginUserID = userID
+        loginToken = token
+        reconnectWorkItem?.cancel()
+        performLogin(completion: completion)
+    }
+
+    private func performLogin(completion: ((Bool, Error?) -> Void)? = nil) {
+        guard let userID = loginUserID, let token = loginToken else { return }
+        publishConnectionState(.connecting)
         OIMManager.manager.login(userID, token: token, onSuccess: { _ in
             self.publishConnectionState(.connected)
-            DispatchQueue.main.async { completion(true, nil) }
+            self.resetReconnect()
+            DispatchQueue.main.async { completion?(true, nil) }
         }, onFailure: { code, msg in
             self.publishConnectionState(.disconnected)
+            self.scheduleReconnect()
             let error = NSError(domain: "OpenIM", code: Int(code),
                                 userInfo: [NSLocalizedDescriptionKey: msg ?? "登录失败"])
-            DispatchQueue.main.async { completion(false, error) }
+            DispatchQueue.main.async { completion?(false, error) }
         })
+    }
+
+    private func scheduleReconnect(immediate: Bool = false) {
+        guard loginUserID != nil, loginToken != nil else { return }
+        reconnectWorkItem?.cancel()
+        let delay = immediate ? 0 : min(pow(2, Double(reconnectAttempt)), 30)
+        reconnectAttempt += 1
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self, self.connectionState == .disconnected else { return }
+            self.performLogin()
+        }
+        reconnectWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
+    private func resetReconnect() {
+        reconnectAttempt = 0
+        reconnectWorkItem?.cancel()
+        reconnectWorkItem = nil
+    }
+
+    @objc private func applicationDidBecomeActive() {
+        guard connectionState == .disconnected else { return }
+        scheduleReconnect(immediate: true)
     }
 
     /// 登出
     func logout(completion: @escaping (Bool) -> Void) {
+        loginUserID = nil
+        loginToken = nil
+        resetReconnect()
         OIMManager.manager.logoutWith(onSuccess: { _ in
             self.publishConnectionState(.disconnected)
             DispatchQueue.main.async { completion(true) }

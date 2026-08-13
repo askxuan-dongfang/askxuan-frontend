@@ -17,6 +17,10 @@ struct MasterProfileView: View {
     @State private var showLoginPrompt = false
     @State private var paidConversation: ChatConversation?
     @State private var isResolvingConversation = false
+    @State private var isPurchasingConsultation = false
+    @State private var consultationQuote: ConsultationQuote?
+    @State private var consultationQuestion = ""
+    @State private var showConsultCheckout = false
     @State private var consultMessage = ""
     @State private var showConsultMessage = false
 
@@ -38,6 +42,7 @@ struct MasterProfileView: View {
             bottomActionBar
         }
         .background(Color.bgPrimary)
+        .secondaryPage()
         .toolbar(.hidden, for: .navigationBar)
         .task {
             if viewModel.master == nil { await viewModel.load(id: masterId) }
@@ -58,7 +63,12 @@ struct MasterProfileView: View {
                 ChatDetailView(conversation: conversation, viewModel: ChatViewModel())
             }
         }
-        .alert("暂时无法发起咨询", isPresented: $showConsultMessage) {
+        .sheet(isPresented: $showConsultCheckout) {
+            consultationCheckout
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
+        .alert("咨询提示", isPresented: $showConsultMessage) {
             Button("我知道了", role: .cancel) {}
         } message: {
             Text(consultMessage)
@@ -131,8 +141,8 @@ struct MasterProfileView: View {
                          label: "状态",
                          color: (viewModel.master?.isOnlineDisplay ?? true) ? .stateSuccess : .textTertiary)
                 statItem(icon: "yensign.circle.fill",
-                         value: viewModel.master?.startPriceText ?? "—",
-                         label: "起步价", color: .brandDefault)
+                         value: viewModel.master?.consultFeeText ?? "—",
+                         label: "咨询费", color: .brandDefault)
             }
             .padding(.vertical, AppSpacing.md)
 
@@ -316,7 +326,7 @@ struct MasterProfileView: View {
                 .foregroundStyle(Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, AppSpacing.xl)
-            Text("预约并完成支付后，可与对应法师进行文字沟通。")
+            Text("即时咨询单独付费，不要求先预约服务；预约法事、祈福等服务需另行下单。")
                 .font(.caption)
                 .foregroundStyle(Color.textTertiary)
                 .multilineTextAlignment(.center)
@@ -328,7 +338,7 @@ struct MasterProfileView: View {
     // MARK: - 底部操作栏
     private var bottomActionBar: some View {
         HStack(spacing: AppSpacing.md) {
-            DFSecondaryButton(title: isResolvingConversation ? "查询中..." : "立即咨询") {
+            DFSecondaryButton(title: consultationButtonTitle) {
                 if authStore.isLoggedIn {
                     guard !isResolvingConversation else { return }
                     Task { await openPaidConversation() }
@@ -359,13 +369,121 @@ struct MasterProfileView: View {
         isResolvingConversation = true
         defer { isResolvingConversation = false }
         do {
-            let response: BookingChatListResponse = try await APIClient.shared.request(.bookingChats(page: 1, size: 100))
+            let response: BookingChatListResponse = try await APIClient.shared.request(.chats(page: 1, size: 100))
             if let conversation = response.list.first(where: { $0.masterId == masterId && $0.canChat }) {
                 paidConversation = conversation
             } else {
-                consultMessage = "请先预约该法师的服务并完成支付，支付成功后即可开始文字沟通。"
-                showConsultMessage = true
+                let quote: ConsultationQuote = try await APIClient.shared.request(.consultationQuote(masterId: masterId))
+                guard quote.enabled else {
+                    consultMessage = "该法师暂未开通即时咨询，可先预约寺院服务。"
+                    showConsultMessage = true
+                    return
+                }
+                consultationQuote = quote
+                showConsultCheckout = true
             }
+        } catch {
+            consultMessage = error.localizedDescription
+            showConsultMessage = true
+        }
+    }
+
+    private var consultationButtonTitle: String {
+        if isResolvingConversation { return "查询中..." }
+        if let fee = viewModel.master?.consultFeeText { return "立即咨询 \(fee)" }
+        return "立即咨询"
+    }
+
+    private var consultationCheckout: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: AppSpacing.lg) {
+                if let quote = consultationQuote {
+                    VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                        Text("向\(quote.masterName)发起即时咨询")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(Color.textPrimary)
+                        Text("文字咨询有效 \(quote.validHours) 小时，法师承诺尽量在 \(quote.responseMinutes) 分钟内响应。预约服务不包含在本订单中。")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    TextField("简要描述想咨询的问题（可选）", text: $consultationQuestion, axis: .vertical)
+                        .lineLimit(2...4)
+                        .padding(AppSpacing.md)
+                        .background(Color.bgSecondary)
+                        .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault))
+
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("即时咨询费")
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.textTertiary)
+                            Text("款项先进入平台总账，再按规则结算")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color.textTertiary)
+                        }
+                        Spacer()
+                        Text("¥\(Int(quote.consultFee))")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundStyle(Color.brandDefault)
+                    }
+
+                    Button {
+                        Task { await purchaseConsultation() }
+                    } label: {
+                        HStack {
+                            if isPurchasingConsultation { ProgressView().tint(.white) }
+                            Text(isPurchasingConsultation ? "支付中..." : "模拟支付并开始咨询")
+                                .font(.system(size: 15, weight: .semibold))
+                        }
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .background(Color.brandDefault)
+                        .cornerRadius(AppRadius.md)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isPurchasingConsultation)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(AppSpacing.lg)
+            .background(Color.bgPrimary.ignoresSafeArea())
+            .navigationTitle("确认咨询")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { showConsultCheckout = false }
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func purchaseConsultation() async {
+        guard consultationQuote != nil, !isPurchasingConsultation else { return }
+        isPurchasingConsultation = true
+        defer { isPurchasingConsultation = false }
+        do {
+            let request = ConsultationCreateRequest(requestId: UUID().uuidString,
+                                                    masterId: masterId,
+                                                    question: consultationQuestion)
+            let order: ConsultationOrder = try await APIClient.shared.request(.consultationCreate(request))
+            guard order.paymentStatus == "success", order.status == "active" else {
+                consultMessage = "支付尚未完成，请稍后重试。"
+                showConsultMessage = true
+                return
+            }
+            let response: BookingChatListResponse = try await APIClient.shared.request(.chats(page: 1, size: 100))
+            guard let conversation = response.list.first(where: { $0.id == order.conversationId }) else {
+                consultMessage = "咨询已支付成功，会话正在创建，请到“对话”列表刷新。"
+                showConsultMessage = true
+                showConsultCheckout = false
+                return
+            }
+            showConsultCheckout = false
+            try? await Task.sleep(for: .milliseconds(250))
+            paidConversation = conversation
         } catch {
             consultMessage = error.localizedDescription
             showConsultMessage = true

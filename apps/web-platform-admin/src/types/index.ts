@@ -177,9 +177,15 @@ export interface Master {
   sect: string
   type: string
   authStatus: string
+	 shelfStatus: string
+	 platformStatus: string
   specialties: string[]
   avatar: string
   rating: number
+  consultEnabled: boolean
+  consultFee: number
+  consultValidHours: number
+  consultResponseMinutes: number
 }
 
 export interface MasterAudit {

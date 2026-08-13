@@ -94,6 +94,20 @@ const bookingChatMessages = new Map<string, Array<Record<string, unknown>>>([
     { id: 2, bookingId: 'B20260630001', clientMessageId: 'mock-chat-2', senderType: 'master', senderId: 'm_1', receiverId: 'u_U001', content: '已收到您的预约，保持恭敬心按时到场即可。', status: 'sent', createTime: '2026-07-31 10:21:00' }
   ]]
 ]);
+const consultationOrders: Array<Record<string, unknown>> = [];
+
+function consultationConversation(order: Record<string, unknown>) {
+  const id = String(order.id);
+  const messages = bookingChatMessages.get(id) ?? [];
+  const last = messages[messages.length - 1];
+  return {
+    conversationId: id, sourceType: 'consultation', sourceId: id, bookingId: '',
+    peerId: order.masterId, peerOpenIMId: 'm_1', peerName: order.masterName, peerAvatar: '',
+    templeName: order.templeName, serviceName: '即时文字咨询', bookingDate: '',
+    expiresAt: order.expiresAt, lastMessage: String(last?.content ?? '付款成功，可开始对话'),
+    lastMessageAt: String(last?.createTime ?? order.createdAt), canChat: order.status === 'active'
+  };
+}
 
 const aiSkills = [
   { id: 8, code: 'general', name: '直接问事', description: '不限定术数方向的日常问事入口', icon: '/icons/general.png', promptTemplate: '', status: 'enabled', createdAt: '2026-07-13 10:00:00' },
@@ -259,6 +273,7 @@ function page<T>(list: T[], req: Request) {
 router.get('/temples', (req: Request, res: Response) => {
   const { beliefCode, sect, type, serviceCode } = req.query;
   const list = temples.filter((t) => {
+	if (t.status !== '正常' && t.status !== '推荐') return false;
     if (typeof beliefCode === 'string' && beliefCode && t.beliefCode !== beliefCode) return false;
     if (typeof sect === 'string' && sect && t.sect !== sect) return false;
     if (typeof type === 'string' && type && t.type !== type) return false;
@@ -283,10 +298,26 @@ router.get('/temples/:id', (req: Request, res: Response) => {
 router.get('/masters', (req: Request, res: Response) => {
   const { beliefCode, sect, type, templeId } = req.query;
   const list = masters.filter((m) => {
+	if (m.authStatus !== '已认证' || m.shelfStatus !== 'on_shelf' || m.platformStatus !== 'normal') return false;
     if (typeof beliefCode === 'string' && beliefCode && m.beliefCode !== beliefCode) return false;
     if (typeof sect === 'string' && sect && m.sect !== sect) return false;
     if (typeof type === 'string' && type && m.type !== type) return false;
     if (typeof templeId === 'string' && templeId && m.templeId !== templeId) return false;
+    return true;
+  });
+  success(res, page(list, req));
+});
+
+router.get('/admin/platform/masters', (req: Request, res: Response) => {
+  const { beliefCode, sect, type, templeId, authStatus, shelfStatus, platformStatus } = req.query;
+  const list = masters.filter((m) => {
+    if (typeof beliefCode === 'string' && beliefCode && m.beliefCode !== beliefCode) return false;
+    if (typeof sect === 'string' && sect && m.sect !== sect) return false;
+    if (typeof type === 'string' && type && m.type !== type) return false;
+    if (typeof templeId === 'string' && templeId && m.templeId !== templeId) return false;
+    if (typeof authStatus === 'string' && authStatus && m.authStatus !== authStatus) return false;
+    if (typeof shelfStatus === 'string' && shelfStatus && m.shelfStatus !== shelfStatus) return false;
+    if (typeof platformStatus === 'string' && platformStatus && m.platformStatus !== platformStatus) return false;
     return true;
   });
   success(res, page(list, req));
@@ -317,6 +348,20 @@ router.get('/beliefs/:code', (req: Request, res: Response) => {
 router.get('/masters/:id', (req: Request, res: Response) => {
   const master = masters.find((m) => m.id === req.params.id);
   if (!master) return fail(res, 404, '法师不存在');
+  success(res, master);
+});
+
+router.put('/admin/platform/masters/:id/consultation', (req: Request, res: Response) => {
+  const master = masters.find((m) => m.id === req.params.id);
+  if (!master) return fail(res, 40404, '法师不存在');
+  const fee = Number(req.body?.consultFee ?? 0);
+  const validHours = Number(req.body?.consultValidHours ?? 0);
+  const responseMinutes = Number(req.body?.consultResponseMinutes ?? 0);
+  if (fee <= 0 || validHours < 1 || responseMinutes < 1) return fail(res, 40001, '参数格式不正确');
+  master.consultEnabled = Boolean(req.body?.consultEnabled);
+  master.consultFee = fee;
+  master.consultValidHours = validHours;
+  master.consultResponseMinutes = responseMinutes;
   success(res, master);
 });
 
@@ -727,11 +772,14 @@ router.get('/bookings/availability', (req: Request, res: Response) => {
 	success(res, { templeId, serviceId, serviceName: service.serviceName, bookingDate: date, serviceFee: service.price, slots });
 });
 
-router.get('/bookings/chats', (req: Request, res: Response) => {
-  const list = bookings.filter((booking) => booking.id === 'B20260630001').map((booking) => {
+function chatList(req: Request, res: Response) {
+  const list: Array<Record<string, unknown>> = bookings.filter((booking) => booking.id === 'B20260630001').map((booking) => {
     const messages = bookingChatMessages.get(booking.id) ?? [];
     const last = messages[messages.length - 1];
     return {
+      conversationId: booking.id,
+      sourceType: 'booking',
+      sourceId: booking.id,
       bookingId: booking.id,
       peerId: booking.masterId,
       peerName: booking.masterName,
@@ -744,8 +792,12 @@ router.get('/bookings/chats', (req: Request, res: Response) => {
       canChat: true
     };
   });
+  list.push(...consultationOrders.filter((item) => item.paymentStatus === 'success').map(consultationConversation));
   success(res, page(list, req));
-});
+}
+
+router.get('/bookings/chats', chatList);
+router.get('/chats', chatList);
 
 router.get('/bookings/:id/chat/messages', (req: Request, res: Response) => {
   const bookingId = String(req.params.id);
@@ -766,6 +818,62 @@ router.post('/bookings/:id/chat/messages', (req: Request, res: Response) => {
   const message = { id: messages.length + 1, bookingId, clientMessageId, senderType: 'customer', senderId: 'u_U001', receiverId: 'm_1', content, status: 'sent', createTime: new Date().toISOString().replace('T', ' ').slice(0, 19) };
   messages.push(message);
   success(res, message);
+});
+
+router.get('/chats/:id/messages', (req: Request, res: Response) => {
+  const sourceId = String(req.params.id);
+  const messages = bookingChatMessages.get(sourceId);
+  if (!messages) return fail(res, 40909, '当前没有有效的付费咨询或预约会话');
+  success(res, page(messages, req));
+});
+
+router.post('/chats/:id/messages', (req: Request, res: Response) => {
+  const sourceId = String(req.params.id);
+  const messages = bookingChatMessages.get(sourceId);
+  if (!messages) return fail(res, 40909, '当前没有有效的付费咨询或预约会话');
+  const content = String(req.body?.content ?? '').trim();
+  if (!content) return fail(res, 40003, '消息内容不能为空');
+  const clientMessageId = String(req.body?.clientMessageId ?? `mock-${Date.now()}`);
+  const existing = messages.find((message) => message.clientMessageId === clientMessageId);
+  if (existing) return success(res, existing);
+  const message = { id: messages.length + 1, bookingId: sourceId, conversationId: sourceId, sourceType: sourceId.startsWith('C') ? 'consultation' : 'booking', clientMessageId, senderType: 'customer', senderId: 'u_U001', receiverId: 'm_1', content, status: 'sent', createTime: new Date().toISOString().replace('T', ' ').slice(0, 19) };
+  messages.push(message);
+  success(res, message);
+});
+
+router.get('/consultations/quote', (req: Request, res: Response) => {
+  const master = masters.find((item) => item.id === String(req.query.masterId ?? ''));
+  if (!master) return fail(res, 40404, '法师不存在');
+  success(res, { masterId: master.id, masterName: master.dharmaName, templeId: master.templeId,
+    templeName: master.templeName, enabled: Boolean(master.consultEnabled && master.shelfStatus === 'on_shelf'),
+    consultFee: master.consultFee ?? 39, validHours: master.consultValidHours ?? 72,
+    responseMinutes: master.consultResponseMinutes ?? 30 });
+});
+
+router.post('/consultations', (req: Request, res: Response) => {
+  const master = masters.find((item) => item.id === String(req.body?.masterId ?? ''));
+  if (!master || !master.consultEnabled) return fail(res, 40930, '该法师暂未开通即时咨询');
+  const requestId = String(req.body?.requestId ?? '');
+  const existing = consultationOrders.find((item) => item.requestId === requestId);
+  if (existing) return success(res, existing);
+  const now = new Date();
+  const expires = new Date(now.getTime() + (master.consultValidHours ?? 72) * 3600_000);
+  const id = `C${Date.now()}`;
+  const order = { id, requestId, userId: 'U001', masterId: master.id, masterName: master.dharmaName,
+    templeId: master.templeId, templeName: master.templeName, consultFee: master.consultFee ?? 39,
+    validHours: master.consultValidHours ?? 72, responseMinutes: master.consultResponseMinutes ?? 30,
+    question: String(req.body?.question ?? ''), paymentNo: `P${Date.now()}`, paymentStatus: 'success',
+    status: 'active', validFrom: now.toISOString(), expiresAt: expires.toISOString(), simulated: true,
+    conversationId: id, createdAt: now.toISOString() };
+  consultationOrders.push(order);
+  bookingChatMessages.set(id, []);
+  success(res, order);
+});
+
+router.post('/consultations/:id/pay', (req: Request, res: Response) => {
+  const order = consultationOrders.find((item) => item.id === req.params.id);
+  if (!order) return fail(res, 40430, '咨询订单不存在');
+  success(res, order);
 });
 
 router.get('/bookings/:id', (req: Request, res: Response) => {
@@ -831,7 +939,7 @@ router.get('/messages', (_req: Request, res: Response) => {
       id: 'MSG001',
       userId: 'U001',
       title: '预约已确认',
-      content: '您于灵隐寺的祈福预约已由智海法师确认，请准时到达。',
+      content: '您于灵隐寺的祈福预约已由明觉法师（演示）确认，请准时到达。',
       type: '预约通知',
       isRead: false,
       createdAt: '2026-06-30 09:15:00'

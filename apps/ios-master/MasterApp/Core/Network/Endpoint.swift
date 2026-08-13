@@ -40,6 +40,9 @@ enum Endpoint {
     case bookingChats(page: Int, size: Int)
     case bookingChatMessages(id: String, page: Int, size: Int)
     case bookingChatSend(id: String, MasterBookingChatSendRequest)
+    case chats(page: Int, size: Int)
+    case chatMessages(id: String, page: Int, size: Int)
+    case chatSend(id: String, MasterBookingChatSendRequest)
 
     // MARK: - 加持任务
     /// GET admin/masters/blessing-tasks
@@ -132,6 +135,10 @@ enum Endpoint {
             return "bookings/chats"
         case .bookingChatMessages(let id, _, _), .bookingChatSend(let id, _):
             return "bookings/\(id)/chat/messages"
+        case .chats:
+            return "chats"
+        case .chatMessages(let id, _, _), .chatSend(let id, _):
+            return "chats/\(id)/messages"
         // 加持任务
         case .blessingTasks:
             return "admin/masters/blessing-tasks"
@@ -204,7 +211,7 @@ enum Endpoint {
     /// HTTP 方法
     var httpMethod: HTTPMethod {
         switch self {
-        case .adminLogin, .authRefresh, .withdrawalApply, .registerDeviceToken, .bookingChatSend,
+        case .adminLogin, .authRefresh, .withdrawalApply, .registerDeviceToken, .bookingChatSend, .chatSend,
              .masterCommunityPostCreate, .mediaUploadCredential, .mediaComplete,
              .liveRoomCreate, .liveRoomStart, .liveRoomClose:
             return .POST
@@ -231,7 +238,8 @@ enum Endpoint {
                 items.append(URLQueryItem(name: "status", value: status))
             }
             return items
-        case .bookingChats(let page, let size), .bookingChatMessages(_, let page, let size):
+        case .bookingChats(let page, let size), .bookingChatMessages(_, let page, let size),
+             .chats(let page, let size), .chatMessages(_, let page, let size):
             return [URLQueryItem(name: "page", value: String(page)),
                     URLQueryItem(name: "size", value: String(size))]
         case .blessingTasks(let status, let page, let size):
@@ -300,7 +308,7 @@ enum Endpoint {
         case .masterBookingConfirm(_, let remark), .masterBookingStart(_, let remark),
              .masterBookingComplete(_, let remark):
             return AnyEncodable(RemarkBody(remark: remark))
-        case .bookingChatSend(_, let request):
+        case .bookingChatSend(_, let request), .chatSend(_, let request):
             return AnyEncodable(request)
         case .blessingTaskComplete(_, let urls):
             return AnyEncodable(CertificateBody(certificateUrls: urls))

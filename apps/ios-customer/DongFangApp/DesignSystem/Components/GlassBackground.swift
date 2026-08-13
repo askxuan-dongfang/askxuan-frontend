@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 extension View {
     /// 液态玻璃背景：iOS 26+ 使用 glassEffect，低版本回退 ultraThinMaterial。
@@ -26,6 +27,39 @@ extension View {
                     .ignoresSafeArea()
             )
         }
+    }
+}
+
+private struct RootTabVisibilityObserver: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIViewController {
+        RootTabVisibilityViewController()
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+}
+
+private final class RootTabVisibilityViewController: UIViewController {
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tabBarController?.tabBar.isHidden = false
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        guard let navigationController, navigationController.viewControllers.count > 1 else { return }
+        tabBarController?.tabBar.isHidden = true
+    }
+}
+
+extension View {
+    /// 标记 Tab 根页面。push 离开根页面时隐藏 Dock，返回根页面时恢复。
+    func rootTabPage() -> some View {
+        background(RootTabVisibilityObserver().frame(width: 0, height: 0))
+    }
+
+    /// 二级及更深页面显式隐藏 Dock。
+    func secondaryPage() -> some View {
+        toolbar(.hidden, for: .tabBar)
     }
 }
 

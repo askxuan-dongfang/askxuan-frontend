@@ -17,6 +17,11 @@ struct ChatDetailView: View {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
 
+    private var activeConversation: ChatConversation {
+        guard viewModel.currentConversation?.id == conversation.id else { return conversation }
+        return viewModel.currentConversation ?? conversation
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             topBar
@@ -24,10 +29,18 @@ struct ChatDetailView: View {
             inputBar
         }
         .background(Color.bgPrimary)
+        .secondaryPage()
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             if viewModel.currentConversation?.id != conversation.id {
                 viewModel.enterConversation(conversation)
+            }
+        }
+        .task(id: conversation.id) {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(3))
+                guard !Task.isCancelled else { break }
+                await viewModel.loadChatMessages(conversationId: conversation.id)
             }
         }
     }
@@ -44,8 +57,8 @@ struct ChatDetailView: View {
             .buttonStyle(.plain)
 
             ZStack {
-                RemoteAvatar(urlString: conversation.masterAvatar, size: 40)
-                if conversation.isOnline {
+                RemoteAvatar(urlString: activeConversation.masterAvatar, size: 40)
+                if activeConversation.isOnline {
                     Circle()
                         .fill(Color.stateSuccess)
                         .frame(width: 8, height: 8)
@@ -55,12 +68,12 @@ struct ChatDetailView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(conversation.masterName)
+                Text(activeConversation.masterName)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.textPrimary)
-                Text(conversation.isOnline ? "在线" : "离线")
+                Text(activeConversation.isOnline ? "在线" : "离线")
                     .font(.system(size: 11))
-                    .foregroundStyle(conversation.isOnline ? Color.stateSuccess : Color.textTertiary)
+                    .foregroundStyle(activeConversation.isOnline ? Color.stateSuccess : Color.textTertiary)
             }
 
             Spacer()
@@ -99,7 +112,7 @@ struct ChatDetailView: View {
             if message.isFromMe {
                 Spacer()
             } else {
-                RemoteAvatar(urlString: conversation.masterAvatar, size: 32)
+                RemoteAvatar(urlString: activeConversation.masterAvatar, size: 32)
             }
 
             VStack(alignment: message.isFromMe ? .trailing : .leading, spacing: 2) {

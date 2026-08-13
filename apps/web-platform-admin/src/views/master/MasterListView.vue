@@ -47,11 +47,24 @@
         <el-table-column label="评分" width="80">
           <template #default="{ row }"><span class="star">★ {{ row.rating?.toFixed(1) }}</span></template>
         </el-table-column>
+        <el-table-column label="即时咨询" width="130">
+          <template #default="{ row }">
+            <div>{{ row.consultEnabled ? `¥${row.consultFee}` : '未开放' }}</div>
+            <div class="master-cell__id">{{ row.consultValidHours }}小时</div>
+          </template>
+        </el-table-column>
         <el-table-column label="认证" width="100">
           <template #default="{ row }"><StatusTag :status="row.authStatus" /></template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+		<el-table-column label="上架" width="90">
+		  <template #default="{ row }"><StatusTag :status="row.shelfStatus" /></template>
+		</el-table-column>
+		<el-table-column label="平台状态" width="100">
+		  <template #default="{ row }"><StatusTag :status="row.platformStatus" /></template>
+		</el-table-column>
+        <el-table-column label="操作" width="210" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" @click="openConsult(row)">咨询配置</el-button>
             <el-dropdown @command="(cmd: string) => onStatus(row, cmd)">
               <el-button link type="warning">状态<el-icon><ArrowDown /></el-icon></el-button>
               <template #dropdown>
@@ -65,6 +78,19 @@
         </el-table-column>
       </DataTable>
     </div>
+
+    <el-dialog v-model="consultVisible" title="即时咨询配置" width="460px">
+      <el-form label-width="110px">
+        <el-form-item label="开放咨询"><el-switch v-model="consultForm.consultEnabled" /></el-form-item>
+        <el-form-item label="咨询费"><el-input-number v-model="consultForm.consultFee" :min="1" :max="9999" :precision="2" /></el-form-item>
+        <el-form-item label="有效时长"><el-input-number v-model="consultForm.consultValidHours" :min="1" :max="720" /><span class="unit">小时</span></el-form-item>
+        <el-form-item label="承诺首响"><el-input-number v-model="consultForm.consultResponseMinutes" :min="1" :max="1440" /><span class="unit">分钟</span></el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="consultVisible = false">取消</el-button>
+        <el-button type="primary" :loading="consultSaving" @click="saveConsult">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -75,7 +101,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
-import { getMasterList, updateMasterStatus } from '@/api/master'
+import { getMasterList, updateMasterStatus, updateMasterConsultation } from '@/api/master'
 import { taxonomyApi, type BeliefProfile } from '@/api/taxonomy'
 import type { Master } from '@/types'
 
@@ -85,6 +111,10 @@ const loading = ref(false)
 const list = ref<Master[]>([])
 const total = ref(0)
 const query = reactive({ beliefCode: '', templeId: '', sect: '', type: '', page: 1, size: 20 })
+const consultVisible = ref(false)
+const consultSaving = ref(false)
+const consultMasterId = ref('')
+const consultForm = reactive({ consultEnabled: true, consultFee: 39, consultValidHours: 72, consultResponseMinutes: 30 })
 
 async function loadData() {
   loading.value = true
@@ -117,6 +147,27 @@ async function onStatus(row: Master, status: string) {
   await updateMasterStatus(row.id, status)
   ElMessage.success('状态已更新')
   loadData()
+}
+
+function openConsult(row: Master) {
+  consultMasterId.value = row.id
+  consultForm.consultEnabled = row.consultEnabled
+  consultForm.consultFee = row.consultFee || 39
+  consultForm.consultValidHours = row.consultValidHours || 72
+  consultForm.consultResponseMinutes = row.consultResponseMinutes || 30
+  consultVisible.value = true
+}
+
+async function saveConsult() {
+  consultSaving.value = true
+  try {
+    await updateMasterConsultation(consultMasterId.value, { ...consultForm })
+    ElMessage.success('即时咨询配置已更新')
+    consultVisible.value = false
+    await loadData()
+  } finally {
+    consultSaving.value = false
+  }
 }
 
 onMounted(async () => {
@@ -159,4 +210,5 @@ onMounted(async () => {
   color: var(--color-accent);
   font-weight: 600;
 }
+.unit { margin-left: 8px; color: var(--color-text-tertiary); }
 </style>

@@ -84,9 +84,9 @@ final class ProfileViewModel: ObservableObject {
         errorMessage = nil
 
         async let profileResult = fetchProfile()
-        async let bookingsResult = fetchRecentBookings(userId: requestedUserId)
+        async let bookingsResult = fetchRecentBookings()
         async let addressesResult = fetchAddresses()
-        async let couponsResult = fetchCoupons(userId: requestedUserId)
+        async let couponsResult = fetchCoupons()
 
         let (p, b, a, c) = await (profileResult, bookingsResult, addressesResult, couponsResult)
 
@@ -163,10 +163,10 @@ final class ProfileViewModel: ObservableObject {
         }
     }
 
-    private func fetchRecentBookings(userId: String) async -> Result<[Booking], Error> {
+    private func fetchRecentBookings() async -> Result<[Booking], Error> {
         do {
             let resp: PageResponse<Booking> = try await apiClient.request(
-                .bookings(userId: userId, status: nil, page: 1, size: 5))
+                .bookings(userId: nil, status: nil, page: 1, size: 5))
             return .success(resp.list)
         } catch {
             return .failure(error)
@@ -182,10 +182,10 @@ final class ProfileViewModel: ObservableObject {
         }
     }
 
-    private func fetchCoupons(userId: String) async -> Result<[UserCoupon], Error> {
+    private func fetchCoupons() async -> Result<[UserCoupon], Error> {
         do {
             let resp: PageResponse<UserCoupon> = try await apiClient.request(
-                .myCoupons(userId: userId, status: nil, page: 1, size: 100)
+                .myCoupons(status: nil, page: 1, size: 100)
             )
             return .success(resp.list)
         } catch {

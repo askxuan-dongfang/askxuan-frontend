@@ -207,13 +207,13 @@ struct BookingReview: Codable, Identifiable {
 extension Booking {
     static let mockData: [Booking] = [
         Booking(id: "B20260701001", userId: "U001", templeId: "T001",
-                templeName: "灵隐寺", masterId: "M001", masterName: "智海法师",
+                templeName: "灵隐寺", masterId: "M001", masterName: "明觉法师（演示）",
                 serviceId: "S001", serviceName: "祈福法事",
                 bookingDate: "2026-07-05", timeSlot: "09:00-10:00",
                 meritMoney: 100, meritMoneyTier: "中额", status: "confirmed",
                 note: "为家人祈福", createdAt: "2026-07-01 10:23:00"),
         Booking(id: "B20260701002", userId: "U001", templeId: "T002",
-                templeName: "白云观", masterId: "M002", masterName: "清风道长",
+                templeName: "北京白云观", masterId: "M002", masterName: "玄和道长（演示）",
                 serviceId: "S005", serviceName: "化太岁法事",
                 bookingDate: "2026-07-08", timeSlot: "14:00-15:00",
                 meritMoney: 200, meritMoneyTier: "大额", status: "pending",

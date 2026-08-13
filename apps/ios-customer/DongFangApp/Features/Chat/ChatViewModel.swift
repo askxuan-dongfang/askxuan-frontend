@@ -3,7 +3,7 @@
 //  DongFangApp
 //
 //  对话共享 ViewModel：
-//  - 对话列表：仅来源于已支付预约
+//  - 对话列表：来源于已支付即时咨询或已支付预约
 //  - 单聊消息流：booking-service 持久化，OpenIM 实时通知
 //  - 站内消息（message-service）
 //  - 实时消息：通过 WebSocketManager（HTTP 轮询，后端暂无 WS）拉取未读数并刷新
@@ -36,6 +36,7 @@ final class ChatViewModel: ObservableObject {
     private let apiClient: APIClient
     private let authStore: AuthStore
     let socketManager: WebSocketManager
+    private var cancellables = Set<AnyCancellable>()
 
     init(apiClient: APIClient = .shared,
          authStore: AuthStore? = nil) {
@@ -46,6 +47,11 @@ final class ChatViewModel: ObservableObject {
 
         // 顶部连接指示使用真实 OpenIM WebSocket 状态。
         OpenIMManager.shared.$connectionState.assign(to: &$connectionState)
+        OpenIMManager.shared.$onlineUserIDs
+            .sink { [weak self] onlineUserIDs in
+                self?.applyOnlineStatus(onlineUserIDs)
+            }
+            .store(in: &cancellables)
         // 站内通知未读数仍由 message-service 轮询。
         socketManager.$unreadCount.assign(to: &$unreadCount)
 
@@ -62,7 +68,7 @@ final class ChatViewModel: ObservableObject {
         socketManager.connect()
     }
 
-    // MARK: - 加载已支付预约会话
+    // MARK: - 加载有效付费会话
     /// - Parameter silent: 静默模式（轮询触发），不切换 isLoading / errorMessage
     func loadConversations(silent: Bool = false) async {
         if !silent {
@@ -70,8 +76,10 @@ final class ChatViewModel: ObservableObject {
             errorMessage = nil
         }
         do {
-            let resp: BookingChatListResponse = try await apiClient.request(.bookingChats(page: 1, size: 20))
+            let resp: BookingChatListResponse = try await apiClient.request(.chats(page: 1, size: 20))
             self.conversations = resp.list
+            applyOnlineStatus(OpenIMManager.shared.onlineUserIDs)
+            OpenIMManager.shared.watchUsers(resp.list.map(\.peerOpenIMId))
         } catch {
             self.conversations = []
             if !silent { self.errorMessage = error.localizedDescription }
@@ -79,18 +87,28 @@ final class ChatViewModel: ObservableObject {
         if !silent { isLoading = false }
     }
 
+    private func applyOnlineStatus(_ onlineUserIDs: Set<String>) {
+        for index in conversations.indices {
+            conversations[index].isOnline = onlineUserIDs.contains(conversations[index].peerOpenIMId)
+        }
+        if let current = currentConversation,
+           let refreshed = conversations.first(where: { $0.id == current.id }) {
+            currentConversation = refreshed
+        }
+    }
+
     // MARK: - 进入会话
     func enterConversation(_ conversation: ChatConversation) {
         currentConversation = conversation
         messages = []
-        Task { await loadChatMessages(bookingId: conversation.bookingId) }
+        Task { await loadChatMessages(conversationId: conversation.id) }
     }
 
-    func loadChatMessages(bookingId: String) async {
+    func loadChatMessages(conversationId: String) async {
         do {
             let resp: BookingChatMessageListResponse = try await apiClient.request(
-                .bookingChatMessages(id: bookingId, page: 1, size: 100))
-            guard currentConversation?.bookingId == bookingId else { return }
+                .chatMessages(id: conversationId, page: 1, size: 100))
+            guard currentConversation?.id == conversationId else { return }
             messages = resp.list.map {
                 ChatBubble(id: $0.clientMessageId,
                            text: $0.content,
@@ -120,8 +138,8 @@ final class ChatViewModel: ObservableObject {
         Task {
             do {
                 let _: BookingChatMessage = try await apiClient.request(
-                    .bookingChatSend(id: conversation.bookingId,
-                                     BookingChatMessageSendRequest(clientMessageId: bubbleId, content: text)))
+                    .chatSend(id: conversation.id,
+                              BookingChatMessageSendRequest(clientMessageId: bubbleId, content: text)))
                 updateBubbleStatus(bubbleId, .sent)
                 await loadConversations(silent: true)
             } catch {
@@ -193,17 +211,17 @@ struct EmptyResponse: Decodable {}
 // MARK: - OpenIM 消息接收
 extension ChatViewModel: OpenIMManagerDelegate {
     func onRecvC2CMessage(_ message: OpenIMMessage) {
-        guard let bookingId = currentConversation?.bookingId else {
+        guard let conversationId = currentConversation?.id else {
             Task { await loadConversations(silent: true) }
             return
         }
         Task {
-            await loadChatMessages(bookingId: bookingId)
+            await loadChatMessages(conversationId: conversationId)
             await loadConversations(silent: true)
         }
     }
 
     func onConversationListUpdated(_ conversations: [OpenIMConversation]) {
-        // 预留：后续可在此刷新会话列表
+        Task { await loadConversations(silent: true) }
     }
 }

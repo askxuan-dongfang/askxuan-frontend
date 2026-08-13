@@ -130,6 +130,12 @@ enum Endpoint {
     case bookingChats(page: Int, size: Int)
     case bookingChatMessages(id: String, page: Int, size: Int)
     case bookingChatSend(id: String, BookingChatMessageSendRequest)
+    case chats(page: Int, size: Int)
+    case chatMessages(id: String, page: Int, size: Int)
+    case chatSend(id: String, BookingChatMessageSendRequest)
+    case consultationQuote(masterId: String)
+    case consultationCreate(ConsultationCreateRequest)
+    case consultationPay(id: String)
 
     // MARK: - DIY
     case diyDesigns(page: Int, size: Int)
@@ -206,7 +212,7 @@ enum Endpoint {
     case addressUpdate(id: Int64, AddressUpdateRequest)
     case addressDelete(Int64)
     case reviews(userId: String, page: Int, size: Int)
-    case myCoupons(userId: String, status: String?, page: Int, size: Int)
+    case myCoupons(status: String?, page: Int, size: Int)
 
     /// 相对路径（不含 BaseURL 前缀）
     var path: String {
@@ -234,6 +240,11 @@ enum Endpoint {
         case .bookingChats:                   return "bookings/chats"
         case .bookingChatMessages(let id, _, _), .bookingChatSend(let id, _):
             return "bookings/\(id)/chat/messages"
+        case .chats:                     return "chats"
+        case .chatMessages(let id, _, _), .chatSend(let id, _): return "chats/\(id)/messages"
+        case .consultationQuote:         return "consultations/quote"
+        case .consultationCreate:        return "consultations"
+        case .consultationPay(let id):   return "consultations/\(id)/pay"
         // DIY
         case .diyDesigns:               return "diy/designs"
         case .diyDesignSave:            return "diy/designs"
@@ -304,6 +315,7 @@ enum Endpoint {
         case .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief, .serviceTypes,
              .masters, .mastersByBelief, .masterById,
 			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById, .bookingChats, .bookingChatMessages,
+             .chats, .chatMessages, .consultationQuote,
              .diyDesigns, .diyDesignById, .diyMaterials, .diyBlessingServices, .diyOrders, .diyOrderById, .paymentById,
              .aiSessions, .aiMessages,
              .communityFeed, .communityPostById, .communityComments,
@@ -314,7 +326,8 @@ enum Endpoint {
              .messages, .unreadCount, .announcements,
              .userProfile, .addressList, .reviews, .myCoupons:
             return .GET
-        case .createBooking, .bookingReviewCreate, .bookingChatSend, .diyDesignSave, .diyOrderCreate, .diyOrderCreateFromDesign, .paymentCreate,
+        case .createBooking, .bookingReviewCreate, .bookingChatSend, .chatSend, .consultationCreate, .consultationPay,
+             .diyDesignSave, .diyOrderCreate, .diyOrderCreateFromDesign, .paymentCreate,
              .shopOrderCreate,
              .aiSessionCreate, .aiSendMessage, .aiRetryMessage, .communityPostLike,
              .communityCommentCreate, .communityMasterFollow,
@@ -355,9 +368,12 @@ enum Endpoint {
             if let userId, !userId.isEmpty { items.append(URLQueryItem(name: "userId", value: userId)) }
             if let status, !status.isEmpty { items.append(URLQueryItem(name: "status", value: status)) }
             return items
-		case .bookingChats(let page, let size), .bookingChatMessages(_, let page, let size):
+		case .bookingChats(let page, let size), .bookingChatMessages(_, let page, let size),
+             .chats(let page, let size), .chatMessages(_, let page, let size):
 			return [URLQueryItem(name: "page", value: "\(page)"),
 					URLQueryItem(name: "size", value: "\(size)")]
+		case .consultationQuote(let masterId):
+			return [URLQueryItem(name: "masterId", value: masterId)]
 		case .bookingAvailability(let templeId, let serviceId, let date):
 			return [URLQueryItem(name: "templeId", value: templeId),
 					URLQueryItem(name: "serviceId", value: serviceId),
@@ -434,9 +450,8 @@ enum Endpoint {
             return [URLQueryItem(name: "userId", value: userId),
                     URLQueryItem(name: "page", value: "\(page)"),
                     URLQueryItem(name: "size", value: "\(size)")]
-        case .myCoupons(let userId, let status, let page, let size):
-            var items = [URLQueryItem(name: "userId", value: userId),
-                         URLQueryItem(name: "page", value: "\(page)"),
+        case .myCoupons(let status, let page, let size):
+            var items = [URLQueryItem(name: "page", value: "\(page)"),
                          URLQueryItem(name: "size", value: "\(size)")]
             if let status, !status.isEmpty {
                 items.append(URLQueryItem(name: "status", value: status))
@@ -453,7 +468,9 @@ enum Endpoint {
         case .createBooking(let req):          return AnyEncodable(req)
         case .updateBookingStatus(_, let status): return AnyEncodable(["status": status])
         case .bookingReviewCreate(_, let request): return AnyEncodable(request)
-        case .bookingChatSend(_, let request): return AnyEncodable(request)
+        case .bookingChatSend(_, let request), .chatSend(_, let request): return AnyEncodable(request)
+        case .consultationCreate(let request): return AnyEncodable(request)
+        case .consultationPay:             return AnyEncodable([String: String]())
         case .diyDesignSave(let req):          return AnyEncodable(req)
         case .diyOrderCreate(let req):         return AnyEncodable(req)
         case .diyOrderCreateFromDesign(_, let req): return AnyEncodable(req)

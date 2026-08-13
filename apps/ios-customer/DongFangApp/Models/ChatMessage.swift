@@ -28,8 +28,12 @@ struct ChatMessage: Codable, Identifiable, Hashable {
 
 /// 对话会话（C端 IM 简化模型，用于对话列表）
 struct ChatConversation: Identifiable, Hashable, Decodable {
+    let conversationId: String
+    let sourceType: String
+    let sourceId: String
     let bookingId: String
     let masterId: String
+    let peerOpenIMId: String
     let masterName: String
     let masterAvatar: String
     let templeName: String
@@ -40,18 +44,23 @@ struct ChatConversation: Identifiable, Hashable, Decodable {
     let serviceName: String
     let bookingDate: String
     let canChat: Bool
+    let expiresAt: String
 
-    var id: String { bookingId }
+    var id: String { conversationId }
 
     enum CodingKeys: String, CodingKey {
-        case bookingId, peerId, peerName, peerAvatar, templeName
-        case lastMessage, lastMessageAt, serviceName, bookingDate, canChat
+        case conversationId, sourceType, sourceId, bookingId, peerId, peerOpenIMId, peerName, peerAvatar, templeName
+        case lastMessage, lastMessageAt, serviceName, bookingDate, canChat, expiresAt
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        bookingId = try container.decode(String.self, forKey: .bookingId)
+        bookingId = try container.decodeIfPresent(String.self, forKey: .bookingId) ?? ""
+        sourceId = try container.decodeIfPresent(String.self, forKey: .sourceId) ?? bookingId
+        conversationId = try container.decodeIfPresent(String.self, forKey: .conversationId) ?? sourceId
+        sourceType = try container.decodeIfPresent(String.self, forKey: .sourceType) ?? "booking"
         masterId = try container.decode(String.self, forKey: .peerId)
+        peerOpenIMId = try container.decodeIfPresent(String.self, forKey: .peerOpenIMId) ?? ""
         masterName = try container.decode(String.self, forKey: .peerName)
         masterAvatar = try container.decodeIfPresent(String.self, forKey: .peerAvatar) ?? ""
         templeName = try container.decodeIfPresent(String.self, forKey: .templeName) ?? ""
@@ -62,13 +71,19 @@ struct ChatConversation: Identifiable, Hashable, Decodable {
         serviceName = try container.decodeIfPresent(String.self, forKey: .serviceName) ?? ""
         bookingDate = try container.decodeIfPresent(String.self, forKey: .bookingDate) ?? ""
         canChat = try container.decodeIfPresent(Bool.self, forKey: .canChat) ?? false
+        expiresAt = try container.decodeIfPresent(String.self, forKey: .expiresAt) ?? ""
     }
 
-    init(bookingId: String, masterId: String, masterName: String, masterAvatar: String,
+    init(bookingId: String, masterId: String, peerOpenIMId: String = "", masterName: String, masterAvatar: String,
          templeName: String, lastMessage: String, lastTime: String, unreadCount: Int,
-         isOnline: Bool, serviceName: String = "", bookingDate: String = "", canChat: Bool = true) {
+         isOnline: Bool, serviceName: String = "", bookingDate: String = "", canChat: Bool = true,
+         conversationId: String? = nil, sourceType: String = "booking", expiresAt: String = "") {
+        self.conversationId = conversationId ?? bookingId
+        self.sourceType = sourceType
+        self.sourceId = conversationId ?? bookingId
         self.bookingId = bookingId
         self.masterId = masterId
+        self.peerOpenIMId = peerOpenIMId
         self.masterName = masterName
         self.masterAvatar = masterAvatar
         self.templeName = templeName
@@ -79,6 +94,11 @@ struct ChatConversation: Identifiable, Hashable, Decodable {
         self.serviceName = serviceName
         self.bookingDate = bookingDate
         self.canChat = canChat
+        self.expiresAt = expiresAt
+    }
+
+    var entitlementDescription: String {
+        sourceType == "consultation" ? "即时咨询" : serviceName
     }
 }
 
@@ -113,6 +133,43 @@ struct BookingChatMessageSendRequest: Encodable {
     let content: String
 }
 
+struct ConsultationQuote: Decodable {
+    let masterId: String
+    let masterName: String
+    let templeId: String
+    let templeName: String
+    let enabled: Bool
+    let consultFee: Double
+    let validHours: Int
+    let responseMinutes: Int
+}
+
+struct ConsultationCreateRequest: Encodable {
+    let requestId: String
+    let masterId: String
+    let question: String
+}
+
+struct ConsultationOrder: Decodable, Identifiable {
+    let id: String
+    let masterId: String
+    let masterName: String
+    let templeId: String
+    let templeName: String
+    let consultFee: Double
+    let validHours: Int
+    let responseMinutes: Int
+    let question: String
+    let paymentNo: String
+    let paymentStatus: String
+    let status: String
+    let validFrom: String
+    let expiresAt: String
+    let simulated: Bool
+    let conversationId: String
+    let createdAt: String
+}
+
 /// 单条聊天消息（UI 用）
 struct ChatBubble: Identifiable, Hashable {
     let id: String
@@ -132,15 +189,15 @@ enum SendStatus: Hashable {
 
 extension ChatConversation {
     static let mockConversations: [ChatConversation] = [
-        ChatConversation(bookingId: "C001", masterId: "M001", masterName: "智海法师",
+        ChatConversation(bookingId: "C001", masterId: "M001", masterName: "明觉法师（演示）",
                          masterAvatar: "master-avatar-zhihai", templeName: "灵隐寺",
                          lastMessage: "阿弥陀佛，施主有何疑问？", lastTime: "10:23",
                          unreadCount: 2, isOnline: true),
-        ChatConversation(bookingId: "C002", masterId: "M002", masterName: "清风道长",
+        ChatConversation(bookingId: "C002", masterId: "M002", masterName: "玄和道长（演示）",
                          masterAvatar: "master-avatar-qingfeng", templeName: "白云观",
                          lastMessage: "贫道已为您安排祈福法事", lastTime: "昨天",
                          unreadCount: 0, isOnline: true),
-        ChatConversation(bookingId: "C003", masterId: "M004", masterName: "扎西多吉活佛",
+        ChatConversation(bookingId: "C003", masterId: "M004", masterName: "嘉措讲师（演示）",
                          masterAvatar: "master-avatar-zhaxiduoji", templeName: "大昭寺",
                          lastMessage: "愿佛法加持，吉祥如意", lastTime: "06-28",
                          unreadCount: 0, isOnline: false)

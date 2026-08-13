@@ -7,13 +7,16 @@ export interface MasterListParams {
   sect?: string
   type?: string
   templeId?: string
+	 authStatus?: string
+	 shelfStatus?: string
+	 platformStatus?: string
   page?: number
   size?: number
 }
 
-/** 法师列表（C端接口） */
+/** 平台法师全量列表（包含待审核、下架和封禁记录） */
 export function getMasterList(params: MasterListParams) {
-  return client.get<PageResult<Master>>('/masters', { params })
+  return client.get<PageResult<Master>>('/admin/platform/masters', { params })
 }
 
 /** 法师详情（C端接口） */
@@ -39,4 +42,13 @@ export function masterAuditReject(id: number, auditRemark?: string) {
 /** 平台法师状态变更 */
 export function updateMasterStatus(id: string, status: string) {
   return client.put<{ id: string; status: string }>(`/admin/platform/masters/${id}/status`, { status })
+}
+
+export function updateMasterConsultation(id: string, data: {
+  consultEnabled: boolean
+  consultFee: number
+  consultValidHours: number
+  consultResponseMinutes: number
+}) {
+  return client.put<Master>(`/admin/platform/masters/${id}/consultation`, data)
 }

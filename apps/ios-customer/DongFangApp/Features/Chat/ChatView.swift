@@ -29,17 +29,17 @@ struct ChatView: View {
 
     // MARK: - Mock 数据
     private let followedMasters: [(id: String, name: String, temple: String, avatar: String, isOnline: Bool)] = [
-        ("M001", "智海法师", "灵隐寺", "master-avatar-zhihai", true),
-        ("M002", "清风道长", "白云观", "master-avatar-qingfeng", false),
-        ("M003", "释延心法师", "少林寺", "master-avatar-shimingyuan", true),
-        ("M004", "扎西多吉活佛", "大昭寺", "master-avatar-zhaxiduoji", false),
-        ("M005", "慧明法师", "普陀山", "master-avatar-miaoyin", false),
-        ("M006", "真武道长", "武当山", "master-avatar-zhangzhishun", true)
+        ("M001", "明觉法师（演示）", "灵隐寺", "master-avatar-zhihai", true),
+        ("M002", "玄和道长（演示）", "北京白云观", "master-avatar-qingfeng", false),
+        ("M003", "延澄法师（演示）", "嵩山少林寺", "master-avatar-shimingyuan", true),
+        ("M004", "嘉措讲师（演示）", "大昭寺", "master-avatar-zhaxiduoji", false),
+        ("M005", "慧闻法师（演示）", "普济禅寺", "master-avatar-miaoyin", false),
+        ("M006", "守一道长（演示）", "武当山紫霄宫", "master-avatar-zhangzhishun", true)
     ]
 
     private let callRecords: [(masterId: String, name: String, avatar: String, time: String, duration: String, isVideo: Bool)] = [
         ("M003", "扎西多吉", "master-avatar-zhaxiduoji", "12/18", "语音通话 12分35秒", false),
-        ("M004", "智海法师", "master-avatar-zhihai", "12/15", "视频通话 25分18秒", true)
+        ("M004", "明觉法师（演示）", "master-avatar-zhihai", "12/15", "视频通话 25分18秒", true)
     ]
 
     var body: some View {

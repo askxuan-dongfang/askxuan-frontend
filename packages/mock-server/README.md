@@ -70,7 +70,7 @@ curl -X POST http://localhost:3001/api/v1/auth/login \
 # 创建预约
 curl -X POST http://localhost:3001/api/v1/bookings \
   -H "Content-Type: application/json" \
-  -d '{"userId":"U001","templeId":"T001","templeName":"灵隐寺","masterId":"M001","masterName":"智海法师","serviceId":"S001","serviceName":"祈福","bookingDate":"2026-07-10","timeSlot":"09:00-10:00","meritMoney":100,"meritMoneyTier":"中额","note":"祈求平安"}'
+  -d '{"userId":"U001","templeId":"T001","templeName":"灵隐寺","masterId":"M001","masterName":"明觉法师（演示）","serviceId":"S001","serviceName":"祈福","bookingDate":"2026-07-10","timeSlot":"09:00-10:00","meritMoney":100,"meritMoneyTier":"中额","note":"祈求平安"}'
 ```
 
 ## 目录结构
