@@ -13,6 +13,21 @@
 
 import Foundation
 
+private actor AccessTokenRefreshCoordinator {
+    private var inFlight: Task<String?, Error>?
+
+    func refresh(using operation: @escaping @Sendable () async throws -> String?) async throws -> String? {
+        if let inFlight {
+            return try await inFlight.value
+        }
+
+        let task = Task { try await operation() }
+        inFlight = task
+        defer { inFlight = nil }
+        return try await task.value
+    }
+}
+
 /// 网络客户端（非 MainActor，网络请求在后台执行，结果交由 ViewModel 在主线程消费）
 final class APIClient {
     static let shared = APIClient()
@@ -28,6 +43,9 @@ final class APIClient {
 
     /// JSON 编码器
     private let encoder: JSONEncoder
+
+    /// 合并多个接口同时遇到 401 时的刷新请求，避免 refresh token 被并发消费。
+    private let refreshCoordinator = AccessTokenRefreshCoordinator()
 
     /// JWT Token 提供者（默认从 Keychain 读取）
     var tokenProvider: () -> String? = {
@@ -63,15 +81,33 @@ final class APIClient {
         do {
             return try await perform(request: request)
         } catch APIError.unauthorized {
-            // 尝试刷新 token（仅支持刷新的端点）
-            if endpoint.shouldAttemptTokenRefresh,
-               let newToken = try? await refreshAccessToken() {
-                var retried = request
-                retried.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
-                return try await perform(request: retried)
+            if endpoint.shouldAttemptTokenRefresh {
+                // 另一个请求可能已完成刷新，优先使用当前新 token 重试。
+                if let currentToken = tokenProvider(),
+                   authorizationToken(in: request) != currentToken {
+                    return try await perform(request: authorizedCopy(of: request, token: currentToken))
+                }
+
+                if let newToken = try? await refreshCoordinator.refresh(using: { [weak self] in
+                    guard let self else { return nil }
+                    return try await self.refreshAccessToken()
+                }) {
+                    return try await perform(request: authorizedCopy(of: request, token: newToken))
+                }
+
+                // 刷新等待期间若凭据已被其他请求更新，不能用旧请求的失败覆盖新登录态。
+                if let currentToken = tokenProvider(),
+                   authorizationToken(in: request) != currentToken {
+                    return try await perform(request: authorizedCopy(of: request, token: currentToken))
+                }
             }
-            // 刷新失败或不需要刷新：触发登出，UI 自动切换到未登录状态
-            await MainActor.run { AuthStore.shared.logout() }
+            // 只清理由这次失败请求携带的凭据，不能让旧请求覆盖后续的新登录态。
+            let failedToken = authorizationToken(in: request)
+            await MainActor.run {
+                if AuthStore.shared.accessToken == failedToken {
+                    AuthStore.shared.logout()
+                }
+            }
             throw APIError.unauthorized
         }
     }
@@ -186,6 +222,17 @@ final class APIClient {
         }
 
         return request
+    }
+
+    private func authorizationToken(in request: URLRequest) -> String? {
+        request.value(forHTTPHeaderField: "Authorization")?
+            .replacingOccurrences(of: "Bearer ", with: "")
+    }
+
+    private func authorizedCopy(of request: URLRequest, token: String) -> URLRequest {
+        var copy = request
+        copy.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        return copy
     }
 }
 

@@ -70,21 +70,31 @@ final class ProfileViewModel: ObservableObject {
 
     /// 当前请求是否有数据（用于 View 判断空状态）
     var hasAnyData: Bool {
-        profile != nil || !recentBookings.isEmpty || !addresses.isEmpty
+        profile != nil || !recentBookings.isEmpty || !addresses.isEmpty || !coupons.isEmpty
     }
 
     func load() async {
+        guard authStore.isLoggedIn else {
+            reset()
+            return
+        }
+
+        let requestedUserId = authStore.userId
         isLoading = true
         errorMessage = nil
 
-        let userId = authStore.userId
-
         async let profileResult = fetchProfile()
-        async let bookingsResult = fetchRecentBookings(userId: userId)
+        async let bookingsResult = fetchRecentBookings(userId: requestedUserId)
         async let addressesResult = fetchAddresses()
-        async let couponsResult = fetchCoupons(userId: userId)
+        async let couponsResult = fetchCoupons(userId: requestedUserId)
 
         let (p, b, a, c) = await (profileResult, bookingsResult, addressesResult, couponsResult)
+
+        // 请求期间发生退出或切换账号时，丢弃旧账号结果。
+        guard authStore.isLoggedIn, authStore.userId == requestedUserId else {
+            reset()
+            return
+        }
 
         // API 失败时不再回退 Mock 数据：置空并记录错误，由 View 展示空状态/错误提示
         var failedParts: [String] = []
@@ -130,10 +140,16 @@ final class ProfileViewModel: ObservableObject {
 
     func logout() {
         authStore.logout()
+        reset()
+    }
+
+    func reset() {
         self.profile = nil
         self.recentBookings = []
         self.addresses = []
         self.coupons = []
+        self.errorMessage = nil
+        self.isLoading = false
     }
 
     // MARK: - 网络请求

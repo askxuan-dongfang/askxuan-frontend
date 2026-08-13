@@ -80,6 +80,11 @@ struct ProfileView: View {
         }
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
+        .onChange(of: authStore.isLoggedIn) { _, isLoggedIn in
+            if !isLoggedIn {
+                viewModel.reset()
+            }
+        }
     }
 
     // MARK: - 未登录：登录引导
