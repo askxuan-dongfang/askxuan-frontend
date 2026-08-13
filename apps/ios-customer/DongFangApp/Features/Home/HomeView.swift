@@ -563,6 +563,8 @@ struct HomeView: View {
         case .rite:         ServiceRiteView()
         case .taisui:       ServiceTaisuiView()
         case .vow:          ServiceVowView()
+        case .love, .wealth, .career, .fengshui, .health, .study:
+            ServiceContainerView(serviceType: type)
         case .diy:          DiyBraceletView()
         }
     }
@@ -734,12 +736,18 @@ private struct IntentionHubView: View {
     @ViewBuilder
     private func serviceView(for code: String?) -> some View {
         switch code {
-        case "S002", "S008": ServiceLampView()
-        case "S003", "S009": ServiceIncenseView()
-        case "S004", "S013": ServiceVowView()
+        case "S002": ServiceLampView()
+        case "S003": ServiceIncenseView()
+        case "S004": ServiceVowView()
         case "S005": ServiceRiteView()
-        case "S006", "S010", "S011": ServiceConsecrationView()
+        case "S006": ServiceConsecrationView()
         case "S007": ServiceTaisuiView()
+        case "S008": ServiceContainerView(serviceType: .love)
+        case "S009": ServiceContainerView(serviceType: .wealth)
+        case "S010": ServiceContainerView(serviceType: .career)
+        case "S011": ServiceContainerView(serviceType: .fengshui)
+        case "S012": ServiceContainerView(serviceType: .health)
+        case "S013": ServiceContainerView(serviceType: .study)
         case "DIY": DiyBraceletView()
         default: ServiceBlessingView()
         }

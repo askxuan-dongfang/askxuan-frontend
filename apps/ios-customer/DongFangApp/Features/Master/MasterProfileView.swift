@@ -261,38 +261,40 @@ struct MasterProfileView: View {
                 .padding(.horizontal, AppSpacing.lg)
                 .padding(.top, AppSpacing.md)
 
-            ForEach(ServiceType.allCases.filter { $0 != .diy }) { service in
-                NavigationLink(value: HomeRoute.service(service)) {
-                    HStack(spacing: AppSpacing.md) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: AppRadius.md)
-                                .fill(Color.brandDefault.opacity(0.12))
-                            Image(systemName: service.iconName)
-                                .font(.system(size: 16))
-                                .foregroundStyle(Color.brandDefault)
-                        }
-                        .frame(width: 40, height: 40)
+            ForEach(viewModel.services) { service in
+                if let type = ServiceType.from(serviceCode: service.serviceCode) {
+                    NavigationLink(value: HomeRoute.service(type)) {
+                        HStack(spacing: AppSpacing.md) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: AppRadius.md)
+                                    .fill(Color.brandDefault.opacity(0.12))
+                                Image(systemName: type.iconName)
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(Color.brandDefault)
+                            }
+                            .frame(width: 40, height: 40)
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(service.rawValue)
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(Color.textPrimary)
-                            Text(service.subtitle)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(service.serviceName)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(Color.textPrimary)
+                                Text(type.subtitle)
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.textTertiary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
                                 .font(.system(size: 12))
                                 .foregroundStyle(Color.textTertiary)
                         }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.textTertiary)
+                        .padding(AppSpacing.md)
+                        .background(Color.bgSecondary)
+                        .cornerRadius(AppRadius.lg)
+                        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
+                        .padding(.horizontal, AppSpacing.lg)
                     }
-                    .padding(AppSpacing.md)
-                    .background(Color.bgSecondary)
-                    .cornerRadius(AppRadius.lg)
-                    .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
-                    .padding(.horizontal, AppSpacing.lg)
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
     }

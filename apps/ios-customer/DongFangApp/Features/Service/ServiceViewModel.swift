@@ -3,7 +3,7 @@
 //  DongFangApp
 //
 //  服务详情共享 ViewModel：根据 ServiceType 加载对应服务列表。
-//  支持 7 种法事/供养服务：祈福/开光/敬香/点灯/法事/太岁/许愿。
+//  支持平台 13 种标准服务。
 //
 
 import SwiftUI
@@ -36,11 +36,11 @@ final class ServiceViewModel: ObservableObject {
 
     private var defaultMin: Double {
         switch serviceType {
-        case .blessing, .vow:        return 88
+        case .blessing, .vow, .love, .career, .health, .study: return 88
         case .lamp, .incense:        return 38
-        case .consecration:          return 168
+        case .consecration, .wealth: return 168
         case .rite:                  return 388
-        case .taisui:                return 268
+        case .taisui, .fengshui:     return 268
         case .diy:                   return 188
         }
     }
@@ -89,17 +89,17 @@ final class ServiceViewModel: ObservableObject {
     }
 
     private func fetchServices() async -> Result<[BlessingService], Error> {
-        // 暂用第一个寺院的服务列表作为服务数据源
+        // 先按标准服务编码找到已开通的寺院，再读取其实际服务。
         do {
             let templeResp: PageResponse<Temple> = try await apiClient.request(
-                .temples(sect: nil, type: nil, serviceCode: nil, page: 1, size: 1))
+                .temples(sect: nil, type: nil, serviceCode: serviceType.code, page: 1, size: 1))
             guard let templeId = templeResp.list.first?.id else {
                 return .success([])
             }
             let services: [TempleServiceInfo] = try await apiClient.request(
                 .templeServices(templeId))
             let mapped = services
-                .filter { $0.serviceName.contains(serviceType.rawValue) || $0.serviceCode.contains(serviceType.rawValue) }
+                .filter { ServiceType.from(serviceCode: $0.serviceCode) == serviceType }
                 .map { info in
                     BlessingService(id: info.id,
                                     serviceCode: info.serviceCode,

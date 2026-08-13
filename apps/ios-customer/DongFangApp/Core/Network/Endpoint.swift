@@ -112,6 +112,7 @@ enum Endpoint {
     case templeServices(String)         // GET /temples/{id}/services
     case beliefs
     case belief(String)
+    case serviceTypes
 
     // MARK: - 法师
     case masters(type: String?, templeId: String?, page: Int, size: Int)
@@ -217,6 +218,7 @@ enum Endpoint {
         case .templeServices(let id):   return "temples/\(id)/services"
         case .beliefs:                  return "beliefs"
         case .belief(let code):         return "beliefs/\(code)"
+        case .serviceTypes:             return "service-types"
         // 法师
         case .masters:                  return "masters"
         case .mastersByBelief:          return "masters"
@@ -299,7 +301,7 @@ enum Endpoint {
     /// HTTP 方法
     var httpMethod: HTTPMethod {
         switch self {
-        case .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief,
+        case .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief, .serviceTypes,
              .masters, .mastersByBelief, .masterById,
 			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById, .bookingChats, .bookingChatMessages,
              .diyDesigns, .diyDesignById, .diyMaterials, .diyBlessingServices, .diyOrders, .diyOrderById, .paymentById,

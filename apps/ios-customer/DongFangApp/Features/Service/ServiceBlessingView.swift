@@ -16,7 +16,7 @@ struct ServiceBlessingView: View {
 }
 
 // MARK: - 服务详情共享容器
-/// 7 种法事/供养服务（祈福/开光/敬香/点灯/法事/太岁/许愿）共享的服务详情布局。
+/// 13 种平台标准服务共享的服务详情布局。
 struct ServiceContainerView: View {
     let serviceType: ServiceType
 

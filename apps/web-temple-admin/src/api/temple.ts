@@ -1,5 +1,5 @@
 import client from './client'
-import type { Temple, TempleImage, TempleService, TempleServiceListResp } from '@/types'
+import type { Temple, TempleImage } from '@/types'
 
 /** 寺院信息（管理台自有寺院，由 JWT 推导，无需传 id） */
 export function getTempleInfo(): Promise<Temple> {
@@ -27,29 +27,4 @@ export function deleteTempleImage(id: number): Promise<void> {
 
 export function getTempleImages(): Promise<{ list: TempleImage[] }> {
   return client.get<{ list: TempleImage[] }>('/admin/temples/images')
-}
-
-/** 寺院服务列表 */
-export function listTempleServices(): Promise<TempleServiceListResp> {
-  return client.get<TempleServiceListResp>('/admin/temples/services')
-}
-
-export function createTempleService(data: {
-  serviceCode: string
-  serviceName: string
-  price: number
-  timeSlots: string[]
-}): Promise<{ id: number }> {
-  return client.post<{ id: number }>('/admin/temples/services', data)
-}
-
-export function updateTempleService(
-  id: number,
-  data: { serviceName?: string; price?: number; timeSlots?: string[] }
-): Promise<TempleService> {
-  return client.put<TempleService>(`/admin/temples/services/${id}`, data)
-}
-
-export function updateTempleServiceStatus(id: number, status: string): Promise<{ id: number; status: string }> {
-  return client.put<{ id: number; status: string }>(`/admin/temples/services/${id}/status`, { status })
 }

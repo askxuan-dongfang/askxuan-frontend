@@ -33,6 +33,13 @@ export interface Temple {
   serviceCount?: number;
 }
 
+export interface ServiceCatalogItem {
+  code: string;
+  name: string;
+  category: string;
+  priceRange: string;
+}
+
 // 师傅/法师
 export interface Master {
   id: string;

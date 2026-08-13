@@ -300,6 +300,14 @@ const beliefs = [
 ];
 
 router.get('/beliefs', (_req: Request, res: Response) => success(res, { list: beliefs.filter((item) => item.status === 'enabled') }));
+router.get('/service-types', (_req: Request, res: Response) => success(res, {
+  list: services.map((item) => ({
+    code: item.id,
+    name: item.name,
+    category: item.type,
+    priceRange: item.priceRange
+  }))
+}));
 router.get('/beliefs/:code', (req: Request, res: Response) => {
   const belief = beliefs.find((item) => item.code === req.params.code);
   if (!belief) return fail(res, 404, '信仰流派不存在');

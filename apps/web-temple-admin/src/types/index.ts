@@ -77,6 +77,13 @@ export interface TempleService {
   createTime: string
 }
 
+export interface ServiceTypeOption {
+  code: string
+  name: string
+  category: string
+  priceRange: string
+}
+
 export interface TempleServiceSlot {
 	code: string
 	label: string

@@ -4,9 +4,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { ArrowLeft, Check, Plus, Delete } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
-import { listServices, createService, updateService } from '@/api/service'
+import { listServiceTypes, listServices, createService, updateService } from '@/api/service'
 import { listIntentions, type IntentionOption } from '@/api/taxonomy'
-import type { TempleService, TempleServiceSlot } from '@/types'
+import type { ServiceTypeOption, TempleService, TempleServiceSlot } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,7 +20,6 @@ const saving = ref(false)
 
 const form = reactive({
   serviceCode: '',
-  serviceName: '',
   price: 0,
   timeSlots: [] as string[],
 	slots: [] as TempleServiceSlot[],
@@ -28,12 +27,28 @@ const form = reactive({
 })
 
 const rules: FormRules = {
-  serviceCode: [{ required: true, message: '请输入服务编码', trigger: 'blur' }],
-  serviceName: [{ required: true, message: '请输入服务名称', trigger: 'blur' }],
+  serviceCode: [{ required: true, message: '请选择服务类型', trigger: 'change' }],
   price: [{ required: true, type: 'number', min: 0, message: '请输入有效价格', trigger: 'blur' }]
 }
 
 const intentOptions = ref<IntentionOption[]>([])
+const serviceTypeOptions = ref<ServiceTypeOption[]>([])
+const enabledServiceCodes = ref<Set<string>>(new Set())
+
+const selectedServiceType = computed(() =>
+  serviceTypeOptions.value.find((item) => item.code === form.serviceCode)
+)
+
+function selectServiceType(item: ServiceTypeOption) {
+  if (isEdit.value || enabledServiceCodes.value.has(item.code)) return
+  form.serviceCode = item.code
+}
+
+async function loadServiceTypes() {
+  const [catalog, enabled] = await Promise.all([listServiceTypes(), listServices()])
+  serviceTypeOptions.value = catalog.list || []
+  enabledServiceCodes.value = new Set((enabled.list || []).map((item) => item.serviceCode))
+}
 
 async function loadService() {
   if (!serviceId.value) return
@@ -47,7 +62,6 @@ async function loadService() {
       return
     }
     form.serviceCode = s.serviceCode
-    form.serviceName = s.serviceName
     form.price = s.price
     form.timeSlots = s.timeSlots || []
 		form.slots = s.slots?.length ? s.slots.map((slot) => ({ ...slot })) : (s.timeSlots || []).map((range, index) => {
@@ -70,7 +84,6 @@ async function handleSubmit() {
 		const timeSlots = slots.map((slot) => `${slot.startTime}-${slot.endTime}`)
       if (isEdit.value) {
         await updateService(Number(serviceId.value), {
-          serviceName: form.serviceName,
           price: form.price,
 			timeSlots,
 			slots,
@@ -80,7 +93,6 @@ async function handleSubmit() {
       } else {
         await createService({
           serviceCode: form.serviceCode,
-          serviceName: form.serviceName,
           price: form.price,
 			timeSlots,
 			slots,
@@ -105,7 +117,10 @@ function removeSlot(index: number) {
 }
 
 onMounted(async () => {
-  intentOptions.value = await listIntentions()
+  await Promise.all([
+    loadServiceTypes(),
+    listIntentions().then((items) => { intentOptions.value = items })
+  ])
   await loadService()
 })
 </script>
@@ -119,11 +134,27 @@ onMounted(async () => {
 
     <div class="df-card edit-card">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="92px" class="edit-form">
-        <el-form-item label="服务编码" prop="serviceCode">
-          <el-input v-model="form.serviceCode" :disabled="isEdit" placeholder="如 S001" />
-        </el-form-item>
-        <el-form-item label="服务名称" prop="serviceName">
-          <el-input v-model="form.serviceName" placeholder="如 早课祈福、供灯法会" />
+        <el-form-item label="服务类型" prop="serviceCode">
+          <div class="service-type-picker">
+            <button
+              v-for="item in serviceTypeOptions"
+              :key="item.code"
+              type="button"
+              class="service-type-tag"
+              :class="{
+                selected: form.serviceCode === item.code,
+                unavailable: !isEdit && enabledServiceCodes.has(item.code)
+              }"
+              :disabled="isEdit || enabledServiceCodes.has(item.code)"
+              @click="selectServiceType(item)"
+            >
+              <span>{{ item.name }}</span>
+              <small>{{ item.category }} · {{ item.priceRange }}</small>
+            </button>
+          </div>
+          <div v-if="selectedServiceType" class="selected-type-hint">
+            已选择 {{ selectedServiceType.name }}（{{ selectedServiceType.code }}）；服务类型由平台统一维护
+          </div>
         </el-form-item>
         <el-form-item label="价格（元）" prop="price">
           <el-input-number v-model="form.price" :min="0" :precision="2" controls-position="right" />
@@ -160,5 +191,14 @@ onMounted(async () => {
 }
 .slot-editor { width: 100%; display: grid; gap: 10px; }
 .slot-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr 120px 48px 40px; gap: 8px; align-items: center; }
+.service-type-picker { width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.service-type-tag { min-height: 64px; padding: 10px 12px; border: 1px solid var(--el-border-color); border-radius: 6px; background: var(--el-bg-color); color: var(--el-text-color-primary); text-align: left; cursor: pointer; }
+.service-type-tag span, .service-type-tag small { display: block; }
+.service-type-tag span { font-size: 14px; font-weight: 600; }
+.service-type-tag small { margin-top: 4px; color: var(--el-text-color-secondary); }
+.service-type-tag.selected { border-color: var(--el-color-primary); background: var(--el-color-primary-light-9); color: var(--el-color-primary); }
+.service-type-tag.unavailable { opacity: 0.45; cursor: not-allowed; }
+.selected-type-hint { margin-top: 8px; color: var(--el-text-color-secondary); font-size: 12px; }
 @media (max-width: 760px) { .slot-row { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 760px) { .service-type-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>

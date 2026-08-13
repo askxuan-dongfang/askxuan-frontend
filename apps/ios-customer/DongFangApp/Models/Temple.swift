@@ -7,6 +7,19 @@
 
 import Foundation
 
+struct ServiceCatalogItem: Codable, Identifiable, Hashable {
+    let code: String
+    let name: String
+    let category: String
+    let priceRange: String
+
+    var id: String { code }
+}
+
+struct ServiceCatalogResponse: Codable {
+    let list: [ServiceCatalogItem]
+}
+
 struct Temple: Codable, Identifiable, Hashable {
     let id: String
     let name: String

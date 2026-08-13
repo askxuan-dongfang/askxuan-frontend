@@ -1,5 +1,9 @@
 import client from './client'
-import type { TempleService, TempleServiceListResp, TempleServiceSlot } from '@/types'
+import type { ServiceTypeOption, TempleService, TempleServiceListResp, TempleServiceSlot } from '@/types'
+
+export function listServiceTypes(): Promise<{ list: ServiceTypeOption[] }> {
+  return client.get<{ list: ServiceTypeOption[] }>('/service-types')
+}
 
 /**
  * 寺院服务管理（路由 /admin/temples/services → temple-service）
@@ -11,7 +15,6 @@ export function listServices(): Promise<TempleServiceListResp> {
 
 export function createService(data: {
   serviceCode: string
-  serviceName: string
   price: number
   timeSlots: string[]
 	slots: TempleServiceSlot[]
@@ -22,7 +25,7 @@ export function createService(data: {
 
 export function updateService(
   id: number,
-	data: { serviceName?: string; price?: number; timeSlots?: string[]; slots?: TempleServiceSlot[]; intentTags?: string[] }
+	data: { price?: number; timeSlots?: string[]; slots?: TempleServiceSlot[]; intentTags?: string[] }
 ): Promise<TempleService> {
   return client.put<TempleService>(`/admin/temples/services/${id}`, data)
 }

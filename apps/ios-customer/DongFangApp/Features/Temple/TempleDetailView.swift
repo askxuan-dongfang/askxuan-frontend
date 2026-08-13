@@ -215,42 +215,54 @@ struct TempleDetailView: View {
                 .padding(.horizontal, AppSpacing.lg)
                 .padding(.top, AppSpacing.md)
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: AppSpacing.md), count: 2),
-                      spacing: AppSpacing.md) {
-                ForEach(ServiceType.allCases.filter { $0 != .diy }) { service in
-                    serviceGridItem(service)
+            if viewModel.services.contains(where: { $0.status == "on_shelf" }) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: AppSpacing.md), count: 2),
+                          spacing: AppSpacing.md) {
+                    ForEach(viewModel.services.filter { $0.status == "on_shelf" }) { service in
+                        serviceGridItem(service)
+                    }
                 }
+                .padding(.horizontal, AppSpacing.lg)
+            } else {
+                DFEmptyState(icon: "calendar.badge.exclamationmark", title: "暂无可预约服务", subtitle: "以寺院实际开通项目为准")
             }
-            .padding(.horizontal, AppSpacing.lg)
         }
     }
 
-    private func serviceGridItem(_ service: ServiceType) -> some View {
-        NavigationLink(value: HomeRoute.service(service)) {
-            VStack(alignment: .leading, spacing: AppSpacing.sm) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: AppRadius.md)
-                        .fill(Color.brandDefault.opacity(0.12))
-                    Image(systemName: service.iconName)
-                        .font(.system(size: 18))
-                        .foregroundStyle(Color.brandDefault)
-                }
-                .frame(width: 36, height: 36)
-
-                Text(service.rawValue)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.textPrimary)
-                Text("立即预约")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.brandDefault)
+    private func serviceGridItem(_ service: TempleServiceInfo) -> some View {
+        Group {
+            if let type = ServiceType.from(serviceCode: service.serviceCode) {
+                NavigationLink(value: HomeRoute.service(type)) { serviceCard(service, type: type) }
+            } else {
+                serviceCard(service, type: nil)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(AppSpacing.lg)
-            .background(Color.bgSecondary)
-            .cornerRadius(AppRadius.md)
-            .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
         }
         .buttonStyle(.plain)
+    }
+
+    private func serviceCard(_ service: TempleServiceInfo, type: ServiceType?) -> some View {
+        VStack(alignment: .leading, spacing: AppSpacing.sm) {
+            ZStack {
+                RoundedRectangle(cornerRadius: AppRadius.md)
+                    .fill(Color.brandDefault.opacity(0.12))
+                Image(systemName: type?.iconName ?? "hands.and.sparkles")
+                    .font(.system(size: 18))
+                    .foregroundStyle(Color.brandDefault)
+            }
+            .frame(width: 36, height: 36)
+
+            Text(service.serviceName)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.textPrimary)
+            Text("立即预约")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.brandDefault)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(AppSpacing.lg)
+        .background(Color.bgSecondary)
+        .cornerRadius(AppRadius.md)
+        .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
     }
 
     private var mastersPanel: some View {

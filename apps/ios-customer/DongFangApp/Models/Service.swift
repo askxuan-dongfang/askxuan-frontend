@@ -2,12 +2,12 @@
 //  Service.swift
 //  DongFangApp
 //
-//  服务数据模型：7 种法事/供养服务 + DIY 手串加持服务。
+//  服务数据模型：13 种平台标准服务 + DIY 手串加持服务。
 //
 
 import Foundation
 
-/// 服务类型枚举（用户端 7 种核心服务 + DIY 手串）
+/// 服务类型枚举（编码与平台标准目录一一对应）
 enum ServiceType: String, Codable, CaseIterable, Identifiable {
     case blessing      = "祈福"
     case lamp          = "供灯"
@@ -16,19 +16,50 @@ enum ServiceType: String, Codable, CaseIterable, Identifiable {
     case rite          = "超度"
     case consecration  = "开光"
     case taisui        = "化太岁"
+    case love          = "求姻缘"
+    case wealth        = "求财运"
+    case career        = "求事业"
+    case fengshui      = "求风水"
+    case health        = "求健康"
+    case study         = "求学业"
     case diy           = "DIY手串"
 
     var id: String { rawValue }
 
+    var code: String {
+        switch self {
+        case .blessing: return "S001"
+        case .lamp: return "S002"
+        case .incense: return "S003"
+        case .vow: return "S004"
+        case .rite: return "S005"
+        case .consecration: return "S006"
+        case .taisui: return "S007"
+        case .love: return "S008"
+        case .wealth: return "S009"
+        case .career: return "S010"
+        case .fengshui: return "S011"
+        case .health: return "S012"
+        case .study: return "S013"
+        case .diy: return "DIY"
+        }
+    }
+
     static func from(serviceCode: String) -> ServiceType? {
         switch serviceCode {
-        case "S001", "S012": return .blessing
-        case "S002", "S008": return .lamp
-        case "S003", "S009": return .incense
-        case "S004", "S013": return .vow
+        case "S001": return .blessing
+        case "S002": return .lamp
+        case "S003": return .incense
+        case "S004": return .vow
         case "S005": return .rite
-        case "S006", "S010", "S011": return .consecration
+        case "S006": return .consecration
         case "S007": return .taisui
+        case "S008": return .love
+        case "S009": return .wealth
+        case "S010": return .career
+        case "S011": return .fengshui
+        case "S012": return .health
+        case "S013": return .study
         case "DIY": return .diy
         default: return nil
         }
@@ -44,6 +75,12 @@ enum ServiceType: String, Codable, CaseIterable, Identifiable {
         case .rite:         return "flame.fill"
         case .consecration: return "sparkles"
         case .taisui:       return "shield.lefthalf.filled"
+        case .love:         return "heart.fill"
+        case .wealth:       return "yensign.circle.fill"
+        case .career:       return "briefcase.fill"
+        case .fengshui:     return "safari.fill"
+        case .health:       return "cross.case.fill"
+        case .study:        return "book.fill"
         case .diy:          return "circle.grid.2x1.fill"
         }
     }
@@ -58,6 +95,12 @@ enum ServiceType: String, Codable, CaseIterable, Identifiable {
         case .rite:         return "超度亡灵 · 往生净土"
         case .consecration: return "开光加持 · 灵气贯注"
         case .taisui:       return "化解太岁 · 安康顺遂"
+        case .love:         return "良缘善缘 · 和合美满"
+        case .wealth:       return "财源顺遂 · 福慧增长"
+        case .career:       return "事业精进 · 诸愿成就"
+        case .fengshui:     return "宅安人和 · 环境咨询"
+        case .health:       return "身心安康 · 福寿绵长"
+        case .study:        return "增慧开智 · 学业顺利"
         case .diy:          return "手串定制 · 法师加持"
         }
     }
@@ -72,6 +115,12 @@ enum ServiceType: String, Codable, CaseIterable, Identifiable {
         case .rite:         return "为亡者举行超度法事，助其往生善道。由法师依仪轨诵经回向，普利冥阳两界。"
         case .consecration: return "为新购法器、佛像、手串等举行开光加持仪式，注入灵气。法师诵经咒加持，使法物更具灵性。"
         case .taisui:       return "本命年或冲太岁者，拜太岁、化太岁，祈求一年安康顺遂、化解口舌是非。"
+        case .love:         return "为善缘、姻缘与家庭和合祈愿，由寺院按正规仪轨回向。"
+        case .wealth:       return "为正财、事业经营和福慧增长祈愿，不承诺具体结果。"
+        case .career:       return "为事业发展、工作顺遂与正当目标成就祈愿回向。"
+        case .fengshui:     return "由具备相关服务能力的寺院或道观提供环境文化与风水咨询。"
+        case .health:       return "为自己或亲友身心安康祈愿回向，不替代医疗诊断与治疗。"
+        case .study:        return "为学习精进、智慧增长和考试顺利祈愿回向。"
         case .diy:          return "自定义手串材料，由法师开光加持，定制专属法物。"
         }
     }

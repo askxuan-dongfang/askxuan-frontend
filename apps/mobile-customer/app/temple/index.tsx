@@ -17,7 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { DFTopNavBar } from '../../src/components/DFTopNavBar';
 import { DFTagPill } from '../../src/components/DFTagPill';
 import { getTemples } from '../../src/api/temple';
-import { getBeliefs } from '../../src/api/taxonomy';
+import { getBeliefs, getServiceTypes } from '../../src/api/taxonomy';
 import { colors, radius, spacing, fontFamilies } from '../../src/theme/tokens';
 import type { Temple } from '../../src/types';
 
@@ -26,19 +26,23 @@ export default function TempleListScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ beliefCode?: string }>();
   const [activeCate, setActiveCate] = useState(params.beliefCode || '');
+  const [activeService, setActiveService] = useState('');
 
   const { data: temples, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['temples', 'list'],
     queryFn: () => getTemples(),
   });
   const { data: beliefs = [] } = useQuery({ queryKey: ['beliefs'], queryFn: getBeliefs });
+  const { data: serviceTypes = [] } = useQuery({ queryKey: ['service-types'], queryFn: getServiceTypes });
 
   // 按教派分类筛选
   const filtered = useMemo(() => {
     if (!temples) return [];
-    if (!activeCate) return temples;
-    return temples.filter((t: Temple) => t.beliefCode === activeCate);
-  }, [temples, activeCate]);
+    return temples.filter((t: Temple) =>
+      (!activeCate || t.beliefCode === activeCate) &&
+      (!activeService || t.serviceCodes?.includes(activeService))
+    );
+  }, [temples, activeCate, activeService]);
 
   const renderItem = ({ item }: { item: Temple }) => (
     <TouchableOpacity
@@ -95,6 +99,24 @@ export default function TempleListScreen() {
         ))}
       </ScrollView>
 
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.serviceRow}
+      >
+        {[{ code: '', name: '全部' }, ...serviceTypes].map((item) => (
+          <TouchableOpacity
+            key={item.code}
+            style={[styles.serviceTag, activeService === item.code && styles.serviceTagActive]}
+            onPress={() => setActiveService(item.code)}
+          >
+            <Text style={[styles.serviceTagText, activeService === item.code && styles.serviceTagTextActive]}>
+              {item.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
       {/* 寺院列表 */}
       {isLoading ? (
         <View style={styles.center}>
@@ -135,6 +157,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     gap: spacing.sm,
+  },
+  serviceRow: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  serviceTag: {
+    minHeight: 34,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    borderRadius: radius.sm,
+  },
+  serviceTagActive: {
+    borderColor: colors.brand.default,
+    backgroundColor: colors.bg.secondary,
+  },
+  serviceTagText: {
+    color: colors.text.secondary,
+    fontSize: 13,
+  },
+  serviceTagTextActive: {
+    color: colors.brand.default,
+    fontWeight: '600',
   },
   center: {
     flex: 1,

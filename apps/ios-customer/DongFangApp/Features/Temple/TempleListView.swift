@@ -47,9 +47,9 @@ struct TempleListView: View {
             HStack(spacing: 0) {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        ForEach(viewModel.serviceFilters, id: \.self) { filter in
-                            filterOption(title: filter, isSelected: viewModel.selectedService == filter) {
-                                viewModel.selectedService = filter
+                        ForEach(viewModel.serviceOptions) { option in
+                            filterOption(title: option.name, isSelected: viewModel.selectedServiceCode == option.code) {
+                                viewModel.selectedServiceCode = option.code
                             }
                         }
                     }
