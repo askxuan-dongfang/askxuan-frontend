@@ -3,8 +3,8 @@ import vue from '@vitejs/plugin-vue'
 import path from 'node:path'
 
 // https://vite.dev/config/
-export default defineConfig({
-  base: process.env.VITE_PUBLIC_BASE || '/',
+export default defineConfig(({ mode }) => ({
+  base: process.env.VITE_PUBLIC_BASE || (mode === 'production' ? '/temple/' : '/'),
   plugins: [vue()],
   resolve: {
     alias: {
@@ -34,4 +34,4 @@ export default defineConfig({
       }
     }
   }
-})
+}))
