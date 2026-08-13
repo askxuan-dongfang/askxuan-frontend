@@ -7,6 +7,7 @@
     </PageHeader>
 
     <div class="dfx-card filter-bar">
+      <el-input v-model="query.templeCode" placeholder="寺院编码" clearable style="width: 160px" @keyup.enter="onSearch" />
       <el-select v-model="query.status" placeholder="审核状态" clearable style="width: 160px" @change="onSearch">
         <el-option label="待初审" value="pending" />
         <el-option label="初审通过" value="first_pass" />
@@ -81,6 +82,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
@@ -91,9 +93,10 @@ import { formatDate } from '@/utils/format'
 import type { TempleAudit } from '@/types'
 
 const loading = ref(false)
+const route = useRoute()
 const list = ref<TempleAudit[]>([])
 const total = ref(0)
-const query = reactive({ status: '', page: 1, size: 20 })
+const query = reactive({ templeCode: String(route.query.templeCode || ''), status: '', page: 1, size: 20 })
 
 const dialog = reactive({
   visible: false,

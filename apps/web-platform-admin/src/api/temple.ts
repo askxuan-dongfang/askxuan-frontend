@@ -12,6 +12,7 @@ export interface TempleListParams {
 }
 
 export interface TempleAuditListParams {
+  templeCode?: string
   status?: string
   page?: number
   size?: number
@@ -22,21 +23,9 @@ export function getTempleList(params: TempleListParams) {
   return client.get<PageResult<Temple>>('/admin/platform/temples', { params })
 }
 
-/** 寺院详情（C端接口） */
-export async function getTempleDetail(id: string): Promise<TempleDetail> {
-  const data = await client.get<TempleDetail | Temple>(`/temples/${id}`)
-  if ('temple' in data) {
-    return {
-      temple: data.temple,
-      images: data.images ?? [],
-      services: data.services ?? []
-    }
-  }
-  return {
-    temple: data,
-    images: [],
-    services: []
-  }
+/** 平台寺院详情（包含待审核/封禁数据） */
+export function getTempleDetail(id: string) {
+  return client.get<TempleDetail>(`/admin/platform/temples/${id}`)
 }
 
 /** 寺院入驻审核列表 */
@@ -60,7 +49,9 @@ export function templeAuditReject(id: number, auditRemark?: string) {
 }
 
 /** 平台寺院状态变更 */
-export function updateTempleStatus(id: string, status: string) {
+export type TempleOperationStatus = 'normal' | 'recommended' | 'banned'
+
+export function updateTempleStatus(id: string, status: TempleOperationStatus) {
   return client.put<{ id: string; status: string }>(`/admin/platform/temples/${id}/status`, { status })
 }
 

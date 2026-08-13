@@ -47,15 +47,19 @@
             <span class="star">★ {{ row.rating?.toFixed(1) || '-' }}</span>
           </template>
         </el-table-column>
+        <el-table-column label="上架服务" width="100" align="center">
+          <template #default="{ row }">{{ row.serviceCount }}</template>
+        </el-table-column>
         <el-table-column label="状态" width="110">
           <template #default="{ row }">
             <StatusTag :status="row.status" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="$router.push(`/temple/detail/${row.id}`)">详情</el-button>
-            <el-dropdown @command="(cmd: string) => onStatus(row, cmd)">
+            <el-button v-if="row.status === '待审核'" link type="success" @click="goToReview(row)">去审核</el-button>
+            <el-dropdown v-else @command="(cmd: TempleOperationStatus) => onStatus(row, cmd)">
               <el-button link type="warning">状态<el-icon><ArrowDown /></el-icon></el-button>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -74,12 +78,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Search, Refresh, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
-import { getTempleList, updateTempleStatus } from '@/api/temple'
+import { getTempleList, updateTempleStatus, type TempleOperationStatus } from '@/api/temple'
 import { taxonomyApi, type BeliefProfile } from '@/api/taxonomy'
 import type { Temple } from '@/types'
 
@@ -88,6 +93,7 @@ const types = computed(() => Array.from(new Set(list.value.map((item) => item.ty
 const beliefOptions = ref<BeliefProfile[]>([])
 
 const loading = ref(false)
+const router = useRouter()
 const list = ref<Temple[]>([])
 const total = ref(0)
 const query = reactive({ beliefCode: '', region: '', sect: '', type: '', page: 1, size: 20 })
@@ -122,7 +128,11 @@ function onReset() {
   onSearch()
 }
 
-async function onStatus(row: Temple, status: string) {
+function goToReview(row: Temple) {
+  router.push({ path: '/temple/review', query: { templeCode: row.id } })
+}
+
+async function onStatus(row: Temple, status: TempleOperationStatus) {
   const actionText = { normal: '设为正常', recommended: '设为推荐', banned: '封禁' }[status] || status
   await ElMessageBox.confirm(`确认将「${row.name}」${actionText}？`, '提示', { type: status === 'banned' ? 'warning' : 'info' })
   await updateTempleStatus(row.id, status)

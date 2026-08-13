@@ -20,9 +20,12 @@ const props = withDefaults(
 const STATUS_MAP: Record<string, { text: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }> = {
   // 通用
   normal: { text: '正常', type: 'success' },
+  '正常': { text: '正常', type: 'success' },
   enabled: { text: '启用', type: 'success' },
   disabled: { text: '禁用', type: 'info' },
   banned: { text: '封禁', type: 'danger' },
+  '封禁': { text: '封禁', type: 'danger' },
+  '待审核': { text: '待审核', type: 'warning' },
   pending: { text: '待处理', type: 'warning' },
   approved: { text: '已通过', type: 'success' },
   pass: { text: '已通过', type: 'success' },
@@ -36,6 +39,7 @@ const STATUS_MAP: Record<string, { text: string; type: 'success' | 'warning' | '
   on_shelf: { text: '上架', type: 'success' },
   off_shelf: { text: '下架', type: 'info' },
   recommended: { text: '推荐', type: 'primary' },
+  '推荐': { text: '推荐', type: 'primary' },
   // 财务
   confirmed: { text: '已确认', type: 'success' },
   paid: { text: '已付款', type: 'success' },
