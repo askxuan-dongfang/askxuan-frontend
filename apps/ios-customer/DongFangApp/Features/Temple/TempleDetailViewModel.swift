@@ -10,6 +10,7 @@ import SwiftUI
 @MainActor
 final class TempleDetailViewModel: ObservableObject {
     @Published var temple: Temple?
+    @Published var images: [TempleImage] = []
     @Published var services: [TempleServiceInfo] = []
     @Published var masters: [Master] = []
     @Published var selectedTab: Int = 0
@@ -33,9 +34,11 @@ final class TempleDetailViewModel: ObservableObject {
         switch detailRes {
         case .success(let detail):
             self.temple = detail.temple
+            self.images = detail.images ?? []
             self.services = detail.services ?? []
         case .failure(let error):
             self.temple = nil
+            self.images = []
             self.services = []
             self.errorMessage = error.localizedDescription
         }

@@ -23,14 +23,28 @@ struct TempleDetailView: View {
                 VStack(spacing: 0) {
                     heroSection
                     infoBar
-                    tabBar
-                    tabContent
+                    if let errorMessage = viewModel.errorMessage, viewModel.temple == nil, !viewModel.isLoading {
+                        loadFailurePanel(errorMessage)
+                    } else {
+                        tabBar
+                        tabContent
+                    }
                     Spacer(minLength: 100)
                 }
             }
             .ignoresSafeArea(edges: .top)
 
-            bottomActionBar
+            if viewModel.temple != nil {
+                bottomActionBar
+            }
+
+            if viewModel.isLoading, viewModel.temple == nil {
+                ProgressView("正在加载寺院信息")
+                    .tint(Color.brandDefault)
+                    .padding(AppSpacing.xl)
+                    .background(Color.bgSecondary)
+                    .cornerRadius(AppRadius.md)
+            }
         }
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
@@ -180,7 +194,33 @@ struct TempleDetailView: View {
             infoRow(label: "所属教派", value: viewModel.temple?.sect ?? "—")
             infoRow(label: "详细地址", value: viewModel.temple?.address ?? "—")
             infoRow(label: "运营状态", value: viewModel.temple?.status ?? "正常", isLast: true)
+
+            if !viewModel.images.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: AppSpacing.md) {
+                        ForEach(viewModel.images) { image in
+                            RemoteImage(urlString: image.url, placeholderIcon: "building.2.fill")
+                                .frame(width: 220, height: 132)
+                                .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
+                        }
+                    }
+                    .padding(.horizontal, AppSpacing.lg)
+                }
+                .padding(.top, AppSpacing.lg)
+            }
         }
+    }
+
+    private func loadFailurePanel(_ message: String) -> some View {
+        VStack(spacing: AppSpacing.md) {
+            DFEmptyState(icon: "exclamationmark.triangle", title: "寺院信息加载失败", subtitle: message)
+            Button("重新加载") {
+                Task { await viewModel.load(id: templeId) }
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Color.brandDefault)
+        }
+        .padding(.top, AppSpacing.xl)
     }
 
     private func infoRow(label: String, value: String, isLast: Bool = false) -> some View {

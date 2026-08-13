@@ -3,7 +3,16 @@ import client from './client'
 import type { Role, Permission, AuditQueue, SensitiveWord, PageResult } from '@/types'
 
 // 角色 & 权限（来自 auth-service）
-export { getRoles, createRole, updateRole, getPermissions, getAdminAccounts } from './auth'
+export {
+  getRoles,
+  createRole,
+  updateRole,
+  getPermissions,
+  getAdminAccounts,
+  createAdminAccount,
+  updateAdminAccount,
+  updateAdminAccountStatus
+} from './auth'
 
 // 数据字典：复用 audit-service 敏感词管理
 export { getSensitiveWords, createSensitiveWord, deleteSensitiveWord } from './audit'

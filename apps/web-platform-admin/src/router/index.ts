@@ -145,6 +145,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '角色权限', parent: '系统设置' }
       },
       {
+        path: 'settings/account',
+        name: 'SettingsAccount',
+        component: () => import('@/views/settings/SettingsAccountView.vue'),
+        meta: { title: '账号管理', parent: '系统设置' }
+      },
+      {
         path: 'settings/dict',
         name: 'SettingsDict',
         component: () => import('@/views/settings/SettingsDictView.vue'),
