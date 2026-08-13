@@ -27,6 +27,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '寺院信息' }
       },
       {
+        path: 'temple-gallery',
+        name: 'temple-gallery',
+        component: () => import('@/views/TempleGalleryView.vue'),
+        meta: { title: '寺院图册' }
+      },
+      {
         path: 'masters',
         name: 'master-list',
         component: () => import('@/views/MasterListView.vue'),

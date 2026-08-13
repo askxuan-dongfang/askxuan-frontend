@@ -63,6 +63,7 @@ function handleLogout() {
             <span>寺院管理</span>
           </template>
           <el-menu-item index="/temple-info">寺院信息</el-menu-item>
+          <el-menu-item index="/temple-gallery">寺院图册</el-menu-item>
           <el-menu-item index="/masters">法师管理</el-menu-item>
           <el-menu-item index="/services">服务管理</el-menu-item>
         </el-sub-menu>
