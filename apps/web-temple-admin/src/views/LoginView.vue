@@ -42,7 +42,7 @@ async function handleLogin() {
     <div class="login-bg"></div>
     <div class="login-card df-card">
       <div class="login-brand">
-        <img class="login-mark" src="/logos/logo-temple.jpg" alt="问玄东方寺院管理台" />
+        <img class="login-mark" src="/logos/logo-temple.png" alt="问玄东方寺院管理台" />
         <div>
           <div class="login-title">问玄东方</div>
           <div class="login-sub">寺院管理台</div>

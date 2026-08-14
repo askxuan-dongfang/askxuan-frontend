@@ -8,7 +8,7 @@
 
     <div class="login__panel dfx-card">
       <div class="login__brand">
-        <img class="login__seal" src="/logos/logo-platform.jpg" alt="问玄东方平台总管理台" />
+        <img class="login__seal" src="/logos/logo-platform.png" alt="问玄东方平台总管理台" />
         <h1 class="login__title dfx-serif">问玄东方</h1>
         <p class="login__subtitle">P05 · 平台总管理台</p>
       </div>

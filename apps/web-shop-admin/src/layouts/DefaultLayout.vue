@@ -56,7 +56,7 @@ async function handleLogout() {
     <!-- 左侧菜单栏 -->
     <aside class="sidebar">
       <div class="sidebar-logo">
-        <img class="sidebar-logo-img" src="/logos/logo-shop.jpg" alt="问玄东方商城管理台" />
+        <img class="sidebar-logo-img" src="/logos/logo-shop.png" alt="问玄东方商城管理台" />
         <div>
           <h1>问玄东方</h1>
           <p>商城管理台</p>

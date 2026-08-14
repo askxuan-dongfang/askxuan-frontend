@@ -3,7 +3,7 @@
     <!-- 侧边栏 -->
     <el-aside :width="collapsed ? '64px' : '230px'" class="layout__aside">
       <div class="layout__logo">
-        <img class="layout__logo-icon" src="/logos/logo-platform.jpg" alt="问玄东方平台总管理台" />
+        <img class="layout__logo-icon" src="/logos/logo-platform.png" alt="问玄东方平台总管理台" />
         <transition name="fade">
           <span v-if="!collapsed" class="layout__logo-text dfx-serif">问玄东方</span>
         </transition>

@@ -51,7 +51,7 @@ async function handleLogin() {
 
     <div class="login-card">
       <div class="login-logo">
-        <img class="login-symbol" src="/logos/logo-shop.jpg" alt="问玄东方商城管理台" />
+        <img class="login-symbol" src="/logos/logo-shop.png" alt="问玄东方商城管理台" />
         <h1>问玄东方</h1>
         <p>商城管理台</p>
       </div>

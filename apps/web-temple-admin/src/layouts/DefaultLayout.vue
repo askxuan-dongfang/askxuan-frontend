@@ -39,7 +39,7 @@ function handleLogout() {
     <!-- 侧边栏 -->
     <el-aside width="220px" class="df-aside">
       <div class="df-logo">
-        <img class="df-logo-mark" src="/logos/logo-temple.jpg" alt="问玄东方寺院管理台" />
+        <img class="df-logo-mark" src="/logos/logo-temple.png" alt="问玄东方寺院管理台" />
         <div class="df-logo-text">
           <div class="df-logo-title">问玄东方</div>
           <div class="df-logo-sub">寺院管理台</div>
