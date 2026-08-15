@@ -9,16 +9,12 @@ const USER_KEY = 'df_temple_admin_user'
 const TEMPLE_ID_KEY = 'df_temple_admin_temple_id'
 const TEMPLE_NAME_KEY = 'df_temple_admin_temple_name'
 
-// Mock 账号 lingyin_admin 对应灵隐寺，默认 templeId 兜底
-const DEFAULT_TEMPLE_ID = 'T001'
-const DEFAULT_TEMPLE_NAME = '灵隐寺'
-
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string>(localStorage.getItem(TOKEN_KEY) || '')
   const refreshToken = ref<string>(localStorage.getItem(REFRESH_KEY) || '')
   const userInfo = ref<UserInfo | null>(loadUser())
-  const templeId = ref<string>(localStorage.getItem(TEMPLE_ID_KEY) || DEFAULT_TEMPLE_ID)
-  const templeName = ref<string>(localStorage.getItem(TEMPLE_NAME_KEY) || DEFAULT_TEMPLE_NAME)
+  const templeId = ref<string>(localStorage.getItem(TEMPLE_ID_KEY) || '')
+  const templeName = ref<string>(localStorage.getItem(TEMPLE_NAME_KEY) || '')
 
   const isLogin = computed(() => !!token.value)
 
@@ -47,11 +43,12 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = resp.accessToken
     refreshToken.value = resp.refreshToken
     userInfo.value = resp.userInfo
-    // 登录响应若携带 templeId 则采用，否则沿用本地配置
-    if (resp.userInfo?.templeId) {
-      templeId.value = resp.userInfo.templeId
-      templeName.value = resp.userInfo.templeName || templeName.value
+    // 寺院管理员必须由后端返回 templeId（服务端隔离依据）；缺失说明账号未绑定寺院
+    if (!resp.userInfo?.templeId) {
+      throw new Error('账号未绑定寺院，请联系平台管理员')
     }
+    templeId.value = resp.userInfo.templeId
+    templeName.value = resp.userInfo.templeName || templeId.value
     persist()
     return resp
   }
