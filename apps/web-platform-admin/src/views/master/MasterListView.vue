@@ -35,6 +35,13 @@
             </div>
           </template>
         </el-table-column>
+        <el-table-column label="管理方" width="110">
+          <template #default="{ row }">
+            <el-tag :type="row.manageBy === 'platform' ? 'success' : 'info'" size="small">
+              {{ row.manageBy === 'platform' ? '野生·平台' : '寺庙绑定' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="所属寺院" prop="templeName" width="150" />
         <el-table-column label="职位" prop="position" width="100" />
         <el-table-column label="宗派" prop="sect" width="90" />

@@ -186,6 +186,8 @@ export interface Master {
   consultFee: number
   consultValidHours: number
   consultResponseMinutes: number
+  /** temple=寺庙绑定 / platform=平台(野生) */
+  manageBy?: string
 }
 
 export interface MasterAudit {

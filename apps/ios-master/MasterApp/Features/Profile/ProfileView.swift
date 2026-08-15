@@ -58,6 +58,10 @@ struct ProfileView: View {
                      iconColor: Color(hex: "5B7AAA"),
                      iconBgColor: Color(hex: "5B7AAA").opacity(0.12),
                      extra: nil),
+        ProfileMenuItem(icon: "tag.fill", label: "服务标签",
+                     iconColor: Color(hex: "7A8FA6"),
+                     iconBgColor: Color(hex: "7A8FA6").opacity(0.12),
+                     extra: nil),
         ProfileMenuItem(icon: "yensign", label: "服务定价",
                      iconColor: .brandDefault,
                      iconBgColor: Color.brandDefault.opacity(0.12),
@@ -244,12 +248,14 @@ struct ProfileView: View {
         case 1:
             ProfileEditView(profile: viewModel.profile)
         case 2:
-            PricingView()
+            ServiceTagsView()
         case 3:
-            EarningsView()
+            PricingView()
         case 4:
-            ReviewsView()
+            EarningsView()
         case 5:
+            ReviewsView()
+        case 6:
             SettingsView()
         default:
             EmptyView()

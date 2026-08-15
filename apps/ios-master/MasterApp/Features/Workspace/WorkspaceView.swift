@@ -136,13 +136,18 @@ private struct QuickAction {
 struct WorkspaceView: View {
     @StateObject private var viewModel = WorkspaceViewModel()
     @EnvironmentObject private var authStore: AuthStore
+    @State private var manageBy: String = "temple"
 
-    private let quickActions: [QuickAction] = [
-        QuickAction(icon: "calendar", label: "设置日程"),
-        QuickAction(icon: "clock", label: "休息请假"),
-        QuickAction(icon: "person", label: "个人主页"),
-        QuickAction(icon: "yensign", label: "收入提现")
-    ]
+    private var quickActions: [QuickAction] {
+        var actions: [QuickAction] = []
+        if !isWildMaster {
+            actions.append(QuickAction(icon: "calendar", label: "设置日程"))
+        }
+        actions.append(QuickAction(icon: "clock", label: "休息请假"))
+        actions.append(QuickAction(icon: "person", label: "个人主页"))
+        actions.append(QuickAction(icon: "yensign", label: "收入提现"))
+        return actions
+    }
 
     var body: some View {
         ScrollView {
@@ -152,14 +157,19 @@ struct WorkspaceView: View {
                 quickActionsSection
                 mediaStudioSection
                 todayBookingsSection
-                blessingTaskSection
+                if !isWildMaster {
+                    blessingTaskSection
+                }
             }
             .padding(.bottom, 70)
         }
         .softScrollEdge(.bottom)
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
-        .task { await viewModel.load() }
+        .task {
+            await viewModel.load()
+            await loadManageBy()
+        }
         .refreshable { await viewModel.load() }
     }
 
@@ -368,6 +378,14 @@ struct WorkspaceView: View {
         .padding(.horizontal, AppSpacing.pageHorizontal)
         .padding(.top, 10)
     }
+
+    private func loadManageBy() async {
+        if let profile: MasterProfile = try? await APIClient.shared.request(.masterProfile) {
+            manageBy = profile.manageBy ?? "temple"
+        }
+    }
+
+    private var isWildMaster: Bool { manageBy == "platform" }
 
     // MARK: - 加持任务
 

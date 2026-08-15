@@ -77,6 +77,10 @@ enum Endpoint {
     case masterProfile
     /// PUT admin/masters/profile
     case masterProfileUpdate(MasterProfileUpdateRequest)
+    /// GET admin/masters/service-tags
+    case masterServiceTags
+    /// PUT admin/masters/service-tags
+    case masterServiceTagsUpdate(MasterServiceTagsUpdateRequest)
 
     // MARK: - 消息（master-scoped from JWT）
     /// GET admin/messages/master
@@ -171,6 +175,8 @@ enum Endpoint {
             return "admin/masters/profile"
         case .masterProfileUpdate:
             return "admin/masters/profile"
+        case .masterServiceTags, .masterServiceTagsUpdate:
+            return "admin/masters/service-tags"
         // 消息
         case .masterMessages:
             return "admin/messages/master"
@@ -216,6 +222,7 @@ enum Endpoint {
     var httpMethod: HTTPMethod {
         switch self {
         case .adminLogin, .authRefresh, .authIMToken, .withdrawalApply, .registerDeviceToken, .bookingChatSend, .chatSend,
+             .masterServiceTagsUpdate,
              .masterCommunityPostCreate, .mediaUploadCredential, .mediaComplete,
              .liveRoomCreate, .liveRoomStart, .liveRoomClose:
             return .POST
@@ -318,6 +325,8 @@ enum Endpoint {
             return AnyEncodable(CertificateBody(certificateUrls: urls))
         case .masterScheduleUpdate(let date, let timeSlots, let status):
             return AnyEncodable(ScheduleUpdateBody(date: date, timeSlots: timeSlots, status: status))
+        case .masterServiceTagsUpdate(let req):
+            return AnyEncodable(req)
         case .masterProfileUpdate(let req):
             return AnyEncodable(req)
         case .withdrawalApply(let req):
@@ -556,4 +565,21 @@ struct AnyEncodable: Encodable {
     func encode(to encoder: Encoder) throws {
         try _encode(encoder)
     }
+}
+
+
+// MARK: - 服务标签
+/// 服务标签更新请求
+struct MasterServiceTagsUpdateRequest: Encodable {
+    let tags: [MasterServiceTagPayload]
+}
+
+struct MasterServiceTagPayload: Encodable {
+    let serviceCode: String
+    let price: Double
+}
+
+/// 服务标签列表响应
+struct MasterServiceTagsResponse: Decodable {
+    let list: [MasterServiceTagItem]
 }

@@ -22,6 +22,15 @@ struct MasterProfile: Identifiable, Decodable {
     let bio: String
     let pricing: String
     let rating: Double
+    let manageBy: String?
+    let serviceTags: [MasterServiceTagItem]?
+}
+
+/// 大师服务标签
+struct MasterServiceTagItem: Codable, Hashable {
+    let serviceCode: String
+    let price: Double
+    let status: String?
 }
 
 extension MasterProfile {
