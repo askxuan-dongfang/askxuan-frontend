@@ -41,6 +41,7 @@ final class ChatViewModel: ObservableObject {
             }
             errorMessage = nil
         } catch {
+            if (error as? APIError)?.isCancellation == true || error is CancellationError { return }
             errorMessage = error.localizedDescription
         }
     }
@@ -57,6 +58,7 @@ final class ChatViewModel: ObservableObject {
                               MasterBookingChatSendRequest(clientMessageId: clientMessageId, content: text)))
                 await load()
             } catch {
+                if (error as? APIError)?.isCancellation == true || error is CancellationError { return }
                 inputText = text
                 errorMessage = error.localizedDescription
             }

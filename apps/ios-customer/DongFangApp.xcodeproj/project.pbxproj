@@ -916,9 +916,9 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				OTHER_SWIFT_FLAGS = "-DDEBUG";
 				OPENIM_API_URL = "https://101.96.228.71/openim-api";
 				OPENIM_WS_URL = "wss://101.96.228.71/openim-ws";
+				OTHER_SWIFT_FLAGS = "-DDEBUG";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				TARGETED_DEVICE_FAMILY = "1,2";

@@ -25,6 +25,8 @@ enum Endpoint {
     case adminLogin(AdminLoginRequest)
     /// POST auth/refresh
     case authRefresh(refreshToken: String)
+    /// POST auth/im-token（续签 OpenIM 登录 token，JWT 鉴权）
+    case authIMToken
 
     // MARK: - 预约（法师工作台）
     /// GET admin/masters/bookings
@@ -120,6 +122,8 @@ enum Endpoint {
             return "auth/admin/login"
         case .authRefresh:
             return "auth/refresh"
+        case .authIMToken:
+            return "auth/im-token"
         // 预约
         case .masterBookings:
             return "admin/masters/bookings"
@@ -211,7 +215,7 @@ enum Endpoint {
     /// HTTP 方法
     var httpMethod: HTTPMethod {
         switch self {
-        case .adminLogin, .authRefresh, .withdrawalApply, .registerDeviceToken, .bookingChatSend, .chatSend,
+        case .adminLogin, .authRefresh, .authIMToken, .withdrawalApply, .registerDeviceToken, .bookingChatSend, .chatSend,
              .masterCommunityPostCreate, .mediaUploadCredential, .mediaComplete,
              .liveRoomCreate, .liveRoomStart, .liveRoomClose:
             return .POST
@@ -347,6 +351,11 @@ enum Endpoint {
             return true
         }
     }
+}
+
+/// OpenIM token 续签响应
+struct IMTokenResponse: Decodable {
+    let imToken: String
 }
 
 // MARK: - 请求体模型

@@ -87,8 +87,10 @@ final class OpenIMManager: NSObject, ObservableObject {
             self?.publishConnectionState(.disconnected)
         } onUserTokenExpired: { [weak self] in
             self?.publishConnectionState(.disconnected)
+            self?.refreshTokenAndRelogin()
         } onUserTokenInvalid: { [weak self] _ in
             self?.publishConnectionState(.disconnected)
+            self?.refreshTokenAndRelogin()
         }
 
         OIMManager.callbacker.addAdvancedMsgListener(listener: self)
@@ -153,6 +155,21 @@ final class OpenIMManager: NSObject, ObservableObject {
     @objc private func applicationDidBecomeActive() {
         guard connectionState == .disconnected else { return }
         scheduleReconnect(immediate: true)
+    }
+
+    /// OpenIM token 过期/失效后，向后端续签并重新登录。
+    private func refreshTokenAndRelogin() {
+        guard let userID = loginUserID, !userID.isEmpty else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let resp: IMTokenResponse = try await APIClient.shared.request(.authIMToken)
+                guard !resp.imToken.isEmpty else { return }
+                self.login(userID: userID, token: resp.imToken) { _, _ in }
+            } catch {
+                // 保持 disconnected；重新登录 askXuan 时会再次拿到 imToken
+            }
+        }
     }
 
     /// 登出

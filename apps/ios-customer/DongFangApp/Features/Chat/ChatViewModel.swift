@@ -81,7 +81,8 @@ final class ChatViewModel: ObservableObject {
             applyOnlineStatus(OpenIMManager.shared.onlineUserIDs)
             OpenIMManager.shared.watchUsers(resp.list.map(\.peerOpenIMId))
         } catch {
-            self.conversations = []
+            // 任务取消（切页/重复刷新触发）不视为错误，且失败时保留已有对话，避免列表闪空
+            if (error as? APIError)?.isCancellation == true || error is CancellationError { return }
             if !silent { self.errorMessage = error.localizedDescription }
         }
         if !silent { isLoading = false }
@@ -117,6 +118,7 @@ final class ChatViewModel: ObservableObject {
                            status: $0.status == "sent" ? .sent : .failed)
             }
         } catch {
+            if (error as? APIError)?.isCancellation == true || error is CancellationError { return }
             errorMessage = error.localizedDescription
         }
     }
@@ -143,6 +145,7 @@ final class ChatViewModel: ObservableObject {
                 updateBubbleStatus(bubbleId, .sent)
                 await loadConversations(silent: true)
             } catch {
+                if (error as? APIError)?.isCancellation == true || error is CancellationError { return }
                 updateBubbleStatus(bubbleId, .failed)
                 errorMessage = error.localizedDescription
             }
@@ -167,7 +170,7 @@ final class ChatViewModel: ObservableObject {
                 .messages(userId: authStore.userId, isRead: 0, page: 1, size: 20))
             self.notifications = resp.list
         } catch {
-            self.notifications = []
+            if (error as? APIError)?.isCancellation == true || error is CancellationError { return }
             if !silent { self.errorMessage = error.localizedDescription }
         }
         if !silent { isLoading = false }

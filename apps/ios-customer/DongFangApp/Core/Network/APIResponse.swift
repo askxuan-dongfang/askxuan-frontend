@@ -56,4 +56,13 @@ enum APIError: Error, LocalizedError {
             return "网络异常：\(error.localizedDescription)"
         }
     }
+
+    /// 是否为任务取消（.task/.refreshable 被 SwiftUI 取消时抛出的 URLSession -999 等），
+    /// 取消不应被当作错误展示，也不应清空已有数据。
+    var isCancellation: Bool {
+        if case .networkError(let underlying) = self {
+            return (underlying as? URLError)?.code == .cancelled
+        }
+        return false
+    }
 }

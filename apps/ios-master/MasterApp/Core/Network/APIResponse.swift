@@ -39,4 +39,12 @@ enum APIError: Error, LocalizedError {
             return "网络异常：\(error.localizedDescription)"
         }
     }
+
+    /// 是否为任务取消（不应展示为错误）
+    var isCancellation: Bool {
+        if case .networkError(let underlying) = self {
+            return (underlying as? URLError)?.code == .cancelled
+        }
+        return false
+    }
 }

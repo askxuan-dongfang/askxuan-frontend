@@ -18,6 +18,11 @@ enum HTTPMethod: String {
     case PATCH
 }
 
+/// OpenIM token 续签响应
+struct IMTokenResponse: Decodable {
+    let imToken: String
+}
+
 struct MediaAsset: Decodable, Identifiable {
     let id: Int64
     let mediaNo: String
@@ -203,6 +208,7 @@ enum Endpoint {
     case authRegister(RegisterRequest)
     case authRefresh(refreshToken: String)
     case authLogout(accessToken: String?)
+    case authIMToken
 
     // MARK: - 用户
     case userProfile
@@ -297,6 +303,7 @@ enum Endpoint {
         case .authRegister:             return "users/register"
         case .authRefresh:              return "auth/refresh"
         case .authLogout:               return "auth/logout"
+        case .authIMToken:             return "auth/im-token"
         // 用户
         case .userProfile:              return "users/profile"
         case .updateProfile:            return "users/profile"
@@ -331,7 +338,7 @@ enum Endpoint {
              .shopOrderCreate,
              .aiSessionCreate, .aiSendMessage, .aiRetryMessage, .communityPostLike,
              .communityCommentCreate, .communityMasterFollow,
-             .authLogin, .authRegister, .authRefresh, .authLogout,
+             .authLogin, .authRegister, .authRefresh, .authLogout, .authIMToken,
              .addressCreate, .registerDeviceToken:
             return .POST
         case .updateBookingStatus, .shopOrderConfirm, .messageRead, .readAllMessages,
