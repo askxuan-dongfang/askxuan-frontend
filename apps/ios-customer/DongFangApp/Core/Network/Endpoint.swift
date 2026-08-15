@@ -118,6 +118,24 @@ struct TempleFavoritesResponse: Decodable { let list: [Temple] }
 
 /// 收藏的商品列表
 struct ProductFavoritesResponse: Decodable { let list: [ShopProduct] }
+
+/// 我的设计条目（含最新订单信息）
+struct MyDesignItem: Decodable, Identifiable, Hashable {
+    let id: Int64
+    let designNo: String?
+    let name: String
+    let designData: String?
+    let totalPrice: Double
+    let status: String
+    let blessServiceCode: String?
+    let createTime: String?
+    let updateTime: String?
+    let orderNo: String?
+    let orderStatus: String?
+
+    /// 是否已下单
+    var hasOrder: Bool { !(orderNo?.isEmpty ?? true) }
+}
 struct CommunityCommentCreateRequest: Encodable { let content: String }
 
 /// API 端点枚举
@@ -156,6 +174,7 @@ enum Endpoint {
 
     // MARK: - DIY
     case diyDesigns(page: Int, size: Int)
+    case diyMyDesigns(page: Int, size: Int)
     case diyDesignSave(DiyDesignSaveRequest)
     case diyDesignById(Int64)
     case diyMaterials(category: String?, page: Int, size: Int)
@@ -272,6 +291,7 @@ enum Endpoint {
         case .consultationPay(let id):   return "consultations/\(id)/pay"
         // DIY
         case .diyDesigns:               return "diy/designs"
+        case .diyMyDesigns:             return "diy/my-designs"
         case .diyDesignSave:            return "diy/designs"
         case .diyDesignById(let id):    return "diy/designs/\(id)"
         case .diyMaterials:             return "diy/materials"
@@ -347,7 +367,7 @@ enum Endpoint {
              .masters, .mastersByBelief, .masterById,
 			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById, .bookingChats, .bookingChatMessages,
              .chats, .chatMessages, .consultationQuote,
-             .diyDesigns, .diyDesignById, .diyMaterials, .diyBlessingServices, .diyOrders, .diyOrderById, .paymentById,
+             .diyDesigns, .diyMyDesigns, .diyDesignById, .diyMaterials, .diyBlessingServices, .diyOrders, .diyOrderById, .paymentById,
              .aiSessions, .aiMessages,
              .communityFeed, .communityPostById, .communityComments, .communityMyFollowing,
              .templeFavorites, .productFavorites,

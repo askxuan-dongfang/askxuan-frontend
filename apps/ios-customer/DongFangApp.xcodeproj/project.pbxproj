@@ -52,6 +52,7 @@
 		A98A05A40D9DF09AADD47588 /* ServiceIncenseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FBD28CBB485AB876AA47DD9 /* ServiceIncenseView.swift */; };
 		AB46B81C569A50D1B2BB5176 /* AiDivinationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 787EDD761D1A9D8D2F7853A8 /* AiDivinationView.swift */; };
 		B16A7A941FCCAF092DE3C73C /* DiyDesignView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7526F74BD52B1A039609D8DF /* DiyDesignView.swift */; };
+		DFA1B2C3D4E5F6A7B8C9D002 /* DiyMyDesignsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA1B2C3D4E5F6A7B8C9D001 /* DiyMyDesignsView.swift */; };
 		B2FEE4BBD4A4151CC68B74DF /* TempleListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989347BF6A366E3E13B3BDDA /* TempleListView.swift */; };
 		B35B169513C0F234B65D9CB8 /* ServiceBlessingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C2E5B48BC2E74108354D27 /* ServiceBlessingView.swift */; };
 		B3EAA3277CE211284149DB37 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6031FC8114555CAC9A2010E3 /* AuthStore.swift */; };
@@ -126,6 +127,7 @@
 		72C2E2CB76CD043E38E68EDD /* DateFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatter.swift; sourceTree = "<group>"; };
 		746540EA9040535BB5DA0E12 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		7526F74BD52B1A039609D8DF /* DiyDesignView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyDesignView.swift; sourceTree = "<group>"; };
+		DFA1B2C3D4E5F6A7B8C9D001 /* DiyMyDesignsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyMyDesignsView.swift; sourceTree = "<group>"; };
 		77F6C9921DE3DA835BB90207 /* GlassBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassBackground.swift; sourceTree = "<group>"; };
 		78233F2A18CCCCDF35390DB2 /* BookingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingView.swift; sourceTree = "<group>"; };
 		787EDD761D1A9D8D2F7853A8 /* AiDivinationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AiDivinationView.swift; sourceTree = "<group>"; };
@@ -455,6 +457,7 @@
 			children = (
 				F14481BA1F32CB1D766AFB69 /* DiyBraceletView.swift */,
 				7526F74BD52B1A039609D8DF /* DiyDesignView.swift */,
+				DFA1B2C3D4E5F6A7B8C9D001 /* DiyMyDesignsView.swift */,
 				D959B591467788C8881269EE /* DiyDetailView.swift */,
 				8C90FB5FC146C32B7F608F0A /* DiyOrderView.swift */,
 				E9446383FCD8C80FAC5035CE /* DiyViewModel.swift */,
@@ -656,6 +659,7 @@
 				61D940E548D42E09DFB9AB44 /* DateFormatter.swift in Sources */,
 				E10148E171165C5D902CC446 /* DiyBraceletView.swift in Sources */,
 				B16A7A941FCCAF092DE3C73C /* DiyDesignView.swift in Sources */,
+				DFA1B2C3D4E5F6A7B8C9D002 /* DiyMyDesignsView.swift in Sources */,
 				5152DE8AB826062170958CB4 /* DiyDetailView.swift in Sources */,
 				D977E1C40A7290458864DCEA /* DiyOrder.swift in Sources */,
 				3980D1D3EAF34F9165A05CA6 /* DiyOrderView.swift in Sources */,

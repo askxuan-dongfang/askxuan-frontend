@@ -2,13 +2,12 @@
 //  DiyBraceletView.swift
 //  DongFangApp
 //
-//  DIY 手串入口页：顶部 Banner + 我的创作 + 推荐模板 + 进入编辑器。
+//  DIY 手串入口页：顶部 Banner + 开始设计/我的设计入口 + 推荐模板。
 //
 
 import SwiftUI
 
 struct DiyBraceletView: View {
-    @StateObject private var viewModel = DiyViewModel()
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -17,7 +16,6 @@ struct DiyBraceletView: View {
                 backBar
                 heroBanner
                 quickEntrySection
-                myDesignsSection
                 templateSection
                 Spacer(minLength: AppSpacing.xl)
             }
@@ -25,10 +23,6 @@ struct DiyBraceletView: View {
         }
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
-        .task {
-            if viewModel.designs.isEmpty { await viewModel.loadDesigns() }
-        }
-        .refreshable { await viewModel.loadDesigns() }
         .navigationDestination(for: DiyDesign.self) { design in
             DiyDetailView(designId: design.id)
         }
@@ -88,10 +82,10 @@ struct DiyBraceletView: View {
             .buttonStyle(.plain)
 
             NavigationLink {
-                DiyDesignView()
+                DiyMyDesignsView()
             } label: {
                 entryCard(icon: "doc.on.doc", title: "我的设计",
-                          subtitle: "查看历史创作", highlight: false)
+                          subtitle: "草稿与已下单手串", highlight: false)
             }
             .buttonStyle(.plain)
         }
@@ -121,85 +115,6 @@ struct DiyBraceletView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, AppSpacing.lg)
-        .background(Color.bgSecondary)
-        .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
-    }
-
-    // MARK: - 我的创作
-    private var myDesignsSection: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.md) {
-            HStack {
-                Text("我的创作")
-                    .font(.sectionTitle)
-                    .foregroundStyle(Color.textPrimary)
-                Spacer()
-                NavigationLink {
-                    DiyDesignView()
-                } label: {
-                    HStack(spacing: 2) {
-                        Text("更多").font(.caption)
-                        Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
-                    }
-                    .foregroundStyle(Color.accentDefault)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, AppSpacing.lg)
-
-            if viewModel.designs.isEmpty {
-                Text("还没有创作，快去设计一个吧")
-                    .font(.caption)
-                    .foregroundStyle(Color.textTertiary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, AppSpacing.xl)
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: AppSpacing.md) {
-                        ForEach(viewModel.designs) { design in
-                            NavigationLink(value: design) { designCard(design) }
-                                .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(.horizontal, AppSpacing.lg)
-                }
-            }
-        }
-    }
-
-    private func designCard(_ design: DiyDesign) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ZStack {
-                RoundedRectangle(cornerRadius: AppRadius.md)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.brandDefault.opacity(0.2), Color.accentDefault.opacity(0.15)],
-                            startPoint: .topLeading, endPoint: .bottomTrailing
-                        )
-                    )
-                Image(systemName: "circle.grid.2x2.fill")
-                    .font(.system(size: 28))
-                    .foregroundStyle(Color.accentDefault)
-            }
-            .frame(width: 140, height: 100)
-            .cornerRadius(AppRadius.md)
-
-            Text(design.name)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.textPrimary)
-                .lineLimit(1)
-            HStack {
-                Text("¥\(Int(design.totalPrice))")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(Color.brandDefault)
-                Spacer()
-                Text(design.createTime ?? "")
-                    .font(.system(size: 10))
-                    .foregroundStyle(Color.textTertiary)
-            }
-        }
-        .frame(width: 140)
-        .padding(AppSpacing.sm)
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.lg)
         .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
