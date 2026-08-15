@@ -17,7 +17,9 @@ extension View {
         if #available(iOS 26.0, *) {
             self.background(
                 Color.bgPrimary.opacity(opacity)
-                    .glassEffect(.regular)
+                    // 显式指定矩形形状：默认 capsule 会在大幅面（如顶部导航栏）上
+                    // 呈现出胶囊弧线与边缘折射，导致状态栏区域出现异常圆弧并扭曲图标。
+                    .glassEffect(.regular, in: .rect)
                     .ignoresSafeArea()
             )
         } else {
