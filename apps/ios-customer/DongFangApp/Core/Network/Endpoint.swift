@@ -106,6 +106,9 @@ struct CommunityLikeResponse: Decodable {
 }
 
 struct CommunityFollowResponse: Decodable { let following: Bool }
+
+/// 我关注的法师 ID 列表
+struct FollowedMastersResponse: Decodable { let list: [String] }
 struct CommunityCommentCreateRequest: Encodable { let content: String }
 
 /// API 端点枚举
@@ -173,6 +176,7 @@ enum Endpoint {
     case communityCommentCreate(postId: String, CommunityCommentCreateRequest)
     case communityMasterFollow(String)
     case communityMasterUnfollow(String)
+    case communityMyFollowing
 
     // MARK: - 媒体与直播
     case mediaDetail(Int64)
@@ -276,6 +280,7 @@ enum Endpoint {
         case .communityComments(let postId, _, _): return "community/posts/\(postId)/comments"
         case .communityCommentCreate(let postId, _): return "community/posts/\(postId)/comments"
         case .communityMasterFollow(let id), .communityMasterUnfollow(let id): return "community/masters/\(id)/follow"
+        case .communityMyFollowing:       return "community/masters/following"
         case .mediaDetail(let id):       return "media/\(id)"
         case .liveRooms:                 return "live/rooms"
         case .liveRoomById(let id):      return "live/rooms/\(id)"
@@ -325,7 +330,7 @@ enum Endpoint {
              .chats, .chatMessages, .consultationQuote,
              .diyDesigns, .diyDesignById, .diyMaterials, .diyBlessingServices, .diyOrders, .diyOrderById, .paymentById,
              .aiSessions, .aiMessages,
-             .communityFeed, .communityPostById, .communityComments,
+             .communityFeed, .communityPostById, .communityComments, .communityMyFollowing,
              .mediaDetail, .liveRooms, .liveRoomById,
              .intentionHub, .intentionTags,
              .products, .productById, .productCategories,

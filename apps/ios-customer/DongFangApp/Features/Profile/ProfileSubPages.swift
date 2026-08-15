@@ -469,11 +469,92 @@ private struct BookingReviewSheet: View {
 
 // MARK: - 2. 收藏列表
 struct FavoritesView: View {
+    @State private var masters: [Master] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
     var body: some View {
-        DFEmptyState(icon: "heart", title: "暂无收藏", subtitle: "收藏的寺院、法师和内容会显示在这里")
+        Group {
+            if isLoading && masters.isEmpty {
+                ProgressView("正在加载收藏")
+                    .tint(Color.accentDefault)
+            } else if masters.isEmpty {
+                DFEmptyState(icon: "heart", title: "暂无收藏",
+                             subtitle: errorMessage ?? "在法师主页点击关注后，会显示在这里")
+            } else {
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(spacing: 0) {
+                        ForEach(masters) { master in
+                            NavigationLink {
+                                MasterProfileView(masterId: master.id)
+                            } label: {
+                                HStack(spacing: 12) {
+                                    RemoteAvatar(urlString: master.avatar, size: 48)
+
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(master.dharmaName)
+                                            .font(.system(size: 14, weight: .bold))
+                                            .foregroundStyle(Color.textPrimary)
+                                        Text(master.templeName)
+                                            .font(.system(size: 12))
+                                            .foregroundStyle(Color.textTertiary)
+                                    }
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(Color.textTertiary)
+                                }
+                                .padding(.horizontal, AppSpacing.lg)
+                                .padding(.vertical, 12)
+                                .overlay(alignment: .bottom) {
+                                    Rectangle()
+                                        .fill(Color.borderDivider)
+                                        .frame(height: 1)
+                                        .padding(.leading, AppSpacing.lg + 48 + 12)
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+        }
         .background(Color.bgPrimary)
         .navigationTitle("我的收藏")
         .navigationBarTitleDisplayMode(.inline)
+        .refreshable { await load() }
+        .task { await load() }
+    }
+
+    private func load() async {
+        if masters.isEmpty { isLoading = true }
+        errorMessage = nil
+        do {
+            let resp: FollowedMastersResponse = try await APIClient.shared.request(.communityMyFollowing)
+            let ids = resp.list
+            // 并行拉取法师详情，避免串行 N+1 过慢
+            let details = await withTaskGroup(of: (String, Master?).self) { group -> [Master] in
+                for id in ids {
+                    group.addTask {
+                        let master: Master? = try? await APIClient.shared.request(.masterById(id))
+                        return (id, master)
+                    }
+                }
+                var byId: [String: Master] = [:]
+                for await (id, master) in group {
+                    if let master { byId[id] = master }
+                }
+                return ids.compactMap { byId[$0] }
+            }
+            masters = details
+        } catch {
+            if (error as? APIError)?.isCancellation == true || error is CancellationError { return }
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
     }
 }
 

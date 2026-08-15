@@ -25,22 +25,7 @@ struct ChatView: View {
     @State private var searchText: String = ""
     @State private var liveRooms: [LiveRoom] = []
 
-    private let tabTitles = ["我的收藏", "我的私聊", "大师广场"]
-
-    // MARK: - Mock 数据
-    private let followedMasters: [(id: String, name: String, temple: String, avatar: String, isOnline: Bool)] = [
-        ("M001", "明觉法师（演示）", "灵隐寺", "master-avatar-zhihai", true),
-        ("M002", "玄和道长（演示）", "北京白云观", "master-avatar-qingfeng", false),
-        ("M003", "延澄法师（演示）", "嵩山少林寺", "master-avatar-shimingyuan", true),
-        ("M004", "嘉措讲师（演示）", "大昭寺", "master-avatar-zhaxiduoji", false),
-        ("M005", "慧闻法师（演示）", "普济禅寺", "master-avatar-miaoyin", false),
-        ("M006", "守一道长（演示）", "武当山紫霄宫", "master-avatar-zhangzhishun", true)
-    ]
-
-    private let callRecords: [(masterId: String, name: String, avatar: String, time: String, duration: String, isVideo: Bool)] = [
-        ("M003", "扎西多吉", "master-avatar-zhaxiduoji", "12/18", "语音通话 12分35秒", false),
-        ("M004", "明觉法师（演示）", "master-avatar-zhihai", "12/15", "视频通话 25分18秒", true)
-    ]
+    private let tabTitles = ["我的私聊", "大师广场"]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -60,7 +45,7 @@ struct ChatView: View {
             }
         }
         .refreshable {
-            if selectedTab == 1 {
+            if selectedTab == 0 {
                 await viewModel.loadConversations()
             }
         }
@@ -153,69 +138,9 @@ struct ChatView: View {
     @ViewBuilder
     private var panelContent: some View {
         switch selectedTab {
-        case 0: favoritesPanel
-        case 1: privatePanel
+        case 0: privatePanel
         default: plazaPanel
         }
-    }
-
-    // MARK: - Panel 1: 我的收藏
-    private var favoritesPanel: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("关注列表")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.textSecondary)
-                    .padding(.top, 12)
-                    .padding(.bottom, 4)
-                    .padding(.horizontal, AppSpacing.lg)
-
-                ForEach(Array(followedMasters.enumerated()), id: \.offset) { _, master in
-                    followItem(master)
-                }
-                Color.clear.frame(height: AppSpacing.navBottom)
-            }
-        }
-    }
-
-    private func followItem(_ master: (id: String, name: String, temple: String, avatar: String, isOnline: Bool)) -> some View {
-        NavigationLink {
-            MasterProfileView(masterId: master.id)
-        } label: {
-            HStack(spacing: 12) {
-                RemoteAvatar(urlString: master.avatar, size: 48)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 8) {
-                        Text(master.name)
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(Color.textPrimary)
-                        Text("已关注")
-                            .font(.system(size: 10))
-                            .foregroundStyle(Color.brandDefault)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .overlay(Capsule().stroke(Color.brandDefault.opacity(0.4), lineWidth: 1))
-                    }
-                    Text(master.temple)
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.textTertiary)
-                }
-
-                Spacer()
-
-                Circle()
-                    .fill(master.isOnline ? Color.stateSuccess : Color.textTertiary.opacity(0.5))
-                    .frame(width: 10, height: 10)
-            }
-            .padding(.horizontal, AppSpacing.lg)
-            .padding(.vertical, 12)
-            .overlay(alignment: .bottom) {
-                Rectangle().fill(Color.borderDivider).frame(height: 1).padding(.leading, AppSpacing.lg + 48 + 12)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Panel 2: 我的私聊
