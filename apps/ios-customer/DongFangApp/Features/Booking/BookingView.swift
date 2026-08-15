@@ -362,11 +362,17 @@ struct BookingView: View {
     private var priceSummary: some View {
 		let serviceFee = Int(viewModel.serviceFee)
         let merit = viewModel.finalMeritMoney
-        let total = serviceFee + Int(merit)
+        let total = Int(viewModel.displayTotal)
 
         return VStack(spacing: 0) {
-            priceRow(label: "服务费用", value: "¥\(serviceFee)", valueColor: Color.textPrimary)
-            priceRow(label: "随喜功德", value: "¥\(Int(merit))", valueColor: Color.accentDefault)
+            if let tag = viewModel.masterTagFee {
+                priceRow(label: "大师执行费", value: "¥\(Int(tag))", valueColor: Color.textPrimary)
+                priceRow(label: "寺院服务费", value: "¥\(serviceFee)", valueColor: Color.textPrimary)
+                priceRow(label: "随喜功德", value: "¥\(Int(merit))", valueColor: Color.accentDefault)
+            } else {
+                priceRow(label: "服务费用", value: "¥\(serviceFee)", valueColor: Color.textPrimary)
+                priceRow(label: "随喜功德", value: "¥\(Int(merit))", valueColor: Color.accentDefault)
+            }
 
             Rectangle()
                 .fill(Color.borderDefault)
@@ -435,7 +441,7 @@ struct BookingView: View {
                         Image(systemName: "creditcard")
                             .font(.system(size: 18))
                     }
-                    Text("确认预约并支付 ¥\(total)")
+                    Text("确认预约并支付 ¥\(Int(viewModel.displayTotal))")
                         .font(.system(size: 17, weight: .semibold))
                 }
                 .foregroundStyle(Color.white)

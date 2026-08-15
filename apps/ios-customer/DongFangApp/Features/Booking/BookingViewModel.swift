@@ -76,6 +76,19 @@ final class BookingViewModel: ObservableObject {
 	var selectedService: TempleServiceInfo? { services.first { $0.serviceCode == selectedServiceId } }
 	var selectedSlot: AvailableBookingSlot? { availableSlots.first { $0.slotCode == selectedSlotCode && $0.available } }
 	var serviceFee: Double { selectedService == nil ? 0 : (availabilityServiceFee ?? selectedService?.price ?? 0) }
+
+	/// 大师执行费：大师已配置该服务标签时按标签价分流，否则为 nil（回退原计价）
+	var masterTagFee: Double? {
+		guard let code = selectedService?.serviceCode,
+		      let tags = master.serviceTags else { return nil }
+		return tags.first(where: { $0.serviceCode == code && ($0.status ?? "enabled") == "enabled" })?.price
+	}
+
+	/// 展示总额：标签存在 = 大师执行费 + 寺院服务费 + 功德；否则 = 服务费 + 功德
+	var displayTotal: Double {
+		let tag = masterTagFee ?? 0
+		return tag + serviceFee + finalMeritMoney
+	}
 	private var availabilityServiceFee: Double?
 
 	func loadServices() async {
