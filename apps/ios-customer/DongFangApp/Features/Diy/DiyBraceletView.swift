@@ -9,10 +9,12 @@ import SwiftUI
 
 struct DiyBraceletView: View {
     @StateObject private var viewModel = DiyViewModel()
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: AppSpacing.lg) {
+                backBar
                 heroBanner
                 quickEntrySection
                 myDesignsSection
@@ -30,6 +32,25 @@ struct DiyBraceletView: View {
         .navigationDestination(for: DiyDesign.self) { design in
             DiyDetailView(designId: design.id)
         }
+    }
+
+    // MARK: - 返回栏（导航栏隐藏后提供返回首页入口）
+    private var backBar: some View {
+        HStack {
+            Button { dismiss() } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.accentDefault)
+                    .frame(width: 36, height: 36)
+                    .background(Color.bgPrimary.opacity(0.6))
+                    .background(.ultraThinMaterial)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.borderDefault, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            Spacer()
+        }
+        .padding(.horizontal, AppSpacing.lg)
     }
 
     // MARK: - Hero
