@@ -35,7 +35,6 @@ struct TempleDetailView: View {
             .ignoresSafeArea(edges: .top)
 
             if viewModel.temple != nil {
-                bottomActionBar
             }
 
             if viewModel.isLoading, viewModel.temple == nil {
@@ -389,28 +388,7 @@ struct TempleDetailView: View {
         }
     }
 
-    // MARK: - 底部操作栏
-    private var bottomActionBar: some View {
-        HStack(spacing: AppSpacing.md) {
-            if let master = viewModel.masters.first {
-                NavigationLink(value: HomeRoute.booking(master)) {
-                    DFPrimaryButton(title: "预约服务", icon: "calendar.badge.plus") {}
-                }
-                .buttonStyle(.plain)
-            } else {
-                DFPrimaryButton(title: "预约服务", icon: "calendar.badge.plus") {}
-            }
-        }
-        .padding(.horizontal, AppSpacing.lg)
-        .padding(.vertical, AppSpacing.md)
-        .background(
-            Color.bgPrimary.opacity(0.95)
-                .background(.ultraThinMaterial)
-                .ignoresSafeArea(edges: .bottom)
-        )
-        .overlay(alignment: .top) { Rectangle().fill(Color.borderDivider).frame(height: 1) }
-    }
-}
+
 
 #Preview {
     NavigationStack { TempleDetailView(templeId: "T001", templeName: "灵隐寺") }
