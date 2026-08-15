@@ -279,7 +279,7 @@ struct WorkspaceView: View {
     private func quickActionDestination(_ label: String) -> some View {
         switch label {
         case "设置日程", "休息请假": CalendarView()
-        case "个人主页": ProfileView()
+        case "个人主页": ProfileView(showsBackButton: true)
         default: EarningsView()
         }
     }

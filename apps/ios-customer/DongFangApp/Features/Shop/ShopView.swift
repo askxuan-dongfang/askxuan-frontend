@@ -299,9 +299,33 @@ struct ShopProductDetailView: View {
     @State private var quantity = 1
     @State private var showCart = false
     @State private var added = false
+    @State private var isFavorited = false
 
     init(product: ShopProduct) {
         _viewModel = StateObject(wrappedValue: ShopProductDetailViewModel(product: product))
+    }
+
+    // MARK: - 收藏
+    private func syncFavoriteState() async {
+        if let resp: ProductFavoritesResponse = try? await APIClient.shared.request(.productFavorites) {
+            isFavorited = resp.list.contains { $0.id == viewModel.product.id }
+        }
+    }
+
+    private func toggleFavorite() {
+        let target = !isFavorited
+        isFavorited = target
+        Task {
+            do {
+                if target {
+                    let _: FavoriteResponse = try await APIClient.shared.request(.productFavorite(viewModel.product.id))
+                } else {
+                    let _: FavoriteResponse = try await APIClient.shared.request(.productUnfavorite(viewModel.product.id))
+                }
+            } catch {
+                isFavorited = !target
+            }
+        }
     }
 
     private var selectedSku: ProductSku? {
@@ -393,6 +417,19 @@ struct ShopProductDetailView: View {
         .background(Color.bgPrimary)
         .navigationTitle("商品详情")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    toggleFavorite()
+                } label: {
+                    Image(systemName: isFavorited ? "heart.fill" : "heart")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(isFavorited ? Color.brandDefault : Color.accentDefault)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .task { await syncFavoriteState() }
         .safeAreaInset(edge: .bottom) {
             HStack(spacing: AppSpacing.md) {
                 Button { showCart = true } label: {

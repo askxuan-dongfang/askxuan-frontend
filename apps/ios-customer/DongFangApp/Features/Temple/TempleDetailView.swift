@@ -50,6 +50,7 @@ struct TempleDetailView: View {
         .toolbar(.hidden, for: .navigationBar)
         .task {
             if viewModel.temple == nil { await viewModel.load(id: templeId) }
+            await syncFavoriteState()
         }
         .navigationDestination(for: Master.self) { master in
             MasterProfileView(masterId: master.id)
@@ -91,7 +92,7 @@ struct TempleDetailView: View {
                 Spacer()
 
                 Button {
-                    isFavorited.toggle()
+                    toggleFavorite()
                 } label: {
                     Image(systemName: isFavorited ? "bookmark.fill" : "bookmark")
                         .font(.system(size: 16, weight: .semibold))
@@ -108,6 +109,30 @@ struct TempleDetailView: View {
             .padding(.top, 56)
         }
         .frame(height: 220)
+    }
+
+    // MARK: - 收藏
+    private func syncFavoriteState() async {
+        if let resp: TempleFavoritesResponse = try? await APIClient.shared.request(.templeFavorites) {
+            isFavorited = resp.list.contains { $0.id == templeId }
+        }
+    }
+
+    private func toggleFavorite() {
+        let target = !isFavorited
+        isFavorited = target
+        Task {
+            do {
+                if target {
+                    let _: FavoriteResponse = try await APIClient.shared.request(.templeFavorite(templeId))
+                } else {
+                    let _: FavoriteResponse = try await APIClient.shared.request(.templeUnfavorite(templeId))
+                }
+            } catch {
+                // 失败回滚状态
+                isFavorited = !target
+            }
+        }
     }
 
     // MARK: - 信息栏

@@ -109,6 +109,15 @@ struct CommunityFollowResponse: Decodable { let following: Bool }
 
 /// 我关注的法师 ID 列表
 struct FollowedMastersResponse: Decodable { let list: [String] }
+
+/// 收藏/取消收藏响应
+struct FavoriteResponse: Decodable { let favorited: Bool }
+
+/// 收藏的寺院列表
+struct TempleFavoritesResponse: Decodable { let list: [Temple] }
+
+/// 收藏的商品列表
+struct ProductFavoritesResponse: Decodable { let list: [ShopProduct] }
 struct CommunityCommentCreateRequest: Encodable { let content: String }
 
 /// API 端点枚举
@@ -177,6 +186,12 @@ enum Endpoint {
     case communityMasterFollow(String)
     case communityMasterUnfollow(String)
     case communityMyFollowing
+    case templeFavorite(String)
+    case templeUnfavorite(String)
+    case templeFavorites
+    case productFavorite(Int64)
+    case productUnfavorite(Int64)
+    case productFavorites
 
     // MARK: - 媒体与直播
     case mediaDetail(Int64)
@@ -281,6 +296,10 @@ enum Endpoint {
         case .communityCommentCreate(let postId, _): return "community/posts/\(postId)/comments"
         case .communityMasterFollow(let id), .communityMasterUnfollow(let id): return "community/masters/\(id)/follow"
         case .communityMyFollowing:       return "community/masters/following"
+        case .templeFavorite(let id), .templeUnfavorite(let id): return "temples/\(id)/favorite"
+        case .templeFavorites:             return "favorites/temples"
+        case .productFavorite(let id), .productUnfavorite(let id): return "products/\(id)/favorite"
+        case .productFavorites:            return "favorites/products"
         case .mediaDetail(let id):       return "media/\(id)"
         case .liveRooms:                 return "live/rooms"
         case .liveRoomById(let id):      return "live/rooms/\(id)"
@@ -331,6 +350,7 @@ enum Endpoint {
              .diyDesigns, .diyDesignById, .diyMaterials, .diyBlessingServices, .diyOrders, .diyOrderById, .paymentById,
              .aiSessions, .aiMessages,
              .communityFeed, .communityPostById, .communityComments, .communityMyFollowing,
+             .templeFavorites, .productFavorites,
              .mediaDetail, .liveRooms, .liveRoomById,
              .intentionHub, .intentionTags,
              .products, .productById, .productCategories,
@@ -344,12 +364,14 @@ enum Endpoint {
              .aiSessionCreate, .aiSendMessage, .aiRetryMessage, .communityPostLike,
              .communityCommentCreate, .communityMasterFollow,
              .authLogin, .authRegister, .authRefresh, .authLogout, .authIMToken,
+             .templeFavorite, .productFavorite,
              .addressCreate, .registerDeviceToken:
             return .POST
         case .updateBookingStatus, .shopOrderConfirm, .messageRead, .readAllMessages,
              .updateProfile, .addressUpdate:
             return .PUT
-        case .deleteMessage, .addressDelete, .communityPostUnlike, .communityMasterUnfollow:
+        case .deleteMessage, .addressDelete, .communityPostUnlike, .communityMasterUnfollow,
+             .templeUnfavorite, .productUnfavorite:
             return .DELETE
         }
     }
@@ -491,7 +513,8 @@ enum Endpoint {
         case .aiSessionCreate(let req):        return AnyEncodable(req)
         case .aiSendMessage(let req):          return AnyEncodable(req)
         case .aiRetryMessage(_, _, let userId): return AnyEncodable(["userId": userId])
-        case .communityPostLike, .communityPostUnlike, .communityMasterFollow, .communityMasterUnfollow:
+        case .communityPostLike, .communityPostUnlike, .communityMasterFollow, .communityMasterUnfollow,
+             .templeFavorite, .productFavorite:
             return AnyEncodable([String: String]())
         case .communityCommentCreate(_, let req): return AnyEncodable(req)
         case .authLogin(let req):              return AnyEncodable(req)

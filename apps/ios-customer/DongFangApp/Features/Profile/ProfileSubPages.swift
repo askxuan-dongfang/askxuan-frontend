@@ -469,54 +469,71 @@ private struct BookingReviewSheet: View {
 
 // MARK: - 2. 收藏列表
 struct FavoritesView: View {
+    private enum Section: String, CaseIterable, Identifiable {
+        case masters = "法师"
+        case temples = "寺院"
+        case products = "商品"
+        var id: String { rawValue }
+    }
+
+    @State private var section: Section = .masters
     @State private var masters: [Master] = []
+    @State private var temples: [Temple] = []
+    @State private var products: [ShopProduct] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
 
     var body: some View {
-        Group {
-            if isLoading && masters.isEmpty {
-                ProgressView("正在加载收藏")
-                    .tint(Color.accentDefault)
-            } else if masters.isEmpty {
-                DFEmptyState(icon: "heart", title: "暂无收藏",
-                             subtitle: errorMessage ?? "在法师主页点击关注后，会显示在这里")
-            } else {
-                ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 0) {
-                        ForEach(masters) { master in
-                            NavigationLink {
-                                MasterProfileView(masterId: master.id)
-                            } label: {
-                                HStack(spacing: 12) {
-                                    RemoteAvatar(urlString: master.avatar, size: 48)
+        VStack(spacing: 0) {
+            Picker("收藏分类", selection: $section) {
+                ForEach(Section.allCases) { s in
+                    Text(s.rawValue).tag(s)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, AppSpacing.lg)
+            .padding(.vertical, AppSpacing.sm)
 
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(master.dharmaName)
-                                            .font(.system(size: 14, weight: .bold))
-                                            .foregroundStyle(Color.textPrimary)
-                                        Text(master.templeName)
-                                            .font(.system(size: 12))
-                                            .foregroundStyle(Color.textTertiary)
+            Group {
+                if isLoading && isEmpty {
+                    ProgressView("正在加载收藏")
+                        .tint(Color.accentDefault)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if isEmpty {
+                    DFEmptyState(icon: emptyIcon, title: "暂无收藏",
+                                 subtitle: errorMessage ?? emptySubtitle)
+                } else {
+                    ScrollView(showsIndicators: false) {
+                        LazyVStack(spacing: 0) {
+                            switch section {
+                            case .masters:
+                                ForEach(masters) { master in
+                                    NavigationLink {
+                                        MasterProfileView(masterId: master.id)
+                                    } label: {
+                                        masterRow(master)
                                     }
-
-                                    Spacer()
-
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 12, weight: .semibold))
-                                        .foregroundStyle(Color.textTertiary)
+                                    .buttonStyle(.plain)
                                 }
-                                .padding(.horizontal, AppSpacing.lg)
-                                .padding(.vertical, 12)
-                                .overlay(alignment: .bottom) {
-                                    Rectangle()
-                                        .fill(Color.borderDivider)
-                                        .frame(height: 1)
-                                        .padding(.leading, AppSpacing.lg + 48 + 12)
+                            case .temples:
+                                ForEach(temples) { temple in
+                                    NavigationLink {
+                                        TempleDetailView(templeId: temple.id, templeName: temple.name)
+                                    } label: {
+                                        templeRow(temple)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                                .contentShape(Rectangle())
+                            case .products:
+                                ForEach(products) { product in
+                                    NavigationLink {
+                                        ShopProductDetailView(product: product)
+                                    } label: {
+                                        productRow(product)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
-                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -529,32 +546,140 @@ struct FavoritesView: View {
         .task { await load() }
     }
 
+    private var isEmpty: Bool {
+        switch section {
+        case .masters:   return masters.isEmpty
+        case .temples:   return temples.isEmpty
+        case .products:  return products.isEmpty
+        }
+    }
+
+    private var emptyIcon: String {
+        switch section {
+        case .masters:   return "heart"
+        case .temples:   return "building.2"
+        case .products:  return "bag"
+        }
+    }
+
+    private var emptySubtitle: String {
+        switch section {
+        case .masters:   return "在法师主页点击关注后，会显示在这里"
+        case .temples:   return "在寺院详情页点击收藏后，会显示在这里"
+        case .products:  return "在商品详情页点击收藏后，会显示在这里"
+        }
+    }
+
     private func load() async {
-        if masters.isEmpty { isLoading = true }
+        if masters.isEmpty && temples.isEmpty && products.isEmpty { isLoading = true }
         errorMessage = nil
         do {
-            let resp: FollowedMastersResponse = try await APIClient.shared.request(.communityMyFollowing)
-            let ids = resp.list
-            // 并行拉取法师详情，避免串行 N+1 过慢
-            let details = await withTaskGroup(of: (String, Master?).self) { group -> [Master] in
-                for id in ids {
-                    group.addTask {
-                        let master: Master? = try? await APIClient.shared.request(.masterById(id))
-                        return (id, master)
+            // 三类收藏并行加载
+            async let m: FollowedMastersResponse? = try? APIClient.shared.request(.communityMyFollowing)
+            async let t: TempleFavoritesResponse? = try? APIClient.shared.request(.templeFavorites)
+            async let pr: ProductFavoritesResponse? = try? APIClient.shared.request(.productFavorites)
+            let (mResp, tResp, prResp) = await (m, t, pr)
+
+            if let ids = mResp?.list {
+                let details = await withTaskGroup(of: (String, Master?).self) { group -> [Master] in
+                    for id in ids {
+                        group.addTask {
+                            let master: Master? = try? await APIClient.shared.request(.masterById(id))
+                            return (id, master)
+                        }
                     }
+                    var byId: [String: Master] = [:]
+                    for await (id, master) in group {
+                        if let master { byId[id] = master }
+                    }
+                    return ids.compactMap { byId[$0] }
                 }
-                var byId: [String: Master] = [:]
-                for await (id, master) in group {
-                    if let master { byId[id] = master }
-                }
-                return ids.compactMap { byId[$0] }
+                masters = details
             }
-            masters = details
+            temples = tResp?.list ?? []
+            products = prResp?.list ?? []
         } catch {
             if (error as? APIError)?.isCancellation == true || error is CancellationError { return }
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    // MARK: - 行视图
+    private func masterRow(_ master: Master) -> some View {
+        HStack(spacing: 12) {
+            RemoteAvatar(urlString: master.avatar, size: 48)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(master.dharmaName)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color.textPrimary)
+                Text(master.templeName)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.textTertiary)
+            }
+            Spacer()
+            chevron
+        }
+        .rowStyle()
+    }
+
+    private func templeRow(_ temple: Temple) -> some View {
+        HStack(spacing: 12) {
+            RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.2.fill")
+                .frame(width: 48, height: 48)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(temple.name)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color.textPrimary)
+                Text("\(temple.region) · \(temple.sect)")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.textTertiary)
+            }
+            Spacer()
+            chevron
+        }
+        .rowStyle()
+    }
+
+    private func productRow(_ product: ShopProduct) -> some View {
+        HStack(spacing: 12) {
+            RemoteImage(urlString: product.mainImage, placeholderIcon: "bag.fill")
+                .frame(width: 48, height: 48)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(product.name)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color.textPrimary)
+                Text("¥\(product.price, specifier: "%.2f")")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.brandDefault)
+            }
+            Spacer()
+            chevron
+        }
+        .rowStyle()
+    }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(Color.textTertiary)
+    }
+}
+
+private extension View {
+    func rowStyle() -> some View {
+        self
+            .padding(.horizontal, AppSpacing.lg)
+            .padding(.vertical, 12)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(Color.borderDivider)
+                    .frame(height: 1)
+                    .padding(.leading, AppSpacing.lg + 48 + 12)
+            }
+            .contentShape(Rectangle())
     }
 }
 

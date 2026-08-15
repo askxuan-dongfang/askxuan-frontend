@@ -44,6 +44,9 @@ private struct ProfileMenuItem {
 }
 
 struct ProfileView: View {
+    /// 从工作台「个人主页」push 进入时为 true（Tab 根页面为 false，无需返回）
+    var showsBackButton: Bool = false
+
     @StateObject private var viewModel = ProfileViewModel()
 
     private let menuItems: [ProfileMenuItem] = [
@@ -83,7 +86,8 @@ struct ProfileView: View {
         }
         .softScrollEdge(.bottom)
         .background(Color.bgPrimary)
-        .toolbar(.hidden, for: .navigationBar)
+        .toolbar(showsBackButton ? .visible : .hidden, for: .navigationBar)
+        .navigationTitle(showsBackButton ? "个人主页" : "")
         .task { await viewModel.load() }
         .refreshable { await viewModel.load() }
     }
