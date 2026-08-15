@@ -27,6 +27,10 @@ struct Master: Codable, Identifiable, Hashable {
     var consultFee: Double
     var consultValidHours: Int
     var consultResponseMinutes: Int
+    /// 管理方：temple=寺庙绑定 / platform=平台(野生)
+    var manageBy: String?
+    /// 大师服务标签（大师所提供，S001-S013）
+    var serviceTags: [MasterServiceTag]?
     /// 上下架状态（对齐 master-service ShelfStatus，on_shelf/off_shelf）
     var shelfStatus: String?
 
@@ -144,4 +148,11 @@ extension Master {
                avatar: "master-avatar-zhangzhishun", rating: 4.9, isOnline: false, startPrice: 518,
                shelfStatus: "on_shelf")
     ]
+}
+
+/// 大师服务标签
+struct MasterServiceTag: Codable, Hashable {
+    let serviceCode: String
+    let price: Double
+    let status: String?
 }

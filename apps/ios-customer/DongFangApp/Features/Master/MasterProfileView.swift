@@ -14,6 +14,11 @@ struct MasterProfileView: View {
     @EnvironmentObject private var authStore: AuthStore
     @Environment(\.dismiss) private var dismiss
     @State private var showBooking = false
+    @State private var selectedServiceCode: String?
+    @State private var directBookingDate = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+    @State private var isSubmittingDirectBooking = false
+    @State private var directBookingMessage = ""
+    @State private var showDirectBookingMessage = false
     @State private var showLoginPrompt = false
     @State private var paidConversation: ChatConversation?
     @State private var isResolvingConversation = false
@@ -264,6 +269,93 @@ struct MasterProfileView: View {
     }
 
     private var bookingPanel: some View {
+        Group {
+            if viewModel.master?.manageBy == "platform" {
+                directBookingPanel
+            } else {
+                templeServicePanel
+            }
+        }
+    }
+
+    /// 野生大师直约面板：大师服务标签 → 先付费咨询 → 预约服务
+    private var directBookingPanel: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.md) {
+            Text("大师服务标签")
+                .font(.cardTitle)
+                .foregroundStyle(Color.textPrimary)
+                .padding(.horizontal, AppSpacing.lg)
+                .padding(.top, AppSpacing.md)
+
+            if let tags = viewModel.master?.serviceTags, !tags.isEmpty {
+                ForEach(tags, id: \.self) { tag in
+                    serviceTagRow(tag)
+                }
+
+                DatePicker("预约日期", selection: $directBookingDate, in: Date()..., displayedComponents: .date)
+                    .padding(.horizontal, AppSpacing.lg)
+
+                Text("先完成付费咨询，再预约服务（咨询入口见底部按钮）")
+                    .font(.caption)
+                    .foregroundStyle(Color.textTertiary)
+                    .padding(.horizontal, AppSpacing.lg)
+
+                DFPrimaryButton(title: isSubmittingDirectBooking ? "提交中…" : "预约服务", icon: "calendar.badge.plus") {
+                    submitDirectBooking()
+                }
+                .disabled(isSubmittingDirectBooking || selectedServiceCode == nil)
+                .padding(.horizontal, AppSpacing.lg)
+                .padding(.bottom, AppSpacing.lg)
+            } else {
+                DFEmptyState(icon: "tag", title: "暂无服务标签", subtitle: "该大师暂未配置可预约服务")
+            }
+        }
+        .alert("预约提示", isPresented: $showDirectBookingMessage) {
+            Button("知道了", role: .cancel) {}
+        } message: {
+            Text(directBookingMessage)
+        }
+    }
+
+    private func serviceTagRow(_ tag: MasterServiceTag) -> some View {
+        let isSelected = selectedServiceCode == tag.serviceCode
+        let iconName = ServiceType.from(serviceCode: tag.serviceCode)?.iconName ?? "sparkles"
+        let title = ServiceType.from(serviceCode: tag.serviceCode)?.rawValue ?? tag.serviceCode
+        return Button {
+            selectedServiceCode = tag.serviceCode
+        } label: {
+            HStack(spacing: AppSpacing.md) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: AppRadius.md)
+                        .fill(Color.brandDefault.opacity(0.12))
+                    Image(systemName: iconName)
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.brandDefault)
+                }
+                .frame(width: 40, height: 40)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.textPrimary)
+                    Text(String(format: "¥%.2f", tag.price))
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.brandDefault)
+                }
+                Spacer()
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 18))
+                    .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
+            }
+            .padding(AppSpacing.md)
+            .background(Color.bgSecondary)
+            .cornerRadius(AppRadius.lg)
+            .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(isSelected ? Color.brandDefault : Color.borderDefault, lineWidth: 1))
+            .padding(.horizontal, AppSpacing.lg)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var templeServicePanel: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             Text("可预约服务")
                 .font(.cardTitle)
@@ -333,6 +425,28 @@ struct MasterProfileView: View {
                 .padding(.horizontal, AppSpacing.xl)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func submitDirectBooking() {
+        guard let master = viewModel.master, let code = selectedServiceCode else { return }
+        isSubmittingDirectBooking = true
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let request = DirectBookingRequest(
+            serviceCode: code,
+            bookingDate: formatter.string(from: directBookingDate),
+            requestId: UUID().uuidString,
+            note: nil)
+        Task {
+            defer { isSubmittingDirectBooking = false }
+            do {
+                let resp: DirectBookingResponse = try await APIClient.shared.request(.masterBooking(master.id, request))
+                directBookingMessage = "预约成功！单号 \(resp.id)，请等待法师确认（\(resp.paymentStatus)）"
+            } catch {
+                directBookingMessage = error.localizedDescription
+            }
+            showDirectBookingMessage = true
+        }
     }
 
     // MARK: - 底部操作栏

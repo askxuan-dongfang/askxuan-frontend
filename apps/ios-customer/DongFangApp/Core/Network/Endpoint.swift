@@ -113,6 +113,23 @@ struct FollowedMastersResponse: Decodable { let list: [String] }
 /// 收藏/取消收藏响应
 struct FavoriteResponse: Decodable { let favorited: Bool }
 
+/// 大师直约请求（先付费咨询后预约服务）
+struct DirectBookingRequest: Encodable {
+    let serviceCode: String
+    let bookingDate: String
+    let requestId: String
+    let note: String?
+}
+
+/// 大师直约响应
+struct DirectBookingResponse: Decodable {
+    let id: String
+    let status: String
+    let paymentStatus: String
+    let serviceFee: Double
+    let totalFee: Double
+}
+
 /// 收藏的寺院列表
 struct TempleFavoritesResponse: Decodable { let list: [Temple] }
 
@@ -150,7 +167,8 @@ enum Endpoint {
     case serviceTypes
 
     // MARK: - 法师
-    case masters(type: String?, templeId: String?, page: Int, size: Int)
+    case masters(type: String?, templeId: String?, manageBy: String?, page: Int, size: Int)
+    case masterBooking(String, DirectBookingRequest)
     case mastersByBelief(String, page: Int, size: Int)
     case masterById(String)
 
@@ -271,6 +289,7 @@ enum Endpoint {
         case .serviceTypes:             return "service-types"
         // 法师
         case .masters:                  return "masters"
+        case .masterBooking(let id, _): return "master-bookings/\(id)"
         case .mastersByBelief:          return "masters"
         case .masterById(let id):       return "masters/\(id)"
         // 预约（后端复数 bookings）
@@ -384,7 +403,7 @@ enum Endpoint {
              .aiSessionCreate, .aiSendMessage, .aiRetryMessage, .communityPostLike,
              .communityCommentCreate, .communityMasterFollow,
              .authLogin, .authRegister, .authRefresh, .authLogout, .authIMToken,
-             .templeFavorite, .productFavorite,
+             .templeFavorite, .productFavorite, .masterBooking,
              .addressCreate, .registerDeviceToken:
             return .POST
         case .updateBookingStatus, .shopOrderConfirm, .messageRead, .readAllMessages,
@@ -410,11 +429,12 @@ enum Endpoint {
             return [URLQueryItem(name: "beliefCode", value: code),
                     URLQueryItem(name: "page", value: "\(page)"),
                     URLQueryItem(name: "size", value: "\(size)")]
-        case .masters(let type, let templeId, let page, let size):
+        case .masters(let type, let templeId, let manageBy, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
                          URLQueryItem(name: "size", value: "\(size)")]
             if let type, !type.isEmpty { items.append(URLQueryItem(name: "type", value: type)) }
             if let templeId, !templeId.isEmpty { items.append(URLQueryItem(name: "templeId", value: templeId)) }
+            if let manageBy, !manageBy.isEmpty { items.append(URLQueryItem(name: "manageBy", value: manageBy)) }
             return items
         case .bookings(let userId, let status, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
@@ -536,6 +556,8 @@ enum Endpoint {
         case .communityPostLike, .communityPostUnlike, .communityMasterFollow, .communityMasterUnfollow,
              .templeFavorite, .productFavorite:
             return AnyEncodable([String: String]())
+        case .masterBooking(_, let req):
+            return AnyEncodable(req)
         case .communityCommentCreate(_, let req): return AnyEncodable(req)
         case .authLogin(let req):              return AnyEncodable(req)
         case .authRegister(let req):           return AnyEncodable(req)

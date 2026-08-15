@@ -387,8 +387,7 @@ struct TempleDetailView: View {
             }
         }
     }
-
-
+}
 
 #Preview {
     NavigationStack { TempleDetailView(templeId: "T001", templeName: "灵隐寺") }

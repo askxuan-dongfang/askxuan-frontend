@@ -66,7 +66,7 @@ final class MasterListViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         do {
-            async let masterRequest: PageResponse<Master> = apiClient.request(.masters(type: nil, templeId: nil, page: 1, size: 100))
+            async let masterRequest: PageResponse<Master> = apiClient.request(.masters(type: nil, templeId: nil, manageBy: "platform", page: 1, size: 100))
             async let beliefRequest: BeliefListResponse = apiClient.request(.beliefs)
             let (masterResponse, beliefResponse) = try await (masterRequest, beliefRequest)
             masters = masterResponse.list
