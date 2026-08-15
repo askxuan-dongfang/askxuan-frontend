@@ -36,18 +36,15 @@ async function loadDetail() {
   if (!isEdit.value) return
   loading.value = true
   try {
-    const res = await serviceApi.list({ page: 1, size: 100 })
-    const target = (res.list || []).find((s) => s.id === serviceId.value)
-    if (target) {
-      Object.assign(form, {
-        serviceName: target.serviceName,
-        templeCode: target.templeCode,
-        masterCode: target.masterCode,
-        price: target.price,
-        description: target.description,
-        status: target.status as 'on_shelf' | 'off_shelf'
-      })
-    }
+    const target = await serviceApi.detail(serviceId.value)
+    Object.assign(form, {
+      serviceName: target.serviceName,
+      templeCode: target.templeCode,
+      masterCode: target.masterCode,
+      price: target.price,
+      description: target.description,
+      status: target.status as 'on_shelf' | 'off_shelf'
+    })
   } finally {
     loading.value = false
   }

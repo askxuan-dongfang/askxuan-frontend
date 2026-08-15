@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 
@@ -13,6 +14,8 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     component: DefaultLayout,
     redirect: '/dashboard',
+    // RBAC：仅寺庙管理员（及平台超管）可进入本管理台
+    meta: { roles: ['temple_admin', 'platform_super'] },
     children: [
       {
         path: 'dashboard',
@@ -121,6 +124,13 @@ router.beforeEach((to) => {
   // 未登录跳登录
   if (!auth.isLogin) {
     return { path: '/login', query: { redirect: to.fullPath } }
+  }
+  // RBAC：JWT 解码 roles 与路由 meta.roles 取交集
+  const required = to.matched.flatMap((r) => (r.meta.roles as string[] | undefined) || [])
+  if (required.length && !required.some((role) => auth.roles.includes(role))) {
+    auth.logout()
+    ElMessage.error('当前账号无寺院管理台权限，请使用寺院管理员账号登录')
+    return { path: '/login', query: { redirect: to.fullPath, denied: '1' } }
   }
   return true
 })

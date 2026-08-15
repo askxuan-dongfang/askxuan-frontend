@@ -80,6 +80,44 @@ export function orderStatusType(status: string): 'success' | 'warning' | 'info' 
 }
 
 /**
+ * DIY 订单状态 → 中文标签（对齐后端 diy_order 枚举）
+ */
+export function diyOrderStatusLabel(status: string): string {
+  const map: Record<string, string> = {
+    pending_review: '待审核',
+    in_making: '制作中',
+    awaiting_blessing: '待加持',
+    blessing_in_progress: '加持中',
+    blessing_completed: '加持完成',
+    awaiting_shipment: '待发货',
+    shipped: '已发货',
+    completed: '已完成',
+    cancelled: '已取消',
+    in_return: '退换中'
+  }
+  return map[status] ?? status
+}
+
+/**
+ * DIY 订单状态 → Element Plus Tag 类型
+ */
+export function diyOrderStatusType(status: string): 'success' | 'warning' | 'info' | 'primary' | 'danger' {
+  const map: Record<string, 'success' | 'warning' | 'info' | 'primary' | 'danger'> = {
+    pending_review: 'warning',
+    in_making: 'primary',
+    awaiting_blessing: 'info',
+    blessing_in_progress: 'info',
+    blessing_completed: 'info',
+    awaiting_shipment: 'warning',
+    shipped: 'primary',
+    completed: 'success',
+    cancelled: 'danger',
+    in_return: 'warning'
+  }
+  return map[status] ?? 'info'
+}
+
+/**
  * 退货状态 → 中文标签
  */
 export function returnStatusLabel(status: string): string {

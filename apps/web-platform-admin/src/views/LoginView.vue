@@ -24,14 +24,12 @@
           <el-button type="primary" class="login__submit" :loading="loading" @click="onSubmit">登 录</el-button>
         </el-form-item>
       </el-form>
-
-      <p class="login__hint">演示账号：admin / 123456</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { User, Lock } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
@@ -43,7 +41,13 @@ const auth = useAuthStore()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
-const form = reactive({ account: 'admin', password: '123456' })
+const form = reactive({ account: '', password: '' })
+
+onMounted(() => {
+  if (route.query.denied === '1') {
+    ElMessage.warning('该账号没有本管理台权限，请使用对应角色账号登录')
+  }
+})
 
 const rules: FormRules = {
   account: [{ required: true, message: '请输入账号', trigger: 'blur' }],

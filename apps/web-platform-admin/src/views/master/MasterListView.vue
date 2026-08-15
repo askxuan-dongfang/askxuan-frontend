@@ -18,7 +18,8 @@
         <el-option label="佛教" value="佛教" />
         <el-option label="道教" value="道教" />
       </el-select>
-      <el-button type="primary" :icon="Search" @click="onSearch">查询</el-button>
+      <el-button type="primary" @click="router.push('/master/create')">+ 新增野生大师</el-button>
+            <el-button type="primary" :icon="Search" @click="onSearch">查询</el-button>
       <el-button :icon="RefreshLeft" @click="onReset">重置</el-button>
     </div>
 
@@ -102,6 +103,8 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
+const router = useRouter()
 import { ref, reactive, onMounted } from 'vue'
 import { Search, Refresh, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'

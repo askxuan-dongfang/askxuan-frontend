@@ -52,3 +52,24 @@ export function updateMasterConsultation(id: string, data: {
 }) {
   return client.put<Master>(`/admin/platform/masters/${id}/consultation`, data)
 }
+
+/** 平台创建野生大师请求 */
+export interface WildMasterCreateParams {
+  dharmaName: string
+  layName?: string
+  position?: string
+  beliefCode: string
+  sect: string
+  type: string
+  specialties?: string[]
+  avatar?: string
+  consultEnabled?: boolean
+  consultFee?: number
+  consultValidHours?: number
+  consultResponseMinutes?: number
+}
+
+/** 创建野生大师（无寺庙，平台管理） */
+export function createWildMaster(data: WildMasterCreateParams): Promise<{ id: string }> {
+  return client.post<{ id: string }>('/admin/platform/masters', data)
+}

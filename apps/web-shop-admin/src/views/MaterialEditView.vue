@@ -55,20 +55,17 @@ async function loadDetail() {
   if (!isEdit.value) return
   loading.value = true
   try {
-    const detail = await materialApi.list({ keyword: '', page: 1, size: 100 })
-    const target = (detail.list || []).find((m) => m.id === materialId.value)
-    if (target) {
-      Object.assign(form, {
-        name: target.name,
-        spec: target.spec,
-        unitPrice: target.unitPrice,
-        unit: target.unit,
-        category: target.category,
-        fiveElements: target.fiveElements || '',
-        image: target.image,
-        stock: target.stock
-      })
-    }
+    const target = await materialApi.detail(materialId.value)
+    Object.assign(form, {
+      name: target.name,
+      spec: target.spec,
+      unitPrice: target.unitPrice,
+      unit: target.unit,
+      category: target.category,
+      fiveElements: target.fiveElements || '',
+      image: target.image,
+      stock: target.stock
+    })
   } finally {
     loading.value = false
   }

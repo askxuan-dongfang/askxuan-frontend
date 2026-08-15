@@ -11,6 +11,11 @@ export function listMasters(params: {
   return client.get<PageResult<Master>>('/admin/temples/masters', { params })
 }
 
+/** 法师详情（id 为法师编码 code） */
+export function getMasterDetail(id: string): Promise<Master> {
+  return client.get<Master>(`/admin/temples/masters/${id}`)
+}
+
 export function createMaster(data: {
   dharmaName: string
   layName: string

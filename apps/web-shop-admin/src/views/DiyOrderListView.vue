@@ -4,7 +4,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import PageHeader from '@/components/PageHeader.vue'
 import { diyOrderApi, type DiyOrderListParams } from '@/api/diyOrder'
-import { formatMoney } from '@/utils/format'
+import { formatMoney , diyOrderStatusLabel, diyOrderStatusType } from '@/utils/format'
 import type { DiyOrder } from '@/types'
 
 const router = useRouter()
@@ -19,13 +19,16 @@ const query = reactive<DiyOrderListParams>({
 })
 
 const statusOptions = [
-  { value: 'pending_payment', label: '待付款' },
-  { value: 'paid', label: '已付款' },
-  { value: 'in_review', label: '待审核' },
-  { value: 'making', label: '制作中' },
+  { value: 'pending_review', label: '待审核' },
+  { value: 'in_making', label: '制作中' },
+  { value: 'awaiting_blessing', label: '待加持' },
+  { value: 'blessing_in_progress', label: '加持中' },
+  { value: 'blessing_completed', label: '加持完成' },
+  { value: 'awaiting_shipment', label: '待发货' },
   { value: 'shipped', label: '已发货' },
   { value: 'completed', label: '已完成' },
-  { value: 'cancelled', label: '已取消' }
+  { value: 'cancelled', label: '已取消' },
+  { value: 'in_return', label: '退换中' }
 ]
 
 async function loadList() {
@@ -105,7 +108,11 @@ onMounted(() => {
             <span class="price">{{ formatMoney(row.totalFee) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" prop="status" width="120" />
+        <el-table-column label="状态" width="120">
+          <template #default="{ row }">
+            <el-tag :type="diyOrderStatusType(row.status)" effect="light">{{ diyOrderStatusLabel(row.status) }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="下单时间" prop="createTime" width="180" />
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">

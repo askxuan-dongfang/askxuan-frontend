@@ -23,6 +23,10 @@ export const serviceApi = {
   list(params: BlessingServiceListParams = {}): Promise<Page<BlessingService>> {
     return client.get<Page<BlessingService>>('/admin/diy/blessing-services', { params })
   },
+  /** 祈福服务详情 */
+  detail(id: number): Promise<BlessingService> {
+    return client.get<BlessingService>(`/admin/diy/blessing-services/${id}`)
+  },
   /** 创建祈福服务 */
   create(data: BlessingServiceSaveParams): Promise<{ id: number }> {
     return client.post<{ id: number }>('/admin/diy/blessing-services', data)

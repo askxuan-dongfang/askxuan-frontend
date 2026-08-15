@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import client from '@/api/client'
 import { authApi } from '@/api/auth'
+import { jwtRoles, jwtClientId } from '@/utils/jwt'
 import type { AdminLoginParams, LoginResult, UserInfo } from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -16,6 +17,10 @@ export const useAuthStore = defineStore('auth', () => {
   // ===== Getters =====
   const isLoggedIn = computed(() => !!token.value)
   const nickname = computed(() => userInfo.value?.nickname || '管理员')
+  /** 从 JWT payload 解码出的角色列表（RBAC 守卫用） */
+  const roles = computed(() => jwtRoles(token.value))
+  /** 从 JWT payload 解码出的端标识 */
+  const clientId = computed(() => jwtClientId(token.value))
 
   // ===== Actions =====
   /**
@@ -53,6 +58,8 @@ export const useAuthStore = defineStore('auth', () => {
     userInfo,
     isLoggedIn,
     nickname,
+    roles,
+    clientId,
     login,
     logout
   }

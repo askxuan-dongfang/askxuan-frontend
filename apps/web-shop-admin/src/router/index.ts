@@ -1,5 +1,6 @@
 // 路由定义与守卫 - P04 商城管理台（17 条路由）
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 
 const routes: RouteRecordRaw[] = [
@@ -13,6 +14,8 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     component: () => import('@/layouts/DefaultLayout.vue'),
     redirect: '/dashboard',
+    // RBAC：仅商城运营（及平台超管）可进入本管理台
+    meta: { roles: ['shop_admin', 'platform_super'] },
     children: [
       // 1. 工作台
       {
@@ -160,6 +163,15 @@ router.beforeEach((to, _from, next) => {
 
   if (!auth.isLoggedIn) {
     next({ path: '/login', query: { redirect: to.fullPath } })
+    return
+  }
+
+  // RBAC：JWT 解码 roles 与路由 meta.roles 取交集
+  const required = to.matched.flatMap((r) => (r.meta.roles as string[] | undefined) || [])
+  if (required.length && !required.some((role) => auth.roles.includes(role))) {
+    auth.logout()
+    ElMessage.error('当前账号无商城管理台权限，请使用商城管理员账号登录')
+    next({ path: '/login', query: { redirect: to.fullPath, denied: '1' } })
     return
   }
 

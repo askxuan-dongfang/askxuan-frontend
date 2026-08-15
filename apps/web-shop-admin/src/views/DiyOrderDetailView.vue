@@ -113,22 +113,22 @@ onMounted(() => {
         <el-button @click="router.push('/diy-orders')">返回列表</el-button>
         <template v-if="detail">
           <el-button
-            v-if="detail.status === 'in_review'"
+            v-if="detail.status === 'pending_review'"
             type="success"
             @click="handleReview('approve')"
           >通过审核</el-button>
           <el-button
-            v-if="detail.status === 'in_review'"
+            v-if="detail.status === 'pending_review'"
             type="danger"
             @click="handleReview('reject')"
           >拒绝</el-button>
           <el-button
-            v-if="detail.status === 'making'"
+            v-if="detail.status === 'in_making'"
             type="warning"
             @click="handleMakeComplete"
           >制作完成</el-button>
           <el-button
-            v-if="detail.status === 'paid' || detail.status === 'approved'"
+            v-if="detail.status === 'awaiting_shipment' || detail.status === 'in_return'"
             type="primary"
             @click="openShipDialog"
           >

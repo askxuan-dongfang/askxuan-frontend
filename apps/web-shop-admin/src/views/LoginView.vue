@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 商城运营登录页 - 禅意暗色背景 + 居中玻璃态卡片
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
@@ -13,9 +13,15 @@ const auth = useAuthStore()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 const form = reactive({
-  account: 'admin',
-  password: '123456',
+  account: '',
+  password: '',
   remember: true
+})
+
+onMounted(() => {
+  if (route.query.denied === '1') {
+    ElMessage.warning('该账号没有本管理台权限，请使用对应角色账号登录')
+  }
 })
 
 const rules: FormRules = {
@@ -99,7 +105,7 @@ async function handleLogin() {
           <a href="#">忘记密码？</a>
         </div>
 
-        <div class="login-tip">默认账号：admin / 123456</div>
+        <div class="login-tip">默认账号：shop_admin / 123456</div>
       </el-form>
     </div>
   </div>

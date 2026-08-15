@@ -5,7 +5,7 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { ArrowLeft, Check, Close } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
-import { listMasters, createMaster, updateMaster } from '@/api/master'
+import { getMasterDetail, createMaster, updateMaster } from '@/api/master'
 import { listBeliefs, type BeliefOption } from '@/api/taxonomy'
 import { useAuthStore } from '@/stores/auth'
 import type { Master } from '@/types'
@@ -48,13 +48,7 @@ async function loadMaster() {
   if (!masterId.value) return
   loading.value = true
   try {
-    const r = await listMasters({ templeId: auth.templeId, page: 1, size: 200 })
-    const m: Master | undefined = (r.list || []).find((x) => x.id === masterId.value)
-    if (!m) {
-      ElMessage.error('未找到该法师')
-      router.back()
-      return
-    }
+    const m: Master = await getMasterDetail(masterId.value)
     form.dharmaName = m.dharmaName
     form.layName = m.layName
     form.position = m.position

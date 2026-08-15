@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { ArrowLeft, Check, Plus, Delete } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
-import { listServiceTypes, listServices, createService, updateService } from '@/api/service'
+import { listServiceTypes, listServices, getServiceDetail, createService, updateService } from '@/api/service'
 import { listIntentions, type IntentionOption } from '@/api/taxonomy'
 import type { ServiceTypeOption, TempleService, TempleServiceSlot } from '@/types'
 
@@ -54,13 +54,7 @@ async function loadService() {
   if (!serviceId.value) return
   loading.value = true
   try {
-    const r = await listServices()
-    const s: TempleService | undefined = (r.list || []).find((x) => x.id === Number(serviceId.value))
-    if (!s) {
-      ElMessage.error('未找到该服务')
-      router.back()
-      return
-    }
+    const s: TempleService = await getServiceDetail(Number(serviceId.value))
     form.serviceCode = s.serviceCode
     form.price = s.price
     form.timeSlots = s.timeSlots || []

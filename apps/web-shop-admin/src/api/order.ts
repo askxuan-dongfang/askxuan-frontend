@@ -26,6 +26,10 @@ export const orderApi = {
   list(params: OrderListParams = {}): Promise<Page<ShopOrder>> {
     return client.get<Page<ShopOrder>>('/admin/orders', { params })
   },
+  /** 经营报表 */
+  report(): Promise<OrderReport> {
+    return client.get<OrderReport>('/admin/orders/report')
+  },
   /** 订单详情 */
   detail(id: number): Promise<ShopOrder> {
     return client.get<ShopOrder>(`/admin/orders/${id}`)
@@ -38,6 +42,10 @@ export const orderApi = {
   returnList(params: ReturnListParams = {}): Promise<Page<ReturnOrder>> {
     return client.get<Page<ReturnOrder>>('/admin/orders/returns', { params })
   },
+  /** 退货详情 */
+  returnDetail(id: number): Promise<ReturnOrder> {
+    return client.get<ReturnOrder>(`/admin/orders/returns/${id}`)
+  },
   /** 退货审核 */
   returnReview(id: number, action: 'approve' | 'reject', reason?: string): Promise<ReturnOrder> {
     return client.put<ReturnOrder>(`/admin/orders/returns/${id}/review`, { action, reason })
@@ -46,4 +54,15 @@ export const orderApi = {
   returnRefund(id: number, amount: number): Promise<ReturnOrder> {
     return client.put<ReturnOrder>(`/admin/orders/returns/${id}/refund`, { amount })
   }
+}
+
+/** 商城经营报表（真实聚合） */
+export interface OrderReport {
+  todayOrders: number
+  todaySales: number
+  pendingShip: number
+  totalOrders: number
+  totalSales: number
+  trend: { date: string; sales: number; orders: number }[]
+  topProducts: { productId: number; productName: string; sales: number; orderCount: number }[]
 }

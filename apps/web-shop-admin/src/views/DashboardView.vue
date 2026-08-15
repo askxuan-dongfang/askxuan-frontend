@@ -5,6 +5,7 @@ import * as echarts from 'echarts'
 import { useRouter } from 'vue-router'
 import StatCard from '@/components/StatCard.vue'
 import { orderApi } from '@/api/order'
+import type { OrderReport } from '@/api/order'
 import { productApi } from '@/api/product'
 import { formatMoney, orderStatusLabel, orderStatusType } from '@/utils/format'
 import type { ShopOrder } from '@/types'
@@ -23,20 +24,31 @@ const recentOrders = ref<ShopOrder[]>([])
 const trendChartRef = ref<HTMLElement>()
 let trendChart: echarts.ECharts | null = null
 
-function initTrendChart() {
-  if (!trendChartRef.value) return
-  trendChart = echarts.init(trendChartRef.value)
+function buildTrendData(report: OrderReport | null) {
   const today = new Date()
+  const map = new Map<string, { sales: number; orders: number }>()
+  for (const t of report?.trend || []) {
+    map.set(t.date, { sales: t.sales, orders: t.orders })
+  }
   const dates: string[] = []
   const sales: number[] = []
   const orders: number[] = []
   for (let i = 6; i >= 0; i--) {
     const d = new Date(today)
     d.setDate(today.getDate() - i)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     dates.push(`${d.getMonth() + 1}/${d.getDate()}`)
-    sales.push(Math.round(2000 + Math.random() * 3000))
-    orders.push(Math.round(15 + Math.random() * 20))
+    const point = map.get(key)
+    sales.push(point?.sales || 0)
+    orders.push(point?.orders || 0)
   }
+  return { dates, sales, orders }
+}
+
+function initTrendChart() {
+  if (!trendChartRef.value) return
+  trendChart = echarts.init(trendChartRef.value)
+  const { dates, sales, orders } = buildTrendData(null)
   trendChart.setOption({
     tooltip: { trigger: 'axis' },
     legend: { data: ['销售额', '订单数'], textStyle: { color: '#6A5A4A' } },
@@ -100,14 +112,25 @@ function handleResize() {
 
 async function loadDashboard() {
   try {
+    const report = await orderApi.report()
+    stats.value[0].value = report.todayOrders
+    stats.value[0].change = '今日'
+    stats.value[1].value = formatMoney(report.todaySales)
+    stats.value[1].change = '今日'
+    stats.value[2].value = report.pendingShip
+    // 趋势图按真实数据重绘
+    const { dates, sales, orders } = buildTrendData(report)
+    trendChart?.setOption({
+      xAxis: { data: dates },
+      series: [{ data: sales }, { data: orders }]
+    })
+  } catch {
+    // 报表加载失败时保持 0 展示，避免误导
+  }
+
+  try {
     const list = await orderApi.list({ page: 1, size: 5 })
     recentOrders.value = list.list || []
-    // 简单汇总
-    const todayStr = new Date().toISOString().slice(0, 10)
-    const todayOrders = (list.list || []).filter((o) => o.createTime?.startsWith(todayStr))
-    stats.value[0].value = todayOrders.length
-    stats.value[1].value = formatMoney(todayOrders.reduce((s, o) => s + o.payAmount, 0))
-    stats.value[2].value = (list.list || []).filter((o) => o.status === 'paid').length
   } catch {
     recentOrders.value = []
   }

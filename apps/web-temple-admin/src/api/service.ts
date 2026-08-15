@@ -13,6 +13,11 @@ export function listServices(): Promise<TempleServiceListResp> {
   return client.get<TempleServiceListResp>('/admin/temples/services')
 }
 
+/** 寺院服务详情 */
+export function getServiceDetail(id: number): Promise<TempleService> {
+  return client.get<TempleService>(`/admin/temples/services/${id}`)
+}
+
 export function createService(data: {
   serviceCode: string
   price: number

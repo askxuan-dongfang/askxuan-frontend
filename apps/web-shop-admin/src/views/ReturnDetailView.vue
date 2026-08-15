@@ -23,9 +23,7 @@ const refundAmount = ref(0)
 async function loadDetail() {
   loading.value = true
   try {
-    // 后端未提供单独的退货详情接口，从列表中查找
-    const res = await orderApi.returnList({ page: 1, size: 200 })
-    detail.value = (res.list || []).find((r) => r.id === returnId.value) || null
+    detail.value = await orderApi.returnDetail(returnId.value)
     if (detail.value) {
       refundAmount.value = detail.value.refundAmount
     }

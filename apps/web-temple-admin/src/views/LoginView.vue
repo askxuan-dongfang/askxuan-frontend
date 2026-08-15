@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { User, Lock, InfoFilled } from '@element-plus/icons-vue'
@@ -11,7 +11,13 @@ const auth = useAuthStore()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
-const form = reactive({ account: 'lingyin_admin', password: '123456' })
+const form = reactive({ account: '', password: '' })
+
+onMounted(() => {
+  if (route.query.denied === '1') {
+    ElMessage.warning('该账号没有本管理台权限，请使用对应角色账号登录')
+  }
+})
 
 const rules: FormRules = {
   account: [{ required: true, message: '请输入账号', trigger: 'blur' }],
@@ -86,7 +92,6 @@ async function handleLogin() {
 
       <div class="login-tip">
         <el-icon><InfoFilled /></el-icon>
-        演示账号：<b>lingyin_admin</b> / 密码：<b>123456</b>
       </div>
     </div>
     <div class="login-footer">© 问玄东方 · 寺院管理台 P02</div>

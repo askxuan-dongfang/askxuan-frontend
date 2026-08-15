@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { adminLogin } from '@/api/auth'
+import { jwtRoles, jwtClientId } from '@/utils/jwt'
 import type { UserInfo } from '@/types'
 
 const TOKEN_KEY = 'df_temple_admin_token'
@@ -17,6 +18,10 @@ export const useAuthStore = defineStore('auth', () => {
   const templeName = ref<string>(localStorage.getItem(TEMPLE_NAME_KEY) || '')
 
   const isLogin = computed(() => !!token.value)
+  /** 从 JWT payload 解码出的角色列表（RBAC 守卫用） */
+  const roles = computed(() => jwtRoles(token.value))
+  /** 从 JWT payload 解码出的端标识 */
+  const clientId = computed(() => jwtClientId(token.value))
 
   function loadUser(): UserInfo | null {
     try {
@@ -73,6 +78,8 @@ export const useAuthStore = defineStore('auth', () => {
     templeId,
     templeName,
     isLogin,
+    roles,
+    clientId,
     login,
     logout,
     setTemple

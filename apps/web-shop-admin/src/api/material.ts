@@ -27,6 +27,10 @@ export const materialApi = {
   list(params: MaterialListParams = {}): Promise<Page<Material>> {
     return client.get<Page<Material>>('/admin/diy/materials', { params })
   },
+  /** 材料详情 */
+  detail(id: number): Promise<Material> {
+    return client.get<Material>(`/admin/diy/materials/${id}`)
+  },
   /** 创建材料 */
   create(data: MaterialSaveParams): Promise<{ id: number }> {
     return client.post<{ id: number }>('/admin/diy/materials', data)

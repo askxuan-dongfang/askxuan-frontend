@@ -1,5 +1,6 @@
 // 路由配置 - 23 条路由 + 守卫
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 
 const Layout = () => import('@/layouts/DefaultLayout.vue')
@@ -15,6 +16,8 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     component: Layout,
     redirect: '/dashboard',
+    // RBAC：仅平台超管/平台运营可进入本管理台
+    meta: { roles: ['platform_super', 'platform_service'] },
     children: [
       // 概览
       {
@@ -54,6 +57,12 @@ const routes: RouteRecordRaw[] = [
         name: 'MasterReview',
         component: () => import('@/views/master/MasterReviewView.vue'),
         meta: { title: '法师审核', parent: '法师管理' }
+      },
+      {
+        path: 'master/create',
+        name: 'MasterCreate',
+        component: () => import('@/views/master/MasterCreateView.vue'),
+        meta: { title: '新增野生大师', parent: '法师管理' }
       },
       // 用户管理
       {
@@ -193,9 +202,17 @@ router.beforeEach((to, _from, next) => {
   }
   if (!auth.isLogin) {
     next({ path: '/login', query: { redirect: to.fullPath } })
-  } else {
-    next()
+    return
   }
+  // RBAC：JWT 解码 roles 与路由 meta.roles 取交集
+  const required = to.matched.flatMap((r) => (r.meta.roles as string[] | undefined) || [])
+  if (required.length && !required.some((role) => auth.roles.includes(role))) {
+    auth.logout()
+    ElMessage.error('当前账号无平台管理台权限，请使用平台管理员账号登录')
+    next({ path: '/login', query: { redirect: to.fullPath, denied: '1' } })
+    return
+  }
+  next()
 })
 
 export default router

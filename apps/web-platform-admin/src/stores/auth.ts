@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { adminLogin, type AdminLoginParams } from '@/api/auth'
+import { jwtRoles, jwtClientId } from '@/utils/jwt'
 import type { UserInfo } from '@/types'
 
 const TOKEN_KEY = 'df_platform_admin_token'
@@ -23,6 +24,10 @@ export const useAuthStore = defineStore('auth', () => {
   )
 
   const isLogin = computed(() => !!token.value)
+  /** 从 JWT payload 解码出的角色列表（RBAC 守卫用） */
+  const roles = computed(() => jwtRoles(token.value))
+  /** 从 JWT payload 解码出的端标识 */
+  const clientId = computed(() => jwtClientId(token.value))
 
   async function login(params: AdminLoginParams) {
     const res = await adminLogin(params)
@@ -44,5 +49,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(USER_KEY)
   }
 
-  return { token, refreshToken, userInfo, isLogin, login, logout }
+  return { token, refreshToken, userInfo, isLogin, roles, clientId, login, logout }
 })
