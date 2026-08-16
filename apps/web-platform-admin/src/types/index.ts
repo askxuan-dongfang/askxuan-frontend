@@ -188,6 +188,14 @@ export interface Master {
   consultResponseMinutes: number
   /** temple=寺庙绑定 / platform=平台(野生) */
   manageBy?: string
+  /** 大师服务标签（可提供服务，S001-S013） */
+  serviceTags?: MasterServiceTagItem[]
+}
+
+export interface MasterServiceTagItem {
+  serviceCode: string
+  price: number
+  status?: string
 }
 
 export interface MasterAudit {

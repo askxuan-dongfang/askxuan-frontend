@@ -52,6 +52,14 @@
             <el-tag v-for="s in row.specialties" :key="s" size="small" effect="plain" style="margin-right: 4px">{{ s }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="可提供服务" min-width="150">
+          <template #default="{ row }">
+            <el-tag v-for="t in row.serviceTags || []" :key="t.serviceCode" size="small" effect="plain" style="margin-right: 4px">
+              {{ serviceNameMap[t.serviceCode] || t.serviceCode }} ¥{{ t.price }}
+            </el-tag>
+            <span v-if="!(row.serviceTags || []).length" class="master-cell__id">未配置</span>
+          </template>
+        </el-table-column>
         <el-table-column label="评分" width="80">
           <template #default="{ row }"><span class="star">★ {{ row.rating?.toFixed(1) }}</span></template>
         </el-table-column>
@@ -112,12 +120,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
-import { getMasterList, updateMasterStatus, updateMasterConsultation } from '@/api/master'
+import { getMasterList, updateMasterStatus, updateMasterConsultation, getServiceTypes } from '@/api/master'
 import { taxonomyApi, type BeliefProfile } from '@/api/taxonomy'
 import type { Master } from '@/types'
 
 const beliefs = ref<BeliefProfile[]>([])
 const sects = ref<string[]>([])
+const serviceNameMap = ref<Record<string, string>>({})
 const loading = ref(false)
 const list = ref<Master[]>([])
 const total = ref(0)
@@ -182,8 +191,12 @@ async function saveConsult() {
 }
 
 onMounted(async () => {
-  const response = await taxonomyApi.beliefs()
-  beliefs.value = response.list || []
+  const [beliefResp, catalog] = await Promise.all([
+    taxonomyApi.beliefs(),
+    getServiceTypes().catch(() => ({ list: [] }))
+  ])
+  beliefs.value = beliefResp.list || []
+  serviceNameMap.value = Object.fromEntries((catalog.list || []).map((s) => [s.code, s.name]))
   await loadData()
 })
 </script>

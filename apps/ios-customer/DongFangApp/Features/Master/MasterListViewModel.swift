@@ -19,6 +19,7 @@ final class MasterListViewModel: ObservableObject {
     @Published var selectedTemple: String = "全部"         // 左侧：所属寺院
     @Published var selectedLevel: String = "全部"          // 左侧：修为等级
     @Published var selectedSpecialty: String = "全部"      // 左侧：擅长领域
+    @Published var selectedService: String = "全部"        // 左侧：可提供服务（大师标签 S001-S013）
 
     @Published var beliefOptions: [BeliefFilterOption] = []
 
@@ -26,7 +27,8 @@ final class MasterListViewModel: ObservableObject {
         [
             ("所属寺院", ["全部"] + unique(masters.map(\.templeName))),
             ("职位", ["全部"] + unique(masters.map(\.position))),
-            ("擅长领域", ["全部"] + unique(masters.flatMap(\.specialties)))
+            ("擅长领域", ["全部"] + unique(masters.flatMap(\.specialties))),
+            ("可提供服务", ["全部"] + ServiceType.allCases.map(\.rawValue))
         ]
     }
 
@@ -41,7 +43,8 @@ final class MasterListViewModel: ObservableObject {
             (selectedBeliefCode.isEmpty || m.beliefCode == selectedBeliefCode) &&
             matchTemple(m, selectedTemple) &&
             matchLevel(m, selectedLevel) &&
-            matchSpecialty(m, selectedSpecialty)
+            matchSpecialty(m, selectedSpecialty) &&
+            matchService(m, selectedService)
         }
     }
 
@@ -62,11 +65,18 @@ final class MasterListViewModel: ObservableObject {
         return m.specialties.contains { $0.contains(specialty) || specialty.contains($0) }
     }
 
+    /// 按可提供服务筛选：大师服务标签（master_service_tag）包含所选服务编码
+    private func matchService(_ m: Master, _ serviceName: String) -> Bool {
+        if serviceName == "全部" { return true }
+        guard let code = ServiceType.allCases.first(where: { $0.rawValue == serviceName })?.code else { return true }
+        return (m.serviceTags ?? []).contains { $0.serviceCode == code }
+    }
+
     func load() async {
         isLoading = true
         errorMessage = nil
         do {
-            async let masterRequest: PageResponse<Master> = apiClient.request(.masters(type: nil, templeId: nil, manageBy: "platform", page: 1, size: 100))
+            async let masterRequest: PageResponse<Master> = apiClient.request(.masters(type: nil, templeId: nil, manageBy: "platform", serviceCode: nil, page: 1, size: 100))
             async let beliefRequest: BeliefListResponse = apiClient.request(.beliefs)
             let (masterResponse, beliefResponse) = try await (masterRequest, beliefRequest)
             masters = masterResponse.list

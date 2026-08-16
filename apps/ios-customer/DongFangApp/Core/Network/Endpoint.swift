@@ -167,7 +167,7 @@ enum Endpoint {
     case serviceTypes
 
     // MARK: - 法师
-    case masters(type: String?, templeId: String?, manageBy: String?, page: Int, size: Int)
+    case masters(type: String?, templeId: String?, manageBy: String?, serviceCode: String?, page: Int, size: Int)
     case masterBooking(String, DirectBookingRequest)
     case mastersByBelief(String, page: Int, size: Int)
     case masterById(String)
@@ -429,12 +429,13 @@ enum Endpoint {
             return [URLQueryItem(name: "beliefCode", value: code),
                     URLQueryItem(name: "page", value: "\(page)"),
                     URLQueryItem(name: "size", value: "\(size)")]
-        case .masters(let type, let templeId, let manageBy, let page, let size):
+        case .masters(let type, let templeId, let manageBy, let serviceCode, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
                          URLQueryItem(name: "size", value: "\(size)")]
             if let type, !type.isEmpty { items.append(URLQueryItem(name: "type", value: type)) }
             if let templeId, !templeId.isEmpty { items.append(URLQueryItem(name: "templeId", value: templeId)) }
             if let manageBy, !manageBy.isEmpty { items.append(URLQueryItem(name: "manageBy", value: manageBy)) }
+            if let serviceCode, !serviceCode.isEmpty { items.append(URLQueryItem(name: "serviceCode", value: serviceCode)) }
             return items
         case .bookings(let userId, let status, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),

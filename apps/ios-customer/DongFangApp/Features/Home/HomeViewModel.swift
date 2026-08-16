@@ -92,7 +92,7 @@ final class HomeViewModel: ObservableObject {
     private func fetchMasters() async -> Result<[Master], Error> {
         do {
             let resp: PageResponse<Master> = try await apiClient.request(
-                .masters(type: nil, templeId: nil, manageBy: "platform", page: 1, size: 6))
+                .masters(type: nil, templeId: nil, manageBy: "platform", serviceCode: nil, page: 1, size: 6))
             return .success(resp.list)
         } catch {
             return .failure(error)

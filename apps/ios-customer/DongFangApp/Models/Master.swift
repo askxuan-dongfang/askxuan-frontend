@@ -38,6 +38,7 @@ struct Master: Codable, Identifiable, Hashable {
         case id, dharmaName, layName, templeId, templeName, position, beliefCode, sect, type
         case authStatus, specialties, avatar, rating, isOnline, startPrice, shelfStatus
         case consultEnabled, consultFee, consultValidHours, consultResponseMinutes
+        case manageBy, serviceTags
     }
 
     init(id: String, dharmaName: String, layName: String, templeId: String,

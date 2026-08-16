@@ -66,7 +66,7 @@ final class TempleDetailViewModel: ObservableObject {
     private func fetchMasters(templeId: String) async -> Result<[Master], Error> {
         do {
             let resp: PageResponse<Master> = try await apiClient.request(
-                .masters(type: nil, templeId: templeId, manageBy: "temple", page: 1, size: 20))
+                .masters(type: nil, templeId: templeId, manageBy: "temple", serviceCode: nil, page: 1, size: 20))
             return .success(resp.list)
         } catch {
             return .failure(error)

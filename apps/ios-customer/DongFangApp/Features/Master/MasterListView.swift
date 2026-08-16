@@ -272,6 +272,7 @@ struct MasterListView: View {
         case "所属寺院": return viewModel.selectedTemple
         case "职位": return viewModel.selectedLevel
         case "擅长领域": return viewModel.selectedSpecialty
+        case "可提供服务": return viewModel.selectedService
         default: return "全部"
         }
     }
@@ -281,6 +282,7 @@ struct MasterListView: View {
         case "所属寺院":   viewModel.selectedTemple = value
         case "职位":       viewModel.selectedLevel = value
         case "擅长领域":   viewModel.selectedSpecialty = value
+        case "可提供服务": viewModel.selectedService = value
         default: break
         }
     }

@@ -86,3 +86,36 @@ export function updatePlatformMaster(
 ): Promise<Master> {
   return client.put<Master>(`/admin/platform/masters/${id}`, data)
 }
+
+/** 服务目录 S001-S013（大师「可提供服务」选项） */
+export interface ServiceTypeOption {
+  code: string
+  name: string
+  type?: string
+  priceRange?: string
+}
+
+/** 大师服务标签项 */
+export interface MasterServiceTagItem {
+  serviceCode: string
+  price: number
+  status?: string
+}
+
+/** 服务目录（公共接口 /service-types） */
+export function getServiceTypes(): Promise<{ list: ServiceTypeOption[] }> {
+  return client.get<{ list: ServiceTypeOption[] }>('/service-types')
+}
+
+/** 平台查看大师服务标签（可提供服务） */
+export function getPlatformMasterServiceTags(id: string): Promise<{ list: MasterServiceTagItem[] }> {
+  return client.get<{ list: MasterServiceTagItem[] }>(`/admin/platform/masters/${id}/service-tags`)
+}
+
+/** 平台配置大师服务标签（覆盖式，S001-S013 目录） */
+export function updatePlatformMasterServiceTags(
+  id: string,
+  tags: MasterServiceTagItem[]
+): Promise<{ list: MasterServiceTagItem[] }> {
+  return client.put<{ list: MasterServiceTagItem[] }>(`/admin/platform/masters/${id}/service-tags`, { tags })
+}
