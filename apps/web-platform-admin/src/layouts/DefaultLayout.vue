@@ -34,6 +34,7 @@
             </el-menu-item>
           </el-sub-menu>
         </el-menu>
+        <div v-if="!collapsed" class="layout__version">平台管理台 v2.1 · 2026-08-16</div>
       </el-scrollbar>
     </el-aside>
 
@@ -206,6 +207,15 @@ async function onCommand(cmd: string) {
 }
 .layout__menu-scroll {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.layout__version {
+  padding: 12px 18px;
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  border-top: 1px solid var(--color-border-divider);
+  white-space: nowrap;
 }
 .layout__header {
   display: flex;

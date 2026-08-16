@@ -143,6 +143,10 @@ async function loadData() {
     list.value = res.list || []
     sects.value = [...new Set(list.value.map((item) => item.sect).filter(Boolean))]
     total.value = res.total || 0
+  } catch (e: any) {
+    list.value = []
+    total.value = 0
+    ElMessage.error(e?.message || '法师列表加载失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -191,12 +195,17 @@ async function saveConsult() {
 }
 
 onMounted(async () => {
-  const [beliefResp, catalog] = await Promise.all([
-    taxonomyApi.beliefs(),
-    getServiceTypes().catch(() => ({ list: [] }))
-  ])
-  beliefs.value = beliefResp.list || []
-  serviceNameMap.value = Object.fromEntries((catalog.list || []).map((s) => [s.code, s.name]))
+  // 筛选器与目录加载失败不阻断法师列表主数据（避免列表页静默空白）
+  try {
+    const [beliefResp, catalog] = await Promise.all([
+      taxonomyApi.beliefs().catch(() => ({ list: [] })),
+      getServiceTypes().catch(() => ({ list: [] }))
+    ])
+    beliefs.value = beliefResp.list || []
+    serviceNameMap.value = Object.fromEntries((catalog.list || []).map((s) => [s.code, s.name]))
+  } catch {
+    // ignore
+  }
   await loadData()
 })
 </script>
