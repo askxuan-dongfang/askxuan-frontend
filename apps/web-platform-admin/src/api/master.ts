@@ -73,3 +73,16 @@ export interface WildMasterCreateParams {
 export function createWildMaster(data: WildMasterCreateParams): Promise<{ id: string }> {
   return client.post<{ id: string }>('/admin/platform/masters', data)
 }
+
+/** 平台法师详情（含野生大师与寺庙绑定大师） */
+export function getPlatformMasterDetail(id: string): Promise<Master> {
+  return client.get<Master>(`/admin/platform/masters/${id}`)
+}
+
+/** 平台编辑法师资料（野生大师唯一管理入口） */
+export function updatePlatformMaster(
+  id: string,
+  data: Partial<WildMasterCreateParams>
+): Promise<Master> {
+  return client.put<Master>(`/admin/platform/masters/${id}`, data)
+}

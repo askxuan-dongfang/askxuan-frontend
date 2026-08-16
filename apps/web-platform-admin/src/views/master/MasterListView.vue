@@ -70,8 +70,9 @@
 		<el-table-column label="平台状态" width="100">
 		  <template #default="{ row }"><StatusTag :status="row.platformStatus" /></template>
 		</el-table-column>
-        <el-table-column label="操作" width="210" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" @click="router.push(`/master/detail/${row.id}`)">详情/编辑</el-button>
             <el-button link type="primary" @click="openConsult(row)">咨询配置</el-button>
             <el-dropdown @command="(cmd: string) => onStatus(row, cmd)">
               <el-button link type="warning">状态<el-icon><ArrowDown /></el-icon></el-button>

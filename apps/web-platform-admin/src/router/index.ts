@@ -64,6 +64,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/master/MasterCreateView.vue'),
         meta: { title: '新增野生大师', parent: '法师管理' }
       },
+      {
+        path: 'master/detail/:id',
+        name: 'MasterDetail',
+        component: () => import('@/views/master/MasterDetailView.vue'),
+        meta: { title: '法师详情', parent: '法师管理', hidden: true }
+      },
       // 用户管理
       {
         path: 'user/list',
