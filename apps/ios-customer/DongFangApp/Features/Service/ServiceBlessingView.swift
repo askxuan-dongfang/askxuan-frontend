@@ -25,6 +25,8 @@ struct ServiceContainerView: View {
 
     @StateObject private var viewModel: ServiceViewModel
     @Environment(\.dismiss) private var dismiss
+    /// 立即预约：程序化导航（避免 Button 嵌套在 NavigationLink label 内吞掉点击）
+    @State private var showBooking = false
 
     init(serviceType: ServiceType, templeId: String? = nil, templeName: String? = nil) {
         self.serviceType = serviceType
@@ -60,6 +62,12 @@ struct ServiceContainerView: View {
             case .booking(let master): BookingView(master: master)
             default: EmptyView()
             }
+        }
+        .navigationDestination(isPresented: $showBooking) {
+            BookingView(master: viewModel.selectedTempleMaster,
+                        templeId: viewModel.resolvedTempleId ?? "",
+                        templeName: viewModel.resolvedTempleName ?? "",
+                        serviceType: serviceType)
         }
     }
 
@@ -349,15 +357,9 @@ struct ServiceContainerView: View {
     /// 立即预约：直接进入预约下单（可指定法师或不指定=全寺执行）
     private var bottomActionBar: some View {
         HStack(spacing: AppSpacing.md) {
-            NavigationLink {
-                BookingView(master: viewModel.selectedTempleMaster,
-                            templeId: viewModel.resolvedTempleId ?? "",
-                            templeName: viewModel.resolvedTempleName ?? "",
-                            serviceType: serviceType)
-            } label: {
-                DFPrimaryButton(title: "立即预约", icon: "calendar.badge.plus") {}
+            DFPrimaryButton(title: "立即预约", icon: "calendar.badge.plus") {
+                showBooking = true
             }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, AppSpacing.lg)
         .padding(.vertical, AppSpacing.md)
