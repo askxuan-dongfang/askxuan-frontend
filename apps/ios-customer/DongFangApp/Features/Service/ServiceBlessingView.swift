@@ -17,15 +17,20 @@ struct ServiceBlessingView: View {
 
 // MARK: - 服务详情共享容器
 /// 13 种平台标准服务共享的服务详情布局。
+/// 从寺院详情进入时携带寺院上下文：本寺价格 + 本寺法师可选指定 + 立即预约（全寺执行）。
 struct ServiceContainerView: View {
     let serviceType: ServiceType
+    let templeId: String?
+    let templeName: String?
 
     @StateObject private var viewModel: ServiceViewModel
     @Environment(\.dismiss) private var dismiss
 
-    init(serviceType: ServiceType) {
+    init(serviceType: ServiceType, templeId: String? = nil, templeName: String? = nil) {
         self.serviceType = serviceType
-        _viewModel = StateObject(wrappedValue: ServiceViewModel(serviceType: serviceType))
+        self.templeId = templeId
+        self.templeName = templeName
+        _viewModel = StateObject(wrappedValue: ServiceViewModel(serviceType: serviceType, templeId: templeId, templeName: templeName))
     }
 
     var body: some View {
@@ -35,7 +40,7 @@ struct ServiceContainerView: View {
                     heroSection
                     introSection
                     packagesSection
-                    mastersSection
+                    designatedMasterSection
                     noticeSection
                     Spacer(minLength: 100)
                 }
@@ -50,9 +55,6 @@ struct ServiceContainerView: View {
             if viewModel.blessingServices.isEmpty { await viewModel.load() }
         }
         .refreshable { await viewModel.load() }
-        .navigationDestination(for: Master.self) { master in
-            MasterProfileView(masterId: master.id)
-        }
         .navigationDestination(for: HomeRoute.self) { route in
             switch route {
             case .booking(let master): BookingView(master: master)
@@ -218,64 +220,90 @@ struct ServiceContainerView: View {
         .padding(.horizontal, AppSpacing.lg)
     }
 
-    // MARK: - 法师列表
-    private var mastersSection: some View {
+    // MARK: - 指定法师（可选，仅本寺法师）
+    /// 双轨制：寺院服务默认全寺执行；如本寺有可按该服务执行的大师，可指定其一（附加分流）。
+    /// 仅展示本寺法师（templeId 过滤），不推荐跨寺院法师。
+    private var designatedMasterSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             HStack {
-                Text("推荐法师")
+                Text("指定法师（可选）")
                     .font(.cardTitle)
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
+                Text("不指定则为全寺执行")
+                    .font(.caption)
+                    .foregroundStyle(Color.textTertiary)
             }
             .padding(.horizontal, AppSpacing.lg)
             .padding(.top, AppSpacing.lg)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: AppSpacing.md) {
-                    ForEach(viewModel.masters) { master in
-                        NavigationLink(value: master) { masterCard(master) }
-                            .buttonStyle(.plain)
+            if viewModel.masters.isEmpty {
+                Text(viewModel.templeId == nil ? "暂无可指定法师" : "本寺暂无可执行该服务的法师，默认全寺执行")
+                    .font(.caption)
+                    .foregroundStyle(Color.textTertiary)
+                    .padding(.horizontal, AppSpacing.lg)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: AppSpacing.md) {
+                        masterOption(nil)
+                        ForEach(viewModel.masters) { master in
+                            masterOption(master)
+                        }
                     }
+                    .padding(.horizontal, AppSpacing.lg)
                 }
-                .padding(.horizontal, AppSpacing.lg)
             }
         }
     }
 
-    private func masterCard(_ master: Master) -> some View {
-        VStack(spacing: 6) {
-            ZStack {
-                RemoteAvatar(urlString: master.avatar, size: 60)
-                if master.isOnlineDisplay {
-                    Circle()
-                        .fill(Color.stateSuccess)
-                        .frame(width: 10, height: 10)
-                        .overlay(Circle().stroke(Color.bgSecondary, lineWidth: 2))
-                        .offset(x: 22, y: 22)
+    private func masterOption(_ master: Master?) -> some View {
+        let isSelected = (master == nil && viewModel.selectedTempleMasterId == nil) || (master != nil && viewModel.selectedTempleMasterId == master?.id)
+        return Button {
+            viewModel.selectedTempleMasterId = master?.id
+        } label: {
+            VStack(spacing: 6) {
+                if let master {
+                    ZStack {
+                        RemoteAvatar(urlString: master.avatar, size: 52)
+                        if master.isOnlineDisplay {
+                            Circle()
+                                .fill(Color.stateSuccess)
+                                .frame(width: 10, height: 10)
+                                .overlay(Circle().stroke(Color.bgSecondary, lineWidth: 2))
+                                .offset(x: 19, y: 19)
+                        }
+                    }
+                    Text(master.dharmaName)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.textPrimary)
+                        .lineLimit(1)
+                    Text("可指定执行")
+                        .font(.system(size: 9))
+                        .foregroundStyle(Color.textTertiary)
+                } else {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 26)
+                            .fill(Color.bgTertiary)
+                            .frame(width: 52, height: 52)
+                        Image(systemName: "building.columns")
+                            .font(.system(size: 20))
+                            .foregroundStyle(Color.textSecondary)
+                    }
+                    Text("全寺执行")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.textPrimary)
+                    Text("不指定法师")
+                        .font(.system(size: 9))
+                        .foregroundStyle(Color.textTertiary)
                 }
             }
-            Text(master.dharmaName)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.textPrimary)
-                .lineLimit(1)
-            Text(master.templeName)
-                .font(.system(size: 10))
-                .foregroundStyle(Color.textTertiary)
-                .lineLimit(1)
-            HStack(spacing: 2) {
-                Image(systemName: "star.fill")
-                    .font(.system(size: 9))
-                    .foregroundStyle(Color.accentDefault)
-                Text(master.ratingText)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Color.accentDefault)
-            }
+            .frame(width: 88)
+            .padding(.vertical, AppSpacing.sm)
+            .background(isSelected ? Color.brandDefault.opacity(0.12) : Color.bgSecondary)
+            .cornerRadius(AppRadius.lg)
+            .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(isSelected ? Color.brandDefault : Color.borderDefault, lineWidth: 1))
         }
-        .frame(width: 88)
-        .padding(.vertical, AppSpacing.sm)
-        .background(Color.bgSecondary)
-        .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
+        .buttonStyle(.plain)
     }
 
     // MARK: - 须知
@@ -318,16 +346,18 @@ struct ServiceContainerView: View {
     }
 
     // MARK: - 底部操作栏
+    /// 立即预约：直接进入预约下单（可指定法师或不指定=全寺执行）
     private var bottomActionBar: some View {
         HStack(spacing: AppSpacing.md) {
-            if let master = viewModel.masters.first {
-                NavigationLink(value: HomeRoute.booking(master)) {
-                    DFPrimaryButton(title: "立即预约", icon: "calendar.badge.plus") {}
-                }
-                .buttonStyle(.plain)
-            } else {
+            NavigationLink {
+                BookingView(master: viewModel.selectedTempleMaster,
+                            templeId: viewModel.resolvedTempleId ?? "",
+                            templeName: viewModel.resolvedTempleName ?? "",
+                            serviceType: serviceType)
+            } label: {
                 DFPrimaryButton(title: "立即预约", icon: "calendar.badge.plus") {}
             }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, AppSpacing.lg)
         .padding(.vertical, AppSpacing.md)

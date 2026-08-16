@@ -365,7 +365,12 @@ struct MasterProfileView: View {
 
             ForEach(viewModel.services) { service in
                 if let type = ServiceType.from(serviceCode: service.serviceCode) {
-                    NavigationLink(value: HomeRoute.service(type)) {
+                    // 双轨制：寺庙绑定大师的服务 → 本寺服务页（本寺价格 + 本寺法师 + 立即预约）
+                    NavigationLink {
+                        ServiceContainerView(serviceType: type,
+                                             templeId: viewModel.master?.templeId ?? "",
+                                             templeName: viewModel.master?.templeName ?? "")
+                    } label: {
                         HStack(spacing: AppSpacing.md) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: AppRadius.md)
@@ -462,7 +467,13 @@ struct MasterProfileView: View {
             }
             DFPrimaryButton(title: "预约服务") {
                 if authStore.isLoggedIn {
-                    showBooking = true
+                    // 双轨制：野生大师（无寺庙）走「预约」Tab 的直约面板（先付费咨询再预约服务）；
+                    // 寺庙绑定大师保留原寺院服务预约下单页。
+                    if viewModel.master?.manageBy == "platform" {
+                        withAnimation(.easeInOut(duration: 0.2)) { viewModel.selectedTab = 1 }
+                    } else {
+                        showBooking = true
+                    }
                 } else {
                     showLoginPrompt = true
                 }

@@ -296,7 +296,12 @@ struct TempleDetailView: View {
     private func serviceGridItem(_ service: TempleServiceInfo) -> some View {
         Group {
             if let type = ServiceType.from(serviceCode: service.serviceCode) {
-                NavigationLink(value: HomeRoute.service(type)) { serviceCard(service, type: type) }
+                // 双轨制：寺院公共服务 → 服务页携带寺院上下文（本寺价格 + 本寺法师 + 立即预约）
+                NavigationLink {
+                    ServiceContainerView(serviceType: type, templeId: templeId, templeName: templeName)
+                } label: {
+                    serviceCard(service, type: type)
+                }
             } else {
                 serviceCard(service, type: nil)
             }

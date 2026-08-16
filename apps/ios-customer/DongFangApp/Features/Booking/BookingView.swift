@@ -13,7 +13,12 @@ struct BookingView: View {
     @Environment(\.dismiss) private var dismiss
 
     init(master: Master) {
-        _viewModel = StateObject(wrappedValue: BookingViewModel(master: master))
+        _viewModel = StateObject(wrappedValue: BookingViewModel(master: master, templeId: master.templeId, templeName: master.templeName))
+    }
+
+    /// 寺院直约模式：master 可为 nil（全寺执行）
+    init(master: Master?, templeId: String, templeName: String, serviceType: ServiceType? = nil) {
+        _viewModel = StateObject(wrappedValue: BookingViewModel(master: master, templeId: templeId, templeName: templeName, serviceType: serviceType))
     }
 
     var body: some View {
@@ -83,42 +88,66 @@ struct BookingView: View {
         }
     }
 
-    // MARK: - 法师信息卡
+    // MARK: - 法师信息卡（全寺执行时展示寺院卡）
     private var masterCard: some View {
-        HStack(spacing: 12) {
-            RemoteAvatar(urlString: viewModel.master.avatar, size: 48)
+        Group {
+            if let master = viewModel.master {
+                HStack(spacing: 12) {
+                    RemoteAvatar(urlString: master.avatar, size: 48)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(viewModel.master.dharmaName)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.textPrimary)
-                Text("\(viewModel.master.templeName) · \(viewModel.master.position)")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color.textTertiary)
-
-                HStack(spacing: 8) {
-                    if let specialty = viewModel.master.specialties.first {
-                        Text(specialty)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 2)
-                            .background(Color.brandDefault)
-                            .clipShape(Capsule())
-                    }
-                    HStack(spacing: 2) {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.accentDefault)
-                        Text(viewModel.master.ratingText)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(master.dharmaName)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color.textPrimary)
+                        Text("\(master.templeName) · \(master.position)")
                             .font(.system(size: 13))
-                            .foregroundStyle(Color.accentDefault)
-                    }
-                }
-                .padding(.top, 4)
-            }
+                            .foregroundStyle(Color.textTertiary)
 
-            Spacer()
+                        HStack(spacing: 8) {
+                            if let specialty = master.specialties.first {
+                                Text(specialty)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(Color.white)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 2)
+                                    .background(Color.brandDefault)
+                                    .clipShape(Capsule())
+                            }
+                            HStack(spacing: 2) {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.accentDefault)
+                                Text(master.ratingText)
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(Color.accentDefault)
+                            }
+                        }
+                        .padding(.top, 4)
+                    }
+
+                    Spacer()
+                }
+            } else {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.brandDefault.opacity(0.12))
+                            .frame(width: 48, height: 48)
+                        Image(systemName: "building.columns")
+                            .font(.system(size: 20))
+                            .foregroundStyle(Color.brandDefault)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(viewModel.templeName.isEmpty ? "寺院预约" : viewModel.templeName)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color.textPrimary)
+                        Text("全寺执行 · 不指定法师")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.textTertiary)
+                    }
+                    Spacer()
+                }
+            }
         }
         .padding(16)
         .background(Color.bgSecondary)

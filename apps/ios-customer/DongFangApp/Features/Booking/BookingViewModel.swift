@@ -10,8 +10,13 @@ import SwiftUI
 
 @MainActor
 final class BookingViewModel: ObservableObject {
-    /// 预约的法师
-    let master: Master
+    /// 预约的法师（nil = 全寺执行，不指定法师）
+    let master: Master?
+    /// 预约的寺院（法师为空时必填）
+    let templeId: String
+    let templeName: String
+    /// 服务类型上下文：从服务详情页进入时锁定该服务
+    let serviceType: ServiceType?
 
     // MARK: - 表单字段
 	@Published var services: [TempleServiceInfo] = []
@@ -39,10 +44,16 @@ final class BookingViewModel: ObservableObject {
     private let apiClient: APIClient
     private let authStore: AuthStore
 
-    init(master: Master,
+    init(master: Master?,
+         templeId: String,
+         templeName: String,
+         serviceType: ServiceType? = nil,
          apiClient: APIClient = .shared,
          authStore: AuthStore? = nil) {
         self.master = master
+        self.templeId = templeId
+        self.templeName = templeName
+        self.serviceType = serviceType
         self.apiClient = apiClient
         self.authStore = authStore ?? .shared
     }
@@ -79,7 +90,7 @@ final class BookingViewModel: ObservableObject {
 
 	/// 大师执行费：大师已配置该服务标签时按标签价分流，否则为 nil（回退原计价）
 	var masterTagFee: Double? {
-		guard let code = selectedService?.serviceCode,
+		guard let master, let code = selectedService?.serviceCode,
 		      let tags = master.serviceTags else { return nil }
 		return tags.first(where: { $0.serviceCode == code && ($0.status ?? "enabled") == "enabled" })?.price
 	}
@@ -95,8 +106,13 @@ final class BookingViewModel: ObservableObject {
 		isLoading = true
 		defer { isLoading = false }
 		do {
-			let response: TempleServiceListResponse = try await apiClient.request(.templeServices(master.templeId))
-			services = response.list.filter { $0.status == "on_shelf" }
+			let response: TempleServiceListResponse = try await apiClient.request(.templeServices(templeId))
+			var list = response.list.filter { $0.status == "on_shelf" }
+			// 服务详情页进入时锁定当前服务类型
+			if let type = serviceType {
+				list = list.filter { ServiceType.from(serviceCode: $0.serviceCode) == type }
+			}
+			services = list
 			if !services.contains(where: { $0.serviceCode == selectedServiceId }) {
 				selectedServiceId = services.first?.serviceCode ?? ""
 			}
@@ -110,7 +126,7 @@ final class BookingViewModel: ObservableObject {
 		guard !selectedServiceId.isEmpty else { availableSlots = []; return }
 		do {
 			let date = AppDateFormatter.day.string(from: selectedDate)
-			let response: BookingAvailabilityResponse = try await apiClient.request(.bookingAvailability(templeId: master.templeId, serviceId: selectedServiceId, date: date))
+			let response: BookingAvailabilityResponse = try await apiClient.request(.bookingAvailability(templeId: templeId, serviceId: selectedServiceId, date: date))
 			availabilityServiceFee = response.serviceFee
 			availableSlots = response.slots
 			if !availableSlots.contains(where: { $0.slotCode == selectedSlotCode && $0.available }) {
@@ -133,10 +149,10 @@ final class BookingViewModel: ObservableObject {
 		guard let service = selectedService, let slot = selectedSlot else { isSubmitting = false; return }
 		let request = CreateBookingRequest(
 			requestId: UUID().uuidString,
-            templeId: master.templeId,
-            templeName: master.templeName,
-            masterId: master.id,
-            masterName: master.dharmaName,
+            templeId: templeId,
+            templeName: templeName,
+            masterId: master?.id ?? "",
+            masterName: master?.dharmaName ?? "",
 			serviceId: service.serviceCode,
 			serviceName: service.serviceName,
             bookingDate: bookingDate,
