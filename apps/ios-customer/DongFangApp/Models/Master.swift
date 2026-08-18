@@ -91,6 +91,9 @@ struct Master: Codable, Identifiable, Hashable {
         self.consultFee = try c.decodeIfPresent(Double.self, forKey: .consultFee) ?? 0
         self.consultValidHours = try c.decodeIfPresent(Int.self, forKey: .consultValidHours) ?? 72
         self.consultResponseMinutes = try c.decodeIfPresent(Int.self, forKey: .consultResponseMinutes) ?? 30
+        // 双轨制字段：管理方（temple/platform）与大师服务标签（可提供服务）
+        self.manageBy = try c.decodeIfPresent(String.self, forKey: .manageBy)
+        self.serviceTags = try c.decodeIfPresent([MasterServiceTag].self, forKey: .serviceTags)
     }
 
     var ratingText: String { String(format: "%.1f", rating) }
