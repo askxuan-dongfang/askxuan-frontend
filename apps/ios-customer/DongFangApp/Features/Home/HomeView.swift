@@ -714,7 +714,7 @@ private struct IntentionHubView: View {
                         .clipShape(Circle())
                         .overlay(Circle().stroke(Color.accentDefault, lineWidth: 2))
                 } else {
-                    RemoteImage(urlString: item.image, placeholderIcon: item.resourceType == "product" ? "shippingbox" : "building.columns")
+                    RemoteImage(urlString: item.image, placeholderIcon: "building.columns")
                         .frame(width: 86, height: 86)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
@@ -737,7 +737,6 @@ private struct IntentionHubView: View {
 
     private func resourceTypeLabel(_ type: String) -> String {
         switch type {
-        case "product": return "商品"
         case "master": return "大师服务"
         default: return "寺院服务"
         }
@@ -745,9 +744,7 @@ private struct IntentionHubView: View {
 
     @ViewBuilder
     private func destination(for item: IntentionResource) -> some View {
-        if item.resourceType == "product" {
-            ShopView()
-        } else if item.resourceType == "master" {
+        if item.resourceType == "master" {
             MasterProfileView(masterId: item.masterCode ?? "")
         } else {
             serviceView(for: item.serviceCode)
