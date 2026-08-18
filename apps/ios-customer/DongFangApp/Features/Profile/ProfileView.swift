@@ -198,6 +198,9 @@ struct ProfileView: View {
                     Text("ID: \(viewModel.maskedMobile)")
                         .font(.system(size: 13))
                         .foregroundStyle(Color.textTertiary)
+                    Text("修复版 08-18 · 预约链路 v2")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.brandDefault)
                 }
 
                 Spacer()
