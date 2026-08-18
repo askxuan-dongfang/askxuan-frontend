@@ -194,6 +194,7 @@ struct IntentionResource: Codable, Identifiable, Hashable {
     let orderTarget: String
     let templeCode: String?
     let serviceCode: String?
+    let masterCode: String?
     var id: String { "\(resourceType):\(sourceId)" }
 }
 

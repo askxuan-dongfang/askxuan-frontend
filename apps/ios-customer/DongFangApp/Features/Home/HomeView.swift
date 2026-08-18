@@ -636,7 +636,7 @@ private struct IntentionHubView: View {
                 } else if viewModel.resources.isEmpty {
                     ContentUnavailableView("暂无匹配内容", systemImage: "square.grid.2x2")
                 } else {
-                    Text("相关寺院服务与商品")
+                    Text("相关寺院服务与大师服务")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(Color.textPrimary)
                         .padding(.horizontal, 20)
@@ -707,10 +707,21 @@ private struct IntentionHubView: View {
 
     private func resourceRow(_ item: IntentionResource) -> some View {
         HStack(spacing: 12) {
-            RemoteImage(urlString: item.image, placeholderIcon: item.resourceType == "product" ? "shippingbox" : "building.columns")
-                .frame(width: 86, height: 86).clipShape(RoundedRectangle(cornerRadius: 6))
+            Group {
+                if item.resourceType == "master" {
+                    RemoteImage(urlString: item.image, placeholderIcon: "person.circle.fill")
+                        .frame(width: 72, height: 72)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(Color.accentDefault, lineWidth: 2))
+                } else {
+                    RemoteImage(urlString: item.image, placeholderIcon: item.resourceType == "product" ? "shippingbox" : "building.columns")
+                        .frame(width: 86, height: 86)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+            }
+
             VStack(alignment: .leading, spacing: 6) {
-                Text(item.resourceType == "product" ? "商品" : "寺院服务")
+                Text(resourceTypeLabel(item.resourceType))
                     .font(.system(size: 11, weight: .semibold)).foregroundStyle(Color.accentDefault)
                 Text(item.title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.textPrimary).lineLimit(2)
                 Text(item.subtitle).font(.system(size: 12)).foregroundStyle(Color.textSecondary).lineLimit(1)
@@ -724,10 +735,20 @@ private struct IntentionHubView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
+    private func resourceTypeLabel(_ type: String) -> String {
+        switch type {
+        case "product": return "商品"
+        case "master": return "大师服务"
+        default: return "寺院服务"
+        }
+    }
+
     @ViewBuilder
     private func destination(for item: IntentionResource) -> some View {
         if item.resourceType == "product" {
             ShopView()
+        } else if item.resourceType == "master" {
+            MasterProfileView(masterId: item.masterCode ?? "")
         } else {
             serviceView(for: item.serviceCode)
         }
