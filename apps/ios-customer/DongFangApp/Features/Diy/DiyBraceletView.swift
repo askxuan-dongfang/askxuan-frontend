@@ -31,17 +31,7 @@ struct DiyBraceletView: View {
     // MARK: - 返回栏（导航栏隐藏后提供返回首页入口）
     private var backBar: some View {
         HStack {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.accentDefault)
-                    .frame(width: 36, height: 36)
-                    .background(Color.bgPrimary.opacity(0.6))
-                    .background(.ultraThinMaterial)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.borderDefault, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
+            DFBackButton(style: .circle)
             Spacer()
         }
         .padding(.horizontal, AppSpacing.lg)

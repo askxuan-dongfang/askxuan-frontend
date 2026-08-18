@@ -93,12 +93,7 @@ struct DiyDesignView: View {
 
     private var topBar: some View {
         HStack(spacing: 8) {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
-                    .frame(width: 36, height: 36)
-            }
-            .accessibilityLabel("返回")
+            DFBackButton()
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("设计你的手串")

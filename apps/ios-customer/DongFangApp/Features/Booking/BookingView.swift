@@ -72,15 +72,8 @@ struct BookingView: View {
         .frame(height: AppSpacing.navTop)
         .frame(maxWidth: .infinity)
         .overlay(alignment: .leading) {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(Color.accentDefault)
-                    .padding(.leading, AppSpacing.lg)
-            }
-            .buttonStyle(.plain)
+            DFBackButton()
+                .padding(.leading, AppSpacing.lg)
         }
         .background(Color.bgPrimary.opacity(0.92).background(.ultraThinMaterial))
         .overlay(alignment: .bottom) {

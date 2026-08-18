@@ -184,48 +184,77 @@ struct MasterListView: View {
                     .offset(x: -2, y: -2)
             }
 
-            // 信息区
-            VStack(alignment: .leading, spacing: 0) {
+            // 信息区（统一布局：法号+流派 / 归属 / 专长 / 可约服务 / 评分·价格）
+            VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 8) {
                     Text(master.dharmaName)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(Color.textPrimary)
+                        .lineLimit(1)
 
-                    HStack(spacing: 4) {
-                        Text(master.type)
-                        Text(master.sect)
-                        Text(master.position)
-                    }
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(masterTypeColor(for: master).opacity(0.95))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(masterTypeColor(for: master).opacity(0.12))
-                    .clipShape(Capsule())
+                    Text("\(master.type)·\(master.sect)")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(masterTypeColor(for: master).opacity(0.95))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(masterTypeColor(for: master).opacity(0.12))
+                        .clipShape(Capsule())
+                        .lineLimit(1)
                 }
 
-                Text("\(master.templeName) · \(master.position)")
-                    .font(.system(size: 13))
+                // 归属：野生大师无寺院
+                Text(master.templeName.isEmpty ? "平台直管 · 野生大师" : "\(master.templeName) · \(master.position.isEmpty ? "寺院法师" : master.position)")
+                    .font(.system(size: 12))
                     .foregroundStyle(Color.textTertiary)
-                    .padding(.top, 2)
+                    .lineLimit(1)
 
-                // 专长标签
+                // 专长（大师资料字段）
                 HStack(spacing: 6) {
-                    ForEach(master.specialties.prefix(2), id: \.self) { specialty in
-                        Text(specialty)
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color.brandDefault)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 2)
-                            .background(Color.brandDefault.opacity(0.1))
-                            .clipShape(Capsule())
+                    Text("专长")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color.textTertiary)
+                    if master.specialties.isEmpty {
+                        Text("暂无")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Color.textTertiary)
+                    } else {
+                        ForEach(master.specialties.prefix(2), id: \.self) { specialty in
+                            Text(specialty)
+                                .font(.system(size: 10))
+                                .foregroundStyle(Color.brandDefault)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color.brandDefault.opacity(0.1))
+                                .clipShape(Capsule())
+                                .lineLimit(1)
+                        }
                     }
                 }
-                .padding(.top, 6)
 
-                Spacer(minLength: 4)
+                // 可提供服务（大师服务标签，S001-S013 自定价）
+                HStack(spacing: 6) {
+                    Text("可约")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color.textTertiary)
+                    if let tags = master.serviceTags, !tags.isEmpty {
+                        ForEach(tags.prefix(2), id: \.self) { tag in
+                            Text(ServiceType.from(serviceCode: tag.serviceCode)?.rawValue ?? tag.serviceCode)
+                                .font(.system(size: 10))
+                                .foregroundStyle(Color.stateSuccess)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color.stateSuccess.opacity(0.1))
+                                .clipShape(Capsule())
+                                .lineLimit(1)
+                        }
+                    } else {
+                        Text("暂未配置")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Color.textTertiary)
+                    }
+                }
 
-                // 评分 + 在线状态 + 价格
+                // 评分 + 在线状态 + 起价（统一展示）
                 HStack {
                     HStack(spacing: 3) {
                         Text(String(format: "%.1f", master.rating))
@@ -239,21 +268,33 @@ struct MasterListView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(master.isOnline == true ? Color.stateSuccess : Color.textTertiary)
                     Spacer()
-                    if let price = master.startPrice {
-                        Text("¥\(Int(price))起")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(Color.brandDefault)
-                    }
+                    Text(masterPriceText(master))
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Color.brandDefault)
                 }
-                .padding(.top, 4)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(AppSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.md)
         .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
         .contentShape(Rectangle())
+    }
+
+    /// 卡片起价：优先大师服务标签最低价，回退咨询费
+    private func masterPriceText(_ master: Master) -> String {
+        if let prices = master.serviceTags?.compactMap({ $0.price > 0 ? $0.price : nil }), let min = prices.min() {
+            return "¥\(Int(min))起"
+        }
+        if let price = master.startPrice, price > 0 {
+            return "¥\(Int(price))起"
+        }
+        if master.consultEnabled, master.consultFee > 0 {
+            return "咨询 ¥\(Int(master.consultFee))"
+        }
+        return "—"
     }
 
     private func masterTypeColor(for master: Master) -> Color {

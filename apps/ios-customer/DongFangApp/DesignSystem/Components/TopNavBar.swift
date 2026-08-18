@@ -59,16 +59,44 @@ private struct BackButton: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
+        DFBackButton()
+    }
+}
+
+/// 统一返回按钮（双客户端统一规范，NavigationStack 原生滑动返回手势默认可用）：
+/// - plain：透明底，用于普通导航栏
+/// - circle：毛玻璃圆底带描边，用于 Hero 大图悬浮
+struct DFBackButton: View {
+    enum Style {
+        case plain
+        case circle
+    }
+
+    var style: Style = .plain
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
         Button {
             dismiss()
         } label: {
-            Image(systemName: "chevron.left")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Color.accentDefault)
-                .frame(width: 32, height: 32)
-                .contentShape(Rectangle())
+            ZStack {
+                if style == .circle {
+                    Circle()
+                        .fill(Color.bgPrimary.opacity(0.6))
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                    Circle()
+                        .stroke(Color.borderDefault, lineWidth: 1)
+                }
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.accentDefault)
+            }
+            .frame(width: 36, height: 36)
+            .contentShape(Circle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("返回")
     }
 }
 

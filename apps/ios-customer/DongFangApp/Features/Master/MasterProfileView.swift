@@ -19,6 +19,7 @@ struct MasterProfileView: View {
     @State private var isSubmittingDirectBooking = false
     @State private var directBookingMessage = ""
     @State private var showDirectBookingMessage = false
+    @State private var showDirectPaySheet = false
     @State private var showLoginPrompt = false
     @State private var paidConversation: ChatConversation?
     @State private var isResolvingConversation = false
@@ -90,19 +91,7 @@ struct MasterProfileView: View {
             .frame(height: 240)
 
             HStack {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Color.accentDefault)
-                        .frame(width: 36, height: 36)
-                        .background(Color.bgPrimary.opacity(0.6))
-                        .background(.ultraThinMaterial)
-                        .clipShape(Circle())
-                        .overlay(Circle().stroke(Color.borderDefault, lineWidth: 1))
-                }
-                .buttonStyle(.plain)
+                DFBackButton(style: .circle)
                 Spacer()
             }
             .padding(.horizontal, AppSpacing.lg)
@@ -301,7 +290,7 @@ struct MasterProfileView: View {
                     .padding(.horizontal, AppSpacing.lg)
 
                 DFPrimaryButton(title: isSubmittingDirectBooking ? "提交中…" : "预约服务", icon: "calendar.badge.plus") {
-                    submitDirectBooking()
+                    showDirectPaySheet = true
                 }
                 .disabled(isSubmittingDirectBooking || selectedServiceCode == nil)
                 .padding(.horizontal, AppSpacing.lg)
@@ -315,6 +304,84 @@ struct MasterProfileView: View {
         } message: {
             Text(directBookingMessage)
         }
+        .sheet(isPresented: $showDirectPaySheet) {
+            directPaySheet
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
+    }
+
+    // MARK: - 直约支付确认（模拟支付）
+    private var directPaySheet: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.lg) {
+            HStack {
+                Text("预约确认")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(Color.textPrimary)
+                Spacer()
+                Button {
+                    showDirectPaySheet = false
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.textTertiary)
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, AppSpacing.lg)
+
+            VStack(alignment: .leading, spacing: 10) {
+                payRow("服务项目", selectedDirectTagName)
+                payRow("大师", viewModel.master?.dharmaName ?? "")
+                payRow("预约日期", directBookingDateText)
+                payRow("服务费用", "¥\(Int(selectedDirectTagPrice))")
+            }
+            .padding(AppSpacing.md)
+            .background(Color.bgSecondary)
+            .cornerRadius(AppRadius.lg)
+
+            Text("演示环境：点击确认后自动完成模拟支付，预约将进入待大师确认状态。")
+                .font(.caption)
+                .foregroundStyle(Color.textTertiary)
+
+            DFPrimaryButton(title: isSubmittingDirectBooking ? "提交中…" : "确认预约并支付 ¥\(Int(selectedDirectTagPrice))", icon: "creditcard") {
+                submitDirectBooking()
+                showDirectPaySheet = false
+            }
+            .disabled(isSubmittingDirectBooking)
+
+            Spacer()
+        }
+        .padding(.horizontal, AppSpacing.lg)
+    }
+
+    private func payRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 14))
+                .foregroundStyle(Color.textTertiary)
+            Spacer()
+            Text(value)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Color.textPrimary)
+        }
+    }
+
+    private var selectedDirectTag: MasterServiceTag? {
+        viewModel.master?.serviceTags?.first { $0.serviceCode == selectedServiceCode }
+    }
+    private var selectedDirectTagName: String {
+        guard let code = selectedDirectTag?.serviceCode else { return "未选择" }
+        return ServiceType.from(serviceCode: code)?.rawValue ?? code
+    }
+    private var selectedDirectTagPrice: Double {
+        selectedDirectTag?.price ?? 0
+    }
+    private var directBookingDateText: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: directBookingDate)
     }
 
     private func serviceTagRow(_ tag: MasterServiceTag) -> some View {
@@ -446,7 +513,8 @@ struct MasterProfileView: View {
             defer { isSubmittingDirectBooking = false }
             do {
                 let resp: DirectBookingResponse = try await APIClient.shared.request(.masterBooking(master.id, request))
-                directBookingMessage = "预约成功！单号 \(resp.id)，请等待法师确认（\(resp.paymentStatus)）"
+                let pay = resp.paymentStatus == "success" ? "模拟支付成功" : "支付状态 \(resp.paymentStatus)"
+                directBookingMessage = "预约成功！单号 \(resp.id)，\(pay)，请等待法师确认"
             } catch {
                 directBookingMessage = error.localizedDescription
             }
@@ -465,17 +533,15 @@ struct MasterProfileView: View {
                     showLoginPrompt = true
                 }
             }
-            DFPrimaryButton(title: "预约服务") {
-                if authStore.isLoggedIn {
-                    // 双轨制：野生大师（无寺庙）走「预约」Tab 的直约面板（先付费咨询再预约服务）；
-                    // 寺庙绑定大师保留原寺院服务预约下单页。
-                    if viewModel.master?.manageBy == "platform" {
-                        withAnimation(.easeInOut(duration: 0.2)) { viewModel.selectedTab = 1 }
-                    } else {
+            // 双轨制：野生大师的预约入口在「预约」Tab 直约面板内（避免底部重复按钮）；
+            // 寺庙绑定大师保留底部按钮进入寺院服务预约下单页。
+            if viewModel.master?.manageBy != "platform" {
+                DFPrimaryButton(title: "预约服务") {
+                    if authStore.isLoggedIn {
                         showBooking = true
+                    } else {
+                        showLoginPrompt = true
                     }
-                } else {
-                    showLoginPrompt = true
                 }
             }
         }

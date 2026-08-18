@@ -48,13 +48,7 @@ struct ChatDetailView: View {
     // MARK: - 顶部导航
     private var topBar: some View {
         HStack(spacing: AppSpacing.md) {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.accentDefault)
-                    .frame(width: 36, height: 36)
-            }
-            .buttonStyle(.plain)
+            DFBackButton()
 
             ZStack {
                 RemoteAvatar(urlString: activeConversation.masterAvatar, size: 40)
