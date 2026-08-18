@@ -580,6 +580,11 @@ private final class IntentionHubViewModel: ObservableObject {
 
     init(code: String) { selectedCode = code }
 
+    /// 当前选中诉求名称（筛选按钮展示用）
+    var selectedTagName: String {
+        tags.first { $0.code == selectedCode }?.name ?? "全部"
+    }
+
     func load() async {
         isLoading = true
         errorMessage = nil
@@ -609,23 +614,42 @@ private struct IntentionHubView: View {
             VStack(alignment: .leading, spacing: 16) {
                 intentionHero
 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
+                // 紧凑筛选按钮（替代顶部心愿胶囊横滑条）
+                HStack(spacing: 8) {
+                    Text("筛选")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.textTertiary)
+                    Menu {
                         ForEach(viewModel.tags) { tag in
                             Button {
                                 viewModel.selectedCode = tag.code
                                 Task { await viewModel.load() }
                             } label: {
-                                Label(tag.name, systemImage: tag.icon)
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(viewModel.selectedCode == tag.code ? Color.white : Color.textPrimary)
-                                    .padding(.horizontal, 12).frame(height: 36)
-                                    .background(viewModel.selectedCode == tag.code ? Color.brandDefault : Color.bgSecondary)
-                                    .clipShape(Capsule())
+                                if viewModel.selectedCode == tag.code {
+                                    Label(tag.name, systemImage: "checkmark")
+                                } else {
+                                    Text(tag.name)
+                                }
                             }
                         }
-                    }.padding(.horizontal, 20)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(viewModel.selectedTagName)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(Color.accentDefault)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(Color.accentDefault)
+                        }
+                        .padding(.horizontal, 14)
+                        .frame(height: 36)
+                        .background(Color.bgSecondary)
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(Color.borderDefault, lineWidth: 1))
+                    }
+                    Spacer()
                 }
+                .padding(.horizontal, 20)
 
                 if viewModel.isLoading && viewModel.resources.isEmpty {
                     ProgressView().frame(maxWidth: .infinity).padding(.top, 60)
