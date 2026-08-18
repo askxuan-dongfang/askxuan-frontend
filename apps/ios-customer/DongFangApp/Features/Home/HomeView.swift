@@ -679,10 +679,26 @@ private struct IntentionHubView: View {
         .task { await viewModel.load() }
     }
 
+    /// 当前选中诉求（跟随筛选切换；未加载到 tags 时回退入口诉求）
+    private var currentTag: IntentionTag? {
+        viewModel.tags.first { $0.code == viewModel.selectedCode }
+    }
+    private var heroTitle: String { currentTag?.name ?? entry.title }
+    private var heroSummary: String { currentTag?.description ?? entry.summary }
+    private var heroIcon: String { currentTag?.icon ?? entry.iconName }
+    private var heroLandingType: String { currentTag?.landingType ?? entry.landingType }
+    private var heroActionTitle: String { currentTag?.actionTitle ?? entry.actionTitle }
+    private var heroService: ServiceType? {
+        if let value = currentTag?.landingValue, !value.isEmpty {
+            return ServiceType.from(serviceCode: value)
+        }
+        return entry.service
+    }
+
     private var intentionHero: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                Image(systemName: entry.iconName)
+                Image(systemName: heroIcon)
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(Color.brandDefault)
                     .frame(width: 48, height: 48)
@@ -690,22 +706,22 @@ private struct IntentionHubView: View {
                     .clipShape(Circle())
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(entry.title)
+                    Text(heroTitle)
                         .font(.custom(AppFont.serif[0], size: 22).weight(.bold))
                         .foregroundStyle(Color.textPrimary)
-                    Text(entry.summary)
+                    Text(heroSummary)
                         .font(.system(size: 13))
                         .foregroundStyle(Color.textSecondary)
                         .lineSpacing(4)
                 }
             }
 
-            if entry.landingType == "diy" {
+            if heroLandingType == "diy" {
                 NavigationLink(value: HomeRoute.diyBracelet) {
                     actionLabel
                 }
                 .buttonStyle(.plain)
-            } else if let service = entry.service {
+            } else if let service = heroService {
                 NavigationLink(value: HomeRoute.service(service)) {
                     actionLabel
                 }
@@ -720,7 +736,7 @@ private struct IntentionHubView: View {
     }
 
     private var actionLabel: some View {
-        Label(entry.actionTitle, systemImage: "arrow.right.circle.fill")
+        Label(heroActionTitle, systemImage: "arrow.right.circle.fill")
             .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(Color.white)
             .frame(maxWidth: .infinity)
