@@ -612,45 +612,6 @@ private struct IntentionHubView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                intentionHero
-
-                // 紧凑筛选按钮（替代顶部心愿胶囊横滑条）
-                HStack(spacing: 8) {
-                    Text("筛选")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color.textTertiary)
-                    Menu {
-                        ForEach(viewModel.tags) { tag in
-                            Button {
-                                viewModel.selectedCode = tag.code
-                                Task { await viewModel.load() }
-                            } label: {
-                                if viewModel.selectedCode == tag.code {
-                                    Label(tag.name, systemImage: "checkmark")
-                                } else {
-                                    Text(tag.name)
-                                }
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text(viewModel.selectedTagName)
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(Color.accentDefault)
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(Color.accentDefault)
-                        }
-                        .padding(.horizontal, 14)
-                        .frame(height: 36)
-                        .background(Color.bgSecondary)
-                        .clipShape(Capsule())
-                        .overlay(Capsule().stroke(Color.borderDefault, lineWidth: 1))
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-
                 if viewModel.isLoading && viewModel.resources.isEmpty {
                     ProgressView().frame(maxWidth: .infinity).padding(.top, 60)
                 } else if let message = viewModel.errorMessage {

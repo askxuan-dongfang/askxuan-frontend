@@ -262,7 +262,13 @@ struct MasterProfileView: View {
             if viewModel.master?.manageBy == "platform" {
                 directBookingPanel
             } else {
-                templeServicePanel
+                // 寺庙绑定大师：寺院服务 + 大师服务标签（直约，双轨制两轨都可见）
+                VStack(spacing: AppSpacing.md) {
+                    templeServicePanel
+                    if let tags = viewModel.master?.serviceTags, !tags.isEmpty {
+                        directBookingPanel
+                    }
+                }
             }
         }
     }
