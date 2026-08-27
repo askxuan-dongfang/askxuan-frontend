@@ -7,7 +7,6 @@ import PageHeader from '@/components/PageHeader.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import { productApi, type ProductSaveParams } from '@/api/product'
 import { categoryApi } from '@/api/category'
-import { listIntentions, type IntentionOption } from '@/api/taxonomy'
 import type { ProductCategory } from '@/types'
 
 const route = useRoute()
@@ -17,7 +16,6 @@ const formRef = ref<FormInstance>()
 const loading = ref(false)
 const saving = ref(false)
 const categories = ref<ProductCategory[]>([])
-const intentOptions = ref<IntentionOption[]>([])
 
 const isEdit = computed(() => !!route.params.id)
 const productId = computed(() => Number(route.params.id) || 0)
@@ -31,7 +29,6 @@ const form = reactive<ProductSaveParams>({
   marketPrice: 0,
   stock: 0,
   tags: '',
-  intentTags: [],
   freightTemplateId: 0
 })
 
@@ -66,7 +63,6 @@ async function loadDetail() {
       marketPrice: detail.marketPrice,
       stock: detail.stock,
       tags: detail.tags,
-      intentTags: detail.intentTags || [],
       freightTemplateId: detail.freightTemplateId
     })
   } finally {
@@ -100,7 +96,6 @@ function handleCancel() {
 
 onMounted(() => {
   loadCategories()
-  listIntentions().then((list) => { intentOptions.value = list })
   loadDetail()
 })
 </script>
@@ -152,12 +147,6 @@ onMounted(() => {
 
         <el-form-item label="标签">
           <el-input v-model="form.tags" placeholder="多个标签用逗号分隔，如：祈福,开光,禅意" style="width: 480px" />
-        </el-form-item>
-
-        <el-form-item label="诉求标签">
-          <el-select v-model="form.intentTags" multiple placeholder="选择要进入的诉求聚合" style="width: 480px">
-            <el-option v-for="item in intentOptions" :key="item.code" :label="item.name" :value="item.code" />
-          </el-select>
         </el-form-item>
 
         <el-form-item label="运费模板">

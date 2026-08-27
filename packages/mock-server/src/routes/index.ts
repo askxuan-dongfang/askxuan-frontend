@@ -71,13 +71,6 @@ const communityComments = [
 const communityLikes = new Set<string>();
 const communityFollows = new Set<string>();
 
-const intentionItems = [
-  { code: 'peace', title: '求平安', serviceCode: 'S001', productTags: ['开光', '平安'], sects: ['禅宗', '格鲁派'] },
-  { code: 'wealth', title: '求财运', serviceCode: 'S009', productTags: ['招财', '供香'], sects: ['全真派', '正一派'] },
-  { code: 'love', title: '求姻缘', serviceCode: 'S008', productTags: ['姻缘', '供灯'], sects: ['禅宗'] },
-  { code: 'taisui', title: '化太岁', serviceCode: 'S007', productTags: ['太岁', '符牌'], sects: ['全真派', '正一派'] }
-];
-
 const templeBookingServices = [
 	{ id: 1, templeCode: 'T001', serviceCode: 'S001', serviceName: '祈福', price: 200, status: 'on_shelf', timeSlots: ['09:00-12:00', '13:00-17:00'], slots: [
 		{ code: 'slot_01', label: '上午', startTime: '09:00', endTime: '12:00', capacity: 10, status: 'enabled', sort: 1 },
@@ -378,11 +371,11 @@ const intentTags = [
   { code: 'rite', name: '做法事', description: '超度等法事', icon: 'hands.sparkles.fill', landingType: 'service', landingValue: 'S005', actionTitle: '预约法事', sort: 80, status: 'enabled' }
 ];
 const intentionResources = [
-  { resourceType: 'product', sourceId: '1', title: '小叶紫檀108颗佛珠', subtitle: '精选小叶紫檀，手工打磨', price: 388, image: '/assets/product-xiaoyezitan.jpg', orderTarget: 'product:1', intentCodes: ['peace', 'diy'] },
-  { resourceType: 'product', sourceId: '2', title: '星月菩提手串', subtitle: '顺白高密星月菩提', price: 198, image: '/assets/product-xingyueputi.jpg', orderTarget: 'product:2', intentCodes: ['diy'] },
   { resourceType: 'service', sourceId: '1', title: '灵隐寺 · 祈福', subtitle: '寺院祈福服务', price: 200, image: '/assets/temple-card-lingyinsi.jpg', orderTarget: 'service:T001:S001', templeCode: 'T001', serviceCode: 'S001', intentCodes: ['peace'] },
   { resourceType: 'service', sourceId: '2', title: '白云观 · 化太岁', subtitle: '道教科仪服务', price: 300, image: '/assets/temple-card-baimasi.jpg', orderTarget: 'service:T002:S007', templeCode: 'T002', serviceCode: 'S007', intentCodes: ['taisui'] },
-  { resourceType: 'service', sourceId: '3', title: '少林寺 · 超度', subtitle: '寺院法事服务', price: 500, image: '/assets/temple-card-shaolinsi.jpg', orderTarget: 'service:T003:S005', templeCode: 'T003', serviceCode: 'S005', intentCodes: ['rite'] }
+  { resourceType: 'service', sourceId: '3', title: '少林寺 · 超度', subtitle: '寺院法事服务', price: 500, image: '/assets/temple-card-shaolinsi.jpg', orderTarget: 'service:T003:S005', templeCode: 'T003', serviceCode: 'S005', intentCodes: ['rite'] },
+  { resourceType: 'master', sourceId: 'M001', title: '明觉法师（演示） · 祈福', subtitle: '汉传佛教 · 禅宗', price: 168, image: masters[0].avatar, orderTarget: 'master:M001:S001', templeCode: 'T001', masterCode: 'M001', serviceCode: 'S001', intentCodes: ['peace'] },
+  { resourceType: 'master', sourceId: 'M002', title: '玄和道长（演示） · 化太岁', subtitle: '道教 · 全真派', price: 268, image: masters[1].avatar, orderTarget: 'master:M002:S007', templeCode: 'T002', masterCode: 'M002', serviceCode: 'S007', intentCodes: ['taisui'] }
 ];
 
 router.get('/intentions', (req: Request, res: Response) => {

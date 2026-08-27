@@ -21,7 +21,6 @@ export interface ProductSaveParams {
   marketPrice?: number
   stock: number
   tags?: string
-  intentTags?: string[]
   freightTemplateId?: number
 }
 

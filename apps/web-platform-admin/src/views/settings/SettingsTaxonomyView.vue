@@ -13,6 +13,16 @@ const intentionVisible = ref(false)
 const editingBelief = ref(false)
 const editingIntention = ref(false)
 
+const serviceTypeOptions = [
+  { code: 'S001', name: '祈福' }, { code: 'S002', name: '供灯' },
+  { code: 'S003', name: '上香' }, { code: 'S004', name: '还愿' },
+  { code: 'S005', name: '超度' }, { code: 'S006', name: '开光' },
+  { code: 'S007', name: '化太岁' }, { code: 'S008', name: '求姻缘' },
+  { code: 'S009', name: '求财运' }, { code: 'S010', name: '求事业' },
+  { code: 'S011', name: '求风水' }, { code: 'S012', name: '求健康' },
+  { code: 'S013', name: '求学业' },
+]
+
 const beliefForm = reactive({ code: '', name: '', summary: '', description: '', coverImage: '', icon: 'sparkles', sort: 0 })
 const intentionForm = reactive({ code: '', name: '', description: '', icon: 'sparkles', landingType: 'aggregate' as IntentionTag['landingType'], landingValue: '', actionTitle: '', sort: 0 })
 
@@ -55,6 +65,7 @@ function openIntention(row?: IntentionTag) {
 
 async function saveIntention() {
   if (!intentionForm.code || !intentionForm.name) return ElMessage.warning('请填写编码和名称')
+  if (intentionForm.landingType === 'service' && !intentionForm.landingValue) return ElMessage.warning('请从固定目录选择服务')
   const data = { ...intentionForm }
   if (editingIntention.value) {
     const { code, ...body } = data
@@ -98,7 +109,7 @@ onMounted(load)
     </section>
 
     <section class="taxonomy-section">
-      <div class="section-head"><div><h2>按心愿办</h2><p>心愿可聚合商城商品与寺院服务，落地方式控制首页点击后的办理路径。</p></div><el-button type="primary" :icon="Plus" @click="openIntention()">新增心愿</el-button></div>
+      <div class="section-head"><div><h2>按心愿办</h2><p>心愿聚合寺院服务与大师服务，落地方式控制首页点击后的办理路径。</p></div><el-button type="primary" :icon="Plus" @click="openIntention()">新增心愿</el-button></div>
       <el-table :data="intentions" border>
         <el-table-column prop="sort" label="排序" width="70" />
         <el-table-column prop="name" label="名称" min-width="120" />
@@ -130,8 +141,12 @@ onMounted(load)
         <el-form-item label="名称" required><el-input v-model="intentionForm.name" /></el-form-item>
         <el-form-item label="说明"><el-input v-model="intentionForm.description" type="textarea" :rows="3" /></el-form-item>
         <el-form-item label="SF Symbol"><el-input v-model="intentionForm.icon" /></el-form-item>
-        <el-form-item label="落地方式"><el-select v-model="intentionForm.landingType" style="width:100%"><el-option label="聚合页" value="aggregate" /><el-option label="服务办理" value="service" /><el-option label="DIY 定制" value="diy" /></el-select></el-form-item>
-        <el-form-item v-if="intentionForm.landingType === 'service'" label="服务编码"><el-input v-model="intentionForm.landingValue" placeholder="如 S001" /></el-form-item>
+        <el-form-item label="落地方式"><el-select v-model="intentionForm.landingType" style="width:100%"><el-option label="聚合页" value="aggregate" /><el-option label="服务办理" value="service" /><el-option label="独立 DIY 入口（不聚合）" value="diy" /></el-select></el-form-item>
+        <el-form-item v-if="intentionForm.landingType === 'service'" label="固定服务" required>
+          <el-select v-model="intentionForm.landingValue" filterable style="width:100%" placeholder="从 S001-S013 选择">
+            <el-option v-for="item in serviceTypeOptions" :key="item.code" :label="`${item.code} · ${item.name}`" :value="item.code" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="按钮文案"><el-input v-model="intentionForm.actionTitle" placeholder="如 立即办理" /></el-form-item>
         <el-form-item label="排序"><el-input-number v-model="intentionForm.sort" :min="0" /></el-form-item>
       </el-form>
