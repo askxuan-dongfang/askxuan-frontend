@@ -93,6 +93,9 @@ ehthumbs.db
 Thumbs.db
 desktop.ini
 
+# ---------- 独立 H5 仓库 ----------
+apps/web-h5/
+
 # ---------- 本地数据库/缓存 ----------
 *.sqlite
 *.sqlite3
