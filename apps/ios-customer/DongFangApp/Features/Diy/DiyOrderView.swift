@@ -20,6 +20,7 @@ struct DiyOrderView: View {
     @State private var selectedAddress: UserAddress?
     @State private var selectedBlessingService: BlessingService?
     @State private var checkoutOrder: DiyOrder?
+    @State private var materialsExpanded = false
 
     init(designId: Int64, viewModel: DiyViewModel? = nil, orderSource: DiyOrderSource = .cart) {
         self.designId = designId
@@ -38,6 +39,7 @@ struct DiyOrderView: View {
                     designSummary
                     addressSection
                     blessingSection
+                    materialSection
                     feeSection
                     Spacer(minLength: 100)
                 }
@@ -70,7 +72,7 @@ struct DiyOrderView: View {
         .task {
             await viewModel.loadCheckoutOptions()
             selectedAddress = viewModel.addresses.first(where: { $0.isDefault }) ?? viewModel.addresses.first
-            selectedBlessingService = viewModel.blessingServices.first
+            selectedBlessingService = nil
             if orderSource == .design, viewModel.currentDesign?.id != designId {
                 await viewModel.loadDesign(id: designId)
             }
@@ -79,45 +81,88 @@ struct DiyOrderView: View {
 
     // MARK: - 设计概要
     private var designSummary: some View {
-        HStack(spacing: AppSpacing.md) {
-            ZStack {
-                RoundedRectangle(cornerRadius: AppRadius.md)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.brandDefault.opacity(0.2), Color.accentDefault.opacity(0.15)],
-                            startPoint: .topLeading, endPoint: .bottomTrailing
-                        )
-                    )
-                Image(systemName: "circle.grid.2x2.fill")
-                    .font(.system(size: 22))
-                    .foregroundStyle(Color.accentDefault)
+        VStack(spacing: 0) {
+            DiyMiniBracelet(slots: checkoutSlots, fallbackCount: 0)
+                .frame(height: 218)
+
+            HStack(alignment: .bottom, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(viewModel.currentDesign?.name ?? "我的手串")
+                        .font(.custom(AppFont.serif[0], size: 17).weight(.bold))
+                        .foregroundStyle(Color.textPrimary)
+                    Text("\(checkoutSlots.count) 颗 · \(materialLines.count) 种材料")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color.textTertiary)
+                }
+                Spacer()
+                Text("¥\(String(format: "%.2f", viewModel.currentDesign?.totalPrice ?? viewModel.totalPrice))")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(Color.brandDefault)
             }
-            .frame(width: 64, height: 64)
-            .cornerRadius(AppRadius.md)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(viewModel.currentDesign?.name ?? "我的手串")
-                    .font(.cardTitle)
-                    .foregroundStyle(Color.textPrimary)
-                Text("编号：\(viewModel.currentDesign?.designNo ?? "—")")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.textTertiary)
-                Text(materialSummaryText)
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.textSecondary)
-            }
-
-            Spacer()
-
-            Text("¥\(Int(viewModel.currentDesign?.totalPrice ?? viewModel.totalPrice))")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(Color.brandDefault)
+            .padding(.horizontal, AppSpacing.md)
+            .padding(.bottom, AppSpacing.md)
         }
-        .padding(AppSpacing.md)
-        .background(Color.bgSecondary)
-        .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
+        .background(
+            RadialGradient(
+                colors: [Color(hex: "303236"), Color(hex: "17191B"), Color(hex: "0D0F10")],
+                center: .center,
+                startRadius: 24,
+                endRadius: 280
+            )
+        )
+        .overlay(alignment: .bottom) { Rectangle().fill(Color.borderDefault).frame(height: 1) }
         .padding(.horizontal, AppSpacing.lg)
+    }
+
+    private var materialSection: some View {
+        VStack(spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { materialsExpanded.toggle() }
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("材料明细")
+                            .font(.cardTitle)
+                            .foregroundStyle(Color.textPrimary)
+                        Text("\(materialLines.count) 种材料")
+                            .font(.system(size: 9))
+                            .foregroundStyle(Color.textTertiary)
+                    }
+                    Spacer()
+                    Image(systemName: materialsExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.accentDefault)
+                }
+                .padding(.vertical, 12)
+            }
+            .buttonStyle(.plain)
+
+            if materialsExpanded {
+                VStack(spacing: 0) {
+                    ForEach(materialLines) { line in
+                        HStack(spacing: 10) {
+                            Circle()
+                                .fill(line.color)
+                                .frame(width: 28, height: 28)
+                                .shadow(color: Color.black.opacity(0.3), radius: 3, y: 2)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(line.name).font(.system(size: 12, weight: .medium)).foregroundStyle(Color.textPrimary)
+                                Text("\(line.spec) × \(line.quantity)").font(.system(size: 9)).foregroundStyle(Color.textTertiary)
+                            }
+                            Spacer()
+                            Text("¥\(String(format: "%.2f", line.total))")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.textSecondary)
+                        }
+                        .padding(.vertical, 10)
+                        .overlay(alignment: .bottom) { Rectangle().fill(Color.borderDivider).frame(height: 1) }
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .padding(.horizontal, AppSpacing.lg)
+        .overlay(alignment: .bottom) { Rectangle().fill(Color.borderDivider).frame(height: 1) }
     }
 
     // MARK: - 收货地址
@@ -322,11 +367,33 @@ struct DiyOrderView: View {
         return "¥\(Int(material + bless))"
     }
 
-    private var materialSummaryText: String {
-        if viewModel.totalQuantity > 0 {
-            return "\(viewModel.totalQuantity) 种材料"
+    private var checkoutSlots: [DiyBeadSlot] {
+        if !viewModel.beadSlots.isEmpty { return viewModel.beadSlots }
+        guard let raw = viewModel.currentDesign?.designData,
+              let data = raw.data(using: .utf8),
+              let document = try? JSONDecoder().decode(DiyDesignDocument.self, from: data) else { return [] }
+        return document.beads.sorted { $0.position < $1.position }
+    }
+
+    private var materialLines: [DiyCheckoutMaterialLine] {
+        var grouped: [String: DiyCheckoutMaterialLine] = [:]
+        for slot in checkoutSlots {
+            let key = "\(slot.materialId)|\(slot.spec)"
+            if var line = grouped[key] {
+                line.quantity += 1
+                grouped[key] = line
+            } else {
+                grouped[key] = DiyCheckoutMaterialLine(
+                    id: key,
+                    name: slot.materialName,
+                    spec: slot.spec,
+                    unitPrice: slot.unitPrice,
+                    quantity: 1,
+                    color: Color(hex: slot.colorHex ?? "8F3B3B")
+                )
+            }
         }
-        return orderSource == .design ? "按设计方案下单" : "未选择材料"
+        return grouped.values.sorted { $0.name < $1.name }
     }
 
     // MARK: - 底部提交栏
@@ -385,6 +452,17 @@ struct DiyOrderView: View {
             )
         }
     }
+}
+
+private struct DiyCheckoutMaterialLine: Identifiable {
+    let id: String
+    let name: String
+    let spec: String
+    let unitPrice: Double
+    var quantity: Int
+    let color: Color
+
+    var total: Double { unitPrice * Double(quantity) }
 }
 
 private struct DiyPaymentFlowView: View {
