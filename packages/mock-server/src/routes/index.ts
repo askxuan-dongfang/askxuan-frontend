@@ -908,21 +908,34 @@ router.post('/bookings', (req: Request, res: Response) => {
 });
 
 // ========== 认证 ==========
+const mockCustomerUsers = new Map<string, { userId: number; mobile: string; nickname: string; avatar: string }>([
+  ['13800138000', { userId: 1, mobile: '13800138000', nickname: '善信居士', avatar: '' }]
+]);
+
+router.post('/users/register', (req: Request, res: Response) => {
+  const mobile = String(req.body?.mobile ?? '').trim();
+  const nickname = String(req.body?.nickname ?? '').trim() || `善信${mobile.slice(-4)}`;
+  if (!/^1[3-9][0-9]{9}$/.test(mobile) || nickname.length > 32) return fail(res, 40003, '参数格式不正确');
+  if (mockCustomerUsers.has(mobile)) return fail(res, 40901, '用户已存在');
+  const user = { userId: mockCustomerUsers.size + 1, mobile, nickname, avatar: '' };
+  mockCustomerUsers.set(mobile, user);
+  success(res, { ...user, imReady: true });
+});
+
 router.post('/auth/login', (req: Request, res: Response) => {
   const { phone, code } = req.body ?? {};
-  if (!phone || !code) {
-    return fail(res, 400, 'phone 与 code 必填');
-  }
+  if (!phone || code !== '1234') return fail(res, 40102, '手机号或验证码错误');
+  const user = mockCustomerUsers.get(String(phone));
+  if (!user) return fail(res, 40401, '用户不存在');
   // 模拟 JWT token（仅用于联调，非真实签名）
   const token = `mock.${Buffer.from(JSON.stringify({ phone, ts: Date.now() })).toString('base64')}.signature`;
-  const user = {
-    userId: 'U001',
-    phone,
-    nickname: '善信弟子',
-    avatar: '/assets/master-avatar-zhihai.jpg',
-    createdAt: '2026-01-01 00:00:00'
-  };
-  success(res, { token, user });
+  success(res, {
+    accessToken: token,
+    refreshToken: `mock-refresh-${user.userId}`,
+    expiresIn: 7200,
+    userInfo: user,
+    imToken: `mock-im-${user.userId}`
+  });
 });
 
 // ========== 站内消息 ==========

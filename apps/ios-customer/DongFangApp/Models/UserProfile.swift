@@ -96,13 +96,16 @@ struct LoginRequest: Codable {
 /// 注册请求体（user-service /user/register）
 struct RegisterRequest: Codable {
     let mobile: String
-    let code: String
-    let nickname: String
+    let code: String?
+    let nickname: String?
 }
 
 /// 注册响应
 struct RegisterResponse: Codable {
     let userId: Int64?
+    let mobile: String?
+    let nickname: String?
+    let imReady: Bool?
 }
 
 /// 登录响应

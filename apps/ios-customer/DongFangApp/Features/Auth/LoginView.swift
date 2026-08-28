@@ -2,8 +2,7 @@
 //  LoginView.swift
 //  DongFangApp
 //
-//  C 端登录页：品牌 Logo + 手机号 + 验证码 + 登录按钮。
-//  后端 mock 阶段验证码固定 1234，点击"获取验证码"直接填入。
+//  C 端认证页：手机号登录与免真实短信验证注册。
 //
 
 import SwiftUI
@@ -12,8 +11,17 @@ struct LoginView: View {
     @EnvironmentObject private var authStore: AuthStore
     @Environment(\.dismiss) private var dismiss
 
+    private enum AuthMode: String, CaseIterable, Identifiable {
+        case login = "登录"
+        case register = "注册"
+
+        var id: String { rawValue }
+    }
+
+    @State private var mode: AuthMode = .login
     @State private var phone: String = ""
     @State private var code: String = ""
+    @State private var nickname: String = ""
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
     @State private var countdown: Int = 0
@@ -23,8 +31,13 @@ struct LoginView: View {
         phone.count == 11 && phone.hasPrefix("1")
     }
 
-    private var canLogin: Bool {
-        isPhoneValid && code.count >= 4 && !isLoading
+    private var canSubmit: Bool {
+        switch mode {
+        case .login:
+            return isPhoneValid && code.count >= 4 && !isLoading
+        case .register:
+            return isPhoneValid && nickname.count <= 32 && !isLoading
+        }
     }
 
     var body: some View {
@@ -34,8 +47,9 @@ struct LoginView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: AppSpacing.xl) {
                     logoSection
+                    modePicker
                     formSection
-                    loginButton
+                    submitButton
                     hintSection
                     Spacer(minLength: 40)
                 }
@@ -43,7 +57,7 @@ struct LoginView: View {
                 .padding(.top, 60)
             }
         }
-        .alert("登录失败", isPresented: .init(
+        .alert(mode == .login ? "登录失败" : "注册失败", isPresented: .init(
             get: { errorMessage != nil },
             set: { if !$0 { errorMessage = nil } }
         )) {
@@ -53,6 +67,18 @@ struct LoginView: View {
         }
         .onDisappear {
             countdownTimer?.invalidate()
+        }
+    }
+
+    private var modePicker: some View {
+        Picker("认证方式", selection: $mode) {
+            ForEach(AuthMode.allCases) { item in
+                Text(item.rawValue).tag(item)
+            }
+        }
+        .pickerStyle(.segmented)
+        .onChange(of: mode) { _, _ in
+            errorMessage = nil
         }
     }
 
@@ -116,63 +142,89 @@ struct LoginView: View {
                     .stroke(isPhoneValid ? Color.accentDefault.opacity(0.3) : Color.borderDefault, lineWidth: 1)
             )
 
-            // 验证码
-            HStack(spacing: 12) {
-                Image(systemName: "shield.lefthalf.filled")
-                    .font(.system(size: 16))
-                    .foregroundStyle(Color.textTertiary)
-                    .frame(width: 20)
-
-                TextField("请输入验证码", text: $code)
-                    .keyboardType(.numberPad)
-                    .font(.system(size: 16))
-                    .foregroundStyle(Color.textPrimary)
-                    .onChange(of: code) { _, newValue in
-                        if newValue.count > 6 {
-                            code = String(newValue.prefix(6))
-                        }
-                    }
-
-                Spacer()
-
-                Button {
-                    sendCode()
-                } label: {
-                    Text(countdown > 0 ? "\(countdown)s" : "获取验证码")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(countdown > 0 ? Color.textTertiary : Color.accentDefault)
-                }
-                .buttonStyle(.plain)
-                .disabled(countdown > 0 || !isPhoneValid)
+            if mode == .login {
+                codeField
+            } else {
+                nicknameField
             }
-            .padding(.horizontal, AppSpacing.lg)
-            .padding(.vertical, 14)
-            .background(Color.bgSecondary)
-            .cornerRadius(AppRadius.lg)
-            .overlay(
-                RoundedRectangle(cornerRadius: AppRadius.lg)
-                    .stroke(Color.borderDefault, lineWidth: 1)
-            )
         }
     }
 
+    private var codeField: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "shield.lefthalf.filled")
+                .font(.system(size: 16))
+                .foregroundStyle(Color.textTertiary)
+                .frame(width: 20)
+
+            TextField("请输入验证码", text: $code)
+                .keyboardType(.numberPad)
+                .font(.system(size: 16))
+                .foregroundStyle(Color.textPrimary)
+                .onChange(of: code) { _, newValue in
+                    if newValue.count > 6 { code = String(newValue.prefix(6)) }
+                }
+
+            Spacer()
+            Button { sendCode() } label: {
+                Text(countdown > 0 ? "\(countdown)s" : "获取验证码")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(countdown > 0 ? Color.textTertiary : Color.accentDefault)
+            }
+            .buttonStyle(.plain)
+            .disabled(countdown > 0 || !isPhoneValid)
+        }
+        .padding(.horizontal, AppSpacing.lg)
+        .padding(.vertical, 14)
+        .background(Color.bgSecondary)
+        .cornerRadius(AppRadius.lg)
+        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
+    }
+
+    private var nicknameField: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "person.fill")
+                .font(.system(size: 16))
+                .foregroundStyle(Color.textTertiary)
+                .frame(width: 20)
+            TextField("昵称（选填）", text: $nickname)
+                .font(.system(size: 16))
+                .foregroundStyle(Color.textPrimary)
+                .onChange(of: nickname) { _, newValue in
+                    if newValue.count > 32 { nickname = String(newValue.prefix(32)) }
+                }
+        }
+        .padding(.horizontal, AppSpacing.lg)
+        .padding(.vertical, 14)
+        .background(Color.bgSecondary)
+        .cornerRadius(AppRadius.lg)
+        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
+    }
+
     // MARK: - 登录按钮
-    private var loginButton: some View {
-        DFPrimaryButton(title: "登录", icon: "arrow.right.circle.fill",
-                        isEnabled: canLogin,
+    private var submitButton: some View {
+        DFPrimaryButton(title: mode.rawValue,
+                        icon: mode == .login ? "arrow.right.circle.fill" : "person.badge.plus",
+                        isEnabled: canSubmit,
                         isLoading: isLoading) {
-            Task { await performLogin() }
+            Task {
+                if mode == .login {
+                    await performLogin()
+                } else {
+                    await performRegistration()
+                }
+            }
         }
     }
 
     // MARK: - 提示
     private var hintSection: some View {
         VStack(spacing: AppSpacing.sm) {
-            Text("MVP 测试提示：验证码固定为 1234")
+            Text(mode == .login ? "演示登录验证码固定为 1234" : "注册不发送或校验真实短信验证码")
                 .font(.system(size: 12))
                 .foregroundStyle(Color.textTertiary)
 
-            Text("未注册手机号将自动创建账号")
+            Text(mode == .login ? "没有账号？切换到注册" : "注册成功后将自动登录")
                 .font(.system(size: 11))
                 .foregroundStyle(Color.textTertiary.opacity(0.7))
         }
@@ -202,38 +254,51 @@ struct LoginView: View {
         isLoading = true
         errorMessage = nil
 
-        // 先尝试登录，若用户不存在则自动注册后再登录
-        var loginSucceeded = false
         let loginResult = await tryLogin()
         switch loginResult {
         case .success:
-            loginSucceeded = true
-        case .userNotFound:
-            // 自动注册
-            let regResult = await tryRegister()
-            switch regResult {
-            case .success:
-                // 注册成功后再次登录
-                let retryResult = await tryLogin()
-                if case .success = retryResult {
-                    loginSucceeded = true
-                } else if case .failure(let msg) = retryResult {
-                    errorMessage = msg
-                }
-            case .failure(let msg):
-                errorMessage = msg
-            }
-        case .failure(let msg):
-            errorMessage = msg
-        }
-
-        await MainActor.run {
-            isLoading = false
-            // 登录成功后自动 dismiss 回到来源页（TabView 会因 isLoggedIn 变化刷新）
-            if loginSucceeded {
+            await MainActor.run {
+                isLoading = false
                 dismiss()
             }
+        case .userNotFound:
+            await MainActor.run {
+                isLoading = false
+                errorMessage = "该手机号尚未注册，请切换到注册"
+            }
+        case .failure(let msg):
+            await MainActor.run {
+                isLoading = false
+                errorMessage = msg
+            }
         }
+    }
+
+    private func performRegistration() async {
+        isLoading = true
+        errorMessage = nil
+        switch await tryRegister() {
+        case .success:
+            switch await tryLogin(codeOverride: "1234") {
+            case .success:
+                await MainActor.run {
+                    isLoading = false
+                    dismiss()
+                }
+            case .userNotFound:
+                finishWithError("账号已创建，但自动登录失败，请重试")
+            case .failure(let message):
+                finishWithError("账号已创建，自动登录失败：\(message)")
+            }
+        case .failure(let message):
+            finishWithError(message)
+        }
+    }
+
+    @MainActor
+    private func finishWithError(_ message: String) {
+        isLoading = false
+        errorMessage = message
     }
 
     private enum LoginOutcome {
@@ -247,10 +312,10 @@ struct LoginView: View {
         case failure(String)
     }
 
-    private func tryLogin() async -> LoginOutcome {
+    private func tryLogin(codeOverride: String? = nil) async -> LoginOutcome {
         do {
             let resp: LoginResponse = try await APIClient.shared.request(
-                .authLogin(LoginRequest(phone: phone, code: code, account: nil, password: nil))
+                .authLogin(LoginRequest(phone: phone, code: codeOverride ?? code, account: nil, password: nil))
             )
             let userId = resp.userInfo?.userId.map(String.init) ?? AppConfig.defaultUserId
             await MainActor.run {
@@ -293,14 +358,14 @@ struct LoginView: View {
     private func tryRegister() async -> RegisterOutcome {
         do {
             let _: RegisterResponse = try await APIClient.shared.request(
-                .authRegister(RegisterRequest(mobile: phone, code: code, nickname: "善信\(phone.suffix(4))"))
+                .authRegister(RegisterRequest(
+                    mobile: phone,
+                    code: nil,
+                    nickname: nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : nickname
+                ))
             )
             return .success
         } catch let APIError.serverError(_, message) {
-            // 已注册也视为成功
-            if message.contains("已") || message.contains("存在") {
-                return .success
-            }
             return .failure("注册失败：\(message)")
         } catch APIError.networkError {
             return .failure("网络连接失败，请检查网络后重试")
