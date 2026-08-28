@@ -13,6 +13,7 @@ struct DiyDesignView: View {
     @State private var checkoutAfterSave = false
     @State private var showOrderPage = false
     @State private var materialSearch = ""
+    @State private var materialPanelExpanded = true
     @Environment(\.dismiss) private var dismiss
 
     @MainActor
@@ -174,47 +175,85 @@ struct DiyDesignView: View {
     private var materialPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center, spacing: 12) {
-                Text("选择材料")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.textPrimary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("材料库")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.textPrimary)
+                    Text("\(filteredMaterials.count) 种可选 · 库存实时同步")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.textTertiary)
+                }
                 Spacer()
-                HStack(spacing: 6) {
+                Button {
+                    withAnimation(.snappy(duration: 0.24)) {
+                        materialPanelExpanded.toggle()
+                    }
+                    UISelectionFeedbackGenerator().selectionChanged()
+                } label: {
+                    Image(systemName: materialPanelExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.accentDefault)
+                        .frame(width: 34, height: 34)
+                        .background(Color.bgTertiary)
+                        .clipShape(Circle())
+                        .overlay { Circle().stroke(Color.borderDefault, lineWidth: 1) }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(materialPanelExpanded ? "收起材料库" : "展开材料库")
+            }
+
+            categoryTabs
+
+            if materialPanelExpanded {
+                HStack(spacing: 7) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 11))
-                    TextField("搜索材质", text: $materialSearch)
+                    TextField("搜索材质、规格", text: $materialSearch)
                         .font(.system(size: 11))
                         .textInputAutocapitalization(.never)
                 }
                 .foregroundStyle(.textTertiary)
-                .padding(.horizontal, 9)
-                .frame(width: 126, height: 32)
+                .padding(.horizontal, 10)
+                .frame(height: 34)
                 .background(Color.bgTertiary)
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
                 .overlay {
                     RoundedRectangle(cornerRadius: AppRadius.md)
                         .stroke(Color.borderDefault, lineWidth: 1)
                 }
-            }
 
-            categoryTabs
-
-            if filteredMaterials.isEmpty && !viewModel.isLoading {
-                ContentUnavailableView("暂无可选材料", systemImage: "circle.slash")
-                    .foregroundStyle(.textTertiary)
-                    .frame(maxWidth: .infinity, minHeight: 150)
-            } else {
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 74, maximum: 96), spacing: 8)],
-                    spacing: 8
-                ) {
-                    ForEach(filteredMaterials) { material in
-                        materialCard(material)
+                if filteredMaterials.isEmpty && !viewModel.isLoading {
+                    ContentUnavailableView("暂无可选材料", systemImage: "circle.slash")
+                        .foregroundStyle(.textTertiary)
+                        .frame(maxWidth: .infinity, minHeight: 150)
+                } else {
+                    LazyVGrid(
+                        columns: [GridItem(.adaptive(minimum: 84, maximum: 104), spacing: 8)],
+                        spacing: 8
+                    ) {
+                        ForEach(filteredMaterials) { material in
+                            materialCard(material)
+                        }
                     }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(Array(filteredMaterials.prefix(10))) { material in
+                            quickMaterialButton(material)
+                        }
+                    }
+                    .padding(.vertical, 3)
+                }
+                .transition(.opacity)
             }
         }
         .padding(14)
         .background(Color.bgSecondary)
+        .overlay(alignment: .top) {
+            Rectangle().fill(Color.borderDefault).frame(height: 1)
+        }
     }
 
     private var categoryTabs: some View {
@@ -313,6 +352,40 @@ struct DiyDesignView: View {
         .disabled(isUnavailable)
         .accessibilityLabel("\(material.name)，\(material.spec)，\(material.priceText)")
         .accessibilityValue(count > 0 ? "已选 \(count) 件" : "未选择")
+    }
+
+    private func quickMaterialButton(_ material: Material) -> some View {
+        let count = viewModel.count(for: material.id)
+        let isUnavailable = count >= material.stock
+        return Button {
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.76)) {
+                viewModel.addToCart(material)
+            }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        } label: {
+            VStack(spacing: 6) {
+                DiyMaterialBead(
+                    name: material.name,
+                    category: material.category,
+                    size: 44,
+                    isSelected: count > 0,
+                    shape: material.shape ?? "round",
+                    colorHex: material.colorHex,
+                    textureKey: material.textureKey,
+                    finish: material.finish,
+                    translucency: material.translucency ?? 0
+                )
+                Text(material.name)
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(.textSecondary)
+                    .lineLimit(1)
+                    .frame(width: 60)
+            }
+            .opacity(isUnavailable ? 0.42 : 1)
+        }
+        .buttonStyle(.plain)
+        .disabled(isUnavailable)
+        .accessibilityLabel("添加\(material.name)")
     }
 
     private var bottomActionBar: some View {
