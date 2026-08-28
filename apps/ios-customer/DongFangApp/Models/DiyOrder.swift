@@ -59,6 +59,12 @@ struct DiyBeadSlot: Codable, Identifiable, Hashable {
     let subtype: String
     let image: String
     let diameterMm: Double
+    let materialType: String?
+    let shape: String?
+    let colorHex: String?
+    let textureKey: String?
+    let finish: String?
+    let translucency: Double?
 
     var id: String { slotId }
 
@@ -73,6 +79,12 @@ struct DiyBeadSlot: Codable, Identifiable, Hashable {
         self.subtype = material.category
         self.image = material.image
         self.diameterMm = material.resolvedDiameterMm
+        self.materialType = material.materialType
+        self.shape = material.shape
+        self.colorHex = material.colorHex
+        self.textureKey = material.textureKey
+        self.finish = material.finish
+        self.translucency = material.translucency
     }
 
     init(item: DiyOrderItem, position: Int, slotId: String = UUID().uuidString) {
@@ -85,6 +97,12 @@ struct DiyBeadSlot: Codable, Identifiable, Hashable {
         self.unitPrice = item.unitPrice
         self.subtype = item.subtype ?? "main_bead"
         self.image = ""
+        self.materialType = nil
+        self.shape = nil
+        self.colorHex = nil
+        self.textureKey = nil
+        self.finish = nil
+        self.translucency = nil
         self.diameterMm = Material(
             id: item.materialId,
             name: item.materialName,
@@ -108,6 +126,13 @@ struct DiyBeadSlot: Codable, Identifiable, Hashable {
             unit: subtype == "cord" ? "条" : "颗",
             category: subtype,
             fiveElements: nil,
+            materialType: materialType,
+            shape: shape,
+            diameterMm: diameterMm,
+            colorHex: colorHex,
+            textureKey: textureKey,
+            finish: finish,
+            translucency: translucency,
             image: image,
             stock: 1,
             status: "on_shelf"
@@ -203,13 +228,45 @@ struct Material: Codable, Identifiable, Hashable {
     let unit: String
     let category: String         // main_bead/spacer/buddha_head/pendant/tassel/three_way/cord
     let fiveElements: String?
+    let materialType: String?
+    let shape: String?
+    let diameterMm: Double?
+    let colorHex: String?
+    let textureKey: String?
+    let finish: String?
+    let translucency: Double?
     let image: String
     let stock: Int
     let status: String
 
+    init(id: Int64, name: String, spec: String, unitPrice: Double, unit: String,
+         category: String, fiveElements: String? = nil, materialType: String? = nil,
+         shape: String? = nil, diameterMm: Double? = nil, colorHex: String? = nil,
+         textureKey: String? = nil, finish: String? = nil, translucency: Double? = nil,
+         image: String, stock: Int, status: String) {
+        self.id = id
+        self.name = name
+        self.spec = spec
+        self.unitPrice = unitPrice
+        self.unit = unit
+        self.category = category
+        self.fiveElements = fiveElements
+        self.materialType = materialType
+        self.shape = shape
+        self.diameterMm = diameterMm
+        self.colorHex = colorHex
+        self.textureKey = textureKey
+        self.finish = finish
+        self.translucency = translucency
+        self.image = image
+        self.stock = stock
+        self.status = status
+    }
+
     var priceText: String { "¥\(String(format: "%.2f", unitPrice))/\(unit)" }
 
     var resolvedDiameterMm: Double {
+        if let diameterMm, diameterMm > 0 { return diameterMm }
         let numeric = spec
             .replacingOccurrences(of: "毫米", with: "")
             .replacingOccurrences(of: "mm", with: "", options: .caseInsensitive)
@@ -300,40 +357,6 @@ struct PaymentRecord: Codable, Identifiable {
     let status: String
     let tradeNo: String?
     let createTime: String
-}
-
-// MARK: - Mock 数据
-extension Material {
-    static let mockMaterials: [Material] = [
-        Material(id: 1, name: "小叶紫檀圆珠", spec: "10mm", unitPrice: 28, unit: "颗",
-                 category: "main_bead", fiveElements: "wood", image: "/assets/materials/rosewood.jpg", stock: 500, status: "on_shelf"),
-        Material(id: 2, name: "星月菩提", spec: "10mm", unitPrice: 18, unit: "颗",
-                 category: "main_bead", fiveElements: "wood", image: "/assets/materials/bodhi.jpg", stock: 500, status: "on_shelf"),
-        Material(id: 3, name: "凤眼菩提", spec: "10mm", unitPrice: 22, unit: "颗",
-                 category: "main_bead", fiveElements: "wood", image: "/assets/materials/rudraksha.jpg", stock: 500, status: "on_shelf"),
-        Material(id: 4, name: "白玉", spec: "8mm", unitPrice: 35, unit: "颗",
-                 category: "main_bead", fiveElements: "earth", image: "/assets/materials/jade.jpg", stock: 300, status: "on_shelf"),
-        Material(id: 5, name: "青金石", spec: "10mm", unitPrice: 25, unit: "颗",
-                 category: "main_bead", fiveElements: "water", image: "/assets/materials/lapis.jpg", stock: 300, status: "on_shelf"),
-        Material(id: 6, name: "南红玛瑙", spec: "8mm", unitPrice: 32, unit: "颗",
-                 category: "main_bead", fiveElements: "fire", image: "/assets/materials/agate.jpg", stock: 300, status: "on_shelf"),
-        Material(id: 7, name: "蜜蜡", spec: "10mm", unitPrice: 45, unit: "颗",
-                 category: "main_bead", fiveElements: "earth", image: "/assets/materials/amber.jpg", stock: 260, status: "on_shelf"),
-        Material(id: 8, name: "黑曜石", spec: "10mm", unitPrice: 12, unit: "颗",
-                 category: "main_bead", fiveElements: "water", image: "/assets/materials/obsidian.jpg", stock: 500, status: "on_shelf"),
-        Material(id: 9, name: "藏银三通", spec: "10mm", unitPrice: 48, unit: "个",
-                 category: "three_way", fiveElements: "metal", image: "/assets/materials/silver-three-way.jpg", stock: 120, status: "on_shelf"),
-        Material(id: 10, name: "蜜蜡佛头", spec: "12mm", unitPrice: 68, unit: "个",
-                 category: "buddha_head", fiveElements: "earth", image: "/assets/materials/amber-head.jpg", stock: 120, status: "on_shelf"),
-        Material(id: 11, name: "花丝莲花吊坠", spec: "15mm", unitPrice: 20, unit: "个",
-                 category: "pendant", fiveElements: "metal", image: "/assets/materials/lotus-pendant.jpg", stock: 200, status: "on_shelf"),
-        Material(id: 12, name: "白水晶隔片", spec: "6mm", unitPrice: 2.5, unit: "颗",
-                 category: "spacer", fiveElements: "water", image: "/assets/materials/crystal-spacer.jpg", stock: 1_000, status: "on_shelf"),
-        Material(id: 13, name: "流苏配饰", spec: "", unitPrice: 28, unit: "个",
-                 category: "tassel", fiveElements: "fire", image: "/assets/materials/tassel.jpg", stock: 180, status: "on_shelf"),
-        Material(id: 14, name: "弹力绳", spec: "", unitPrice: 2, unit: "根",
-                 category: "cord", fiveElements: "wood", image: "/assets/materials/cord.jpg", stock: 1_000, status: "on_shelf")
-    ]
 }
 
 extension DiyDesign {

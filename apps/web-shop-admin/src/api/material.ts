@@ -18,6 +18,13 @@ export interface MaterialSaveParams {
   unit: string
   category: string
   fiveElements?: string
+  materialType: string
+  shape: string
+  diameterMm: number
+  colorHex: string
+  textureKey: string
+  finish: string
+  translucency: number
   image: string
   stock: number
 }

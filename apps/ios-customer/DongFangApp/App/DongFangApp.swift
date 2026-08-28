@@ -28,17 +28,7 @@ struct DongFangApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Group {
-                #if DEBUG
-                if ProcessInfo.processInfo.arguments.contains("--diy-screenshot") {
-                    DiyScreenshotRootView()
-                } else {
-                    MainTabView()
-                }
-                #else
-                MainTabView()
-                #endif
-            }
+            MainTabView()
             .environmentObject(authStore)
             .preferredColorScheme(.dark)
         }
@@ -110,37 +100,3 @@ struct DongFangApp: App {
         }
     }
 }
-
-#if DEBUG
-/// Deterministic editor fixture for screenshots and visual regression checks.
-private struct DiyScreenshotRootView: View {
-    @StateObject private var viewModel: DiyViewModel
-
-    init() {
-        let defaults = UserDefaults(suiteName: "askxuan.diy.screenshot")!
-        defaults.removePersistentDomain(forName: "askxuan.diy.screenshot")
-
-        let viewModel = DiyViewModel(draftStore: defaults)
-        viewModel.materials = Material.mockMaterials
-
-        let pattern = [2, 2, 6, 2, 2, 2, 6, 2, 2, 10, 2, 2, 6, 2, 2, 6]
-        for materialId in pattern {
-            if let material = Material.mockMaterials.first(where: { $0.id == materialId }) {
-                viewModel.addBead(material)
-            }
-        }
-        if let cord = Material.mockMaterials.first(where: { $0.category == "cord" }) {
-            viewModel.setCord(cord)
-        }
-        viewModel.setWristSize(160)
-        viewModel.selectBead(nil)
-        _viewModel = StateObject(wrappedValue: viewModel)
-    }
-
-    var body: some View {
-        NavigationStack {
-            DiyDesignView(viewModel: viewModel)
-        }
-    }
-}
-#endif

@@ -31,6 +31,12 @@ const categoryOptions = [
   { value: 'cord', label: '线绳' }
 ]
 
+const elementLabel: Record<string, string> = { metal: '金', wood: '木', water: '水', fire: '火', earth: '土' }
+const materialTypeLabel: Record<string, string> = {
+  crystal: '水晶', jade: '玉石', gemstone: '宝石', wood: '木质', seed: '菩提籽',
+  organic: '有机宝石', metal: '金属', ceramic: '陶瓷', glass: '琉璃', textile: '织物', cord: '绳线'
+}
+
 async function loadList() {
   loading.value = true
   try {
@@ -96,7 +102,7 @@ onMounted(() => {
 
 <template>
   <div class="page-wrap">
-    <PageHeader title="DIY 材料列表" subtitle="管理手串 DIY 材料库、价格与库存">
+    <PageHeader title="DIY 材料列表" subtitle="这里是 H5 与 iOS 的权威材料、样式、价格和库存来源">
       <template #extra>
         <el-button type="primary" @click="router.push('/materials/edit')">
           <el-icon><Plus /></el-icon>
@@ -145,7 +151,7 @@ onMounted(() => {
               </el-image>
               <div>
                 <div class="material-name">{{ row.name }}</div>
-                <div class="material-spec">{{ row.spec }}</div>
+                <div class="material-spec">{{ row.spec }} · {{ materialTypeLabel[row.materialType] || row.materialType }}</div>
               </div>
             </div>
           </template>
@@ -153,7 +159,14 @@ onMounted(() => {
         <el-table-column label="分类" width="100">
           <template #default="{ row }">{{ materialCategoryLabel(row.category) }}</template>
         </el-table-column>
-        <el-table-column label="五行" prop="fiveElements" width="80" />
+        <el-table-column label="五行" width="70">
+          <template #default="{ row }">{{ elementLabel[row.fiveElements] || row.fiveElements || '—' }}</template>
+        </el-table-column>
+        <el-table-column label="渲染" width="130">
+          <template #default="{ row }">
+            <div class="render-cell"><span class="color-swatch" :style="{ background: row.colorHex }" />{{ row.shape }} · {{ row.diameterMm }}mm</div>
+          </template>
+        </el-table-column>
         <el-table-column label="单价" width="120">
           <template #default="{ row }">
             <span class="price">{{ formatMoney(row.unitPrice) }} / {{ row.unit }}</span>
@@ -251,4 +264,6 @@ onMounted(() => {
   color: var(--primary);
   font-weight: 600;
 }
+.render-cell { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-light); }
+.color-swatch { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(0,0,0,.12); flex: none; }
 </style>

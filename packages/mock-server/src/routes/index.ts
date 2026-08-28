@@ -164,27 +164,9 @@ function mockAiAnswer(content: string) {
   return `[本地开发模拟] 已收到：${content}。请结合实际情况理性判断。`;
 }
 
-function mapDiyCategory(material: { name: string; category: string }) {
-  if (material.category === '主珠') return 'main_bead';
-  if (material.name.includes('佛头')) return 'buddha_head';
-  if (material.name.includes('三通')) return 'three_way';
-  if (material.name.includes('吊坠') || material.name.includes('流苏')) return 'pendant';
-  if (material.name.includes('隔片')) return 'spacer';
-  if (material.name.includes('绳')) return 'cord';
-  return 'accessory';
-}
-
 const diyMaterials = materials.map((m) => ({
-  id: Number(String(m.id).replace(/\D/g, '')),
-  name: m.name,
-  spec: m.spec,
+  ...m,
   unitPrice: m.price,
-  unit: m.unit,
-  category: mapDiyCategory(m),
-  fiveElements: '',
-  image: '',
-  stock: 999,
-  status: 'on_shelf'
 }));
 
 type MockDiyOrder = {

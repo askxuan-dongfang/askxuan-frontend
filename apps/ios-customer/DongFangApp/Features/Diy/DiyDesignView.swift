@@ -134,7 +134,12 @@ struct DiyDesignView: View {
                     name: selected.materialName,
                     category: selected.subtype,
                     size: 30,
-                    isSelected: true
+                    isSelected: true,
+                    shape: selected.shape ?? "round",
+                    colorHex: selected.colorHex,
+                    textureKey: selected.textureKey,
+                    finish: selected.finish,
+                    translucency: selected.translucency ?? 0
                 )
                 VStack(alignment: .leading, spacing: 2) {
                     Text("当前选中")
@@ -263,7 +268,12 @@ struct DiyDesignView: View {
                         name: material.name,
                         category: material.category,
                         size: 42,
-                        isSelected: count > 0
+                        isSelected: count > 0,
+                        shape: material.shape ?? "round",
+                        colorHex: material.colorHex,
+                        textureKey: material.textureKey,
+                        finish: material.finish,
+                        translucency: material.translucency ?? 0
                     )
                     if count > 0 {
                         Text("×\(count)")
@@ -547,7 +557,12 @@ private struct DiyBraceletStage: View {
                     category: slot.subtype,
                     size: max(28, min(39, 31 + CGFloat(slot.diameterMm - 8) * 1.15)),
                     isSelected: selectedId == slot.id,
-                    seed: slot.id
+                    seed: slot.id,
+                    shape: slot.shape ?? "round",
+                    colorHex: slot.colorHex,
+                    textureKey: slot.textureKey,
+                    finish: slot.finish,
+                    translucency: slot.translucency ?? 0
                 )
                 .rotationEffect(.radians(layout.angle + Double.pi / 2))
                 .scaleEffect(layout.depth)
@@ -635,11 +650,15 @@ private struct DiyMaterialBead: View {
     let size: CGFloat
     let isSelected: Bool
     var seed = "material"
+    var shape = "round"
+    var colorHex: String?
+    var textureKey: String?
+    var finish: String?
+    var translucency: Double = 0
 
-    private var palette: DiyBeadPalette { .resolve(name: name, category: category) }
+    private var palette: DiyBeadPalette { .resolve(name: name, category: category, colorHex: colorHex) }
     private var isDiscSpacer: Bool {
-        category == "spacer"
-            && (name.contains("隔片") || name.contains("金属") || name.contains("银隔") || name.contains("金隔"))
+        shape == "disc" || (category == "spacer" && name.contains("隔片"))
     }
 
     var body: some View {
@@ -649,7 +668,7 @@ private struct DiyMaterialBead: View {
                     .fill(baseGradient)
                     .frame(width: size * 0.52, height: size)
                     .overlay {
-                        DiyBeadTexture(name: name, seed: seed, color: palette.texture)
+                        DiyBeadTexture(name: name, textureKey: textureKey, seed: seed, color: palette.texture)
                             .frame(width: size * 0.52, height: size)
                             .clipShape(Capsule())
                     }
@@ -658,11 +677,20 @@ private struct DiyMaterialBead: View {
                             .strokeBorder(rimGradient, lineWidth: isSelected ? 2 : 0.8)
                             .frame(width: size * 0.52, height: size)
                     }
+            } else if shape == "barrel" {
+                RoundedRectangle(cornerRadius: size * 0.26)
+                    .fill(baseGradient)
+                    .frame(width: size * 1.14, height: size * 0.86)
+                    .overlay {
+                        DiyBeadTexture(name: name, textureKey: textureKey, seed: seed, color: palette.texture)
+                            .frame(width: size * 1.14, height: size * 0.86)
+                            .clipShape(RoundedRectangle(cornerRadius: size * 0.26))
+                    }
             } else {
                 Circle()
                     .fill(baseGradient)
                     .overlay {
-                        DiyBeadTexture(name: name, seed: seed, color: palette.texture)
+                        DiyBeadTexture(name: name, textureKey: textureKey, seed: seed, color: palette.texture)
                             .clipShape(Circle())
                     }
                     .overlay {
@@ -671,6 +699,8 @@ private struct DiyMaterialBead: View {
             }
         }
         .frame(width: size, height: size)
+        .opacity(max(0.62, 1 - translucency * 0.18))
+        .saturation(finish == "matte" || finish == "natural" ? 0.78 : 1)
         .overlay {
             Ellipse()
                 .fill(Color.white.opacity(0.38))
@@ -706,6 +736,7 @@ private struct DiyMaterialBead: View {
 
 private struct DiyBeadTexture: View {
     let name: String
+    let textureKey: String?
     let seed: String
     let color: Color
 
@@ -713,7 +744,7 @@ private struct DiyBeadTexture: View {
         Canvas { context, canvasSize in
             var random = DiySeededRandom(seed: name + seed)
 
-            if name.contains("菩提") || name.contains("金刚") {
+            if textureKey == "bodhi" || textureKey == "seed" || name.contains("菩提") || name.contains("金刚") {
                 for _ in 0..<8 {
                     let diameter = canvasSize.width * CGFloat(random.next(in: 0.025...0.065))
                     let rect = CGRect(
@@ -724,7 +755,7 @@ private struct DiyBeadTexture: View {
                     )
                     context.fill(Path(ellipseIn: rect), with: .color(color.opacity(0.42)))
                 }
-            } else if name.contains("绿松") || name.contains("碧玉") || name.contains("翡翠") {
+            } else if textureKey == "turquoise" || textureKey == "jade_cloud" || name.contains("绿松") || name.contains("碧玉") || name.contains("翡翠") {
                 for index in 0..<3 {
                     var path = Path()
                     let startY = canvasSize.height * CGFloat(0.25 + Double(index) * 0.22)
@@ -736,7 +767,7 @@ private struct DiyBeadTexture: View {
                     )
                     context.stroke(path, with: .color(color.opacity(0.3)), lineWidth: max(0.6, canvasSize.width * 0.025))
                 }
-            } else if name.contains("南红") || name.contains("玛瑙") || name.contains("朱砂") {
+            } else if textureKey == "agate" || textureKey == "cinnabar" || name.contains("南红") || name.contains("玛瑙") || name.contains("朱砂") {
                 for inset in [0.16, 0.3] {
                     let rect = CGRect(
                         x: canvasSize.width * inset,
@@ -746,7 +777,7 @@ private struct DiyBeadTexture: View {
                     )
                     context.stroke(Path(ellipseIn: rect), with: .color(color.opacity(0.26)), lineWidth: max(0.7, canvasSize.width * 0.03))
                 }
-            } else if name.contains("蜜蜡") || name.contains("琥珀") {
+            } else if textureKey == "amber" || name.contains("蜜蜡") || name.contains("琥珀") {
                 let rect = CGRect(
                     x: canvasSize.width * 0.2,
                     y: canvasSize.height * 0.46,
@@ -784,7 +815,17 @@ private struct DiyBeadPalette {
     let dark: Color
     let texture: Color
 
-    static func resolve(name: String, category: String) -> DiyBeadPalette {
+    static func resolve(name: String, category: String, colorHex: String? = nil) -> DiyBeadPalette {
+        if let colorHex, !colorHex.isEmpty {
+            let base = Color(hex: colorHex)
+            return .init(
+                highlight: base.opacity(0.48),
+                light: base.opacity(0.82),
+                base: base,
+                dark: base.opacity(0.58),
+                texture: finishTextureColor(base: base, category: category)
+            )
+        }
         if name.contains("南红") || name.contains("玛瑙") || name.contains("朱砂") {
             return .init(highlight: Color(hex: "FFD3BD"), light: Color(hex: "F77C64"), base: Color(hex: "B93631"), dark: Color(hex: "4A1018"), texture: Color(hex: "FFE1CE"))
         }
@@ -810,6 +851,10 @@ private struct DiyBeadPalette {
             return .init(highlight: Color(hex: "FFF7C5"), light: Color(hex: "E8C86B"), base: Color(hex: "B98B2B"), dark: Color(hex: "5C3B0D"), texture: Color(hex: "FFF1AE"))
         }
         return .init(highlight: Color(hex: "EFB19D"), light: Color(hex: "BA6657"), base: Color(hex: "672A25"), dark: Color(hex: "250B0C"), texture: Color(hex: "E6B29F"))
+    }
+
+    private static func finishTextureColor(base: Color, category: String) -> Color {
+        category == "spacer" ? Color.white.opacity(0.72) : base.opacity(0.46)
     }
 }
 

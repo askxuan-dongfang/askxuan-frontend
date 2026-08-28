@@ -10,7 +10,7 @@
 - 第2节：6 位法师
 - 第3节：7 种用户端服务（祈福/供灯/上香/还愿/超度/开光/化太岁）
 - 第4节：4 项 DIY 手串加持服务（价格精确匹配）
-- 第5节：14 种 DIY 手串材料基准价格
+- 第5节：45 项 DIY 东方材料、渲染样式、价格与库存
 - 第6节：功德金档位
 - 第7节：预约订单状态流转
 
@@ -49,7 +49,7 @@ npm run build
 | GET  | `/api/v1/masters/:id` | 获取单个法师详情 |
 | GET  | `/api/v1/services` | 获取服务列表（含 7 种用户端服务 + 4 项加持服务 + 功德金档位） |
 | GET  | `/api/v1/services/:id` | 获取单个服务详情 |
-| GET  | `/api/v1/materials` | 获取 14 种材料列表 |
+| GET  | `/api/v1/materials` | 获取 45 项材料列表 |
 | GET  | `/api/v1/bookings` | 获取预约订单列表 |
 | GET  | `/api/v1/bookings/:id` | 获取单个订单详情 |
 | POST | `/api/v1/bookings` | 创建预约订单（状态默认「待确认」） |
@@ -86,7 +86,7 @@ packages/mock-server/
     │   ├── temples.ts        # 6 座寺院
     │   ├── masters.ts        # 6 位法师
     │   ├── services.ts       # 7 种服务 + 4 项加持服务
-    │   ├── materials.ts      # 14 种材料
+    │   ├── materials.ts      # 45 项东方材料与配件
     │   └── bookings.ts       # 3 条示例订单 + 功德金档位
     └── routes/
         └── index.ts          # 所有 API 路由

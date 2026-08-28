@@ -104,6 +104,13 @@ export interface Material {
   unit: string
   category: MaterialCategory | string
   fiveElements?: string
+  materialType: string
+  shape: string
+  diameterMm: number
+  colorHex: string
+  textureKey: string
+  finish: string
+  translucency: number
   image: string
   stock: number
   status: string // on_shelf/off_shelf
