@@ -207,6 +207,7 @@ enum Endpoint {
     case paymentById(Int64)
 
     // MARK: - AI 问事
+    case aiSkills
     case aiSessions(userId: String, page: Int, size: Int)
     case aiSessionCreate(AiSessionCreateRequest)
     case aiMessages(sessionId: String, userId: String, page: Int, size: Int)
@@ -322,6 +323,7 @@ enum Endpoint {
         case .paymentCreate:            return "payments"
         case .paymentById(let id):      return "payments/\(id)"
         // AI 问事
+        case .aiSkills:                 return "ai/skills"
         case .aiSessions:               return "ai/sessions"
         case .aiSessionCreate:          return "ai/sessions"
         case .aiMessages(let sessionId, _, _, _): return "ai/sessions/\(sessionId)/messages"
@@ -387,7 +389,7 @@ enum Endpoint {
 			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById, .bookingChats, .bookingChatMessages,
              .chats, .chatMessages, .consultationQuote,
              .diyDesigns, .diyMyDesigns, .diyDesignById, .diyMaterials, .diyBlessingServices, .diyOrders, .diyOrderById, .paymentById,
-             .aiSessions, .aiMessages,
+             .aiSkills, .aiSessions, .aiMessages,
              .communityFeed, .communityPostById, .communityComments, .communityMyFollowing,
              .templeFavorites, .productFavorites,
              .mediaDetail, .liveRooms, .liveRoomById,
@@ -474,6 +476,8 @@ enum Endpoint {
             return [URLQueryItem(name: "userId", value: userId),
                     URLQueryItem(name: "page", value: "\(page)"),
                     URLQueryItem(name: "size", value: "\(size)")]
+        case .aiSkills:
+            return [URLQueryItem(name: "status", value: "enabled")]
         case .aiMessages(_, let userId, let page, let size):
             return [URLQueryItem(name: "userId", value: userId),
                     URLQueryItem(name: "page", value: "\(page)"),
@@ -606,12 +610,14 @@ struct AiSessionCreateRequest: Encodable {
     let userId: String
     let skillCode: String?
     let question: String?
+    let inputs: [String: String]
 }
 
 struct AiMessageSendRequest: Encodable {
     let sessionId: String
     let userId: String
     let content: String
+    let inputs: [String: String]
 }
 
 struct DiyDesignOrderCreateRequest: Codable {

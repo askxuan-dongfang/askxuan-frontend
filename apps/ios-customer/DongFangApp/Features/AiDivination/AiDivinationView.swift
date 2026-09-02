@@ -7,6 +7,43 @@
 
 import SwiftUI
 
+struct AiSkillOption: Decodable, Identifiable {
+    let value: String
+    let label: String
+    var id: String { value }
+}
+
+struct AiSkillField: Decodable, Identifiable {
+    let key: String
+    let label: String
+    let type: String
+    let required: Bool
+    let placeholder: String?
+    let options: [AiSkillOption]?
+    var id: String { key }
+}
+
+struct AiSkillInputSchema: Decodable { let fields: [AiSkillField] }
+
+struct AiSkill: Decodable, Identifiable {
+    let id: Int64
+    let code: String
+    let category: String
+    let name: String
+    let version: String
+    let description: String
+    let icon: String
+    let sourceType: String
+    let sourceRef: String
+    let inputSchema: AiSkillInputSchema
+    let capabilities: [String]
+    let riskLevel: String
+    let sortOrder: Int
+    let status: String
+}
+
+struct AiSkillListResponse: Decodable { let list: [AiSkill] }
+
 struct AiConversation: Decodable, Identifiable {
     let id: Int64
     let sessionNo: String
@@ -22,9 +59,9 @@ struct AiChatMessage: Decodable, Identifiable {
     let id: Int64
     let sessionId: Int64
     let role: String
-    let content: String
+    var content: String
     let tokens: Int
-    let status: String
+    var status: String
     let errorMessage: String
     let retryable: Bool
     let createdAt: String
@@ -35,6 +72,7 @@ struct AiSessionCreateResult: Decodable {
     let sessionNo: String
     let skillCode: String
     let status: String
+    let messageId: Int64?
 }
 
 struct AiMessageSendResult: Decodable {
@@ -45,11 +83,13 @@ struct AiMessageSendResult: Decodable {
 
 @MainActor
 final class AiDivinationViewModel: ObservableObject {
+    @Published var skills: [AiSkill] = []
     @Published var sessions: [AiConversation] = []
     @Published var messages: [AiChatMessage] = []
     @Published var input = ""
     @Published var selectedSessionId: Int64?
-    @Published var selectedSkillCode: String?
+    @Published var selectedSkillCode = "general"
+    @Published var structuredInputs: [String: String] = [:]
     @Published var isLoading = false
     @Published var isSending = false
     @Published var errorMessage: String?
@@ -66,9 +106,26 @@ final class AiDivinationViewModel: ObservableObject {
         sessions.first(where: { $0.id == selectedSessionId })?.title ?? "新对话"
     }
 
+    var selectedSkill: AiSkill? {
+        skills.first(where: { $0.code == selectedSkillCode })
+    }
+
     func bootstrap() async {
+        await loadSkills()
         guard sessions.isEmpty else { return }
         await loadSessions(selectMostRecent: true)
+    }
+
+    func loadSkills() async {
+        do {
+            let response: AiSkillListResponse = try await apiClient.request(.aiSkills)
+            skills = response.list
+            if !skills.contains(where: { $0.code == selectedSkillCode }), let first = skills.first {
+                selectedSkillCode = first.code
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     func loadSessions(selectMostRecent: Bool = false) async {
@@ -93,7 +150,8 @@ final class AiDivinationViewModel: ObservableObject {
 
     func newConversation() {
         selectedSessionId = nil
-        selectedSkillCode = nil
+        selectedSkillCode = "general"
+        structuredInputs = [:]
         messages = []
         input = ""
         errorMessage = nil
@@ -109,28 +167,37 @@ final class AiDivinationViewModel: ObservableObject {
 
         do {
             let sessionId: Int64
+            let pendingMessageId: Int64?
             if let selectedSessionId {
                 sessionId = selectedSessionId
-                let _: AiMessageSendResult = try await apiClient.request(
+                let result: AiMessageSendResult = try await apiClient.request(
                     .aiSendMessage(AiMessageSendRequest(
                         sessionId: String(selectedSessionId),
                         userId: authStore.userId,
-                        content: content
+                        content: content,
+                        inputs: [:]
                     ))
                 )
+                pendingMessageId = result.messageId
             } else {
                 let result: AiSessionCreateResult = try await apiClient.request(
                     .aiSessionCreate(AiSessionCreateRequest(
                         userId: authStore.userId,
                         skillCode: selectedSkillCode,
-                        question: content
+                        question: content,
+                        inputs: structuredInputs
                     ))
                 )
                 sessionId = result.id
+                pendingMessageId = result.messageId
                 selectedSessionId = result.id
             }
             await loadMessages()
-            await pollUntilSettled(sessionId: sessionId)
+            if let pendingMessageId, pendingMessageId > 0 {
+                await streamUntilSettled(sessionId: sessionId, messageId: pendingMessageId)
+            } else {
+                await pollUntilSettled(sessionId: sessionId)
+            }
             await loadSessions()
         } catch {
             input = content
@@ -144,7 +211,7 @@ final class AiDivinationViewModel: ObservableObject {
         errorMessage = nil
         defer { isSending = false }
         do {
-            let _: AiMessageSendResult = try await apiClient.request(
+            let result: AiMessageSendResult = try await apiClient.request(
                 .aiRetryMessage(
                     sessionId: String(message.sessionId),
                     messageId: message.id,
@@ -152,7 +219,7 @@ final class AiDivinationViewModel: ObservableObject {
                 )
             )
             await loadMessages()
-            await pollUntilSettled(sessionId: message.sessionId)
+            await streamUntilSettled(sessionId: message.sessionId, messageId: result.messageId)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -192,22 +259,30 @@ final class AiDivinationViewModel: ObservableObject {
             errorMessage = "回答仍在生成，可稍后从历史会话继续查看"
         }
     }
+
+    private func streamUntilSettled(sessionId: Int64, messageId: Int64) async {
+        do {
+            try await apiClient.streamAIMessage(sessionId: sessionId, messageId: messageId) { [weak self] event in
+                await MainActor.run {
+                    guard let self else { return }
+                    if event.event == "delta", let snapshot = event.snapshot,
+                       let index = self.messages.firstIndex(where: { $0.id == messageId }) {
+                        self.messages[index].content = snapshot
+                    } else if event.event == "error" {
+                        self.errorMessage = event.message ?? "回答生成失败"
+                    }
+                }
+            }
+            await loadMessages()
+        } catch {
+            await pollUntilSettled(sessionId: sessionId)
+        }
+    }
 }
 
 struct AiDivinationView: View {
     @StateObject private var viewModel = AiDivinationViewModel()
     @State private var isDrawerOpen = false
-
-    private let skillOptions = [
-        (code: nil as String?, name: "直接问事"),
-        (code: "bazi", name: "八字命理"),
-        (code: "marriage", name: "姻缘测算"),
-        (code: "tarot", name: "塔罗牌"),
-        (code: "fengshui", name: "风水分析"),
-        (code: "qimen", name: "奇门遁甲"),
-        (code: "ziwei", name: "紫微斗数"),
-        (code: "liuyao", name: "六爻梅花")
-    ]
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -303,8 +378,11 @@ struct AiDivinationView: View {
                 .foregroundStyle(Color.textSecondary)
 
             Menu {
-                ForEach(Array(skillOptions.enumerated()), id: \.offset) { _, option in
-                    Button(option.name) { viewModel.selectedSkillCode = option.code }
+                ForEach(viewModel.skills) { skill in
+                    Button(skill.name) {
+                        viewModel.selectedSkillCode = skill.code
+                        viewModel.structuredInputs = [:]
+                    }
                 }
             } label: {
                 HStack(spacing: 6) {
@@ -319,6 +397,41 @@ struct AiDivinationView: View {
                 .frame(height: 36)
                 .background(Color.brandDefault.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+
+            if let fields = viewModel.selectedSkill?.inputSchema.fields, !fields.isEmpty {
+                VStack(spacing: 10) {
+                    ForEach(fields) { field in
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(field.label + (field.required ? " *" : ""))
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.textSecondary)
+                            if field.type == "select" {
+                                Picker(field.label, selection: inputBinding(field.key)) {
+                                    Text("请选择").tag("")
+                                    ForEach(field.options ?? []) { option in
+                                        Text(option.label).tag(option.value)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 10)
+                                .frame(height: 40)
+                                .background(Color.bgSecondary)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            } else {
+                                TextField(field.placeholder ?? inputPlaceholder(field.type), text: inputBinding(field.key))
+                                    .font(.system(size: 14))
+                                    .padding(.horizontal, 12)
+                                    .frame(height: 40)
+                                    .background(Color.bgSecondary)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.borderDefault, lineWidth: 1))
+                            }
+                        }
+                    }
+                }
+                .padding(.top, 4)
             }
         }
         .frame(maxWidth: .infinity)
@@ -339,7 +452,7 @@ struct AiDivinationView: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                if message.status == "pending" {
+                if message.status == "pending", message.content.isEmpty {
                     HStack(spacing: 8) {
                         ProgressView().controlSize(.small)
                         Text("正在生成回答")
@@ -500,15 +613,34 @@ struct AiDivinationView: View {
     }
 
     private var canSend: Bool {
-        !viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isSending
+        let requiredReady = viewModel.selectedSessionId != nil || (viewModel.selectedSkill?.inputSchema.fields ?? []).allSatisfy {
+            !$0.required || !(viewModel.structuredInputs[$0.key] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        return !viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isSending && requiredReady
     }
 
     private var selectedSkillName: String {
-        skillOptions.first(where: { $0.code == viewModel.selectedSkillCode })?.name ?? "直接问事"
+        viewModel.skills.first(where: { $0.code == viewModel.selectedSkillCode })?.name ?? "直接问事"
     }
 
     private func skillName(_ code: String) -> String {
-        skillOptions.first(where: { $0.code == code })?.name ?? code
+        viewModel.skills.first(where: { $0.code == code })?.name ?? code
+    }
+
+    private func inputBinding(_ key: String) -> Binding<String> {
+        Binding(
+            get: { viewModel.structuredInputs[key] ?? "" },
+            set: { viewModel.structuredInputs[key] = $0 }
+        )
+    }
+
+    private func inputPlaceholder(_ type: String) -> String {
+        switch type {
+        case "date": return "YYYY-MM-DD"
+        case "time": return "HH:mm"
+        case "datetime": return "YYYY-MM-DD HH:mm"
+        default: return "请输入"
+        }
     }
 
     private func iconButton(_ systemName: String, label: String, action: @escaping () -> Void) -> some View {

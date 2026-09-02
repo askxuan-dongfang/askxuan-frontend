@@ -112,6 +112,68 @@ final class APIClient {
         }
     }
 
+    struct AIStreamEvent: Decodable {
+        let event: String
+        let messageId: Int64?
+        let content: String?
+        let snapshot: String?
+        let status: String?
+        let message: String?
+        let retryable: Bool?
+    }
+
+    /// AI SSE 流。模型密钥只在后端，本请求沿用当前用户 JWT。
+    func streamAIMessage(
+        sessionId: Int64,
+        messageId: Int64,
+        onEvent: @escaping (AIStreamEvent) async -> Void
+    ) async throws {
+        let path = "ai/sessions/\(sessionId)/messages/\(messageId)/stream"
+        var request = URLRequest(url: baseURL.appendingPathComponent(path))
+        request.httpMethod = HTTPMethod.GET.rawValue
+        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        request.setValue(AppConfig.clientType, forHTTPHeaderField: "X-Client-Type")
+        request.setValue(AppConfig.clientVersion, forHTTPHeaderField: "X-Client-Version")
+        if let token = tokenProvider(), !token.isEmpty {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        let (bytes, response) = try await session.bytes(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.networkError(URLError(.badServerResponse))
+        }
+        if http.statusCode == 401 { throw APIError.unauthorized }
+        guard (200..<300).contains(http.statusCode) else {
+            throw APIError.serverError(http.statusCode, "AI 流式连接失败")
+        }
+
+        var eventName = "delta"
+        var dataLines: [String] = []
+        for try await line in bytes.lines {
+            if line.isEmpty {
+                guard !dataLines.isEmpty else { continue }
+                let data = Data(dataLines.joined().utf8)
+                var payload = try decoder.decode(AIStreamEvent.self, from: data)
+                payload = AIStreamEvent(
+                    event: eventName,
+                    messageId: payload.messageId,
+                    content: payload.content,
+                    snapshot: payload.snapshot,
+                    status: payload.status,
+                    message: payload.message,
+                    retryable: payload.retryable
+                )
+                await onEvent(payload)
+                eventName = "delta"
+                dataLines.removeAll(keepingCapacity: true)
+            } else if line.hasPrefix("event:") {
+                eventName = String(line.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+            } else if line.hasPrefix("data:") {
+                dataLines.append(String(line.dropFirst(5)).trimmingCharacters(in: .whitespaces))
+            }
+        }
+    }
+
     func upload(_ data: Data, to url: URL, headers: [String: String]) async throws {
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
