@@ -120,6 +120,8 @@ final class APIClient {
         let status: String?
         let message: String?
         let retryable: Bool?
+		let runId: Int64?
+		let stage: String?
     }
 
     /// AI SSE 流。模型密钥只在后端，本请求沿用当前用户 JWT。
@@ -161,7 +163,9 @@ final class APIClient {
                     snapshot: payload.snapshot,
                     status: payload.status,
                     message: payload.message,
-                    retryable: payload.retryable
+                    retryable: payload.retryable,
+                    runId: payload.runId,
+					stage: payload.stage
                 )
                 await onEvent(payload)
                 eventName = "delta"

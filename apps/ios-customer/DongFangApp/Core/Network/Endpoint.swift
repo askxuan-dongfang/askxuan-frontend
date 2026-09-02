@@ -37,6 +37,21 @@ struct MediaAsset: Decodable, Identifiable {
     let errorMessage: String
 }
 
+struct MediaUploadCredential: Decodable {
+	let mediaId: Int64
+	let uploadUrl: String
+	let uploadHeaders: [String: String]
+}
+
+struct MediaUploadCredentialRequest: Encodable {
+	let fileName: String
+	let mediaType: String
+	let contentType: String
+	let fileSize: Int64
+}
+
+struct MediaCompleteRequest: Encodable { let coverMediaId: Int64? }
+
 struct LiveRoom: Decodable, Identifiable {
     let id: Int64
     let roomNo: String
@@ -213,6 +228,8 @@ enum Endpoint {
     case aiMessages(sessionId: String, userId: String, page: Int, size: Int)
     case aiSendMessage(AiMessageSendRequest)
     case aiRetryMessage(sessionId: String, messageId: Int64, userId: String)
+	case mediaUploadCredential(MediaUploadCredentialRequest)
+	case mediaComplete(id: Int64, MediaCompleteRequest)
 
     // MARK: - 社区内容 / 大师广场
     case communityFeed(type: String?, beliefCode: String?, page: Int, size: Int)
@@ -329,6 +346,8 @@ enum Endpoint {
         case .aiMessages(let sessionId, _, _, _): return "ai/sessions/\(sessionId)/messages"
         case .aiSendMessage(let req):   return "ai/sessions/\(req.sessionId)/messages"
         case .aiRetryMessage(let sessionId, let messageId, _): return "ai/sessions/\(sessionId)/messages/\(messageId)/retry"
+		case .mediaUploadCredential: return "media/uploads/credentials"
+		case .mediaComplete(let id, _): return "media/\(id)/complete"
         // 社区内容
         case .communityFeed:            return "community/feed"
         case .communityPostById(let id): return "community/posts/\(id)"
@@ -402,7 +421,7 @@ enum Endpoint {
         case .createBooking, .bookingReviewCreate, .bookingChatSend, .chatSend, .consultationCreate, .consultationPay,
              .diyDesignSave, .diyOrderCreate, .diyOrderCreateFromDesign, .paymentCreate,
              .shopOrderCreate,
-             .aiSessionCreate, .aiSendMessage, .aiRetryMessage, .communityPostLike,
+			 .aiSessionCreate, .aiSendMessage, .aiRetryMessage, .mediaUploadCredential, .mediaComplete, .communityPostLike,
              .communityCommentCreate, .communityMasterFollow,
              .authLogin, .authRegister, .authRefresh, .authLogout, .authIMToken,
              .templeFavorite, .productFavorite, .masterBooking,
@@ -558,6 +577,8 @@ enum Endpoint {
         case .aiSessionCreate(let req):        return AnyEncodable(req)
         case .aiSendMessage(let req):          return AnyEncodable(req)
         case .aiRetryMessage(_, _, let userId): return AnyEncodable(["userId": userId])
+		case .mediaUploadCredential(let request): return AnyEncodable(request)
+		case .mediaComplete(_, let request): return AnyEncodable(request)
         case .communityPostLike, .communityPostUnlike, .communityMasterFollow, .communityMasterUnfollow,
              .templeFavorite, .productFavorite:
             return AnyEncodable([String: String]())
@@ -611,6 +632,7 @@ struct AiSessionCreateRequest: Encodable {
     let skillCode: String?
     let question: String?
     let inputs: [String: String]
+	let attachments: [AiImageAttachment]
 }
 
 struct AiMessageSendRequest: Encodable {
@@ -618,6 +640,16 @@ struct AiMessageSendRequest: Encodable {
     let userId: String
     let content: String
     let inputs: [String: String]
+	let attachments: [AiImageAttachment]
+}
+
+struct AiImageAttachment: Codable, Identifiable {
+	let mediaId: Int64
+	let url: String
+	let contentType: String
+	let width: Int?
+	let height: Int?
+	var id: Int64 { mediaId }
 }
 
 struct DiyDesignOrderCreateRequest: Codable {

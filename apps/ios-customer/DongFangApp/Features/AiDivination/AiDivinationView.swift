@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import PhotosUI
+import UIKit
 
 struct AiSkillOption: Decodable, Identifiable {
     let value: String
@@ -49,6 +51,8 @@ struct AiConversation: Decodable, Identifiable {
     let sessionNo: String
     let userId: String
     let skillCode: String
+	let selectionMode: String
+	let skillVersion: String
     let title: String
     let status: String
     let createdAt: String
@@ -60,8 +64,11 @@ struct AiChatMessage: Decodable, Identifiable {
     let sessionId: Int64
     let role: String
     var content: String
+	let attachments: [AiImageAttachment]?
+	let runId: Int64
     let tokens: Int
     var status: String
+	var stage: String
     let errorMessage: String
     let retryable: Bool
     let createdAt: String
@@ -93,6 +100,7 @@ final class AiDivinationViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isSending = false
     @Published var errorMessage: String?
+	@Published var selectedImages: [Data] = []
 
     private let apiClient: APIClient
     private let authStore: AuthStore
@@ -145,6 +153,7 @@ final class AiDivinationViewModel: ObservableObject {
     func selectSession(_ id: Int64) async {
         selectedSessionId = id
         errorMessage = nil
+		selectedImages = []
         await loadMessages()
     }
 
@@ -159,13 +168,15 @@ final class AiDivinationViewModel: ObservableObject {
 
     func send() async {
         let content = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !content.isEmpty, !isSending else { return }
+		guard (!content.isEmpty || !selectedImages.isEmpty), !isSending else { return }
         input = ""
         isSending = true
         errorMessage = nil
         defer { isSending = false }
 
         do {
+			let attachments = try await uploadSelectedImages()
+			let question = content.isEmpty ? "请分析我上传的图片" : content
             let sessionId: Int64
             let pendingMessageId: Int64?
             if let selectedSessionId {
@@ -174,8 +185,9 @@ final class AiDivinationViewModel: ObservableObject {
                     .aiSendMessage(AiMessageSendRequest(
                         sessionId: String(selectedSessionId),
                         userId: authStore.userId,
-                        content: content,
-                        inputs: [:]
+						content: question,
+						inputs: [:],
+						attachments: attachments
                     ))
                 )
                 pendingMessageId = result.messageId
@@ -184,8 +196,9 @@ final class AiDivinationViewModel: ObservableObject {
                     .aiSessionCreate(AiSessionCreateRequest(
                         userId: authStore.userId,
                         skillCode: selectedSkillCode,
-                        question: content,
-                        inputs: structuredInputs
+						question: question,
+						inputs: structuredInputs,
+						attachments: attachments
                     ))
                 )
                 sessionId = result.id
@@ -199,6 +212,7 @@ final class AiDivinationViewModel: ObservableObject {
                 await pollUntilSettled(sessionId: sessionId)
             }
             await loadSessions()
+			selectedImages = []
         } catch {
             input = content
             errorMessage = error.localizedDescription
@@ -268,6 +282,9 @@ final class AiDivinationViewModel: ObservableObject {
                     if event.event == "delta", let snapshot = event.snapshot,
                        let index = self.messages.firstIndex(where: { $0.id == messageId }) {
                         self.messages[index].content = snapshot
+					} else if event.event == "stage", let stage = event.stage,
+					          let index = self.messages.firstIndex(where: { $0.id == messageId }) {
+						self.messages[index].stage = stage
                     } else if event.event == "error" {
                         self.errorMessage = event.message ?? "回答生成失败"
                     }
@@ -278,11 +295,33 @@ final class AiDivinationViewModel: ObservableObject {
             await pollUntilSettled(sessionId: sessionId)
         }
     }
+
+	private func uploadSelectedImages() async throws -> [AiImageAttachment] {
+		var attachments: [AiImageAttachment] = []
+		for (index, data) in selectedImages.prefix(3).enumerated() {
+			let credential: MediaUploadCredential = try await apiClient.request(.mediaUploadCredential(MediaUploadCredentialRequest(fileName: "ai-\(Int(Date().timeIntervalSince1970))-\(index).jpg", mediaType: "image", contentType: "image/jpeg", fileSize: Int64(data.count))))
+			guard let uploadURL = URL(string: credential.uploadUrl) else { throw APIError.invalidURL }
+			var headers = credential.uploadHeaders
+			headers["Content-Type"] = "image/jpeg"
+			try await apiClient.upload(data, to: uploadURL, headers: headers)
+			let asset: MediaAsset = try await apiClient.request(.mediaComplete(id: credential.mediaId, MediaCompleteRequest(coverMediaId: nil)))
+			let rawURL = asset.playbackUrl.isEmpty ? asset.coverUrl : asset.playbackUrl
+			attachments.append(AiImageAttachment(mediaId: asset.id, url: absoluteMediaURL(rawURL), contentType: "image/jpeg", width: nil, height: nil))
+		}
+		return attachments
+	}
+
+	private func absoluteMediaURL(_ value: String) -> String {
+		if URL(string: value)?.scheme != nil { return value }
+		guard let origin = URL(string: "/", relativeTo: AppConfig.baseURL)?.absoluteURL else { return value }
+		return URL(string: value, relativeTo: origin)?.absoluteURL.absoluteString ?? value
+	}
 }
 
 struct AiDivinationView: View {
     @StateObject private var viewModel = AiDivinationViewModel()
     @State private var isDrawerOpen = false
+	@State private var selectedPhotoItems: [PhotosPickerItem] = []
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -306,6 +345,15 @@ struct AiDivinationView: View {
         }
         .navigationBarHidden(true)
         .task { await viewModel.bootstrap() }
+		.onChange(of: selectedPhotoItems) {
+			Task {
+				var images: [Data] = []
+				for item in selectedPhotoItems.prefix(3) {
+					if let source = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: source), let jpeg = image.jpegData(compressionQuality: 0.82) { images.append(jpeg) }
+				}
+				await MainActor.run { viewModel.selectedImages = images }
+			}
+		}
         .animation(.easeInOut(duration: 0.2), value: isDrawerOpen)
     }
 
@@ -452,10 +500,16 @@ struct AiDivinationView: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
+				if let attachments = message.attachments, !attachments.isEmpty {
+					ForEach(attachments) { attachment in
+						AsyncImage(url: URL(string: attachment.url)) { image in image.resizable().scaledToFill() } placeholder: { ProgressView() }
+							.frame(width: 180, height: 140).clipped().clipShape(RoundedRectangle(cornerRadius: 6))
+					}
+				}
                 if message.status == "pending", message.content.isEmpty {
                     HStack(spacing: 8) {
                         ProgressView().controlSize(.small)
-                        Text("正在生成回答")
+						Text(stageLabel(message.stage))
                     }
                 } else if message.status == "failed" {
                     Text(message.errorMessage.isEmpty ? "回答生成失败" : message.errorMessage)
@@ -501,7 +555,43 @@ struct AiDivinationView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
+            if !viewModel.selectedImages.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(viewModel.selectedImages.enumerated()), id: \.offset) { index, data in
+                            if let image = UIImage(data: data) {
+                                ZStack(alignment: .topTrailing) {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 56, height: 56)
+                                        .clipped()
+                                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                                    Button {
+                                        viewModel.selectedImages.remove(at: index)
+                                        if selectedPhotoItems.indices.contains(index) {
+                                            selectedPhotoItems.remove(at: index)
+                                        }
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .symbolRenderingMode(.palette)
+                                            .foregroundStyle(.white, .black.opacity(0.72))
+                                    }
+                                    .offset(x: 5, y: -5)
+                                    .accessibilityLabel("移除图片")
+                                }
+                            }
+                        }
+                    }
+                    .padding(.top, 4)
+                }
+            }
+
             HStack(alignment: .bottom, spacing: 10) {
+                PhotosPicker(selection: $selectedPhotoItems, maxSelectionCount: 3, matching: .images) {
+                    Image(systemName: "photo").frame(width: 36, height: 40)
+                }
+                .accessibilityLabel("添加图片")
                 TextField("输入你的问题", text: $viewModel.input, axis: .vertical)
                     .lineLimit(1...4)
                     .font(.system(size: 15))
@@ -538,6 +628,16 @@ struct AiDivinationView: View {
         .padding(.bottom, 8)
         .background(Color.bgPrimary)
         .overlay(alignment: .top) { Divider().overlay(Color.borderDivider) }
+    }
+
+    private func stageLabel(_ stage: String) -> String {
+        switch stage {
+        case "preparing": return "正在准备"
+        case "loading_images": return "正在读取图片"
+        case "tool_running": return "正在调用专业排盘"
+        case "reasoning": return "正在分析"
+        default: return "正在生成回答"
+        }
     }
 
     private var historyDrawer: some View {
@@ -616,7 +716,7 @@ struct AiDivinationView: View {
         let requiredReady = viewModel.selectedSessionId != nil || (viewModel.selectedSkill?.inputSchema.fields ?? []).allSatisfy {
             !$0.required || !(viewModel.structuredInputs[$0.key] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
-        return !viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isSending && requiredReady
+		return (!viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !viewModel.selectedImages.isEmpty) && !viewModel.isSending && requiredReady
     }
 
     private var selectedSkillName: String {
