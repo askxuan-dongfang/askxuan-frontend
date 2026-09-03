@@ -1,10 +1,11 @@
 import client from './client'
 import type { TempleReportResp } from '@/types'
 
-/** 寺院数据报表（路由 /admin/temples/reports → temple-service） */
-export function getTempleReport(params?: {
+/** 寺院经营报表由预约域按已支付预约聚合。 */
+export function getTempleReport(params: {
+  templeId: string
   startTime?: string
   endTime?: string
 }): Promise<TempleReportResp> {
-  return client.get<TempleReportResp>('/admin/temples/reports', { params })
+  return client.get<TempleReportResp>('/admin/bookings/report', { params })
 }

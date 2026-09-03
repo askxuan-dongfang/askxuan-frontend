@@ -39,7 +39,7 @@ async function loadAll() {
     listBlessingTasks({ status: 'pending', page: 1, size: 5 }).then(
       (r) => (pendingBlessings.value = r.list || [])
     ),
-    getTempleReport().then((r) => (report.value = r))
+    getTempleReport({ templeId }).then((r) => (report.value = r))
   ])
   loading.value = false
 }

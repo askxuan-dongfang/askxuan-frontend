@@ -7,10 +7,12 @@ import StatCard from '@/components/StatCard.vue'
 import { getTempleReport } from '@/api/report'
 import { formatMoney } from '@/utils/format'
 import type { TempleReportResp } from '@/types'
+import { useAuthStore } from '@/stores/auth'
 
 const loading = ref(false)
 const report = ref<TempleReportResp | null>(null)
 const dateRange = ref<[string, string] | []>([])
+const auth = useAuthStore()
 
 const trendRef = ref<HTMLElement>()
 const pieRef = ref<HTMLElement>()
@@ -22,7 +24,7 @@ let barChart: echarts.ECharts | null = null
 async function load() {
   loading.value = true
   try {
-    const params: { startTime?: string; endTime?: string } = {}
+    const params: { templeId: string; startTime?: string; endTime?: string } = { templeId: auth.templeId }
     if (dateRange.value && dateRange.value.length === 2) {
       params.startTime = dateRange.value[0]
       params.endTime = dateRange.value[1]

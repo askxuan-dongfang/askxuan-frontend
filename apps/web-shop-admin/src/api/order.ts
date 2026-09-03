@@ -27,8 +27,8 @@ export const orderApi = {
     return client.get<Page<ShopOrder>>('/admin/orders', { params })
   },
   /** 经营报表 */
-  report(): Promise<OrderReport> {
-    return client.get<OrderReport>('/admin/orders/report')
+  report(params: { startTime?: string; endTime?: string } = {}): Promise<OrderReport> {
+	return client.get<OrderReport>('/admin/orders/report', { params })
   },
   /** 订单详情 */
   detail(id: number): Promise<ShopOrder> {
@@ -65,4 +65,5 @@ export interface OrderReport {
   totalSales: number
   trend: { date: string; sales: number; orders: number }[]
   topProducts: { productId: number; productName: string; sales: number; orderCount: number }[]
+	refundRate: number
 }
