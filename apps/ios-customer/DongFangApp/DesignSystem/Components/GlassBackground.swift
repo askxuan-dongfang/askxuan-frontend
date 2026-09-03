@@ -90,24 +90,6 @@ extension View {
         toolbar(.hidden, for: .tabBar)
     }
 
-    /// 为 C 端所有输入控件提供统一的键盘收起入口，尤其覆盖数字键盘。
-    func appKeyboardDismissal() -> some View {
-        toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("完成") {
-                    UIApplication.shared.sendAction(
-                        #selector(UIResponder.resignFirstResponder),
-                        to: nil,
-                        from: nil,
-                        for: nil
-                    )
-                }
-                .font(.system(size: 15, weight: .semibold))
-                .accessibilityLabel("收起键盘")
-            }
-        }
-    }
 }
 
 /// 卡片点击缩放反馈 ButtonStyle：按下时 scaleEffect(0.98)，带 0.15s easeInOut 动画。
