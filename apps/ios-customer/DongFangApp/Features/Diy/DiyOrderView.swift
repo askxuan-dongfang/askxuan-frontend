@@ -40,6 +40,9 @@ struct DiyOrderView: View {
                     addressSection
                     blessingSection
                     materialSection
+                    if let message = viewModel.availabilityMessage {
+                        availabilityWarning(message)
+                    }
                     feeSection
                     Spacer(minLength: 100)
                 }
@@ -75,6 +78,13 @@ struct DiyOrderView: View {
             selectedBlessingService = nil
             if orderSource == .design, viewModel.currentDesign?.id != designId {
                 await viewModel.loadDesign(id: designId)
+            } else if orderSource == .cart {
+                let items = viewModel.cartItems.map {
+                    DiyOrderItem(materialId: $0.material.id, materialName: $0.material.name,
+                                 spec: $0.material.spec, unitPrice: $0.material.unitPrice,
+                                 quantity: $0.quantity, subtype: $0.material.category)
+                }
+                _ = await viewModel.refreshOrderAvailability(designId: designId, items: items)
             }
         }
     }
@@ -409,8 +419,8 @@ struct DiyOrderView: View {
             }
             Spacer()
 
-            DFPrimaryButton(title: "提交订单", icon: "checkmark.circle.fill",
-                            isEnabled: selectedAddress != nil,
+            DFPrimaryButton(title: viewModel.isCurrentDesignOrderable ? "提交订单" : "材料需替换", icon: "checkmark.circle.fill",
+                            isEnabled: selectedAddress != nil && viewModel.isCurrentDesignOrderable,
                             isLoading: viewModel.isSubmitting) {
                 Task {
                     let order = await submitOrder()
@@ -429,6 +439,23 @@ struct DiyOrderView: View {
                 .ignoresSafeArea(edges: .bottom)
         )
         .overlay(alignment: .top) { Rectangle().fill(Color.borderDivider).frame(height: 1) }
+    }
+
+    private func availabilityWarning(_ message: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("部分材料需要重新选择", systemImage: "exclamationmark.triangle.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.stateWarning)
+            Text(message)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(AppSpacing.lg)
+        .background(Color.stateWarning.opacity(0.1))
+        .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.stateWarning.opacity(0.35), lineWidth: 1))
+        .cornerRadius(AppRadius.md)
+        .padding(.horizontal, AppSpacing.lg)
     }
 
     private func submitOrder() async -> DiyOrder? {

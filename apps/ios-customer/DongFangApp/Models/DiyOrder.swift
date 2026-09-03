@@ -219,6 +219,25 @@ struct DiyOrderItem: Codable, Identifiable, Hashable {
     }
 }
 
+struct DiyOrderAvailabilityIssue: Codable, Hashable, Identifiable {
+    let materialId: Int64
+    let materialName: String
+    let spec: String
+    let quantity: Int
+    let reason: String
+    let message: String
+
+    var id: String { "\(materialId)|\(spec)" }
+}
+
+struct DiyOrderAvailability: Codable, Hashable {
+    let orderable: Bool
+    let materialFee: Double
+    let originalMaterialFee: Double
+    let priceChanged: Bool
+    let issues: [DiyOrderAvailabilityIssue]
+}
+
 /// 材料
 struct Material: Codable, Identifiable, Hashable {
     let id: Int64
@@ -331,6 +350,11 @@ struct DiyOrderCreateRequest: Codable {
     let items: [DiyOrderItem]
     let blessServiceCode: String?
     let addressId: Int64
+}
+
+struct DiyOrderAvailabilityRequest: Codable {
+    let designId: Int64
+    let items: [DiyOrderItem]?
 }
 
 struct PaymentCreateRequest: Codable {

@@ -213,6 +213,7 @@ enum Endpoint {
     case diyMaterials(category: String?, page: Int, size: Int)
     case diyBlessingServices(page: Int, size: Int)
     case diyOrderCreate(DiyOrderCreateRequest)
+    case diyOrderAvailability(DiyOrderAvailabilityRequest)
     case diyOrderCreateFromDesign(Int64, DiyDesignOrderCreateRequest)
     case diyOrders(userId: String, status: String?, page: Int, size: Int)
     case diyOrderById(Int64)
@@ -334,6 +335,7 @@ enum Endpoint {
         case .diyMaterials:             return "diy/materials"
         case .diyBlessingServices:      return "diy/blessing-services"
         case .diyOrderCreate:           return "diy/orders"
+        case .diyOrderAvailability:     return "diy/orders/availability"
         case .diyOrderCreateFromDesign(let id, _): return "diy/designs/\(id)/order"
         case .diyOrders:                return "diy/orders"
         case .diyOrderById(let id):     return "diy/orders/\(id)"
@@ -419,7 +421,7 @@ enum Endpoint {
              .userProfile, .addressList, .reviews, .myCoupons:
             return .GET
         case .createBooking, .bookingReviewCreate, .bookingChatSend, .chatSend, .consultationCreate, .consultationPay,
-             .diyDesignSave, .diyOrderCreate, .diyOrderCreateFromDesign, .paymentCreate,
+             .diyDesignSave, .diyOrderCreate, .diyOrderAvailability, .diyOrderCreateFromDesign, .paymentCreate,
              .shopOrderCreate,
 			 .aiSessionCreate, .aiSendMessage, .aiRetryMessage, .mediaUploadCredential, .mediaComplete, .communityPostLike,
              .communityCommentCreate, .communityMasterFollow,
@@ -571,6 +573,7 @@ enum Endpoint {
         case .consultationPay:             return AnyEncodable([String: String]())
         case .diyDesignSave(let req):          return AnyEncodable(req)
         case .diyOrderCreate(let req):         return AnyEncodable(req)
+        case .diyOrderAvailability(let req):   return AnyEncodable(req)
         case .diyOrderCreateFromDesign(_, let req): return AnyEncodable(req)
         case .paymentCreate(let req):          return AnyEncodable(req)
         case .shopOrderCreate(let req):        return AnyEncodable(req)

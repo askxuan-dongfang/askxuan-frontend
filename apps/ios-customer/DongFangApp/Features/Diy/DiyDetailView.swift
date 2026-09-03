@@ -30,6 +30,9 @@ struct DiyDetailView: View {
                     previewSection
                     infoSection
                     materialsSection
+                    if let message = viewModel.availabilityMessage {
+                        availabilityWarning(message)
+                    }
                     blessingSection
                     Spacer(minLength: 100)
                 }
@@ -209,6 +212,26 @@ struct DiyDetailView: View {
         .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
     }
 
+    private func availabilityWarning(_ message: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("该作品暂不可直接下单", systemImage: "exclamationmark.triangle.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.stateWarning)
+            Text(message)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.textSecondary)
+            Text("请进入编辑器替换已失效材料。")
+                .font(.system(size: 12))
+                .foregroundStyle(Color.textTertiary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(AppSpacing.lg)
+        .background(Color.stateWarning.opacity(0.1))
+        .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.stateWarning.opacity(0.35), lineWidth: 1))
+        .cornerRadius(AppRadius.md)
+        .padding(.horizontal, AppSpacing.lg)
+    }
+
     // MARK: - 加持信息
     private var blessingSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.sm) {
@@ -252,7 +275,11 @@ struct DiyDetailView: View {
             DFSecondaryButton(title: "编辑", icon: "pencil") {
                 // 编辑会跳转到 DiyDesignView（简化：暂不实现）
             }
-            DFPrimaryButton(title: "立即下单", icon: "creditcard.fill") {
+            DFPrimaryButton(
+                title: viewModel.isCurrentDesignOrderable ? "立即下单" : "材料需替换",
+                icon: "creditcard.fill",
+                isEnabled: viewModel.isCurrentDesignOrderable
+            ) {
                 showOrderPage = true
             }
         }

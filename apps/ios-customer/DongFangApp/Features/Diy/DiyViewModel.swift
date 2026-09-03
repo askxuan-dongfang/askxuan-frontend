@@ -49,6 +49,7 @@ final class DiyViewModel: ObservableObject {
     @Published var currentDesign: DiyDesign?
     @Published var currentOrder: DiyOrder?
     @Published var currentPayment: PaymentRecord?
+    @Published var orderAvailability: DiyOrderAvailability?
 
     // MARK: - Editor state
     @Published var selectedCategory = "all"
@@ -111,6 +112,11 @@ final class DiyViewModel: ObservableObject {
     }
 
     var totalPriceText: String { AppDateFormatter.moneyText(totalPrice) }
+    var isCurrentDesignOrderable: Bool { orderAvailability?.orderable == true }
+    var availabilityMessage: String? {
+        guard let availability = orderAvailability, !availability.orderable else { return nil }
+        return availability.issues.map(\.message).joined(separator: "；")
+    }
     var totalQuantity: Int { beadSlots.count + (selectedCord == nil ? 0 : 1) }
     var usedLengthMm: Double { beadSlots.reduce(0) { $0 + $1.diameterMm } }
 
@@ -164,7 +170,14 @@ final class DiyViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         do {
-            let design: DiyDesign = try await apiClient.request(.diyDesignById(id))
+            async let designRequest: DiyDesign = apiClient.request(.diyDesignById(id))
+            async let materialRequest: PageResponse<Material> = apiClient.request(
+                .diyMaterials(category: nil, page: 1, size: 100))
+            async let availabilityRequest: DiyOrderAvailability = apiClient.request(
+                .diyOrderAvailability(DiyOrderAvailabilityRequest(designId: id, items: nil)))
+            let (design, materialResponse, availability) = try await (designRequest, materialRequest, availabilityRequest)
+            materials = materialResponse.list
+            orderAvailability = availability
             currentDesign = design
             designName = design.name
             if let data = design.designData {
@@ -172,9 +185,27 @@ final class DiyViewModel: ObservableObject {
             }
         } catch {
             currentDesign = nil
+            orderAvailability = nil
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    @discardableResult
+    func refreshOrderAvailability(designId: Int64, items: [DiyOrderItem]?) async -> Bool {
+        do {
+            let result: DiyOrderAvailability = try await apiClient.request(
+                .diyOrderAvailability(DiyOrderAvailabilityRequest(designId: designId, items: items)))
+            orderAvailability = result
+            if !result.orderable {
+                errorMessage = result.issues.map(\.message).joined(separator: "；")
+            }
+            return result.orderable
+        } catch {
+            orderAvailability = nil
+            errorMessage = "无法校验材料状态：\(error.localizedDescription)"
+            return false
+        }
     }
 
     func loadOrder(id: Int64) async {
@@ -450,12 +481,14 @@ final class DiyViewModel: ObservableObject {
 
     func createOrder(designId: Int64, addressId: Int64,
                      blessServiceCode: String?) async -> DiyOrder? {
+        let items = cartItems.map(makeOrderItem)
+        guard await refreshOrderAvailability(designId: designId, items: items) else { return nil }
         isSubmitting = true
         errorMessage = nil
         let request = DiyOrderCreateRequest(
             userId: authStore.userId,
             designId: designId,
-            items: cartItems.map(makeOrderItem),
+            items: items,
             blessServiceCode: blessServiceCode,
             addressId: addressId
         )
@@ -475,6 +508,7 @@ final class DiyViewModel: ObservableObject {
 
     func createOrderFromDesign(designId: Int64, addressId: Int64,
                                blessServiceCode: String?) async -> DiyOrder? {
+        guard await refreshOrderAvailability(designId: designId, items: nil) else { return nil }
         isSubmitting = true
         errorMessage = nil
         let request = DiyDesignOrderCreateRequest(
