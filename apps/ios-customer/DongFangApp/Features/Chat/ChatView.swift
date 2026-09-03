@@ -20,12 +20,12 @@ struct ChatView: View {
             return tab
         }
         #endif
-        return 0
+        return 1
     }()
     @State private var searchText: String = ""
     @State private var liveRooms: [LiveRoom] = []
 
-    private let tabTitles = ["我的私聊", "大师广场"]
+    private let tabTitles = ["我的收藏", "我的私聊", "大师广场"]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -45,7 +45,7 @@ struct ChatView: View {
             }
         }
         .refreshable {
-            if selectedTab == 0 {
+            if selectedTab == 1 {
                 await viewModel.loadConversations()
             }
         }
@@ -138,7 +138,8 @@ struct ChatView: View {
     @ViewBuilder
     private var panelContent: some View {
         switch selectedTab {
-        case 0: privatePanel
+        case 0: ChatFavoritesPanel()
+        case 1: privatePanel
         default: plazaPanel
         }
     }
@@ -286,6 +287,89 @@ struct ChatView: View {
     // MARK: - Panel 3: 大师广场
     private var plazaPanel: some View {
         CommunityPlazaView(liveRooms: liveRooms)
+    }
+}
+
+private struct ChatFavoritesPanel: View {
+    @State private var masters: [Master] = []
+    @State private var isLoading = false
+    @State private var message: String?
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            LazyVStack(spacing: 0) {
+                if isLoading && masters.isEmpty {
+                    ProgressView("正在加载关注")
+                        .tint(Color.accentDefault)
+                        .padding(.top, 48)
+                } else if masters.isEmpty {
+                    ContentUnavailableView(
+                        "还没有关注的大师",
+                        systemImage: "heart",
+                        description: Text(message ?? "在大师主页关注后，会显示在这里")
+                    )
+                    .padding(.top, 48)
+                } else {
+                    ForEach(masters) { master in
+                        NavigationLink {
+                            MasterProfileView(masterId: master.id)
+                        } label: {
+                            HStack(spacing: 12) {
+                                RemoteAvatar(urlString: master.avatar, size: 48)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(master.dharmaName)
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundStyle(Color.textPrimary)
+                                    Text(master.templeName.isEmpty ? "独立大师" : master.templeName)
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(Color.textTertiary)
+                                }
+                                Spacer()
+                                Text("已关注")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.accentDefault)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .overlay(Capsule().stroke(Color.accentDefault.opacity(0.45), lineWidth: 1))
+                            }
+                            .padding(.horizontal, AppSpacing.lg)
+                            .padding(.vertical, 12)
+                            .overlay(alignment: .bottom) {
+                                Rectangle().fill(Color.borderDivider).frame(height: 1).padding(.leading, 76)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                Color.clear.frame(height: AppSpacing.navBottom)
+            }
+        }
+        .task { await load() }
+        .refreshable { await load() }
+    }
+
+    @MainActor
+    private func load() async {
+        isLoading = true
+        message = nil
+        defer { isLoading = false }
+        do {
+            let response: FollowedMastersResponse = try await APIClient.shared.request(.communityMyFollowing)
+            masters = await withTaskGroup(of: (String, Master?).self) { group in
+                for id in response.list {
+                    group.addTask {
+                        let master: Master? = try? await APIClient.shared.request(.masterById(id))
+                        return (id, master)
+                    }
+                }
+                var values: [String: Master] = [:]
+                for await (id, master) in group where master != nil { values[id] = master }
+                return response.list.compactMap { values[$0] }
+            }
+        } catch {
+            if (error as? APIError)?.isCancellation == true || error is CancellationError { return }
+            message = error.localizedDescription
+        }
     }
 }
 

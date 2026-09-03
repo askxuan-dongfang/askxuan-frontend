@@ -23,7 +23,10 @@ final class CalendarViewModel: ObservableObject {
     @Published var selectedDate: Date = Date()
     @Published var schedules: [MasterSchedule] = []
     @Published var isLoading: Bool = false
+    @Published var isSaving: Bool = false
     @Published var errorMessage: String? = nil
+    @Published var successMessage: String? = nil
+    @Published var selectedSlots: Set<String> = []
 
     private let apiClient: APIClient
     private let calendar = Calendar(identifier: .gregorian)
@@ -41,20 +44,30 @@ final class CalendarViewModel: ObservableObject {
         schedules.flatMap { $0.timeSlots }.sorted()
     }
 
+    private let templateSlots = ["09:00-12:00", "13:00-17:00"]
+
+    var availableSlots: [String] {
+        Array(Set(templateSlots + timeSlots)).sorted()
+    }
+
     func load() async {
         isLoading = true
         errorMessage = nil
+        successMessage = nil
         do {
             let resp: ScheduleListResponse = try await apiClient.request(
                 .masterSchedules(date: selectedDateString, page: 1, size: 50)
             )
             schedules = resp.list
+            selectedSlots = Set(resp.list.flatMap { $0.timeSlots })
         } catch let error as APIError {
             errorMessage = error.errorDescription
             schedules = []
+            selectedSlots = []
         } catch {
             errorMessage = "加载失败：\(error.localizedDescription)"
             schedules = []
+            selectedSlots = []
         }
         isLoading = false
     }
@@ -62,6 +75,33 @@ final class CalendarViewModel: ObservableObject {
     func selectDate(_ date: Date) async {
         selectedDate = date
         await load()
+    }
+
+    func toggle(_ slot: String) {
+        if selectedSlots.contains(slot) {
+            selectedSlots.remove(slot)
+        } else {
+            selectedSlots.insert(slot)
+        }
+    }
+
+    func save(restDay: Bool = false) async {
+        isSaving = true
+        errorMessage = nil
+        successMessage = nil
+        let slots = restDay ? [] : availableSlots.filter { selectedSlots.contains($0) }
+        do {
+            let _: ScheduleUpdateResponse = try await apiClient.request(
+                .masterScheduleUpdate(date: selectedDateString, timeSlots: slots, status: "available")
+            )
+            await load()
+            successMessage = restDay ? "已设为休息日" : "日程已保存"
+        } catch let error as APIError {
+            errorMessage = error.errorDescription
+        } catch {
+            errorMessage = "保存失败：\(error.localizedDescription)"
+        }
+        isSaving = false
     }
 }
 
@@ -71,6 +111,10 @@ struct ScheduleListResponse: Decodable {
     let list: [MasterSchedule]
     let page: Int
     let size: Int
+}
+
+struct ScheduleUpdateResponse: Decodable {
+    let id: Int64
 }
 
 struct CalendarView: View {
@@ -207,29 +251,58 @@ struct CalendarView: View {
             if viewModel.isLoading {
                 LoadingView(message: "加载日程...")
                     .frame(maxWidth: .infinity)
-            } else if viewModel.timeSlots.isEmpty {
-                EmptyState(icon: "clock.badge.questionmark",
-                           title: "暂无日程",
-                           message: viewModel.errorMessage ?? "当日未设置可用时段")
             } else {
-                ForEach(viewModel.timeSlots, id: \.self) { slot in
-                    MasterCard(padding: AppSpacing.md) {
-                        HStack {
-                            Image(systemName: "clock.fill")
-                                .foregroundStyle(.accentDefault)
-                            Text(slot)
-                                .font(.body)
-                                .foregroundStyle(.textPrimary)
-                            Spacer()
-                            Text("可预约")
-                                .font(.micro)
-                                .foregroundStyle(.stateSuccess)
-                                .padding(.horizontal, AppSpacing.sm)
-                                .padding(.vertical, 3)
-                                .background(Color.stateSuccess.opacity(0.15))
-                                .cornerRadius(AppRadius.sm)
+                ForEach(viewModel.availableSlots, id: \.self) { slot in
+                    Button {
+                        viewModel.toggle(slot)
+                    } label: {
+                        MasterCard(padding: AppSpacing.md) {
+                            HStack {
+                                Image(systemName: "clock.fill")
+                                    .foregroundStyle(.accentDefault)
+                                Text(slot)
+                                    .font(.body)
+                                    .foregroundStyle(.textPrimary)
+                                Spacer()
+                                Text(viewModel.selectedSlots.contains(slot) ? "可预约" : "休息")
+                                    .font(.micro)
+                                    .foregroundStyle(viewModel.selectedSlots.contains(slot) ? Color.stateSuccess : Color.textTertiary)
+                                Image(systemName: viewModel.selectedSlots.contains(slot) ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(viewModel.selectedSlots.contains(slot) ? Color.stateSuccess : Color.textTertiary)
+                            }
                         }
                     }
+                    .buttonStyle(.plain)
+                }
+
+                HStack(spacing: AppSpacing.md) {
+                    Button {
+                        Task { await viewModel.save(restDay: true) }
+                    } label: {
+                        Text("设置休息日").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.textSecondary)
+
+                    Button {
+                        Task { await viewModel.save() }
+                    } label: {
+                        HStack {
+                            if viewModel.isSaving { ProgressView().controlSize(.small) }
+                            Text("保存日程")
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.brandDefault)
+                }
+                .disabled(viewModel.isSaving)
+
+                if let success = viewModel.successMessage {
+                    Text(success).font(.caption).foregroundStyle(.stateSuccess)
+                }
+                if let error = viewModel.errorMessage {
+                    Text(error).font(.caption).foregroundStyle(.stateError)
                 }
             }
         }

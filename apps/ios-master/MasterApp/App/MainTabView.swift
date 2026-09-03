@@ -70,6 +70,7 @@ struct MainTabView: View {
         appearance.shadowColor = UIColor(Color.borderDivider)
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
+        UIScrollView.appearance().keyboardDismissMode = .interactive
     }
 
     var body: some View {

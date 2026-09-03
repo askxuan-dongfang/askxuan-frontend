@@ -569,6 +569,15 @@ private final class MediaStudioViewModel: ObservableObject {
         }
     }
 
+    func closeLive() async {
+        guard let room else { return }
+        do {
+            self.room = try await APIClient.shared.request(.liveRoomClose(id: room.id))
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     private func uploadAsset(data: Data, fileName: String, mediaType: String, contentType: String, coverMediaId: Int64?) async throws -> MediaAsset {
         let credential: MediaUploadCredential = try await APIClient.shared.request(
             .mediaUploadCredential(MediaUploadCredentialRequest(
@@ -706,6 +715,11 @@ private struct MediaStudioView: View {
                 }
                 if let room = viewModel.room {
                     Text("房间 \(room.roomNo) · \(room.status)")
+                    if room.status == "live" {
+                        Button("结束直播", role: .destructive) {
+                            Task { await viewModel.closeLive() }
+                        }
+                    }
                 }
             }
 
