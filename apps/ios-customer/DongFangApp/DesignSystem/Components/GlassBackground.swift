@@ -40,16 +40,42 @@ private struct RootTabVisibilityObserver: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
 }
 
-private final class RootTabVisibilityViewController: UIViewController {
+private final class RootTabVisibilityViewController: UIViewController, UIGestureRecognizerDelegate {
+    private weak var observedNavigationController: UINavigationController?
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         tabBarController?.tabBar.isHidden = false
+        enableInteractivePopGesture()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        enableInteractivePopGesture()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         guard let navigationController, navigationController.viewControllers.count > 1 else { return }
         tabBarController?.tabBar.isHidden = true
+    }
+
+    deinit {
+        guard observedNavigationController?.interactivePopGestureRecognizer?.delegate === self else { return }
+        observedNavigationController?.interactivePopGestureRecognizer?.delegate = nil
+    }
+
+    private func enableInteractivePopGesture() {
+        guard let navigationController,
+              let gesture = navigationController.interactivePopGestureRecognizer else { return }
+        observedNavigationController = navigationController
+        gesture.delegate = self
+        gesture.isEnabled = true
+    }
+
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard let navigationController = observedNavigationController else { return false }
+        return navigationController.viewControllers.count > 1 && navigationController.transitionCoordinator == nil
     }
 }
 
@@ -62,6 +88,25 @@ extension View {
     /// 二级及更深页面显式隐藏 Dock。
     func secondaryPage() -> some View {
         toolbar(.hidden, for: .tabBar)
+    }
+
+    /// 为 C 端所有输入控件提供统一的键盘收起入口，尤其覆盖数字键盘。
+    func appKeyboardDismissal() -> some View {
+        toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("完成") {
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder),
+                        to: nil,
+                        from: nil,
+                        for: nil
+                    )
+                }
+                .font(.system(size: 15, weight: .semibold))
+                .accessibilityLabel("收起键盘")
+            }
+        }
     }
 }
 

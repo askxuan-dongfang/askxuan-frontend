@@ -322,6 +322,7 @@ struct AiDivinationView: View {
     @StateObject private var viewModel = AiDivinationViewModel()
     @State private var isDrawerOpen = false
 	@State private var selectedPhotoItems: [PhotosPickerItem] = []
+    @FocusState private var focusedInput: String?
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -360,6 +361,7 @@ struct AiDivinationView: View {
     private var navigationBar: some View {
         HStack(spacing: 12) {
             iconButton("sidebar.left", label: "历史问事") {
+                focusedInput = nil
                 isDrawerOpen = true
             }
 
@@ -375,6 +377,7 @@ struct AiDivinationView: View {
             .frame(maxWidth: .infinity)
 
             iconButton("square.and.pencil", label: "新建问事") {
+                focusedInput = nil
                 viewModel.newConversation()
             }
         }
@@ -399,6 +402,7 @@ struct AiDivinationView: View {
                 .padding(.vertical, 18)
             }
             .scrollDismissesKeyboard(.interactively)
+            .onTapGesture { focusedInput = nil }
             .onChange(of: viewModel.messages.count) {
                 if let last = viewModel.messages.last {
                     withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
@@ -470,6 +474,9 @@ struct AiDivinationView: View {
                             } else {
                                 TextField(field.placeholder ?? inputPlaceholder(field.type), text: inputBinding(field.key))
                                     .font(.system(size: 14))
+                                    .focused($focusedInput, equals: "structured:\(field.key)")
+                                    .submitLabel(.done)
+                                    .onSubmit { focusedInput = nil }
                                     .padding(.horizontal, 12)
                                     .frame(height: 40)
                                     .background(Color.bgSecondary)
@@ -595,6 +602,8 @@ struct AiDivinationView: View {
                 TextField("输入你的问题", text: $viewModel.input, axis: .vertical)
                     .lineLimit(1...4)
                     .font(.system(size: 15))
+                    .focused($focusedInput, equals: "question")
+                    .submitLabel(.send)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
                     .background(Color.bgSecondary)
@@ -603,10 +612,10 @@ struct AiDivinationView: View {
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(Color.borderDefault, lineWidth: 1)
                     )
-                    .onSubmit { Task { await viewModel.send() } }
+                    .onSubmit { sendMessage() }
 
                 Button {
-                    Task { await viewModel.send() }
+                    sendMessage()
                 } label: {
                     Image(systemName: "arrow.up")
                         .font(.system(size: 16, weight: .bold))
@@ -755,7 +764,14 @@ struct AiDivinationView: View {
     }
 
     private func closeDrawer() {
+        focusedInput = nil
         isDrawerOpen = false
+    }
+
+    private func sendMessage() {
+        guard canSend else { return }
+        focusedInput = nil
+        Task { await viewModel.send() }
     }
 }
 

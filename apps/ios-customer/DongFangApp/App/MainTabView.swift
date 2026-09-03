@@ -33,6 +33,7 @@ struct MainTabView: View {
         appearance.shadowColor = UIColor(Color.borderDivider)
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
+        UIScrollView.appearance().keyboardDismissMode = .interactive
     }
 
     var body: some View {
@@ -94,6 +95,7 @@ struct MainTabView: View {
         }
         .tint(.brandDefault)
         .animation(.easeInOut(duration: 0.25), value: selectedTab)
+        .appKeyboardDismissal()
         // 特性 7：iOS 26+ 滚动时液态玻璃 TabBar 自动最小化为浮动 dock
         .tabBarMinimizeOnScroll()
     }
