@@ -1,10 +1,18 @@
 <template>
   <div class="dfx-page">
-    <PageHeader :title="`用户详情 · ${detail?.user.nickname || ''}`" subtitle="用户资料 / 消费画像 / 偏好">
+    <PageHeader :title="`用户详情 · ${detail?.user?.nickname || ''}`" subtitle="用户资料 / 消费画像 / 偏好">
       <template #actions>
         <el-button :icon="Back" @click="$router.back()">返回</el-button>
       </template>
     </PageHeader>
+
+    <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+      <div class="ax-page-feedback__copy">
+        <div class="ax-page-feedback__title">用户详情加载失败</div>
+        <div class="ax-page-feedback__description">{{ loadError }}，未完整返回的数据不会按空资料展示。</div>
+      </div>
+      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+    </div>
 
     <div v-loading="loading">
       <div v-if="detail" class="detail-wrap">
@@ -63,6 +71,7 @@ import type { AdminUserDetailResp } from '@/types'
 const route = useRoute()
 const loading = ref(false)
 const detail = ref<AdminUserDetailResp | null>(null)
+const loadError = ref('')
 
 const genderText = computed(() => {
   const g = detail.value?.user.gender
@@ -71,8 +80,16 @@ const genderText = computed(() => {
 
 async function loadData() {
   loading.value = true
+  loadError.value = ''
   try {
-    detail.value = await getUserDetail(route.params.id as string)
+    const data = await getUserDetail(route.params.id as string)
+    if (!data?.user || typeof data.user.nickname !== 'string' || !data.user.nickname.trim()) {
+      throw new Error('用户详情数据结构不完整')
+    }
+    detail.value = { ...data, preferenceTags: Array.isArray(data.preferenceTags) ? data.preferenceTags : [] }
+  } catch (error) {
+    detail.value = null
+    loadError.value = error instanceof Error ? error.message : '加载用户详情失败'
   } finally {
     loading.value = false
   }

@@ -6,6 +6,11 @@
       </template>
     </PageHeader>
 
+    <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+      <div class="ax-page-feedback__copy"><div class="ax-page-feedback__title">{{ activeTab === 'settlement' ? '法师结算单加载失败' : '法师提现记录加载失败' }}</div><div class="ax-page-feedback__description">当前结果不是业务零值，请重新加载。</div></div>
+      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+    </div>
+
     <div class="dfx-card table-wrap">
       <el-tabs v-model="activeTab" @tab-change="loadData">
         <el-tab-pane label="结算单" name="settlement">
@@ -16,7 +21,7 @@
               <el-option label="已付款" value="paid" />
             </el-select>
           </div>
-          <DataTable :data="sList" :loading="loading" :total="sTotal" v-model:page="sQuery.page" v-model:size="sQuery.size" @change="loadData">
+          <DataTable class="desktop-table" :data="sList" :loading="loading" :total="sTotal" v-model:page="sQuery.page" v-model:size="sQuery.size" @change="loadData">
             <el-table-column label="结算单号" prop="settlementNo" width="180" />
             <el-table-column label="法师" min-width="150">
               <template #default="{ row }">
@@ -47,6 +52,16 @@
               </template>
             </el-table-column>
           </DataTable>
+          <MobileTaskList v-model:page="sQuery.page" :items="sList" :loading="loading" :total="sTotal" :size="sQuery.size" @change="loadData">
+            <template #item="{ item: row }">
+              <article class="mobile-task-card">
+                <div class="mobile-task-card__head"><strong>{{ row.targetName || row.targetId }}</strong><StatusTag :status="row.status" /></div>
+                <div class="mobile-task-card__meta">{{ row.settlementNo }} · {{ row.periodStart }} 至 {{ row.periodEnd }}</div>
+                <div class="mobile-task-card__meta">{{ row.orderCount }} 单 · 总额 {{ formatMoney(row.totalAmount) }} · 抽成 {{ formatMoney(row.commissionAmount) }}</div>
+                <div class="mobile-task-card__foot"><span>应结 <b>{{ formatMoney(row.settleAmount) }}</b></span><el-button v-if="row.status === 'pending'" type="primary" @click="confirmSettle(row)">确认结算</el-button><b v-else>已处理</b></div>
+              </article>
+            </template>
+          </MobileTaskList>
         </el-tab-pane>
 
         <el-tab-pane label="提现记录" name="withdrawal">
@@ -60,7 +75,7 @@
               <el-option label="已驳回" value="rejected" />
             </el-select>
           </div>
-          <DataTable :data="wList" :loading="loading" :total="wTotal" v-model:page="wQuery.page" v-model:size="wQuery.size" @change="loadData">
+          <DataTable class="desktop-table" :data="wList" :loading="loading" :total="wTotal" v-model:page="wQuery.page" v-model:size="wQuery.size" @change="loadData">
             <el-table-column label="提现单号" prop="withdrawalNo" width="180" />
             <el-table-column label="申请人" prop="applicantId" width="120" />
             <el-table-column label="金额" width="130" align="right">
@@ -76,6 +91,15 @@
               <template #default="{ row }">{{ formatDate(row.createTime) }}</template>
             </el-table-column>
           </DataTable>
+          <MobileTaskList v-model:page="wQuery.page" :items="wList" :loading="loading" :total="wTotal" :size="wQuery.size" @change="loadData">
+            <template #item="{ item: row }">
+              <article class="mobile-task-card">
+                <div class="mobile-task-card__head"><strong>{{ row.withdrawalNo }}</strong><StatusTag :status="row.status" /></div>
+                <div class="mobile-task-card__meta">申请人 {{ row.applicantId }} · {{ maskBankCard(row.bankCard) }}</div>
+                <div class="mobile-task-card__foot"><span>{{ formatDate(row.createTime) }}</span><b>{{ formatMoney(row.amount) }}</b></div>
+              </article>
+            </template>
+          </MobileTaskList>
         </el-tab-pane>
       </el-tabs>
     </div>
@@ -88,6 +112,7 @@ import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
+import MobileTaskList from '@/components/MobileTaskList.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import { getSettlements, confirmSettlement, getWithdrawals } from '@/api/finance'
 import { formatDate, formatMoney, maskBankCard } from '@/utils/format'
@@ -95,6 +120,7 @@ import type { Settlement, Withdrawal } from '@/types'
 
 const activeTab = ref('settlement')
 const loading = ref(false)
+const loadError = ref(false)
 
 const sQuery = reactive({ status: '', settleType: 'master', page: 1, size: 20 })
 const sList = ref<Settlement[]>([])
@@ -106,6 +132,7 @@ const wTotal = ref(0)
 
 async function loadData() {
   loading.value = true
+  loadError.value = false
   try {
     if (activeTab.value === 'settlement') {
       const res = await getSettlements(sQuery)
@@ -116,6 +143,8 @@ async function loadData() {
       wList.value = res.list || []
       wTotal.value = res.total || 0
     }
+  } catch {
+    loadError.value = true
   } finally {
     loading.value = false
   }

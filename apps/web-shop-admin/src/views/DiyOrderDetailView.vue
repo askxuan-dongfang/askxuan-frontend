@@ -43,16 +43,16 @@ async function handleReview(action: 'approve' | 'reject') {
   try {
     let reason = ''
     if (action === 'reject') {
-      const res = await ElMessageBox.prompt('请输入拒绝原因', '拒绝审核', {
+      const res = await ElMessageBox.prompt('拒绝后订单将停止进入制作流程，用户会看到该原因。请输入拒绝原因。', '拒绝审核', {
         confirmButtonText: '确认',
         cancelButtonText: '取消',
         inputType: 'textarea'
       })
       reason = res.value || ''
     } else {
-      await ElMessageBox.confirm(`确认${tip}该 DIY 订单审核？`, '提示', {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
+      await ElMessageBox.confirm('确认通过该 DIY 订单审核？通过后将锁定当前设计快照并进入制作流程。', 'DIY 审核确认', {
+        confirmButtonText: '确认通过',
+        cancelButtonText: '返回核对',
         type: 'warning'
       })
     }
@@ -66,9 +66,9 @@ async function handleReview(action: 'approve' | 'reject') {
 
 async function handleMakeComplete() {
   try {
-    await ElMessageBox.confirm('确认该 DIY 订单制作完成？', '提示', {
-      confirmButtonText: '确认',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm('确认该 DIY 订单制作完成？确认后订单进入待发货，材料与制作状态将被更新。', '制作完成确认', {
+      confirmButtonText: '确认完成',
+      cancelButtonText: '返回核对',
       type: 'warning'
     })
     await diyOrderApi.makeComplete(orderId.value)
@@ -89,6 +89,15 @@ async function handleShip() {
   if (!shipFormRef.value) return
   await shipFormRef.value.validate(async (valid) => {
     if (!valid) return
+    try {
+      await ElMessageBox.confirm(
+        `确认将 DIY 订单「${detail.value?.orderNo || orderId.value}」标记为已发货？运单号 ${shipForm.trackingNo} 将展示给用户。`,
+        '确认发货',
+        { type: 'warning', confirmButtonText: '确认发货', cancelButtonText: '返回核对' }
+      )
+    } catch {
+      return
+    }
     shipSaving.value = true
     try {
       await diyOrderApi.ship(orderId.value, { ...shipForm })
@@ -210,6 +219,7 @@ onMounted(() => {
 
     <!-- 发货弹窗 -->
     <el-dialog v-model="shipDialogVisible" title="DIY 订单发货" width="480px">
+      <el-alert title="发货后订单进入待收货状态，物流信息会同步给用户且不可在本页面撤回。" type="warning" :closable="false" show-icon />
       <el-form
         ref="shipFormRef"
         :model="shipForm"

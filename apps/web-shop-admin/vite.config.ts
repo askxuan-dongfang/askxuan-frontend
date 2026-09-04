@@ -6,8 +6,8 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import path from 'node:path'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  base: process.env.VITE_PUBLIC_BASE || '/',
+export default defineConfig(({ mode }) => ({
+  base: process.env.VITE_PUBLIC_BASE || (mode === 'production' ? '/shop/' : '/'),
   plugins: [
     vue(),
     // 自动导入 Vue / Vue Router / Pinia 的 API 与 Element Plus 的函数式组件
@@ -25,14 +25,15 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src')
+      '@': path.resolve(__dirname, 'src'),
+      '@askxuan/domain-status': path.resolve(__dirname, '../../packages/domain-status/src/index.ts')
     }
   },
   server: {
     port: 5175,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: process.env.VITE_DEV_PROXY_TARGET || 'http://localhost:8080',
         changeOrigin: true,
         rewrite: (p) => p
       }
@@ -51,4 +52,4 @@ export default defineConfig({
       }
     }
   }
-})
+}))

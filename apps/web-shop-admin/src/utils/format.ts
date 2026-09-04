@@ -1,5 +1,8 @@
 // 问玄东方 · 商城管理台 - 工具函数
 import dayjs from 'dayjs'
+import { getStatusMeta } from '../../../../packages/domain-status/src'
+
+type TagType = 'success' | 'warning' | 'info' | 'primary' | 'danger'
 
 /**
  * 格式化日期为 YYYY-MM-DD
@@ -29,131 +32,63 @@ export function formatMoney(amount: number | undefined | null): string {
  * 商品状态 → 中文标签
  */
 export function productStatusLabel(status: string): string {
-  const map: Record<string, string> = {
-    draft: '草稿',
-    on_shelf: '已上架',
-    off_shelf: '已下架'
-  }
-  return map[status] ?? status
+  return getStatusMeta('product', status).label
 }
 
 /**
  * 商品状态 → Element Plus Tag 类型
  */
-export function productStatusType(status: string): 'success' | 'warning' | 'info' | 'primary' | 'danger' {
-  const map: Record<string, 'success' | 'warning' | 'info' | 'primary' | 'danger'> = {
-    draft: 'info',
-    on_shelf: 'success',
-    off_shelf: 'warning'
-  }
-  return map[status] ?? 'info'
+export function productStatusType(status: string): TagType {
+  return getStatusMeta('product', status).tone
 }
 
 /**
  * 订单状态 → 中文标签
  */
 export function orderStatusLabel(status: string): string {
-  const map: Record<string, string> = {
-    pending_payment: '待付款',
-    paid: '已付款',
-    shipped: '已发货',
-    completed: '已完成',
-    cancelled: '已取消',
-    in_return: '退货中'
-  }
-  return map[status] ?? status
+  return getStatusMeta('order', status).label
 }
 
 /**
  * 订单状态 → Element Plus Tag 类型
  */
-export function orderStatusType(status: string): 'success' | 'warning' | 'info' | 'primary' | 'danger' {
-  const map: Record<string, 'success' | 'warning' | 'info' | 'primary' | 'danger'> = {
-    pending_payment: 'warning',
-    paid: 'primary',
-    shipped: 'info',
-    completed: 'success',
-    cancelled: 'danger',
-    in_return: 'warning'
-  }
-  return map[status] ?? 'info'
+export function orderStatusType(status: string): TagType {
+  return getStatusMeta('order', status).tone
 }
 
 /**
  * DIY 订单状态 → 中文标签（对齐后端 diy_order 枚举）
  */
 export function diyOrderStatusLabel(status: string): string {
-  const map: Record<string, string> = {
-    pending_review: '待审核',
-    in_making: '制作中',
-    awaiting_blessing: '待加持',
-    blessing_in_progress: '加持中',
-    blessing_completed: '加持完成',
-    awaiting_shipment: '待发货',
-    shipped: '已发货',
-    completed: '已完成',
-    cancelled: '已取消',
-    in_return: '退换中'
-  }
-  return map[status] ?? status
+  return getStatusMeta('diyOrder', status).label
 }
 
 /**
  * DIY 订单状态 → Element Plus Tag 类型
  */
-export function diyOrderStatusType(status: string): 'success' | 'warning' | 'info' | 'primary' | 'danger' {
-  const map: Record<string, 'success' | 'warning' | 'info' | 'primary' | 'danger'> = {
-    pending_review: 'warning',
-    in_making: 'primary',
-    awaiting_blessing: 'info',
-    blessing_in_progress: 'info',
-    blessing_completed: 'info',
-    awaiting_shipment: 'warning',
-    shipped: 'primary',
-    completed: 'success',
-    cancelled: 'danger',
-    in_return: 'warning'
-  }
-  return map[status] ?? 'info'
+export function diyOrderStatusType(status: string): TagType {
+  return getStatusMeta('diyOrder', status).tone
 }
 
 /**
  * 退货状态 → 中文标签
  */
 export function returnStatusLabel(status: string): string {
-  const map: Record<string, string> = {
-    pending_review: '待审核',
-    approved: '已通过',
-    return_shipping: '退货运输中',
-    return_received: '已收货',
-    refunding: '退款中',
-    completed: '已完成',
-    rejected: '已拒绝'
-  }
-  return map[status] ?? status
+  return getStatusMeta('return', status).label
 }
 
 /**
  * 退货状态 → Element Plus Tag 类型
  */
-export function returnStatusType(status: string): 'success' | 'warning' | 'info' | 'primary' | 'danger' {
-  const map: Record<string, 'success' | 'warning' | 'info' | 'primary' | 'danger'> = {
-    pending_review: 'warning',
-    approved: 'primary',
-    return_shipping: 'info',
-    return_received: 'info',
-    refunding: 'warning',
-    completed: 'success',
-    rejected: 'danger'
-  }
-  return map[status] ?? 'info'
+export function returnStatusType(status: string): TagType {
+  return getStatusMeta('return', status).tone
 }
 
 /**
  * 启用/禁用状态 → 中文
  */
 export function enabledLabel(status: string): string {
-  return status === 'enabled' || status === 'on_shelf' ? '启用' : '禁用'
+  return getStatusMeta('generic', status === 'on_shelf' ? 'enabled' : status).label
 }
 
 /**

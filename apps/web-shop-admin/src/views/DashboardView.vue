@@ -3,6 +3,7 @@
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { useRouter } from 'vue-router'
+import PageHeader from '@/components/PageHeader.vue'
 import StatCard from '@/components/StatCard.vue'
 import { orderApi } from '@/api/order'
 import type { OrderReport } from '@/api/order'
@@ -11,12 +12,25 @@ import { formatMoney, orderStatusLabel, orderStatusType } from '@/utils/format'
 import type { ShopOrder } from '@/types'
 
 const router = useRouter()
+const loading = ref(false)
+const loadIssueCount = ref(0)
+const failedModules = ref<string[]>([])
+const reportLoaded = ref(false)
+const ordersLoaded = ref(false)
+const pendingShip = ref<number | string>('—')
 
-const stats = ref([
-  { label: '今日订单', value: 0, change: '统计中', up: true, icon: 'List', color: 'primary' as const },
-  { label: '今日销售额', value: '¥0', change: '统计中', up: true, icon: 'Money', color: 'success' as const },
-  { label: '待发货', value: 0, change: '需及时处理', up: false, icon: 'Box', color: 'warning' as const },
-  { label: '商品总数', value: 0, change: '在售', up: true, icon: 'Goods', color: 'accent' as const }
+const stats = ref<Array<{
+  label: string
+  value: string | number
+  change: string
+  up: boolean
+  icon: string
+  color: 'primary' | 'warning' | 'success' | 'accent' | 'info'
+}>>([
+  { label: '今日订单', value: '—', change: '等待加载', up: true, icon: 'List', color: 'primary' as const },
+  { label: '今日销售额', value: '—', change: '等待加载', up: true, icon: 'Money', color: 'success' as const },
+  { label: '待发货', value: '—', change: '等待加载', up: false, icon: 'Box', color: 'warning' as const },
+  { label: '商品总数', value: '—', change: '等待加载', up: true, icon: 'Goods', color: 'accent' as const }
 ])
 
 const recentOrders = ref<ShopOrder[]>([])
@@ -111,41 +125,63 @@ function handleResize() {
 }
 
 async function loadDashboard() {
+  loading.value = true
+  loadIssueCount.value = 0
+  failedModules.value = []
+  reportLoaded.value = false
+  ordersLoaded.value = false
+  pendingShip.value = '—'
+  stats.value.forEach((item) => { item.value = '—'; item.change = '等待加载' })
+  recentOrders.value = []
   try {
     const report = await orderApi.report()
+    if (
+      !Number.isFinite(report.todayOrders) ||
+      !Number.isFinite(report.todaySales) ||
+      !Number.isFinite(report.pendingShip) ||
+      !Array.isArray(report.trend) ||
+      !Array.isArray(report.topProducts)
+    ) {
+      throw new Error('经营报表返回的数据结构不完整')
+    }
+    reportLoaded.value = true
     stats.value[0].value = report.todayOrders
     stats.value[0].change = '今日'
     stats.value[1].value = formatMoney(report.todaySales)
     stats.value[1].change = '今日'
     stats.value[2].value = report.pendingShip
+    pendingShip.value = report.pendingShip
     // 趋势图按真实数据重绘
+    await nextTick()
+    if (!trendChart) initTrendChart()
     const { dates, sales, orders } = buildTrendData(report)
     trendChart?.setOption({
       xAxis: { data: dates },
       series: [{ data: sales }, { data: orders }]
     })
   } catch {
-    // 报表加载失败时保持 0 展示，避免误导
+    failedModules.value.push('经营报表')
   }
 
   try {
     const list = await orderApi.list({ page: 1, size: 5 })
     recentOrders.value = list.list || []
+    ordersLoaded.value = true
   } catch {
-    recentOrders.value = []
+    failedModules.value.push('最新订单')
   }
 
   try {
     const products = await productApi.list({ page: 1, size: 1 })
     stats.value[3].value = products.total
   } catch {
-    // 忽略
+    failedModules.value.push('商品总数')
   }
+  loadIssueCount.value = failedModules.value.length
+  loading.value = false
 }
 
 onMounted(async () => {
-  await nextTick()
-  initTrendChart()
   window.addEventListener('resize', handleResize)
   await loadDashboard()
 })
@@ -158,6 +194,43 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="dashboard">
+    <PageHeader title="今日工作台" subtitle="先处理履约、DIY 与售后任务，再查看经营趋势">
+      <template #extra>
+        <el-button :loading="loading" @click="loadDashboard">刷新数据</el-button>
+      </template>
+    </PageHeader>
+
+    <div v-if="loadIssueCount" class="ax-page-feedback" :class="{ 'is-error': loadIssueCount === 3 }" role="status">
+      <div class="ax-page-feedback__copy">
+        <div class="ax-page-feedback__title">{{ loadIssueCount === 3 ? '商城工作台暂时无法加载' : '部分商城数据加载失败' }}</div>
+        <div class="ax-page-feedback__description">失败模块：{{ failedModules.join('、') }}。未取得的数据保持“—”，不会将接口失败显示为 0。</div>
+      </div>
+      <el-button :loading="loading" @click="loadDashboard">重新加载</el-button>
+    </div>
+
+    <div class="ax-task-grid">
+      <router-link class="ax-task-card" to="/diy-orders">
+        <span class="ax-task-card__icon"><el-icon><Brush /></el-icon></span>
+        <span class="ax-task-card__copy"><span class="ax-task-card__label">DIY 审核与制作</span><span class="ax-task-card__meta">查看当前制作节点</span></span>
+        <strong class="ax-task-card__value">查看</strong>
+      </router-link>
+      <router-link class="ax-task-card" to="/orders">
+        <span class="ax-task-card__icon"><el-icon><Box /></el-icon></span>
+        <span class="ax-task-card__copy"><span class="ax-task-card__label">待发货订单</span><span class="ax-task-card__meta">进入订单履约列表</span></span>
+        <strong class="ax-task-card__value">{{ pendingShip }}</strong>
+      </router-link>
+      <router-link class="ax-task-card" to="/returns">
+        <span class="ax-task-card__icon"><el-icon><RefreshLeft /></el-icon></span>
+        <span class="ax-task-card__copy"><span class="ax-task-card__label">售后处理</span><span class="ax-task-card__meta">退货、退款与异常单</span></span>
+        <strong class="ax-task-card__value">查看</strong>
+      </router-link>
+      <router-link class="ax-task-card" to="/materials">
+        <span class="ax-task-card__icon"><el-icon><Warning /></el-icon></span>
+        <span class="ax-task-card__copy"><span class="ax-task-card__label">材料库存</span><span class="ax-task-card__meta">检查上下架与库存状态</span></span>
+        <strong class="ax-task-card__value">查看</strong>
+      </router-link>
+    </div>
+
     <!-- 指标卡片 -->
     <div class="stat-grid">
       <StatCard
@@ -178,7 +251,13 @@ onBeforeUnmount(() => {
         <h3>近 7 日销售趋势</h3>
         <el-tag size="small" type="info" effect="plain">本周</el-tag>
       </div>
-      <div ref="trendChartRef" class="chart-box"></div>
+      <div v-if="reportLoaded" ref="trendChartRef" class="chart-box desktop-chart"></div>
+      <div v-else class="chart-state">趋势数据未加载</div>
+      <div v-if="reportLoaded" class="chart-mobile-summary">
+        <div><span>今日销售额</span><b>{{ stats[1].value }}</b></div>
+        <div><span>今日订单</span><b>{{ stats[0].value }} 单</b></div>
+        <el-button link type="primary" @click="router.push('/reports')">查看完整经营报表</el-button>
+      </div>
     </div>
 
     <!-- 近期订单 -->
@@ -190,7 +269,7 @@ onBeforeUnmount(() => {
           <el-icon><ArrowRight /></el-icon>
         </el-button>
       </div>
-      <el-table :data="recentOrders" style="width: 100%" empty-text="暂无订单数据">
+      <el-table :data="recentOrders" style="width: 100%" :empty-text="ordersLoaded ? '暂无订单数据' : '订单列表加载失败'">
         <el-table-column label="订单号" prop="orderNo" width="200" />
         <el-table-column label="用户" prop="userId" width="160" />
         <el-table-column label="支付金额" width="140">
@@ -245,10 +324,36 @@ onBeforeUnmount(() => {
   height: 340px;
   padding: 12px;
 }
+.chart-state {
+  height: 240px;
+  display: grid;
+  place-items: center;
+  color: var(--text-light);
+  background: var(--admin-surface-muted);
+}
+.chart-mobile-summary {
+  display: none;
+}
 
 @media (max-width: 1200px) {
   .stat-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+@media (max-width: 767px) {
+  .chart-header {
+    padding: 14px;
+  }
+  .desktop-chart { display: none; }
+  .chart-mobile-summary {
+    display: grid;
+    gap: 10px;
+    padding: 14px;
+    background: var(--admin-surface-muted);
+  }
+  .chart-mobile-summary div { display: flex; justify-content: space-between; gap: 16px; }
+  .chart-mobile-summary span { color: var(--color-text-secondary); }
+  .chart-mobile-summary b { font-variant-numeric: tabular-nums; }
 }
 </style>

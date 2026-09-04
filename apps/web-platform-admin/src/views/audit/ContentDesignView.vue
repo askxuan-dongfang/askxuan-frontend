@@ -14,8 +14,16 @@
       </el-select>
     </div>
 
+    <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+      <div class="ax-page-feedback__copy">
+        <div class="ax-page-feedback__title">帖子审核任务加载失败</div>
+        <div class="ax-page-feedback__description">当前结果不可用于判断是否存在待审核内容。</div>
+      </div>
+      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+    </div>
+
     <div class="dfx-card table-wrap">
-      <DataTable :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
+      <DataTable class="desktop-table" :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
         <el-table-column label="帖子ID" prop="id" width="190" show-overflow-tooltip />
         <el-table-column label="法师" prop="masterId" width="110" />
         <el-table-column label="类型" width="90">
@@ -44,6 +52,20 @@
           </template>
         </el-table-column>
       </DataTable>
+      <MobileTaskList v-model:page="query.page" :items="list" :loading="loading" :total="total" :size="query.size" @change="loadData">
+        <template #item="{ item: row }">
+          <article class="mobile-task-card">
+            <div class="mobile-task-card__head"><strong>{{ row.title || '未命名帖子' }}</strong><StatusTag :status="row.status" /></div>
+            <div class="mobile-task-card__meta">{{ row.type === 'video' ? '视频' : '图文' }} · 法师 {{ row.masterId }} · {{ row.likeCount || 0 }} 赞 / {{ row.commentCount || 0 }} 评</div>
+            <div class="mobile-task-card__meta">{{ row.content || '暂无内容摘要' }}</div>
+            <div class="mobile-task-card__foot">
+              <span>{{ formatDate(row.createTime) }}</span>
+              <AuditAction v-if="row.status === 'pending'" :on-confirm="(a, r) => doAudit(row, a, r)" @success="loadData" />
+              <b v-else>已处理</b>
+            </div>
+          </article>
+        </template>
+      </MobileTaskList>
     </div>
   </div>
 </template>
@@ -53,6 +75,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
+import MobileTaskList from '@/components/MobileTaskList.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import AuditAction from '@/components/AuditAction.vue'
 import { getCommunityPosts, reviewCommunityPost } from '@/api/community'
@@ -62,16 +85,20 @@ import type { CommunityPost } from '@/api/community'
 
 const auth = useAuthStore()
 const loading = ref(false)
+const loadError = ref(false)
 const list = ref<CommunityPost[]>([])
 const total = ref(0)
 const query = reactive({ status: '', page: 1, size: 20 })
 
 async function loadData() {
   loading.value = true
+  loadError.value = false
   try {
     const res = await getCommunityPosts(query)
     list.value = res.list || []
     total.value = res.total || 0
+  } catch {
+    loadError.value = true
   } finally {
     loading.value = false
   }

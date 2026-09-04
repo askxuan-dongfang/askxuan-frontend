@@ -9,13 +9,13 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const logoUrl = `${import.meta.env.BASE_URL}logos/logo-shop.png`
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 const form = reactive({
   account: '',
-  password: '',
-  remember: true
+  password: ''
 })
 
 onMounted(() => {
@@ -57,7 +57,7 @@ async function handleLogin() {
 
     <div class="login-card">
       <div class="login-logo">
-        <img class="login-symbol" src="/logos/logo-shop.png" alt="问玄东方商城管理台" />
+        <img class="login-symbol" :src="logoUrl" alt="问玄东方商城管理台" />
         <h1>问玄东方</h1>
         <p>商城管理台</p>
       </div>
@@ -100,12 +100,6 @@ async function handleLogin() {
           登 录
         </el-button>
 
-        <div class="login-options">
-          <el-checkbox v-model="form.remember">记住登录</el-checkbox>
-          <a href="#">忘记密码？</a>
-        </div>
-
-        <div class="login-tip">默认账号：shop_admin / 123456</div>
       </el-form>
     </div>
   </div>
@@ -174,15 +168,14 @@ async function handleLogin() {
 .login-logo h1 {
   font-family: 'Noto Serif SC', serif;
   font-size: 28px;
-  color: var(--accent);
+  color: #d4b36d;
   letter-spacing: 6px;
   margin: 0 0 8px;
 }
 .login-logo p {
   font-size: 14px;
-  color: var(--sidebar-text);
+  color: #d9c9b5;
   letter-spacing: 3px;
-  opacity: 0.6;
   margin: 0;
 }
 
@@ -203,10 +196,10 @@ async function handleLogin() {
   color: #e8e0d8;
 }
 .login-form :deep(.el-input__inner::placeholder) {
-  color: rgba(197, 176, 151, 0.4);
+  color: rgba(232, 224, 216, 0.72);
 }
 .login-form :deep(.el-input__prefix-inner) {
-  color: rgba(197, 176, 151, 0.5);
+  color: rgba(232, 224, 216, 0.72);
 }
 
 /* 登录按钮 - 朱砂红渐变 */
@@ -226,39 +219,4 @@ async function handleLogin() {
   box-shadow: 0 4px 20px rgba(196, 90, 60, 0.4);
 }
 
-.login-options {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 16px;
-}
-.login-options :deep(.el-checkbox__label) {
-  color: var(--sidebar-text);
-  opacity: 0.7;
-  font-size: 13px;
-}
-.login-options :deep(.el-checkbox__inner) {
-  background: transparent;
-  border-color: rgba(197, 176, 151, 0.4);
-}
-.login-options :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-.login-options a {
-  color: var(--sidebar-text);
-  opacity: 0.7;
-  font-size: 13px;
-}
-.login-options a:hover {
-  opacity: 1;
-  color: var(--accent);
-}
-
-.login-tip {
-  margin-top: 16px;
-  font-size: 12px;
-  color: rgba(200, 169, 110, 0.5);
-  text-align: center;
-}
 </style>

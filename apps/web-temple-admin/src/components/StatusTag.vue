@@ -1,55 +1,54 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import {
-  bookingStatusText,
-  bookingStatusType,
-  serviceStatusText,
-  serviceStatusType,
-  reviewStatusText,
-  reviewStatusType,
-  masterAuthStatusText,
-  templeStatusText,
-  blessingStatusText
-} from '@/utils/format'
+import { getStatusMeta, type StatusDomain, type StatusTone } from '@askxuan/domain-status'
 
-type Kind = 'booking' | 'service' | 'review' | 'master' | 'temple' | 'blessing'
-type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+type LegacyKind = 'booking' | 'service' | 'review' | 'master' | 'temple' | 'blessing'
+type AdminStatusDomain = StatusDomain | 'enabled'
 
-const props = withDefaults(defineProps<{ status: string; kind?: Kind }>(), { kind: 'booking' })
+const props = withDefaults(
+  defineProps<{
+    status?: string
+    domain?: AdminStatusDomain
+    kind?: LegacyKind
+    label?: string
+    effect?: 'light' | 'dark' | 'plain'
+  }>(),
+  { status: '', domain: 'generic', effect: 'light' }
+)
 
-const text = computed(() => {
-  switch (props.kind) {
-    case 'booking':
-      return bookingStatusText(props.status)
-    case 'service':
-      return serviceStatusText(props.status)
-    case 'review':
-      return reviewStatusText(props.status)
-    case 'master':
-      return masterAuthStatusText(props.status)
-    case 'temple':
-      return templeStatusText(props.status)
-    case 'blessing':
-      return blessingStatusText(props.status)
-    default:
-      return props.status
-  }
-})
+const legacyDomains: Record<LegacyKind, StatusDomain> = {
+  booking: 'booking',
+  service: 'service',
+  review: 'review',
+  master: 'masterAuth',
+  temple: 'temple',
+  blessing: 'blessing'
+}
 
-const type = computed<TagType>(() => {
-  switch (props.kind) {
-    case 'booking':
-      return (bookingStatusType(props.status) as TagType) ?? 'info'
-    case 'service':
-      return serviceStatusType(props.status) as TagType
-    case 'review':
-      return reviewStatusType(props.status) as TagType
-    default:
-      return 'info'
-  }
-})
+function resolvedDomain(): StatusDomain {
+  if (props.kind) return legacyDomains[props.kind]
+  return props.domain === 'enabled' ? 'generic' : props.domain
+}
+
+function resolvedLabel(): string {
+  return props.label || getStatusMeta(resolvedDomain(), props.status).label
+}
+
+function resolvedTone(): StatusTone {
+  return props.label ? 'primary' : getStatusMeta(resolvedDomain(), props.status).tone
+}
 </script>
 
 <template>
-  <el-tag :type="type" effect="light" size="small" round>{{ text }}</el-tag>
+  <el-tag :type="resolvedTone()" :effect="effect" size="small" class="aui-status-tag" round>
+    {{ resolvedLabel() }}
+  </el-tag>
 </template>
+
+<style scoped>
+.aui-status-tag {
+  max-width: 100%;
+  border-width: 1px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+</style>

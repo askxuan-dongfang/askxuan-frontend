@@ -4,6 +4,14 @@
     <el-button type="danger" size="small" :icon="Close" @click="open('reject')">驳回</el-button>
 
     <el-dialog v-model="visible" :title="action === 'approve' ? '审核通过' : '审核驳回'" width="460px" append-to-body>
+      <el-alert
+        :title="action === 'approve'
+          ? '通过后，相关资质或内容将进入后续发布、展示或业务流转。'
+          : '驳回后，本次申请或内容不会通过审核，驳回原因将作为处理记录保留。'"
+        type="warning"
+        :closable="false"
+        show-icon
+      />
       <el-form label-position="top">
         <el-form-item :label="action === 'approve' ? '审核备注（选填）' : '驳回原因（必填）'">
           <el-input v-model="remark" type="textarea" :rows="4" :placeholder="action === 'approve' ? '请输入审核备注' : '请输入驳回原因'" />

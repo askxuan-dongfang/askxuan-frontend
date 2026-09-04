@@ -9,6 +9,7 @@ import type { ReturnOrder } from '@/types'
 
 const router = useRouter()
 const loading = ref(false)
+const loadError = ref('')
 const list = ref<ReturnOrder[]>([])
 const total = ref(0)
 
@@ -30,10 +31,13 @@ const statusOptions = [
 
 async function loadList() {
   loading.value = true
+  loadError.value = ''
   try {
     const res = await orderApi.returnList(query)
     list.value = res.list || []
     total.value = res.total || 0
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : '退货列表加载失败'
   } finally {
     loading.value = false
   }
@@ -89,8 +93,16 @@ onMounted(() => {
       </el-form>
     </div>
 
+    <div v-if="loadError" class="ax-page-feedback is-error" role="status">
+      <div class="ax-page-feedback__copy">
+        <div class="ax-page-feedback__title">退货列表加载失败</div>
+        <div class="ax-page-feedback__description">{{ loadError }}</div>
+      </div>
+      <el-button :loading="loading" @click="loadList">重试</el-button>
+    </div>
+
     <div class="df-card">
-      <el-table v-loading="loading" :data="list" style="width: 100%" empty-text="暂无退货单">
+      <div class="desktop-table"><el-table v-loading="loading" :data="list" style="width: 100%" empty-text="暂无退货单">
         <el-table-column label="退货单号" prop="returnNo" width="200" />
         <el-table-column label="原订单 ID" prop="orderId" width="120" />
         <el-table-column label="类型" width="100">
@@ -121,9 +133,26 @@ onMounted(() => {
             <el-button text type="primary" size="small" @click="router.push(`/returns/${row.id}`)">详情</el-button>
           </template>
         </el-table-column>
-      </el-table>
+      </el-table></div>
 
-      <div class="pager">
+      <div class="mobile-task-list" aria-label="售后任务列表">
+        <button v-for="item in list" :key="item.id" class="mobile-task-card" type="button" @click="router.push(`/returns/${item.id}`)">
+          <span class="mobile-task-card__head">
+            <strong>{{ item.returnNo }}</strong>
+            <el-tag :type="returnStatusType(item.status)" effect="light" round size="small">{{ returnStatusLabel(item.status) }}</el-tag>
+          </span>
+          <span class="mobile-task-card__meta">{{ item.type === 'exchange' ? '换货' : '退货' }} · {{ formatDateTime(item.createTime) }}</span>
+          <span class="mobile-task-card__foot"><span>{{ item.reason || '未填写原因' }}</span><b>{{ formatMoney(item.refundAmount) }}</b></span>
+        </button>
+        <div v-if="!loading && !list.length && !loadError" class="mobile-task-empty">当前筛选下暂无售后任务</div>
+        <div v-if="total > (query.size || 20)" class="mobile-task-pager">
+          <el-button :disabled="(query.page || 1) <= 1" @click="handlePageChange((query.page || 1) - 1)">上一页</el-button>
+          <span>第 {{ query.page || 1 }} 页</span>
+          <el-button :disabled="(query.page || 1) * (query.size || 20) >= total" @click="handlePageChange((query.page || 1) + 1)">下一页</el-button>
+        </div>
+      </div>
+
+      <div class="pager desktop-table">
         <el-pagination
           v-model:current-page="query.page"
           v-model:page-size="query.size"
@@ -155,5 +184,8 @@ onMounted(() => {
 .price {
   color: var(--primary);
   font-weight: 600;
+}
+@media (max-width: 767px) {
+  .filter-bar { padding: 12px; }
 }
 </style>

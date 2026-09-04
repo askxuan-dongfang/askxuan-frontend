@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node ../../scripts/sync-admin-ui-components.mjs --check",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview"
   },

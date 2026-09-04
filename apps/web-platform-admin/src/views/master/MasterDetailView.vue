@@ -26,6 +26,7 @@ const loading = ref(false)
 const saving = ref(false)
 const editing = ref(false)
 const master = ref<Master | null>(null)
+const loadError = ref('')
 const serviceCatalog = ref<ServiceTypeOption[]>([])
 const serviceTags = ref<MasterServiceTagItem[]>([])
 
@@ -54,16 +55,22 @@ const tagEdits = ref<{ code: string; name: string; enabled: boolean; price: numb
 
 async function loadDetail() {
   loading.value = true
+  loadError.value = ''
   try {
     const [m, catalog, tags] = await Promise.all([
       getPlatformMasterDetail(masterId.value),
       getServiceTypes(),
       getPlatformMasterServiceTags(masterId.value)
     ])
-    master.value = m
+    if (!m || typeof m.dharmaName !== 'string' || !m.dharmaName.trim()) {
+      throw new Error('法师详情数据结构不完整')
+    }
+    master.value = { ...m, specialties: m.specialties || [] }
     serviceCatalog.value = catalog.list || []
     serviceTags.value = tags.list || []
-  } catch {
+  } catch (error) {
+    master.value = null
+    loadError.value = error instanceof Error ? error.message : '加载法师详情失败'
     ElMessage.error('加载法师详情失败')
   } finally {
     loading.value = false
@@ -159,6 +166,11 @@ onMounted(loadDetail)
         <el-button v-if="master && !editing" type="primary" @click="startEdit">编辑资料</el-button>
       </template>
     </PageHeader>
+
+    <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+      <div class="ax-page-feedback__copy"><div class="ax-page-feedback__title">法师详情加载失败</div><div class="ax-page-feedback__description">{{ loadError }}，未展示的数据不会按空资料处理。</div></div>
+      <el-button :loading="loading" @click="loadDetail">重新加载</el-button>
+    </div>
 
     <!-- 查看态 -->
     <div v-if="master && !editing" class="df-card" style="max-width: 760px">
@@ -265,6 +277,7 @@ onMounted(loadDetail)
         </el-form-item>
       </el-form>
     </div>
+    <div v-else-if="!loading && !loadError" class="df-card detail-empty">未找到该法师资料</div>
   </div>
 </template>
 
@@ -307,5 +320,11 @@ onMounted(loadDetail)
 .tag-row__code {
   font-size: 12px;
   color: var(--color-text-tertiary);
+}
+.detail-empty {
+  max-width: 760px;
+  padding: 40px 16px;
+  color: var(--color-text-tertiary);
+  text-align: center;
 }
 </style>

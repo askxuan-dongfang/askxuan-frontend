@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const logoUrl = `${import.meta.env.BASE_URL}logos/logo-temple.png`
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
@@ -48,7 +49,7 @@ async function handleLogin() {
     <div class="login-bg"></div>
     <div class="login-card df-card">
       <div class="login-brand">
-        <img class="login-mark" src="/logos/logo-temple.png" alt="问玄东方寺院管理台" />
+        <img class="login-mark" :src="logoUrl" alt="问玄东方寺院管理台" />
         <div>
           <div class="login-title">问玄东方</div>
           <div class="login-sub">寺院管理台</div>

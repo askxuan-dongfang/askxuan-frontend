@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import type { TagProps } from 'element-plus'
+import { getStatusMeta, isTerminalStatus, type StatusDomain } from '../../../../packages/domain-status/src'
 
 /** 日期格式化，兼容 ISO / yyyy-MM-dd HH:mm:ss */
 export function formatDate(value?: string | number | Date | null, withTime = true): string {
@@ -22,95 +23,54 @@ export function formatPercent(n?: number | null, digits = 1): string {
 }
 
 // ============ 预约状态 ============
-export const BOOKING_STATUS = {
-  pending: '待确认',
-  confirmed: '已确认',
-  in_progress: '进行中',
-  reviewed: '已评价',
-  cancelled: '已取消'
-} as const
-
 export function bookingStatusText(status: string): string {
-  return (BOOKING_STATUS as Record<string, string>)[status] ?? status
+  return getStatusMeta('booking', status).label
 }
 
 export function bookingStatusType(status: string): TagProps['type'] {
-  const map: Record<string, TagProps['type']> = {
-    pending: 'warning',
-    confirmed: 'success',
-    in_progress: 'primary',
-    reviewed: 'info',
-    cancelled: 'danger'
-  }
-  return map[status] ?? 'info'
+  return getStatusMeta('booking', status).tone
 }
 
 /** 终态：已评价 / 已取消 */
 export function isBookingTerminal(status: string): boolean {
-  return status === 'reviewed' || status === 'cancelled'
+  return isTerminalStatus('booking', status)
 }
 
 // ============ 服务上下架 ============
-export const SERVICE_STATUS = {
-  on_shelf: '上架',
-  off_shelf: '下架'
-} as const
-
 export function serviceStatusText(status: string): string {
-  return (SERVICE_STATUS as Record<string, string>)[status] ?? status
+  return getStatusMeta('service', status).label
 }
 
 export function serviceStatusType(status: string): TagProps['type'] {
-  return status === 'on_shelf' ? 'success' : 'info'
+  return getStatusMeta('service', status).tone
+}
+
+function statusText(domain: StatusDomain, status: string): string {
+  return getStatusMeta(domain, status).label
 }
 
 // ============ 法师认证状态 ============
 export function masterAuthStatusText(status: string): string {
-  const map: Record<string, string> = {
-    pending: '待认证',
-    unverified: '待认证',
-    verified: '已认证',
-    pass: '已认证',
-    rejected: '已驳回'
-  }
-  return map[status] ?? status
+  return statusText('masterAuth', status)
 }
 
 // ============ 寺院状态 ============
 export function templeStatusText(status: string): string {
-  const map: Record<string, string> = {
-    normal: '正常',
-    banned: '已封禁',
-    recommended: '推荐'
-  }
-  return map[status] ?? status
+  return statusText('temple', status)
 }
 
 // ============ 评价状态 ============
 export function reviewStatusText(status: string): string {
-  const map: Record<string, string> = {
-    normal: '正常',
-    hidden: '已隐藏'
-  }
-  return map[status] ?? status
+  return statusText('review', status)
 }
 
 export function reviewStatusType(status: string): TagProps['type'] {
-  return status === 'normal' ? 'success' : 'info'
+  return getStatusMeta('review', status).tone
 }
 
 // ============ 加持任务状态 ============
 export function blessingStatusText(status: string): string {
-  const map: Record<string, string> = {
-    pending: '待处理',
-    dispatched: '待分配',
-    assigned: '已分配',
-    accepted: '已接单',
-    in_progress: '进行中',
-    completed: '已完成',
-    rejected: '已拒绝'
-  }
-  return map[status] ?? status
+  return statusText('blessing', status)
 }
 
 // ============ 评价图片解析 ============

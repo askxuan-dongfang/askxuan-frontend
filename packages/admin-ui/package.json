@@ -1,0 +1,10 @@
+{
+  "name": "@askxuan/admin-ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./styles.css": "./styles/index.css",
+    "./components/*": "./components/*.vue"
+  }
+}

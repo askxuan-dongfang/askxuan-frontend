@@ -1,10 +1,18 @@
 <template>
   <div class="dfx-page">
-    <PageHeader :title="`寺院详情 · ${detail?.temple.name || ''}`" subtitle="寺院基础信息 / 图册 / 服务项目">
+    <PageHeader :title="`寺院详情 · ${detail?.temple?.name || ''}`" subtitle="寺院基础信息 / 图册 / 服务项目">
       <template #actions>
         <el-button :icon="Back" @click="$router.back()">返回</el-button>
       </template>
     </PageHeader>
+
+    <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+      <div class="ax-page-feedback__copy">
+        <div class="ax-page-feedback__title">寺院详情加载失败</div>
+        <div class="ax-page-feedback__description">{{ loadError }}，未完整返回的数据不会按空资料展示。</div>
+      </div>
+      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+    </div>
 
     <div v-loading="loading">
       <div v-if="detail" class="detail-wrap">
@@ -82,11 +90,24 @@ import type { TempleDetail } from '@/types'
 const route = useRoute()
 const loading = ref(false)
 const detail = ref<TempleDetail | null>(null)
+const loadError = ref('')
 
 async function loadData() {
   loading.value = true
+  loadError.value = ''
   try {
-    detail.value = await getTempleDetail(route.params.id as string)
+    const data = await getTempleDetail(route.params.id as string)
+    if (!data?.temple || typeof data.temple.name !== 'string' || !data.temple.name.trim()) {
+      throw new Error('寺院详情数据结构不完整')
+    }
+    detail.value = {
+      ...data,
+      images: Array.isArray(data.images) ? data.images : [],
+      services: Array.isArray(data.services) ? data.services : []
+    }
+  } catch (error) {
+    detail.value = null
+    loadError.value = error instanceof Error ? error.message : '加载寺院详情失败'
   } finally {
     loading.value = false
   }

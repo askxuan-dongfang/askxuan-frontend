@@ -2,7 +2,7 @@
 // 订单详情（含发货操作）
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import { orderApi } from '@/api/order'
 import { formatMoney, formatDateTime, orderStatusLabel, orderStatusType } from '@/utils/format'
@@ -48,6 +48,15 @@ async function handleShip() {
   if (!shipFormRef.value) return
   await shipFormRef.value.validate(async (valid) => {
     if (!valid) return
+    try {
+      await ElMessageBox.confirm(
+        `确认将订单「${detail.value?.orderNo || orderId.value}」标记为已发货？运单号 ${shipForm.trackingNo} 将展示给用户，提交后不能在本页面撤回。`,
+        '确认发货',
+        { type: 'warning', confirmButtonText: '确认发货', cancelButtonText: '返回核对' }
+      )
+    } catch {
+      return
+    }
     shipSaving.value = true
     try {
       await orderApi.ship(orderId.value, { ...shipForm })
@@ -136,6 +145,7 @@ onMounted(() => {
 
     <!-- 发货弹窗 -->
     <el-dialog v-model="shipDialogVisible" title="订单发货" width="480px">
+      <el-alert title="发货后订单进入待收货状态，快递公司和运单号会同步给用户。" type="warning" :closable="false" show-icon />
       <el-form
         ref="shipFormRef"
         :model="shipForm"

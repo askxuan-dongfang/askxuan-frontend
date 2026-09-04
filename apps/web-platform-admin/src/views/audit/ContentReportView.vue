@@ -20,8 +20,16 @@
       </el-select>
     </div>
 
+    <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+      <div class="ax-page-feedback__copy">
+        <div class="ax-page-feedback__title">举报工单加载失败</div>
+        <div class="ax-page-feedback__description">当前结果不可视为无待处理举报，请重新加载。</div>
+      </div>
+      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+    </div>
+
     <div class="dfx-card table-wrap">
-      <DataTable :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
+      <DataTable class="desktop-table" :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
         <el-table-column label="编号" prop="id" width="80" />
         <el-table-column label="举报人" prop="reporterId" width="110" />
         <el-table-column label="对象类型" width="100">
@@ -59,6 +67,20 @@
           </template>
         </el-table-column>
       </DataTable>
+      <MobileTaskList v-model:page="query.page" :items="list" :loading="loading" :total="total" :size="query.size" @change="loadData">
+        <template #item="{ item: row }">
+          <article class="mobile-task-card">
+            <div class="mobile-task-card__head"><strong>{{ targetText(row.targetType) }}举报 #{{ row.id }}</strong><StatusTag :status="row.status" /></div>
+            <div class="mobile-task-card__meta">{{ row.reason || '未填写举报原因' }}</div>
+            <div class="mobile-task-card__meta">举报人 {{ row.reporterId }} · 对象 {{ row.targetId }} · 证据 {{ evidenceUrls(row.evidenceUrls).length }} 项</div>
+            <div class="mobile-task-card__foot">
+              <span>{{ formatDate(row.createTime) }}</span>
+              <el-button v-if="row.status === 'pending'" type="primary" @click="open(row)">处理</el-button>
+              <b v-else>已处理</b>
+            </div>
+          </article>
+        </template>
+      </MobileTaskList>
     </div>
 
     <el-dialog v-model="dialog.visible" title="处理举报" width="460px">
@@ -66,6 +88,14 @@
         <p><span>对象类型：</span>{{ targetText(dialog.row?.targetType) }}</p>
         <p><span>举报原因：</span>{{ dialog.row?.reason }}</p>
       </div>
+      <el-alert
+        :title="dialog.handleResult === 'handled'
+          ? '确认处理会执行对应内容下架或账号封禁，并改变前台可见性或账号状态。'
+          : '驳回举报后对象保持当前状态，本次举报将关闭并保留处理记录。'"
+        type="warning"
+        :closable="false"
+        show-icon
+      />
       <el-form label-position="top">
         <el-form-item label="处理结果">
           <el-radio-group v-model="dialog.handleResult">
@@ -91,6 +121,7 @@ import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
+import MobileTaskList from '@/components/MobileTaskList.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import { getAuditReports, handleAuditReport } from '@/api/audit'
 import { useAuthStore } from '@/stores/auth'
@@ -99,6 +130,7 @@ import type { Report } from '@/types'
 
 const auth = useAuthStore()
 const loading = ref(false)
+const loadError = ref(false)
 const list = ref<Report[]>([])
 const total = ref(0)
 const query = reactive({ targetType: '', status: '', page: 1, size: 20 })
@@ -121,10 +153,13 @@ function evidenceUrls(raw: string): string[] {
 
 async function loadData() {
   loading.value = true
+  loadError.value = false
   try {
     const res = await getAuditReports(query)
     list.value = res.list || []
     total.value = res.total || 0
+  } catch {
+    loadError.value = true
   } finally {
     loading.value = false
   }

@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/auth'
 
 const loading = ref(false)
 const report = ref<TempleReportResp | null>(null)
+const loadError = ref('')
 const dateRange = ref<[string, string] | []>([])
 const auth = useAuthStore()
 
@@ -23,15 +24,24 @@ let barChart: echarts.ECharts | null = null
 
 async function load() {
   loading.value = true
+  loadError.value = ''
   try {
     const params: { templeId: string; startTime?: string; endTime?: string } = { templeId: auth.templeId }
     if (dateRange.value && dateRange.value.length === 2) {
       params.startTime = dateRange.value[0]
       params.endTime = dateRange.value[1]
     }
-    report.value = await getTempleReport(params)
+    const nextReport = await getTempleReport(params)
+    if (!nextReport?.revenueStats || !Array.isArray(nextReport.bookingTrend) || !Array.isArray(nextReport.serviceDistribution) || !Array.isArray(nextReport.masterRanking)) {
+      throw new Error('报表服务返回的数据结构不完整')
+    }
+    report.value = nextReport
     await nextTick()
     renderCharts()
+  } catch (error) {
+    report.value = null
+    loadError.value = error instanceof Error ? error.message : '报表加载失败'
+    disposeCharts()
   } finally {
     loading.value = false
   }
@@ -107,15 +117,22 @@ function onResize() {
   barChart?.resize()
 }
 
+function disposeCharts() {
+  trendChart?.dispose()
+  pieChart?.dispose()
+  barChart?.dispose()
+  trendChart = null
+  pieChart = null
+  barChart = null
+}
+
 onMounted(() => {
   load()
   window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
-  trendChart?.dispose()
-  pieChart?.dispose()
-  barChart?.dispose()
+  disposeCharts()
 })
 </script>
 
@@ -134,6 +151,11 @@ onBeforeUnmount(() => {
       <el-button :icon="Refresh" type="primary" @click="load">查询</el-button>
     </PageHeader>
 
+    <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+      <div class="ax-page-feedback__copy"><div class="ax-page-feedback__title">寺院报表加载失败</div><div class="ax-page-feedback__description">{{ loadError }}。页面不会用 0 代替缺失经营数据。</div></div>
+      <el-button :loading="loading" @click="load">重新加载</el-button>
+    </div>
+
     <div class="stat-grid" v-if="report">
       <StatCard title="累计功德金" :value="formatMoney(report.revenueStats.totalRevenue)" :icon="Wallet" tone="accent" />
       <StatCard title="预约总数" :value="report.revenueStats.bookingCount" :icon="Calendar" tone="brand" suffix="单" />
@@ -141,6 +163,7 @@ onBeforeUnmount(() => {
       <StatCard title="已完成数" :value="report.revenueStats.completedCount" :icon="CircleCheck" tone="warning" suffix="单" />
     </div>
 
+    <div v-if="report" class="desktop-report-charts">
     <div class="df-card chart-card big-chart">
       <div class="chart-title">预约与功德金趋势</div>
       <div ref="trendRef" class="chart-box"></div>
@@ -156,6 +179,17 @@ onBeforeUnmount(() => {
         <div ref="barRef" class="chart-box small"></div>
       </div>
     </div>
+    </div>
+
+    <div v-if="report" class="df-card mobile-report-summary">
+      <div class="chart-title">经营摘要</div>
+      <div class="summary-list">
+        <div><span>趋势数据点</span><b>{{ report.bookingTrend.length }} 个</b></div>
+        <div><span>服务分类</span><b>{{ report.serviceDistribution.length }} 类</b></div>
+        <div><span>法师排行</span><b>{{ report.masterRanking.length }} 位</b></div>
+      </div>
+    </div>
+    <div v-else-if="!loading && !loadError" class="df-card report-empty">当前范围暂无可展示报表</div>
   </div>
 </template>
 
@@ -190,5 +224,15 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+.mobile-report-summary { display: none; padding: 16px; }
+.summary-list { display: grid; gap: 10px; }
+.summary-list div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 12px; background: var(--color-bg-tertiary); border-radius: 8px; }
+.summary-list span { color: var(--color-text-secondary); }
+.summary-list b { font-variant-numeric: tabular-nums; }
+.report-empty { padding: 36px 16px; color: var(--color-text-tertiary); text-align: center; }
+@media (max-width: 767px) {
+  .desktop-report-charts { display: none; }
+  .mobile-report-summary { display: block; }
 }
 </style>

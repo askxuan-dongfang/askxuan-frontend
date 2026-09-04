@@ -1,101 +1,65 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, UploadFilled } from '@element-plus/icons-vue'
 import type { UploadFile, UploadFiles, UploadRequestOptions, UploadUserFile } from 'element-plus'
 import client from '@/api/client'
 
 const props = withDefaults(
   defineProps<{
-    modelValue: string | string[]
+    modelValue?: string | string[]
     multiple?: boolean
     limit?: number
     placeholder?: string
+    hint?: string
+    action?: string
+    maxSizeMB?: number
   }>(),
   {
+    modelValue: '',
     multiple: false,
     limit: 8,
-    placeholder: '或粘贴图片 URL'
+    placeholder: '或粘贴图片 URL',
+    hint: '支持 JPG、PNG、WebP，单张不超过 10MB。',
+    action: '/files/upload',
+    maxSizeMB: 10
   }
 )
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string | string[]): void
+  'update:modelValue': [value: string | string[]]
 }>()
 
 const urlInput = ref('')
 const fileList = ref<UploadUserFile[]>([])
 
-function syncFromFileList(urls: string | string[]) {
-  const arr = Array.isArray(urls) ? urls : urls ? [urls] : []
-  fileList.value = arr.map((url, idx) => ({
-    name: `image-${idx + 1}`,
-    url
-  }))
+function modelURLs(value: string | string[] | undefined): string[] {
+  if (Array.isArray(value)) return value.filter(Boolean)
+  return value ? [value] : []
 }
 
 watch(
   () => props.modelValue,
-  (val) => syncFromFileList(val),
+  (value) => {
+    fileList.value = modelURLs(value).map((url, index) => ({ name: `image-${index + 1}`, url }))
+  },
   { immediate: true }
 )
 
-function emitFromList() {
-  const urls = fileList.value.map((f) => f.url || '').filter(Boolean)
-  if (props.multiple) {
-    emit('update:modelValue', urls)
-  } else {
-    emit('update:modelValue', urls[0] || '')
+function emitURLs(urls: string[]) {
+  emit('update:modelValue', props.multiple ? urls : urls[0] || '')
+}
+
+function extractURL(response: unknown): string {
+  if (typeof response === 'string') return response
+  if (!response || typeof response !== 'object') return ''
+  const body = response as Record<string, unknown>
+  if (typeof body.url === 'string') return body.url
+  if (typeof body.link === 'string') return body.link
+  if (body.data && typeof body.data === 'object' && typeof (body.data as Record<string, unknown>).url === 'string') {
+    return (body.data as Record<string, string>).url
   }
-}
-
-function handleAddUrl() {
-  const url = urlInput.value.trim()
-  if (!url) return
-  if (!props.multiple) {
-    fileList.value = [{ name: 'image-1', url }]
-  } else {
-    if (fileList.value.length >= props.limit) {
-      ElMessage.warning(`最多 ${props.limit} 张图片`)
-      return
-    }
-    fileList.value.push({ name: `image-${fileList.value.length + 1}`, url })
-  }
-  urlInput.value = ''
-  emitFromList()
-}
-
-function handleRemove(_file: UploadFile, files: UploadFiles) {
-  fileList.value = files as UploadUserFile[]
-  emitFromList()
-}
-
-function handlePreview(file: UploadFile) {
-  if (file.url) window.open(file.url, '_blank')
-}
-
-async function httpRequest(options: UploadRequestOptions) {
-  const form = new FormData()
-  form.append('file', options.file)
-  try {
-    const response = await client.post<{ url: string }>('/files/upload', form, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-    options.onSuccess(response)
-  } catch (error) {
-    options.onError(error as any)
-  }
-}
-
-function handleSuccess(response: { url?: string }, file: UploadFile, files: UploadFiles) {
-  if (!response?.url) {
-    ElMessage.error('上传成功但未返回文件地址')
-    return
-  }
-  file.url = response.url
-  fileList.value = files as UploadUserFile[]
-  emitFromList()
-  ElMessage.success('上传成功')
+  return ''
 }
 
 function beforeUpload(file: File) {
@@ -103,58 +67,180 @@ function beforeUpload(file: File) {
     ElMessage.warning('请选择图片文件')
     return false
   }
-  if (file.size > 10 * 1024 * 1024) {
-    ElMessage.warning('单张图片不能超过 10MB')
+  if (file.size > props.maxSizeMB * 1024 * 1024) {
+    ElMessage.warning(`单张图片不能超过 ${props.maxSizeMB}MB`)
     return false
   }
   return true
 }
+
+async function httpRequest(options: UploadRequestOptions) {
+  const form = new FormData()
+  form.append('file', options.file)
+  try {
+    const response = await client.post<unknown>(props.action, form, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    const url = extractURL(response)
+    if (!url) throw new Error('上传成功但未返回文件地址')
+    if (!props.multiple) emitURLs([url])
+    options.onSuccess({ url })
+    if (!props.multiple) ElMessage.success('上传成功')
+  } catch (error) {
+    options.onError(error as any)
+    ElMessage.warning('上传失败，可手动填写图片 URL')
+  }
+}
+
+function handleSuccess(response: unknown, file: UploadFile, files: UploadFiles) {
+  if (!props.multiple) return
+  const url = extractURL(response)
+  if (!url) {
+    ElMessage.error('上传成功但未返回文件地址')
+    return
+  }
+  file.url = url
+  fileList.value = files as UploadUserFile[]
+  emitURLs(fileList.value.map((item) => item.url || '').filter(Boolean))
+  ElMessage.success('上传成功')
+}
+
+function handleRemove(_file: UploadFile, files: UploadFiles) {
+  fileList.value = files as UploadUserFile[]
+  emitURLs(fileList.value.map((item) => item.url || '').filter(Boolean))
+}
+
+function handlePreview(file: UploadFile) {
+  if (file.url) window.open(file.url, '_blank', 'noopener,noreferrer')
+}
+
+function addManualURL() {
+  const url = urlInput.value.trim()
+  if (!url) return
+  const urls = modelURLs(props.modelValue)
+  if (props.multiple && urls.length >= props.limit) {
+    ElMessage.warning(`最多 ${props.limit} 张图片`)
+    return
+  }
+  emitURLs(props.multiple ? [...urls, url] : [url])
+  urlInput.value = ''
+}
+
+function clearSingle() {
+  emitURLs([])
+}
 </script>
 
 <template>
-  <div class="image-uploader">
-    <el-upload
-      v-model:file-list="fileList"
-      list-type="picture-card"
-      accept="image/*"
-      :limit="limit"
-      :http-request="httpRequest"
-      :before-upload="beforeUpload"
-      :on-success="handleSuccess"
-      :on-remove="handleRemove"
-      :on-preview="handlePreview"
-    >
-      <template #default>
-        <el-icon><Plus /></el-icon>
-      </template>
-    </el-upload>
-    <div class="url-row">
-      <el-input
-        v-model="urlInput"
-        size="small"
-        :placeholder="placeholder"
-        @keyup.enter="handleAddUrl"
-      />
-      <el-button size="small" type="primary" plain @click="handleAddUrl">添加</el-button>
+  <div class="aui-image-uploader">
+    <template v-if="multiple">
+      <el-upload
+        v-model:file-list="fileList"
+        list-type="picture-card"
+        accept="image/*"
+        :limit="limit"
+        :http-request="httpRequest"
+        :before-upload="beforeUpload"
+        :on-success="handleSuccess"
+        :on-remove="handleRemove"
+        :on-preview="handlePreview"
+      >
+        <el-icon aria-hidden="true"><Plus /></el-icon>
+        <span class="sr-only">添加图片</span>
+      </el-upload>
+    </template>
+    <template v-else>
+      <div v-if="typeof modelValue === 'string' && modelValue" class="aui-image-uploader__preview">
+        <img :src="modelValue" alt="已上传图片预览" />
+        <el-button class="aui-image-uploader__remove" type="danger" @click="clearSingle">移除图片</el-button>
+      </div>
+      <el-upload
+        v-else
+        class="aui-image-uploader__dropzone"
+        :show-file-list="false"
+        :http-request="httpRequest"
+        :before-upload="beforeUpload"
+        accept="image/*"
+        drag
+      >
+        <el-icon :size="30" aria-hidden="true"><UploadFilled /></el-icon>
+        <div>点击或拖拽上传图片</div>
+      </el-upload>
+    </template>
+
+    <div class="aui-image-uploader__manual">
+      <el-input v-model="urlInput" :placeholder="placeholder" clearable @keyup.enter="addManualURL" />
+      <el-button type="primary" plain @click="addManualURL">填入</el-button>
     </div>
-    <p class="tips">支持 JPG、PNG、WebP，单张不超过 10MB。</p>
+    <p class="aui-image-uploader__hint">{{ hint.replace('10MB', `${maxSizeMB}MB`) }}</p>
   </div>
 </template>
 
 <style scoped>
-.image-uploader {
+.aui-image-uploader {
+  width: 100%;
+  max-width: 520px;
+}
+.aui-image-uploader__preview {
+  position: relative;
+  width: min(100%, 360px);
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border: 1px solid var(--color-border-divider, var(--admin-border, var(--border, #e8e0d8)));
+  border-radius: 12px;
+  background: var(--color-bg-tertiary, #faf6f0);
+}
+.aui-image-uploader__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.aui-image-uploader__remove {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+}
+.aui-image-uploader__dropzone {
+  width: min(100%, 360px);
+}
+.aui-image-uploader__dropzone :deep(.el-upload),
+.aui-image-uploader__dropzone :deep(.el-upload-dragger) {
   width: 100%;
 }
-.url-row {
+.aui-image-uploader__dropzone :deep(.el-upload-dragger) {
+  min-height: 156px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary, var(--text-light, #6a5a4a));
+  background: var(--color-bg-tertiary, #faf6f0);
+  border-radius: 12px;
+}
+.aui-image-uploader__manual {
   display: flex;
   gap: 8px;
-  margin-top: 8px;
   width: 100%;
-  max-width: 480px;
+  margin-top: 10px;
 }
-.tips {
+.aui-image-uploader__hint {
+  margin: 7px 0 0;
+  color: var(--color-text-tertiary, var(--text-light, #8a7a6a));
   font-size: 12px;
-  color: var(--text-light);
-  margin: 8px 0 0;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 480px) {
+  .aui-image-uploader__manual { align-items: stretch; flex-direction: column; }
+  .aui-image-uploader__manual :deep(.el-button) { min-height: 40px; margin-left: 0; }
 }
 </style>

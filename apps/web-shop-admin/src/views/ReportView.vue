@@ -11,6 +11,7 @@ import type { ShopReport } from '@/types'
 const loading = ref(false)
 const dateRange = ref<[string, string] | null>(null)
 const report = ref<ShopReport | null>(null)
+const loadError = ref('')
 
 const trendChartRef = ref<HTMLElement>()
 const topChartRef = ref<HTMLElement>()
@@ -26,23 +27,27 @@ function defaultRange(): [string, string] {
 
 async function loadReport() {
   loading.value = true
+  loadError.value = ''
   try {
     const [startTime, endTime] = dateRange.value || defaultRange()
-    report.value = await reportApi.shopReports({ startTime, endTime })
-    await nextTick()
-    renderCharts()
-  } catch {
-    // 失败时使用空数据渲染
-    report.value = {
-      totalSales: 0,
-      totalOrders: 0,
-      avgOrderValue: 0,
-      refundRate: 0,
-      salesTrend: [],
-      topProducts: []
+    const nextReport = await reportApi.shopReports({ startTime, endTime })
+    if (
+      !Number.isFinite(nextReport.totalSales) ||
+      !Number.isFinite(nextReport.totalOrders) ||
+      !Number.isFinite(nextReport.avgOrderValue) ||
+      !Number.isFinite(nextReport.refundRate) ||
+      !Array.isArray(nextReport.salesTrend) ||
+      !Array.isArray(nextReport.topProducts)
+    ) {
+      throw new Error('报表服务返回的数据结构不完整')
     }
+    report.value = nextReport
     await nextTick()
     renderCharts()
+  } catch (error) {
+    report.value = null
+    loadError.value = error instanceof Error ? error.message : '商城报表加载失败'
+    disposeCharts()
   } finally {
     loading.value = false
   }
@@ -176,6 +181,13 @@ function handleSearch() {
   loadReport()
 }
 
+function disposeCharts() {
+  trendChart?.dispose()
+  topChart?.dispose()
+  trendChart = null
+  topChart = null
+}
+
 onMounted(async () => {
   dateRange.value = defaultRange()
   await loadReport()
@@ -184,8 +196,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
-  trendChart?.dispose()
-  topChart?.dispose()
+  disposeCharts()
 })
 </script>
 
@@ -213,6 +224,14 @@ onBeforeUnmount(() => {
       </el-form>
     </div>
 
+    <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+      <div class="ax-page-feedback__copy">
+        <div class="ax-page-feedback__title">商城报表加载失败</div>
+        <div class="ax-page-feedback__description">{{ loadError }}。经营指标保持“—”，不会用 0 冒充真实结果。</div>
+      </div>
+      <el-button :loading="loading" @click="loadReport">重新加载</el-button>
+    </div>
+
     <!-- 指标卡片 -->
     <div class="stat-grid" v-if="report">
       <StatCard label="总销售额" :value="formatMoney(report.totalSales)" change="统计区间内" color="primary" icon="Money" />
@@ -222,6 +241,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- 销售趋势 -->
+    <div v-if="report" class="desktop-report-charts">
     <div class="df-card chart-card">
       <div class="chart-header">
         <h3>销售趋势</h3>
@@ -237,6 +257,17 @@ onBeforeUnmount(() => {
         <el-tag size="small" type="info" effect="plain">Top 10</el-tag>
       </div>
       <div ref="topChartRef" class="chart-box"></div>
+    </div>
+    </div>
+
+    <div v-if="report" class="df-card mobile-report-summary">
+      <div class="chart-header"><h3>经营图表摘要</h3></div>
+      <div class="summary-list">
+        <div><span>区间销售额</span><b>{{ formatMoney(report.totalSales) }}</b></div>
+        <div><span>区间订单数</span><b>{{ report.totalOrders }} 单</b></div>
+        <div><span>趋势数据点</span><b>{{ report.salesTrend.length }} 个</b></div>
+        <div><span>Top 商品</span><b>{{ report.topProducts[0]?.productName || '暂无' }}</b></div>
+      </div>
     </div>
 
     <!-- Top 商品列表 -->
@@ -299,10 +330,40 @@ onBeforeUnmount(() => {
   color: var(--primary);
   font-weight: 600;
 }
+.mobile-report-summary {
+  display: none;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.summary-list {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+.summary-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px;
+  background: var(--admin-surface-muted);
+  border-radius: 8px;
+}
+.summary-list span {
+  color: var(--color-text-secondary);
+}
+.summary-list b {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 
 @media (max-width: 1200px) {
   .stat-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+@media (max-width: 767px) {
+  .desktop-report-charts { display: none; }
+  .mobile-report-summary { display: block; }
+  .chart-header { padding: 14px; }
 }
 </style>

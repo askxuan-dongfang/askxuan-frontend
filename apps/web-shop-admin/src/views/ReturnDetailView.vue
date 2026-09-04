@@ -37,16 +37,16 @@ async function handleReview(action: 'approve' | 'reject') {
   try {
     let reason = ''
     if (action === 'reject') {
-      const res = await ElMessageBox.prompt('请输入拒绝原因', '拒绝退货', {
+      const res = await ElMessageBox.prompt('拒绝后用户将看到该原因，申请保持关闭且需用户重新发起。请输入拒绝原因。', '拒绝退货', {
         confirmButtonText: '确认',
         cancelButtonText: '取消',
         inputType: 'textarea'
       })
       reason = res.value || ''
     } else {
-      await ElMessageBox.confirm(`确认${tip}该退货申请？`, '提示', {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
+      await ElMessageBox.confirm('确认通过该退货申请？通过后将进入退货收件与退款流程。', '退货审核确认', {
+        confirmButtonText: '确认通过',
+        cancelButtonText: '返回核对',
         type: 'warning'
       })
     }
@@ -66,6 +66,15 @@ function openRefundDialog() {
 async function handleRefund() {
   if (refundAmount.value <= 0) {
     ElMessage.warning('退款金额需大于 0')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确认退款 ${formatMoney(refundAmount.value)}？提交后将进入支付退款流程，不能在本页面撤回。`,
+      '退款确认',
+      { type: 'warning', confirmButtonText: '确认退款', cancelButtonText: '返回核对' }
+    )
+  } catch {
     return
   }
   refundSaving.value = true
@@ -142,6 +151,7 @@ onMounted(() => {
 
     <!-- 退款弹窗 -->
     <el-dialog v-model="refundDialogVisible" title="退款处理" width="420px">
+      <el-alert title="请核对退款金额；确认后会改变售后与退款状态。" type="warning" :closable="false" show-icon />
       <el-form label-width="100px">
         <el-form-item label="退款金额">
           <el-input-number v-model="refundAmount" :min="0" :precision="2" :step="1" controls-position="right" />

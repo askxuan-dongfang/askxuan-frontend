@@ -8,7 +8,8 @@ export default defineConfig(({ mode }) => ({
   plugins: [vue()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src')
+      '@': path.resolve(__dirname, 'src'),
+      '@askxuan/domain-status': path.resolve(__dirname, '../../packages/domain-status/src/index.ts')
     }
   },
   server: {
@@ -16,7 +17,7 @@ export default defineConfig(({ mode }) => ({
     proxy: {
       // 网关统一入口：/api → http://localhost:8080
       '/api': {
-        target: 'http://localhost:8080',
+        target: process.env.VITE_DEV_PROXY_TARGET || 'http://localhost:8080',
         changeOrigin: true
       }
     }

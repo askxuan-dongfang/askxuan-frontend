@@ -8,7 +8,7 @@
 
     <div class="login__panel dfx-card">
       <div class="login__brand">
-        <img class="login__seal" src="/logos/logo-platform.png" alt="问玄东方平台总管理台" />
+        <img class="login__seal" :src="logoUrl" alt="问玄东方平台总管理台" />
         <h1 class="login__title dfx-serif">问玄东方</h1>
         <p class="login__subtitle">P05 · 平台总管理台</p>
       </div>
@@ -38,6 +38,7 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const logoUrl = `${import.meta.env.BASE_URL}logos/logo-platform.png`
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
@@ -144,13 +145,13 @@ async function onSubmit() {
   margin: 0;
   font-size: 26px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: #f0e6da;
   letter-spacing: 4px;
 }
 .login__subtitle {
   margin: 6px 0 0;
   font-size: 13px;
-  color: var(--color-text-tertiary);
+  color: #c5b097;
   letter-spacing: 2px;
 }
 .login__submit {

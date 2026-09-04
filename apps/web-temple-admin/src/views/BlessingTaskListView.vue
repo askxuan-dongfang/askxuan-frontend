@@ -11,6 +11,7 @@ import type { BlessingTask } from '@/types'
 
 const router = useRouter()
 const loading = ref(false)
+const loadError = ref('')
 const list = ref<BlessingTask[]>([])
 const total = ref(0)
 const query = reactive({ status: '', page: 1, size: 20 })
@@ -25,6 +26,7 @@ const statusOptions = [
 
 async function load() {
   loading.value = true
+  loadError.value = ''
   try {
     const response = await listBlessingTasks({
       status: query.status || undefined,
@@ -33,6 +35,8 @@ async function load() {
     })
     list.value = response.list || []
     total.value = response.total || 0
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : '加持任务加载失败'
   } finally {
     loading.value = false
   }
@@ -66,7 +70,15 @@ onMounted(load)
         <el-button :icon="Search" type="primary" plain @click="search">查询</el-button>
       </div>
 
-      <DataTable
+      <div v-if="loadError" class="ax-page-feedback is-error" role="status">
+        <div class="ax-page-feedback__copy">
+          <div class="ax-page-feedback__title">加持任务加载失败</div>
+          <div class="ax-page-feedback__description">{{ loadError }}</div>
+        </div>
+        <el-button :loading="loading" @click="load">重试</el-button>
+      </div>
+
+      <div class="desktop-table"><DataTable
         :data="list"
         :loading="loading"
         :total="total"
@@ -93,7 +105,24 @@ onMounted(load)
             </el-button>
           </template>
         </el-table-column>
-      </DataTable>
+      </DataTable></div>
+
+      <div class="mobile-task-list" aria-label="加持任务列表">
+        <button v-for="item in list" :key="item.id" class="mobile-task-card" type="button" @click="router.push(`/blessing-tasks/${item.id}`)">
+          <span class="mobile-task-card__head">
+            <strong>{{ item.taskNo }}</strong>
+            <StatusTag :status="item.status" kind="blessing" />
+          </span>
+          <span class="mobile-task-card__meta">DIY 订单：{{ item.diyOrderNo }}</span>
+          <span class="mobile-task-card__foot"><span>{{ item.masterCode || '待分配法师' }}</span><b>{{ formatDate(item.createTime) }}</b></span>
+        </button>
+        <div v-if="!loading && !list.length && !loadError" class="mobile-task-empty">当前筛选下暂无加持任务</div>
+        <div v-if="total > query.size" class="mobile-task-pager">
+          <el-button :disabled="query.page <= 1" @click="pageChange({ page: query.page - 1, size: query.size })">上一页</el-button>
+          <span>第 {{ query.page }} 页</span>
+          <el-button :disabled="query.page * query.size >= total" @click="pageChange({ page: query.page + 1, size: query.size })">下一页</el-button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -101,4 +130,9 @@ onMounted(load)
 <style scoped>
 .list-card { padding: 18px 20px; }
 .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; }
+@media (max-width: 767px) {
+  .list-card { padding: 12px; }
+  .filter-bar { align-items: stretch; flex-direction: column; }
+  .filter-bar :deep(.el-select), .filter-bar :deep(.el-button) { width: 100% !important; }
+}
 </style>

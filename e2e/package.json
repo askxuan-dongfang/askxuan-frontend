@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test:web": "playwright test",
-    "test:web:headed": "playwright test --headed"
+    "test:web:headed": "playwright test --headed",
+    "test:web:public": "playwright test -c playwright.public.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.45.0"

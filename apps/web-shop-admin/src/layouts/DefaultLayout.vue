@@ -1,27 +1,33 @@
 <script setup lang="ts">
-// 默认布局：左侧暗色菜单栏 + 顶栏 + 主内容区
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { ElMessageBox } from 'element-plus'
 import {
-  Odometer,
-  Goods,
-  Files,
   Box,
-  MagicStick,
-  List,
-  Van,
-  RefreshLeft,
   DataLine,
-  SwitchButton
+  Expand,
+  Files,
+  Fold,
+  Goods,
+  List,
+  MagicStick,
+  Menu,
+  Odometer,
+  RefreshLeft,
+  SwitchButton,
+  Van
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const logoUrl = `${import.meta.env.BASE_URL}logos/logo-shop.png`
+const collapsed = ref(false)
+const mobile = ref(false)
+const drawerOpen = ref(false)
+let mobileQuery: MediaQueryList | undefined
 
-// 当前激活菜单
 const activeMenu = computed(() => {
   if (route.path.startsWith('/products')) return '/products'
   if (route.path.startsWith('/materials')) return '/materials'
@@ -31,316 +37,199 @@ const activeMenu = computed(() => {
   if (route.path.startsWith('/returns')) return '/returns'
   return route.path
 })
-
-// 当前页面标题
 const pageTitle = computed(() => (route.meta.title as string) || '商城管理台')
 
-// 退出登录
+function syncViewport(event?: MediaQueryListEvent) {
+  mobile.value = event ? event.matches : Boolean(mobileQuery?.matches)
+  if (!mobile.value) drawerOpen.value = false
+}
+
+function toggleNavigation() {
+  if (mobile.value) drawerOpen.value = !drawerOpen.value
+  else collapsed.value = !collapsed.value
+}
+
 async function handleLogout() {
   try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+    await ElMessageBox.confirm('确定要退出登录吗？', '退出登录', {
       confirmButtonText: '退出',
       cancelButtonText: '取消',
       type: 'warning'
     })
     auth.logout()
-    router.push('/login')
+    await router.push('/login')
   } catch {
-    // 用户取消
+    // 用户取消。
   }
 }
+
+watch(() => route.fullPath, () => { drawerOpen.value = false })
+
+onMounted(() => {
+  mobileQuery = window.matchMedia('(max-width: 991px)')
+  syncViewport()
+  mobileQuery.addEventListener('change', syncViewport)
+})
+
+onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
 </script>
 
 <template>
-  <div class="layout">
-    <!-- 左侧菜单栏 -->
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <img class="sidebar-logo-img" src="/logos/logo-shop.png" alt="问玄东方商城管理台" />
-        <div>
-          <h1>问玄东方</h1>
-          <p>商城管理台</p>
+  <div
+    class="ax-admin-shell"
+    :class="{ 'is-collapsed': collapsed && !mobile, 'is-drawer-open': drawerOpen }"
+  >
+    <button class="ax-admin-overlay" type="button" aria-label="关闭导航" @click="drawerOpen = false"></button>
+
+    <aside class="ax-admin-sidebar" aria-label="商城管理台主导航">
+      <div class="ax-admin-logo">
+        <img class="ax-admin-logo__image" :src="logoUrl" alt="" />
+        <div class="ax-admin-logo__copy">
+          <div class="ax-admin-logo__title">问玄东方</div>
+          <div class="ax-admin-logo__subtitle">商城管理台</div>
         </div>
       </div>
 
       <el-menu
         :default-active="activeMenu"
+        :collapse="collapsed && !mobile"
+        :collapse-transition="false"
         background-color="transparent"
         text-color="#C5B097"
-        active-text-color="#C45A3C"
+        active-text-color="#F5E0D6"
         router
-        class="sidebar-menu"
+        class="ax-admin-menu"
       >
-        <div class="sidebar-section">主菜单</div>
+        <div class="ax-admin-menu__section">今日</div>
         <el-menu-item index="/dashboard">
           <el-icon><Odometer /></el-icon>
-          <span>工作台</span>
+          <template #title>今日工作台</template>
         </el-menu-item>
+
+        <div class="ax-admin-menu__section">商品中心</div>
         <el-menu-item index="/products">
           <el-icon><Goods /></el-icon>
-          <span>商品管理</span>
+          <template #title>商品管理</template>
         </el-menu-item>
         <el-menu-item index="/categories">
           <el-icon><Files /></el-icon>
-          <span>分类管理</span>
+          <template #title>分类管理</template>
         </el-menu-item>
 
-        <div class="sidebar-section">DIY 中心</div>
+        <div class="ax-admin-menu__section">DIY 中心</div>
+        <el-menu-item index="/diy-orders">
+          <el-icon><MagicStick /></el-icon>
+          <template #title>DIY 订单</template>
+        </el-menu-item>
         <el-menu-item index="/materials">
           <el-icon><Box /></el-icon>
-          <span>材料管理</span>
+          <template #title>材料管理</template>
         </el-menu-item>
         <el-menu-item index="/services">
           <el-icon><MagicStick /></el-icon>
-          <span>DIY加持服务</span>
+          <template #title>加持服务</template>
         </el-menu-item>
 
-        <div class="sidebar-section">订单运营</div>
+        <div class="ax-admin-menu__section">履约与售后</div>
         <el-menu-item index="/orders">
           <el-icon><List /></el-icon>
-          <span>商城订单</span>
-        </el-menu-item>
-        <el-menu-item index="/diy-orders">
-          <el-icon><MagicStick /></el-icon>
-          <span>DIY设计/订单</span>
+          <template #title>商城订单</template>
         </el-menu-item>
         <el-menu-item index="/logistics">
           <el-icon><Van /></el-icon>
-          <span>物流管理</span>
+          <template #title>物流管理</template>
         </el-menu-item>
         <el-menu-item index="/returns">
           <el-icon><RefreshLeft /></el-icon>
-          <span>退货管理</span>
+          <template #title>退货管理</template>
         </el-menu-item>
 
-        <div class="sidebar-section">数据</div>
+        <div class="ax-admin-menu__section">数据</div>
         <el-menu-item index="/reports">
           <el-icon><DataLine /></el-icon>
-          <span>数据报表</span>
+          <template #title>经营报表</template>
         </el-menu-item>
       </el-menu>
 
-      <!-- 用户信息 -->
-      <div class="sidebar-footer">
-        <div class="sidebar-user">
-          <div class="sidebar-user-avatar">{{ auth.nickname?.charAt(0) || '商' }}</div>
-          <div class="sidebar-user-info">
-            <div class="sidebar-user-name">{{ auth.nickname }}</div>
-            <div class="sidebar-user-role">商城运营</div>
+      <div class="ax-admin-sidebar__footer">
+        <div class="ax-admin-user">
+          <div class="ax-admin-user__avatar">{{ auth.nickname?.charAt(0) || '商' }}</div>
+          <div class="ax-admin-user__copy">
+            <div class="ax-admin-user__name">{{ auth.nickname || '商城管理员' }}</div>
+            <div class="ax-admin-user__role">商城运营</div>
           </div>
           <el-tooltip content="退出登录" placement="top">
-            <el-icon class="logout-btn" @click="handleLogout"><SwitchButton /></el-icon>
+            <button class="ax-admin-user__action icon-button" type="button" aria-label="退出登录" @click="handleLogout">
+              <el-icon><SwitchButton /></el-icon>
+            </button>
           </el-tooltip>
         </div>
       </div>
     </aside>
 
-    <!-- 主内容区 -->
-    <main class="content">
-      <!-- 顶栏 -->
-      <header class="page-header">
-        <div class="page-header-left">
-          <h2>{{ pageTitle }}</h2>
+    <section class="ax-admin-content">
+      <header class="ax-admin-header">
+        <div class="ax-admin-header__left">
+          <button
+            class="ax-admin-nav-toggle"
+            type="button"
+            aria-label="切换主导航"
+            :aria-expanded="mobile ? drawerOpen : !collapsed"
+            @click="toggleNavigation"
+          >
+            <el-icon :size="20">
+              <Menu v-if="mobile" />
+              <Expand v-else-if="collapsed" />
+              <Fold v-else />
+            </el-icon>
+          </button>
+          <div>
+            <div class="ax-admin-header__eyebrow">商城管理台</div>
+            <div class="ax-admin-header__title">{{ pageTitle }}</div>
+          </div>
         </div>
-        <div class="page-header-right">
-          <span class="header-date">{{ new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }) }}</span>
+        <div class="ax-admin-header__right">
+          <span class="header-date">
+            {{ new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }) }}
+          </span>
         </div>
       </header>
 
-      <!-- 路由出口 -->
-      <div class="page-body">
+      <main class="ax-admin-main">
         <RouterView v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
+          <transition name="page" mode="out-in">
             <component :is="Component" />
           </transition>
         </RouterView>
-      </div>
-    </main>
+      </main>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.layout {
-  display: flex;
-  min-height: 100vh;
-}
-
-/* ===== 侧边栏 ===== */
-.sidebar {
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: var(--sidebar-width);
-  background: var(--sidebar-bg);
-  display: flex;
-  flex-direction: column;
-  z-index: 1000;
-}
-
-.sidebar-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 24px 20px;
-  border-bottom: 1px solid rgba(197, 176, 151, 0.15);
-  text-align: left;
-}
-.sidebar-logo-img {
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
-  object-fit: cover;
-  border: 1px solid rgba(197, 176, 151, 0.24);
-  flex-shrink: 0;
-}
-.sidebar-logo h1 {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--accent);
-  margin: 0 0 4px;
-  letter-spacing: 4px;
-}
-.sidebar-logo p {
-  font-size: 12px;
-  color: var(--sidebar-text);
-  opacity: 0.6;
-  letter-spacing: 2px;
-  margin: 0;
-}
-
-.sidebar-menu {
-  flex: 1;
-  border-right: none;
-  overflow-y: auto;
-  padding: 12px 0;
-}
-
-.sidebar-section {
-  padding: 12px 20px 4px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--sidebar-text);
-  opacity: 0.4;
-}
-
-/* 菜单项样式覆盖 */
-.sidebar-menu :deep(.el-menu-item) {
-  height: 44px;
-  line-height: 44px;
-  border-left: 3px solid transparent;
-  border-radius: 0;
-}
-.sidebar-menu :deep(.el-menu-item:hover) {
-  background: rgba(197, 176, 151, 0.08) !important;
-  color: #dcc8b0 !important;
-}
-.sidebar-menu :deep(.el-menu-item.is-active) {
-  background: rgba(196, 90, 60, 0.15) !important;
-  border-left-color: var(--primary);
-  font-weight: 500;
-}
-
-/* 用户信息 */
-.sidebar-footer {
-  padding: 16px 20px;
-  border-top: 1px solid rgba(197, 176, 151, 0.15);
-}
-.sidebar-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.sidebar-user-avatar {
+.icon-button {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  background: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--sidebar-bg);
-  font-weight: 600;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-.sidebar-user-info {
-  flex: 1;
-  min-width: 0;
-}
-.sidebar-user-name {
-  font-size: 13px;
-  color: #dcc8b0;
-  font-weight: 500;
-}
-.sidebar-user-role {
-  font-size: 11px;
-  color: var(--sidebar-text);
-  opacity: 0.5;
-}
-.logout-btn {
-  color: var(--sidebar-text);
-  opacity: 0.6;
-  cursor: pointer;
-  font-size: 18px;
-  transition: var(--transition);
-}
-.logout-btn:hover {
-  opacity: 1;
-  color: var(--primary);
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
 }
 
-/* ===== 内容区 ===== */
-.content {
-  margin-left: var(--sidebar-width);
-  flex: 1;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+.icon-button:hover {
+  color: #f0e6da;
+  background: rgba(200, 169, 110, 0.08);
 }
 
-.page-header {
-  background: var(--card-bg);
-  padding: 0 32px;
-  height: var(--header-height);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-.page-header h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-dark);
-  margin: 0;
-}
-.header-date {
-  font-size: 13px;
-  color: var(--text-light);
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 180ms ease;
 }
 
-.page-body {
-  flex: 1;
-  padding: 24px 32px;
-}
-
-/* 响应式 */
-@media (max-width: 1024px) {
-  :deep(.sidebar) {
-    width: 64px;
-  }
-  :deep(.sidebar-logo h1),
-  :deep(.sidebar-logo p),
-  :deep(.sidebar-section),
-  :deep(.sidebar-user-info),
-  :deep(.logout-btn) {
-    display: none;
-  }
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
 }
 </style>

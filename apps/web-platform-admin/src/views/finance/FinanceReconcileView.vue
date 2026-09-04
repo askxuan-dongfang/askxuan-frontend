@@ -6,6 +6,11 @@
       </template>
     </PageHeader>
 
+    <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+      <div class="ax-page-feedback__copy"><div class="ax-page-feedback__title">{{ activeTab === 'withdrawal' ? '提现审核队列加载失败' : '对账报表加载失败' }}</div><div class="ax-page-feedback__description">资金数据状态未知，请重新加载，避免重复审核或打款。</div></div>
+      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+    </div>
+
     <div class="dfx-card table-wrap">
       <el-tabs v-model="activeTab" @tab-change="loadData">
         <el-tab-pane label="提现审核" name="withdrawal">
@@ -24,7 +29,7 @@
               <el-option label="已驳回" value="rejected" />
             </el-select>
           </div>
-          <DataTable :data="wList" :loading="loading" :total="wTotal" v-model:page="wQuery.page" v-model:size="wQuery.size" @change="loadWithdrawals">
+          <DataTable class="desktop-table" :data="wList" :loading="loading" :total="wTotal" v-model:page="wQuery.page" v-model:size="wQuery.size" @change="loadWithdrawals">
             <el-table-column label="提现单号" prop="withdrawalNo" width="180" />
             <el-table-column label="申请方" width="120">
               <template #default="{ row }">{{ applicantText(row.applicantType) }} · {{ row.applicantId }}</template>
@@ -52,6 +57,20 @@
               </template>
             </el-table-column>
           </DataTable>
+          <MobileTaskList v-model:page="wQuery.page" :items="wList" :loading="loading" :total="wTotal" :size="wQuery.size" @change="loadWithdrawals">
+            <template #item="{ item: row }">
+              <article class="mobile-task-card">
+                <div class="mobile-task-card__head"><strong>{{ row.withdrawalNo }}</strong><StatusTag :status="row.status" /></div>
+                <div class="mobile-task-card__meta">{{ applicantText(row.applicantType) }} {{ row.applicantId }} · {{ maskBankCard(row.bankCard) }}</div>
+                <div class="mobile-task-card__foot">
+                  <span>{{ formatDate(row.createTime) }} · <b>{{ formatMoney(row.amount) }}</b></span>
+                  <span class="mobile-actions" v-if="row.status === 'pending'"><el-button type="success" @click="auditW(row, 'approve')">通过</el-button><el-button type="danger" plain @click="auditW(row, 'reject')">驳回</el-button></span>
+                  <el-button v-else-if="row.status === 'approved'" type="primary" @click="processW(row)">确认打款</el-button>
+                  <b v-else>已处理</b>
+                </div>
+              </article>
+            </template>
+          </MobileTaskList>
         </el-tab-pane>
 
         <el-tab-pane label="对账报表" name="report">
@@ -78,6 +97,7 @@ import { Refresh, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
+import MobileTaskList from '@/components/MobileTaskList.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import StatCard from '@/components/StatCard.vue'
 import { getWithdrawals, auditWithdrawal, processWithdrawal, getFinanceReports } from '@/api/finance'
@@ -86,6 +106,7 @@ import type { Withdrawal, FinanceReport } from '@/types'
 
 const activeTab = ref('withdrawal')
 const loading = ref(false)
+const loadError = ref(false)
 
 const wQuery = reactive({ applicantType: '', status: '', page: 1, size: 20 })
 const wList = ref<Withdrawal[]>([])
@@ -100,10 +121,13 @@ function applicantText(t: string) {
 
 async function loadWithdrawals() {
   loading.value = true
+  loadError.value = false
   try {
     const res = await getWithdrawals(wQuery)
     wList.value = res.list || []
     wTotal.value = res.total || 0
+  } catch {
+    loadError.value = true
   } finally {
     loading.value = false
   }
@@ -115,7 +139,20 @@ function onWSearch() {
 }
 
 async function auditW(row: Withdrawal, action: 'approve' | 'reject') {
-  const remark = action === 'reject' ? await ElMessageBox.prompt('请输入驳回原因', '驳回提现', { type: 'warning' }).then((r) => r.value).catch(() => null) : ''
+  if (action === 'approve') {
+    await ElMessageBox.confirm(
+      `确认通过提现单「${row.withdrawalNo}」？金额 ${formatMoney(row.amount)}，通过后将进入打款处理队列。`,
+      '提现审核确认',
+      { type: 'warning', confirmButtonText: '确认通过', cancelButtonText: '返回核对' }
+    )
+  }
+  const remark = action === 'reject'
+    ? await ElMessageBox.prompt(
+        `驳回后提现单「${row.withdrawalNo}」不会进入打款，申请方将看到处理结果。请输入驳回原因。`,
+        '驳回提现',
+        { type: 'warning', confirmButtonText: '确认驳回', cancelButtonText: '返回核对', inputType: 'textarea' }
+      ).then((r) => r.value).catch(() => null)
+    : ''
   if (action === 'reject' && remark === null) return
   await auditWithdrawal(row.id, { action, remark: remark || undefined })
   ElMessage.success('操作成功')
@@ -123,7 +160,11 @@ async function auditW(row: Withdrawal, action: 'approve' | 'reject') {
 }
 
 async function processW(row: Withdrawal) {
-  await ElMessageBox.confirm(`确认对提现单「${row.withdrawalNo}」执行打款？金额 ${formatMoney(row.amount)}`, '打款确认', { type: 'warning' })
+  await ElMessageBox.confirm(
+    `确认对提现单「${row.withdrawalNo}」执行打款？金额 ${formatMoney(row.amount)}，提交后资金状态进入处理流程，不能在本页面撤回。`,
+    '打款确认',
+    { type: 'warning', confirmButtonText: '确认打款', cancelButtonText: '返回核对' }
+  )
   await processWithdrawal(row.id)
   ElMessage.success('打款处理已提交')
   loadWithdrawals()
@@ -135,16 +176,19 @@ async function loadReport() {
     return
   }
   loading.value = true
+  loadError.value = false
   try {
     report.value = await getFinanceReports({ startTime: dateRange.value[0], endTime: dateRange.value[1] })
+  } catch {
+    loadError.value = true
   } finally {
     loading.value = false
   }
 }
 
 async function loadData() {
-  if (activeTab.value === 'withdrawal') loadWithdrawals()
-  else if (report.value) loadReport()
+  if (activeTab.value === 'withdrawal') await loadWithdrawals()
+  else if (report.value) await loadReport()
 }
 
 onMounted(loadWithdrawals)
@@ -174,4 +218,6 @@ onMounted(loadWithdrawals)
   gap: 16px;
   margin-top: 8px;
 }
+.mobile-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.mobile-actions :deep(.el-button + .el-button) { margin-left: 0; }
 </style>

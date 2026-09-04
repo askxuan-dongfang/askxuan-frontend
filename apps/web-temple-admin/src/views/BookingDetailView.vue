@@ -47,8 +47,8 @@ async function load() {
 }
 
 function doConfirm() {
-  ElMessageBox.prompt('请输入确认备注（可选）', '确认预约', {
-    confirmButtonText: '确认',
+  ElMessageBox.prompt('确认后预约将进入履约流程，信众端会同步看到已确认状态。可填写确认备注。', '确认预约', {
+    confirmButtonText: '确认预约',
     cancelButtonText: '取消',
     inputPlaceholder: '备注'
   })
@@ -66,7 +66,7 @@ function doConfirm() {
 }
 
 function doCancel() {
-  ElMessageBox.prompt('请输入取消原因', '取消预约', {
+  ElMessageBox.prompt('取消后本次预约将停止履约，信众端会同步看到取消状态和原因。请输入取消原因。', '取消预约', {
     confirmButtonText: '确认取消',
     cancelButtonText: '返回',
     inputPlaceholder: '取消原因',

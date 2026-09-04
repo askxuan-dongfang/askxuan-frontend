@@ -14,6 +14,7 @@ const router = useRouter()
 const auth = useAuthStore()
 
 const loading = ref(false)
+const loadError = ref('')
 const list = ref<Booking[]>([])
 const total = ref(0)
 const query = reactive({ status: '', page: 1, size: 20 })
@@ -28,6 +29,7 @@ const statusOptions = [
 
 async function load() {
   loading.value = true
+  loadError.value = ''
   try {
     const r = await listBookings({
       templeId: auth.templeId,
@@ -37,6 +39,8 @@ async function load() {
     })
     list.value = r.list || []
     total.value = r.total || 0
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : '预约列表加载失败'
   } finally {
     loading.value = false
   }
@@ -72,7 +76,15 @@ onMounted(load)
         <el-button :icon="Search" type="primary" plain @click="onSearch">查询</el-button>
       </div>
 
-      <DataTable
+      <div v-if="loadError" class="ax-page-feedback is-error" role="status">
+        <div class="ax-page-feedback__copy">
+          <div class="ax-page-feedback__title">预约列表加载失败</div>
+          <div class="ax-page-feedback__description">{{ loadError }}</div>
+        </div>
+        <el-button :loading="loading" @click="load">重试</el-button>
+      </div>
+
+      <div class="desktop-table"><DataTable
         :data="list"
         :loading="loading"
         :total="total"
@@ -106,7 +118,24 @@ onMounted(load)
             <el-button link type="primary" size="small" :icon="View" @click="goDetail(row.id)">详情</el-button>
           </template>
         </el-table-column>
-      </DataTable>
+      </DataTable></div>
+
+      <div class="mobile-task-list" aria-label="预约任务列表">
+        <button v-for="item in list" :key="item.id" class="mobile-task-card" type="button" @click="goDetail(item.id)">
+          <span class="mobile-task-card__head">
+            <strong>{{ item.serviceName || '预约服务' }}</strong>
+            <StatusTag :status="item.status" kind="booking" />
+          </span>
+          <span class="mobile-task-card__meta">{{ item.masterName || '待分配法师' }} · {{ item.bookingDate }} {{ item.timeSlot }}</span>
+          <span class="mobile-task-card__foot"><span>{{ item.id }}</span><b>{{ formatMoney(item.meritMoney) }}</b></span>
+        </button>
+        <div v-if="!loading && !list.length && !loadError" class="mobile-task-empty">当前筛选下暂无预约</div>
+        <div v-if="total > query.size" class="mobile-task-pager">
+          <el-button :disabled="query.page <= 1" @click="onPageChange({ page: query.page - 1, size: query.size })">上一页</el-button>
+          <span>第 {{ query.page }} 页</span>
+          <el-button :disabled="query.page * query.size >= total" @click="onPageChange({ page: query.page + 1, size: query.size })">下一页</el-button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -127,5 +156,10 @@ onMounted(load)
 .price {
   color: #c45a3c;
   font-weight: 600;
+}
+@media (max-width: 767px) {
+  .list-card { padding: 12px; }
+  .filter-bar { align-items: stretch; flex-direction: column; }
+  .filter-bar :deep(.el-select), .filter-bar :deep(.el-button) { width: 100% !important; }
 }
 </style>

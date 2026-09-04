@@ -288,4 +288,32 @@ onMounted(() => {
   font-size: 12px;
   color: var(--text-light);
 }
+@media (max-width: 767px) {
+  .form-card {
+    width: 100%;
+    padding: 18px 14px;
+  }
+  .render-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .render-grid :deep(.el-slider) {
+    width: 100%;
+  }
+  .render-grid :deep(.el-slider__runway.show-input) {
+    margin-right: 0;
+  }
+  .render-grid :deep(.el-slider__input) {
+    position: static;
+    width: 100%;
+    margin-top: 10px;
+  }
+  .form-tip {
+    margin-left: 0;
+  }
+  .bead-preview-wrap {
+    justify-content: flex-start;
+    padding: 0 0 16px;
+  }
+}
 </style>

@@ -14,8 +14,13 @@
       </el-select>
     </div>
 
+    <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+      <div class="ax-page-feedback__copy"><div class="ax-page-feedback__title">寺院结算单加载失败</div><div class="ax-page-feedback__description">结算队列状态未知，请勿按无待结算单处理。</div></div>
+      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+    </div>
+
     <div class="dfx-card table-wrap">
-      <DataTable :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
+      <DataTable class="desktop-table" :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
         <el-table-column label="结算单号" prop="settlementNo" width="180" />
         <el-table-column label="寺院" min-width="160">
           <template #default="{ row }">
@@ -49,6 +54,16 @@
           </template>
         </el-table-column>
       </DataTable>
+      <MobileTaskList v-model:page="query.page" :items="list" :loading="loading" :total="total" :size="query.size" @change="loadData">
+        <template #item="{ item: row }">
+          <article class="mobile-task-card">
+            <div class="mobile-task-card__head"><strong>{{ row.targetName || row.targetId }}</strong><StatusTag :status="row.status" /></div>
+            <div class="mobile-task-card__meta">{{ row.settlementNo }} · {{ row.periodStart }} 至 {{ row.periodEnd }}</div>
+            <div class="mobile-task-card__meta">{{ row.orderCount }} 单 · 总额 {{ formatMoney(row.totalAmount) }} · 抽成 {{ formatPercent(row.commissionRate) }}</div>
+            <div class="mobile-task-card__foot"><span>应结 <b>{{ formatMoney(row.settleAmount) }}</b></span><el-button v-if="row.status === 'pending'" type="primary" :loading="row._saving" @click="confirm(row)">确认结算</el-button><b v-else>已处理</b></div>
+          </article>
+        </template>
+      </MobileTaskList>
     </div>
   </div>
 </template>
@@ -59,6 +74,7 @@ import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
+import MobileTaskList from '@/components/MobileTaskList.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import { getSettlements, confirmSettlement } from '@/api/finance'
 import { formatMoney, formatPercent } from '@/utils/format'
@@ -69,16 +85,20 @@ interface Row extends Settlement {
 }
 
 const loading = ref(false)
+const loadError = ref(false)
 const list = ref<Row[]>([])
 const total = ref(0)
 const query = reactive({ status: '', settleType: 'temple', page: 1, size: 20 })
 
 async function loadData() {
   loading.value = true
+  loadError.value = false
   try {
     const res = await getSettlements(query)
     list.value = (res.list || []).map((s) => ({ ...s }))
     total.value = res.total || 0
+  } catch {
+    loadError.value = true
   } finally {
     loading.value = false
   }

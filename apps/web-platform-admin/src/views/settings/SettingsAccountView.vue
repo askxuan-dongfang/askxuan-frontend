@@ -17,8 +17,16 @@
       <el-button :icon="RefreshLeft" @click="onReset">重置</el-button>
     </div>
 
+    <div v-if="loadError || dependencyError" class="ax-page-feedback" :class="{ 'is-error': loadError }" role="alert">
+      <div class="ax-page-feedback__copy">
+        <div class="ax-page-feedback__title">{{ loadError ? '账号列表加载失败' : '部分账号关联信息加载失败' }}</div>
+        <div class="ax-page-feedback__description">{{ loadError ? '当前结果不可视为无账号，请重新加载。' : '角色、寺院或法师名称可能不完整，账号状态操作仍以列表数据为准。' }}</div>
+      </div>
+      <el-button :loading="loading" @click="loadPage">重新加载</el-button>
+    </div>
+
     <div class="dfx-card table-wrap">
-      <DataTable :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
+      <DataTable class="desktop-table" :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
         <el-table-column label="登录账号" prop="account" min-width="150" />
         <el-table-column label="名称" prop="name" min-width="150" />
         <el-table-column label="角色" min-width="130">
@@ -46,6 +54,22 @@
           </template>
         </el-table-column>
       </DataTable>
+      <MobileTaskList v-model:page="query.page" :items="list" :loading="loading" :total="total" :size="query.size" @change="loadData">
+        <template #item="{ item: row }">
+          <article class="mobile-task-card">
+            <div class="mobile-task-card__head"><strong>{{ row.name || row.account }}</strong><StatusTag :status="row.status" /></div>
+            <div class="mobile-task-card__meta">{{ row.account }} · {{ row.roleName || roleName(row.roleId) }}</div>
+            <div class="mobile-task-card__meta">{{ bindingText(row) }} · {{ row.lastLoginTime ? `最近登录 ${formatDate(row.lastLoginTime)}` : '尚未登录' }}</div>
+            <div class="mobile-task-card__foot">
+              <span>账号 #{{ row.id }}</span>
+              <span class="mobile-actions">
+                <el-button type="primary" @click="openEdit(row)">编辑</el-button>
+                <el-button :type="row.status === 'enabled' ? 'warning' : 'success'" plain @click="toggleStatus(row)">{{ row.status === 'enabled' ? '停用' : '启用' }}</el-button>
+              </span>
+            </div>
+          </article>
+        </template>
+      </MobileTaskList>
     </div>
 
     <el-dialog v-model="dialog.visible" :title="dialog.isEdit ? '编辑账号' : '新建账号'" width="520px">
@@ -98,6 +122,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, RefreshLeft, Search } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
+import MobileTaskList from '@/components/MobileTaskList.vue'
+import StatusTag from '@/components/StatusTag.vue'
 import { createAdminAccount, getAdminAccounts, getRoles, updateAdminAccount, updateAdminAccountStatus } from '@/api/auth'
 import { getTempleList } from '@/api/temple'
 import { getMasterList } from '@/api/master'
@@ -105,6 +131,8 @@ import { formatDate } from '@/utils/format'
 import type { AdminAccount, Master, Role, Temple } from '@/types'
 
 const loading = ref(false)
+const loadError = ref(false)
+const dependencyError = ref(false)
 const list = ref<AdminAccount[]>([])
 const total = ref(0)
 const roles = ref<Role[]>([])
@@ -117,10 +145,13 @@ const selectedRoleCode = computed(() => roles.value.find((role) => role.id === d
 
 async function loadData() {
   loading.value = true
+  loadError.value = false
   try {
     const response = await getAdminAccounts(query)
     list.value = response.list || []
     total.value = response.total || 0
+  } catch {
+    loadError.value = true
   } finally {
     loading.value = false
   }
@@ -175,15 +206,25 @@ async function toggleStatus(row: AdminAccount) {
   loadData()
 }
 
-onMounted(async () => {
-  const [roleList, templeList, masterList] = await Promise.all([
-	getRoles(),
-	getTempleList({ page: 1, size: 100 }),
-	getMasterList({ page: 1, size: 100 })
+async function loadDependencies() {
+  dependencyError.value = false
+  const [roleResult, templeResult, masterResult] = await Promise.allSettled([
+    getRoles(),
+    getTempleList({ page: 1, size: 100 }),
+    getMasterList({ page: 1, size: 100 })
   ])
-  roles.value = roleList
-  temples.value = templeList.list || []
-  masters.value = masterList.list || []
+  if (roleResult.status === 'fulfilled') roles.value = roleResult.value
+  if (templeResult.status === 'fulfilled') temples.value = templeResult.value.list || []
+  if (masterResult.status === 'fulfilled') masters.value = masterResult.value.list || []
+  dependencyError.value = [roleResult, templeResult, masterResult].some((result) => result.status === 'rejected')
+}
+
+async function loadPage() {
+  await Promise.all([loadDependencies(), loadData()])
+}
+
+onMounted(async () => {
+  await loadDependencies()
   await loadData()
 })
 </script>
@@ -191,4 +232,6 @@ onMounted(async () => {
 <style scoped>
 .filter-bar { display: flex; gap: 12px; align-items: center; padding: 16px; margin-bottom: 16px; flex-wrap: wrap; }
 .table-wrap { padding: 16px; }
+.mobile-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.mobile-actions :deep(.el-button + .el-button) { margin-left: 0; }
 </style>

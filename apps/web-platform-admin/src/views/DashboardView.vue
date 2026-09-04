@@ -1,6 +1,32 @@
 <template>
   <div class="dfx-page">
-    <PageHeader title="平台总览" subtitle="全平台运营数据实时概览" />
+    <PageHeader title="平台总览" subtitle="先处理风险与待办，再查看经营数据；所有指标均来自实时接口">
+      <template #actions>
+        <el-button :loading="loading" @click="loadDashboard">刷新数据</el-button>
+      </template>
+    </PageHeader>
+
+    <div v-if="loadIssueCount" class="ax-page-feedback" :class="{ 'is-error': loadIssueCount === 5 }" role="status">
+      <div class="ax-page-feedback__copy">
+        <div class="ax-page-feedback__title">{{ loadIssueCount === 5 ? '平台数据暂时无法加载' : '部分指标加载失败' }}</div>
+        <div class="ax-page-feedback__description">失败模块：{{ failedModules.join('、') }}。失败数据不会以 0 冒充真实结果，请稍后重试。</div>
+      </div>
+      <el-button :loading="loading" @click="loadDashboard">重新加载</el-button>
+    </div>
+
+    <!-- 先任务、后数据 -->
+    <div class="dfx-card dashboard__todo">
+      <div class="chart-card__title">运营待办</div>
+      <div class="dashboard__todo-grid">
+        <router-link v-for="todo in todos" :key="todo.path" :to="todo.path" class="todo-item">
+          <el-icon :size="22" :color="todo.color"><component :is="todo.icon" /></el-icon>
+          <div class="todo-item__info">
+            <div class="todo-item__label">{{ todo.label }}</div>
+            <div class="todo-item__count dfx-serif">{{ todo.count }}</div>
+          </div>
+        </router-link>
+      </div>
+    </div>
 
     <!-- 统计卡片 -->
     <div class="dashboard__cards">
@@ -16,27 +42,26 @@
     <div class="dashboard__charts">
       <div class="dfx-card chart-card">
         <div class="chart-card__title">收入构成分布</div>
-        <div ref="pieRef" class="chart-card__body"></div>
+        <div v-if="overview" ref="pieRef" class="chart-card__body"></div>
+        <div v-else class="chart-card__state">收入数据未加载</div>
+        <div v-if="overview" class="chart-card__mobile-summary">
+          <span>平台总收入</span>
+          <strong>{{ stats.totalIncome === '—' ? '—' : `¥${stats.totalIncome}` }}</strong>
+          <router-link to="/finance/overview">查看完整财务报表</router-link>
+        </div>
       </div>
       <div class="dfx-card chart-card">
         <div class="chart-card__title">审核队列状态</div>
-        <div ref="barRef" class="chart-card__body"></div>
+        <div v-if="audit" ref="barRef" class="chart-card__body"></div>
+        <div v-else class="chart-card__state">审核数据未加载</div>
+        <div v-if="audit" class="chart-card__mobile-summary">
+          <span>当前待审核</span>
+          <strong>{{ stats.pendingCount }}</strong>
+          <router-link to="/audit/comment">进入审核中心</router-link>
+        </div>
       </div>
     </div>
 
-    <!-- 待办 -->
-    <div class="dfx-card dashboard__todo">
-      <div class="chart-card__title">运营待办</div>
-      <div class="dashboard__todo-grid">
-        <router-link v-for="todo in todos" :key="todo.path" :to="todo.path" class="todo-item">
-          <el-icon :size="22" :color="todo.color"><component :is="todo.icon" /></el-icon>
-          <div class="todo-item__info">
-            <div class="todo-item__label">{{ todo.label }}</div>
-            <div class="todo-item__count dfx-serif">{{ todo.count }}</div>
-          </div>
-        </router-link>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -56,29 +81,33 @@ const pieRef = ref<HTMLElement>()
 const barRef = ref<HTMLElement>()
 let pieChart: echarts.ECharts | null = null
 let barChart: echarts.ECharts | null = null
+const loading = ref(false)
+const loadIssueCount = ref(0)
+const failedModules = ref<string[]>([])
 
-const stats = reactive({
-  totalIncome: 0,
-  commissionIncome: 0,
-  templeCount: 0,
-  masterCount: 0,
-  userCount: 0,
-  pendingCount: 0
+const stats = reactive<Record<string, number | string>>({
+  totalIncome: '—',
+  commissionIncome: '—',
+  templeCount: '—',
+  masterCount: '—',
+  userCount: '—',
+  pendingCount: '—'
 })
 
 const overview = ref<FinanceOverview | null>(null)
 const audit = ref<AuditStatistics | null>(null)
 
-const todos = ref([
-  { path: '/temple/review', label: '寺院入驻审核', count: 0, icon: 'OfficeBuilding', color: '#C45A3C' },
-  { path: '/master/review', label: '法师资质审核', count: 0, icon: 'Avatar', color: '#B5453A' },
-  { path: '/audit/comment', label: '评价内容审核', count: 0, icon: 'ChatDotRound', color: '#D4A843' },
-  { path: '/audit/report', label: '举报待处理', count: 0, icon: 'Warning', color: '#C45A3C' },
-  { path: '/finance/reconcile', label: '提现待审核', count: 0, icon: 'Wallet', color: '#C8A96E' }
+const todos = ref<Array<{ path: string; label: string; count: number | string; icon: string; color: string }>>([
+  { path: '/temple/review', label: '寺院入驻审核', count: '查看', icon: 'OfficeBuilding', color: '#C45A3C' },
+  { path: '/master/review', label: '法师资质审核', count: '查看', icon: 'Avatar', color: '#B5453A' },
+  { path: '/audit/comment', label: '评价内容审核', count: '—', icon: 'ChatDotRound', color: '#D4A843' },
+  { path: '/audit/report', label: '举报待处理', count: '查看', icon: 'Warning', color: '#C45A3C' },
+  { path: '/finance/reconcile', label: '提现待审核', count: '—', icon: 'Wallet', color: '#C8A96E' }
 ])
 
 function renderPie() {
   if (!pieRef.value) return
+  pieChart?.dispose()
   pieChart = echarts.init(pieRef.value)
   const o = overview.value
   pieChart.setOption({
@@ -105,6 +134,7 @@ function renderPie() {
 
 function renderBar() {
   if (!barRef.value) return
+  barChart?.dispose()
   barChart = echarts.init(barRef.value)
   const a = audit.value
   barChart.setOption({
@@ -131,7 +161,15 @@ function onResize() {
   barChart?.resize()
 }
 
-onMounted(async () => {
+async function loadDashboard() {
+  loading.value = true
+  loadIssueCount.value = 0
+  failedModules.value = []
+  overview.value = null
+  audit.value = null
+  Object.keys(stats).forEach((key) => { stats[key] = '—' })
+  todos.value[2].count = '—'
+  todos.value[4].count = '—'
   const [finRes, auditRes, templeRes, masterRes, userRes] = await Promise.allSettled([
     getFinanceOverview(),
     getAuditStatistics({}),
@@ -155,9 +193,24 @@ onMounted(async () => {
   if (masterRes.status === 'fulfilled') stats.masterCount = masterRes.value.total
   if (userRes.status === 'fulfilled') stats.userCount = userRes.value.total
 
+  const namedResults = [
+    ['财务概览', finRes],
+    ['审核统计', auditRes],
+    ['寺院数量', templeRes],
+    ['法师数量', masterRes],
+    ['用户数量', userRes]
+  ] as const
+  failedModules.value = namedResults.filter(([, result]) => result.status === 'rejected').map(([name]) => name)
+  loadIssueCount.value = failedModules.value.length
+
   await nextTick()
   renderPie()
   renderBar()
+  loading.value = false
+}
+
+onMounted(async () => {
+  await loadDashboard()
   window.addEventListener('resize', onResize)
 })
 
@@ -174,6 +227,10 @@ onBeforeUnmount(() => {
   grid-template-columns: repeat(6, 1fr);
   gap: 16px;
   margin-bottom: 20px;
+}
+.dashboard__todo {
+  margin-bottom: 20px;
+  padding: 18px 20px;
 }
 .dashboard__charts {
   display: grid;
@@ -194,6 +251,17 @@ onBeforeUnmount(() => {
 }
 .chart-card__body {
   height: 280px;
+}
+.chart-card__state {
+  height: 280px;
+  display: grid;
+  place-items: center;
+  color: var(--admin-text-tertiary);
+  background: var(--admin-surface-muted);
+  border-radius: 8px;
+}
+.chart-card__mobile-summary {
+  display: none;
 }
 .dashboard__todo-grid {
   display: grid;
@@ -225,5 +293,54 @@ onBeforeUnmount(() => {
   font-weight: 700;
   color: var(--color-text-primary);
   margin-top: 4px;
+}
+
+@media (max-width: 1199px) {
+  .dashboard__cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .dashboard__todo-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .dashboard__cards,
+  .dashboard__charts,
+  .dashboard__todo-grid {
+    grid-template-columns: 1fr;
+  }
+  .dashboard__todo,
+  .chart-card {
+    padding: 14px;
+  }
+  .chart-card__body {
+    display: none;
+  }
+  .chart-card__state {
+    height: 180px;
+  }
+  .chart-card__mobile-summary {
+    min-height: 132px;
+    padding: 18px 4px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    color: var(--admin-text-tertiary);
+    background: var(--admin-surface-muted);
+    border-radius: 8px;
+  }
+  .chart-card__mobile-summary strong {
+    margin: 4px 0 12px;
+    color: var(--admin-text);
+    font-size: 26px;
+    font-variant-numeric: tabular-nums;
+  }
+  .chart-card__mobile-summary a {
+    color: var(--admin-primary);
+    font-size: 13px;
+    font-weight: 600;
+  }
 }
 </style>

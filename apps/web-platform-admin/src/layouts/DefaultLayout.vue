@@ -1,88 +1,5 @@
-<template>
-  <el-container class="layout">
-    <!-- 侧边栏 -->
-    <el-aside :width="collapsed ? '64px' : '230px'" class="layout__aside">
-      <div class="layout__logo">
-        <img class="layout__logo-icon" src="/logos/logo-platform.png" alt="问玄东方平台总管理台" />
-        <transition name="fade">
-          <span v-if="!collapsed" class="layout__logo-text dfx-serif">问玄东方</span>
-        </transition>
-      </div>
-      <el-scrollbar class="layout__menu-scroll">
-        <el-menu
-          :default-active="activeMenu"
-          :collapse="collapsed"
-          :collapse-transition="false"
-          background-color="transparent"
-          text-color="var(--color-text-secondary)"
-          active-text-color="var(--color-accent)"
-          router
-          unique-opened
-        >
-          <el-menu-item index="/dashboard">
-            <el-icon><Odometer /></el-icon>
-            <template #title>平台总览</template>
-          </el-menu-item>
-
-          <el-sub-menu v-for="group in menuGroups" :key="group.title" :index="group.title">
-            <template #title>
-              <el-icon><component :is="group.icon" /></el-icon>
-              <span>{{ group.title }}</span>
-            </template>
-            <el-menu-item v-for="item in group.children" :key="item.path" :index="item.path">
-              {{ item.title }}
-            </el-menu-item>
-          </el-sub-menu>
-        </el-menu>
-        <div v-if="!collapsed" class="layout__version">平台管理台 v2.1 · 2026-08-16</div>
-      </el-scrollbar>
-    </el-aside>
-
-    <el-container>
-      <!-- 顶部 -->
-      <el-header class="layout__header">
-        <div class="layout__header-left">
-          <el-icon class="layout__collapse" :size="20" @click="collapsed = !collapsed">
-            <Fold v-if="!collapsed" />
-            <Expand v-else />
-          </el-icon>
-          <el-breadcrumb separator="/">
-            <el-breadcrumb-item :to="{ path: '/dashboard' }">首页</el-breadcrumb-item>
-            <el-breadcrumb-item v-if="route.meta.parent">{{ route.meta.parent }}</el-breadcrumb-item>
-            <el-breadcrumb-item>{{ route.meta.title }}</el-breadcrumb-item>
-          </el-breadcrumb>
-        </div>
-        <div class="layout__header-right">
-          <el-dropdown @command="onCommand">
-            <span class="layout__user">
-              <el-avatar :size="30" :src="auth.userInfo?.avatar">{{ avatarText }}</el-avatar>
-              <span class="layout__user-name">{{ auth.userInfo?.nickname || '管理员' }}</span>
-              <el-icon><ArrowDown /></el-icon>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="dashboard">返回总览</el-dropdown-item>
-                <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </el-header>
-
-      <!-- 内容区 -->
-      <el-main class="layout__main">
-        <router-view v-slot="{ Component }">
-          <transition name="page" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
-      </el-main>
-    </el-container>
-  </el-container>
-</template>
-
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
@@ -90,41 +7,36 @@ import { useAuthStore } from '@/stores/auth'
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const logoUrl = `${import.meta.env.BASE_URL}logos/logo-platform.png`
 const collapsed = ref(false)
+const mobile = ref(false)
+const drawerOpen = ref(false)
+let mobileQuery: MediaQueryList | undefined
 
 const menuGroups = [
   {
-    title: '寺院管理',
+    title: '机构与人员',
     icon: 'OfficeBuilding',
     children: [
       { path: '/temple/list', title: '寺院列表' },
-      { path: '/temple/review', title: '寺院审核' }
-    ]
-  },
-  {
-    title: '法师管理',
-    icon: 'Avatar',
-    children: [
       { path: '/master/list', title: '法师列表' },
-      { path: '/master/review', title: '法师审核' }
+      { path: '/user/list', title: '用户列表' },
+      { path: '/settings/account', title: '管理账号' }
     ]
   },
   {
-    title: '用户管理',
-    icon: 'User',
-    children: [{ path: '/user/list', title: '用户列表' }]
-  },
-  {
-    title: '内容审核',
+    title: '审核中心',
     icon: 'Checked',
     children: [
+      { path: '/temple/review', title: '寺院审核' },
+      { path: '/master/review', title: '法师审核' },
       { path: '/audit/comment', title: '评价审核' },
       { path: '/audit/design', title: '社区/短视频审核' },
       { path: '/audit/report', title: '举报处理' }
     ]
   },
   {
-    title: '财务管理',
+    title: '财务中心',
     icon: 'Money',
     children: [
       { path: '/finance/overview', title: '财务概览' },
@@ -134,20 +46,19 @@ const menuGroups = [
     ]
   },
   {
-    title: '营销管理',
+    title: '增长运营',
     icon: 'Promotion',
     children: [
       { path: '/marketing/banner', title: 'Banner 管理' },
       { path: '/marketing/activity', title: '活动管理' },
-      { path: '/marketing/coupon', title: '优惠券管理' }
+      { path: '/marketing/coupon', title: '优惠券管理' },
+      { path: '/settings/taxonomy', title: '首页分类' }
     ]
   },
   {
-    title: '系统设置',
+    title: '系统治理',
     icon: 'Setting',
     children: [
-      { path: '/settings/taxonomy', title: '首页分类' },
-      { path: '/settings/account', title: '账号管理' },
       { path: '/settings/role', title: '角色权限' },
       { path: '/settings/dict', title: '数据字典' },
       { path: '/settings/log', title: '操作日志' },
@@ -156,137 +67,171 @@ const menuGroups = [
   }
 ]
 
-const activeMenu = computed(() => route.path)
+const activeMenu = computed(() => {
+  const path = route.path
+  if (path.startsWith('/temple/detail/')) return '/temple/list'
+  if (path.startsWith('/master/detail/') || path === '/master/create') return '/master/list'
+  if (path.startsWith('/user/detail/')) return '/user/list'
+  return path
+})
 const avatarText = computed(() => (auth.userInfo?.nickname || '管').slice(0, 1))
+const pageTitle = computed(() => (route.meta.title as string) || '平台管理台')
+const pageParent = computed(() => (route.meta.parent as string) || '平台管理台')
+
+function syncViewport(event?: MediaQueryListEvent) {
+  mobile.value = event ? event.matches : Boolean(mobileQuery?.matches)
+  if (!mobile.value) drawerOpen.value = false
+}
+
+function toggleNavigation() {
+  if (mobile.value) drawerOpen.value = !drawerOpen.value
+  else collapsed.value = !collapsed.value
+}
 
 async function onCommand(cmd: string) {
   if (cmd === 'logout') {
-    await ElMessageBox.confirm('确定要退出登录吗？', '提示', { type: 'warning' })
-    auth.logout()
-    router.push('/login')
+    try {
+      await ElMessageBox.confirm('确定要退出登录吗？', '退出登录', {
+        confirmButtonText: '退出',
+        cancelButtonText: '取消',
+        type: 'warning'
+      })
+      auth.logout()
+      await router.push('/login')
+    } catch {
+      // 用户取消。
+    }
   } else if (cmd === 'dashboard') {
-    router.push('/dashboard')
+    await router.push('/dashboard')
   }
 }
+
+watch(() => route.fullPath, () => { drawerOpen.value = false })
+
+onMounted(() => {
+  mobileQuery = window.matchMedia('(max-width: 991px)')
+  syncViewport()
+  mobileQuery.addEventListener('change', syncViewport)
+})
+
+onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
 </script>
 
+<template>
+  <div
+    class="ax-admin-shell"
+    :class="{ 'is-collapsed': collapsed && !mobile, 'is-drawer-open': drawerOpen }"
+  >
+    <button class="ax-admin-overlay" type="button" aria-label="关闭导航" @click="drawerOpen = false"></button>
+
+    <aside class="ax-admin-sidebar" aria-label="平台管理台主导航">
+      <div class="ax-admin-logo">
+        <img class="ax-admin-logo__image" :src="logoUrl" alt="" />
+        <div class="ax-admin-logo__copy">
+          <div class="ax-admin-logo__title">问玄东方</div>
+          <div class="ax-admin-logo__subtitle">平台管理台</div>
+        </div>
+      </div>
+
+      <el-menu
+        :default-active="activeMenu"
+        :collapse="collapsed && !mobile"
+        :collapse-transition="false"
+        background-color="transparent"
+        text-color="#C5B097"
+        active-text-color="#F5E0D6"
+        router
+        unique-opened
+        class="ax-admin-menu"
+      >
+        <el-menu-item index="/dashboard">
+          <el-icon><Odometer /></el-icon>
+          <template #title>平台总览</template>
+        </el-menu-item>
+
+        <el-sub-menu v-for="group in menuGroups" :key="group.title" :index="group.title">
+          <template #title>
+            <el-icon><component :is="group.icon" /></el-icon>
+            <span>{{ group.title }}</span>
+          </template>
+          <el-menu-item v-for="item in group.children" :key="item.path" :index="item.path">
+            {{ item.title }}
+          </el-menu-item>
+        </el-sub-menu>
+      </el-menu>
+
+      <div class="ax-admin-version">平台管理台 · UI Blueprint v1</div>
+    </aside>
+
+    <section class="ax-admin-content">
+      <header class="ax-admin-header">
+        <div class="ax-admin-header__left">
+          <button
+            class="ax-admin-nav-toggle"
+            type="button"
+            aria-label="切换主导航"
+            :aria-expanded="mobile ? drawerOpen : !collapsed"
+            @click="toggleNavigation"
+          >
+            <el-icon :size="20">
+              <Menu v-if="mobile" />
+              <Expand v-else-if="collapsed" />
+              <Fold v-else />
+            </el-icon>
+          </button>
+          <div>
+            <div class="ax-admin-header__eyebrow">{{ pageParent }}</div>
+            <div class="ax-admin-header__title">{{ pageTitle }}</div>
+          </div>
+        </div>
+
+        <div class="ax-admin-header__right">
+          <el-dropdown @command="onCommand">
+            <button class="ax-admin-user" type="button">
+              <el-avatar :size="32" :src="auth.userInfo?.avatar">{{ avatarText }}</el-avatar>
+              <span class="layout__user-name">{{ auth.userInfo?.nickname || '管理员' }}</span>
+              <el-icon><ArrowDown /></el-icon>
+            </button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="dashboard">返回总览</el-dropdown-item>
+                <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+      </header>
+
+      <main class="ax-admin-main">
+        <router-view v-slot="{ Component }">
+          <transition name="page" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </main>
+    </section>
+  </div>
+</template>
+
 <style scoped>
-.layout {
-  height: 100vh;
-}
-.layout__aside {
-  background: var(--color-bg-secondary);
-  border-right: 1px solid var(--color-border);
-  transition: width 0.25s;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-.layout__logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 60px;
-  padding: 0 18px;
-  border-bottom: 1px solid var(--color-border-divider);
-  flex-shrink: 0;
-}
-.layout__logo-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  object-fit: cover;
-  border: 1px solid var(--color-border-strong);
-  flex-shrink: 0;
-}
-.layout__logo-text {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  white-space: nowrap;
-}
-.layout__menu-scroll {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-.layout__version {
-  padding: 12px 18px;
-  font-size: 11px;
-  color: var(--color-text-tertiary);
-  border-top: 1px solid var(--color-border-divider);
-  white-space: nowrap;
-}
-.layout__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 56px;
-  background: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--color-border);
-  padding: 0 20px;
-}
-.layout__header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.layout__collapse {
-  cursor: pointer;
-  color: var(--color-text-secondary);
-}
-.layout__collapse:hover {
-  color: var(--color-accent);
-}
-.layout__header-right {
-  display: flex;
-  align-items: center;
-}
-.layout__user {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-}
-.layout__user-name {
-  font-size: 14px;
-}
-.layout__main {
-  background: var(--color-bg-primary);
-  padding: 0;
-  overflow-y: auto;
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 180ms ease;
 }
 
-/* 菜单样式 */
-:deep(.el-menu) {
-  border-right: none;
-}
-:deep(.el-menu-item:hover),
-:deep(.el-sub-menu__title:hover) {
-  background-color: var(--color-bg-tertiary) !important;
-}
-:deep(.el-menu-item.is-active) {
-  background-color: var(--color-bg-tertiary) !important;
-  border-right: 2px solid var(--color-accent);
-}
-:deep(.el-sub-menu .el-menu-item) {
-  padding-left: 52px !important;
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
 }
 
-/* 过渡 */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s;
+.ax-admin-user {
+  padding: 4px 6px;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
 }
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-.page-enter-active {
-  transition: opacity 0.2s;
-}
-.page-enter-from {
-  opacity: 0;
+
+.ax-admin-user:hover {
+  background: var(--admin-surface-hover);
 }
 </style>

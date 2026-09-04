@@ -16,8 +16,16 @@
       </el-select>
     </div>
 
+    <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+      <div class="ax-page-feedback__copy">
+        <div class="ax-page-feedback__title">寺院入驻申请加载失败</div>
+        <div class="ax-page-feedback__description">两阶段审核队列状态未知，请重试后再处理。</div>
+      </div>
+      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+    </div>
+
     <div class="dfx-card table-wrap">
-      <DataTable :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
+      <DataTable class="desktop-table" :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
         <el-table-column label="申请编号" prop="id" width="90" />
         <el-table-column label="寺院编码" prop="templeCode" width="120" />
         <el-table-column label="申请人" prop="applicantName" width="120" />
@@ -59,6 +67,27 @@
           </template>
         </el-table-column>
       </DataTable>
+      <MobileTaskList v-model:page="query.page" :items="list" :loading="loading" :total="total" :size="query.size" @change="loadData">
+        <template #item="{ item: row }">
+          <article class="mobile-task-card">
+            <div class="mobile-task-card__head"><strong>{{ row.applicantName || row.templeCode }}</strong><StatusTag :status="row.status" /></div>
+            <div class="mobile-task-card__meta">寺院 {{ row.templeCode }} · 申请 #{{ row.id }}</div>
+            <div class="mobile-task-card__meta">联系电话 {{ row.contactPhone || '未填写' }} · 材料 {{ row.certUrls?.length || 0 }} 项</div>
+            <div class="mobile-task-card__foot">
+              <span>{{ formatDate(row.createTime) }}</span>
+              <span class="mobile-actions" v-if="row.status === 'pending'">
+                <el-button type="success" @click="open(row, 'first-pass')">初审通过</el-button>
+                <el-button type="danger" plain @click="open(row, 'reject')">驳回</el-button>
+              </span>
+              <span class="mobile-actions" v-else-if="row.status === 'first_pass'">
+                <el-button type="success" @click="open(row, 'final-pass')">终审通过</el-button>
+                <el-button type="danger" plain @click="open(row, 'reject')">驳回</el-button>
+              </span>
+              <b v-else>已处理</b>
+            </div>
+          </article>
+        </template>
+      </MobileTaskList>
     </div>
 
     <!-- 审核弹窗 -->
@@ -67,6 +96,7 @@
         <p><span>寺院编码：</span>{{ dialog.row?.templeCode }}</p>
         <p><span>申请人：</span>{{ dialog.row?.applicantName }}</p>
       </div>
+      <el-alert :title="dialogImpact" type="warning" :closable="false" show-icon />
       <el-form label-position="top">
         <el-form-item :label="dialog.action === 'reject' ? '驳回原因（必填）' : '审核备注（选填）'">
           <el-input v-model="dialog.remark" type="textarea" :rows="4" placeholder="请输入" />
@@ -87,12 +117,14 @@ import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
+import MobileTaskList from '@/components/MobileTaskList.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import { getTempleAudits, templeAuditFirstPass, templeAuditFinalPass, templeAuditReject } from '@/api/temple'
 import { formatDate } from '@/utils/format'
 import type { TempleAudit } from '@/types'
 
 const loading = ref(false)
+const loadError = ref(false)
 const route = useRoute()
 const list = ref<TempleAudit[]>([])
 const total = ref(0)
@@ -110,12 +142,23 @@ const dialogTitle = computed(() => {
   return { 'first-pass': '初审通过', 'final-pass': '终审通过', reject: '审核驳回' }[dialog.action]
 })
 
+const dialogImpact = computed(() => {
+  return {
+    'first-pass': '初审通过后申请将进入终审队列，暂不会正式入驻。',
+    'final-pass': '终审通过后寺院将完成入驻并进入平台业务管理范围。',
+    reject: '驳回后本次入驻申请停止流转，驳回原因将作为审核记录保留。'
+  }[dialog.action]
+})
+
 async function loadData() {
   loading.value = true
+  loadError.value = false
   try {
     const res = await getTempleAudits(query)
     list.value = res.list || []
     total.value = res.total || 0
+  } catch {
+    loadError.value = true
   } finally {
     loading.value = false
   }
@@ -191,5 +234,14 @@ onMounted(loadData)
 }
 .dialog-info span {
   color: var(--color-text-tertiary);
+}
+.mobile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.mobile-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
 }
 </style>

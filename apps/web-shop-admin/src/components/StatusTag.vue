@@ -1,57 +1,54 @@
 <script setup lang="ts">
-// 通用状态标签：将 snake_case 状态码映射为中文 + Element Plus Tag 类型
-import { computed } from 'vue'
-import {
-  productStatusLabel,
-  productStatusType,
-  orderStatusLabel,
-  orderStatusType,
-  returnStatusLabel,
-  returnStatusType,
-  enabledLabel
-} from '@/utils/format'
+import { getStatusMeta, type StatusDomain, type StatusTone } from '@askxuan/domain-status'
 
-type Domain = 'product' | 'order' | 'return' | 'enabled'
+type LegacyKind = 'booking' | 'service' | 'review' | 'master' | 'temple' | 'blessing'
+type AdminStatusDomain = StatusDomain | 'enabled'
 
 const props = withDefaults(
   defineProps<{
-    status: string
-    domain?: Domain
+    status?: string
+    domain?: AdminStatusDomain
+    kind?: LegacyKind
+    label?: string
+    effect?: 'light' | 'dark' | 'plain'
   }>(),
-  { domain: 'order' }
+  { status: '', domain: 'generic', effect: 'light' }
 )
 
-const label = computed(() => {
-  switch (props.domain) {
-    case 'product':
-      return productStatusLabel(props.status)
-    case 'order':
-      return orderStatusLabel(props.status)
-    case 'return':
-      return returnStatusLabel(props.status)
-    case 'enabled':
-      return enabledLabel(props.status)
-    default:
-      return props.status
-  }
-})
+const legacyDomains: Record<LegacyKind, StatusDomain> = {
+  booking: 'booking',
+  service: 'service',
+  review: 'review',
+  master: 'masterAuth',
+  temple: 'temple',
+  blessing: 'blessing'
+}
 
-const type = computed(() => {
-  switch (props.domain) {
-    case 'product':
-      return productStatusType(props.status)
-    case 'order':
-      return orderStatusType(props.status)
-    case 'return':
-      return returnStatusType(props.status)
-    default:
-      return props.status === 'enabled' || props.status === 'on_shelf'
-        ? 'success'
-        : 'info'
-  }
-})
+function resolvedDomain(): StatusDomain {
+  if (props.kind) return legacyDomains[props.kind]
+  return props.domain === 'enabled' ? 'generic' : props.domain
+}
+
+function resolvedLabel(): string {
+  return props.label || getStatusMeta(resolvedDomain(), props.status).label
+}
+
+function resolvedTone(): StatusTone {
+  return props.label ? 'primary' : getStatusMeta(resolvedDomain(), props.status).tone
+}
 </script>
 
 <template>
-  <el-tag :type="type" effect="light" round size="small">{{ label }}</el-tag>
+  <el-tag :type="resolvedTone()" :effect="effect" size="small" class="aui-status-tag" round>
+    {{ resolvedLabel() }}
+  </el-tag>
 </template>
+
+<style scoped>
+.aui-status-tag {
+  max-width: 100%;
+  border-width: 1px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+</style>

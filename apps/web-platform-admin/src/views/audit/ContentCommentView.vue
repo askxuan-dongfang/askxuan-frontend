@@ -14,8 +14,16 @@
       </el-select>
     </div>
 
+    <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+      <div class="ax-page-feedback__copy">
+        <div class="ax-page-feedback__title">评论审核任务加载失败</div>
+        <div class="ax-page-feedback__description">当前结果不是“暂无评论”，请重试后再处理。</div>
+      </div>
+      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+    </div>
+
     <div class="dfx-card table-wrap">
-      <DataTable :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
+      <DataTable class="desktop-table" :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
         <el-table-column label="评论ID" prop="id" width="190" show-overflow-tooltip />
         <el-table-column label="帖子ID" prop="postId" width="190" show-overflow-tooltip />
         <el-table-column label="用户" prop="userId" width="130" />
@@ -34,6 +42,20 @@
           </template>
         </el-table-column>
       </DataTable>
+      <MobileTaskList v-model:page="query.page" :items="list" :loading="loading" :total="total" :size="query.size" @change="loadData">
+        <template #item="{ item: row }">
+          <article class="mobile-task-card">
+            <div class="mobile-task-card__head"><strong>{{ row.content || '无评论正文' }}</strong><StatusTag :status="row.status" /></div>
+            <div class="mobile-task-card__meta">用户 {{ row.userId }} · 帖子 {{ row.postId }}</div>
+            <div class="mobile-task-card__meta">提交于 {{ formatDate(row.createTime) }}</div>
+            <div class="mobile-task-card__foot">
+              <span>{{ row.auditRemark || (row.status === 'pending' ? '等待人工审核' : '未填写审核备注') }}</span>
+              <AuditAction v-if="row.status === 'pending'" :on-confirm="(a, r) => doAudit(row, a, r)" @success="loadData" />
+              <b v-else>已处理</b>
+            </div>
+          </article>
+        </template>
+      </MobileTaskList>
     </div>
   </div>
 </template>
@@ -43,6 +65,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
+import MobileTaskList from '@/components/MobileTaskList.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import AuditAction from '@/components/AuditAction.vue'
 import { getCommunityComments, reviewCommunityComment } from '@/api/community'
@@ -52,16 +75,20 @@ import type { CommunityComment } from '@/api/community'
 
 const auth = useAuthStore()
 const loading = ref(false)
+const loadError = ref(false)
 const list = ref<CommunityComment[]>([])
 const total = ref(0)
 const query = reactive({ status: '', page: 1, size: 20 })
 
 async function loadData() {
   loading.value = true
+  loadError.value = false
   try {
     const res = await getCommunityComments(query)
     list.value = res.list || []
     total.value = res.total || 0
+  } catch {
+    loadError.value = true
   } finally {
     loading.value = false
   }
