@@ -9,6 +9,7 @@ import Foundation
 
 @MainActor
 final class ProfileViewModel: ObservableObject {
+    @Published var pointsBalance: Int64?
     @Published var profile: UserProfile?
     @Published var recentBookings: [Booking] = []
     @Published var addresses: [UserAddress] = []
@@ -83,12 +84,13 @@ final class ProfileViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
+        async let pointsResult: PointsAccount? = try? apiClient.request(.pointsAccount)
         async let profileResult = fetchProfile()
         async let bookingsResult = fetchRecentBookings()
         async let addressesResult = fetchAddresses()
         async let couponsResult = fetchCoupons()
 
-        let (p, b, a, c) = await (profileResult, bookingsResult, addressesResult, couponsResult)
+        let (p, b, a, c, pts) = await (profileResult, bookingsResult, addressesResult, couponsResult, pointsResult)
 
         // 请求期间发生退出或切换账号时，丢弃旧账号结果。
         guard authStore.isLoggedIn, authStore.userId == requestedUserId else {
@@ -98,6 +100,8 @@ final class ProfileViewModel: ObservableObject {
 
         // API 失败时不再回退 Mock 数据：置空并记录错误，由 View 展示空状态/错误提示
         var failedParts: [String] = []
+        pointsBalance = pts?.balance
+        if pts == nil { failedParts.append("积分") }
 
         switch p {
         case .success(let prof):
@@ -145,6 +149,7 @@ final class ProfileViewModel: ObservableObject {
 
     func reset() {
         self.profile = nil
+        self.pointsBalance = nil
         self.recentBookings = []
         self.addresses = []
         self.coupons = []

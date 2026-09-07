@@ -1114,12 +1114,137 @@ struct CouponView: View {
 }
 
 // MARK: - 7. 积分明细
+struct PointsAccount: Decodable { let balance: Int64 }
+struct PointsEntry: Decodable, Identifiable {
+    let id: Int64; let kind: String; let delta: Int64; let balanceAfter: Int64; let referenceNo: String; let createdAt: String
+    var title: String { ["earn":"消费获得", "refund":"退款扣回", "redeem":"兑换商品", "return":"取消兑换退回"][kind] ?? kind }
+}
+struct PointsProduct: Decodable, Identifiable {
+    let id: Int64; let name: String; let category: String; let description: String; let image: String; let pointsPrice: Int64; let stock: Int64
+}
+struct PointsOrder: Decodable, Identifiable {
+    let id: Int64; let orderNo: String; let productName: String; let quantity: Int64; let pointsTotal: Int64; let status: String; let carrier: String; let trackingNo: String; let address: String; let createdAt: String
+    var statusText: String { ["pending":"待发货", "shipped":"已发货", "completed":"已完成", "cancelled":"已取消"][status] ?? status }
+}
+struct PointsRedeemRequest: Encodable {
+    let productId: Int64; let quantity: Int; let expectedPrice: Int64; let requestKey: String; let receiver: String; let mobile: String; let address: String
+}
+struct PointsActionResult: Decodable { let success: Bool }
 struct PointsView: View {
+    @State private var balance: Int64?
+    @State private var tab = 0
+    @State private var page = 1
+    @State private var entries: [PointsEntry] = []
+    @State private var products: [PointsProduct] = []
+    @State private var orders: [PointsOrder] = []
+    @State private var busy = false
+    @State private var error: String?
+    @State private var selected: PointsProduct?
+    @State private var pendingAction: PointsOrder?
+    private var count: Int { tab == 0 ? entries.count : tab == 1 ? products.count : orders.count }
     var body: some View {
-        DFEmptyState(icon: "chart.line.uptrend.xyaxis", title: "暂无积分记录", subtitle: "积分变动会显示在这里")
-        .background(Color.bgPrimary)
-        .navigationTitle("积分明细")
-        .navigationBarTitleDisplayMode(.inline)
+        List {
+            Section {
+                Text(balance.map(String.init) ?? "—").font(.system(size: 38, weight: .semibold)).foregroundStyle(Color.accentDefault)
+                Text("每笔实付满 100 元得 1 积分，不足部分舍去。退款后按净实付重算。").font(.footnote).foregroundStyle(.secondary)
+                if (balance ?? 0) < 0 { Text("退款扣回后余额不足，后续消费将先补足积分。").font(.footnote) }
+            } header: { Text("可用积分") }
+            Picker("积分", selection: $tab) { Text("明细").tag(0); Text("积分商城").tag(1); Text("兑换记录").tag(2) }.pickerStyle(.segmented).disabled(busy)
+            if let error { Text(error).foregroundStyle(.red); Button("重试") { Task { await load() } } }
+            if busy { ProgressView() }
+            if tab == 0 {
+                ForEach(entries) { e in
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack { Text(e.title); Spacer(); Text("\(e.delta > 0 ? "+" : "")\(e.delta) 积分") }
+                        Text("\(e.createdAt) · 余额 \(e.balanceAfter)").font(.caption).foregroundStyle(.secondary)
+                        Text(e.referenceNo).font(.caption2).foregroundStyle(.secondary)
+                    }
+                }
+            } else if tab == 1 {
+                ForEach(products) { p in
+                    Button { selected = p } label: {
+                        HStack {
+                            if let url = URL(string: p.image), !p.image.isEmpty { AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { Color.gray.opacity(0.15) }.frame(width: 64, height: 64).clipped().cornerRadius(8) }
+                            VStack(alignment: .leading, spacing: 6) { Text(p.name).foregroundStyle(Color.textPrimary); Text("\(p.pointsPrice) 积分 · 库存 \(p.stock)").foregroundStyle(Color.accentDefault); Text(p.category).font(.caption).foregroundStyle(.secondary) }
+                        }
+                    }
+                }
+            } else {
+                ForEach(orders) { o in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("\(o.productName) × \(o.quantity)").font(.headline)
+                        Text("\(o.pointsTotal) 积分 · \(o.statusText)")
+                        Text(o.orderNo).font(.caption2); Text(o.address).font(.caption)
+                        if !o.trackingNo.isEmpty { Text("\(o.carrier)：\(o.trackingNo)").font(.caption) }
+                        if o.status == "pending" || o.status == "shipped" { Button(o.status == "pending" ? "取消兑换" : "确认收货") { pendingAction = o }.disabled(busy) }
+                    }
+                }
+            }
+            if !busy && error == nil && count == 0 { Text(tab == 1 ? "暂无上架的积分商品" : "暂无记录").foregroundStyle(.secondary) }
+            HStack { Button("上一页") { page -= 1 }.disabled(page == 1 || busy); Spacer(); Text("第 \(page) 页"); Spacer(); Button("下一页") { page += 1 }.disabled(count < 20 || busy) }
+        }
+        .navigationTitle("我的积分").navigationBarTitleDisplayMode(.inline)
+        .task { await load() }.refreshable { await load() }
+        .onChange(of: tab) { _, _ in page = 1; Task { await load() } }
+        .onChange(of: page) { _, _ in Task { await load() } }
+        .sheet(item: $selected, onDismiss: { Task { await load() } }) { product in PointsRedeemSheet(product: product, balance: balance ?? 0) }
+        .alert("确认操作", isPresented: Binding(get: { pendingAction != nil }, set: { if !$0 { pendingAction = nil } })) {
+            Button("返回", role: .cancel) { pendingAction = nil }
+            Button("确认") { if let order = pendingAction { Task { await transition(order) } }; pendingAction = nil }
+        } message: { Text(pendingAction?.status == "pending" ? "取消兑换后将退回积分。" : "请确认已收到商品。") }
+    }
+    @MainActor private func load() async {
+        busy = true; error = nil
+        defer { busy = false }
+        do {
+            let a: PointsAccount = try await APIClient.shared.request(.pointsAccount); balance = a.balance
+            if tab == 0 { entries = try await APIClient.shared.request(.pointsLedger(page)) }
+            if tab == 1 { products = try await APIClient.shared.request(.pointsProducts(page)) }
+            if tab == 2 { orders = try await APIClient.shared.request(.pointsOrders(page)) }
+        } catch { self.error = error.localizedDescription }
+    }
+    @MainActor private func transition(_ order: PointsOrder) async {
+        busy = true
+        do { let _: PointsActionResult = try await APIClient.shared.request(.pointsOrderAction(order.id, order.status == "pending" ? "cancel" : "complete")); await load() }
+        catch { self.error = error.localizedDescription }
+        busy = false
+    }
+}
+struct PointsRedeemSheet: View {
+    let product: PointsProduct
+    let balance: Int64
+    @Environment(\.dismiss) private var dismiss
+    @State private var addresses: [UserAddress] = []
+    @State private var addressID: Int64 = 0
+    @State private var quantity = 1
+    @State private var busy = false
+    @State private var error: String?
+    @State private var request: PointsRedeemRequest?
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(product.name) { Text(product.description); Text("每件 \(product.pointsPrice) 积分 · 库存 \(product.stock)") }
+                if product.stock > 0 { Stepper("数量：\(quantity)", value: $quantity, in: 1...Int(min(99, product.stock))).disabled(busy || request != nil) }
+                Section("收货地址") {
+                    if addresses.isEmpty { Text("请先在“我的”添加收货地址") }
+                    Picker("地址", selection: $addressID) { ForEach(addresses) { a in Text("\(a.name) \(a.phone) \(a.fullAddress)").tag(a.id) } }.disabled(busy || request != nil)
+                }
+                Text("合计 \(Int64(quantity) * product.pointsPrice) 积分 · 可用 \(balance)")
+                if let error { Text(error).foregroundStyle(.red) }
+                Button(busy ? "兑换中…" : request == nil ? "确认兑换" : "重试本次兑换") { Task { await redeem() } }.disabled(busy || addressID == 0 || product.stock < quantity || balance < Int64(quantity) * product.pointsPrice)
+            }
+            .navigationTitle("兑换商品")
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() }.disabled(busy) } }
+            .interactiveDismissDisabled(busy)
+            .task { do { addresses = try await APIClient.shared.request(.addressList); addressID = (addresses.first(where: { $0.isDefault }) ?? addresses.first)?.id ?? 0 } catch { self.error = error.localizedDescription } }
+        }
+    }
+    @MainActor private func redeem() async {
+        guard !busy, let a = addresses.first(where: { $0.id == addressID }) else { return }
+        busy = true; error = nil; defer { busy = false }
+        let payload = request ?? PointsRedeemRequest(productId: product.id, quantity: quantity, expectedPrice: product.pointsPrice, requestKey: UUID().uuidString, receiver: a.name, mobile: a.phone, address: a.fullAddress)
+        request = payload
+        do { let _: PointsOrder = try await APIClient.shared.request(.pointsRedeem(payload)); dismiss() } catch { self.error = error.localizedDescription }
     }
 }
 

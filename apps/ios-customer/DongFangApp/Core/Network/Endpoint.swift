@@ -295,9 +295,21 @@ enum Endpoint {
     case reviews(userId: String, page: Int, size: Int)
     case myCoupons(status: String?, page: Int, size: Int)
 
+    case pointsAccount
+    case pointsLedger(Int)
+    case pointsProducts(Int)
+    case pointsOrders(Int)
+    case pointsRedeem(PointsRedeemRequest)
+    case pointsOrderAction(Int64, String)
+
     /// 相对路径（不含 BaseURL 前缀）
     var path: String {
         switch self {
+        case .pointsAccount: return "points"
+        case .pointsLedger: return "points/ledger"
+        case .pointsProducts: return "points/products"
+        case .pointsOrders, .pointsRedeem: return "points/orders"
+        case .pointsOrderAction(let id, let action): return "points/orders/\(id)/\(action)"
         // 寺院
         case .temples:                  return "temples"
         case .templesByBelief:          return "temples"
@@ -405,7 +417,7 @@ enum Endpoint {
     /// HTTP 方法
     var httpMethod: HTTPMethod {
         switch self {
-        case .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief, .serviceTypes,
+        case .pointsAccount, .pointsLedger, .pointsProducts, .pointsOrders, .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief, .serviceTypes,
              .masters, .mastersByBelief, .masterById,
 			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById, .bookingChats, .bookingChatMessages,
              .chats, .chatMessages, .consultationQuote,
@@ -420,7 +432,7 @@ enum Endpoint {
              .messages, .unreadCount, .announcements,
              .userProfile, .addressList, .reviews, .myCoupons:
             return .GET
-        case .createBooking, .bookingReviewCreate, .bookingChatSend, .chatSend, .consultationCreate, .consultationPay,
+        case .pointsRedeem, .pointsOrderAction, .createBooking, .bookingReviewCreate, .bookingChatSend, .chatSend, .consultationCreate, .consultationPay,
              .diyDesignSave, .diyOrderCreate, .diyOrderAvailability, .diyOrderCreateFromDesign, .paymentCreate,
              .shopOrderCreate,
 			 .aiSessionCreate, .aiSendMessage, .aiRetryMessage, .mediaUploadCredential, .mediaComplete, .communityPostLike,
@@ -441,6 +453,7 @@ enum Endpoint {
     /// 查询参数
     var queryItems: [URLQueryItem]? {
         switch self {
+        case .pointsLedger(let page), .pointsProducts(let page), .pointsOrders(let page): return [URLQueryItem(name: "page", value: String(page))]
         case .temples(let sect, let type, let serviceCode, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
                          URLQueryItem(name: "size", value: "\(size)")]
@@ -565,6 +578,7 @@ enum Endpoint {
     /// 请求体（Encodable）
     var body: (any Encodable)? {
         switch self {
+        case .pointsRedeem(let req): return req
         case .createBooking(let req):          return AnyEncodable(req)
         case .updateBookingStatus(_, let status): return AnyEncodable(["status": status])
         case .bookingReviewCreate(_, let request): return AnyEncodable(request)

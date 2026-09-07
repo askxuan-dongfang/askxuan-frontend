@@ -17,6 +17,7 @@ const routes: RouteRecordRaw[] = [
     // RBAC：仅商城运营（及平台超管）可进入本管理台
     meta: { roles: ['shop_admin', 'platform_super'] },
     children: [
+      { path: 'points-mall', name: 'PointsMall', component: () => import('@/views/PointsMallView.vue'), meta: { title: '积分商城' } },
       // 1. 工作台
       {
         path: 'dashboard',

@@ -116,6 +116,8 @@ onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
           <template #title>分类管理</template>
         </el-menu-item>
 
+        <div class="ax-admin-menu__section">积分运营</div>
+        <el-menu-item index="/points-mall"><el-icon><Goods /></el-icon><template #title>积分商城</template></el-menu-item>
         <div class="ax-admin-menu__section">DIY 中心</div>
         <el-menu-item index="/diy-orders">
           <el-icon><MagicStick /></el-icon>

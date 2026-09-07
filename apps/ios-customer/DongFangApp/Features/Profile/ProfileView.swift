@@ -20,7 +20,7 @@ struct ProfileView: View {
     /// 注：当前 UserProfile 模型未提供这些字段，故展示 "—" 占位，待后端补齐后接入
     private var stats: [(label: String, value: String)] {
         let merit = viewModel.profile?.meritValueText ?? "—"
-        let points = viewModel.profile?.pointsText ?? "—"
+        let points = viewModel.pointsBalance.map { String($0) } ?? "—"
         let coupons = "\(viewModel.availableCouponCount)"
         return [("功德值", merit), ("积分", points), ("优惠券", coupons)]
     }
@@ -215,6 +215,9 @@ struct ProfileView: View {
             // 统计行
             HStack(spacing: 0) {
                 ForEach(Array(stats.enumerated()), id: \.offset) { index, item in
+                    NavigationLink {
+                        PointsView()
+                    } label: {
                     VStack(spacing: 2) {
                         Text(item.value)
                             .font(.system(size: 20, weight: .semibold))
@@ -225,6 +228,8 @@ struct ProfileView: View {
                             .foregroundStyle(Color.textTertiary)
                     }
                     .frame(maxWidth: .infinity)
+                    }
+                    .disabled(item.label != "积分")
 
                     if index < stats.count - 1 {
                         Rectangle()
