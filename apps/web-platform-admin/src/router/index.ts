@@ -26,6 +26,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/DashboardView.vue'),
         meta: { title: '平台总览', icon: 'Odometer' }
       },
+      {path:'commerce',name:'Commerce',component:()=>import('@/views/CommerceView.vue'),meta:{title:'商城运营中心',parent:'商城管理'}},
       // 寺院管理
       {
         path: 'temple/list',

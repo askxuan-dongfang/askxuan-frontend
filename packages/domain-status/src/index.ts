@@ -180,6 +180,8 @@ const STATUS_DICTIONARY: Record<StatusDomain, Record<string, StatusMeta>> = {
     rejected: meta('已拒绝', 'danger')
   },
   payment: {
+    refunding: meta('退款中', 'warning'),
+    refunded: meta('已退款', 'info'),
     pending: meta('待支付', 'warning'),
     pending_payment: meta('待支付', 'warning'),
     paid: meta('已支付', 'success'),

@@ -141,6 +141,7 @@ final class AuthStore: ObservableObject {
         self.accessToken = accessToken
         self.isLoggedIn = true
         self.userId = userId
+        ShopCartStore.shared.reloadForAccount()
         self.nickname = nickname ?? ""
         self.avatar = avatar ?? ""
         self.mobile = mobile ?? ""
@@ -181,6 +182,7 @@ final class AuthStore: ObservableObject {
         self.refreshToken = nil
         self.isLoggedIn = false
         self.userId = AppConfig.defaultUserId
+        ShopCartStore.shared.reloadForAccount()
         self.nickname = ""
         self.avatar = ""
         self.mobile = ""

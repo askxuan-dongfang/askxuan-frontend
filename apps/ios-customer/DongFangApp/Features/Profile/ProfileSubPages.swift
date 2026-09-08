@@ -328,15 +328,26 @@ private struct CustomerBookingDetailView: View {
 private struct CustomerDiyOrderDetailView: View {
     let orderId: Int64
     @State private var order: DiyOrder?
+    @State private var busy=false
+    @State private var confirmReceipt=false
     @State private var errorMessage: String?
 
     var body: some View {
         Group {
             if let order {
                 List {
+                    Section("制作与交付") {
+                        if let logistics=order.logistics {Text("\(logistics.expressCompany) · \(logistics.trackingNo)").textSelection(.enabled)}
+                        Text("选材 → 审核 → 制作 → 加持（选购）→ 发货 → 收货").font(.caption).foregroundStyle(Color.accentDefault)
+                        if let errorMessage {Text(errorMessage).foregroundStyle(.red)}
+                        if order.status=="shipped" {Button("确认收到作品"){confirmReceipt=true}.disabled(busy)}
+                        if order.status=="pending_review" && order.paymentStatus != "success" {Button("继续模拟支付"){Task{await act(false)}}.disabled(busy)}
+                        Button("刷新制作进度"){Task{await load()}}.disabled(busy)
+                    }
                     Section("订单") {
                         detailRow("订单号", order.orderNo)
                         detailRow("状态", order.statusDisplayText)
+                        detailRow("支付 / 退款", ["success":"已支付","pending":"待支付","refunding":"退款中","refunded":"已退款"][order.paymentStatus ?? "pending"] ?? "待确认")
                         detailRow("材料费", String(format: "¥%.2f", order.materialFee))
                         detailRow("加持费", String(format: "¥%.2f", order.blessFee))
                         detailRow("合计", String(format: "¥%.2f", order.totalFee))
@@ -368,7 +379,8 @@ private struct CustomerDiyOrderDetailView: View {
         .background(Color.bgPrimary)
         .navigationTitle("DIY 订单详情")
         .navigationBarTitleDisplayMode(.inline)
-        .task { await load() }
+        .task { await load() }.refreshable{await load()}
+        .alert("确认已收到定制作品？",isPresented:$confirmReceipt){Button("返回",role:.cancel){};Button("确认收货"){Task{await act(true)}}}
     }
 
     @MainActor
@@ -380,6 +392,10 @@ private struct CustomerDiyOrderDetailView: View {
         }
     }
 
+    @MainActor private func act(_ confirm:Bool) async {
+        guard !busy,let order else{return};busy=true;defer{busy=false}
+        do{if confirm{let _:DiyOrder=try await APIClient.shared.request(.diyOrderConfirm(orderId))}else{let p:PaymentCreateResult=try await APIClient.shared.request(.paymentCreate(PaymentCreateRequest(orderType:"diy_order",orderNo:order.orderNo,amount:order.totalFee,channel:"mock",userId:AuthStore.shared.userId)));let _:PaymentRecord=try await APIClient.shared.request(.paymentById(p.id))};await load()}catch{errorMessage=error.localizedDescription}
+    }
     private func detailRow(_ label: String, _ value: String) -> some View {
         HStack {
             Text(label).foregroundStyle(Color.textSecondary)
@@ -396,6 +412,8 @@ private struct BookingReviewSheet: View {
     @State private var rating = 5
     @State private var content = ""
     @State private var isSubmitting = false
+    @State private var busy=false
+    @State private var confirmReceipt=false
     @State private var errorMessage: String?
     @Environment(\.dismiss) private var dismiss
 
@@ -1131,6 +1149,7 @@ struct PointsRedeemRequest: Encodable {
 }
 struct PointsActionResult: Decodable { let success: Bool }
 struct PointsView: View {
+    @State private var keyword=""
     @State private var balance: Int64?
     @State private var tab = 0
     @State private var page = 1
@@ -1183,6 +1202,8 @@ struct PointsView: View {
             if !busy && error == nil && count == 0 { Text(tab == 1 ? "暂无上架的积分商品" : "暂无记录").foregroundStyle(.secondary) }
             HStack { Button("上一页") { page -= 1 }.disabled(page == 1 || busy); Spacer(); Text("第 \(page) 页"); Spacer(); Button("下一页") { page += 1 }.disabled(count < 20 || busy) }
         }
+        .scrollContentBackground(.hidden).background(Color.bgPrimary)
+        .searchable(text:$keyword,prompt:"搜索积分商品或分类").onSubmit(of:.search){page=1;tab=1;Task{await load()}}
         .navigationTitle("我的积分").navigationBarTitleDisplayMode(.inline)
         .task { await load() }.refreshable { await load() }
         .onChange(of: tab) { _, _ in page = 1; Task { await load() } }
@@ -1199,7 +1220,7 @@ struct PointsView: View {
         do {
             let a: PointsAccount = try await APIClient.shared.request(.pointsAccount); balance = a.balance
             if tab == 0 { entries = try await APIClient.shared.request(.pointsLedger(page)) }
-            if tab == 1 { products = try await APIClient.shared.request(.pointsProducts(page)) }
+            if tab == 1 { products = try await APIClient.shared.request(.pointsSearch(page,keyword)) }
             if tab == 2 { orders = try await APIClient.shared.request(.pointsOrders(page)) }
         } catch { self.error = error.localizedDescription }
     }

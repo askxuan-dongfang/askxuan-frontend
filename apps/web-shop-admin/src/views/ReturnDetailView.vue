@@ -4,6 +4,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
+import client from '@/api/client'
 import { orderApi } from '@/api/order'
 import { formatMoney, formatDateTime, returnStatusLabel, returnStatusType } from '@/utils/format'
 import type { ReturnOrder } from '@/types'
@@ -44,11 +45,8 @@ async function handleReview(action: 'approve' | 'reject') {
       })
       reason = res.value || ''
     } else {
-      await ElMessageBox.confirm('确认通过该退货申请？通过后将进入退货收件与退款流程。', '退货审核确认', {
-        confirmButtonText: '确认通过',
-        cancelButtonText: '返回核对',
-        type: 'warning'
-      })
+      const res = await ElMessageBox.prompt('已发货商品请填写退货收件人、电话和地址；未发货退款请填写无需寄回。用户将在售后详情看到这些说明。', '通过售后审核', {confirmButtonText:'确认通过',cancelButtonText:'返回核对',inputType:'textarea',inputValidator:v=>!!v?.trim()||'请填写处理说明'})
+      reason=res.value
     }
     await orderApi.returnReview(returnId.value, action, reason)
     ElMessage.success(`审核已${tip}`)
@@ -80,7 +78,7 @@ async function handleRefund() {
   refundSaving.value = true
   try {
     await orderApi.returnRefund(returnId.value, refundAmount.value)
-    ElMessage.success('退款成功')
+    ElMessage.success('退款请求已提交，到账结果以最新状态为准')
     refundDialogVisible.value = false
     loadDetail()
   } finally {
@@ -88,6 +86,7 @@ async function handleRefund() {
   }
 }
 
+async function receiveReturn(){try{await ElMessageBox.confirm('确认已收到退回商品并完成核验？','确认收货');await client.put(`/admin/orders/returns/${returnId.value}/receive`);ElMessage.success('已确认收货，可发起退款');await loadDetail()}catch(e){if(e instanceof Error)ElMessage.error(e.message)}}
 onMounted(() => {
   loadDetail()
 })
@@ -98,7 +97,7 @@ onMounted(() => {
     <PageHeader title="退货详情" subtitle="查看退货申请、执行审核与退款">
       <template #extra>
         <el-button @click="router.push('/returns')">返回列表</el-button>
-        <template v-if="detail">
+        <template v-if="detail"><el-button v-if="detail.status==='return_shipping'" type="primary" @click="receiveReturn">确认收到退货</el-button>
           <el-button
             v-if="detail.status === 'pending_review'"
             type="success"
@@ -110,7 +109,7 @@ onMounted(() => {
             @click="handleReview('reject')"
           >拒绝</el-button>
           <el-button
-            v-if="detail.status === 'approved' || detail.status === 'return_received' || detail.status === 'refunding'"
+            v-if="detail.status === 'return_received'"
             type="primary"
             @click="openRefundDialog"
           >退款</el-button>
@@ -143,7 +142,7 @@ onMounted(() => {
       </div>
 
       <div class="df-card section-card">
-        <div class="section-title">退货原因</div>
+        <div class="section-title">退货原因与物流</div><p v-if="detail.carrier">{{detail.carrier}} · {{detail.trackingNo}}</p><p v-if="detail.reviewNote">审核说明：{{detail.reviewNote}}</p>
         <div class="reason-box">{{ detail.reason || '未填写' }}</div>
       </div>
     </template>

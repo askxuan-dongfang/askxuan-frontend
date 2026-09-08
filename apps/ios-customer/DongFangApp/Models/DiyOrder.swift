@@ -142,6 +142,7 @@ struct DiyBeadSlot: Codable, Identifiable, Hashable {
 
 /// DIY 订单
 struct DiyOrder: Codable, Identifiable, Hashable {
+    var logistics:DiyOrderLogistics? = nil
     let id: Int64
     let orderNo: String
     let userId: String?
@@ -167,7 +168,7 @@ struct DiyOrder: Codable, Identifiable, Hashable {
         case id, orderNo, userId, designId, materialFee, blessFee
         case totalFee, status, paymentStatus, addressId, source, creatorId, creatorShareRate
         case originalMaterialFee, priceChanged, designSnapshot, pricingSnapshot
-        case items, blessingTask, createTime
+        case items, blessingTask, createTime, logistics
     }
 
     var totalFeeText: String { "¥\(Int(totalFee))" }
@@ -180,6 +181,8 @@ struct DiyOrder: Codable, Identifiable, Hashable {
         case "paid":           return "已付款"
         case "making", "in_making": return "制作中"
         case "blessing", "awaiting_blessing", "blessing_in_progress": return "加持中"
+        case "awaiting_shipment": return "待发货"
+        case "blessing_completed": return "加持完成"
         case "shipped":        return "已发货"
         case "completed":      return "已完成"
         case "cancelled":      return "已取消"
@@ -393,3 +396,5 @@ extension DiyDesign {
                   status: "public", blessServiceCode: nil, createTime: "2026-07-01")
     ]
 }
+
+struct DiyOrderLogistics:Codable,Hashable {let expressCompany:String;let trackingNo:String;let shipTime:String}

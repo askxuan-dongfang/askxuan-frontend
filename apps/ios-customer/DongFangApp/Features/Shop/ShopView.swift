@@ -19,6 +19,11 @@ struct ShopView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     promoBanner
+                    HStack(spacing:12) {
+                        NavigationLink { ShopOrderListView() } label: { Label("我的订单",systemImage:"shippingbox") }
+                        NavigationLink { PointsView() } label: { Label("积分商城",systemImage:"gift") }
+                    }.font(.system(size:13,weight:.medium)).foregroundStyle(Color.accentDefault)
+                        .padding(18).frame(maxWidth:.infinity).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius:16)).padding(.horizontal,16).padding(.top,12)
                     categoryBar
                     content
                 }
@@ -120,13 +125,13 @@ struct ShopView: View {
                 )
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("新春福运礼盒")
+                    Text("好物有心，日常有礼")
                         .font(.custom(AppFont.serif[0], size: 20).weight(.bold))
                         .foregroundStyle(.white)
-                    Text("精选开光好物 · 福泽满堂")
+                    Text("精选文创礼品 · 发现生活之美")
                         .font(.system(size: 13))
                         .foregroundStyle(.accentDefault)
-                    Text("立即抢购")
+                    Text("挑选礼物")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white)
                         .padding(.horizontal, AppSpacing.lg)
@@ -255,7 +260,7 @@ struct ShopView: View {
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(.brandDefault)
                     Spacer()
-                    Text(salesText(product.stock))
+                    Text("库存 \(product.stock)")
                         .font(.system(size: 11))
                         .foregroundStyle(.textTertiary)
                 }
@@ -783,38 +788,61 @@ struct ShopOrderListView: View {
     }
 }
 
+struct ShopReturnRecord: Decodable,Identifiable {
+    let id:Int64; let returnNo:String; let status:String; let reason:String; let refundAmount:Double
+    let carrier:String; let trackingNo:String; let reviewNote:String
+    var statusText:String { ["pending_review":"等待审核","approved":"审核通过，请寄回商品","return_shipping":"退货运输中","return_received":"已收货，等待退款","refunding":"退款处理中","completed":"退款完成","rejected":"申请已拒绝"][status] ?? status }
+}
+struct ShopReturnCreated:Decodable {let id:Int64;let returnNo:String}
 struct ShopOrderDetailView: View {
-    let orderId: Int64
-    @State private var order: ShopOrder?
-    @State private var errorMessage: String?
-
-    var body: some View {
-        ScrollView(showsIndicators: false) {
+    let orderId:Int64
+    @State private var order:ShopOrder?
+    @State private var returns:[ShopReturnRecord]=[]
+    @State private var errorMessage:String?
+    @State private var busy=false
+    @State private var reason=""
+    @State private var carrier=""
+    @State private var tracking=""
+    @State private var confirmReceipt=false
+    var body:some View {
+        List {
             if let order {
-                VStack(alignment: .leading, spacing: AppSpacing.md) {
-                    HStack { Text(order.statusText).font(.system(size: 20, weight: .bold)); Spacer(); Text("¥\(order.payAmount, specifier: "%.2f")").foregroundStyle(.brandDefault) }
-                    Text("订单号：\(order.orderNo)").font(.system(size: 12)).foregroundStyle(.textTertiary)
-                    ForEach(order.items ?? []) { item in
-                        HStack { Text(item.productName); Spacer(); Text("×\(item.quantity)"); Text("¥\(item.price, specifier: "%.2f")") }
-                            .font(.system(size: 13)).foregroundStyle(.textSecondary)
-                    }
-                    if let logistics = order.logistics, !logistics.trackingNo.isEmpty {
-                        Label("\(logistics.expressCompany) · \(logistics.trackingNo)", systemImage: "shippingbox")
-                            .font(.system(size: 13)).foregroundStyle(.textSecondary)
-                    }
+                Section("订单进度") {
+                    Text(order.statusText).font(.title2.bold()).foregroundStyle(Color.accentDefault)
+                    Text(order.orderNo).font(.caption).textSelection(.enabled)
+                    HStack{Text("订单实付");Spacer();Text(String(format:"¥%.2f",order.payAmount)).bold()}
+                    if let logistics=order.logistics,!logistics.trackingNo.isEmpty {Label("\(logistics.expressCompany) · \(logistics.trackingNo)",systemImage:"shippingbox").textSelection(.enabled)}
                 }
-                .padding(AppSpacing.lg).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
-                .padding(AppSpacing.lg)
-            } else if let errorMessage {
-                DFEmptyState(icon: "exclamationmark.triangle", title: "订单加载失败", subtitle: errorMessage)
-                    .frame(minHeight: 360)
-            } else { DFLoadingView().frame(minHeight: 360) }
-        }
-        .background(Color.bgPrimary).navigationTitle("订单详情").navigationBarTitleDisplayMode(.inline)
-        .task {
-            do { order = try await APIClient.shared.request(.shopOrderById(orderId)) }
-            catch { errorMessage = error.localizedDescription }
-        }
+                Section("商品清单") {ForEach(order.items ?? []) {item in HStack{Text(item.productName);Spacer();Text("×\(item.quantity)");Text(String(format:"¥%.2f",item.price*Double(item.quantity)))}}}
+                if order.status=="pending_payment" {Section{Text("继续支付已有订单，不会重新下单。当前为模拟支付。").font(.footnote);Button("继续模拟支付"){Task{await act("pay")}}.disabled(busy)}}
+                if order.status=="shipped" {Button("确认收货"){confirmReceipt=true}.disabled(busy)}
+                if ["paid","shipped","completed"].contains(order.status) && !returns.contains(where:{$0.status != "rejected"}) {Section("申请售后") {TextField("填写退货或退款原因",text:$reason,axis:.vertical).lineLimit(3...5);Button("提交售后申请"){Task{await act("return")}}.disabled(busy||reason.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)}}
+                ForEach(returns){r in Section("售后进度") {
+                    Text(r.statusText).font(.headline);Text(r.returnNo).font(.caption);Text(r.reason)
+                    if !r.reviewNote.isEmpty{Text("审核说明：\(r.reviewNote)")}
+                    if !r.trackingNo.isEmpty{Text("\(r.carrier) · \(r.trackingNo)").textSelection(.enabled)}
+                    if r.status=="approved"{Text("请先与商家核对退货地址，寄出后填写运单。").font(.footnote);TextField("物流公司",text:$carrier);TextField("运单号",text:$tracking);Button("提交寄回物流"){Task{await act("ship",returnId:r.id)}}.disabled(busy||carrier.isEmpty||tracking.isEmpty)}
+                }}
+            } else if busy {ProgressView()} else {Text("订单详情尚未加载")}
+            if let errorMessage {Text(errorMessage).foregroundStyle(.red)}
+            Button("刷新订单进度"){Task{await load()}}.disabled(busy)
+        }.scrollContentBackground(.hidden).background(Color.bgPrimary).navigationTitle("订单详情").navigationBarTitleDisplayMode(.inline)
+        .task{await load()}.refreshable{await load()}
+        .alert("确认已收到商品？",isPresented:$confirmReceipt){Button("返回",role:.cancel){};Button("确认收货"){Task{await act("confirm")}}}
+    }
+    @MainActor private func load()async{busy=true;defer{busy=false};do{order=try await APIClient.shared.request(.shopOrderById(orderId));returns=try await APIClient.shared.request(.shopReturns(orderId));errorMessage=nil}catch{errorMessage=error.localizedDescription}}
+    @MainActor private func act(_ action:String,returnId:Int64=0)async{
+        guard !busy,let order else{return};busy=true;errorMessage=nil
+        do{
+            switch action {
+            case "pay":let result:PaymentCreateResult=try await APIClient.shared.request(.paymentCreate(PaymentCreateRequest(orderType:"shop_order",orderNo:order.orderNo,amount:order.payAmount,channel:"mock",userId:AuthStore.shared.userId)));let paid:PaymentRecord=try await APIClient.shared.request(.paymentById(result.id));if paid.status != "success" {errorMessage="支付结果待确认，请刷新订单"}
+            case "confirm":let _:ShopOrder=try await APIClient.shared.request(.shopOrderConfirm(orderId))
+            case "return":let _:ShopReturnCreated=try await APIClient.shared.request(.shopReturnCreate(orderId,reason));reason=""
+            case "ship":let _:PointsActionResult=try await APIClient.shared.request(.shopReturnShip(returnId,carrier,tracking))
+            default:break
+            }
+            await load()
+        }catch{errorMessage=error.localizedDescription};busy=false
     }
 }
 

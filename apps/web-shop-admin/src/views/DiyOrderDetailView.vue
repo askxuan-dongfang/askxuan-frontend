@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import { diyOrderApi } from '@/api/diyOrder'
+import { getStatusMeta } from '@askxuan/domain-status'
 import { formatMoney, formatDateTime } from '@/utils/format'
 import type { DiyOrder } from '@/types'
 
@@ -43,7 +44,7 @@ async function handleReview(action: 'approve' | 'reject') {
   try {
     let reason = ''
     if (action === 'reject') {
-      const res = await ElMessageBox.prompt('拒绝后订单将停止进入制作流程，用户会看到该原因。请输入拒绝原因。', '拒绝审核', {
+      const res = await ElMessageBox.prompt('拒绝后停止制作并恢复材料库存，已付款订单将提交原路退款。请输入拒绝原因。', '拒绝审核', {
         confirmButtonText: '确认',
         cancelButtonText: '取消',
         inputType: 'textarea'
@@ -149,6 +150,7 @@ onMounted(() => {
     </PageHeader>
 
     <template v-if="detail">
+      <el-alert v-if="detail.logistics" :title="'物流：'+detail.logistics.expressCompany+' · '+detail.logistics.trackingNo" type="success" :closable="false"/>
       <!-- 基本信息 -->
       <div class="df-card section-card">
         <div class="section-title">基本信息</div>
@@ -157,7 +159,7 @@ onMounted(() => {
           <el-descriptions-item label="订单 ID">{{ detail.id }}</el-descriptions-item>
           <el-descriptions-item label="用户 ID">{{ detail.userId }}</el-descriptions-item>
           <el-descriptions-item label="设计 ID">{{ detail.designId }}</el-descriptions-item>
-          <el-descriptions-item label="订单状态">{{ detail.status }}</el-descriptions-item>
+          <el-descriptions-item label="支付 / 退款">{{getStatusMeta('payment',detail.paymentStatus||'pending').label}}</el-descriptions-item><el-descriptions-item label="订单状态">{{getStatusMeta('diyOrder',detail.status).label}}</el-descriptions-item>
           <el-descriptions-item label="下单时间">{{ formatDateTime(detail.createTime) }}</el-descriptions-item>
           <el-descriptions-item label="材料费">{{ formatMoney(detail.materialFee) }}</el-descriptions-item>
           <el-descriptions-item label="加持费">{{ formatMoney(detail.blessFee) }}</el-descriptions-item>

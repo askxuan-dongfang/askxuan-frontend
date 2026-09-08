@@ -208,7 +208,7 @@ onBeforeUnmount(() => {
       <el-button :loading="loading" @click="loadDashboard">重新加载</el-button>
     </div>
 
-    <div class="ax-task-grid">
+    <div class="ax-task-grid"><router-link class="ax-task-card" to="/points-mall"><span class="ax-task-card__icon"><el-icon><Present /></el-icon></span><span class="ax-task-card__copy"><span class="ax-task-card__label">积分商城</span><span class="ax-task-card__meta">独立商品、兑换与发货</span></span><strong class="ax-task-card__value">查看</strong></router-link>
       <router-link class="ax-task-card" to="/diy-orders">
         <span class="ax-task-card__icon"><el-icon><Brush /></el-icon></span>
         <span class="ax-task-card__copy"><span class="ax-task-card__label">DIY 审核与制作</span><span class="ax-task-card__meta">查看当前制作节点</span></span>

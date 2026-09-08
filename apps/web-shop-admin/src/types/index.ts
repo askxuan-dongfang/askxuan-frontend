@@ -184,6 +184,9 @@ export type ReturnStatus =
   | 'rejected'
 
 export interface ReturnOrder {
+ carrier?:string
+ trackingNo?:string
+ reviewNote?:string
   id: number
   returnNo: string
   orderId: number
@@ -219,6 +222,8 @@ export interface BlessingTask {
 }
 
 export interface DiyOrder {
+ logistics?:{expressCompany:string;trackingNo:string;shipTime:string}
+ paymentStatus?:string
   id: number
   orderNo: string
   userId: string

@@ -266,6 +266,11 @@ enum Endpoint {
     case shopOrders(status: String?, page: Int, size: Int)
     case shopOrderById(Int64)
     case shopOrderConfirm(Int64)
+    case shopReturns(Int64)
+    case shopReturnCreate(Int64, String)
+    case shopReturnShip(Int64, String, String)
+    case diyOrderConfirm(Int64)
+    case pointsSearch(Int, String)
 
     // MARK: - 消息（站内消息）
     case messages(userId: String, isRead: Int, page: Int, size: Int)  // GET /message/list
@@ -305,6 +310,11 @@ enum Endpoint {
     /// 相对路径（不含 BaseURL 前缀）
     var path: String {
         switch self {
+        case .shopReturns(let id): return "orders/\(id)/returns"
+        case .shopReturnCreate(let id, _): return "orders/\(id)/return"
+        case .shopReturnShip(let id, _, _): return "orders/returns/\(id)/ship"
+        case .diyOrderConfirm(let id): return "diy/orders/\(id)/confirm"
+        case .pointsSearch: return "points/products"
         case .pointsAccount: return "points"
         case .pointsLedger: return "points/ledger"
         case .pointsProducts: return "points/products"
@@ -417,7 +427,7 @@ enum Endpoint {
     /// HTTP 方法
     var httpMethod: HTTPMethod {
         switch self {
-        case .pointsAccount, .pointsLedger, .pointsProducts, .pointsOrders, .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief, .serviceTypes,
+        case .shopReturns, .pointsSearch, .pointsAccount, .pointsLedger, .pointsProducts, .pointsOrders, .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief, .serviceTypes,
              .masters, .mastersByBelief, .masterById,
 			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById, .bookingChats, .bookingChatMessages,
              .chats, .chatMessages, .consultationQuote,
@@ -432,7 +442,7 @@ enum Endpoint {
              .messages, .unreadCount, .announcements,
              .userProfile, .addressList, .reviews, .myCoupons:
             return .GET
-        case .pointsRedeem, .pointsOrderAction, .createBooking, .bookingReviewCreate, .bookingChatSend, .chatSend, .consultationCreate, .consultationPay,
+        case .shopReturnCreate, .pointsRedeem, .pointsOrderAction, .createBooking, .bookingReviewCreate, .bookingChatSend, .chatSend, .consultationCreate, .consultationPay,
              .diyDesignSave, .diyOrderCreate, .diyOrderAvailability, .diyOrderCreateFromDesign, .paymentCreate,
              .shopOrderCreate,
 			 .aiSessionCreate, .aiSendMessage, .aiRetryMessage, .mediaUploadCredential, .mediaComplete, .communityPostLike,
@@ -441,7 +451,7 @@ enum Endpoint {
              .templeFavorite, .productFavorite, .masterBooking,
              .addressCreate, .registerDeviceToken:
             return .POST
-        case .updateBookingStatus, .shopOrderConfirm, .messageRead, .readAllMessages,
+        case .shopReturnShip, .diyOrderConfirm, .updateBookingStatus, .shopOrderConfirm, .messageRead, .readAllMessages,
              .updateProfile, .addressUpdate:
             return .PUT
         case .deleteMessage, .addressDelete, .communityPostUnlike, .communityMasterUnfollow,
@@ -453,6 +463,7 @@ enum Endpoint {
     /// 查询参数
     var queryItems: [URLQueryItem]? {
         switch self {
+        case .pointsSearch(let page, let keyword): return [URLQueryItem(name:"page",value:String(page)),URLQueryItem(name:"keyword",value:keyword)]
         case .pointsLedger(let page), .pointsProducts(let page), .pointsOrders(let page): return [URLQueryItem(name: "page", value: String(page))]
         case .temples(let sect, let type, let serviceCode, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
@@ -578,6 +589,8 @@ enum Endpoint {
     /// 请求体（Encodable）
     var body: (any Encodable)? {
         switch self {
+        case .shopReturnCreate(_, let reason): return AnyEncodable(["type":"return","reason":reason])
+        case .shopReturnShip(_, let carrier, let tracking): return AnyEncodable(["carrier":carrier,"trackingNo":tracking])
         case .pointsRedeem(let req): return req
         case .createBooking(let req):          return AnyEncodable(req)
         case .updateBookingStatus(_, let status): return AnyEncodable(["status": status])

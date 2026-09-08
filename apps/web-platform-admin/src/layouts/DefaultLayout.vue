@@ -14,6 +14,7 @@ const drawerOpen = ref(false)
 let mobileQuery: MediaQueryList | undefined
 
 const menuGroups = [
+  {title:'商城管理',icon:'Shop',children:[{path:'/commerce',title:'商城运营中心'}]},
   {
     title: '机构与人员',
     icon: 'OfficeBuilding',
