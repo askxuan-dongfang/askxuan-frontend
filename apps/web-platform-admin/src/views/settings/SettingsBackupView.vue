@@ -2,17 +2,19 @@
   <div class="dfx-page">
     <PageHeader title="数据备份" subtitle="数据库快照、下载与受控恢复">
       <template #actions>
-        <el-button type="primary" :icon="Plus" :loading="backing" @click="createBackup">立即备份</el-button>
+        <el-button type="primary" :icon="Plus" :loading="backing" :disabled="loading || !!loadError" @click="createBackup">立即备份</el-button>
         <el-button :icon="Refresh" @click="loadData">刷新</el-button>
       </template>
     </PageHeader>
 
     <div class="stat-row">
-      <StatCard label="备份总数" :value="backups.length" icon="Files" icon-color="#C8A96E" suffix=" 份" />
-      <StatCard label="最近备份" :value="lastBackupTime" icon="Clock" icon-color="#5B8C5A" />
-      <StatCard label="占用空间" :value="totalSize" icon="Coin" icon-color="#C45A3C" suffix=" MB" />
+      <StatCard label="备份总数" :value="loadError ? '—' : backups.length" icon="Files" icon-color="#C8A96E" suffix=" 份" />
+      <StatCard label="最近备份" :value="loadError ? '—' : lastBackupTime" icon="Clock" icon-color="#5B8C5A" />
+      <StatCard label="占用空间" :value="loadError ? '—' : totalSize" icon="Coin" icon-color="#C45A3C" suffix=" MB" />
       <StatCard label="存储位置" value="私有对象存储" icon="Calendar" icon-color="#D4A843" />
     </div>
+
+    <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon class="backup-error" />
 
     <div class="dfx-card table-wrap">
       <DataTable :data="backups" :loading="loading" :show-pagination="false">
@@ -52,6 +54,7 @@ import StatusTag from '@/components/StatusTag.vue'
 import { formatDate } from '@/utils/format'
 import { getBackups, createBackup as requestBackup, getBackupDownload, restoreBackup, type BackupItem } from '@/api/system'
 
+const loadError = ref('')
 const loading = ref(false)
 const backing = ref(false)
 const backups = ref<BackupItem[]>([])
@@ -64,6 +67,10 @@ async function loadData() {
   try {
     const response = await getBackups()
     backups.value = response.list || []
+    loadError.value = ''
+  } catch {
+    backups.value = []
+    loadError.value = '备份列表加载失败，请稍后点击刷新重试。'
   } finally {
     loading.value = false
   }
@@ -99,6 +106,7 @@ onMounted(loadData)
 </script>
 
 <style scoped>
+.backup-error { margin-bottom: 16px; }
 .stat-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

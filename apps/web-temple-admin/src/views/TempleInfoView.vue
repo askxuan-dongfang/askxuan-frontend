@@ -139,7 +139,7 @@ onMounted(async () => {
 <style scoped>
 .info-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
@@ -168,5 +168,9 @@ onMounted(async () => {
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid #e8e0d8;
+}
+@media (max-width: 767px) {
+  .info-grid { grid-template-columns: minmax(0, 1fr); }
+  .info-form, .info-cover { min-width: 0; padding: 18px; }
 }
 </style>

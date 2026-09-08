@@ -555,3 +555,51 @@ test.describe('管理台高风险操作确认', () => {
     await expect.poll(() => reviewWrites).toBe(0)
   })
 })
+
+test.describe('管理台组件语言和移动编辑布局', () => {
+  test('三端异步页面保持共享主题与中文分页', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'admin-390', '共享配置只执行一次')
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await mockAdminApi(page, (url) => ['/api/v1/admin/bookings', '/api/v1/admin/orders', '/api/v1/admin/users'].includes(url.pathname)
+      ? { list: [], total: 21, page: 1, size: 20 } : undefined)
+    for (const [index, route] of [[0, '/bookings'], [1, '/orders'], [2, '/user/list']] as const) {
+      await seedAdminSession(page, apps[index])
+      await page.goto(`${apps[index].baseURL}${route}`, { waitUntil: 'domcontentloaded' })
+      await expect(page.locator('.el-pagination')).toBeVisible()
+      await expect(page.locator('.el-pagination')).toContainText('共 21 条')
+      await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--el-color-primary').trim())).toBe('#c45a3c')
+    }
+  })
+  test('寺院信息手机编辑区和封面分行且保持完整宽度', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'admin-390', '手机表单布局')
+    await mockAdminApi(page)
+    await seedAdminSession(page, apps[0])
+    await page.goto(`${apps[0].baseURL}/temple-info`, { waitUntil: 'domcontentloaded' })
+    const form = await page.locator('.info-form').boundingBox()
+    const cover = await page.locator('.info-cover').boundingBox()
+    expect(form).not.toBeNull()
+    expect(cover).not.toBeNull()
+    expect(form!.width).toBeGreaterThan(330)
+    expect(cover!.y).toBeGreaterThanOrEqual(form!.y + form!.height)
+    await expectNoPageOverflow(page)
+    await expectVisibleFormControlsInViewport(page)
+  })
+})
+
+test('备份列表失败明确提示且刷新可恢复', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'admin-390', '错误恢复流程只执行一次')
+  await mockAdminApi(page)
+  let failed = true
+  await page.route('**/api/v1/admin/files/backups', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify(failed ? { code: 50001, message: '服务器内部错误' } : { code: 0, data: { list: [] } })
+  }))
+  await seedAdminSession(page, apps[2])
+  await page.goto(`${apps[2].baseURL}/settings/backup`, { waitUntil: 'domcontentloaded' })
+  await expect(page.getByText('备份列表加载失败，请稍后点击刷新重试。')).toBeVisible()
+  await expect(page.getByRole('button', { name: '立即备份' })).toBeDisabled()
+  failed = false
+  await page.getByRole('button', { name: '刷新', exact: true }).click()
+  await expect(page.getByText('备份列表加载失败，请稍后点击刷新重试。')).toBeHidden()
+  await expect(page.getByRole('button', { name: '立即备份' })).toBeEnabled()
+})

@@ -1,7 +1,10 @@
 <script setup lang="ts">
-// 根组件：仅承载路由出口
+import { ElConfigProvider } from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 </script>
 
 <template>
-  <RouterView />
+  <ElConfigProvider :locale="zhCn">
+    <RouterView />
+  </ElConfigProvider>
 </template>

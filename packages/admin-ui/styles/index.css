@@ -1,5 +1,6 @@
 /* 问玄东方三管理台共享作业主题与响应式壳层。 */
-:root {
+/* Keep the shared theme above component CSS loaded by lazy routes. */
+html:root {
   color-scheme: light;
 
   --admin-sidebar-width: 232px;

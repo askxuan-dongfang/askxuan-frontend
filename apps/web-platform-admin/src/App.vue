@@ -1,7 +1,10 @@
-<template>
-  <router-view />
-</template>
-
 <script setup lang="ts">
-// 问玄东方 P05 平台总管理台 根组件
+import { ElConfigProvider } from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 </script>
+
+<template>
+  <ElConfigProvider :locale="zhCn">
+    <RouterView />
+  </ElConfigProvider>
+</template>
