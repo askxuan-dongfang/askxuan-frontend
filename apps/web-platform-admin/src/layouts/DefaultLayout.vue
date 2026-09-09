@@ -70,7 +70,7 @@ const allMenuGroups = [
     children: [
       { path: '/marketing/banner', title: 'Banner 管理' },
       { path: '/marketing/activity', title: '活动管理' },
-      { path: '/marketing/rewards', title: '免费活动与奖品' },
+      { path: '/marketing/rewards', title: '积分活动与奖品' },
       { path: '/marketing/coupon', title: '优惠券管理' },
       { path: '/settings/taxonomy', title: '首页分类' }
     ]

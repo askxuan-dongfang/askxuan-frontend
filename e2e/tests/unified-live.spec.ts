@@ -38,7 +38,9 @@ test('ECS H5 real customer sees activity center and corrected header actions',as
   await page.goto(path);await page.waitForLoadState('networkidle')
   await expect(page.locator('header').getByRole('button',{name:/退出/})).toHaveCount(0)
   await expect(page.locator('header').getByRole('link',{name:'搜索',exact:true})).toHaveCount(path==='/c'?1:0)
-  if(path==='/c/rewards')await expect(page.getByText('免费活动',{exact:true}).first()).toBeVisible()
+  if(path==='/c/points'){await expect(page.getByRole('link',{name:/积分转盘/})).toBeVisible();await expect(page.getByRole('link',{name:/大奖池 一期一码/})).toBeVisible()}
+  if(path==='/c'||path==='/c/profile')await expect(page.locator('a[href^="/c/rewards"]')).toHaveCount(0)
+  if(path==='/c/rewards')await expect(page.getByText('积分活动',{exact:true}).first()).toBeVisible()
  }
  await expect(page.getByRole('button',{name:'退出登录',exact:true})).toBeVisible()
 })

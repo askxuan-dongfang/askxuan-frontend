@@ -60,7 +60,7 @@ test('shop role cannot access platform functions and keeps valid session',async(
 test('platform service cannot bypass restricted child via broad parent',async({page})=>{
  await session(page,'platform_service');await fixture(page)
  await page.goto(origin+'/admin/marketing/rewards');await expect(page).toHaveURL(/\/admin\/dashboard$/)
- await expect(page.getByText('免费活动与奖品',{exact:true})).toHaveCount(0)
+ await expect(page.getByText('积分活动与奖品',{exact:true})).toHaveCount(0)
 })
 test('anonymous legacy login preserves intended page',async({page})=>{
  await page.goto(origin+'/shop/login?redirect=%2Forders%2F9')

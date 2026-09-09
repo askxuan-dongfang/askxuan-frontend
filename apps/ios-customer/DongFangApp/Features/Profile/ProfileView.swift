@@ -52,7 +52,6 @@ struct ProfileView: View {
             ? "已存\(viewModel.addressCount)条"
             : nil
         return [
-            ("gift", "免费活动与我的奖品", nil),
             ("heart", "我的收藏", nil),
             ("clock", "浏览记录", nil),
             ("star", "我的评价", nil),
@@ -476,7 +475,6 @@ struct ProfileView: View {
     private func assetDestination(_ title: String) -> some View {
         switch title {
         case "优惠券": CouponView()
-        case "免费活动与我的奖品": RewardsView()
         case "积分明细": PointsView()
         default: WalletView()
         }
