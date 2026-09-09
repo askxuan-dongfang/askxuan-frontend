@@ -645,7 +645,76 @@ a:focus-visible,
 }
 
 .el-message-box {
-  max-width: calc(100vw - 32px);
+  max-width: min(var(--el-messagebox-width, 420px), calc(100vw - 32px));
+}
+
+/* Date-range panels are teleported outside forms, so form width rules do not apply. */
+@media (max-width: 700px) {
+  html .el-picker__popper:has(.el-date-range-picker) {
+    position: fixed !important;
+    top: max(12px, env(safe-area-inset-top)) !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translateX(-50%) !important;
+  }
+
+  html .el-picker__popper:has(.el-date-range-picker) > .el-popper__arrow {
+    display: none;
+  }
+
+  html .el-date-range-picker,
+  html .el-date-range-picker.has-sidebar {
+    width: min(360px, calc(100vw - 24px));
+  }
+
+  html .el-date-range-picker .el-picker-panel__body {
+    min-width: 0;
+    margin-left: 0;
+    max-height: calc(100dvh - 120px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  html .el-date-range-picker .el-date-range-picker__content {
+    display: block;
+    width: 100%;
+    padding: 12px;
+  }
+
+  html .el-date-range-picker__content.is-left {
+    border-right: 0;
+    border-bottom: 1px solid var(--el-border-color-light);
+  }
+
+  html .el-date-range-picker__time-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  html .el-date-range-picker__editors-wrap {
+    display: flex;
+    width: 100%;
+  }
+
+  html .el-date-range-picker__time-picker-wrap {
+    display: block;
+    width: 50%;
+    min-width: 0;
+  }
+
+  html .el-date-range-picker__time-header > .el-icon {
+    display: none;
+  }
+
+  html .el-date-range-picker .el-picker-panel__sidebar {
+    position: static;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    border-right: 0;
+  }
 }
 
 .el-button--primary {

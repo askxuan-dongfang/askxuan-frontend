@@ -1,6 +1,8 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+// Imperative services (MessageBox, Message, Notification) bypass template auto-imports.
+import 'element-plus/dist/index.css'
 
 import App from './App.vue'
 import router from './router'

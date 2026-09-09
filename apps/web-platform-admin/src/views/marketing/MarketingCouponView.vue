@@ -89,7 +89,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
@@ -178,6 +178,13 @@ async function submit() {
 
 async function toggle(row: Coupon) {
   const status = row.status === 'enabled' ? 'disabled' : 'enabled'
+  try {
+    await ElMessageBox.confirm(`确认${status === 'enabled' ? '启用' : '禁用'}优惠券「${row.name}」？`, '更改优惠券状态', {
+      type: 'warning', confirmButtonText: '确认更改', cancelButtonText: '取消'
+    })
+  } catch {
+    return
+  }
   await updateCoupon(row.id, { status })
   ElMessage.success('状态已更新')
   loadData()
