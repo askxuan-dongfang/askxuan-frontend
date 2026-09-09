@@ -37,11 +37,10 @@ struct ProfileView: View {
         ]
     }
 
-    /// 资产：功德金余额 / 优惠券 / 积分明细
+    /// 权益：优惠券 / 积分明细
     /// 注：UserProfile 模型暂无对应字段，数值显示 "—" 占位
     private var assets: [(label: String, value: String?, icon: String?)] {
         [
-            ("功德金余额", viewModel.profile?.meritBalanceText ?? "—", nil),
             ("优惠券", "\(viewModel.availableCouponCount)", nil),
             ("积分明细", nil, "chart.line.uptrend.xyaxis")
         ]
@@ -147,6 +146,12 @@ struct ProfileView: View {
                     errorHintView(errorMessage)
                 }
                 userInfoSection
+                Text("功德值用于记录个人成长，不用于支付或兑换；成长记录开放后展示。")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.textTertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, AppSpacing.lg)
+                    .padding(.top, 10)
                 orderCenterSection
                 assetsSection
                 servicesSection

@@ -34,12 +34,11 @@ struct UserProfile: Codable {
     }
 
     // MARK: - 资产/统计相关展示字段
-    // 注：当前 user-service 暂未返回功德值/积分/优惠券/功德金余额字段，
+    // 注：当前 user-service 暂未返回功德值/积分/优惠券字段，
     // 以下计算属性返回 nil，由 View 层显示 "—" 占位；后端补齐后在此接入即可。
     var meritValueText: String? { nil }
     var pointsText: String? { nil }
     var couponCountText: String? { nil }
-    var meritBalanceText: String? { nil }
 }
 
 extension UserProfile {
