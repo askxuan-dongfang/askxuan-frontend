@@ -24,7 +24,7 @@ const ts = importedTypeScript.default ?? importedTypeScript
 const projects = [
   ['h5', join(frontendRoot, 'apps/web-h5/src/api')],
   ['platform', join(frontendRoot, 'apps/web-platform-admin/src/api')],
-  ['shop', join(frontendRoot, 'apps/web-shop-admin/src/api')],
+  ['commerce', join(frontendRoot, 'apps/web-platform-admin/src/commerce/api')],
   ['temple', join(frontendRoot, 'apps/web-temple-admin/src/api')],
 ]
 
