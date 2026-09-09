@@ -3,8 +3,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
-import { categoryApi, type CategorySaveParams } from '@/api/category'
-import type { ProductCategory } from '@/types'
+import { categoryApi, type CategorySaveParams } from '@/commerce/api/category'
+import type { ProductCategory } from '@/commerce/types'
 
 const loading = ref(false)
 const list = ref<ProductCategory[]>([])

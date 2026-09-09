@@ -80,13 +80,6 @@ export default defineConfig({
       timeout: 120_000
     },
     {
-      command: 'npm run dev -- --host 127.0.0.1 --port 5274',
-      cwd: '../apps/web-shop-admin',
-      url: 'http://127.0.0.1:5274/login',
-      reuseExistingServer: false,
-      timeout: 120_000
-    },
-    {
       command: 'npm run dev -- --host 127.0.0.1 --port 5275',
       cwd: '../apps/web-platform-admin',
       url: 'http://127.0.0.1:5275/login',

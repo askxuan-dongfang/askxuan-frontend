@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
+import { canAccessRoute, defaultRoute } from '@/router/access'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -13,8 +14,25 @@ const mobile = ref(false)
 const drawerOpen = ref(false)
 let mobileQuery: MediaQueryList | undefined
 
-const menuGroups = [
-  {title:'商城管理',icon:'Shop',children:[{path:'/commerce',title:'商城运营中心'}]},
+const allMenuGroups = [
+  {title:'商城与权益',icon:'Shop',children:[
+    {path:'/commerce',title:'商城运营总览'},
+    {path:'/commerce/dashboard',title:'商城工作台'},
+    {path:'/commerce/products',title:'商品管理'},
+    {path:'/commerce/categories',title:'商品分类'},
+    {path:'/commerce/points-mall',title:'积分商城'},
+    {path:'/commerce/reports',title:'经营报表'}
+  ]},
+  {title:'DIY 与加持服务',icon:'MagicStick',children:[
+    {path:'/commerce/materials',title:'DIY 材料'},
+    {path:'/commerce/services',title:'加持服务'},
+    {path:'/commerce/diy-orders',title:'DIY 订单'}
+  ]},
+  {title:'履约与售后',icon:'Van',children:[
+    {path:'/commerce/orders',title:'商城订单'},
+    {path:'/commerce/logistics',title:'物流与运费'},
+    {path:'/commerce/returns',title:'退货售后'}
+  ]},
   {
     title: '机构与人员',
     icon: 'OfficeBuilding',
@@ -69,11 +87,16 @@ const menuGroups = [
   }
 ]
 
+const menuGroups = computed(() => allMenuGroups.map(group => ({ ...group, children: group.children.filter(item => canAccessRoute(router.resolve(item.path), auth.roles)) })).filter(group => group.children.length))
+const homePath = computed(() => defaultRoute(auth.roles))
+
 const activeMenu = computed(() => {
   const path = route.path
   if (path.startsWith('/temple/detail/')) return '/temple/list'
   if (path.startsWith('/master/detail/') || path === '/master/create') return '/master/list'
   if (path.startsWith('/user/detail/')) return '/user/list'
+  const shop = path.match(/^\/commerce\/(products|materials|services|orders|diy-orders|returns)\//)
+  if (shop) return `/commerce/${shop[1]}`
   return path
 })
 const avatarText = computed(() => (auth.userInfo?.nickname || '管').slice(0, 1))
@@ -104,7 +127,7 @@ async function onCommand(cmd: string) {
       // 用户取消。
     }
   } else if (cmd === 'dashboard') {
-    await router.push('/dashboard')
+    await router.push(homePath.value)
   }
 }
 
@@ -131,7 +154,7 @@ onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
         <img class="ax-admin-logo__image" :src="logoUrl" alt="" />
         <div class="ax-admin-logo__copy">
           <div class="ax-admin-logo__title">问玄东方</div>
-          <div class="ax-admin-logo__subtitle">平台管理台</div>
+          <div class="ax-admin-logo__subtitle">统一运营管理台</div>
         </div>
       </div>
 
@@ -146,9 +169,9 @@ onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
         unique-opened
         class="ax-admin-menu"
       >
-        <el-menu-item index="/dashboard">
+        <el-menu-item :index="homePath">
           <el-icon><Odometer /></el-icon>
-          <template #title>平台总览</template>
+          <template #title>{{ homePath === '/dashboard' ? '平台总览' : '今日工作台' }}</template>
         </el-menu-item>
 
         <el-sub-menu v-for="group in menuGroups" :key="group.title" :index="group.title">
@@ -162,7 +185,7 @@ onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
         </el-sub-menu>
       </el-menu>
 
-      <div class="ax-admin-version">平台管理台 · UI Blueprint v1</div>
+      <div class="ax-admin-version">统一运营管理台</div>
     </aside>
 
     <section class="ax-admin-content">

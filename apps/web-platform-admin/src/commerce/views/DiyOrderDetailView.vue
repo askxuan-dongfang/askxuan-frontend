@@ -4,10 +4,10 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
-import { diyOrderApi } from '@/api/diyOrder'
+import { diyOrderApi } from '@/commerce/api/diyOrder'
 import { getStatusMeta } from '@askxuan/domain-status'
-import { formatMoney, formatDateTime } from '@/utils/format'
-import type { DiyOrder } from '@/types'
+import { formatMoney, formatDateTime } from '@/commerce/utils/format'
+import type { DiyOrder } from '@/commerce/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -120,7 +120,7 @@ onMounted(() => {
   <div class="page-wrap" v-loading="loading">
     <PageHeader title="DIY 订单详情" subtitle="查看 DIY 订单、审核 / 制作完成 / 发货">
       <template #extra>
-        <el-button @click="router.push('/diy-orders')">返回列表</el-button>
+        <el-button @click="router.push('/commerce/diy-orders')">返回列表</el-button>
         <template v-if="detail">
           <el-button
             v-if="detail.status === 'pending_review'"

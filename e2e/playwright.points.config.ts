@@ -5,6 +5,6 @@ export default defineConfig({
   use:{headless:true,trace:'retain-on-failure'},
   webServer:[
     {command:'npm run dev -- --host 127.0.0.1 --port 5376',cwd:'../apps/web-h5',url:'http://127.0.0.1:5376',timeout:120000,reuseExistingServer:false},
-    {command:'npm run dev -- --host 127.0.0.1 --port 5374',cwd:'../apps/web-shop-admin',url:'http://127.0.0.1:5374',timeout:120000,reuseExistingServer:false},
+    {command:'npm run dev -- --host 127.0.0.1 --port 5374',cwd:'../apps/web-platform-admin',url:'http://127.0.0.1:5374',timeout:120000,reuseExistingServer:false},
   ],
 })

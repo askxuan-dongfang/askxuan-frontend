@@ -4,9 +4,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
-import { orderApi } from '@/api/order'
-import { formatMoney, formatDateTime, orderStatusLabel, orderStatusType } from '@/utils/format'
-import type { ShopOrder } from '@/types'
+import { orderApi } from '@/commerce/api/order'
+import { formatMoney, formatDateTime, orderStatusLabel, orderStatusType } from '@/commerce/utils/format'
+import type { ShopOrder } from '@/commerce/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -78,7 +78,7 @@ onMounted(() => {
   <div class="page-wrap" v-loading="loading">
     <PageHeader title="订单详情" subtitle="查看订单明细、物流信息，并执行发货">
       <template #extra>
-        <el-button @click="router.push('/orders')">返回列表</el-button>
+        <el-button @click="router.push('/commerce/orders')">返回列表</el-button>
         <el-button
           v-if="detail && detail.status === 'paid'"
           type="primary"

@@ -1,8 +1,8 @@
 // DIY 材料接口
 // 后端定义：services/commerce/diy-service/api/diy.api
 //   prefix: /api/v1/admin/diy/materials （网关路由到 diy-service:8088）
-import client from './client'
-import type { Material, Page } from '@/types'
+import client from '@/api/client'
+import type { Material, Page } from '@/commerce/types'
 
 export interface MaterialListParams {
   category?: string

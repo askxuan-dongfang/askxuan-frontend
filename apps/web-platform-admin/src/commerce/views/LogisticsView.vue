@@ -4,9 +4,9 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
-import { logisticsApi } from '@/api/logistics'
-import { formatDateTime } from '@/utils/format'
-import type { ExpressCompany, FreightTemplate, TrackQueryResp } from '@/types'
+import { logisticsApi } from '@/commerce/api/logistics'
+import { formatDateTime } from '@/commerce/utils/format'
+import type { ExpressCompany, FreightTemplate, TrackQueryResp } from '@/commerce/types'
 
 const activeTab = ref('express')
 

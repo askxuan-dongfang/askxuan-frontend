@@ -4,7 +4,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
-import { serviceApi, type BlessingServiceSaveParams } from '@/api/service'
+import { serviceApi, type BlessingServiceSaveParams } from '@/commerce/api/service'
 
 const route = useRoute()
 const router = useRouter()
@@ -63,7 +63,7 @@ async function handleSubmit() {
         await serviceApi.create(form)
         ElMessage.success('创建成功')
       }
-      router.push('/services')
+      router.push('/commerce/services')
     } finally {
       saving.value = false
     }
@@ -71,7 +71,7 @@ async function handleSubmit() {
 }
 
 function handleCancel() {
-  router.push('/services')
+  router.push('/commerce/services')
 }
 
 onMounted(() => {

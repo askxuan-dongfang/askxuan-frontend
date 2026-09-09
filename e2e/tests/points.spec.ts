@@ -36,7 +36,7 @@ for(const width of [375,768]){
 }
 test('shop admin independently creates a points product and ships redemption',async({page})=>{
  const token='e30.'+Buffer.from(JSON.stringify({roles:['shop_admin'],clientId:'shop-admin'})).toString('base64url')+'.test'
- await page.addInitScript(t=>localStorage.setItem('df_shop_admin_token',t),token)
+ await page.addInitScript(t=>localStorage.setItem('df_platform_admin_token',t),token)
  let saved:any,shipped:any
  await page.route('**/api/v1/**',async route=>{
   const req=route.request(),path=new URL(req.url()).pathname;let data:any={}
@@ -47,7 +47,7 @@ test('shop admin independently creates a points product and ships redemption',as
   else if(path.endsWith('/points/orders/1/ship')){shipped=req.postDataJSON();data={success:true}}
   await route.fulfill({json:{code:0,message:'ok',data}})
  })
- await page.goto('http://127.0.0.1:5374/points-mall')
+ await page.goto('http://127.0.0.1:5374/commerce/points-mall')
  await expect(page.getByRole('heading',{name:'积分商城'})).toBeVisible()
  await page.getByRole('button',{name:'新增积分商品'}).click()
  const dialog=page.getByRole('dialog')

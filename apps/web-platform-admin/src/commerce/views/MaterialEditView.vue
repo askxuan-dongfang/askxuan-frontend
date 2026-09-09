@@ -5,8 +5,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
-import { materialApi, type MaterialSaveParams } from '@/api/material'
-import type { MaterialCategory } from '@/types'
+import { materialApi, type MaterialSaveParams } from '@/commerce/api/material'
+import type { MaterialCategory } from '@/commerce/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -142,7 +142,7 @@ async function handleSubmit() {
         await materialApi.create(form)
         ElMessage.success('创建成功')
       }
-      router.push('/materials')
+      router.push('/commerce/materials')
     } finally {
       saving.value = false
     }
@@ -150,7 +150,7 @@ async function handleSubmit() {
 }
 
 function handleCancel() {
-  router.push('/materials')
+  router.push('/commerce/materials')
 }
 
 onMounted(() => {

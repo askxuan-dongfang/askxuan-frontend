@@ -1,46 +1,42 @@
 <script setup lang="ts">
-// DIY 订单列表
+// 商城订单列表
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import PageHeader from '@/components/PageHeader.vue'
-import { diyOrderApi, type DiyOrderListParams } from '@/api/diyOrder'
-import { formatMoney , diyOrderStatusLabel, diyOrderStatusType } from '@/utils/format'
-import type { DiyOrder } from '@/types'
+import { orderApi, type OrderListParams } from '@/commerce/api/order'
+import { formatMoney, orderStatusLabel, orderStatusType } from '@/commerce/utils/format'
+import type { ShopOrder } from '@/commerce/types'
 
 const router = useRouter()
 const loading = ref(false)
 const loadError = ref('')
-const list = ref<DiyOrder[]>([])
+const list = ref<ShopOrder[]>([])
 const total = ref(0)
 
-const query = reactive<DiyOrderListParams>({
+const query = reactive<OrderListParams>({
   status: '',
   page: 1,
   size: 20
 })
 
 const statusOptions = [
-  { value: 'pending_review', label: '待审核' },
-  { value: 'in_making', label: '制作中' },
-  { value: 'awaiting_blessing', label: '待加持' },
-  { value: 'blessing_in_progress', label: '加持中' },
-  { value: 'blessing_completed', label: '加持完成' },
-  { value: 'awaiting_shipment', label: '待发货' },
+  { value: 'pending_payment', label: '待付款' },
+  { value: 'paid', label: '已付款' },
   { value: 'shipped', label: '已发货' },
   { value: 'completed', label: '已完成' },
   { value: 'cancelled', label: '已取消' },
-  { value: 'in_return', label: '退换中' }
+  { value: 'in_return', label: '退货中' }
 ]
 
 async function loadList() {
   loading.value = true
   loadError.value = ''
   try {
-    const res = await diyOrderApi.list(query)
+    const res = await orderApi.list(query)
     list.value = res.list || []
     total.value = res.total || 0
   } catch (error) {
-    loadError.value = error instanceof Error ? error.message : 'DIY 订单加载失败'
+    loadError.value = error instanceof Error ? error.message : '商城订单加载失败'
   } finally {
     loading.value = false
   }
@@ -75,7 +71,7 @@ onMounted(() => {
 
 <template>
   <div class="page-wrap">
-    <PageHeader title="DIY 订单" subtitle="管理手串 DIY 订单、审核与发货" />
+    <PageHeader title="商城订单" subtitle="管理商城商品订单，支持发货操作" />
 
     <div class="df-card filter-bar">
       <el-form inline @submit.prevent="handleSearch">
@@ -98,51 +94,47 @@ onMounted(() => {
 
     <div v-if="loadError" class="ax-page-feedback is-error" role="status">
       <div class="ax-page-feedback__copy">
-        <div class="ax-page-feedback__title">DIY 订单加载失败</div>
+        <div class="ax-page-feedback__title">商城订单加载失败</div>
         <div class="ax-page-feedback__description">{{ loadError }}</div>
       </div>
       <el-button :loading="loading" @click="loadList">重试</el-button>
     </div>
 
     <div class="df-card">
-      <div class="desktop-table"><el-table v-loading="loading" :data="list" style="width: 100%" empty-text="暂无 DIY 订单">
+      <div class="desktop-table"><el-table v-loading="loading" :data="list" style="width: 100%" empty-text="暂无订单">
         <el-table-column label="订单号" prop="orderNo" width="200" />
         <el-table-column label="用户 ID" prop="userId" width="160" />
-        <el-table-column label="设计 ID" prop="designId" width="100" />
-        <el-table-column label="材料费" width="120">
-          <template #default="{ row }">{{ formatMoney(row.materialFee) }}</template>
-        </el-table-column>
-        <el-table-column label="加持费" width="120">
-          <template #default="{ row }">{{ formatMoney(row.blessFee) }}</template>
-        </el-table-column>
-        <el-table-column label="合计" width="130">
+        <el-table-column label="订单金额" width="130">
           <template #default="{ row }">
-            <span class="price">{{ formatMoney(row.totalFee) }}</span>
+            <span class="price">{{ formatMoney(row.payAmount) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="120">
+        <el-table-column label="状态" width="110">
           <template #default="{ row }">
-            <el-tag :type="diyOrderStatusType(row.status)" effect="light">{{ diyOrderStatusLabel(row.status) }}</el-tag>
+            <el-tag :type="orderStatusType(row.status)" effect="light" round size="small">
+              {{ orderStatusLabel(row.status) }}
+            </el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="备注" prop="note" min-width="180" show-overflow-tooltip />
         <el-table-column label="下单时间" prop="createTime" width="180" />
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" size="small" @click="router.push(`/diy-orders/${row.id}`)">详情</el-button>
+            <el-button text type="primary" size="small" @click="router.push(`/commerce/orders/${row.id}`)">详情</el-button>
           </template>
         </el-table-column>
       </el-table></div>
 
-      <div class="mobile-task-list" aria-label="DIY 订单列表">
-        <button v-for="item in list" :key="item.id" class="mobile-task-card" type="button" @click="router.push(`/diy-orders/${item.id}`)">
+      <div class="mobile-task-list" aria-label="商城订单列表">
+        <button v-for="item in list" :key="item.id" class="mobile-task-card" type="button" @click="router.push(`/commerce/orders/${item.id}`)">
           <span class="mobile-task-card__head">
             <strong>{{ item.orderNo }}</strong>
-            <el-tag :type="diyOrderStatusType(item.status)" effect="light" round size="small">{{ diyOrderStatusLabel(item.status) }}</el-tag>
+            <el-tag :type="orderStatusType(item.status)" effect="light" round size="small">{{ orderStatusLabel(item.status) }}</el-tag>
           </span>
-          <span class="mobile-task-card__meta">设计 {{ item.designId }} · {{ item.createTime }}</span>
-          <span class="mobile-task-card__foot"><span>材料 {{ formatMoney(item.materialFee) }} · 加持 {{ formatMoney(item.blessFee) }}</span><b>{{ formatMoney(item.totalFee) }}</b></span>
+          <span class="mobile-task-card__meta">用户 {{ item.userId }} · {{ item.createTime }}</span>
+          <span class="mobile-task-card__foot"><span>{{ item.note || '无备注' }}</span><b>{{ formatMoney(item.payAmount) }}</b></span>
         </button>
-        <div v-if="!loading && !list.length && !loadError" class="mobile-task-empty">当前筛选下暂无 DIY 订单</div>
+        <div v-if="!loading && !list.length && !loadError" class="mobile-task-empty">当前筛选下暂无商城订单</div>
         <div v-if="total > (query.size || 20)" class="mobile-task-pager">
           <el-button :disabled="(query.page || 1) <= 1" @click="handlePageChange((query.page || 1) - 1)">上一页</el-button>
           <span>第 {{ query.page || 1 }} 页</span>

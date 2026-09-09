@@ -5,9 +5,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
-import { productApi, type ProductSaveParams } from '@/api/product'
-import { categoryApi } from '@/api/category'
-import type { ProductCategory } from '@/types'
+import { productApi, type ProductSaveParams } from '@/commerce/api/product'
+import { categoryApi } from '@/commerce/api/category'
+import type { ProductCategory } from '@/commerce/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -83,7 +83,7 @@ async function handleSubmit() {
         await productApi.create(form)
         ElMessage.success('创建成功')
       }
-      router.push('/products')
+      router.push('/commerce/products')
     } finally {
       saving.value = false
     }
@@ -91,7 +91,7 @@ async function handleSubmit() {
 }
 
 function handleCancel() {
-  router.push('/products')
+  router.push('/commerce/products')
 }
 
 onMounted(() => {

@@ -1,8 +1,8 @@
 // DIY 订单接口
 // 后端定义：services/commerce/diy-service/api/diy.api
 //   prefix: /api/v1/admin/diy/orders （网关路由到 diy-service:8088）
-import client from './client'
-import type { DiyOrder, Page } from '@/types'
+import client from '@/api/client'
+import type { DiyOrder, Page } from '@/commerce/types'
 
 export interface DiyOrderListParams {
   status?: string

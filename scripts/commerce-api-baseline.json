@@ -1,0 +1,10 @@
+{
+  "category.ts": "19ccddcb90efd01169f52c8943134ae2f9566c9ad1b0d842855bcc0fcafcec6c",
+  "report.ts": "ccbaa30aaac43ad0cff67a1fc27293f2e8b8d6a425409dad376113b0fbdaab11",
+  "product.ts": "88192e641c3d6b9a8e12875343b23b8ca6803c9f0bfc10b8b32c81949eb8e82c",
+  "order.ts": "c315576eb38da7aaa44a2e22a7ae8a6f7d9ba218be41dac0cfbc006aca9d1724",
+  "diyOrder.ts": "c3961d416732eeb64fc7629e7d2885cc925941a9b14e0e55e5311bb271f6ff41",
+  "logistics.ts": "66535349d1aad807641a4f46d5255a73c2a9be81ae918cd3d265b63d19639b3f",
+  "material.ts": "2ae7bb80c9d8abef19b2a40b7eb941e015246acd526ab236d4d34f8ffdaa43ce",
+  "service.ts": "171598f846f31acf19709976ddc451796304b4dad9515bba7f03b13cae24d2ee"
+}

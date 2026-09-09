@@ -5,7 +5,7 @@ const loginCases: ReadonlyArray<{ route: string; root: string; input: string; lo
   { route: '/c/login', root: '.h5-app', input: '请输入手机号码' },
   { route: '/m/login', root: '.h5-app', input: '请输入法师账号' },
   { route: '/admin/login', root: '.login', input: '管理员账号', logo: '.login__seal' },
-  { route: '/shop/login', root: '.login-page', input: '请输入账号', logo: '.login-symbol' },
+  { route: '/shop/login', root: '.login', input: '管理员账号', logo: '.login__seal' },
   { route: '/temple/login', root: '.login-page', input: '请输入账号', logo: '.login-mark' }
 ]
 
@@ -97,6 +97,7 @@ test.describe('ECS 公开页面无凭证验收', () => {
         await expect(page.locator('.login__title')).toHaveCSS('color', 'rgb(240, 230, 218)')
       }
       if (item.route === '/shop/login') {
+        await expect(page).toHaveURL(/\/admin\/login$/)
         await expect(page.getByText(/shop_admin|123456/)).toHaveCount(0)
       }
       await expectNoPageOverflow(page)

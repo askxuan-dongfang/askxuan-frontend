@@ -1,55 +1,7 @@
 import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import AutoImport from 'unplugin-auto-import/vite'
-import Components from 'unplugin-vue-components/vite'
-import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-import path from 'node:path'
-
-// https://vitejs.dev/config/
+// Compatibility entry only. Business pages now live in web-platform-admin.
 export default defineConfig(({ mode }) => ({
   base: process.env.VITE_PUBLIC_BASE || (mode === 'production' ? '/shop/' : '/'),
-  plugins: [
-    vue(),
-    // 自动导入 Vue / Vue Router / Pinia 的 API 与 Element Plus 的函数式组件
-    AutoImport({
-      imports: ['vue', 'vue-router', 'pinia'],
-      resolvers: [ElementPlusResolver()],
-      dts: 'src/types/auto-imports.d.ts',
-      eslintrc: { enabled: false }
-    }),
-    // 自动按需引入 Element Plus 组件
-    Components({
-      resolvers: [ElementPlusResolver()],
-      dts: 'src/types/components.d.ts'
-    })
-  ],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@askxuan/domain-status': path.resolve(__dirname, '../../packages/domain-status/src/index.ts')
-    }
-  },
-  server: {
-    port: 5175,
-    proxy: {
-      '/api': {
-        target: process.env.VITE_DEV_PROXY_TARGET || 'http://localhost:8080',
-        changeOrigin: true,
-        rewrite: (p) => p
-      }
-    }
-  },
-  build: {
-    target: 'es2015',
-    chunkSizeWarningLimit: 1500,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vue: ['vue', 'vue-router', 'pinia'],
-          element: ['element-plus', '@element-plus/icons-vue'],
-          echarts: ['echarts']
-        }
-      }
-    }
-  }
+  server: { port: 5175 },
+  build: { target: 'es2015' }
 }))

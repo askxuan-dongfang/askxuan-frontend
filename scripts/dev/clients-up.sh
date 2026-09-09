@@ -91,7 +91,7 @@ start_web() {
 
   (
     cd "$ROOT_DIR/apps/$app_dir"
-    nohup npm run dev -- --host 127.0.0.1 --port "$port" >"$log_file" 2>&1 &
+    VITE_UNIFIED_ADMIN_URL=http://127.0.0.1:5175/ nohup npm run dev -- --host 127.0.0.1 --port "$port" >"$log_file" 2>&1 &
     echo $! >"$pid_file"
   )
   echo "OK: 已启动 ${key}，端口 ${port}，日志 ${log_file}"

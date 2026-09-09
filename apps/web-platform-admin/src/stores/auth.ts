@@ -47,6 +47,8 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(REFRESH_KEY)
     localStorage.removeItem(USER_KEY)
+    // Old bookmarks must not restore a session after an explicit unified logout.
+    for (const suffix of ['token', 'refresh_token', 'user']) localStorage.removeItem(`df_shop_admin_${suffix}`)
   }
 
   return { token, refreshToken, userInfo, isLogin, roles, clientId, login, logout }

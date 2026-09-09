@@ -1,0 +1,138 @@
+[
+  {
+    "legacy": "/shop/points-mall",
+    "path": "/commerce/points-mall",
+    "name": "ShopPointsMall",
+    "view": "PointsMallView.vue",
+    "title": "积分商城",
+    "baselineSha256": "3a3f01ed556cd7a8197ac1d3af5f7cdcffbfd84b03e800d6ea2dcb2f5a1a538f"
+  },
+  {
+    "legacy": "/shop/dashboard",
+    "path": "/commerce/dashboard",
+    "name": "ShopDashboard",
+    "view": "DashboardView.vue",
+    "title": "商城工作台",
+    "baselineSha256": "38e46ffd286db4aacd32dce1dcd19b62631e5cf0ec8facb875c806f0b0e95800"
+  },
+  {
+    "legacy": "/shop/products",
+    "path": "/commerce/products",
+    "name": "ShopProductList",
+    "view": "ProductListView.vue",
+    "title": "商品列表",
+    "baselineSha256": "883421c967f7f110bbfbbb6677fb9c9c0ff5bc99bcf9f999e4f467263094d6ea"
+  },
+  {
+    "legacy": "/shop/products/edit/:id?",
+    "path": "/commerce/products/edit/:id?",
+    "name": "ShopProductEdit",
+    "view": "ProductEditView.vue",
+    "title": "商品编辑",
+    "baselineSha256": "8cd3e554c14e8a3dc9de6e5cdfbf5f3858cc7fca8562675d89c07ee15abed469"
+  },
+  {
+    "legacy": "/shop/categories",
+    "path": "/commerce/categories",
+    "name": "ShopCategoryManage",
+    "view": "CategoryManageView.vue",
+    "title": "分类管理",
+    "baselineSha256": "fb87f19ab7c91f76998aa23123ef3888f9af9077a85c715dfaedeacca9ba8d05"
+  },
+  {
+    "legacy": "/shop/materials",
+    "path": "/commerce/materials",
+    "name": "ShopMaterialList",
+    "view": "MaterialListView.vue",
+    "title": "材料列表",
+    "baselineSha256": "7998287f8c9fb9f6a29ffb89f2be0794f5d19b5fb833492ba428d711447ea3e8"
+  },
+  {
+    "legacy": "/shop/materials/edit/:id?",
+    "path": "/commerce/materials/edit/:id?",
+    "name": "ShopMaterialEdit",
+    "view": "MaterialEditView.vue",
+    "title": "材料编辑",
+    "baselineSha256": "731154d0cd32295576ab0c27a66706f6fd9cfcd09806b0c668175016047a7cef"
+  },
+  {
+    "legacy": "/shop/services",
+    "path": "/commerce/services",
+    "name": "ShopServiceList",
+    "view": "ServiceListView.vue",
+    "title": "祈福服务列表",
+    "baselineSha256": "eb57fc3ba404acaf740deb0ed637a631f9941f3576a7189d655ed600c7571f86"
+  },
+  {
+    "legacy": "/shop/services/edit/:id?",
+    "path": "/commerce/services/edit/:id?",
+    "name": "ShopServiceEdit",
+    "view": "ServiceEditView.vue",
+    "title": "祈福服务编辑",
+    "baselineSha256": "e21614e6d1b045516be58b83d3a8adcb64d221a2669f3ce55d7a970ffd0ea5f4"
+  },
+  {
+    "legacy": "/shop/orders",
+    "path": "/commerce/orders",
+    "name": "ShopOrderList",
+    "view": "OrderListView.vue",
+    "title": "商城订单",
+    "baselineSha256": "969832e105c2056e3f6e15b96f4a82816bbcf71453131d14be3ad34a620a6f2e"
+  },
+  {
+    "legacy": "/shop/orders/:id",
+    "path": "/commerce/orders/:id",
+    "name": "ShopOrderDetail",
+    "view": "OrderDetailView.vue",
+    "title": "订单详情",
+    "baselineSha256": "5c85804b289917ea8d29ac844bf30f634b7d5951f36e4ea43e80abea43f1f16a"
+  },
+  {
+    "legacy": "/shop/diy-orders",
+    "path": "/commerce/diy-orders",
+    "name": "ShopDiyOrderList",
+    "view": "DiyOrderListView.vue",
+    "title": "DIY 订单",
+    "baselineSha256": "8ec6117e486ec304c9e605e5d57ab5f0cca78743426ea97a87b84ae2d806a868"
+  },
+  {
+    "legacy": "/shop/diy-orders/:id",
+    "path": "/commerce/diy-orders/:id",
+    "name": "ShopDiyOrderDetail",
+    "view": "DiyOrderDetailView.vue",
+    "title": "DIY 订单详情",
+    "baselineSha256": "0c5cc18352ed40d69b34017fd73b48ba79a003fd0bc949e90eb4f30ce997b0b1"
+  },
+  {
+    "legacy": "/shop/logistics",
+    "path": "/commerce/logistics",
+    "name": "ShopLogistics",
+    "view": "LogisticsView.vue",
+    "title": "物流管理",
+    "baselineSha256": "0773a6281ceac6f22a9969849507b28ac84a4f29ca22189909d9241935013006"
+  },
+  {
+    "legacy": "/shop/returns",
+    "path": "/commerce/returns",
+    "name": "ShopReturnList",
+    "view": "ReturnListView.vue",
+    "title": "退货列表",
+    "baselineSha256": "e6579621f0cc73177b1bdac7749a0e2f159731272451656c85927bfdbae81db5"
+  },
+  {
+    "legacy": "/shop/returns/:id",
+    "path": "/commerce/returns/:id",
+    "name": "ShopReturnDetail",
+    "view": "ReturnDetailView.vue",
+    "title": "退货详情",
+    "baselineSha256": "7abbe152a44afdd78865eb53f39bc515e586c33654c8dd17b8492835e514dcda"
+  },
+  {
+    "legacy": "/shop/reports",
+    "path": "/commerce/reports",
+    "name": "ShopReport",
+    "view": "ReportView.vue",
+    "title": "数据报表",
+    "baselineSha256": "ab02ddbc3a1df549166f2dee94d94aeaab17027b9cab4c270b5aedf76b8e034c"
+  }
+]

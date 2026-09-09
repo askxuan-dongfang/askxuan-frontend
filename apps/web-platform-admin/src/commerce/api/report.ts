@@ -2,7 +2,7 @@
 // 后端定义：services/operation/finance-service/api/finance.api
 //   prefix: /api/v1/admin/finance （网关路由到 finance-service:8091）
 //   类型 ShopReportReq / ShopReportResp 已在 .api 中声明
-import type { ShopReport } from '@/types'
+import type { ShopReport } from '@/commerce/types'
 import { orderApi } from './order'
 
 export interface ShopReportParams {

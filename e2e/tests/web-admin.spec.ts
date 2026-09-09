@@ -56,14 +56,14 @@ const apps: AdminApp[] = [
   {
     key: 'shop',
     name: '商城管理台',
-    baseURL: appBaseURL(5274, '/shop'),
+    baseURL: appBaseURL(5275, '/admin'),
     account: process.env.E2E_SHOP_ACCOUNT?.trim() || '',
     password: process.env.E2E_SHOP_PASSWORD?.trim() || '',
     role: 'shop_admin',
     clientId: 'shop-admin',
-    tokenKey: 'df_shop_admin_token',
-    refreshKey: 'df_shop_admin_refresh_token',
-    userKey: 'df_shop_admin_user',
+    tokenKey: 'df_platform_admin_token',
+    refreshKey: 'df_platform_admin_refresh_token',
+    userKey: 'df_platform_admin_user',
     userInfo: { userId: 3, nickname: '商城管理员', shopId: 1 },
     routes: [
       '/dashboard',
@@ -127,11 +127,13 @@ const apps: AdminApp[] = [
   }
 ]
 
+function adminURL(app: AdminApp, path: string) { return `${app.baseURL}${app.key === 'shop' && path !== '/login' ? '/commerce' : ''}${path}` }
+
 async function login(page: Page, app: AdminApp) {
   if (!app.account || !app.password) {
     throw new Error(`真实登录验收缺少 ${app.key} 管理台账号或密码环境变量，未发送登录请求`)
   }
-  await page.goto(`${app.baseURL}/login`, { waitUntil: 'networkidle' })
+  await page.goto(adminURL(app, '/login'), { waitUntil: 'networkidle' })
   await page.getByPlaceholder(/账号|管理员账号/).fill(app.account)
   await page.getByPlaceholder(/密码|登录密码/).fill(app.password)
   await page.getByRole('button', { name: /登\s*录/ }).click()
@@ -247,7 +249,7 @@ for (const app of apps) {
   test.describe(app.name, () => {
     test(`登录页结构与核心路由响应式截图`, async ({ page }, testInfo) => {
       const consoleErrors = collectConsoleErrors(page)
-      await page.goto(`${app.baseURL}/login`, { waitUntil: 'networkidle' })
+      await page.goto(adminURL(app, '/login'), { waitUntil: 'networkidle' })
       await expect(page.getByPlaceholder(/账号|管理员账号/)).toBeVisible()
       await expect(page.getByPlaceholder(/密码|登录密码/)).toBeVisible()
       await expect(page.getByRole('button', { name: /登\s*录/ })).toBeVisible()
@@ -260,7 +262,7 @@ for (const app of apps) {
       }
 
       for (const route of app.routes) {
-        await page.goto(`${app.baseURL}${route}`, { waitUntil: 'domcontentloaded' })
+        await page.goto(adminURL(app, route), { waitUntil: 'domcontentloaded' })
         await expect(page.locator('main')).toBeVisible()
         await expect(page.locator('body')).not.toHaveText(/Cannot read|Unhandled|白屏/i)
         await page.waitForTimeout(250)
@@ -287,7 +289,7 @@ for (const app of apps) {
 
       const isDrawerViewport = await page.evaluate(() => window.innerWidth <= 991)
       if (isDrawerViewport) {
-        await page.goto(`${app.baseURL}/dashboard`, { waitUntil: 'domcontentloaded' })
+        await page.goto(adminURL(app, '/dashboard'), { waitUntil: 'domcontentloaded' })
         await page.getByRole('button', { name: '切换主导航' }).click()
         await expect.poll(async () => {
           const openBox = await page.locator('aside[aria-label]').boundingBox()
@@ -344,7 +346,7 @@ test.describe('管理台移动任务卡', () => {
         ? { list: [testCase.item], total: 1, page: 1, size: 20 }
         : undefined)
       await seedAdminSession(page, testCase.app)
-      await page.goto(`${testCase.app.baseURL}${testCase.route}`, { waitUntil: 'domcontentloaded' })
+      await page.goto(adminURL(testCase.app, testCase.route), { waitUntil: 'domcontentloaded' })
       const card = page.locator('.mobile-task-card').filter({ hasText: testCase.expected }).first()
       await expect(card).toBeVisible()
       await expectNoPageOverflow(page)
@@ -407,26 +409,26 @@ test.describe('管理台移动图表与异常语义', () => {
     })
 
     await seedAdminSession(page, apps[1])
-    await page.goto(`${apps[1].baseURL}/dashboard`, { waitUntil: 'domcontentloaded' })
+    await page.goto(adminURL(apps[1], '/dashboard'), { waitUntil: 'domcontentloaded' })
     const shopDashboardSummary = page.locator('.chart-mobile-summary')
     await expect(shopDashboardSummary).toBeVisible()
     await expect(shopDashboardSummary).toContainText('今日销售额')
     await expect(shopDashboardSummary).toContainText('¥1,999.00')
 
-    await page.goto(`${apps[1].baseURL}/reports`, { waitUntil: 'domcontentloaded' })
+    await page.goto(adminURL(apps[1], '/reports'), { waitUntil: 'domcontentloaded' })
     const shopReportSummary = page.locator('.mobile-report-summary')
     await expect(shopReportSummary).toBeVisible()
     await expect(shopReportSummary).toContainText('经营图表摘要')
     await expect(shopReportSummary).toContainText('菩提手串')
 
     await seedAdminSession(page, apps[2])
-    await page.goto(`${apps[2].baseURL}/dashboard`, { waitUntil: 'domcontentloaded' })
+    await page.goto(adminURL(apps[2], '/dashboard'), { waitUntil: 'domcontentloaded' })
     await expect(page.locator('.chart-card__mobile-summary')).toHaveCount(2)
     await expect(page.locator('.chart-card__mobile-summary').first()).toContainText('¥28888')
     await expect(page.locator('.chart-card__mobile-summary').last()).toContainText('6')
 
     await seedAdminSession(page, apps[0])
-    await page.goto(`${apps[0].baseURL}/report`, { waitUntil: 'domcontentloaded' })
+    await page.goto(adminURL(apps[0], '/report'), { waitUntil: 'domcontentloaded' })
     const templeSummary = page.locator('.mobile-report-summary')
     await expect(templeSummary).toBeVisible()
     await expect(templeSummary).toContainText('经营摘要')
@@ -455,7 +457,7 @@ test.describe('管理台移动图表与异常语义', () => {
       await mockAdminApi(page)
       await mockEndpointFailure(page, testCase.endpoint)
       await seedAdminSession(page, testCase.app)
-      await page.goto(`${testCase.app.baseURL}/dashboard`, { waitUntil: 'domcontentloaded' })
+      await page.goto(adminURL(testCase.app, '/dashboard'), { waitUntil: 'domcontentloaded' })
       const feedback = page.locator('.ax-page-feedback')
       await expect(feedback).toBeVisible()
       await expect(feedback).toContainText(`失败模块：${testCase.module}`)
@@ -469,13 +471,13 @@ test.describe('管理台移动图表与异常语义', () => {
     await mockAdminApi(page)
 
     await seedAdminSession(page, apps[1])
-    await page.goto(`${apps[1].baseURL}/dashboard`, { waitUntil: 'domcontentloaded' })
+    await page.goto(adminURL(apps[1], '/dashboard'), { waitUntil: 'domcontentloaded' })
     await expect(page.locator('.ax-page-feedback')).toContainText('失败模块：经营报表')
     await expect(page.locator('.aui-stat-card').filter({ hasText: '今日订单' }).locator('.aui-stat-card__value')).toHaveText('—')
     await expect(page.locator('body')).not.toContainText('undefined')
 
     await seedAdminSession(page, apps[0])
-    await page.goto(`${apps[0].baseURL}/dashboard`, { waitUntil: 'domcontentloaded' })
+    await page.goto(adminURL(apps[0], '/dashboard'), { waitUntil: 'domcontentloaded' })
     await expect(page.locator('.ax-page-feedback')).toContainText('失败模块：经营报表')
     await expect(page.locator('.aui-stat-card').filter({ hasText: '累计预约' }).locator('.aui-stat-card__value')).toHaveText('—')
     await expect(page.locator('body')).not.toContainText('undefined')
@@ -496,7 +498,7 @@ test.describe('管理台高风险操作确认', () => {
         }
       : undefined)
     await seedAdminSession(page, apps[1])
-    await page.goto(`${apps[1].baseURL}/orders/1`, { waitUntil: 'domcontentloaded' })
+    await page.goto(adminURL(apps[1], '/orders/1'), { waitUntil: 'domcontentloaded' })
     await page.getByRole('button', { name: '发货', exact: true }).click()
     const shipDialog = page.getByRole('dialog', { name: '订单发货' })
     await expect(shipDialog).toContainText('发货后订单进入待收货状态')
@@ -525,7 +527,7 @@ test.describe('管理台高风险操作确认', () => {
         }
       : undefined)
     await seedAdminSession(page, apps[2])
-    await page.goto(`${apps[2].baseURL}/finance/reconcile`, { waitUntil: 'domcontentloaded' })
+    await page.goto(adminURL(apps[2], '/finance/reconcile'), { waitUntil: 'domcontentloaded' })
     const card = page.locator('.mobile-task-card').filter({ hasText: 'WD20260904001' })
     await card.getByRole('button', { name: '通过' }).click()
     await expect(page.getByText(/金额 ¥1,688\.00，通过后将进入打款处理队列/)).toBeVisible()
@@ -546,7 +548,7 @@ test.describe('管理台高风险操作确认', () => {
         }
       : undefined)
     await seedAdminSession(page, apps[2])
-    await page.goto(`${apps[2].baseURL}/master/review`, { waitUntil: 'domcontentloaded' })
+    await page.goto(adminURL(apps[2], '/master/review'), { waitUntil: 'domcontentloaded' })
     const card = page.locator('.mobile-task-card').filter({ hasText: 'M20260904001' })
     await card.getByRole('button', { name: '通过' }).click()
     const dialog = page.getByRole('dialog', { name: '审核通过' })
@@ -574,7 +576,7 @@ test.describe('管理台组件语言和移动编辑布局', () => {
     test.skip(testInfo.project.name !== 'admin-390', '手机表单布局')
     await mockAdminApi(page)
     await seedAdminSession(page, apps[0])
-    await page.goto(`${apps[0].baseURL}/temple-info`, { waitUntil: 'domcontentloaded' })
+    await page.goto(adminURL(apps[0], '/temple-info'), { waitUntil: 'domcontentloaded' })
     const form = await page.locator('.info-form').boundingBox()
     const cover = await page.locator('.info-cover').boundingBox()
     expect(form).not.toBeNull()
@@ -595,7 +597,7 @@ test('备份列表失败明确提示且刷新可恢复', async ({ page }, testIn
     body: JSON.stringify(failed ? { code: 50001, message: '服务器内部错误' } : { code: 0, data: { list: [] } })
   }))
   await seedAdminSession(page, apps[2])
-  await page.goto(`${apps[2].baseURL}/settings/backup`, { waitUntil: 'domcontentloaded' })
+  await page.goto(adminURL(apps[2], '/settings/backup'), { waitUntil: 'domcontentloaded' })
   await expect(page.getByText('备份列表加载失败，请稍后点击刷新重试。')).toBeVisible()
   await expect(page.getByRole('button', { name: '立即备份' })).toBeDisabled()
   failed = false

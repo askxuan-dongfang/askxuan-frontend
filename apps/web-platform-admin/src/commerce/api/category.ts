@@ -1,8 +1,8 @@
 // 商品分类接口
 // 后端定义：services/commerce/product-service/api/product.api
 //   prefix: /api/v1/admin/products/categories
-import client from './client'
-import type { Page, ProductCategory } from '@/types'
+import client from '@/api/client'
+import type { Page, ProductCategory } from '@/commerce/types'
 
 export interface CategoryListParams {
   parentId?: number

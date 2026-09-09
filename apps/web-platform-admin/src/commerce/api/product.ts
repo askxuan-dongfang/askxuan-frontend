@@ -1,8 +1,8 @@
 // 商品接口（含 SKU、上下架）
 // 后端定义：services/commerce/product-service/api/product.api
 //   prefix: /api/v1/admin/products （网关路由到 product-service:8086）
-import client from './client'
-import type { Page, Product, ProductStatus } from '@/types'
+import client from '@/api/client'
+import type { Page, Product, ProductStatus } from '@/commerce/types'
 
 export interface ProductListParams {
   categoryId?: number

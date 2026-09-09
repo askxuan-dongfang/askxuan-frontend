@@ -5,11 +5,11 @@ import * as echarts from 'echarts'
 import { useRouter } from 'vue-router'
 import PageHeader from '@/components/PageHeader.vue'
 import StatCard from '@/components/StatCard.vue'
-import { orderApi } from '@/api/order'
-import type { OrderReport } from '@/api/order'
-import { productApi } from '@/api/product'
-import { formatMoney, orderStatusLabel, orderStatusType } from '@/utils/format'
-import type { ShopOrder } from '@/types'
+import { orderApi } from '@/commerce/api/order'
+import type { OrderReport } from '@/commerce/api/order'
+import { productApi } from '@/commerce/api/product'
+import { formatMoney, orderStatusLabel, orderStatusType } from '@/commerce/utils/format'
+import type { ShopOrder } from '@/commerce/types'
 
 const router = useRouter()
 const loading = ref(false)
@@ -208,23 +208,23 @@ onBeforeUnmount(() => {
       <el-button :loading="loading" @click="loadDashboard">重新加载</el-button>
     </div>
 
-    <div class="ax-task-grid"><router-link class="ax-task-card" to="/points-mall"><span class="ax-task-card__icon"><el-icon><Present /></el-icon></span><span class="ax-task-card__copy"><span class="ax-task-card__label">积分商城</span><span class="ax-task-card__meta">独立商品、兑换与发货</span></span><strong class="ax-task-card__value">查看</strong></router-link>
-      <router-link class="ax-task-card" to="/diy-orders">
+    <div class="ax-task-grid"><router-link class="ax-task-card" to="/commerce/points-mall"><span class="ax-task-card__icon"><el-icon><Present /></el-icon></span><span class="ax-task-card__copy"><span class="ax-task-card__label">积分商城</span><span class="ax-task-card__meta">独立商品、兑换与发货</span></span><strong class="ax-task-card__value">查看</strong></router-link>
+      <router-link class="ax-task-card" to="/commerce/diy-orders">
         <span class="ax-task-card__icon"><el-icon><Brush /></el-icon></span>
         <span class="ax-task-card__copy"><span class="ax-task-card__label">DIY 审核与制作</span><span class="ax-task-card__meta">查看当前制作节点</span></span>
         <strong class="ax-task-card__value">查看</strong>
       </router-link>
-      <router-link class="ax-task-card" to="/orders">
+      <router-link class="ax-task-card" to="/commerce/orders">
         <span class="ax-task-card__icon"><el-icon><Box /></el-icon></span>
         <span class="ax-task-card__copy"><span class="ax-task-card__label">待发货订单</span><span class="ax-task-card__meta">进入订单履约列表</span></span>
         <strong class="ax-task-card__value">{{ pendingShip }}</strong>
       </router-link>
-      <router-link class="ax-task-card" to="/returns">
+      <router-link class="ax-task-card" to="/commerce/returns">
         <span class="ax-task-card__icon"><el-icon><RefreshLeft /></el-icon></span>
         <span class="ax-task-card__copy"><span class="ax-task-card__label">售后处理</span><span class="ax-task-card__meta">退货、退款与异常单</span></span>
         <strong class="ax-task-card__value">查看</strong>
       </router-link>
-      <router-link class="ax-task-card" to="/materials">
+      <router-link class="ax-task-card" to="/commerce/materials">
         <span class="ax-task-card__icon"><el-icon><Warning /></el-icon></span>
         <span class="ax-task-card__copy"><span class="ax-task-card__label">材料库存</span><span class="ax-task-card__meta">检查上下架与库存状态</span></span>
         <strong class="ax-task-card__value">查看</strong>
@@ -256,7 +256,7 @@ onBeforeUnmount(() => {
       <div v-if="reportLoaded" class="chart-mobile-summary">
         <div><span>今日销售额</span><b>{{ stats[1].value }}</b></div>
         <div><span>今日订单</span><b>{{ stats[0].value }} 单</b></div>
-        <el-button link type="primary" @click="router.push('/reports')">查看完整经营报表</el-button>
+        <el-button link type="primary" @click="router.push('/commerce/reports')">查看完整经营报表</el-button>
       </div>
     </div>
 
@@ -264,7 +264,7 @@ onBeforeUnmount(() => {
     <div class="df-card">
       <div class="chart-header">
         <h3>最新订单</h3>
-        <el-button text type="primary" @click="router.push('/orders')">
+        <el-button text type="primary" @click="router.push('/commerce/orders')">
           查看全部
           <el-icon><ArrowRight /></el-icon>
         </el-button>
@@ -287,7 +287,7 @@ onBeforeUnmount(() => {
         <el-table-column label="下单时间" prop="createTime" min-width="180" />
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" size="small" @click="router.push(`/orders/${row.id}`)">详情</el-button>
+            <el-button text type="primary" size="small" @click="router.push(`/commerce/orders/${row.id}`)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>

@@ -1,8 +1,8 @@
 // 物流接口（快递公司 / 运费模板 / 物流追踪）
 // 后端定义：services/operation/logistics-service/api/logistics.api
 //   prefix: /api/v1/admin/logistics （网关路由到 logistics-service:8095）
-import client from './client'
-import type { ExpressCompany, FreightTemplate, Page, TrackQueryResp } from '@/types'
+import client from '@/api/client'
+import type { ExpressCompany, FreightTemplate, Page, TrackQueryResp } from '@/commerce/types'
 
 export interface ExpressListParams {
   code?: string

@@ -1,48 +1,47 @@
 <script setup lang="ts">
-// DIY 材料列表
+// 商品列表
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
-import { materialApi, type MaterialListParams } from '@/api/material'
-import { formatMoney, materialCategoryLabel } from '@/utils/format'
-import type { Material } from '@/types'
+import { productApi, type ProductListParams } from '@/commerce/api/product'
+import { categoryApi } from '@/commerce/api/category'
+import { formatMoney } from '@/commerce/utils/format'
+import type { Product, ProductCategory, ProductStatus } from '@/commerce/types'
 
 const router = useRouter()
 const loading = ref(false)
-const list = ref<Material[]>([])
+const list = ref<Product[]>([])
 const total = ref(0)
+const categories = ref<ProductCategory[]>([])
 
-const query = reactive<MaterialListParams>({
-  category: '',
+const query = reactive<ProductListParams>({
   keyword: '',
+  categoryId: undefined,
+  status: '',
   page: 1,
   size: 20
 })
 
-const categoryOptions = [
-  { value: 'main_bead', label: '主珠' },
-  { value: 'spacer', label: '隔珠' },
-  { value: 'buddha_head', label: '佛头' },
-  { value: 'pendant', label: '吊坠' },
-  { value: 'tassel', label: '流苏' },
-  { value: 'three_way', label: '三通' },
-  { value: 'cord', label: '线绳' }
-]
-
-const elementLabel: Record<string, string> = { metal: '金', wood: '木', water: '水', fire: '火', earth: '土' }
-const materialTypeLabel: Record<string, string> = {
-  crystal: '水晶', jade: '玉石', gemstone: '宝石', wood: '木质', seed: '菩提籽',
-  organic: '有机宝石', metal: '金属', ceramic: '陶瓷', glass: '琉璃', textile: '织物', cord: '绳线'
+async function loadCategories() {
+  try {
+    const res = await categoryApi.list({ page: 1, size: 100 })
+    categories.value = res.list || []
+  } catch {
+    categories.value = []
+  }
 }
 
 async function loadList() {
   loading.value = true
   try {
-    const res = await materialApi.list(query)
+    const res = await productApi.list(query)
     list.value = res.list || []
     total.value = res.total || 0
+  } catch {
+    list.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -54,8 +53,9 @@ function handleSearch() {
 }
 
 function handleReset() {
-  query.category = ''
   query.keyword = ''
+  query.categoryId = undefined
+  query.status = ''
   query.page = 1
   loadList()
 }
@@ -71,9 +71,9 @@ function handleSizeChange(s: number) {
   loadList()
 }
 
-async function handleStatusChange(row: any, status: string) {
+async function handleStatusChange(row: any, status: ProductStatus) {
   try {
-    await materialApi.updateStatus(row.id, status as 'on_shelf' | 'off_shelf')
+    await productApi.updateStatus(row.id, status as 'on_shelf' | 'off_shelf')
     ElMessage.success('状态已更新')
     loadList()
   } catch {
@@ -83,30 +83,32 @@ async function handleStatusChange(row: any, status: string) {
 
 async function handleDelete(row: any) {
   try {
-    await ElMessageBox.confirm(`确认删除材料「${row.name}」吗？`, '提示', {
+    await ElMessageBox.confirm(`确认删除商品「${row.name}」吗？`, '提示', {
       confirmButtonText: '删除',
       cancelButtonText: '取消',
       type: 'warning'
     })
-    // DIY 材料无独立删除接口，使用下架替代提示
-    ElMessage.info('材料暂不支持物理删除，请使用下架')
+    await productApi.remove(row.id)
+    ElMessage.success('删除成功')
+    loadList()
   } catch {
-    // 取消
+    // 取消或失败
   }
 }
 
 onMounted(() => {
+  loadCategories()
   loadList()
 })
 </script>
 
 <template>
   <div class="page-wrap">
-    <PageHeader title="DIY 材料列表" subtitle="这里是 H5 与 iOS 的权威材料、样式、价格和库存来源">
+    <PageHeader title="商品列表" subtitle="管理商城在售商品、上下架与库存">
       <template #extra>
-        <el-button type="primary" @click="router.push('/materials/edit')">
+        <el-button type="primary" @click="router.push('/commerce/products/edit')">
           <el-icon><Plus /></el-icon>
-          新建材料
+          新建商品
         </el-button>
       </template>
     </PageHeader>
@@ -116,20 +118,32 @@ onMounted(() => {
         <el-form-item label="关键词">
           <el-input
             v-model="query.keyword"
-            placeholder="材料名称"
+            placeholder="商品名称 / 编号"
             clearable
             style="width: 200px"
             @keyup.enter="handleSearch"
           />
         </el-form-item>
         <el-form-item label="分类">
-          <el-select v-model="query.category" placeholder="全部分类" clearable style="width: 160px">
+          <el-select
+            v-model="query.categoryId"
+            placeholder="全部分类"
+            clearable
+            style="width: 180px"
+          >
             <el-option
-              v-for="c in categoryOptions"
-              :key="c.value"
-              :label="c.label"
-              :value="c.value"
+              v-for="c in categories"
+              :key="c.id"
+              :label="c.name"
+              :value="c.id"
             />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 140px">
+            <el-option label="草稿" value="draft" />
+            <el-option label="已上架" value="on_shelf" />
+            <el-option label="已下架" value="off_shelf" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -140,47 +154,42 @@ onMounted(() => {
     </div>
 
     <div class="df-card">
-      <el-table v-loading="loading" :data="list" style="width: 100%" empty-text="暂无材料">
-        <el-table-column label="材料" min-width="220">
+      <el-table v-loading="loading" :data="list" style="width: 100%" empty-text="暂无商品">
+        <el-table-column label="商品" min-width="280">
           <template #default="{ row }">
-            <div class="material-cell">
-              <el-image :src="row.image" fit="cover" class="material-thumb">
+            <div class="product-cell">
+              <el-image
+                :src="row.mainImage"
+                fit="cover"
+                class="product-thumb"
+              >
                 <template #error>
-                  <div class="material-thumb-placeholder">无图</div>
+                  <div class="product-thumb-placeholder">无图</div>
                 </template>
               </el-image>
-              <div>
-                <div class="material-name">{{ row.name }}</div>
-                <div class="material-spec">{{ row.spec }} · {{ materialTypeLabel[row.materialType] || row.materialType }}</div>
+              <div class="product-info">
+                <div class="product-name">{{ row.name }}</div>
+                <div class="product-no">{{ row.productNo }}</div>
               </div>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="分类" width="100">
-          <template #default="{ row }">{{ materialCategoryLabel(row.category) }}</template>
-        </el-table-column>
-        <el-table-column label="五行" width="70">
-          <template #default="{ row }">{{ elementLabel[row.fiveElements] || row.fiveElements || '—' }}</template>
-        </el-table-column>
-        <el-table-column label="渲染" width="130">
+        <el-table-column label="分类" prop="categoryName" width="120" />
+        <el-table-column label="售价" width="120">
           <template #default="{ row }">
-            <div class="render-cell"><span class="color-swatch" :style="{ background: row.colorHex }" />{{ row.shape }} · {{ row.diameterMm }}mm</div>
-          </template>
-        </el-table-column>
-        <el-table-column label="单价" width="120">
-          <template #default="{ row }">
-            <span class="price">{{ formatMoney(row.unitPrice) }} / {{ row.unit }}</span>
+            <span class="price">{{ formatMoney(row.price) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="库存" prop="stock" width="100" />
         <el-table-column label="状态" width="110">
           <template #default="{ row }">
-            <StatusTag :status="row.status" domain="enabled" />
+            <StatusTag :status="row.status" domain="product" />
           </template>
         </el-table-column>
+        <el-table-column label="创建时间" prop="createTime" width="180" />
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" size="small" @click="router.push(`/materials/edit/${row.id}`)">编辑</el-button>
+            <el-button text type="primary" size="small" @click="router.push(`/commerce/products/edit/${row.id}`)">编辑</el-button>
             <el-button
               v-if="row.status !== 'on_shelf'"
               text
@@ -229,19 +238,19 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
 }
-.material-cell {
+.product-cell {
   display: flex;
   align-items: center;
   gap: 12px;
 }
-.material-thumb {
-  width: 48px;
-  height: 48px;
-  border-radius: 6px;
+.product-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
   flex-shrink: 0;
   border: 1px solid var(--border);
 }
-.material-thumb-placeholder {
+.product-thumb-placeholder {
   width: 100%;
   height: 100%;
   display: flex;
@@ -251,11 +260,11 @@ onMounted(() => {
   color: var(--text-light);
   font-size: 12px;
 }
-.material-name {
+.product-name {
   font-weight: 500;
   color: var(--text-dark);
 }
-.material-spec {
+.product-no {
   font-size: 12px;
   color: var(--text-light);
   margin-top: 2px;
@@ -264,6 +273,4 @@ onMounted(() => {
   color: var(--primary);
   font-weight: 600;
 }
-.render-cell { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-light); }
-.color-swatch { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(0,0,0,.12); flex: none; }
 </style>

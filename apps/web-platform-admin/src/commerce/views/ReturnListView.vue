@@ -3,9 +3,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import PageHeader from '@/components/PageHeader.vue'
-import { orderApi, type ReturnListParams } from '@/api/order'
-import { formatMoney, formatDateTime, returnStatusLabel, returnStatusType } from '@/utils/format'
-import type { ReturnOrder } from '@/types'
+import { orderApi, type ReturnListParams } from '@/commerce/api/order'
+import { formatMoney, formatDateTime, returnStatusLabel, returnStatusType } from '@/commerce/utils/format'
+import type { ReturnOrder } from '@/commerce/types'
 
 const router = useRouter()
 const loading = ref(false)
@@ -130,13 +130,13 @@ onMounted(() => {
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" size="small" @click="router.push(`/returns/${row.id}`)">详情</el-button>
+            <el-button text type="primary" size="small" @click="router.push(`/commerce/returns/${row.id}`)">详情</el-button>
           </template>
         </el-table-column>
       </el-table></div>
 
       <div class="mobile-task-list" aria-label="售后任务列表">
-        <button v-for="item in list" :key="item.id" class="mobile-task-card" type="button" @click="router.push(`/returns/${item.id}`)">
+        <button v-for="item in list" :key="item.id" class="mobile-task-card" type="button" @click="router.push(`/commerce/returns/${item.id}`)">
           <span class="mobile-task-card__head">
             <strong>{{ item.returnNo }}</strong>
             <el-tag :type="returnStatusType(item.status)" effect="light" round size="small">{{ returnStatusLabel(item.status) }}</el-tag>

@@ -5,9 +5,9 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
-import { serviceApi, type BlessingServiceListParams } from '@/api/service'
-import { formatMoney } from '@/utils/format'
-import type { BlessingService } from '@/types'
+import { serviceApi, type BlessingServiceListParams } from '@/commerce/api/service'
+import { formatMoney } from '@/commerce/utils/format'
+import type { BlessingService } from '@/commerce/types'
 
 const router = useRouter()
 const loading = ref(false)
@@ -65,7 +65,7 @@ onMounted(() => {
   <div class="page-wrap">
     <PageHeader title="祈福服务列表" subtitle="管理 DIY 加持服务项（寺院/法师/价格）">
       <template #extra>
-        <el-button type="primary" @click="router.push('/services/edit')">
+        <el-button type="primary" @click="router.push('/commerce/services/edit')">
           <el-icon><Plus /></el-icon>
           新建服务
         </el-button>
@@ -98,7 +98,7 @@ onMounted(() => {
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" size="small" @click="router.push(`/services/edit/${row.id}`)">编辑</el-button>
+            <el-button text type="primary" size="small" @click="router.push(`/commerce/services/edit/${row.id}`)">编辑</el-button>
             <el-button text type="danger" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>

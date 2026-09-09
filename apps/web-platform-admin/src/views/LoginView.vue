@@ -10,7 +10,7 @@
       <div class="login__brand">
         <img class="login__seal" :src="logoUrl" alt="问玄东方平台总管理台" />
         <h1 class="login__title dfx-serif">问玄东方</h1>
-        <p class="login__subtitle">P05 · 平台总管理台</p>
+        <p class="login__subtitle">统一运营管理台 · 平台与商城</p>
       </div>
 
       <el-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="onSubmit">
@@ -33,6 +33,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { User, Lock } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { defaultRoute } from '@/router/access'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -63,7 +64,8 @@ async function onSubmit() {
     try {
       await auth.login({ account: form.account, password: form.password })
       ElMessage.success('登录成功')
-      const redirect = (route.query.redirect as string) || '/dashboard'
+      const requested = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+      const redirect = requested.startsWith('/') && !requested.startsWith('//') ? requested : defaultRoute(auth.roles)
       router.push(redirect)
     } catch (e: any) {
       ElMessage.error(e?.message || '登录失败，请检查账号密码')

@@ -1,6 +1,8 @@
-// 路由配置 - 23 条路由 + 守卫
+// 统一后台：保留 28 条平台业务路由，迁入 17 条商城业务路由。
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { commerceRoutes } from '@/commerce/routes'
+import { canAccessRoute, defaultRoute } from './access'
 import { useAuthStore } from '@/stores/auth'
 
 const Layout = () => import('@/layouts/DefaultLayout.vue')
@@ -15,10 +17,11 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     component: Layout,
-    redirect: '/dashboard',
-    // RBAC：仅平台超管/平台运营可进入本管理台
-    meta: { roles: ['platform_super', 'platform_service'] },
+    redirect: () => defaultRoute(useAuthStore().roles),
+    // 统一入口按每个子路由授权，商城角色不继承平台权限。
+    meta: { roles: ['platform_super', 'platform_service', 'shop_admin'] },
     children: [
+      ...commerceRoutes,
       // 概览
       {
         path: 'dashboard',
@@ -190,6 +193,12 @@ const routes: RouteRecordRaw[] = [
   { path: '/:pathMatch(.*)*', redirect: '/dashboard' }
 ]
 
+// Preserve platform pages and their existing audience when adding the shop role.
+for (const route of routes[1].children || []) {
+  route.meta ||= {}
+  route.meta.roles ||= ['platform_super', 'platform_service']
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
@@ -202,7 +211,7 @@ router.beforeEach((to, _from, next) => {
   document.title = `${to.meta.title || ''} · 问玄东方平台总管理台`
   if (to.meta.public) {
     if (to.name === 'Login' && auth.isLogin) {
-      next('/dashboard')
+      next(defaultRoute(auth.roles))
     } else {
       next()
     }
@@ -212,12 +221,14 @@ router.beforeEach((to, _from, next) => {
     next({ path: '/login', query: { redirect: to.fullPath } })
     return
   }
-  // RBAC：JWT 解码 roles 与路由 meta.roles 取交集
-  const required = to.matched.flatMap((r) => (r.meta.roles as string[] | undefined) || [])
-  if (required.length && !required.some((role) => auth.roles.includes(role))) {
-    auth.logout()
-    ElMessage.error('当前账号无平台管理台权限，请使用平台管理员账号登录')
-    next({ path: '/login', query: { redirect: to.fullPath, denied: '1' } })
+  if (!canAccessRoute(to, auth.roles)) {
+    ElMessage.error('当前账号无此功能权限')
+    if (auth.roles.some(role => ['platform_super', 'platform_service', 'shop_admin'].includes(role))) {
+      next(defaultRoute(auth.roles))
+    } else {
+      auth.logout()
+      next({ path: '/login', query: { denied: '1' } })
+    }
     return
   }
   next()

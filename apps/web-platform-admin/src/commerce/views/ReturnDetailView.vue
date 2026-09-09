@@ -5,9 +5,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import client from '@/api/client'
-import { orderApi } from '@/api/order'
-import { formatMoney, formatDateTime, returnStatusLabel, returnStatusType } from '@/utils/format'
-import type { ReturnOrder } from '@/types'
+import { orderApi } from '@/commerce/api/order'
+import { formatMoney, formatDateTime, returnStatusLabel, returnStatusType } from '@/commerce/utils/format'
+import type { ReturnOrder } from '@/commerce/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -96,7 +96,7 @@ onMounted(() => {
   <div class="page-wrap" v-loading="loading">
     <PageHeader title="退货详情" subtitle="查看退货申请、执行审核与退款">
       <template #extra>
-        <el-button @click="router.push('/returns')">返回列表</el-button>
+        <el-button @click="router.push('/commerce/returns')">返回列表</el-button>
         <template v-if="detail"><el-button v-if="detail.status==='return_shipping'" type="primary" @click="receiveReturn">确认收到退货</el-button>
           <el-button
             v-if="detail.status === 'pending_review'"

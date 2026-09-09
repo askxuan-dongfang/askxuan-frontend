@@ -4,9 +4,9 @@ import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import PageHeader from '@/components/PageHeader.vue'
 import StatCard from '@/components/StatCard.vue'
-import { reportApi } from '@/api/report'
-import { formatMoney } from '@/utils/format'
-import type { ShopReport } from '@/types'
+import { reportApi } from '@/commerce/api/report'
+import { formatMoney } from '@/commerce/utils/format'
+import type { ShopReport } from '@/commerce/types'
 
 const loading = ref(false)
 const dateRange = ref<[string, string] | null>(null)

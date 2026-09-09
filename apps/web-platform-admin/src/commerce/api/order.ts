@@ -1,8 +1,8 @@
 // 商城订单接口（含发货、退货）
 // 后端定义：services/commerce/order-service/api/order.api
 //   prefix: /api/v1/admin/orders （网关路由到 order-service:8089）
-import client from './client'
-import type { Page, ReturnOrder, ShopOrder } from '@/types'
+import client from '@/api/client'
+import type { Page, ReturnOrder, ShopOrder } from '@/commerce/types'
 
 export interface OrderListParams {
   status?: string
