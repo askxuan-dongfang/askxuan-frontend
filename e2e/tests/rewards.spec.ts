@@ -32,8 +32,8 @@ test('points is the activity entrance and wheel tab deep links work',async({page
  for(const path of ['/c','/c/profile']) {await page.goto('http://127.0.0.1:5386'+path);await expect(page.locator('a[href^="/c/rewards"]')).toHaveCount(0)}
 });
 test('insufficient balance and cancelled confirmation never submit a join',async({page})=>{
- await auth(page);let balance=9,joins=0;
- await page.route('**/api/v1/**',async r=>{if(r.request().method()==='POST')joins++;await r.fulfill({json:{code:0,message:'ok',data:{campaign,mine:null,winners:[],pointsBalance:balance}}})});
+ await auth(page);let balance=9,joins=0,phase='open';
+ await page.route('**/api/v1/**',async r=>{if(r.request().method()==='POST')joins++;await r.fulfill({json:{code:0,message:'ok',data:{campaign:{...campaign,phase},mine:null,winners:[],pointsBalance:balance}}})});
  await page.goto('http://127.0.0.1:5386/c/rewards/1');await expect(page.getByRole('button',{name:'积分不足',exact:true})).toBeDisabled();expect(joins).toBe(0);
- balance=100;await page.reload();await page.getByRole('button',{name:'10 积分参与奖池'}).click();await expect(page.getByRole('dialog',{name:'确认积分参与'})).toContainText('参与后剩余 90 积分');await page.getByRole('button',{name:'再想想'}).click();expect(joins).toBe(0);await expect(page.getByRole('dialog',{name:'确认积分参与'})).not.toBeVisible();
+ balance=100;await page.reload();await page.getByRole('button',{name:'10 积分参与奖池'}).click();await expect(page.getByRole('dialog',{name:'确认积分参与'})).toContainText('参与后剩余 90 积分');await page.getByRole('button',{name:'再想想'}).click();expect(joins).toBe(0);await expect(page.getByRole('dialog',{name:'确认积分参与'})).not.toBeVisible();phase='exhausted';await page.reload();await expect(page.getByRole('button',{name:'奖品已抽完',exact:true})).toBeDisabled();expect(joins).toBe(0);
 });

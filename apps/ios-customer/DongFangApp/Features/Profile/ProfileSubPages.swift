@@ -1748,7 +1748,7 @@ struct RewardCampaign: Decodable, Identifiable {
     let prizeQuantity, capacity, participantCount, awardedCount: Int
     let startsAt, endsAt, drawnAt: Int64
     let status, phase, poolDigest, announcement, algorithm: String
-    var phaseText: String { ["draft":"草稿","scheduled":"即将开始","open":"参与中","full":"名额已满 · 等待截止","awaiting_draw":"正在开奖","drawn":"已结束","cancelled":"已取消"][phase] ?? phase }
+    var phaseText: String { ["draft":"草稿","scheduled":"即将开始","open":"参与中","exhausted":"奖品已抽完","full":"名额已满 · 等待截止","awaiting_draw":"正在开奖","drawn":"已结束","cancelled":"已取消"][phase] ?? phase }
     var oddsText: String {
         let n = kind == "pool" ? participantCount : capacity - participantCount
         let k = kind == "pool" ? min(prizeQuantity, n) : prizeQuantity - awardedCount
