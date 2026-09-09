@@ -1,0 +1,2 @@
+import { defineConfig } from '@playwright/test';
+export default defineConfig({testDir:'./tests',testMatch:'ai-reports.spec.ts',timeout:45000,workers:1,reporter:'list',outputDir:'/private/tmp/askxuan-report-playwright',use:{headless:true,trace:'retain-on-failure'},webServer:{command:'npm run dev -- --host 127.0.0.1 --port 5382',cwd:'../apps/web-h5',url:'http://127.0.0.1:5382',reuseExistingServer:false}});

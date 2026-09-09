@@ -81,6 +81,7 @@
 		FA231E1DDC1EA5CF26115C35 /* APIResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F42ECA2DB16A4249D38183C /* APIResponse.swift */; };
 		FA8DF5C8136C3083A7CF725F /* Booking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4ED0B783D1D7DB113786B0 /* Booking.swift */; };
 		FD62D7B13DCFE5C4B52992F0 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FF6AD3EC1893B3135324CFB /* RemoteImage.swift */; };
+		A19E00990C0D4A1890010001 /* AiReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19E00990C0D4A1890010002 /* AiReportView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -174,6 +175,7 @@
 		F14481BA1F32CB1D766AFB69 /* DiyBraceletView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyBraceletView.swift; sourceTree = "<group>"; };
 		F92542A7AC56799BC20F9544 /* TempleDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempleDetailViewModel.swift; sourceTree = "<group>"; };
 		FB598B67C7D0B2F9D42CD48A /* TagPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagPill.swift; sourceTree = "<group>"; };
+		A19E00990C0D4A1890010002 /* AiReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AiReportView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -439,6 +441,7 @@
 			isa = PBXGroup;
 			children = (
 				787EDD761D1A9D8D2F7853A8 /* AiDivinationView.swift */,
+				A19E00990C0D4A1890010002 /* AiReportView.swift */,
 			);
 			path = AiDivination;
 			sourceTree = "<group>";
@@ -643,6 +646,7 @@
 				84B5E75095A9D37B696B6713 /* APIClient.swift in Sources */,
 				FA231E1DDC1EA5CF26115C35 /* APIResponse.swift in Sources */,
 				AB46B81C569A50D1B2BB5176 /* AiDivinationView.swift in Sources */,
+				A19E00990C0D4A1890010001 /* AiReportView.swift in Sources */,
 				615FDBF75C19A78428C9CBE2 /* AiResult.swift in Sources */,
 				BE234FC62A4A6EFFB20595A0 /* Announcement.swift in Sources */,
 				B3EAA3277CE211284149DB37 /* AuthStore.swift in Sources */,

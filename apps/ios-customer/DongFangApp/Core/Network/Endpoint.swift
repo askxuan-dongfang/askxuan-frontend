@@ -223,6 +223,13 @@ enum Endpoint {
     case paymentById(Int64)
 
     // MARK: - AI 问事
+    case aiReportConversation(Int64)
+    case aiTopics
+    case aiReports(Int)
+    case aiReport(Int64)
+    case aiReportCreate(AiReportCreateRequest)
+    case aiReportRetry(Int64)
+    case aiReportUnlock(AiReportUnlockRequest)
     case aiSkills
     case aiSessions(userId: String, page: Int, size: Int)
     case aiSessionCreate(AiSessionCreateRequest)
@@ -310,6 +317,12 @@ enum Endpoint {
     /// 相对路径（不含 BaseURL 前缀）
     var path: String {
         switch self {
+        case .aiReportConversation(let id): return "ai/reports/\(id)/conversation"
+        case .aiTopics: return "ai/topics"
+        case .aiReports, .aiReportCreate: return "ai/reports"
+        case .aiReport(let id): return "ai/reports/\(id)"
+        case .aiReportRetry(let id): return "ai/reports/\(id)/retry"
+        case .aiReportUnlock: return "payments/ai-report"
         case .shopReturns(let id): return "orders/\(id)/returns"
         case .shopReturnCreate(let id, _): return "orders/\(id)/return"
         case .shopReturnShip(let id, _, _): return "orders/returns/\(id)/ship"
@@ -427,6 +440,8 @@ enum Endpoint {
     /// HTTP 方法
     var httpMethod: HTTPMethod {
         switch self {
+        case .aiTopics, .aiReports, .aiReport: return .GET
+        case .aiReportConversation, .aiReportCreate, .aiReportRetry, .aiReportUnlock: return .POST
         case .shopReturns, .pointsSearch, .pointsAccount, .pointsLedger, .pointsProducts, .pointsOrders, .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief, .serviceTypes,
              .masters, .mastersByBelief, .masterById,
 			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById, .bookingChats, .bookingChatMessages,
@@ -463,6 +478,7 @@ enum Endpoint {
     /// 查询参数
     var queryItems: [URLQueryItem]? {
         switch self {
+        case .aiReports(let page): return [URLQueryItem(name: "page", value: String(page))]
         case .pointsSearch(let page, let keyword): return [URLQueryItem(name:"page",value:String(page)),URLQueryItem(name:"keyword",value:keyword)]
         case .pointsLedger(let page), .pointsProducts(let page), .pointsOrders(let page): return [URLQueryItem(name: "page", value: String(page))]
         case .temples(let sect, let type, let serviceCode, let page, let size):
@@ -589,6 +605,9 @@ enum Endpoint {
     /// 请求体（Encodable）
     var body: (any Encodable)? {
         switch self {
+        case .aiReportCreate(let req): return req
+        case .aiReportUnlock(let req): return req
+        case .aiReportRetry: return AnyEncodable([String:String]())
         case .shopReturnCreate(_, let reason): return AnyEncodable(["type":"return","reason":reason])
         case .shopReturnShip(_, let carrier, let tracking): return AnyEncodable(["carrier":carrier,"trackingNo":tracking])
         case .pointsRedeem(let req): return req

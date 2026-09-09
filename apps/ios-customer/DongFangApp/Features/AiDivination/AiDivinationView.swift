@@ -346,6 +346,9 @@ struct AiDivinationView: View {
         }
         .navigationBarHidden(true)
         .task { await viewModel.bootstrap() }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("AskXuanReportConversation"))) { event in
+            if let id = event.object as? Int64 { Task { await viewModel.loadSessions(); await viewModel.selectSession(id) } }
+        }
 		.onChange(of: selectedPhotoItems) {
 			Task {
 				var images: [Data] = []
@@ -414,6 +417,7 @@ struct AiDivinationView: View {
 
     private var emptyConversation: some View {
         VStack(spacing: 14) {
+            AiTopicEntrances()
             Image(systemName: "sparkles")
                 .font(.system(size: 30))
                 .foregroundStyle(Color.accentDefault)
