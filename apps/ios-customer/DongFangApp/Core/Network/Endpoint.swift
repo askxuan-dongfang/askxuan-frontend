@@ -307,6 +307,13 @@ enum Endpoint {
     case reviews(userId: String, page: Int, size: Int)
     case myCoupons(status: String?, page: Int, size: Int)
 
+    case rewardCampaigns(Int, String)
+    case rewardDetail(Int64)
+    case rewardEntries(Int)
+    case rewardOrders(Int)
+    case rewardJoin(Int64)
+    case rewardClaim(Int64, RewardAddressRequest)
+    case rewardComplete(Int64)
     case pointsAccount
     case pointsLedger(Int)
     case pointsProducts(Int)
@@ -328,6 +335,13 @@ enum Endpoint {
         case .shopReturnShip(let id, _, _): return "orders/returns/\(id)/ship"
         case .diyOrderConfirm(let id): return "diy/orders/\(id)/confirm"
         case .pointsSearch: return "points/products"
+        case .rewardCampaigns: return "marketing/rewards/campaigns"
+        case .rewardDetail(let id): return "marketing/rewards/campaigns/\(id)"
+        case .rewardEntries: return "marketing/rewards/entries"
+        case .rewardOrders: return "marketing/rewards/orders"
+        case .rewardJoin(let id): return "marketing/rewards/campaigns/\(id)/join"
+        case .rewardClaim(let id, _): return "marketing/rewards/orders/\(id)/claim"
+        case .rewardComplete(let id): return "marketing/rewards/orders/\(id)/complete"
         case .pointsAccount: return "points"
         case .pointsLedger: return "points/ledger"
         case .pointsProducts: return "points/products"
@@ -440,6 +454,8 @@ enum Endpoint {
     /// HTTP 方法
     var httpMethod: HTTPMethod {
         switch self {
+        case .rewardCampaigns, .rewardDetail, .rewardEntries, .rewardOrders: return .GET
+        case .rewardJoin, .rewardClaim, .rewardComplete: return .POST
         case .aiTopics, .aiReports, .aiReport: return .GET
         case .aiReportConversation, .aiReportCreate, .aiReportRetry, .aiReportUnlock: return .POST
         case .shopReturns, .pointsSearch, .pointsAccount, .pointsLedger, .pointsProducts, .pointsOrders, .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief, .serviceTypes,
@@ -478,6 +494,8 @@ enum Endpoint {
     /// 查询参数
     var queryItems: [URLQueryItem]? {
         switch self {
+        case .rewardCampaigns(let page, let kind): return [URLQueryItem(name:"page",value:String(page)),URLQueryItem(name:"kind",value:kind)]
+        case .rewardEntries(let page), .rewardOrders(let page): return [URLQueryItem(name:"page",value:String(page))]
         case .aiReports(let page): return [URLQueryItem(name: "page", value: String(page))]
         case .pointsSearch(let page, let keyword): return [URLQueryItem(name:"page",value:String(page)),URLQueryItem(name:"keyword",value:keyword)]
         case .pointsLedger(let page), .pointsProducts(let page), .pointsOrders(let page): return [URLQueryItem(name: "page", value: String(page))]
@@ -610,6 +628,8 @@ enum Endpoint {
         case .aiReportRetry: return AnyEncodable([String:String]())
         case .shopReturnCreate(_, let reason): return AnyEncodable(["type":"return","reason":reason])
         case .shopReturnShip(_, let carrier, let tracking): return AnyEncodable(["carrier":carrier,"trackingNo":tracking])
+        case .rewardClaim(_, let req): return req
+        case .rewardJoin, .rewardComplete: return AnyEncodable([String:String]())
         case .pointsRedeem(let req): return req
         case .createBooking(let req):          return AnyEncodable(req)
         case .updateBookingStatus(_, let status): return AnyEncodable(["status": status])

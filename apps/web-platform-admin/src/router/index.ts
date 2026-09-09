@@ -128,6 +128,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/finance/FinanceReconcileView.vue'),
         meta: { title: '对账中心', parent: '财务管理' }
       },
+      {path:'marketing/rewards',name:'Rewards',component:()=>import('@/views/marketing/RewardsView.vue'),meta:{title:'免费活动与奖品',parent:'营销管理',roles:['platform_super']}},
       // 营销管理
       {
         path: 'marketing/banner',

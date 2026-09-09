@@ -1168,6 +1168,7 @@ struct PointsView: View {
                 Text("每笔实付满 100 元得 1 积分，不足部分舍去。退款后按净实付重算。").font(.footnote).foregroundStyle(.secondary)
                 if (balance ?? 0) < 0 { Text("退款扣回后余额不足，后续消费将先补足积分。").font(.footnote) }
             } header: { Text("可用积分") }
+            NavigationLink("免费转盘与大奖池 · 不扣积分") { RewardsView() }
             Picker("积分", selection: $tab) { Text("明细").tag(0); Text("积分商城").tag(1); Text("兑换记录").tag(2) }.pickerStyle(.segmented).disabled(busy)
             if let error { Text(error).foregroundStyle(.red); Button("重试") { Task { await load() } } }
             if busy { ProgressView() }
@@ -1294,7 +1295,7 @@ struct HelpView: View {
     private let faqs: [(q: String, a: String)] = [
         ("如何预约法师？", "在法师主页点击「预约咨询」，选择时间并提交即可。"),
         ("订单如何退款？", "在「我的订单」中找到对应订单，点击「申请退款」并填写原因。"),
-        ("功德金如何使用？", "功德金可用于法事、供养等服务，下单时勾选功德金支付即可。"),
+        ("积分、活动与功德值有什么区别？", "积分用于确定权益兑换；转盘和大奖池免费参与，由平台提供奖品；功德值独立记录成长，不用于支付或兑换。"),
         ("如何修改收货地址？", "进入「收货地址」页面，点击对应地址进行编辑。"),
         ("DIY 手串定制流程？", "在首页进入「DIY 手串」，选择珠子材质与搭配后提交定制。")
     ]
@@ -1731,4 +1732,161 @@ struct AboutView: View {
     private var divider: some View {
         Rectangle().fill(Color.borderDivider).frame(height: 1).padding(.leading, 52)
     }
+}
+
+// MARK: - 平台免费活动：独立于积分、支付与功德成长
+struct RewardCampaign: Decodable, Identifiable {
+    let id: Int64
+    let title, kind, prizeName, image, description, rules: String
+    let prizeValue, budget: Int64
+    let prizeQuantity, capacity, participantCount, awardedCount: Int
+    let startsAt, endsAt, drawnAt: Int64
+    let status, phase, poolDigest, announcement, algorithm: String
+    var phaseText: String { ["draft":"草稿","scheduled":"即将开始","open":"参与中","full":"名额已满 · 等待截止","awaiting_draw":"正在开奖","drawn":"已结束","cancelled":"已取消"][phase] ?? phase }
+    var oddsText: String {
+        let n = kind == "pool" ? participantCount : capacity - participantCount
+        let k = kind == "pool" ? min(prizeQuantity, n) : prizeQuantity - awardedCount
+        return n > 0 ? String(format: "%.2f%%", Double(k) / Double(n) * 100) : "—"
+    }
+}
+struct RewardEntry: Decodable, Identifiable {
+    let id, campaignId, createdAt: Int64
+    let code, outcome, title: String
+    var outcomeText: String { ["pending":"等待开奖","won":"恭喜中奖","lost":"本期未中奖"][outcome] ?? outcome }
+}
+struct RewardOrder: Decodable, Identifiable {
+    let id, campaignId, entryId, createdAt, claimedAt, shippedAt, completedAt: Int64
+    let prizeName, code, status, receiver, mobile, address, carrier, trackingNo: String
+    var statusText: String { ["awaiting_address":"待填写地址","pending":"待发货","shipped":"已发货","completed":"已完成"][status] ?? status }
+}
+struct RewardDetail: Decodable { let campaign: RewardCampaign; var mine: RewardEntry?; let winners: [RewardEntry] }
+struct RewardAddressRequest: Encodable { let receiver, mobile, address: String }
+private func rewardDate(_ n: Int64) -> String {
+    Date(timeIntervalSince1970: Double(n)).formatted(.dateTime.month().day().hour().minute())
+}
+struct RewardsView: View {
+    init(initialTab: Int = 0) { _tab = State(initialValue: initialTab) }
+    @State private var tab: Int
+    @State private var page = 1
+    @State private var campaigns: [RewardCampaign] = []
+    @State private var entries: [RewardEntry] = []
+    @State private var orders: [RewardOrder] = []
+    @State private var loading = false
+    @State private var error: String?
+    @State private var claim: RewardOrder?
+    @State private var completing: RewardOrder?
+    private var count: Int { tab < 2 ? campaigns.count : tab == 2 ? entries.count : orders.count }
+    var body: some View {
+        List {
+            Section {
+                VStack(alignment:.leading,spacing:12) {
+                    Text("A GIFT, A LITTLE JOY").font(.caption2).tracking(2).foregroundStyle(Color.accentDefault)
+                    Text("把小欢喜，留给有缘的你").font(.system(size:26,weight:.semibold,design:.serif))
+                    Text("平台备好礼物，你只需免费参与。").font(.subheadline).foregroundStyle(.secondary)
+                    HStack { Label("不扣积分",systemImage:"checkmark.seal"); Spacer(); Label("实物包邮",systemImage:"gift") }.font(.caption).foregroundStyle(Color.accentDefault)
+                }.padding(.vertical,12)
+            }.listRowBackground(Color.accentDefault.opacity(0.1))
+            Picker("活动分类",selection:$tab) { Text("大奖池").tag(0);Text("转盘").tag(1);Text("参与记录").tag(2);Text("我的奖品").tag(3) }.pickerStyle(.segmented).disabled(loading)
+            if let error { Section { Text(error).foregroundStyle(.red); Button("重新加载") { Task { await load() } } } }
+            if loading { ProgressView("正在准备活动…") }
+            if tab < 2 {
+                ForEach(campaigns) { c in
+                    NavigationLink { RewardDetailView(id:c.id) } label: {
+                        VStack(alignment:.leading,spacing:12) {
+                            HStack { Text("第 \(c.id) 期 · \(c.kind == "pool" ? "大奖池" : "幸运转盘")");Spacer();Text(c.phaseText).foregroundStyle(Color.accentDefault) }.font(.caption)
+                            if let url=URL(string:c.image), !c.image.isEmpty { AsyncImage(url:url) { image in image.resizable().scaledToFill() } placeholder: { Color.accentDefault.opacity(0.15) }.frame(height:150).clipped().clipShape(RoundedRectangle(cornerRadius:14)) }
+                            Text(c.title).font(.title3.bold()).foregroundStyle(Color.textPrimary)
+                            Text("\(c.prizeName) × \(c.prizeQuantity)").font(.subheadline)
+                            ProgressView(value:Double(c.participantCount),total:Double(c.capacity)).tint(Color.accentDefault)
+                            HStack { Text("\(c.participantCount) 人参与 / 限 \(c.capacity) 人");Spacer();Text("免费 →") }.font(.caption).foregroundStyle(Color.accentDefault)
+                            Text("\(rewardDate(c.endsAt)) 截止\(c.kind == "pool" ? " · 到期即开" : " · 即转即开")").font(.caption).foregroundStyle(.secondary)
+                        }.padding(.vertical,8)
+                    }
+                }
+            } else if tab == 2 {
+                ForEach(entries) { e in NavigationLink { RewardDetailView(id:e.campaignId) } label: { VStack(alignment:.leading,spacing:10) { HStack { Text(e.title);Spacer();Text(e.outcomeText).foregroundStyle(Color.accentDefault) };Text(e.code).font(.system(.subheadline,design:.monospaced));Text(rewardDate(e.createdAt)).font(.caption).foregroundStyle(.secondary) }.padding(.vertical,6) } }
+            } else {
+                ForEach(orders) { o in
+                    Section {
+                        HStack { Text(o.prizeName).font(.headline);Spacer();Text(o.statusText).foregroundStyle(Color.accentDefault) }
+                        NavigationLink("中奖码 \(o.code)") { RewardDetailView(id:o.campaignId) }.font(.caption)
+                        if !o.address.isEmpty { Text("\(o.receiver) · \(o.mobile)\n\(o.address)").font(.subheadline) }
+                        if !o.trackingNo.isEmpty { Text("物流：\(o.carrier) · \(o.trackingNo)").font(.subheadline).textSelection(.enabled) }
+                        if o.claimedAt > 0 { Label("提交地址 \(rewardDate(o.claimedAt))",systemImage:"mappin.circle").font(.caption) }
+                        if o.shippedAt > 0 { Label("发货 \(rewardDate(o.shippedAt))",systemImage:"shippingbox").font(.caption) }
+                        if o.completedAt > 0 { Label("已完成 \(rewardDate(o.completedAt))",systemImage:"checkmark.circle").font(.caption) }
+                        if o.status == "awaiting_address" { Button("填写收货地址") { claim=o }.buttonStyle(.borderedProminent).tint(Color.accentDefault) }
+                        if o.status == "shipped" { Button("确认收货") { completing=o }.disabled(loading) }
+                    }
+                }
+            }
+            if !loading && error == nil && count == 0 { ContentUnavailableView(tab < 2 ? "下一份惊喜，正在准备" : tab == 2 ? "还没有参与记录" : "还没有中奖礼物",systemImage:"gift",description:Text("免费活动不扣积分，每次参与都会保留专属参与码和结果。")) }
+            if page > 1 || count >= 20 { HStack { Button("上一页") { page-=1 }.disabled(page==1||loading);Spacer();Text("第 \(page) 页");Spacer();Button("下一页") { page+=1 }.disabled(count<20||loading) }.font(.caption) }
+            Section { NavigationLink("积分商城 · 确定的回馈") { PointsView() };Text("功德值独立记录成长，与活动概率无关。").font(.caption).foregroundStyle(.secondary) }
+        }
+        .navigationTitle("免费活动").navigationBarTitleDisplayMode(.inline)
+        .task(id:"\(tab)-\(page)") { await load() }
+        .onChange(of:tab) { _,_ in page=1 }
+        .refreshable { await load() }
+        .sheet(item:$claim,onDismiss:{Task {await load()}}) { RewardClaimSheet(order:$0) }
+        .alert("确认已收到奖品？",isPresented:Binding(get:{completing != nil},set:{if !$0 {completing=nil}})) { Button("取消",role:.cancel){completing=nil};Button("确认收货"){if let o=completing { Task {await complete(o)} }} } message: { Text("确认后本次实物领奖流程完成。") }
+    }
+    @MainActor private func load() async {
+        loading=true;error=nil;defer{loading=false}
+        do { if tab < 2 { campaigns=try await APIClient.shared.request(.rewardCampaigns(page,tab==0 ? "pool":"wheel")) } else if tab==2 { entries=try await APIClient.shared.request(.rewardEntries(page)) } else { orders=try await APIClient.shared.request(.rewardOrders(page)) } } catch { self.error=error.localizedDescription }
+    }
+    @MainActor private func complete(_ o:RewardOrder) async { loading=true;defer{loading=false};do { let _:PointsActionResult=try await APIClient.shared.request(.rewardComplete(o.id));completing=nil;await load() }catch{self.error=error.localizedDescription} }
+}
+struct RewardDetailView: View {
+    let id:Int64
+    @State private var detail:RewardDetail?
+    @State private var error:String?
+    @State private var busy=false
+    @State private var spinning=false
+    @State private var rotation=0.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body:some View {
+        List {
+            if let error { Text(error).foregroundStyle(.red);Button("重新加载") {Task{await load()}} }
+            if let d=detail {
+                Section {
+                    VStack(spacing:16) {
+                        Text("第 \(d.campaign.id) 期 · \(d.campaign.phaseText)").font(.caption).foregroundStyle(Color.accentDefault)
+                        Text(d.campaign.title).font(.system(size:25,weight:.semibold,design:.serif)).multilineTextAlignment(.center)
+                        if d.campaign.kind == "wheel" { wheel }
+                        else if let url=URL(string:d.campaign.image), !d.campaign.image.isEmpty { AsyncImage(url:url) { image in image.resizable().scaledToFill() } placeholder: { Image(systemName:"gift.fill").font(.system(size:70)) }.frame(height:190).clipped().clipShape(RoundedRectangle(cornerRadius:18)) }
+                        else { Image(systemName:"gift.fill").font(.system(size:70)).foregroundStyle(Color.accentDefault).padding(30) }
+                        Text("\(d.campaign.prizeName) × \(d.campaign.prizeQuantity)").font(.headline)
+                        Text("平台提供 · 免费参与 · 实物包邮").font(.caption).foregroundStyle(.secondary)
+                    }.frame(maxWidth:.infinity).padding(.vertical,14)
+                }.listRowBackground(Color.accentDefault.opacity(0.08))
+                Section {
+                    HStack { fact("已参与人数","\(d.campaign.participantCount)");Spacer();fact("奖品数量","\(d.campaign.prizeQuantity)");Spacer();fact(d.campaign.kind=="pool" ? "按当前人数估算":"下一位即时概率",d.campaign.oddsText) }
+                    ProgressView(value:Double(d.campaign.participantCount),total:Double(d.campaign.capacity)).tint(Color.accentDefault)
+                    Text("名额 \(d.campaign.participantCount) / \(d.campaign.capacity) 人").font(.caption)
+                    Text("开始：\(rewardDate(d.campaign.startsAt))\n截止：\(rewardDate(d.campaign.endsAt))").font(.subheadline)
+                    Text(d.campaign.kind=="pool" ? "截止后自动开奖，不需要等满额。最终概率为 min(奖品数量, 有效人数) ÷ 有效人数；100 人抽 1 人，每人为 1%。" : "当前概率 = 剩余奖品 ÷ 剩余名额，随结果变化。扇区仅作动画展示，不代表概率。剩余奖品 \(d.campaign.prizeQuantity-d.campaign.awardedCount) 份。").font(.caption).foregroundStyle(.secondary)
+                }
+                if let mine=d.mine { Section("我的专属参与码") { Text(mine.code).font(.system(.title3,design:.monospaced)).foregroundStyle(Color.accentDefault).textSelection(.enabled);Text(spinning ? "正在揭晓…":mine.outcomeText).font(.headline);Text("参与于 \(rewardDate(mine.createdAt))").font(.caption);if mine.outcome=="won" && !spinning { NavigationLink("查看我的奖品并领奖") { RewardsView(initialTab: 3) } } } }
+                Section("这一份礼物") { Text(d.campaign.description);Text(d.campaign.rules).font(.subheadline);Text("每个账号每期一次；不收现金、不扣积分、不增加功德值。奖品预算由平台承担。").font(.caption).foregroundStyle(.secondary) }
+                if !d.campaign.announcement.isEmpty || !d.winners.isEmpty { Section("开奖公告") { Text(d.campaign.announcement.isEmpty ? "本期实时中奖码，活动结束后归档。":d.campaign.announcement);if d.campaign.drawnAt>0 {Text("实际开奖 \(rewardDate(d.campaign.drawnAt))").font(.caption)};ForEach(d.winners) {Text($0.code).font(.system(.caption,design:.monospaced)).textSelection(.enabled)};if !d.campaign.poolDigest.isEmpty { DisclosureGroup("开奖留档信息") { Text(d.campaign.algorithm);Text("参与码按创建顺序以换行分隔，SHA-256：");Text(d.campaign.poolDigest).textSelection(.enabled) }.font(.caption) } } }
+                Section { Button { Task {await join()} } label: { Text(busy ? "正在处理…":d.mine != nil ? "本期已参与":d.campaign.phase=="open" ? (d.campaign.kind=="wheel" ? "免费转一次":"免费参与，领取参与码"):d.campaign.phaseText).frame(maxWidth:.infinity).padding(8) }.buttonStyle(.borderedProminent).tint(Color.accentDefault).disabled(busy||d.mine != nil||d.campaign.phase != "open"||error != nil);Text("一期一次 · 0 积分").font(.caption).frame(maxWidth:.infinity).foregroundStyle(.secondary) }
+            } else if error == nil { ProgressView("加载活动…") }
+        }.navigationTitle("活动详情").navigationBarTitleDisplayMode(.inline).refreshable {await load()}.task { await load();while !Task.isCancelled { do {try await Task.sleep(for:.seconds(15))}catch{return};if !busy {await load()} } }
+    }
+    private func fact(_ title:String,_ value:String)->some View { VStack(spacing:8) {Text(value).font(.title3.bold()).foregroundStyle(Color.accentDefault);Text(title).font(.system(size:10)).foregroundStyle(.secondary)} }
+    private var wheel:some View { ZStack { Circle().fill(Color.accentDefault.opacity(0.18));VStack {Text("好礼");Spacer();Text("下次有缘").rotationEffect(.degrees(180))}.padding(30).frame(width:210,height:210).background(LinearGradient(colors:[Color.accentDefault.opacity(0.5),Color.brown.opacity(0.4)],startPoint:.top,endPoint:.bottom)).clipShape(Circle()).rotationEffect(.degrees(rotation));Circle().fill(Color.accentDefault).frame(width:64,height:64);Text("免费").foregroundStyle(.black);VStack{Image(systemName:"arrowtriangle.down.fill").foregroundStyle(Color.accentDefault);Spacer()}.offset(y:-8) }.frame(width:210,height:210).padding(12).accessibilityLabel(spinning ? "转盘正在揭晓":"免费幸运转盘") }
+    @MainActor private func load()async {do{detail=try await APIClient.shared.request(.rewardDetail(id));error=nil}catch{self.error=error.localizedDescription}}
+    @MainActor private func join()async { guard !busy else{return};busy=true;error=nil;defer{busy=false;spinning=false};do{let entry:RewardEntry=try await APIClient.shared.request(.rewardJoin(id));detail?.mine=entry;if detail?.campaign.kind=="wheel" {spinning=true;withAnimation(reduceMotion ? nil:.easeOut(duration:1.8)){rotation+=1800+(entry.outcome=="won" ? 0:180)};if !reduceMotion {try? await Task.sleep(for:.milliseconds(1800))}};await load()}catch{self.error=error.localizedDescription} }
+}
+struct RewardClaimSheet:View {
+    let order:RewardOrder
+    @Environment(\.dismiss) private var dismiss
+    @State private var receiver=""
+    @State private var mobile=""
+    @State private var address=""
+    @State private var busy=false
+    @State private var error:String?
+    var body:some View { NavigationStack { Form { Section(order.prizeName) { Text("平台包邮，填写地址后进入待发货。").font(.subheadline);Text(order.code).font(.caption) };Section("收货信息") { TextField("收货人",text:$receiver).textContentType(.name);TextField("联系电话",text:$mobile).keyboardType(.phonePad).textContentType(.telephoneNumber);TextField("省市区、街道与门牌号",text:$address,axis:.vertical).textContentType(.fullStreetAddress).lineLimit(3...5) }.disabled(busy);if let error {Text(error).foregroundStyle(.red)};Section { Text("提交后请等待平台发货，请先核对地址和联系电话。").font(.caption);Button(busy ? "提交中…":"确认地址，等待发货") {Task{await submit()}}.disabled(busy||receiver.trimmingCharacters(in:.whitespaces).isEmpty||mobile.count<6||address.count<5) } }.navigationTitle("领奖地址").navigationBarTitleDisplayMode(.inline).toolbar {ToolbarItem(placement:.cancellationAction){Button("稍后填写"){dismiss()}.disabled(busy)}}.interactiveDismissDisabled(busy) } }
+    @MainActor private func submit()async {busy=true;error=nil;defer{busy=false};do{let _:PointsActionResult=try await APIClient.shared.request(.rewardClaim(order.id,RewardAddressRequest(receiver:receiver.trimmingCharacters(in:.whitespacesAndNewlines),mobile:mobile.trimmingCharacters(in:.whitespacesAndNewlines),address:address.trimmingCharacters(in:.whitespacesAndNewlines))));dismiss()}catch{self.error=error.localizedDescription}}
 }

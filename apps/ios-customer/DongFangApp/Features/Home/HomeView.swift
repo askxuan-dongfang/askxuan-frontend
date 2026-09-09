@@ -20,6 +20,9 @@ struct HomeView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: AppSpacing.lg) {
                     bannerSection
+                    NavigationLink { RewardsView() } label: {
+                        HStack { VStack(alignment: .leading, spacing: 6) { Text("好礼相逢 · 免费活动").font(.headline); Text("转盘与大奖池，一期一次，不扣积分").font(.caption).foregroundStyle(.secondary) }; Spacer(); Image(systemName: "gift") }.foregroundStyle(Color.accentDefault).padding(16).background(Color.accentDefault.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+                    }.padding(.horizontal, 16)
                     entryCardsSection
                     beliefSection
                     intentionSection

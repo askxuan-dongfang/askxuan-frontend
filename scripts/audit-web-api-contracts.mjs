@@ -222,7 +222,7 @@ function frontendContracts() {
 function backendContracts() {
   const runtime = new Map()
   const routePattern = /Method:\s*http\.Method(Get|Post|Put|Delete|Patch)[\s\S]*?Path:\s*"([^"]+)"/g
-  const routeFiles = walk(join(backendRoot, 'services'), (path) => basename(path) === 'routes.go')
+  const routeFiles = walk(join(backendRoot, 'services'), (path) => ['routes.go', 'rewards.go'].includes(basename(path)))
 
   for (const file of routeFiles) {
     const source = readFileSync(file, 'utf8')
