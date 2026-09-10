@@ -720,3 +720,84 @@ test("experience detail discloses provenance and does not promise shipping", asy
     fullPage: true,
   });
 });
+
+test("paid response waits for order synchronization instead of asking for another payment", async ({
+  page,
+}) => {
+  await checkoutFixture(page, { experience: true });
+  let reads = 0;
+  await page.route("**/api/v1/orders/81", (r) =>
+    r.fulfill({
+      json: {
+        code: 0,
+        data: {
+          id: 81,
+          orderNo: "EXO-81",
+          isExperience: true,
+          userId: "1",
+          status: ++reads < 4 ? "pending_payment" : "paid",
+          payAmount: 136.7,
+          totalAmount: 136.7,
+          items: [],
+          addressId: 5,
+          createTime: "2026-09-11",
+        },
+      },
+    }),
+  );
+  await page.goto(h5 + "/c/shop/cart");
+  await page.getByRole("button", { name: /去结算/ }).click();
+  await page
+    .getByRole("button", { name: "提交并模拟支付", exact: true })
+    .click();
+  await expect(
+    page.getByText("支付已确认 · 正在同步订单", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "继续模拟支付", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByText("已付款", { exact: true })).toBeVisible();
+});
+test("experience receipt dialog is explicit and cancellation does not complete order", async ({
+  page,
+}) => {
+  await fixtures(page);
+  let completed = false,
+    writes = 0;
+  await page.route("**/api/v1/orders/81", (r) =>
+    r.fulfill({
+      json: {
+        code: 0,
+        data: {
+          id: 81,
+          orderNo: "EXO-81",
+          isExperience: true,
+          userId: "1",
+          status: completed ? "completed" : "shipped",
+          payAmount: 118,
+          totalAmount: 118,
+          items: [],
+          addressId: 5,
+          createTime: "2026-09-11",
+        },
+      },
+    }),
+  );
+  await page.route("**/api/v1/orders/81/returns", (r) =>
+    r.fulfill({ json: { code: 0, data: [] } }),
+  );
+  await page.route("**/api/v1/orders/81/confirm", (r) => {
+    writes++;
+    completed = true;
+    return r.fulfill({ json: { code: 0, data: {} } });
+  });
+  await page.goto(h5 + "/c/shop/orders/81");
+  await page.getByRole("button", { name: "确认收货", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("完成模拟收货？");
+  await page.getByRole("button", { name: "关闭确认", exact: true }).click();
+  expect(writes).toBe(0);
+  await page.getByRole("button", { name: "确认收货", exact: true }).click();
+  await page.getByRole("button", { name: "确认模拟收货", exact: true }).click();
+  await expect(page.getByText("已完成", { exact: true })).toBeVisible();
+  expect(writes).toBe(1);
+});
