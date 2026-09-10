@@ -7,7 +7,7 @@ const list=ref<Design[]>([]), loading=ref(false), error=ref(''), total=ref(0), a
 const query=reactive({page:1,size:20,status:'public',keyword:''})
 const labels:Record<string,string>={private:'私密草稿',public:'已发布',pending_review:'待审核',approved:'已通过',rejected:'已下架'}
 async function load(){loading.value=true;error.value='';try{const r=await client.get<{list:Design[];total:number}>('/admin/diy/designs',{params:query});list.value=r.list||[];total.value=r.total}catch(e){error.value=e instanceof Error?e.message:'作品加载失败'}finally{loading.value=false}}
-async function remove(d:Design){try{await ElMessageBox.confirm(`下架「${d.name}」后，公开链接、复制和新定制将停止。已有副本和订单保留。`,'下架设计',{type:'warning',confirmButtonText:'确认下架',cancelButtonText:'取消'})}catch{return}acting.value=d.id;try{await client.put(`/admin/diy/designs/${d.id}/status`,{revision:d.revision,status:'rejected'});ElMessage.success('作品已下架');await load()}finally{acting.value=0}}
+async function remove(d:Design){try{await ElMessageBox.confirm(`下架「${d.name}」后，公开链接、复制和新定制将停止。已有副本和订单保留。`,'下架设计',{type:'warning',confirmButtonText:'确认下架',cancelButtonText:'取消'})}catch{return}acting.value=d.id;try{await client.put(`/admin/diy/designs/${d.id}/status`,{revision:d.revision,status:'rejected'});ElMessage.success('作品已下架');await load()}catch(e){ElMessage.error(e instanceof Error?e.message:'下架失败，请重试')}finally{acting.value=0}}
 onMounted(load)
 </script>
 <template>

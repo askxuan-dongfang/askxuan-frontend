@@ -1,7 +1,7 @@
 import { chromium, expect } from '@playwright/test';
 import fs from 'node:fs/promises';
 const fixture=JSON.parse(await fs.readFile('/private/tmp/diy-browser-fixture.json','utf8'));
-const output='/Users/gaofeng/develop/DongFang/artifacts/diy-upgrade-20260911/verification';await fs.mkdir(output,{recursive:true});
+const output=process.env.DIY_VERIFY_DIR || '/private/tmp/diy-studio-verification';await fs.mkdir(output,{recursive:true});
 const api=async(path,token,body,method='POST')=>{const r=await fetch('http://127.0.0.1:18088/api/v1'+path,{method,headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});const data=await r.json();if(data.code)throw Error(JSON.stringify(data));return data.data;};
 const live=JSON.parse(await fs.readFile('/private/tmp/diy-live-materials.json','utf8')).data.list;
 const manifest=JSON.parse(await fs.readFile('../apps/web-h5/public/assets/diy/manifest.json','utf8'));
