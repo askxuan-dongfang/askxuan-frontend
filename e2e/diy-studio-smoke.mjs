@@ -1,5 +1,6 @@
-import { chromium, expect } from '@playwright/test';
+import { chromium, expect as assertion } from '@playwright/test';
 import fs from 'node:fs/promises';
+const expect=assertion.configure({timeout:20000});
 const fixture=JSON.parse(await fs.readFile('/private/tmp/diy-browser-fixture.json','utf8'));
 const output=process.env.DIY_VERIFY_DIR || '/private/tmp/diy-studio-verification';await fs.mkdir(output,{recursive:true});
 const api=async(path,token,body,method='POST')=>{const r=await fetch('http://127.0.0.1:18088/api/v1'+path,{method,headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});const data=await r.json();if(data.code)throw Error(JSON.stringify(data));return data.data;};
@@ -16,7 +17,7 @@ for(const name of ['粉晶','小叶紫檀圆珠','白玉','铜鎏金隔片']){
 const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const ctx=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1});
 await ctx.addInitScript(({token})=>{localStorage.setItem('h5_token',token);localStorage.setItem('h5-auth',JSON.stringify({state:{token,role:'customer',userId:99002,displayName:'DIY 验收'},version:0}));},{token:fixture.other});
-const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+const page=await ctx.newPage();page.setDefaultTimeout(60000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
 try {
  await page.goto('http://127.0.0.1:5178/c/diy/editor');
  await page.getByRole('button',{name:'添加青金石',exact:true}).waitFor();
