@@ -16,7 +16,7 @@ test('ECS real platform login and unified operations load with real read-only AP
  const errors:string[]=[],failed:string[]=[]
  page.on('pageerror',e=>errors.push(e.message))
  page.on('response',async r=>{if(!r.url().includes('/api/v1/'))return;try{const body=await r.json();if(!r.ok()||body.code!==undefined&&body.code!==0)failed.push(new URL(r.url()).pathname+':'+body.code)}catch{failed.push(new URL(r.url()).pathname+':non-json')}})
- await page.goto('/admin/login');await page.getByPlaceholder('管理员账号').fill(account);await page.getByPlaceholder('登录密码').fill(password);await page.getByRole('button',{name:/登\s*录/}).click();await expect(page).toHaveURL(/\/admin\/dashboard$/)
+ await page.goto('/admin/login');await page.getByPlaceholder('管理员账号').fill(account);await page.getByPlaceholder('登录密码').fill(password);const loginResponse=page.waitForResponse(r=>r.url().includes('/auth/admin/login')&&r.request().method()==='POST');await page.getByRole('button',{name:/登\s*录/}).click();expect((await (await loginResponse).json()).code).toBe(0);await expect(page).toHaveURL(/\/admin\/dashboard$/,{timeout:20000})
  for(const path of ['/commerce','/commerce/dashboard','/commerce/products','/commerce/categories','/commerce/materials','/commerce/services','/commerce/orders','/commerce/diy-orders','/commerce/logistics','/commerce/returns','/commerce/reports','/commerce/points-mall','/marketing/rewards','/marketing/banner','/marketing/activity','/marketing/coupon','/temple/list','/master/list','/user/list','/finance/overview','/settings/account','/settings/role','/settings/dict','/settings/log','/settings/backup']){
   await page.goto('/admin'+path);await expect(page.locator('.ax-admin-header__title')).not.toBeEmpty();await page.waitForLoadState('networkidle')
   await expect(page.locator('.ax-admin-main')).not.toBeEmpty()
@@ -38,7 +38,7 @@ test('ECS H5 real customer sees activity center and corrected header actions',as
   await page.goto(path);await page.waitForLoadState('networkidle')
   await expect(page.locator('header').getByRole('button',{name:/退出/})).toHaveCount(0)
   await expect(page.locator('header').getByRole('link',{name:'搜索',exact:true})).toHaveCount(path==='/c'?1:0)
-  if(path==='/c/points'){await expect(page.getByRole('link',{name:/积分转盘/})).toBeVisible();await expect(page.getByRole('link',{name:/大奖池 一期一码/})).toBeVisible()}
+  if(path==='/c/points'){await expect(page.locator('.points-activity-entries').getByRole('link',{name:/积分转盘/})).toBeVisible();await expect(page.getByRole('link',{name:/大奖池 一期一码/})).toBeVisible()}
   if(path==='/c'||path==='/c/profile')await expect(page.locator('a[href^="/c/rewards"]')).toHaveCount(0)
   if(path==='/c/rewards')await expect(page.getByText('积分活动',{exact:true}).first()).toBeVisible()
  }
