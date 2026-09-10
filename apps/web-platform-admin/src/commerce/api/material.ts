@@ -11,7 +11,10 @@ export interface MaterialListParams {
   size?: number
 }
 
+export type StudioMaterial = Material & { renderAssets?: string }
+
 export interface MaterialSaveParams {
+  renderAssets?: string
   name: string
   spec: string
   unitPrice: number
@@ -31,23 +34,23 @@ export interface MaterialSaveParams {
 
 export const materialApi = {
   /** 材料列表 */
-  list(params: MaterialListParams = {}): Promise<Page<Material>> {
-    return client.get<Page<Material>>('/admin/diy/materials', { params })
+  list(params: MaterialListParams = {}): Promise<Page<StudioMaterial>> {
+    return client.get<Page<StudioMaterial>>('/admin/diy/materials', { params })
   },
   /** 材料详情 */
-  detail(id: number): Promise<Material> {
-    return client.get<Material>(`/admin/diy/materials/${id}`)
+  detail(id: number): Promise<StudioMaterial> {
+    return client.get<StudioMaterial>(`/admin/diy/materials/${id}`)
   },
   /** 创建材料 */
   create(data: MaterialSaveParams): Promise<{ id: number }> {
     return client.post<{ id: number }>('/admin/diy/materials', data)
   },
   /** 更新材料 */
-  update(id: number, data: MaterialSaveParams): Promise<Material> {
-    return client.put<Material>(`/admin/diy/materials/${id}`, data)
+  update(id: number, data: MaterialSaveParams): Promise<StudioMaterial> {
+    return client.put<StudioMaterial>(`/admin/diy/materials/${id}`, data)
   },
   /** 上下架 */
-  updateStatus(id: number, status: 'on_shelf' | 'off_shelf'): Promise<Material> {
-    return client.put<Material>(`/admin/diy/materials/${id}/status`, { status })
+  updateStatus(id: number, status: 'on_shelf' | 'off_shelf'): Promise<StudioMaterial> {
+    return client.put<StudioMaterial>(`/admin/diy/materials/${id}/status`, { status })
   }
 }

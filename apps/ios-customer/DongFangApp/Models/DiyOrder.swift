@@ -9,6 +9,9 @@ import Foundation
 
 /// DIY 设计
 struct DiyDesign: Codable, Identifiable, Hashable {
+    var revision: Int64? = nil
+    var sourceDesignId: Int64? = nil
+    var description: String? = nil
     let id: Int64
     let designNo: String?
     let userId: String?
@@ -20,7 +23,7 @@ struct DiyDesign: Codable, Identifiable, Hashable {
     let createTime: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, name, status
+        case id, name, status, revision, sourceDesignId, description
         case designNo, userId, designData, totalPrice, blessServiceCode, createTime
     }
 }
@@ -49,6 +52,7 @@ struct DiyDesignDocument: Codable, Hashable {
 
 /// 一颗珠子的不可变材料快照与可变珠位。
 struct DiyBeadSlot: Codable, Identifiable, Hashable {
+    var renderAssets: String? = nil
     let slotId: String
     var position: Int
     let materialId: Int64
@@ -85,6 +89,7 @@ struct DiyBeadSlot: Codable, Identifiable, Hashable {
         self.textureKey = material.textureKey
         self.finish = material.finish
         self.translucency = material.translucency
+        self.renderAssets = material.renderAssets
     }
 
     init(item: DiyOrderItem, position: Int, slotId: String = UUID().uuidString) {
@@ -132,7 +137,7 @@ struct DiyBeadSlot: Codable, Identifiable, Hashable {
             colorHex: colorHex,
             textureKey: textureKey,
             finish: finish,
-            translucency: translucency,
+            translucency: translucency, renderAssets: renderAssets,
             image: image,
             stock: 1,
             status: "on_shelf"
@@ -243,6 +248,7 @@ struct DiyOrderAvailability: Codable, Hashable {
 
 /// 材料
 struct Material: Codable, Identifiable, Hashable {
+    var renderAssets: String? = nil
     let id: Int64
     let name: String
     let spec: String
@@ -264,7 +270,7 @@ struct Material: Codable, Identifiable, Hashable {
     init(id: Int64, name: String, spec: String, unitPrice: Double, unit: String,
          category: String, fiveElements: String? = nil, materialType: String? = nil,
          shape: String? = nil, diameterMm: Double? = nil, colorHex: String? = nil,
-         textureKey: String? = nil, finish: String? = nil, translucency: Double? = nil,
+         textureKey: String? = nil, finish: String? = nil, translucency: Double? = nil, renderAssets: String? = nil,
          image: String, stock: Int, status: String) {
         self.id = id
         self.name = name
@@ -280,6 +286,7 @@ struct Material: Codable, Identifiable, Hashable {
         self.textureKey = textureKey
         self.finish = finish
         self.translucency = translucency
+        self.renderAssets = renderAssets
         self.image = image
         self.stock = stock
         self.status = status
@@ -335,6 +342,9 @@ struct BlessingTask: Codable, Identifiable, Hashable {
 // MARK: - 请求体
 
 struct DiyDesignSaveRequest: Codable {
+    var id: Int64? = nil
+    var revision: Int64? = nil
+    var description: String? = nil
     let userId: String
     let name: String
     let designData: String
@@ -344,6 +354,7 @@ struct DiyDesignSaveRequest: Codable {
 }
 
 struct DiyDesignSaveResponse: Codable {
+    var revision: Int64? = nil
     let id: Int64
 }
 
@@ -398,3 +409,55 @@ extension DiyDesign {
 }
 
 struct DiyOrderLogistics:Codable,Hashable {let expressCompany:String;let trackingNo:String;let shipTime:String}
+
+struct DiyDesignStatusRequest: Codable { let revision: Int64; let status: String }
+struct DiyImageCrop: Codable, Hashable { let x, y, width, height, imageWidth, imageHeight: Double }
+struct DiyRenderAssets: Codable, Hashable {
+    var imageCrop: DiyImageCrop?
+    var attribution: String?
+    var beadImageUrl: String?
+    var albedoMapUrl: String?
+    var normalMapUrl: String?
+    var roughnessMapUrl: String?
+    var source: String?
+    static func parse(_ raw: String?) -> DiyRenderAssets? {
+        guard let data = raw?.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(Self.self, from: data)
+    }
+    static func url(_ raw: String?) -> URL? {
+        guard let raw, !raw.isEmpty, !raw.hasPrefix("//"), !raw.contains("\\") else { return nil }
+        if raw.hasPrefix("/") { return URL(string: raw, relativeTo: AppConfig.baseURL)?.absoluteURL }
+        guard let url = URL(string: raw), url.scheme == "https", url.user == nil else { return nil }
+        return url
+    }
+}
+
+// Geometric packing shared in principle with the H5 studio: preserve bead
+// diameters and chord distances, distribute any remaining cord evenly.
+struct DiyPhysicalLayout {
+    let radius: Double
+    let angles: [Double]
+    let innerMm: Double
+    init(slots: [DiyBeadSlot], wrist: Double = 160, allowance: Double = 8) {
+        let widths = slots.map { $0.diameterMm * ($0.shape == "disc" ? 0.45 : $0.shape == "barrel" ? 1.15 : 1) }
+        let mean = slots.isEmpty ? 10 : slots.reduce(0) { $0 + $1.diameterMm } / Double(slots.count)
+        var r = (wrist + allowance) / (Double.pi * 2) + mean / 2
+        let chords = widths.indices.map { (widths[$0] + widths[($0 + 1) % widths.count]) / 2 }
+        if slots.count > 2 {
+            var low = (chords.max() ?? 10) / 2 + 0.01
+            var high = max(r, widths.reduce(0, +))
+            for _ in 0..<40 {
+                let mid = (low + high) / 2
+                let sum = chords.reduce(0) { $0 + 2 * asin(min(1, $1 / (2 * mid))) }
+                if sum > Double.pi * 2 { low = mid } else { high = mid }
+            }
+            r = max(r, high)
+        }
+        let steps = chords.map { 2 * asin(min(1, $0 / (2 * r))) }
+        let gap = slots.isEmpty ? 0 : max(0, Double.pi * 2 - steps.reduce(0, +)) / Double(slots.count)
+        var angle = -Double.pi / 2
+        var result: [Double] = []
+        for step in steps { result.append(angle); angle += step + gap }
+        radius = r; angles = result; innerMm = max(0, widths.reduce(0, +) - Double.pi * mean)
+    }
+}

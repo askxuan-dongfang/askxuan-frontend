@@ -18,6 +18,8 @@ const saving = ref(false)
 const isEdit = computed(() => !!route.params.id)
 const materialId = computed(() => Number(route.params.id) || 0)
 
+const assets = reactive({ beadImageUrl: '', albedoMapUrl: '', normalMapUrl: '', roughnessMapUrl: '', source: 'procedural', attribution: '' })
+
 const form = reactive<MaterialSaveParams>({
   name: '',
   spec: '',
@@ -107,6 +109,7 @@ async function loadDetail() {
   loading.value = true
   try {
     const target = await materialApi.detail(materialId.value)
+    try { Object.assign(assets, JSON.parse(target.renderAssets || '{}')) } catch { ElMessage.warning('材质素材配置无效，请重新填写') }
     Object.assign(form, {
       name: target.name,
       spec: target.spec,
@@ -134,6 +137,7 @@ async function handleSubmit() {
   await formRef.value.validate(async (valid) => {
     if (!valid) return
     saving.value = true
+    form.renderAssets = JSON.stringify(assets)
     try {
       if (isEdit.value) {
         await materialApi.update(materialId.value, form)
@@ -253,6 +257,14 @@ onMounted(() => {
           <el-input-number v-model="form.stock" :min="0" :step="1" controls-position="right" />
         </el-form-item>
 
+        <el-divider content-position="left">写实单珠与 3D 素材</el-divider>
+        <el-alert title="单珠图请使用有授权的透明底 PNG / WebP，统一正面视角与光照；3D 贴图使用去光照的展开纹理，不要上传整串商品照片。" type="info" :closable="false" style="margin-bottom:20px" />
+        <el-form-item label="单珠实拍"><ImageUploader v-model="assets.beadImageUrl" :multiple="false" placeholder="透明底单珠图片 URL" /></el-form-item>
+        <el-form-item label="颜色贴图"><el-input v-model="assets.albedoMapUrl" placeholder="3D 颜色纹理 URL（可选）" /></el-form-item>
+        <el-form-item label="法线贴图"><el-input v-model="assets.normalMapUrl" placeholder="表面细节纹理 URL（可选）" /></el-form-item>
+        <el-form-item label="粗糙度图"><el-input v-model="assets.roughnessMapUrl" placeholder="黑白粗糙度纹理 URL（可选）" /></el-form-item>
+        <el-form-item label="素材来源"><el-select v-model="assets.source"><el-option label="实拍素材" value="photograph"/><el-option label="授权素材" value="licensed"/><el-option label="程序材质预览" value="procedural"/></el-select></el-form-item>
+        <el-form-item label="授权与说明"><el-input v-model="assets.attribution" type="textarea" :rows="2" maxlength="400" placeholder="摄影归属、授权出处、拍摄批次" /></el-form-item>
         <el-form-item label="材料图片" prop="image">
           <ImageUploader v-model="form.image" :multiple="false" placeholder="粘贴材料图片 URL" />
         </el-form-item>

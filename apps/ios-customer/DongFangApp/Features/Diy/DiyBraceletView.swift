@@ -12,6 +12,13 @@ struct DiyBraceletView: View {
                     workbench
                     quickNavigation
                     inspirationSection
+                    if let error = viewModel.errorMessage {
+                        Text(error).font(.footnote).foregroundStyle(.red).padding()
+                        Button("重新加载") { Task { await viewModel.loadDesigns() } }
+                    }
+                    if viewModel.hasMoreDesigns {
+                        Button(viewModel.isLoading ? "加载中…" : "加载更多作品") { Task { await viewModel.loadDesigns(append: true) } }.disabled(viewModel.isLoading).padding()
+                    }
                     Spacer(minLength: AppSpacing.navBottom + 24)
                 }
                 .padding(.horizontal, AppSpacing.lg)
@@ -43,9 +50,9 @@ struct DiyBraceletView: View {
                 .frame(height: 244)
 
             HStack(spacing: 12) {
-                Text("材料与库存由后台实时维护")
+                Text("天然材质，颗颗不同")
                 Text("·")
-                Text("下单时服务端重新计价")
+                Text("自由搭配，保存心意")
             }
             .font(.system(size: 9))
             .foregroundStyle(Color.textTertiary)
@@ -68,7 +75,7 @@ struct DiyBraceletView: View {
         .padding(16)
         .background(
             RadialGradient(
-                colors: [Color(hex: "303236"), Color(hex: "17191B"), Color(hex: "0D0F10")],
+                colors: [Color(hex: "544338"), Color(hex: "30251E"), Color(hex: "201915")],
                 center: .center,
                 startRadius: 24,
                 endRadius: 280
@@ -146,7 +153,7 @@ struct DiyBraceletView: View {
         VStack(alignment: .leading, spacing: 0) {
             DiyMiniBracelet(slots: slots(for: design), fallbackCount: 0)
                 .frame(height: 142)
-                .background(Color(hex: "17191B"))
+                .background(Color(hex: "30251E"))
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(design.name)
@@ -182,7 +189,7 @@ struct DiyMiniBracelet: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let count = slots.isEmpty ? fallbackCount : min(slots.count, 24)
+            let count = slots.isEmpty ? fallbackCount : min(slots.count, 60)
             let radiusX = min(proxy.size.width * 0.32, 108)
             let radiusY = min(proxy.size.height * 0.34, 82)
             let center = CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2)
@@ -194,11 +201,9 @@ struct DiyMiniBracelet: View {
 
                 ForEach(0..<count, id: \.self) { index in
                     let slot = slots.indices.contains(index) ? slots[index] : nil
-                    let angle = -Double.pi / 2 + Double(index) / Double(max(count, 1)) * Double.pi * 2
-                    let size = min(23, max(13, CGFloat(slot?.diameterMm ?? (index % 4 == 0 ? 12 : 10)) * 1.55))
-                    let base = Color(hex: slot?.colorHex ?? fallbackColors[index % fallbackColors.count])
-                    Circle()
-                        .fill(RadialGradient(colors: [Color.white.opacity(0.74), base, base.opacity(0.58)], center: UnitPoint(x: 0.3, y: 0.25), startRadius: 0, endRadius: size * 0.7))
+                    let angle = slots.isEmpty ? -Double.pi / 2 + Double(index) / Double(max(count, 1)) * Double.pi * 2 : DiyPhysicalLayout(slots: slots).angles[index]
+                    let size = slots.isEmpty ? CGFloat(20) : CGFloat((slot?.diameterMm ?? 10) / DiyPhysicalLayout(slots: slots).radius) * radiusX
+                    DiyMaterialBead(name: slot?.materialName ?? "", category: slot?.subtype ?? "main_bead", size: size, isSelected: false, shape: slot?.shape ?? "round", colorHex: slot?.colorHex ?? fallbackColors[index % fallbackColors.count], textureKey: slot?.textureKey, finish: slot?.finish, translucency: slot?.translucency ?? 0, renderAssets: slot?.renderAssets)
                         .frame(width: size, height: size)
                         .shadow(color: Color.black.opacity(0.45), radius: 4, y: 3)
                         .position(x: center.x + cos(angle) * radiusX, y: center.y + sin(angle) * radiusY)
