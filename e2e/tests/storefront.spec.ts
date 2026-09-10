@@ -433,7 +433,7 @@ const basketItem = (
 });
 async function checkoutFixture(
   page: Page,
-  { failCreate = false, stockChanged = false } = {},
+  { failCreate = false, stockChanged = false, experience = false } = {},
 ) {
   await fixtures(page);
   const calls: any[] = [],
@@ -450,7 +450,10 @@ async function checkoutFixture(
         sessionStorage.setItem("cartSeeded", "1");
       }
     },
-    [basketItem(11, "小号手串", 68.35, 2), basketItem(12, "大号手串", 78.8)],
+    [
+      basketItem(11, "小号手串", 68.35, 2),
+      basketItem(12, "大号手串", 78.8),
+    ].map((i) => ({ ...i, isExperience: experience })),
   );
   await page.route("**/api/v1/users/addresses", (r) =>
     r.fulfill({
@@ -475,7 +478,8 @@ async function checkoutFixture(
   );
   const order = () => ({
     id: 81,
-    orderNo: "LOCAL-81",
+    orderNo: experience ? "EXO-81" : "LOCAL-81",
+    isExperience: experience,
     status: paid ? "paid" : "pending_payment",
     payAmount: 136.7,
     totalAmount: 136.7,
@@ -528,6 +532,37 @@ async function checkoutFixture(
     await page.route("**/api/v1/products/1", (r) =>
       r.fulfill({
         json: { code: 0, data: { ...product, stock: 0, skus: [] } },
+      }),
+    );
+  if (experience)
+    await page.route("**/api/v1/products/1", (r) =>
+      r.fulfill({
+        json: {
+          code: 0,
+          data: {
+            ...product,
+            isExperience: true,
+            sourceName: "公开案例",
+            sourceUrl: "https://example.com/item",
+            sourceNote: "体验案例",
+            skus: [
+              {
+                id: 11,
+                specName: "尺寸",
+                specValue: "小号",
+                price: 68.35,
+                stock: 10,
+              },
+              {
+                id: 12,
+                specName: "尺寸",
+                specValue: "大号",
+                price: 78.8,
+                stock: 10,
+              },
+            ],
+          },
+        },
       }),
     );
   return { calls, payments };
@@ -646,4 +681,123 @@ test("order cards show real status and totals without fabricated payment success
     ),
   ).toBeTruthy();
   await page.screenshot({ path: "/private/tmp/askxuan-market-orders-320.png" });
+});
+
+test("experience checkout preserves disclosure and simulated order identity", async ({
+  page,
+}) => {
+  const { calls, payments } = await checkoutFixture(page, { experience: true });
+  await page.goto(h5 + "/c/shop/cart");
+  await page.getByRole("button", { name: /去结算/ }).click();
+  await expect(
+    page.getByText("体验订单不发放消费积分。", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "提交并模拟支付", exact: true })
+    .click();
+  await expect(page).toHaveURL(/orders\/81/);
+  expect(calls).toHaveLength(1);
+  expect(payments[0].orderNo).toBe("EXO-81");
+  expect(payments[0].channel).toBe("mock");
+  await expect(page.getByText(/体验订单 · 全程模拟/)).toBeVisible();
+});
+test("experience detail discloses provenance and does not promise shipping", async ({
+  page,
+}) => {
+  await checkoutFixture(page, { experience: true });
+  await page.goto(h5 + "/c/shop/1");
+  await expect(
+    page.getByText("体验商品 · 模拟库存", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: /公开案例/ })).toHaveAttribute(
+    "href",
+    "https://example.com/item",
+  );
+  await page.getByText("配送与售后", { exact: true }).click();
+  await expect(page.getByText(/本商品用于体验商城流程/)).toBeVisible();
+  await page.screenshot({
+    path: "/private/tmp/askxuan-case-detail.png",
+    fullPage: true,
+  });
+});
+
+test("paid response waits for order synchronization instead of asking for another payment", async ({
+  page,
+}) => {
+  await checkoutFixture(page, { experience: true });
+  let reads = 0;
+  await page.route("**/api/v1/orders/81", (r) =>
+    r.fulfill({
+      json: {
+        code: 0,
+        data: {
+          id: 81,
+          orderNo: "EXO-81",
+          isExperience: true,
+          userId: "1",
+          status: ++reads < 4 ? "pending_payment" : "paid",
+          payAmount: 136.7,
+          totalAmount: 136.7,
+          items: [],
+          addressId: 5,
+          createTime: "2026-09-11",
+        },
+      },
+    }),
+  );
+  await page.goto(h5 + "/c/shop/cart");
+  await page.getByRole("button", { name: /去结算/ }).click();
+  await page
+    .getByRole("button", { name: "提交并模拟支付", exact: true })
+    .click();
+  await expect(
+    page.getByText("支付已确认 · 正在同步订单", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "继续模拟支付", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByText("已付款", { exact: true })).toBeVisible();
+});
+test("experience receipt dialog is explicit and cancellation does not complete order", async ({
+  page,
+}) => {
+  await fixtures(page);
+  let completed = false,
+    writes = 0;
+  await page.route("**/api/v1/orders/81", (r) =>
+    r.fulfill({
+      json: {
+        code: 0,
+        data: {
+          id: 81,
+          orderNo: "EXO-81",
+          isExperience: true,
+          userId: "1",
+          status: completed ? "completed" : "shipped",
+          payAmount: 118,
+          totalAmount: 118,
+          items: [],
+          addressId: 5,
+          createTime: "2026-09-11",
+        },
+      },
+    }),
+  );
+  await page.route("**/api/v1/orders/81/returns", (r) =>
+    r.fulfill({ json: { code: 0, data: [] } }),
+  );
+  await page.route("**/api/v1/orders/81/confirm", (r) => {
+    writes++;
+    completed = true;
+    return r.fulfill({ json: { code: 0, data: {} } });
+  });
+  await page.goto(h5 + "/c/shop/orders/81");
+  await page.getByRole("button", { name: "确认收货", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("完成模拟收货？");
+  await page.getByRole("button", { name: "关闭确认", exact: true }).click();
+  expect(writes).toBe(0);
+  await page.getByRole("button", { name: "确认收货", exact: true }).click();
+  await page.getByRole("button", { name: "确认模拟收货", exact: true }).click();
+  await expect(page.getByText("已完成", { exact: true })).toBeVisible();
+  expect(writes).toBe(1);
 });

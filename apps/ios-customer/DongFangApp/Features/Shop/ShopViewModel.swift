@@ -161,7 +161,8 @@ final class ShopCartStore: ObservableObject {
             image: product.mainImage,
             unitPrice: sku?.price ?? product.price,
             quantity: safeQuantity,
-            stock: sku?.stock ?? product.stock
+            stock: sku?.stock ?? product.stock,
+            isExperience: product.isExperience
         ))
     }
 
@@ -280,9 +281,11 @@ final class ShopCheckoutViewModel: ObservableObject {
 
         do {
             if pendingRequest == nil {
+                guard !items.contains(where: { $0.isExperience == true }) || items.allSatisfy({ $0.isExperience == true }) else { throw NSError(domain: "Commerce", code: 409, userInfo: [NSLocalizedDescriptionKey: "体验商品与普通商品请分开结算"]) }
                 for item in items {
                     let p:ShopProduct=try await apiClient.request(.productById(item.productId))
                     let sku=p.skus?.first(where:{$0.id==item.skuId})
+                    guard (p.isExperience == true) == (item.isExperience == true) else { throw NSError(domain: "Commerce", code: 409, userInfo: [NSLocalizedDescriptionKey: "商品信息已更新，请重新选择后结算"]) }
                     guard p.status=="on_shelf",(item.skuId==0 || sku != nil),(sku?.stock ?? p.stock)>=item.quantity,abs((sku?.price ?? p.price)-item.unitPrice)<0.005 else {throw NSError(domain:"Commerce",code:409,userInfo:[NSLocalizedDescriptionKey:"\(item.productName) 的价格或库存已变化，请重新加入购物车后确认"])}
                 }
                 guard authStore.userId == account else { return false }

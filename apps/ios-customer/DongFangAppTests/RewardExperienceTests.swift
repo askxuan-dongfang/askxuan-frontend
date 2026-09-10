@@ -189,6 +189,17 @@ private struct RewardWheelMotionFixture: View {
 }
 
 @MainActor final class StorefrontNativeTests: XCTestCase {
+    func testExperienceMetadataAndRelativeMedia() throws {
+        var product = ShopProduct.mockProducts[0]
+        product.isExperience = true; product.sourceName = "公开案例"; product.sourceUrl = "https://example.com/item"
+        let decoded = try JSONDecoder().decode(ShopProduct.self, from: JSONEncoder().encode(product))
+        XCTAssertEqual(decoded.isExperience, true); XCTAssertEqual(decoded.sourceName, "公开案例")
+        XCTAssertEqual(resolvedMediaURL("/catalog-experiences/lotus-sandalwood-1.jpg")?.path, "/catalog-experiences/lotus-sandalwood-1.jpg")
+        XCTAssertNil(resolvedMediaURL("javascript:alert(1)"))
+        let legacy = ShopCartItem(productId: 1, skuId: 11, productName: "旧购物车", skuSpec: "小", image: "", unitPrice: 59, quantity: 1, stock: 10)
+        XCTAssertNil(try JSONDecoder().decode(ShopCartItem.self, from: JSONEncoder().encode(legacy)).isExperience)
+    }
+
     func testPurchasedQuantitiesPreserveOtherSelectionsAndLaterAdditions() {
         let first = ShopCartItem(productId: 1, skuId: 11, productName: "小号", skuSpec: "小", image: "", unitPrice: 68.35, quantity: 3, stock: 10)
         let second = ShopCartItem(productId: 1, skuId: 12, productName: "大号", skuSpec: "大", image: "", unitPrice: 78.8, quantity: 1, stock: 10)

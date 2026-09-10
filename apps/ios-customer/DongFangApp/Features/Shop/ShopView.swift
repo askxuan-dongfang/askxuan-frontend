@@ -100,6 +100,7 @@ struct ShopView: View {
                 }.aspectRatio(1, contentMode: .fit)
                     .overlay(alignment: .topLeading) {
                         if product.stock <= 0 { badge("暂时售罄") }
+                        else if product.isExperience == true { badge("体验商品") }
                         else if let tag = product.tags?.split(whereSeparator: { $0 == "," || $0 == "，" }).first { badge(String(tag)) }
                     }
                 VStack(alignment: .leading, spacing: 8) {
@@ -116,6 +117,7 @@ struct ShopProductDetailView: View {
     @StateObject private var viewModel: ShopProductDetailViewModel
     @StateObject private var cart = ShopCartStore.shared
     @State private var selectedSkuId: Int64?
+    @State private var selectedImage: String?
     @State private var quantity = 1
     @State private var showCart = false
     @State private var added = false
@@ -163,13 +165,19 @@ struct ShopProductDetailView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: AppSpacing.lg) {
-                RemoteImage(urlString: imageAsset,
+                RemoteImage(urlString: selectedImage ?? imageAsset,
                             placeholderIcon: "bag.fill", contentMode: .fill)
                     .aspectRatio(1, contentMode: .fit)
                     .frame(maxWidth: .infinity)
                     .clipped()
 
+                if let images = viewModel.product.images, images.count > 1 {
+                    ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: 10) { ForEach(images.sorted(by: { $0.sort < $1.sort })) { image in
+                        Button { selectedImage = image.imageUrl } label: { RemoteImage(urlString: image.imageUrl, contentMode: .fit).frame(width: 68, height: 68).clipShape(RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(selectedImage == image.imageUrl ? Color.accentDefault : Color.borderDefault)) }.accessibilityLabel("查看商品图片 \(image.sort + 1)")
+                    } }.padding(.horizontal, AppSpacing.lg) }
+                }
                 VStack(alignment: .leading, spacing: AppSpacing.md) {
+                    if viewModel.product.isExperience == true { experienceNotice() }
                     Text(viewModel.product.name)
                         .font(AppTypography.title(24))
                         .foregroundStyle(.textPrimary)
@@ -184,7 +192,7 @@ struct ShopProductDetailView: View {
                                 .strikethrough()
                         }
                         Spacer()
-                        Text(availableStock > 0 ? "库存 \(availableStock)" : "暂时缺货")
+                        Text(availableStock > 0 ? "\(viewModel.product.isExperience == true ? "模拟库存" : "库存") \(availableStock)" : "暂时缺货")
                             .font(.system(size: 12))
                             .foregroundStyle(availableStock > 0 ? Color.textTertiary : Color.stateError)
                     }
@@ -206,6 +214,11 @@ struct ShopProductDetailView: View {
                         .foregroundStyle(.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
 
+                    if let source = viewModel.product.sourceUrl, let url = URL(string: source), url.scheme == "https" {
+                        Divider().overlay(Color.borderDefault)
+                        Link(viewModel.product.sourceName ?? "查看商品案例来源", destination: url).font(.system(size: 14)).foregroundStyle(Color.accentDefault)
+                        Text(viewModel.product.sourceNote ?? "").font(.system(size: 12)).foregroundStyle(Color.textTertiary)
+                    }
                     if let message = viewModel.errorMessage {
                         Text(message).font(.system(size: 12)).foregroundStyle(.stateWarning)
                         Button("重新加载商品") { Task { await viewModel.load() } }
@@ -325,7 +338,7 @@ struct ShopProductDetailView: View {
                 if purchaseMode == "buy" {
                     directItems = [ShopCartItem(productId: viewModel.product.id, skuId: selectedSku?.id ?? 0,
                         productName: viewModel.product.name, skuSpec: selectedSku.map { "\($0.specName)：\($0.specValue)" } ?? "默认规格",
-                        image: viewModel.product.mainImage, unitPrice: unitPrice, quantity: quantity, stock: availableStock)]
+                        image: viewModel.product.mainImage, unitPrice: unitPrice, quantity: quantity, stock: availableStock, isExperience: viewModel.product.isExperience)]
                     showCheckout = true
                 }
                 showSpecs = false
@@ -335,7 +348,7 @@ struct ShopProductDetailView: View {
     }
 
     private var imageAsset: String {
-        if viewModel.product.mainImage.hasPrefix("http") { return viewModel.product.mainImage }
+        if viewModel.product.mainImage.hasPrefix("http") || viewModel.product.mainImage.hasPrefix("/catalog-experiences/") { return viewModel.product.mainImage }
         return ImageMapper.productImage(for: viewModel.product.name) ?? viewModel.product.mainImage
     }
 
@@ -417,7 +430,7 @@ struct ShopCartView: View {
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.sm))
             VStack(alignment: .leading, spacing: 5) {
                 Text(item.productName).font(.system(size: 14, weight: .semibold)).foregroundStyle(.textPrimary).lineLimit(2)
-                Text(item.skuSpec).font(.system(size: 11)).foregroundStyle(.textTertiary)
+                Text((item.isExperience == true ? "体验商品 · " : "") + item.skuSpec).font(.system(size: 11)).foregroundStyle(.textTertiary)
                 Text("¥\(item.unitPrice, specifier: "%.2f")")
                     .font(.system(size: 15, weight: .semibold)).foregroundStyle(.brandDefault)
             }
@@ -446,7 +459,7 @@ struct ShopCartView: View {
     }
 
     private func imageAsset(_ item: ShopCartItem) -> String {
-        if item.image.hasPrefix("http") { return item.image }
+        if item.image.hasPrefix("http") || item.image.hasPrefix("/catalog-experiences/") { return item.image }
         return ImageMapper.productImage(for: item.productName) ?? item.image
     }
 }
@@ -489,6 +502,7 @@ struct ShopCheckoutView: View {
     private var checkoutContent: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: AppSpacing.md) {
+                if checkoutItems.contains(where: { $0.isExperience == true }) { experienceNotice() }
                 section(title: "收货地址", icon: "mappin.and.ellipse") {
                     if viewModel.isLoading {
                         ProgressView().tint(.accentDefault).frame(maxWidth: .infinity, minHeight: 70)
@@ -591,7 +605,7 @@ struct ShopPaymentResultView: View {
             VStack(spacing: AppSpacing.sm) {
                 Text(succeeded ? "支付成功" : "支付结果待确认")
                     .font(.system(size: 24, weight: .semibold)).foregroundStyle(.textPrimary)
-                Text(succeeded ? "本次使用本地模拟支付，订单已进入待发货流程。" : "支付单已创建，可稍后在订单中查询结果。")
+                Text(order.isExperience ? "体验订单已记录，支付和物流均为模拟，不实际扣款、发货或发放消费积分。" : (succeeded ? "本次使用本地模拟支付，订单已进入待发货流程。" : "支付单已创建，可稍后在订单中查询结果。"))
                     .font(.system(size: 13)).foregroundStyle(.textSecondary).multilineTextAlignment(.center)
             }
             VStack(spacing: AppSpacing.sm) {
@@ -667,6 +681,7 @@ struct ShopOrderListView: View {
                 Text(order.orderNo).font(.system(size: 11)).foregroundStyle(.textTertiary)
                 Spacer(); Text(order.statusText).font(.system(size: 12, weight: .medium)).foregroundStyle(.stateWarning)
             }
+            if order.isExperience { Text("体验订单 · 模拟流程").font(.system(size: 12)).foregroundStyle(Color.accentDefault) }
             Text(order.items?.first?.productName ?? "商城订单")
                 .font(.system(size: 14, weight: .semibold)).foregroundStyle(.textPrimary)
             HStack {
@@ -698,6 +713,7 @@ struct ShopOrderDetailView: View {
     var body:some View {
         List {
             if let order {
+                if order.isExperience { Section { experienceNotice() } }
                 Section("订单进度") {
                     Text(order.statusText).font(.title2.bold()).foregroundStyle(Color.accentDefault)
                     Text(order.orderNo).font(AppTypography.caption).textSelection(.enabled)
@@ -735,6 +751,13 @@ struct ShopOrderDetailView: View {
             await load()
         }catch{errorMessage=error.localizedDescription};busy=false
     }
+}
+
+private func experienceNotice() -> some View {
+    VStack(alignment: .leading, spacing: 6) {
+        Label("体验商品 · 模拟流程", systemImage: "sparkles").font(.system(size: 14, weight: .semibold)).foregroundStyle(Color.accentDefault)
+        Text("不实际扣款或发货，不发放消费积分。物流和售后记录仅供体验。").font(.system(size: 12)).foregroundStyle(Color.textSecondary)
+    }.frame(maxWidth: .infinity, alignment: .leading).padding(14).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 12)).overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault))
 }
 
 #Preview {

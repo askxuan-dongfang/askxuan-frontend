@@ -29,6 +29,13 @@ private func extractAssetName(_ urlString: String) -> String {
     return name
 }
 
+/// Catalog case photos are hosted alongside the API; legacy asset names remain local.
+func resolvedMediaURL(_ value: String) -> URL? {
+    if value.hasPrefix("/catalog-experiences/") { return URL(string: value, relativeTo: AppConfig.baseURL)?.absoluteURL }
+    guard let url = URL(string: value), ["https", "http"].contains(url.scheme?.lowercased() ?? "") else { return nil }
+    return url
+}
+
 /// 图片加载（远程 URL 或本地 asset 名）
 struct RemoteImage: View {
     let urlString: String?
@@ -37,7 +44,7 @@ struct RemoteImage: View {
 
     var body: some View {
         if let urlString, !urlString.isEmpty {
-            if let url = URL(string: urlString), url.scheme != nil {
+            if let url = resolvedMediaURL(urlString) {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .empty:
@@ -81,7 +88,7 @@ struct RemoteAvatar: View {
 
     var body: some View {
         if let urlString, !urlString.isEmpty {
-            if let url = URL(string: urlString), url.scheme != nil {
+            if let url = resolvedMediaURL(urlString) {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .empty:

@@ -58,6 +58,11 @@ export interface ProductImage {
 }
 
 export interface Product {
+  isExperience?: boolean;
+  sourceName?: string;
+  sourceUrl?: string;
+  sourceNote?: string;
+
   id: number
   productNo: string
   name: string
@@ -160,6 +165,7 @@ export interface ShopOrderLogistics {
 }
 
 export interface ShopOrder {
+  isExperience?: boolean;
   id: number
   orderNo: string
   userId: string
