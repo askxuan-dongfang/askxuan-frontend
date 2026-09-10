@@ -68,7 +68,18 @@ import XCTest
 import SwiftUI
 @MainActor final class RewardNativeRenderTests: XCTestCase {
     func testNativeActivityLayouts() async throws {
+        let suite = "RewardWheelRender.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let demo = RewardDemoStore(accountID: "render", defaults: defaults)
+        let detail = try demo.detail(RewardDemoStore.wheelID)
         for width in [320.0, 390.0, 768.0] {
+            let wheel = NavigationStack {
+                ScrollView {
+                    RewardWheelExperience(detail: detail, busy: false, spinning: false, rotation: 0, hasError: false, onJoin: {}, onReset: {}, onResult: {}).padding(16)
+                }.background(Color.bgPrimary).navigationTitle("幸运转盘").navigationBarTitleDisplayMode(.inline)
+            }
+            try await render(wheel, name: "ios-wheel-focused-\(Int(width))", width: width)
             let view = NavigationStack {
                 ScrollView {
                     VStack(spacing: 18) {

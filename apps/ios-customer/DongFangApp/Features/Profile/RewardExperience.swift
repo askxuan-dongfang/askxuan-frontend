@@ -430,14 +430,18 @@ struct RewardDetailView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: 18) {
-                    if isDemo { RewardDemoBanner(balance: detail?.pointsBalance ?? store.state.balance, busy: busy) { resetting = true }.rewardPanel() }
+                    if isDemo && detail?.campaign.kind != "wheel" { RewardDemoBanner(balance: detail?.pointsBalance ?? store.state.balance, busy: busy) { resetting = true }.rewardPanel() }
                     if let error { VStack { Text(error).font(.caption).foregroundStyle(.red); Button("重新加载") { Task { await load() } } }.rewardPanel() }
                     if let d = detail {
+                        if d.campaign.kind == "wheel" {
+                            RewardWheelExperience(detail: d, busy: busy, spinning: spinning, rotation: rotation, hasError: error != nil, onJoin: { confirming = true }, onReset: { resetting = true }, onResult: { result = d.mine }).id("reward-art")
+                        } else {
                         hero(d).id("reward-art")
                         facts(d).rewardPanel()
                         if let mine = d.mine { ticket(mine).rewardPanel() }
                         rules(d).rewardPanel()
                         if !d.campaign.announcement.isEmpty || !d.winners.isEmpty { announcement(d).rewardPanel() }
+                        }
                     } else if error == nil { ProgressView("正在准备活动…").padding(40) }
                 }.padding(16)
             }.onChange(of: motionID) { _, _ in
@@ -445,8 +449,8 @@ struct RewardDetailView: View {
             }
         }
         .background(Color.bgPrimary)
-        .safeAreaInset(edge: .bottom) { if let d = detail { actionBar(d) } }
-        .navigationTitle("活动详情").navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) { if let d = detail, d.campaign.kind != "wheel" { actionBar(d) } }
+        .navigationTitle(detail?.campaign.kind == "wheel" ? "幸运转盘" : "活动详情").navigationBarTitleDisplayMode(.inline)
         .task(id: "\(id)-\(auth.userId)") {
             await load()
             while !Task.isCancelled { do { try await Task.sleep(for: .seconds(15)) } catch { return }; if !busy { await load() } }
@@ -463,7 +467,7 @@ struct RewardDetailView: View {
             Button("取消", role: .cancel) {}
             Button("重置示例", role: .destructive) { store.reset(); rotation = 0; result = nil; Task { await load() } }
         } message: { Text("清除两项本机示例记录，恢复 100 演示积分。正式积分和活动不受影响。") }
-        .sheet(item: $result) { entry in RewardResultSheet(entry: entry).presentationDetents([.height(440)]).presentationDragIndicator(.visible) }
+        .sheet(item: $result) { entry in RewardResultSheet(entry: entry, prizeName: detail?.campaign.kind == "wheel" ? detail?.campaign.prizeName : nil).presentationDetents([.height(440)]).presentationDragIndicator(.visible) }
     }
     private func hero(_ d: RewardDetail) -> some View {
         VStack(spacing: 16) {
@@ -573,11 +577,104 @@ struct RewardDetailView: View {
         catch is CancellationError {} catch { self.error = error.localizedDescription }
     }
 }
+/// The wheel is an instant draw. Participation metrics and audit stay in secondary sheets.
+struct RewardWheelExperience: View {
+    let detail: RewardDetail
+    let busy, spinning: Bool
+    let rotation: Double
+    let hasError: Bool
+    let onJoin, onReset, onResult: () -> Void
+    @State private var showRules = false
+    @State private var showRecords = false
+    private var c: RewardCampaign { detail.campaign }
+    private var blocked: Bool { busy || hasError || (detail.mine == nil && (c.phase != "open" || detail.pointsBalance < c.pointsCost || c.pointsCost < 1)) }
+    private var actionLabel: String {
+        if busy { return "正在揭晓…" }
+        if detail.mine != nil { return "查看本次结果" }
+        if c.phase != "open" { return c.phaseText }
+        return detail.pointsBalance < c.pointsCost ? "积分不足" : "\(c.pointsCost) 积分转一次"
+    }
+    var body: some View {
+        VStack(spacing: 16) {
+            VStack(spacing: 10) {
+                Text("LUCKY WHEEL").font(.caption2).tracking(3).foregroundStyle(Color.accentDefault)
+                Text(c.title).font(.system(size: 25, weight: .semibold, design: .serif)).multilineTextAlignment(.center)
+                Text(c.isDemo ? "体验示例 · 不扣真实积分，不发实物" : "积分抽好礼 · 即转即开").font(.caption2).foregroundStyle(.secondary)
+                RewardWheelArt(rotation: spinning ? rotation : (detail.mine?.outcome == "lost" ? 315 : 0), spinning: spinning, cost: c.pointsCost).frame(height: 280).padding(.vertical, 8)
+                HStack(spacing: 12) {
+                    Group {
+                        if let url = URL(string: c.image), !c.image.isEmpty {
+                            AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { RewardGiftArt(kind: "wheel").frame(width: 100, height: 100).scaleEffect(0.45).frame(width: 52, height: 52) }
+                        } else { RewardGiftArt(kind: "wheel").frame(width: 100, height: 100).scaleEffect(0.45).frame(width: 52, height: 52) }
+                    }.frame(width: 52, height: 52).background(Color.accentDefault.opacity(0.08)).clipShape(RoundedRectangle(cornerRadius: 12))
+                    VStack(alignment: .leading, spacing: 4) { Text("本期好礼").font(.caption2).foregroundStyle(.secondary); Text(c.prizeName).font(.subheadline).foregroundStyle(Color.accentDefault) }
+                }.padding(.bottom, 8)
+                Button(action: detail.mine == nil ? onJoin : onResult) {
+                    Text(actionLabel).font(.headline).frame(maxWidth: .infinity).padding(.vertical, 15)
+                        .foregroundStyle(Color.bgPrimary).background(LinearGradient(colors: [Color(red: 0.93, green: 0.83, blue: 0.63), Color.accentDefault], startPoint: .leading, endPoint: .trailing), in: Capsule())
+                }.buttonStyle(.plain).disabled(blocked).opacity(blocked ? 0.5 : 1).accessibilityIdentifier("reward-wheel-draw")
+                Text("可用 \(detail.pointsBalance) \(c.isDemo ? "演示" : "")积分 · \(detail.mine == nil ? "每期一次" : "本期已抽奖")").font(.caption2).foregroundStyle(.secondary)
+            }.padding(18).frame(maxWidth: .infinity).background(LinearGradient(colors: [Color.brown.opacity(0.35), Color.bgSecondary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 22))
+            HStack {
+                Button("抽奖记录") { showRecords = true }.frame(maxWidth: .infinity)
+                Divider().frame(height: 14)
+                NavigationLink("我的奖品") { RewardsView(initialTab: 3) }.frame(maxWidth: .infinity)
+                Divider().frame(height: 14)
+                Button("活动规则") { showRules = true }.frame(maxWidth: .infinity)
+            }.font(.caption).tint(Color.accentDefault).disabled(busy).padding(.vertical, 8)
+            if c.isDemo { Button("重置体验", action: onReset).font(.caption2).foregroundStyle(.secondary).disabled(busy) }
+        }
+        .sheet(isPresented: $showRules) { RewardWheelInfoSheet(detail: detail, records: false) }
+        .sheet(isPresented: $showRecords) { RewardWheelInfoSheet(detail: detail, records: true) }
+    }
+}
+private struct RewardWheelInfoSheet: View {
+    let detail: RewardDetail
+    let records: Bool
+    @Environment(\.dismiss) private var dismiss
+    private var c: RewardCampaign { detail.campaign }
+    var body: some View {
+        NavigationStack {
+            List {
+                if records {
+                    if let e = detail.mine {
+                        Section {
+                            Text(e.outcomeText).font(.title3.bold()).foregroundStyle(Color.accentDefault)
+                            Text("\(rewardDate(e.createdAt)) · 消耗 \(e.pointsSpent) \(c.isDemo ? "演示" : "")积分").font(.caption)
+                            Text(e.code).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
+                            if e.outcome == "won" { NavigationLink("查看奖品与领奖") { RewardsView(initialTab: 3) } }
+                        }
+                    } else { Text("本期还没有抽奖记录，转一次试试手气。").font(.subheadline).foregroundStyle(.secondary) }
+                    if !c.announcement.isEmpty || !detail.winners.isEmpty {
+                        DisclosureGroup("本期开奖留档") {
+                            Text(c.announcement.isEmpty ? "本期转盘实时中奖记录。" : c.announcement)
+                            if c.drawnAt > 0 { Text("实际开奖 \(rewardDate(c.drawnAt))") }
+                            ForEach(detail.winners) { Text($0.code).font(.system(.caption, design: .monospaced)).textSelection(.enabled) }
+                            if !c.poolDigest.isEmpty { Text(c.algorithm); Text(c.poolDigest).textSelection(.enabled) }
+                        }.font(.caption)
+                    }
+                    NavigationLink("查看全部参与记录") { RewardsView(initialTab: 2) }
+                } else {
+                    Section { Text(c.description); Text(c.rules) }.font(.subheadline)
+                    Section {
+                        LabeledContent("活动时间", value: "\(rewardDate(c.startsAt)) 至 \(rewardDate(c.endsAt))")
+                        LabeledContent("奖品数量", value: "\(c.prizeQuantity) 份")
+                        LabeledContent("参与情况", value: "\(c.participantCount) / \(c.capacity) 人 · \(c.phaseText)")
+                        LabeledContent(c.isDemo ? "示例中奖概率" : "下一位即时概率", value: c.oddsText)
+                    }.font(.caption)
+                    Text(c.isDemo ? "示例由本机随机产生结果，记录保存在当前账号的设备中。转盘扇区仅作动画展示，不代表中奖概率。" : "每个账号每期一次，参与成功扣除 \(c.pointsCost) 积分，无论中奖与否均不退回；失败不扣分，重复请求不重复扣分。当前概率为剩余奖品除以剩余名额，奖品预算由平台承担。转盘扇区仅作动画展示，不代表中奖概率。").font(.caption).foregroundStyle(.secondary)
+                }
+            }.navigationTitle(records ? "抽奖记录" : "活动规则").navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() } } }
+        }.tint(Color.accentDefault)
+    }
+}
 private extension View {
     func rewardPanel() -> some View { padding(18).frame(maxWidth: .infinity).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.accentDefault.opacity(0.16), lineWidth: 1)) }
 }
 struct RewardResultSheet: View {
     let entry: RewardEntry
+    var prizeName: String? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var appear = false
@@ -599,7 +696,7 @@ struct RewardResultSheet: View {
                 Text(entry.isDemo ? "DEMO EXPERIENCE" : "A LITTLE JOY").font(.caption2).tracking(2).foregroundStyle(Color.accentDefault)
                 Text(entry.outcomeText).font(.title2.bold())
                 Text(entry.outcome == "pending" ? "参与码已为你生成，静候这一期的惊喜。" : entry.outcome == "won" ? "这份小欢喜，属于你。" : "谢谢参与，愿下一份好运与你相逢。").font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                Text(entry.code).font(.system(.subheadline, design: .monospaced)).foregroundStyle(Color.accentDefault)
+                if let prizeName { if entry.outcome == "won" { Text(prizeName).font(.headline).foregroundStyle(Color.accentDefault) } } else { Text(entry.code).font(.system(.subheadline, design: .monospaced)).foregroundStyle(Color.accentDefault) }
                 Text("已扣 \(entry.pointsSpent) \(entry.isDemo ? "演示" : "")积分\(entry.isDemo ? " · 不发实物" : "")").font(.caption)
                 Button("收好这份期待") { dismiss() }.buttonStyle(.borderedProminent).controlSize(.large).tint(Color.accentDefault)
             }.padding(24)
