@@ -433,7 +433,7 @@ const basketItem = (
 });
 async function checkoutFixture(
   page: Page,
-  { failCreate = false, stockChanged = false } = {},
+  { failCreate = false, stockChanged = false, experience = false } = {},
 ) {
   await fixtures(page);
   const calls: any[] = [],
@@ -450,7 +450,10 @@ async function checkoutFixture(
         sessionStorage.setItem("cartSeeded", "1");
       }
     },
-    [basketItem(11, "小号手串", 68.35, 2), basketItem(12, "大号手串", 78.8)],
+    [
+      basketItem(11, "小号手串", 68.35, 2),
+      basketItem(12, "大号手串", 78.8),
+    ].map((i) => ({ ...i, isExperience: experience })),
   );
   await page.route("**/api/v1/users/addresses", (r) =>
     r.fulfill({
@@ -475,7 +478,8 @@ async function checkoutFixture(
   );
   const order = () => ({
     id: 81,
-    orderNo: "LOCAL-81",
+    orderNo: experience ? "EXO-81" : "LOCAL-81",
+    isExperience: experience,
     status: paid ? "paid" : "pending_payment",
     payAmount: 136.7,
     totalAmount: 136.7,
@@ -528,6 +532,37 @@ async function checkoutFixture(
     await page.route("**/api/v1/products/1", (r) =>
       r.fulfill({
         json: { code: 0, data: { ...product, stock: 0, skus: [] } },
+      }),
+    );
+  if (experience)
+    await page.route("**/api/v1/products/1", (r) =>
+      r.fulfill({
+        json: {
+          code: 0,
+          data: {
+            ...product,
+            isExperience: true,
+            sourceName: "公开案例",
+            sourceUrl: "https://example.com/item",
+            sourceNote: "体验案例",
+            skus: [
+              {
+                id: 11,
+                specName: "尺寸",
+                specValue: "小号",
+                price: 68.35,
+                stock: 10,
+              },
+              {
+                id: 12,
+                specName: "尺寸",
+                specValue: "大号",
+                price: 78.8,
+                stock: 10,
+              },
+            ],
+          },
+        },
       }),
     );
   return { calls, payments };
@@ -646,4 +681,42 @@ test("order cards show real status and totals without fabricated payment success
     ),
   ).toBeTruthy();
   await page.screenshot({ path: "/private/tmp/askxuan-market-orders-320.png" });
+});
+
+test("experience checkout preserves disclosure and simulated order identity", async ({
+  page,
+}) => {
+  const { calls, payments } = await checkoutFixture(page, { experience: true });
+  await page.goto(h5 + "/c/shop/cart");
+  await page.getByRole("button", { name: /去结算/ }).click();
+  await expect(
+    page.getByText("体验订单不发放消费积分。", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "提交并模拟支付", exact: true })
+    .click();
+  await expect(page).toHaveURL(/orders\/81/);
+  expect(calls).toHaveLength(1);
+  expect(payments[0].orderNo).toBe("EXO-81");
+  expect(payments[0].channel).toBe("mock");
+  await expect(page.getByText(/体验订单 · 全程模拟/)).toBeVisible();
+});
+test("experience detail discloses provenance and does not promise shipping", async ({
+  page,
+}) => {
+  await checkoutFixture(page, { experience: true });
+  await page.goto(h5 + "/c/shop/1");
+  await expect(
+    page.getByText("体验商品 · 模拟库存", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: /公开案例/ })).toHaveAttribute(
+    "href",
+    "https://example.com/item",
+  );
+  await page.getByText("配送与售后", { exact: true }).click();
+  await expect(page.getByText(/本商品用于体验商城流程/)).toBeVisible();
+  await page.screenshot({
+    path: "/private/tmp/askxuan-case-detail.png",
+    fullPage: true,
+  });
 });

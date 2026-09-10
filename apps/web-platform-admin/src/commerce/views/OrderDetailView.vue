@@ -1,77 +1,101 @@
 <script setup lang="ts">
 // 订单详情（含发货操作）
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import PageHeader from '@/components/PageHeader.vue'
-import { orderApi } from '@/commerce/api/order'
-import { formatMoney, formatDateTime, orderStatusLabel, orderStatusType } from '@/commerce/utils/format'
-import type { ShopOrder } from '@/commerce/types'
+import { ref, reactive, computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import {
+  ElMessage,
+  ElMessageBox,
+  type FormInstance,
+  type FormRules,
+} from "element-plus";
+import PageHeader from "@/components/PageHeader.vue";
+import { orderApi } from "@/commerce/api/order";
+import {
+  formatMoney,
+  formatDateTime,
+  orderStatusLabel,
+  orderStatusType,
+} from "@/commerce/utils/format";
+import type { ShopOrder } from "@/commerce/types";
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
-const orderId = computed(() => Number(route.params.id) || 0)
-const loading = ref(false)
-const detail = ref<ShopOrder | null>(null)
+const orderId = computed(() => Number(route.params.id) || 0);
+const loading = ref(false);
+const detail = ref<ShopOrder | null>(null);
 
 // 发货弹窗
-const shipDialogVisible = ref(false)
-const shipFormRef = ref<FormInstance>()
-const shipSaving = ref(false)
+const shipDialogVisible = ref(false);
+const shipFormRef = ref<FormInstance>();
+const shipSaving = ref(false);
 const shipForm = reactive({
-  expressCompany: '',
-  trackingNo: ''
-})
+  expressCompany: "",
+  trackingNo: "",
+});
 const shipRules: FormRules = {
-  expressCompany: [{ required: true, message: '请选择快递公司', trigger: 'change' }],
-  trackingNo: [{ required: true, message: '请输入运单号', trigger: 'blur' }]
-}
-const expressOptions = ['顺丰速运', '中通快递', '圆通速递', '韵达快递', '申通快递', '京东物流', 'EMS']
+  expressCompany: [
+    { required: true, message: "请选择快递公司", trigger: "change" },
+  ],
+  trackingNo: [{ required: true, message: "请输入运单号", trigger: "blur" }],
+};
+const expressOptions = [
+  "顺丰速运",
+  "中通快递",
+  "圆通速递",
+  "韵达快递",
+  "申通快递",
+  "京东物流",
+  "EMS",
+];
 
 async function loadDetail() {
-  loading.value = true
+  loading.value = true;
   try {
-    detail.value = await orderApi.detail(orderId.value)
+    detail.value = await orderApi.detail(orderId.value);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function openShipDialog() {
-  shipForm.expressCompany = ''
-  shipForm.trackingNo = ''
-  shipDialogVisible.value = true
+  shipForm.expressCompany = "";
+  shipForm.trackingNo = "";
+  shipDialogVisible.value = true;
 }
 
 async function handleShip() {
-  if (!shipFormRef.value) return
+  if (!shipFormRef.value) return;
   await shipFormRef.value.validate(async (valid) => {
-    if (!valid) return
+    if (!valid) return;
     try {
       await ElMessageBox.confirm(
         `确认将订单「${detail.value?.orderNo || orderId.value}」标记为已发货？运单号 ${shipForm.trackingNo} 将展示给用户，提交后不能在本页面撤回。`,
-        '确认发货',
-        { type: 'warning', confirmButtonText: '确认发货', cancelButtonText: '返回核对' }
-      )
+        "确认发货",
+        {
+          type: "warning",
+          confirmButtonText: "确认发货",
+          cancelButtonText: "返回核对",
+        },
+      );
     } catch {
-      return
+      return;
     }
-    shipSaving.value = true
+    shipSaving.value = true;
     try {
-      await orderApi.ship(orderId.value, { ...shipForm })
-      ElMessage.success('发货成功')
-      shipDialogVisible.value = false
-      loadDetail()
+      await orderApi.ship(orderId.value, { ...shipForm });
+      ElMessage.success("发货成功");
+      shipDialogVisible.value = false;
+      loadDetail();
     } finally {
-      shipSaving.value = false
+      shipSaving.value = false;
     }
-  })
+  });
 }
 
 onMounted(() => {
-  loadDetail()
-})
+  loadDetail();
+});
 </script>
 
 <template>
@@ -91,32 +115,62 @@ onMounted(() => {
     </PageHeader>
 
     <template v-if="detail">
+      <el-alert
+        v-if="detail.isExperience"
+        title="体验订单：仅模拟支付、发货和售后，不实际扣款或发货，不发放消费积分，不计入商城销售收入。"
+        type="warning"
+        :closable="false"
+        show-icon
+      />
       <!-- 基本信息 -->
       <div class="df-card section-card">
         <div class="section-title">基本信息</div>
         <el-descriptions :column="3" border>
-          <el-descriptions-item label="订单号">{{ detail.orderNo }}</el-descriptions-item>
-          <el-descriptions-item label="订单 ID">{{ detail.id }}</el-descriptions-item>
-          <el-descriptions-item label="用户 ID">{{ detail.userId }}</el-descriptions-item>
+          <el-descriptions-item label="订单号">{{
+            detail.orderNo
+          }}</el-descriptions-item>
+          <el-descriptions-item label="订单 ID">{{
+            detail.id
+          }}</el-descriptions-item>
+          <el-descriptions-item label="用户 ID">{{
+            detail.userId
+          }}</el-descriptions-item>
           <el-descriptions-item label="订单状态">
-            <el-tag :type="orderStatusType(detail.status)" effect="light" round size="small">
+            <el-tag
+              :type="orderStatusType(detail.status)"
+              effect="light"
+              round
+              size="small"
+            >
               {{ orderStatusLabel(detail.status) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="下单时间">{{ formatDateTime(detail.createTime) }}</el-descriptions-item>
-          <el-descriptions-item label="收货地址 ID">{{ detail.addressId }}</el-descriptions-item>
-          <el-descriptions-item label="订单总额">{{ formatMoney(detail.totalAmount) }}</el-descriptions-item>
+          <el-descriptions-item label="下单时间">{{
+            formatDateTime(detail.createTime)
+          }}</el-descriptions-item>
+          <el-descriptions-item label="收货地址 ID">{{
+            detail.addressId
+          }}</el-descriptions-item>
+          <el-descriptions-item label="订单总额">{{
+            formatMoney(detail.totalAmount)
+          }}</el-descriptions-item>
           <el-descriptions-item label="实付金额">
             <span class="price">{{ formatMoney(detail.payAmount) }}</span>
           </el-descriptions-item>
-          <el-descriptions-item label="备注">{{ detail.note || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="备注">{{
+            detail.note || "-"
+          }}</el-descriptions-item>
         </el-descriptions>
       </div>
 
       <!-- 商品明细 -->
       <div class="df-card section-card">
         <div class="section-title">商品明细</div>
-        <el-table :data="detail.items || []" style="width: 100%" empty-text="无商品">
+        <el-table
+          :data="detail.items || []"
+          style="width: 100%"
+          empty-text="无商品"
+        >
           <el-table-column label="商品" prop="productName" min-width="200" />
           <el-table-column label="规格" prop="skuSpec" width="160" />
           <el-table-column label="单价" width="120">
@@ -124,7 +178,9 @@ onMounted(() => {
           </el-table-column>
           <el-table-column label="数量" prop="quantity" width="100" />
           <el-table-column label="小计" width="120">
-            <template #default="{ row }">{{ formatMoney(row.price * row.quantity) }}</template>
+            <template #default="{ row }">{{
+              formatMoney(row.price * row.quantity)
+            }}</template>
           </el-table-column>
         </el-table>
       </div>
@@ -134,9 +190,15 @@ onMounted(() => {
         <div class="section-title">物流信息</div>
         <template v-if="detail.logistics && detail.logistics.trackingNo">
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="快递公司">{{ detail.logistics.expressCompany }}</el-descriptions-item>
-            <el-descriptions-item label="运单号">{{ detail.logistics.trackingNo }}</el-descriptions-item>
-            <el-descriptions-item label="发货时间">{{ formatDateTime(detail.logistics.shipTime) }}</el-descriptions-item>
+            <el-descriptions-item label="快递公司">{{
+              detail.logistics.expressCompany
+            }}</el-descriptions-item>
+            <el-descriptions-item label="运单号">{{
+              detail.logistics.trackingNo
+            }}</el-descriptions-item>
+            <el-descriptions-item label="发货时间">{{
+              formatDateTime(detail.logistics.shipTime)
+            }}</el-descriptions-item>
           </el-descriptions>
         </template>
         <el-empty v-else description="暂无物流信息" :image-size="80" />
@@ -144,8 +206,21 @@ onMounted(() => {
     </template>
 
     <!-- 发货弹窗 -->
-    <el-dialog v-model="shipDialogVisible" title="订单发货" width="480px">
-      <el-alert title="发货后订单进入待收货状态，快递公司和运单号会同步给用户。" type="warning" :closable="false" show-icon />
+    <el-dialog
+      v-model="shipDialogVisible"
+      :title="detail?.isExperience ? '模拟订单发货' : '订单发货'"
+      width="480px"
+    >
+      <el-alert
+        :title="
+          detail?.isExperience
+            ? '仅记录模拟物流，请勿实际寄出商品。'
+            : '发货后订单进入待收货状态，快递公司和运单号会同步给用户。'
+        "
+        type="warning"
+        :closable="false"
+        show-icon
+      />
       <el-form
         ref="shipFormRef"
         :model="shipForm"
@@ -153,7 +228,13 @@ onMounted(() => {
         label-width="100px"
       >
         <el-form-item label="快递公司" prop="expressCompany">
-          <el-select v-model="shipForm.expressCompany" placeholder="请选择快递公司" style="width: 100%">
+          <el-select
+            :allow-create="detail?.isExperience"
+            filterable
+            v-model="shipForm.expressCompany"
+            placeholder="请选择快递公司"
+            style="width: 100%"
+          >
             <el-option
               v-for="e in expressOptions"
               :key="e"
@@ -168,7 +249,9 @@ onMounted(() => {
       </el-form>
       <template #footer>
         <el-button @click="shipDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="shipSaving" @click="handleShip">确认发货</el-button>
+        <el-button type="primary" :loading="shipSaving" @click="handleShip"
+          >确认发货</el-button
+        >
       </template>
     </el-dialog>
   </div>

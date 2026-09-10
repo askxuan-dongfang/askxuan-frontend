@@ -25,10 +25,15 @@ struct ShopProduct: Codable, Identifiable, Hashable {
     var images: [ProductImage]?
     let createTime: String?
     let updateTime: String?
+    var isExperience: Bool? = nil
+    var sourceName: String? = nil
+    var sourceUrl: String? = nil
+    var sourceNote: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, name, description, mainImage, status, price, stock, tags, skus, images
         case productNo, categoryId, categoryName, marketPrice, createTime, updateTime
+        case isExperience, sourceName, sourceUrl, sourceNote
     }
 
     var priceText: String { "¥\(String(format: "%.2f", price))" }
@@ -81,6 +86,8 @@ struct ShopCartItem: Codable, Identifiable, Hashable {
     var quantity: Int
     let stock: Int
 
+    var isExperience: Bool? = nil
+
     var subtotal: Double { unitPrice * Double(quantity) }
 }
 
@@ -122,6 +129,8 @@ struct ShopOrder: Codable, Identifiable, Hashable {
     let items: [ShopOrderItem]?
     let logistics: ShopOrderLogistics?
     let createTime: String
+
+    var isExperience: Bool { orderNo.hasPrefix("EXO-") }
 
     var statusText: String {
         switch status {

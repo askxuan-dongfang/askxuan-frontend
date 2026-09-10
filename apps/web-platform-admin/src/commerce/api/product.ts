@@ -13,6 +13,11 @@ export interface ProductListParams {
 }
 
 export interface ProductSaveParams {
+  isExperience?: boolean;
+  sourceName?: string;
+  sourceUrl?: string;
+  sourceNote?: string;
+
   name: string
   categoryId: number
   description?: string

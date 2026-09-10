@@ -33,6 +33,10 @@ const form = reactive<ProductSaveParams>({
   stock: 0,
   tags: "",
   freightTemplateId: 0,
+  isExperience: false,
+  sourceName: "",
+  sourceUrl: "",
+  sourceNote: "",
 });
 
 const rules: FormRules = {
@@ -73,6 +77,10 @@ async function loadDetail() {
       stock: 0,
       tags: "",
       freightTemplateId: 0,
+      isExperience: false,
+      sourceName: "",
+      sourceUrl: "",
+      sourceNote: "",
     });
     loading.value = false;
     detailReady.value = true;
@@ -92,6 +100,10 @@ async function loadDetail() {
       stock: detail.stock,
       tags: detail.tags,
       freightTemplateId: detail.freightTemplateId,
+      isExperience: !!detail.isExperience,
+      sourceName: detail.sourceName || "",
+      sourceUrl: detail.sourceUrl || "",
+      sourceNote: detail.sourceNote || "",
     });
     detailReady.value = true;
   } catch {
@@ -130,6 +142,13 @@ const presentationChecks = computed(() => [
 async function handleSubmit() {
   if (!formRef.value || saving.value || loading.value || !detailReady.value)
     return;
+  if (
+    form.isExperience &&
+    (!form.sourceName?.trim() || !/^https:\/\//.test(form.sourceUrl || ""))
+  ) {
+    ElMessage.warning("请填写案例来源和 HTTPS 原商品链接");
+    return;
+  }
   await formRef.value.validate(async (valid) => {
     if (!valid) return;
     saving.value = true;
@@ -189,6 +208,39 @@ watch(() => route.params.id, loadDetail, { immediate: true });
               <p>名称、分类与首个标签会出现在商城商品卡片。</p>
             </div>
           </div>
+          <el-form-item label="商品类型"
+            ><el-switch
+              v-model="form.isExperience"
+              :disabled="isEdit"
+              active-text="体验商品"
+              inactive-text="普通商品"
+            /><span class="editor-help"
+              >类型创建后固定；体验商品仅模拟支付、库存与物流，不产生消费积分或商城销售收入。</span
+            ></el-form-item
+          >
+          <template v-if="form.isExperience">
+            <el-form-item label="案例来源"
+              ><el-input
+                v-model="form.sourceName"
+                maxlength="100"
+                placeholder="原商家或公开案例名称"
+            /></el-form-item>
+            <el-form-item label="原商品链接"
+              ><el-input
+                v-model="form.sourceUrl"
+                maxlength="1000"
+                placeholder="https://"
+            /></el-form-item>
+            <el-form-item label="来源说明"
+              ><el-input
+                v-model="form.sourceNote"
+                type="textarea"
+                :rows="3"
+                maxlength="500"
+                show-word-limit
+                placeholder="资料核对日期、参考范围与体验说明"
+            /></el-form-item>
+          </template>
           <el-form-item label="商品名称" prop="name"
             ><el-input
               v-model="form.name"

@@ -1,72 +1,77 @@
 <script setup lang="ts">
 // 商城订单列表
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import PageHeader from '@/components/PageHeader.vue'
-import { orderApi, type OrderListParams } from '@/commerce/api/order'
-import { formatMoney, orderStatusLabel, orderStatusType } from '@/commerce/utils/format'
-import type { ShopOrder } from '@/commerce/types'
+import { ref, reactive, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import PageHeader from "@/components/PageHeader.vue";
+import { orderApi, type OrderListParams } from "@/commerce/api/order";
+import {
+  formatMoney,
+  orderStatusLabel,
+  orderStatusType,
+} from "@/commerce/utils/format";
+import type { ShopOrder } from "@/commerce/types";
 
-const router = useRouter()
-const loading = ref(false)
-const loadError = ref('')
-const list = ref<ShopOrder[]>([])
-const total = ref(0)
+const router = useRouter();
+const loading = ref(false);
+const loadError = ref("");
+const list = ref<ShopOrder[]>([]);
+const total = ref(0);
 
 const query = reactive<OrderListParams>({
-  status: '',
+  status: "",
   page: 1,
-  size: 20
-})
+  size: 20,
+});
 
 const statusOptions = [
-  { value: 'pending_payment', label: '待付款' },
-  { value: 'paid', label: '已付款' },
-  { value: 'shipped', label: '已发货' },
-  { value: 'completed', label: '已完成' },
-  { value: 'cancelled', label: '已取消' },
-  { value: 'in_return', label: '退货中' }
-]
+  { value: "pending_payment", label: "待付款" },
+  { value: "paid", label: "已付款" },
+  { value: "shipped", label: "已发货" },
+  { value: "completed", label: "已完成" },
+  { value: "cancelled", label: "已取消" },
+  { value: "in_return", label: "退货中" },
+];
 
 async function loadList() {
-  loading.value = true
-  loadError.value = ''
+  loading.value = true;
+  loadError.value = "";
   try {
-    const res = await orderApi.list(query)
-    list.value = res.list || []
-    total.value = res.total || 0
+    const res = await orderApi.list(query);
+    list.value = res.list || [];
+    total.value = res.total || 0;
   } catch (error) {
-    loadError.value = error instanceof Error ? error.message : '商城订单加载失败'
+    loadError.value =
+      error instanceof Error ? error.message : "商城订单加载失败";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function handleSearch() {
-  query.page = 1
-  loadList()
+  query.page = 1;
+  loadList();
 }
 
 function handleReset() {
-  query.status = ''
-  query.page = 1
-  loadList()
+  query.status = "";
+  query.page = 1;
+  loadList();
 }
 
 function handlePageChange(p: number) {
-  query.page = p
-  loadList()
+  query.page = p;
+  loadList();
 }
 
 function handleSizeChange(s: number) {
-  query.size = s
-  query.page = 1
-  loadList()
+  query.size = s;
+  query.page = 1;
+  loadList();
 }
 
 onMounted(() => {
-  loadList()
-})
+  loadList();
+});
 </script>
 
 <template>
@@ -76,7 +81,12 @@ onMounted(() => {
     <div class="df-card filter-bar">
       <el-form inline @submit.prevent="handleSearch">
         <el-form-item label="订单状态">
-          <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 160px">
+          <el-select
+            v-model="query.status"
+            placeholder="全部状态"
+            clearable
+            style="width: 160px"
+          >
             <el-option
               v-for="s in statusOptions"
               :key="s.value"
@@ -101,44 +111,98 @@ onMounted(() => {
     </div>
 
     <div class="df-card">
-      <div class="desktop-table"><el-table v-loading="loading" :data="list" style="width: 100%" empty-text="暂无订单">
-        <el-table-column label="订单号" prop="orderNo" width="200" />
-        <el-table-column label="用户 ID" prop="userId" width="160" />
-        <el-table-column label="订单金额" width="130">
-          <template #default="{ row }">
-            <span class="price">{{ formatMoney(row.payAmount) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="状态" width="110">
-          <template #default="{ row }">
-            <el-tag :type="orderStatusType(row.status)" effect="light" round size="small">
-              {{ orderStatusLabel(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="备注" prop="note" min-width="180" show-overflow-tooltip />
-        <el-table-column label="下单时间" prop="createTime" width="180" />
-        <el-table-column label="操作" width="120" fixed="right">
-          <template #default="{ row }">
-            <el-button text type="primary" size="small" @click="router.push(`/commerce/orders/${row.id}`)">详情</el-button>
-          </template>
-        </el-table-column>
-      </el-table></div>
+      <div class="desktop-table">
+        <el-table
+          v-loading="loading"
+          :data="list"
+          style="width: 100%"
+          empty-text="暂无订单"
+        >
+          <el-table-column label="订单号" prop="orderNo" width="200" />
+          <el-table-column label="用户 ID" prop="userId" width="160" />
+          <el-table-column label="订单金额" width="130">
+            <template #default="{ row }">
+              <span class="price">{{ formatMoney(row.payAmount) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="110">
+            <template #default="{ row }">
+              <el-tag
+                :type="orderStatusType(row.status)"
+                effect="light"
+                round
+                size="small"
+              >
+                {{ row.isExperience ? "体验 · " : ""
+                }}{{ orderStatusLabel(row.status) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column
+            label="备注"
+            prop="note"
+            min-width="180"
+            show-overflow-tooltip
+          />
+          <el-table-column label="下单时间" prop="createTime" width="180" />
+          <el-table-column label="操作" width="120" fixed="right">
+            <template #default="{ row }">
+              <el-button
+                text
+                type="primary"
+                size="small"
+                @click="router.push(`/commerce/orders/${row.id}`)"
+                >详情</el-button
+              >
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
 
       <div class="mobile-task-list" aria-label="商城订单列表">
-        <button v-for="item in list" :key="item.id" class="mobile-task-card" type="button" @click="router.push(`/commerce/orders/${item.id}`)">
+        <button
+          v-for="item in list"
+          :key="item.id"
+          class="mobile-task-card"
+          type="button"
+          @click="router.push(`/commerce/orders/${item.id}`)"
+        >
           <span class="mobile-task-card__head">
             <strong>{{ item.orderNo }}</strong>
-            <el-tag :type="orderStatusType(item.status)" effect="light" round size="small">{{ orderStatusLabel(item.status) }}</el-tag>
+            <el-tag
+              :type="orderStatusType(item.status)"
+              effect="light"
+              round
+              size="small"
+              >{{ orderStatusLabel(item.status) }}</el-tag
+            >
           </span>
-          <span class="mobile-task-card__meta">用户 {{ item.userId }} · {{ item.createTime }}</span>
-          <span class="mobile-task-card__foot"><span>{{ item.note || '无备注' }}</span><b>{{ formatMoney(item.payAmount) }}</b></span>
+          <span class="mobile-task-card__meta"
+            >用户 {{ item.userId }} · {{ item.createTime }}</span
+          >
+          <span class="mobile-task-card__foot"
+            ><span>{{ item.note || "无备注" }}</span
+            ><b>{{ formatMoney(item.payAmount) }}</b></span
+          >
         </button>
-        <div v-if="!loading && !list.length && !loadError" class="mobile-task-empty">当前筛选下暂无商城订单</div>
+        <div
+          v-if="!loading && !list.length && !loadError"
+          class="mobile-task-empty"
+        >
+          当前筛选下暂无商城订单
+        </div>
         <div v-if="total > (query.size || 20)" class="mobile-task-pager">
-          <el-button :disabled="(query.page || 1) <= 1" @click="handlePageChange((query.page || 1) - 1)">上一页</el-button>
+          <el-button
+            :disabled="(query.page || 1) <= 1"
+            @click="handlePageChange((query.page || 1) - 1)"
+            >上一页</el-button
+          >
           <span>第 {{ query.page || 1 }} 页</span>
-          <el-button :disabled="(query.page || 1) * (query.size || 20) >= total" @click="handlePageChange((query.page || 1) + 1)">下一页</el-button>
+          <el-button
+            :disabled="(query.page || 1) * (query.size || 20) >= total"
+            @click="handlePageChange((query.page || 1) + 1)"
+            >下一页</el-button
+          >
         </div>
       </div>
 
@@ -176,6 +240,8 @@ onMounted(() => {
   font-weight: var(--type-weight-semibold);
 }
 @media (max-width: 767px) {
-  .filter-bar { padding: 12px; }
+  .filter-bar {
+    padding: 12px;
+  }
 }
 </style>

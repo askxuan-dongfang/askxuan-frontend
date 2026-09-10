@@ -236,6 +236,9 @@ onMounted(() => {
           <div class="catalog-preview-copy">
             <small>{{ row.categoryName || "东方好物" }}</small>
             <h3>{{ row.name }}</h3>
+            <el-tag v-if="row.isExperience" type="warning" size="small"
+              >体验商品</el-tag
+            >
 
             <strong>{{ formatMoney(row.price) }}</strong
             ><StatusTag :status="row.status" domain="product" />
@@ -280,7 +283,12 @@ onMounted(() => {
                 </template>
               </el-image>
               <div class="product-info">
-                <div class="product-name">{{ row.name }}</div>
+                <div class="product-name">
+                  {{ row.name }}
+                  <el-tag v-if="row.isExperience" type="warning" size="small"
+                    >体验商品</el-tag
+                  >
+                </div>
                 <div class="product-no">{{ row.productNo }}</div>
               </div>
             </div>
