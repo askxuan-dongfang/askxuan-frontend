@@ -19,9 +19,9 @@ for(const width of [375,768]){
    else if(path.endsWith('/points/orders'))data=orders
    await route.fulfill({json:{code:0,message:'ok',data}})
   })
-  await page.goto('http://127.0.0.1:5376/c/points')
+  await page.goto('http://127.0.0.1:5386/c/points')
   await expect(page.getByText('消费获得')).toBeVisible()
-  await page.getByRole('button',{name:'积分商城',exact:true}).click()
+  await page.getByRole('tab',{name:'积分商城',exact:true}).click()
   await page.getByRole('button',{name:/积分专属香囊/}).click()
   await expect(page.getByRole('dialog')).toBeVisible()
   await page.getByRole('button',{name:'确认兑换',exact:true}).click()
@@ -47,7 +47,7 @@ test('shop admin independently creates a points product and ships redemption',as
   else if(path.endsWith('/points/orders/1/ship')){shipped=req.postDataJSON();data={success:true}}
   await route.fulfill({json:{code:0,message:'ok',data}})
  })
- await page.goto('http://127.0.0.1:5374/commerce/points-mall')
+ await page.goto('http://127.0.0.1:5387/commerce/points-mall')
  await expect(page.getByRole('heading',{name:'积分商城'})).toBeVisible()
  await page.getByRole('button',{name:'新增积分商品'}).click()
  const dialog=page.getByRole('dialog')

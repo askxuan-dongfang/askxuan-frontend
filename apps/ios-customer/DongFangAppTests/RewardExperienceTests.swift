@@ -1,65 +1,27 @@
 import XCTest
 @testable import DongFangApp
 
-@MainActor final class RewardExperienceTests: XCTestCase {
-    private var defaults: UserDefaults!
-    private var suite: String!
-    override func setUp() {
-        super.setUp(); suite = "RewardExperienceTests.\(UUID().uuidString)"
-        defaults = UserDefaults(suiteName: suite)!
+func liveRewardFixture(kind: String = "wheel", participants: Int = 0, prizes: Int = 20, awarded: Int = 0, capacity: Int = 200) -> RewardCampaign {
+    RewardCampaign(id: 2, title: "秋日好礼 · 积分幸运转盘", kind: kind, prizeName: "平安香囊礼袋", image: "", description: "一份草木香，送给幸运的你。", rules: "每人每期一次", prizeValue: 3900, budget: 100000, pointsCost: 10, prizeQuantity: prizes, capacity: capacity, participantCount: participants, awardedCount: awarded, startsAt: 1788973900, endsAt: 1790183560, drawnAt: 0, status: "published", phase: "open", poolDigest: "", announcement: "", algorithm: "crypto-rand")
+}
+final class RewardExperienceTests: XCTestCase {
+    func testPoolProbabilityUsesValidParticipants() {
+        XCTAssertEqual(liveRewardFixture(kind: "pool", participants: 100, prizes: 1).oddsText, "1.00%")
+        XCTAssertEqual(liveRewardFixture(kind: "pool", participants: 2, prizes: 3).oddsText, "100.00%")
+        XCTAssertEqual(liveRewardFixture(kind: "pool", participants: 0, prizes: 1).oddsText, "—")
     }
-    override func tearDown() { defaults.removePersistentDomain(forName: suite); defaults = nil; super.tearDown() }
-    private func store(_ account: String = "alice", time: Int64 = 1000) -> RewardDemoStore {
-        RewardDemoStore(accountID: account, defaults: defaults, clock: { time })
+    func testWheelProbabilityUsesRemainingInventory() {
+        XCTAssertEqual(liveRewardFixture().oddsText, "10.00%")
+        XCTAssertEqual(liveRewardFixture(participants: 100, awarded: 15).oddsText, "5.00%")
+        XCTAssertEqual(liveRewardFixture(participants: 100, awarded: 20).oddsText, "0.00%")
+        XCTAssertEqual(liveRewardFixture(participants: 200, awarded: 20).oddsText, "—")
     }
-    func testEmptyCatalogHasTwoIsolatedExamples() throws {
-        let s = store(); XCTAssertEqual(s.campaigns().count, 2); XCTAssertEqual(s.state.balance, 100)
-        XCTAssertEqual(s.campaigns(kind: "wheel").first?.pointsCost, 10)
-        XCTAssertEqual(s.campaigns(kind: "pool").first?.pointsCost, 20)
-        XCTAssertTrue(s.campaigns().allSatisfy { $0.isDemo && $0.participantCount == 0 && $0.endsAt == 1000 + 72 * 3600 })
-        XCTAssertThrowsError(try s.detail(1))
-    }
-    func testJoinPersistsWithoutRepeatChargeOrAccountLeak() throws {
-        let first = try store().join(RewardDemoStore.wheelID, expectedPoints: 10, randomWin: { false })
-        let duplicate = try store().join(RewardDemoStore.wheelID, expectedPoints: 10, randomWin: { true })
-        XCTAssertEqual(first.code, duplicate.code); XCTAssertEqual(duplicate.outcome, "lost")
-        XCTAssertEqual(store().state.balance, 90); XCTAssertEqual(store().state.entries.count, 1)
-        XCTAssertEqual(store("bob").state.balance, 100); XCTAssertTrue(store("bob").state.entries.isEmpty)
-    }
-    func testPriceMismatchAndExpiredExamplesDoNotCharge() throws {
-        let s = store(); _ = s.state
-        XCTAssertThrowsError(try s.join(RewardDemoStore.poolID, expectedPoints: 1))
-        XCTAssertThrowsError(try s.join(88, expectedPoints: 20))
-        XCTAssertThrowsError(try store(time: 1000 + 72 * 3600).join(RewardDemoStore.poolID, expectedPoints: 20))
-        XCTAssertEqual(s.state.balance, 100); XCTAssertTrue(s.state.entries.isEmpty)
-    }
-    func testPoolDrawAndFulfillmentAreIdempotentAndLocal() throws {
-        let s = store(); XCTAssertThrowsError(try s.draw())
-        let e = try s.join(RewardDemoStore.poolID, expectedPoints: 20)
-        XCTAssertEqual(e.outcome, "pending"); XCTAssertEqual(s.state.balance, 80)
-        XCTAssertEqual(try s.draw().outcome, "won"); _ = try s.draw()
-        XCTAssertEqual(s.state.orders.count, 1); XCTAssertEqual(try s.detail(RewardDemoStore.poolID).campaign.oddsText, "100.00%")
-        try s.advanceOrder(e.id); XCTAssertEqual(s.state.orders[0].status, "pending"); XCTAssertEqual(s.state.orders[0].address, "演示地址 · 无需填写真实信息")
-        try s.advanceOrder(e.id); XCTAssertEqual(s.state.orders[0].status, "shipped")
-        try s.advanceOrder(e.id); try s.advanceOrder(e.id); XCTAssertEqual(s.state.orders[0].status, "completed")
-        XCTAssertEqual(s.state.balance, 80)
-    }
-    func testWinLossAndResetPreserveFormalIDBoundary() throws {
-        let s = store(); let e = try s.join(RewardDemoStore.wheelID, expectedPoints: 10, randomWin: { true })
-        XCTAssertEqual(e.outcome, "won"); XCTAssertEqual(s.state.orders.count, 1)
-        XCTAssertEqual(try s.detail(RewardDemoStore.wheelID).campaign.oddsText, "50.00%")
-        let oldRound = e.code; s.reset(); XCTAssertTrue(s.state.orders.isEmpty); XCTAssertEqual(s.state.balance, 100)
-        let next = try s.join(RewardDemoStore.wheelID, expectedPoints: 10, randomWin: { false })
-        XCTAssertNotEqual(next.code, oldRound); XCTAssertTrue(s.state.orders.isEmpty)
-        XCTAssertFalse(RewardDemoStore.isDemo(1)); XCTAssertFalse(RewardDemoStore.isDemo(-9))
-    }
-    func testExpiredPendingPoolCanStillReveal() throws {
-        _ = try store().join(RewardDemoStore.poolID, expectedPoints: 20)
-        let later = store(time: 1000 + 72 * 3600)
-        XCTAssertEqual(try later.detail(RewardDemoStore.poolID).campaign.phase, "awaiting_draw")
-        XCTAssertEqual(try later.draw().outcome, "won")
-        XCTAssertEqual(try later.detail(RewardDemoStore.poolID).campaign.drawnAt, 1000 + 72 * 3600)
-        XCTAssertEqual(later.state.balance, 80)
+    func testServerDetailPreservesBalanceAndResult() throws {
+        let campaignData = try JSONEncoder().encode(liveRewardFixture())
+        let campaign = try JSONSerialization.jsonObject(with: campaignData)
+        let raw: [String: Any] = ["campaign": campaign, "pointsBalance": 5, "mine": ["id": 8, "campaignId": 2, "createdAt": 1789006900, "pointsSpent": 10, "code": "WX-2-8", "outcome": "lost", "title": "本期转盘"], "winners": []]
+        let decoded = try JSONDecoder().decode(RewardDetail.self, from: JSONSerialization.data(withJSONObject: raw))
+        XCTAssertEqual(decoded.pointsBalance, 5); XCTAssertEqual(decoded.mine?.code, "WX-2-8"); XCTAssertEqual(decoded.mine?.outcome, "lost")
     }
 }
 
@@ -68,15 +30,11 @@ import XCTest
 import SwiftUI
 @MainActor final class RewardNativeRenderTests: XCTestCase {
     func testNativeActivityLayouts() async throws {
-        let suite = "RewardWheelRender.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let demo = RewardDemoStore(accountID: "render", defaults: defaults)
-        let detail = try demo.detail(RewardDemoStore.wheelID)
+        let detail = RewardDetail(campaign: liveRewardFixture(), mine: nil, winners: [], pointsBalance: 15)
         for width in [320.0, 390.0, 768.0] {
             let wheel = NavigationStack {
                 ScrollView {
-                    RewardWheelExperience(detail: detail, busy: false, spinning: false, rotation: 0, hasError: false, onJoin: {}, onReset: {}, onResult: {}).padding(16)
+                    RewardWheelExperience(detail: detail, busy: false, spinning: false, rotation: 0, hasError: false, onJoin: {}, onResult: {}).padding(16)
                 }.background(Color.bgPrimary).navigationTitle("幸运转盘").navigationBarTitleDisplayMode(.inline)
             }
             try await render(wheel, name: "ios-wheel-focused-\(Int(width))", width: width)
@@ -85,7 +43,7 @@ import SwiftUI
                     VStack(spacing: 18) {
                         Text("积分，让期待发生").font(.title2).foregroundStyle(Color.accentDefault)
                         HStack(spacing: 12) { RewardCategoryEntry(kind: "wheel"); RewardCategoryEntry(kind: "pool") }
-                        RewardDemoBanner(balance: 100, busy: false, reset: {})
+                        PointsWalletCard(balance: 15, onRules: {})
                         RewardWheelArt(rotation: 0, spinning: false, cost: 10).frame(height: 280)
                         RewardCountdown(endsAt: Int64(Date().timeIntervalSince1970) + 72 * 3600)
                         RewardDeliverySteps(status: "completed")
@@ -95,7 +53,7 @@ import SwiftUI
             try await render(view, name: "ios-reward-components-\(Int(width))", width: width)
         }
         try await render(RewardWheelMotionFixture(), name: "ios-reward-wheel-motion", width: 390, height: 420, expectsMotion: true)
-        let entry = RewardEntry(id: -91002, campaignId: -91002, createdAt: 1000, pointsSpent: 20, code: "DEMO-P-RENDER", outcome: "won", title: "天然香珠 · 一期一礼")
+        let entry = RewardEntry(id: 8, campaignId: 2, createdAt: 1000, pointsSpent: 20, code: "WX-2-8", outcome: "won", title: "天然香珠 · 一期一礼")
         try await render(RewardResultSheet(entry: entry), name: "ios-reward-result", width: 390, height: 460)
     }
     private func render<V: View>(_ view: V, name: String, width: Double, height: Double = 844, expectsMotion: Bool = false) async throws {

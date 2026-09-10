@@ -1148,7 +1148,39 @@ struct PointsRedeemRequest: Encodable {
     let productId: Int64; let quantity: Int; let expectedPrice: Int64; let requestKey: String; let receiver: String; let mobile: String; let address: String
 }
 struct PointsActionResult: Decodable { let success: Bool }
+struct PointsWalletCard: View {
+    let balance: Int64?
+    let onRules: () -> Void
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack { Text("A LITTLE THANK YOU").font(.caption2).tracking(2); Spacer(); Button("积分规则", action: onRules).font(.caption) }.foregroundStyle(Color.accentDefault)
+            Text("每一份喜爱，都有回馈").font(.system(size: 22, weight: .medium, design: .serif))
+            Text("可用积分").font(.caption).foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline) { Text(balance.map { $0.formatted() } ?? "—").font(.system(size: 54, weight: .medium, design: .serif)).minimumScaleFactor(0.6).lineLimit(1).contentTransition(.numericText()); Text("积分").font(.caption) }.foregroundStyle(Color.accentDefault)
+            Divider().overlay(Color.accentDefault.opacity(0.2))
+            Text("每笔实付满 100 元得 1 积分").font(.caption).foregroundStyle(.secondary)
+            if (balance ?? 0) < 0 { Text("退款扣回后余额不足，后续获得的积分先补足余额。").font(.caption2).foregroundStyle(.secondary) }
+        }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
+            .background(LinearGradient(colors: [Color.brown.opacity(0.45), Color.bgSecondary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24))
+            .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.accentDefault.opacity(0.35), lineWidth: 1))
+    }
+}
+struct PointsRulesSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("01 · 消费积累") { Text("每笔实付满 100 元得 1 积分，不足部分舍去。例如 199 元得 1 积分，200 元得 2 积分。") }
+                Section("02 · 兑换与参与") { Text("积分商城按标价兑换；转盘和大奖池按本期规则扣分，每人每期一次。成功参与后无论中奖与否均不退回，奖品预算由平台承担。") }
+                Section("03 · 退款与记录") { Text("退款按净实付重算所得积分，余额不足时可能为负；后续获得的积分先补足。取消待发货兑换会退回积分。所有变动可查积分明细。") }
+                Text("功德值独立记录成长，不用于兑换，也不影响中奖概率。").font(.caption).foregroundStyle(.secondary)
+            }.navigationTitle("积分规则").navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .confirmationAction) { Button("知道了") { dismiss() } } }
+        }.tint(Color.accentDefault)
+    }
+}
 struct PointsView: View {
+    @State private var showRules = false
+    @State private var generation = 0
     @State private var keyword=""
     @State private var balance: Int64?
     @State private var tab = 0
@@ -1163,11 +1195,7 @@ struct PointsView: View {
     private var count: Int { tab == 0 ? entries.count : tab == 1 ? products.count : orders.count }
     var body: some View {
         List {
-            Section {
-                Text(balance.map(String.init) ?? "—").font(.system(size: 38, weight: .semibold)).foregroundStyle(Color.accentDefault)
-                Text("每笔实付满 100 元得 1 积分，不足部分舍去。退款后按净实付重算。").font(.footnote).foregroundStyle(.secondary)
-                if (balance ?? 0) < 0 { Text("退款扣回后余额不足，后续消费将先补足积分。").font(.footnote) }
-            } header: { Text("可用积分") }
+            PointsWalletCard(balance: balance) { showRules = true }.listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
             Section("积分活动") {
                 HStack(spacing: 12) {
                     RewardCategoryEntry(kind: "wheel")
@@ -1185,18 +1213,23 @@ struct PointsView: View {
             if busy { ProgressView() }
             if tab == 0 {
                 ForEach(entries) { e in
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack { Text(e.title); Spacer(); Text("\(e.delta > 0 ? "+" : "")\(e.delta) 积分") }
-                        Text("\(e.createdAt) · 余额 \(e.balanceAfter)").font(.caption).foregroundStyle(.secondary)
-                        Text(e.referenceNo).font(.caption2).foregroundStyle(.secondary)
+                    DisclosureGroup {
+                        Text("关联单号：\(e.referenceNo)").font(.caption2).foregroundStyle(.secondary).textSelection(.enabled)
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: e.delta > 0 ? "plus.circle.fill" : "minus.circle").font(.title2).foregroundStyle(Color.accentDefault)
+                            VStack(alignment: .leading, spacing: 6) { Text(e.title); Text(e.createdAt).font(.caption2).foregroundStyle(.secondary) }
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 6) { Text("\(e.delta > 0 ? "+" : "")\(e.delta)").font(.title3).monospacedDigit().foregroundStyle(e.delta > 0 ? Color.accentDefault : Color.textPrimary); Text("余额 \(e.balanceAfter)").font(.caption2).foregroundStyle(.secondary) }
+                        }.padding(.vertical, 6)
                     }
                 }
             } else if tab == 1 {
                 ForEach(products) { p in
                     Button { selected = p } label: {
                         HStack {
-                            if let url = URL(string: p.image), !p.image.isEmpty { AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { Color.gray.opacity(0.15) }.frame(width: 64, height: 64).clipped().cornerRadius(8) }
-                            VStack(alignment: .leading, spacing: 6) { Text(p.name).foregroundStyle(Color.textPrimary); Text("\(p.pointsPrice) 积分 · 库存 \(p.stock)").foregroundStyle(Color.accentDefault); Text(p.category).font(.caption).foregroundStyle(.secondary) }
+                            if let url = URL(string: p.image), !p.image.isEmpty { AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { Color.gray.opacity(0.15) }.frame(width: 64, height: 64).clipped().cornerRadius(12) } else { Image(systemName: "gift.fill").font(.title).foregroundStyle(Color.accentDefault).frame(width: 64, height: 64).background(Color.accentDefault.opacity(0.12), in: RoundedRectangle(cornerRadius: 12)) }
+                            VStack(alignment: .leading, spacing: 6) { Text(p.name).foregroundStyle(Color.textPrimary); Text("\(p.pointsPrice) 积分 · 库存 \(p.stock)").foregroundStyle(Color.accentDefault); Text(p.stock < 1 ? "已兑完" : (balance ?? 0) < p.pointsPrice ? "还差 \(p.pointsPrice - (balance ?? 0)) 积分" : "立即兑换 →").font(.caption).foregroundStyle(.secondary) }
                         }
                     }
                 }
@@ -1205,21 +1238,22 @@ struct PointsView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("\(o.productName) × \(o.quantity)").font(.headline)
                         Text("\(o.pointsTotal) 积分 · \(o.statusText)")
-                        Text(o.orderNo).font(.caption2); Text(o.address).font(.caption)
+                        if o.status != "cancelled" { RewardDeliverySteps(status: o.status, firstLabel: "已兑换") }
+                        DisclosureGroup("订单与收货信息") { Text(o.orderNo).font(.caption2); Text(o.address).font(.caption); Text(o.createdAt).font(.caption2) }
                         if !o.trackingNo.isEmpty { Text("\(o.carrier)：\(o.trackingNo)").font(.caption) }
                         if o.status == "pending" || o.status == "shipped" { Button(o.status == "pending" ? "取消兑换" : "确认收货") { pendingAction = o }.disabled(busy) }
                     }
                 }
             }
-            if !busy && error == nil && count == 0 { Text(tab == 1 ? "暂无上架的积分商品" : "暂无记录").foregroundStyle(.secondary) }
-            HStack { Button("上一页") { page -= 1 }.disabled(page == 1 || busy); Spacer(); Text("第 \(page) 页"); Spacer(); Button("下一页") { page += 1 }.disabled(count < 20 || busy) }
+            if !busy && error == nil && count == 0 { ContentUnavailableView(tab == 1 ? "积分好礼，正在准备" : tab == 0 ? "每一笔积累，都值得记录" : "还没有兑换礼物", systemImage: tab == 0 ? "sparkles" : "gift", description: Text(tab == 1 ? "上架后即可用积分兑换，记得再来看看。" : "消费、兑换和活动扣分，都会留下记录。")) }
+            if page > 1 || count >= 20 { HStack { Button("上一页") { page -= 1 }.disabled(page == 1 || busy); Spacer(); Text("第 \(page) 页"); Spacer(); Button("下一页") { page += 1 }.disabled(count < 20 || busy) } }
         }
         .scrollContentBackground(.hidden).background(Color.bgPrimary)
         .searchable(text:$keyword,prompt:"搜索积分商品或分类").onSubmit(of:.search){page=1;tab=1;Task{await load()}}
         .navigationTitle("我的积分").navigationBarTitleDisplayMode(.inline)
-        .task { await load() }.refreshable { await load() }
-        .onChange(of: tab) { _, _ in page = 1; Task { await load() } }
-        .onChange(of: page) { _, _ in Task { await load() } }
+        .task(id: "\(tab)-\(page)") { await load() }.refreshable { await load() }
+        .onChange(of: tab) { _, _ in page = 1 }
+        .sheet(isPresented: $showRules) { PointsRulesSheet() }
         .sheet(item: $selected, onDismiss: { Task { await load() } }) { product in PointsRedeemSheet(product: product, balance: balance ?? 0) }
         .alert("确认操作", isPresented: Binding(get: { pendingAction != nil }, set: { if !$0 { pendingAction = nil } })) {
             Button("返回", role: .cancel) { pendingAction = nil }
@@ -1227,14 +1261,15 @@ struct PointsView: View {
         } message: { Text(pendingAction?.status == "pending" ? "取消兑换后将退回积分。" : "请确认已收到商品。") }
     }
     @MainActor private func load() async {
+        generation += 1; let version = generation
         busy = true; error = nil
-        defer { busy = false }
+        defer { if version == generation { busy = false } }
         do {
-            let a: PointsAccount = try await APIClient.shared.request(.pointsAccount); balance = a.balance
-            if tab == 0 { entries = try await APIClient.shared.request(.pointsLedger(page)) }
-            if tab == 1 { products = try await APIClient.shared.request(.pointsSearch(page,keyword)) }
-            if tab == 2 { orders = try await APIClient.shared.request(.pointsOrders(page)) }
-        } catch { self.error = error.localizedDescription }
+            let a: PointsAccount = try await APIClient.shared.request(.pointsAccount); try Task.checkCancellation(); guard version == generation else { return }; balance = a.balance
+            if tab == 0 { let rows: [PointsEntry] = try await APIClient.shared.request(.pointsLedger(page)); try Task.checkCancellation(); if version == generation { entries = rows } }
+            if tab == 1 { let rows: [PointsProduct] = try await APIClient.shared.request(.pointsSearch(page,keyword)); try Task.checkCancellation(); if version == generation { products = rows } }
+            if tab == 2 { let rows: [PointsOrder] = try await APIClient.shared.request(.pointsOrders(page)); try Task.checkCancellation(); if version == generation { orders = rows } }
+        } catch is CancellationError {} catch { if version == generation { self.error = error.localizedDescription } }
     }
     @MainActor private func transition(_ order: PointsOrder) async {
         busy = true
@@ -1262,7 +1297,7 @@ struct PointsRedeemSheet: View {
                     if addresses.isEmpty { Text("请先在“我的”添加收货地址") }
                     Picker("地址", selection: $addressID) { ForEach(addresses) { a in Text("\(a.name) \(a.phone) \(a.fullAddress)").tag(a.id) } }.disabled(busy || request != nil)
                 }
-                Text("合计 \(Int64(quantity) * product.pointsPrice) 积分 · 可用 \(balance)")
+                Section("兑换合计") { Text("\(Int64(quantity) * product.pointsPrice) 积分").font(.title2).foregroundStyle(Color.accentDefault); Text(balance >= Int64(quantity) * product.pointsPrice ? "兑换后剩余 \(balance - Int64(quantity) * product.pointsPrice) 积分" : "还差 \(Int64(quantity) * product.pointsPrice - balance) 积分").font(.caption).foregroundStyle(.secondary) }
                 if let error { Text(error).foregroundStyle(.red) }
                 Button(busy ? "兑换中…" : request == nil ? "确认兑换" : "重试本次兑换") { Task { await redeem() } }.disabled(busy || addressID == 0 || product.stock < quantity || balance < Int64(quantity) * product.pointsPrice)
             }
