@@ -102,11 +102,21 @@ final class AiDivinationViewModel: ObservableObject {
     @Published var errorMessage: String?
 	@Published var selectedImages: [Data] = []
 
+    @Published var deletingSession = false
+    @Published var deletionError: String?
+    private var deletedIDs = Set<Int64>()
+    private var selectionEpoch = 0
+
+    private let deleteSessionRequest: (Int64) async throws -> Void
     private let apiClient: APIClient
     private let authStore: AuthStore
 
-    init(apiClient: APIClient = .shared) {
+    init(apiClient: APIClient = .shared, deleteSessionRequest: ((Int64) async throws -> Void)? = nil) {
         self.apiClient = apiClient
+        self.deleteSessionRequest = deleteSessionRequest ?? { id in
+            struct Result: Decodable { let id: Int64 }
+            let _: Result = try await apiClient.request(.aiSessionDelete(id))
+        }
         self.authStore = AuthStore.shared
     }
 
@@ -137,12 +147,13 @@ final class AiDivinationViewModel: ObservableObject {
     }
 
     func loadSessions(selectMostRecent: Bool = false) async {
+        let epoch = selectionEpoch
         do {
             let response: PageResponse<AiConversation> = try await apiClient.request(
                 .aiSessions(userId: authStore.userId, page: 1, size: 50)
             )
-            sessions = response.list
-            if selectMostRecent, selectedSessionId == nil, let first = sessions.first {
+            sessions = response.list.filter { $0.status != "closed" && !deletedIDs.contains($0.id) }
+            if selectMostRecent, epoch == selectionEpoch, selectedSessionId == nil, let first = sessions.first {
                 await selectSession(first.id)
             }
         } catch {
@@ -151,6 +162,7 @@ final class AiDivinationViewModel: ObservableObject {
     }
 
     func selectSession(_ id: Int64) async {
+        selectionEpoch += 1; isSending = false; messages = []; input = ""
         selectedSessionId = id
         errorMessage = nil
 		selectedImages = []
@@ -158,6 +170,7 @@ final class AiDivinationViewModel: ObservableObject {
     }
 
     func newConversation() {
+        selectionEpoch += 1; isSending = false; isLoading = false; selectedImages = []
         selectedSessionId = nil
         selectedSkillCode = "general"
         structuredInputs = [:]
@@ -166,16 +179,31 @@ final class AiDivinationViewModel: ObservableObject {
         errorMessage = nil
     }
 
+    func deleteSession(_ session: AiConversation) async -> Bool {
+        guard !deletingSession else { return false }
+        deletingSession = true; deletionError = nil
+        defer { deletingSession = false }
+        do {
+            try await deleteSessionRequest(session.id)
+            deletedIDs.insert(session.id)
+            sessions.removeAll { $0.id == session.id }
+            if selectedSessionId == session.id { newConversation() }
+            return true
+        } catch { deletionError = error.localizedDescription; return false }
+    }
+
     func send() async {
+        let epoch = selectionEpoch
         let content = input.trimmingCharacters(in: .whitespacesAndNewlines)
 		guard (!content.isEmpty || !selectedImages.isEmpty), !isSending else { return }
         input = ""
         isSending = true
         errorMessage = nil
-        defer { isSending = false }
+        defer { if epoch == selectionEpoch { isSending = false } }
 
         do {
 			let attachments = try await uploadSelectedImages()
+            guard epoch == selectionEpoch else { return }
 			let question = content.isEmpty ? "请分析我上传的图片" : content
             let sessionId: Int64
             let pendingMessageId: Int64?
@@ -203,17 +231,21 @@ final class AiDivinationViewModel: ObservableObject {
                 )
                 sessionId = result.id
                 pendingMessageId = result.messageId
+                guard epoch == selectionEpoch else { await loadSessions(); return }
                 selectedSessionId = result.id
             }
+            guard epoch == selectionEpoch else { return }
             await loadMessages()
+            guard epoch == selectionEpoch else { return }
             if let pendingMessageId, pendingMessageId > 0 {
                 await streamUntilSettled(sessionId: sessionId, messageId: pendingMessageId)
             } else {
                 await pollUntilSettled(sessionId: sessionId)
             }
             await loadSessions()
-			selectedImages = []
+            if epoch == selectionEpoch { selectedImages = [] }
         } catch {
+            guard epoch == selectionEpoch else { return }
             input = content
             errorMessage = error.localizedDescription
         }
@@ -221,9 +253,10 @@ final class AiDivinationViewModel: ObservableObject {
 
     func retry(_ message: AiChatMessage) async {
         guard message.retryable, !isSending else { return }
+        let epoch = selectionEpoch
         isSending = true
         errorMessage = nil
-        defer { isSending = false }
+        defer { if epoch == selectionEpoch { isSending = false } }
         do {
             let result: AiMessageSendResult = try await apiClient.request(
                 .aiRetryMessage(
@@ -232,9 +265,11 @@ final class AiDivinationViewModel: ObservableObject {
                     userId: authStore.userId
                 )
             )
+            guard epoch == selectionEpoch else { return }
             await loadMessages()
             await streamUntilSettled(sessionId: message.sessionId, messageId: result.messageId)
         } catch {
+            guard epoch == selectionEpoch else { return }
             errorMessage = error.localizedDescription
         }
     }
@@ -244,8 +279,9 @@ final class AiDivinationViewModel: ObservableObject {
             messages = []
             return
         }
+        let epoch = selectionEpoch
         isLoading = true
-        defer { isLoading = false }
+        defer { if epoch == selectionEpoch { isLoading = false } }
         do {
             let response: PageResponse<AiChatMessage> = try await apiClient.request(
                 .aiMessages(
@@ -255,8 +291,10 @@ final class AiDivinationViewModel: ObservableObject {
                     size: 100
                 )
             )
+            guard epoch == selectionEpoch, self.selectedSessionId == selectedSessionId else { return }
             messages = response.list
         } catch {
+            guard epoch == selectionEpoch else { return }
             errorMessage = error.localizedDescription
         }
     }
@@ -266,19 +304,21 @@ final class AiDivinationViewModel: ObservableObject {
             guard selectedSessionId == sessionId else { return }
             if !messages.contains(where: { $0.status == "pending" }) { return }
             try? await Task.sleep(for: .seconds(1))
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, selectedSessionId == sessionId else { return }
             await loadMessages()
         }
-        if messages.contains(where: { $0.status == "pending" }) {
+        if selectedSessionId == sessionId, messages.contains(where: { $0.status == "pending" }) {
             errorMessage = "回答仍在生成，可稍后从历史会话继续查看"
         }
     }
 
     private func streamUntilSettled(sessionId: Int64, messageId: Int64) async {
+        let epoch = selectionEpoch
+        guard selectedSessionId == sessionId else { return }
         do {
             try await apiClient.streamAIMessage(sessionId: sessionId, messageId: messageId) { [weak self] event in
                 await MainActor.run {
-                    guard let self else { return }
+                    guard let self, self.selectionEpoch == epoch, self.selectedSessionId == sessionId else { return }
                     if event.event == "delta", let snapshot = event.snapshot,
                        let index = self.messages.firstIndex(where: { $0.id == messageId }) {
                         self.messages[index].content = snapshot
@@ -290,8 +330,10 @@ final class AiDivinationViewModel: ObservableObject {
                     }
                 }
             }
+            guard epoch == selectionEpoch else { return }
             await loadMessages()
         } catch {
+            guard epoch == selectionEpoch else { return }
             await pollUntilSettled(sessionId: sessionId)
         }
     }
@@ -321,6 +363,8 @@ final class AiDivinationViewModel: ObservableObject {
 struct AiDivinationView: View {
     @StateObject private var viewModel = AiDivinationViewModel()
     @State private var isDrawerOpen = false
+    @State private var deletionTarget: AiConversation?
+    @State private var confirmDeletion = false
 	@State private var selectedPhotoItems: [PhotosPickerItem] = []
     @FocusState private var focusedInput: String?
 
@@ -344,6 +388,12 @@ struct AiDivinationView: View {
                     .transition(.move(edge: .leading))
             }
         }
+        .confirmationDialog("删除这段会话？", isPresented: $confirmDeletion, titleVisibility: .visible) {
+            Button("确认删除", role: .destructive) {
+                if let session = deletionTarget { Task { if await viewModel.deleteSession(session) { deletionTarget = nil } } }
+            }
+            Button("保留会话", role: .cancel) { deletionTarget = nil }
+        } message: { Text("会话将从历史问事移除，无法在此恢复。已购买的专题报告仍可在「我的报告」阅读。") }
         .navigationBarHidden(true)
         .task { await viewModel.bootstrap() }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("AskXuanReportConversation"))) { event in
@@ -683,7 +733,10 @@ struct AiDivinationView: View {
 
             ScrollView {
                 LazyVStack(spacing: 4) {
+                    if let error = viewModel.deletionError { Text("删除失败：" + error).font(.footnote).foregroundStyle(.red).padding(12) }
+                    if viewModel.sessions.isEmpty { Text("暂无历史问事").font(.subheadline).foregroundStyle(Color.textTertiary).padding(30) }
                     ForEach(viewModel.sessions) { session in
+                        HStack(spacing: 0) {
                         Button {
                             Task {
                                 await viewModel.selectSession(session.id)
@@ -714,6 +767,11 @@ struct AiDivinationView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                         .buttonStyle(.plain)
+                        Button { deletionTarget = session; confirmDeletion = true } label: {
+                            Image(systemName: "trash").font(.system(size: 16)).frame(width: 44, height: 48)
+                        }.buttonStyle(.plain).foregroundStyle(Color.textTertiary)
+                            .accessibilityLabel("删除会话：" + session.title).disabled(viewModel.deletingSession)
+                        }
                     }
                 }
                 .padding(.horizontal, 8)

@@ -232,6 +232,7 @@ enum Endpoint {
     case aiReportUnlock(AiReportUnlockRequest)
     case aiSkills
     case aiSessions(userId: String, page: Int, size: Int)
+    case aiSessionDelete(Int64)
     case aiSessionCreate(AiSessionCreateRequest)
     case aiMessages(sessionId: String, userId: String, page: Int, size: Int)
     case aiSendMessage(AiMessageSendRequest)
@@ -394,6 +395,7 @@ enum Endpoint {
         case .aiSkills:                 return "ai/skills"
         case .aiSessions:               return "ai/sessions"
         case .aiSessionCreate:          return "ai/sessions"
+        case .aiSessionDelete(let id):  return "ai/sessions/\(id)"
         case .aiMessages(let sessionId, _, _, _): return "ai/sessions/\(sessionId)/messages"
         case .aiSendMessage(let req):   return "ai/sessions/\(req.sessionId)/messages"
         case .aiRetryMessage(let sessionId, let messageId, _): return "ai/sessions/\(sessionId)/messages/\(messageId)/retry"
@@ -485,7 +487,7 @@ enum Endpoint {
         case .shopReturnShip, .diyOrderConfirm, .updateBookingStatus, .shopOrderConfirm, .messageRead, .readAllMessages,
              .updateProfile, .addressUpdate:
             return .PUT
-        case .deleteMessage, .addressDelete, .communityPostUnlike, .communityMasterUnfollow,
+        case .aiSessionDelete, .deleteMessage, .addressDelete, .communityPostUnlike, .communityMasterUnfollow,
              .templeUnfavorite, .productUnfavorite:
             return .DELETE
         }
@@ -552,7 +554,7 @@ enum Endpoint {
             if let status, !status.isEmpty { items.append(URLQueryItem(name: "status", value: status)) }
             return items
         case .aiSessions(let userId, let page, let size):
-            return [URLQueryItem(name: "userId", value: userId),
+            return [URLQueryItem(name: "status", value: "active"), URLQueryItem(name: "userId", value: userId),
                     URLQueryItem(name: "page", value: "\(page)"),
                     URLQueryItem(name: "size", value: "\(size)")]
         case .aiSkills:

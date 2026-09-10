@@ -88,3 +88,72 @@ private struct RewardWheelMotionFixture: View {
             .onAppear { withAnimation(.timingCurve(0.12, 0.64, 0.1, 1, duration: 3.7)) { rotation = 2835 } }
     }
 }
+
+@MainActor final class AiSessionDeletionTests: XCTestCase {
+    private func session(_ id: Int64) -> AiConversation {
+        AiConversation(id: id, sessionNo: "test-\(id)", userId: "fixture", skillCode: "general", selectionMode: "explicit", skillVersion: "1", title: "验收会话", status: "active", createdAt: "", updatedAt: "")
+    }
+    func testDeleteRequestHasNoJSONBodyAndPurchaseKeepsPayload() throws {
+        let deletion = try APIClient.shared.buildRequest(.aiSessionDelete(42))
+        XCTAssertEqual(deletion.httpMethod, "DELETE"); XCTAssertTrue(deletion.url?.path.hasSuffix("ai/sessions/42") == true)
+        XCTAssertNil(deletion.httpBody); XCTAssertNil(deletion.value(forHTTPHeaderField: "Content-Type"))
+        let purchase = try APIClient.shared.buildRequest(.aiReportUnlock(.init(reportId: 42, expectedPoints: 10)))
+        XCTAssertEqual(purchase.value(forHTTPHeaderField: "Content-Type"), "application/json"); XCTAssertNotNil(purchase.httpBody)
+    }
+    func testDeletingCurrentClearsConversationAndDraft() async {
+        var requested: [Int64] = []
+        let model = AiDivinationViewModel(deleteSessionRequest: { requested.append($0) })
+        model.sessions = [session(1), session(2)]; model.selectedSessionId = 1; model.input = "草稿"; model.selectedImages = [Data([1])]
+        let success = await model.deleteSession(session(1))
+        XCTAssertTrue(success); XCTAssertEqual(requested, [1]); XCTAssertNil(model.selectedSessionId); XCTAssertEqual(model.input, ""); XCTAssertTrue(model.selectedImages.isEmpty); XCTAssertEqual(model.sessions.map(\.id), [2])
+    }
+    func testDeletingOtherPreservesCurrentDraft() async {
+        let model = AiDivinationViewModel(deleteSessionRequest: { _ in })
+        model.sessions = [session(1), session(2)]; model.selectedSessionId = 1; model.input = "保留的草稿"
+        let success = await model.deleteSession(session(2))
+        XCTAssertTrue(success); XCTAssertEqual(model.selectedSessionId, 1); XCTAssertEqual(model.input, "保留的草稿"); XCTAssertEqual(model.sessions.map(\.id), [1])
+    }
+    func testFailedDeletionKeepsSessionAndCanRetry() async {
+        var fail = true
+        let model = AiDivinationViewModel(deleteSessionRequest: { _ in if fail { throw URLError(.notConnectedToInternet) } })
+        model.sessions = [session(1)]; model.selectedSessionId = 1
+        let failed = await model.deleteSession(session(1)); XCTAssertFalse(failed); XCTAssertEqual(model.sessions.count, 1); XCTAssertEqual(model.selectedSessionId, 1); XCTAssertNotNil(model.deletionError); XCTAssertFalse(model.deletingSession)
+        fail = false
+        let success = await model.deleteSession(session(1)); XCTAssertTrue(success); XCTAssertTrue(model.sessions.isEmpty); XCTAssertNil(model.deletionError)
+    }
+}
+
+@MainActor final class AiTopicNativeRenderTests: XCTestCase {
+    func testSevenTopicLayoutsAndMotion() async throws {
+        let codes = ["bazi", "ziwei", "marriage", "fengshui", "liuyao", "qimen", "tarot"]
+        let names = ["八字命理", "紫微斗数", "姻缘合盘", "风水布局", "六爻占卜", "奇门遁甲", "塔罗指引"]
+        for width in [320.0,390.0,768.0] {
+            let view = ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("一事一解，自有章法").font(.system(.title2, design: .serif))
+                    LazyVGrid(columns: [GridItem(.flexible()),GridItem(.flexible())], spacing: 12) {
+                        ForEach(Array(codes.enumerated()), id: \.offset) { index, code in AiTopicTile(topic: AiTopic(code:code,title:names[index],subtitle:"专题解读",priceCents:990,pointsPrice:10,chapters:[],version:"1")) }
+                    }
+                }.padding(18)
+            }.background(Color(red:0.97,green:0.96,blue:0.93)).preferredColorScheme(.light)
+            try await render(view, name:"ios-ai-seven-topics-\(Int(width))", width:width, height:900)
+        }
+        try await render(AiTopicArtwork(code:"ziwei").padding(35).background(.white),name:"ios-ai-topic-motion",width:390,height:360, motion:true)
+    }
+    private func render<V:View>(_ view:V,name:String,width:Double,height:Double,motion:Bool=false) async throws {
+        let controller = UIHostingController(rootView:view)
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene:scene);window.frame=CGRect(x:0,y:0,width:width,height:height);window.rootViewController=controller;window.makeKeyAndVisible();controller.view.frame=window.bounds;controller.view.layoutIfNeeded()
+        try await Task.sleep(for:.milliseconds(350))
+        let renderer=UIGraphicsImageRenderer(bounds:controller.view.bounds)
+        let image=renderer.image { _ in controller.view.drawHierarchy(in:controller.view.bounds,afterScreenUpdates:true) }
+        XCTAssertEqual(image.size.width,width,accuracy:1)
+        let attachment=XCTAttachment(image:image);attachment.name=name;attachment.lifetime = .keepAlways;add(attachment)
+        if motion && !UIAccessibility.isReduceMotionEnabled {
+            try await Task.sleep(for:.milliseconds(550))
+            let next=renderer.image { _ in controller.view.drawHierarchy(in:controller.view.bounds,afterScreenUpdates:true) }
+            XCTAssertNotEqual(image.pngData(),next.pngData(),"Topic art should animate between frames")
+        }
+        window.isHidden=true
+    }
+}

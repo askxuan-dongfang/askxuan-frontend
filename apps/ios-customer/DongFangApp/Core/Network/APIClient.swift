@@ -253,7 +253,7 @@ final class APIClient {
     }
 
     /// 构造 URLRequest
-    private func buildRequest(_ endpoint: Endpoint) throws -> URLRequest {
+    func buildRequest(_ endpoint: Endpoint) throws -> URLRequest {
         let url = baseURL.appendingPathComponent(endpoint.path)
         var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
 
@@ -268,7 +268,6 @@ final class APIClient {
 
         var request = URLRequest(url: finalURL)
         request.httpMethod = endpoint.httpMethod.rawValue
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue(AppConfig.clientType, forHTTPHeaderField: "X-Client-Type")
         request.setValue(AppConfig.clientVersion, forHTTPHeaderField: "X-Client-Version")
@@ -282,6 +281,7 @@ final class APIClient {
         if let body = endpoint.body {
             do {
                 request.httpBody = try encoder.encode(body)
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             } catch {
                 throw APIError.decodingError(error)
             }
