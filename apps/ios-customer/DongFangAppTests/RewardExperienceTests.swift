@@ -124,6 +124,18 @@ private struct RewardWheelMotionFixture: View {
 }
 
 @MainActor final class AiTopicNativeRenderTests: XCTestCase {
+    func testGuidedFieldConditionalValidation() throws {
+        let data = Data(#"{"key":"numbers","label":"起卦数字","type":"text","required":false,"helpText":"2–3 个整数","visibleWhen":{"key":"method","value":"number"},"requiredWhen":{"key":"method","value":"number"},"validation":"divination-numbers"}"#.utf8)
+        let field = try JSONDecoder().decode(AiSkillField.self, from: data)
+        XCTAssertFalse(field.visible(in: ["method":"auto"]))
+        XCTAssertTrue(field.valid(in: ["method":"auto"]))
+        XCTAssertFalse(field.valid(in: ["method":"number"]))
+        XCTAssertFalse(field.valid(in: ["method":"number","numbers":"1 2 3 4"]))
+        XCTAssertFalse(field.valid(in: ["method":"number","numbers":"-1 2"]))
+        XCTAssertTrue(field.valid(in: ["method":"number","numbers":"12，34 56"]))
+        XCTAssertEqual(field.helpText, "2–3 个整数")
+    }
+
     func testProductTypographyRendersChineseAndNumericContent() async throws {
         XCTAssertEqual(AppTypography.serifName, "AskXuanSerif-Semibold")
         XCTAssertNotNil(UIFont(name: "HelveticaNeue", size: 14))

@@ -12,8 +12,11 @@ import UIKit
 struct AiSkillOption: Decodable, Identifiable {
     let value: String
     let label: String
+    var description: String? = nil
     var id: String { value }
 }
+
+struct AiFieldCondition: Decodable { let key: String; let value: String }
 
 struct AiSkillField: Decodable, Identifiable {
     let key: String
@@ -22,7 +25,29 @@ struct AiSkillField: Decodable, Identifiable {
     let required: Bool
     let placeholder: String?
     let options: [AiSkillOption]?
+    var helpText: String? = nil
+    var defaultValue: String? = nil
+    var visibleWhen: AiFieldCondition? = nil
+    var requiredWhen: AiFieldCondition? = nil
+    var validation: String? = nil
     var id: String { key }
+    func visible(in inputs: [String: String]) -> Bool { visibleWhen.map { inputs[$0.key] == $0.value } ?? true }
+    func needed(in inputs: [String: String]) -> Bool { required || (requiredWhen.map { inputs[$0.key] == $0.value } ?? false) }
+    func valid(in inputs: [String: String]) -> Bool {
+        guard visible(in: inputs) else { return true }
+        let value = (inputs[key] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if value.isEmpty { return !needed(in: inputs) }
+        if validation == "divination-numbers" { return value.range(of: #"^[0-9]{1,6}([ ,，、\t]+[0-9]{1,6}){1,2}$"#, options: .regularExpression) != nil }
+        if key == "birthDate" && inputs["calendarType"] == "lunar" { return value.range(of: #"^(19[0-9]{2}|20[0-9]{2}|2100)-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|30)$"#, options: .regularExpression) != nil }
+        if ["date", "time", "datetime"].contains(type) {
+            let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.timeZone = TimeZone(secondsFromGMT: 8 * 3600); formatter.isLenient = false
+            formatter.dateFormat = type == "date" ? "yyyy-MM-dd" : type == "time" ? "HH:mm" : "yyyy-MM-dd'T'HH:mm"
+            guard let date = formatter.date(from: value), formatter.string(from: date) == value else { return false }
+            if key == "birthDate" { let year = Int(value.prefix(4)) ?? 0; return (1900...2100).contains(year) }
+        }
+        if type == "select" { return options?.contains { $0.value == value } == true }
+        return true
+    }
 }
 
 struct AiSkillInputSchema: Decodable { let fields: [AiSkillField] }
@@ -138,9 +163,7 @@ final class AiDivinationViewModel: ObservableObject {
         do {
             let response: AiSkillListResponse = try await apiClient.request(.aiSkills)
             skills = response.list
-            if !skills.contains(where: { $0.code == selectedSkillCode }), let first = skills.first {
-                selectedSkillCode = first.code
-            }
+
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -223,9 +246,9 @@ final class AiDivinationViewModel: ObservableObject {
                 let result: AiSessionCreateResult = try await apiClient.request(
                     .aiSessionCreate(AiSessionCreateRequest(
                         userId: authStore.userId,
-                        skillCode: selectedSkillCode,
+                        skillCode: "general",
 						question: question,
-						inputs: structuredInputs,
+						inputs: [:],
 						attachments: attachments
                     ))
                 )
@@ -467,84 +490,15 @@ struct AiDivinationView: View {
 
     private var emptyConversation: some View {
         VStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("聊聊当下 · 直接问事").font(AppTypography.caption).foregroundStyle(Color.accentDefault)
+                Text("今天想问什么？").font(AppTypography.title(24)).foregroundStyle(Color.textPrimary)
+                Text("把困惑写在下方，我们从这件事聊起。").font(AppTypography.body).foregroundStyle(Color.textSecondary)
+            }.frame(maxWidth: .infinity, alignment: .leading)
             AiTopicEntrances()
-            Image(systemName: "sparkles")
-                .font(.system(size: 30))
-                .foregroundStyle(Color.accentDefault)
-                .frame(width: 64, height: 64)
-                .background(Color.accentDefault.opacity(0.12))
-                .clipShape(Circle())
-
-            Text("今天想问什么？")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Color.textPrimary)
-
-            Text("默认直接问事，也可选择一个术数方向")
-                .font(.system(size: 13))
-                .foregroundStyle(Color.textSecondary)
-
-            Menu {
-                ForEach(viewModel.skills) { skill in
-                    Button(skill.name) {
-                        viewModel.selectedSkillCode = skill.code
-                        viewModel.structuredInputs = [:]
-                    }
-                }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "slider.horizontal.3")
-                    Text(selectedSkillName)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 10, weight: .semibold))
-                }
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.brandDefault)
-                .padding(.horizontal, 12)
-                .frame(height: 36)
-                .background(Color.brandDefault.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-
-            if let fields = viewModel.selectedSkill?.inputSchema.fields, !fields.isEmpty {
-                VStack(spacing: 10) {
-                    ForEach(fields) { field in
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(field.label + (field.required ? " *" : ""))
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(Color.textSecondary)
-                            if field.type == "select" {
-                                Picker(field.label, selection: inputBinding(field.key)) {
-                                    Text("请选择").tag("")
-                                    ForEach(field.options ?? []) { option in
-                                        Text(option.label).tag(option.value)
-                                    }
-                                }
-                                .pickerStyle(.menu)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 10)
-                                .frame(height: 40)
-                                .background(Color.bgSecondary)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                            } else {
-                                TextField(field.placeholder ?? inputPlaceholder(field.type), text: inputBinding(field.key))
-                                    .font(.system(size: 14))
-                                    .focused($focusedInput, equals: "structured:\(field.key)")
-                                    .submitLabel(.done)
-                                    .onSubmit { focusedInput = nil }
-                                    .padding(.horizontal, 12)
-                                    .frame(height: 40)
-                                    .background(Color.bgSecondary)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.borderDefault, lineWidth: 1))
-                            }
-                        }
-                    }
-                }
-                .padding(.top, 4)
-            }
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 72)
+        .padding(.top, 22)
     }
 
     private func messageRow(_ message: AiChatMessage) -> some View {
@@ -784,34 +738,11 @@ struct AiDivinationView: View {
     }
 
     private var canSend: Bool {
-        let requiredReady = viewModel.selectedSessionId != nil || (viewModel.selectedSkill?.inputSchema.fields ?? []).allSatisfy {
-            !$0.required || !(viewModel.structuredInputs[$0.key] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }
-		return (!viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !viewModel.selectedImages.isEmpty) && !viewModel.isSending && requiredReady
-    }
-
-    private var selectedSkillName: String {
-        viewModel.skills.first(where: { $0.code == viewModel.selectedSkillCode })?.name ?? "直接问事"
+        (!viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !viewModel.selectedImages.isEmpty) && !viewModel.isSending
     }
 
     private func skillName(_ code: String) -> String {
         viewModel.skills.first(where: { $0.code == code })?.name ?? code
-    }
-
-    private func inputBinding(_ key: String) -> Binding<String> {
-        Binding(
-            get: { viewModel.structuredInputs[key] ?? "" },
-            set: { viewModel.structuredInputs[key] = $0 }
-        )
-    }
-
-    private func inputPlaceholder(_ type: String) -> String {
-        switch type {
-        case "date": return "YYYY-MM-DD"
-        case "time": return "HH:mm"
-        case "datetime": return "YYYY-MM-DD HH:mm"
-        default: return "请输入"
-        }
     }
 
     private func iconButton(_ systemName: String, label: String, action: @escaping () -> Void) -> some View {

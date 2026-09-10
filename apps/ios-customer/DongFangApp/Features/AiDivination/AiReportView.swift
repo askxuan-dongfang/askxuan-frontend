@@ -36,7 +36,7 @@ struct AiTopicEntrances: View {
                 Button("我的报告 ↗") { library = true }.font(.system(size: 12))
             }
             if error { Button("专题暂未加载 · 点击重试") { Task { await load() } }.font(.footnote) }
-            Text("从一个在意的问题，走近生活里的答案。").font(.system(size: 12)).foregroundStyle(.secondary)
+            Text("想系统地了解一个主题？选一份专题，按引导补充资料。").font(.system(size: 12)).foregroundStyle(.secondary)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2), spacing: 10) {
                 ForEach(topics) { topic in Button { selected = topic } label: { AiTopicTile(topic: topic) }.buttonStyle(.plain) }
             }
@@ -72,7 +72,11 @@ struct AiReportWorkspace: View {
     @State private var largeType = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var accent: Color { AiTopicPresentation(code: topic?.code ?? report?.skillCode ?? "fengshui").color }
-    private var fieldsReady: Bool { (skill?.inputSchema.fields ?? []).allSatisfy { !$0.required || !(inputs[$0.key] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } }
+    private var fieldsReady: Bool { (skill?.inputSchema.fields ?? []).allSatisfy { $0.valid(in: inputs) } }
+    private var visibleFields: [AiSkillField] { (skill?.inputSchema.fields ?? []).filter { $0.visible(in: inputs) } }
+    private var cleanInputs: [String: String] { Dictionary(uniqueKeysWithValues: visibleFields.compactMap { field in let value = (inputs[field.key] ?? "").trimmingCharacters(in: .whitespacesAndNewlines); return value.isEmpty ? nil : (field.key, value) }) }
+    private func setInput(_ key: String, _ value: String) { inputs[key] = value; inputs = cleanInputs }
+    private func dateFormatter(_ type: String) -> DateFormatter { let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(secondsFromGMT: 8 * 3600); f.dateFormat = type == "date" ? "yyyy-MM-dd" : type == "time" ? "HH:mm" : "yyyy-MM-dd'T'HH:mm"; return f }
     private var questionReady: Bool { !question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && question.count <= 1500 }
 
     var body: some View {
@@ -99,9 +103,9 @@ struct AiReportWorkspace: View {
         }
         .sheet(item: $dateField) { field in
             NavigationStack {
-                DatePicker(field.label, selection: $pickedDate, displayedComponents: field.type == "date" ? [.date] : field.type == "time" ? [.hourAndMinute] : [.date, .hourAndMinute]).datePickerStyle(.wheel).labelsHidden().environment(\.locale, Locale(identifier: "zh_CN")).padding()
+                DatePicker(field.label, selection: $pickedDate, displayedComponents: field.type == "date" ? [.date] : field.type == "time" ? [.hourAndMinute] : [.date, .hourAndMinute]).datePickerStyle(.wheel).labelsHidden().environment(\.locale, Locale(identifier: "zh_CN")).environment(\.timeZone, TimeZone(secondsFromGMT: 8 * 3600)!).padding()
                     .navigationTitle(field.label).navigationBarTitleDisplayMode(.inline)
-                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("确定") { let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = field.type == "date" ? "yyyy-MM-dd" : field.type == "time" ? "HH:mm" : "yyyy-MM-dd'T'HH:mm"; inputs[field.key] = f.string(from: pickedDate); dateField = nil } }; ToolbarItem(placement: .cancellationAction) { Button("取消") { dateField = nil } } }
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("确定") { setInput(field.key, dateFormatter(field.type).string(from: pickedDate)); dateField = nil } }; ToolbarItem(placement: .cancellationAction) { Button("取消") { dateField = nil } } }
             }.presentationDetents([.height(340)])
         }
         .confirmationDialog("确认购买完整报告？", isPresented: $confirm, titleVisibility: .visible) {
@@ -137,10 +141,10 @@ struct AiReportWorkspace: View {
                 Rectangle().frame(height: 1).opacity(0.2)
                 Label("说说问题", systemImage: "2.circle.fill").opacity(step == 1 ? 1 : 0.4)
             }.font(.system(size: 12))
-            Text(step == 0 ? "先从认识您开始" : "这一次，您最在意什么？").font(AppTypography.section).padding(.top, 8)
+            Text(step == 0 ? "为这次解读，补充一点线索" : "这一次，您最在意什么？").font(AppTypography.section).padding(.top, 8)
             if step == 0 {
                 Text("准确的背景，让解读更贴近实际情况。带 * 的资料为必填。").font(.footnote).foregroundStyle(.secondary)
-                if let skill { ForEach(skill.inputSchema.fields) { field in fieldView(field) } }
+                ForEach(visibleFields) { field in fieldView(field) }
                 primary("下一步，说说问题 →") { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { step = 1 } }.disabled(skill == nil || !fieldsReady)
             } else {
                 ForEach(AiTopicPresentation(code: topic.code).prompts, id: \.self) { prompt in
@@ -156,16 +160,31 @@ struct AiReportWorkspace: View {
         }
         card { DisclosureGroup("这份解读，将为您梳理哪些线索？") { VStack(alignment: .leading, spacing: 12) { chapters(topic.chapters); Text("传统文化参考，不承诺预测结果。主题图形用于视觉表达，不代表您的排盘或抽牌结果。").font(.footnote).foregroundStyle(.secondary) }.padding(.top, 14) }.font(.subheadline).tint(accent) }
     }
-    private func binding(_ key: String) -> Binding<String> { Binding(get: { inputs[key] ?? "" }, set: { inputs[key] = $0 }) }
+    private func binding(_ key: String) -> Binding<String> { Binding(get: { inputs[key] ?? "" }, set: { setInput(key, $0) }) }
     @ViewBuilder private func fieldView(_ field: AiSkillField) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(field.label + (field.required ? " *" : "（选填）")).font(.subheadline)
+            HStack { Text(field.label).font(AppTypography.body); Text(field.needed(in: inputs) ? "必填" : "选填").font(AppTypography.caption).foregroundStyle(.secondary) }
+            if let help = field.helpText { Text(help).font(AppTypography.caption).foregroundStyle(.secondary).lineSpacing(5) }
             if field.type == "select" {
-                Picker(field.label, selection: binding(field.key)) { Text("请选择").tag(""); ForEach(field.options ?? []) { Text($0.label).tag($0.value) } }.tint(accent)
+                VStack(spacing: 9) {
+                    ForEach(field.options ?? []) { option in
+                        Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { setInput(field.key, option.value) } } label: {
+                            HStack(alignment: .top, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 5) { Text(option.label).font(AppTypography.body); if let description = option.description { Text(description).font(AppTypography.caption).foregroundStyle(.secondary) } }
+                                Spacer(minLength: 8)
+                                Image(systemName: inputs[field.key] == option.value ? "checkmark.circle.fill" : "circle").foregroundStyle(accent)
+                            }.multilineTextAlignment(.leading).padding(14).frame(maxWidth: .infinity, alignment: .leading).background(inputs[field.key] == option.value ? accent.opacity(0.09) : reportPaper).clipShape(RoundedRectangle(cornerRadius: 12)).overlay(RoundedRectangle(cornerRadius: 12).stroke(inputs[field.key] == option.value ? accent : accent.opacity(0.13)))
+                        }.buttonStyle(.plain).accessibilityLabel(option.label).accessibilityValue(inputs[field.key] == option.value ? "已选择" : "未选择").accessibilityAddTraits(inputs[field.key] == option.value ? [.isSelected] : [])
+                    }
+                }
+            } else if field.key == "birthDate" && inputs["calendarType"] == "lunar" {
+                TextField("YYYY-MM-DD，例如 1990-02-30", text: binding(field.key)).font(AppTypography.body).textInputAutocapitalization(.never).autocorrectionDisabled().padding(14).background(reportPaper).clipShape(RoundedRectangle(cornerRadius: 12)).accessibilityLabel("农历出生日期")
             } else if ["date", "time", "datetime"].contains(field.type) {
-                Button { dateField = field } label: { HStack { Text(inputs[field.key] ?? "请选择" + field.label); Spacer(); Image(systemName: field.type == "time" ? "clock" : "calendar") }.padding(13).background(reportPaper).clipShape(RoundedRectangle(cornerRadius: 10)) }.tint(accent)
+                Button { pickedDate = dateFormatter(field.type).date(from: inputs[field.key] ?? "") ?? Date(); dateField = field } label: { HStack { Text(inputs[field.key] ?? "请选择" + field.label); Spacer(); Image(systemName: field.type == "time" ? "clock" : "calendar") }.padding(14).background(reportPaper).clipShape(RoundedRectangle(cornerRadius: 12)) }.tint(accent)
+                if field.type == "datetime" { Button { setInput(field.key, dateFormatter("datetime").string(from: Date())) } label: { Label("使用当前北京时间", systemImage: "clock") }.font(AppTypography.caption).tint(accent).padding(.vertical, 5) }
             } else {
-                TextField(field.type == "date" ? "YYYY-MM-DD" : field.type == "time" ? "HH:mm" : field.type == "datetime" ? "YYYY-MM-DDTHH:mm" : (field.placeholder ?? "请填写"), text: binding(field.key)).textInputAutocapitalization(.never).autocorrectionDisabled().padding(13).background(reportPaper).clipShape(RoundedRectangle(cornerRadius: 10))
+                TextField(field.placeholder ?? "请填写", text: binding(field.key)).font(AppTypography.body).textInputAutocapitalization(.never).autocorrectionDisabled().padding(14).background(reportPaper).clipShape(RoundedRectangle(cornerRadius: 12)).accessibilityLabel(field.label)
+                if !(inputs[field.key] ?? "").isEmpty && !field.valid(in: inputs) { Text("请填写 2–3 个 0–999999 的整数，以空格或逗号分隔。").font(AppTypography.caption).foregroundStyle(.red) }
             }
         }
     }
@@ -201,7 +220,7 @@ struct AiReportWorkspace: View {
     }
     private func load() async {
         loading = true; defer { loading = false }
-        do { if let reportID { report = try await APIClient.shared.request(.aiReport(reportID)) }; if let topic { let response: AiSkillListResponse = try await APIClient.shared.request(.aiSkills); skill = response.list.first { $0.code == topic.code }; if skill?.inputSchema.fields.isEmpty == true { step = 1 } } }
+        do { if let reportID { report = try await APIClient.shared.request(.aiReport(reportID)) }; if let topic { let response: AiSkillListResponse = try await APIClient.shared.request(.aiSkills); skill = response.list.first { $0.code == topic.code }; if inputs.isEmpty { inputs = Dictionary(uniqueKeysWithValues: (skill?.inputSchema.fields ?? []).compactMap { field in guard let value = field.defaultValue, field.options?.contains(where: { $0.value == value }) == true else { return nil }; return (field.key, value) }) }; if skill?.inputSchema.fields.isEmpty == true { step = 1 } } }
         catch { self.error = error.localizedDescription }
     }
     private func refreshBalance() async {
@@ -210,7 +229,7 @@ struct AiReportWorkspace: View {
     }
     private func create(_ topic: AiTopic) async {
         guard !busy else { return }; busy = true; error = ""; defer { busy = false }
-        do { if submittedRequest == nil { submittedRequest = .init(skillCode: topic.code, question: question.trimmingCharacters(in: .whitespacesAndNewlines), inputs: inputs, requestKey: requestKey) }; if let request = submittedRequest { report = try await APIClient.shared.request(.aiReportCreate(request)) } } catch { self.error = error.localizedDescription }
+        do { if submittedRequest == nil { submittedRequest = .init(skillCode: topic.code, question: question.trimmingCharacters(in: .whitespacesAndNewlines), inputs: cleanInputs, requestKey: requestKey) }; if let request = submittedRequest { report = try await APIClient.shared.request(.aiReportCreate(request)) } } catch { self.error = error.localizedDescription }
     }
     private func retry(_ r: AiReport) async {
         guard !busy else { return }; busy = true; error = ""; defer { busy = false }

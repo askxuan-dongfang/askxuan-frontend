@@ -80,3 +80,32 @@ test('deleting current chat suppresses late message response and animations actu
  await page.goto('http://127.0.0.1:5382/c/ai');await page.getByRole('button',{name:'历史问事',exact:true}).click();await page.getByRole('button',{name:'删除会话：待返回会话'}).click();await page.getByRole('button',{name:'确认删除',exact:true}).click();await expect(page.getByText('暂无历史问事')).toBeVisible();releaseMessage();await page.getByRole('button',{name:'关闭历史问事'}).click();await expect(page.getByText('迟到的已删除消息')).toHaveCount(0);
  const motif=page.locator('.ai-topic-grid .art-motif').first();await expect(motif).toBeVisible();const before=await motif.evaluate(el=>getComputedStyle(el).transform);await expect.poll(()=>motif.evaluate(el=>getComputedStyle(el).transform)).not.toBe(before);
 });
+
+// Public catalog fixture; all APIs in these cases are isolated from production.
+import { readFileSync } from 'node:fs';
+const guidedCatalog = JSON.parse(readFileSync(new URL('./ai-guided-catalog.json', import.meta.url), 'utf8'));
+for(const width of [320,536]) test(`guided conditional fields and single entry ${width}`,async({page})=>{
+ await signIn(page);await page.setViewportSize({width,height:987});let created:any;
+ await page.route('**/api/v1/**',async route=>{const req=route.request(),path=new URL(req.url()).pathname;let data:any={};
+  if(path.endsWith('/ai/skills'))data={list:guidedCatalog};else if(path.endsWith('/ai/topics'))data=topics;else if(path.endsWith('/ai/sessions'))data={list:[]};
+  else if(path.endsWith('/ai/reports')&&req.method()==='POST'){created=req.postDataJSON();data={id:991};}
+  else if(path.endsWith('/ai/reports/991'))data={id:991,skillCode:'liuyao',title:'本地验收报告',status:'failed',chapters:[]};
+  await route.fulfill({json:{code:0,data}});
+ });
+ await page.goto('http://127.0.0.1:5382/c/ai');await expect(page.locator('.ai-topic-grid a')).toHaveCount(7);await expect(page.locator('select')).toHaveCount(0);await expect(page.getByText(/^已选：/)).toHaveCount(0);await expect(page.getByRole('button',{name:'六爻梅花',exact:true})).toHaveCount(0);
+ await page.screenshot({path:`/private/tmp/ai-guided-home-${width}.png`,fullPage:true});await page.locator('.ai-topic-grid a[href$="liuyao"]').click();
+ await expect(page.getByRole('radio',{name:/自动起卦/})).toBeChecked();await expect(page.getByLabel('起卦数字',{exact:true})).toHaveCount(0);await expect(page.getByLabel('起卦时间',{exact:true})).toHaveCount(0);
+ await page.getByRole('radio',{name:/数字起卦/}).check();await page.getByLabel('起卦数字',{exact:true}).fill('1 2 3 4');await page.getByRole('radio',{name:/财务与资源/}).check();await page.getByRole('button',{name:'下一步，说说问题'}).click();await expect(page.getByLabel('起卦数字',{exact:true})).toBeVisible();expect(created).toBeUndefined();
+ await page.getByLabel('起卦数字',{exact:true}).fill('12，34 56');await page.screenshot({path:`/private/tmp/ai-guided-numbers-${width}.png`,fullPage:true});
+ await page.getByRole('radio',{name:/时间起卦/}).check();await expect(page.getByLabel('起卦数字',{exact:true})).toHaveCount(0);await page.getByRole('button',{name:'下一步，说说问题'}).click();await expect(page.getByLabel('起卦时间',{exact:true})).toBeVisible();await page.getByRole('button',{name:'使用当前北京时间'}).click();
+ const time=await page.getByLabel('起卦时间',{exact:true}).inputValue();expect(Math.abs(Date.parse(time+'+08:00')-Date.now())).toBeLessThan(65000);
+ await page.getByRole('radio',{name:/自动起卦/}).check();await page.getByRole('button',{name:'下一步，说说问题'}).click();await page.getByLabel('最想了解的问题').fill('本地验收：如何安排下一阶段的资源？');await page.getByRole('button',{name:'生成免费摘要'}).click();await expect.poll(()=>created?.inputs).toEqual({method:'auto',yongShenTarget:'妻财'});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+});
+test('all seven actual schemas and lunar field',async({page})=>{
+ test.setTimeout(120000);
+ await signIn(page);await page.setViewportSize({width:390,height:900});
+ await page.route('**/api/v1/**',async route=>{const path=new URL(route.request().url()).pathname;await route.fulfill({json:{code:0,data:path.endsWith('/ai/skills')?{list:guidedCatalog}:path.endsWith('/ai/topics')?topics:{list:[]}}});});
+ for(const code of codes){await page.goto(`http://127.0.0.1:5382/c/ai/topics/${code}`);await expect(page.locator('.ai-guided-field').first()).toBeVisible();await expect(page.locator('.ai-guided-fields select')).toHaveCount(0);await expect(page.locator('.ai-field-help').first()).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();await page.screenshot({path:`/private/tmp/ai-guided-${code}-390.png`,fullPage:true});}
+ await page.goto('http://127.0.0.1:5382/c/ai/topics/marriage');await expect(page.getByLabel('对方出生日期',{exact:true})).toHaveCount(0);await page.getByRole('radio',{name:/双方合盘/}).check();await expect(page.getByLabel('对方出生日期',{exact:true})).toBeVisible();
+ await page.goto('http://127.0.0.1:5382/c/ai/topics/bazi');await page.getByRole('radio',{name:'农历',exact:true}).check();await page.getByLabel('出生日期',{exact:true}).fill('1990-02-30');expect(await page.getByLabel('出生日期',{exact:true}).evaluate((el:HTMLInputElement)=>el.checkValidity())).toBeTruthy();
+});

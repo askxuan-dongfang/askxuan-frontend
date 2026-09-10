@@ -1,0 +1,541 @@
+[
+  {
+    "capabilities": [
+      "chat",
+      "stream",
+      "auto_route",
+      "reasoning_status",
+      "vision"
+    ],
+    "category": "assistant",
+    "code": "general",
+    "createdAt": "2026-07-13T10:00:00+08:00",
+    "description": "不限定术数方向的日常问事入口",
+    "icon": "/icons/general.png",
+    "id": 1,
+    "inputSchema": {
+      "fields": []
+    },
+    "name": "直接问事",
+    "riskLevel": "low",
+    "sortOrder": 0,
+    "sourceRef": "askxuan/general@2.0.0",
+    "sourceType": "reviewed_skill",
+    "status": "enabled",
+    "version": "2.0.0"
+  },
+  {
+    "capabilities": [
+      "chat",
+      "stream",
+      "structured_input",
+      "mcp",
+      "auto_route",
+      "reasoning_status"
+    ],
+    "category": "divination",
+    "code": "bazi",
+    "createdAt": "2026-06-28T10:00:00+08:00",
+    "description": "依据生辰八字推演命格运势",
+    "icon": "/icons/bazi.png",
+    "id": 2,
+    "inputSchema": {
+      "fields": [
+        {
+          "defaultValue": "solar",
+          "helpText": "先确认公历或农历。农历闰月暂请换算为公历后填写。",
+          "key": "calendarType",
+          "label": "历法",
+          "options": [
+            {
+              "label": "公历",
+              "value": "solar"
+            },
+            {
+              "label": "农历",
+              "value": "lunar"
+            }
+          ],
+          "required": true,
+          "type": "select"
+        },
+        {
+          "helpText": "填写 1900–2100 年的出生年月日。农历按 YYYY-MM-DD 输入，例如 1990-02-30；不确定时请先核对出生记录。",
+          "key": "birthDate",
+          "label": "出生日期",
+          "required": true,
+          "type": "date"
+        },
+        {
+          "helpText": "填写出生记录中的时、分；不确定时不要随意猜测，可返回直接问事。",
+          "key": "birthTime",
+          "label": "出生时间",
+          "required": true,
+          "type": "time"
+        },
+        {
+          "helpText": "用于传统排盘规则，请按出生资料选择。",
+          "key": "gender",
+          "label": "性别",
+          "options": [
+            {
+              "label": "男",
+              "value": "male"
+            },
+            {
+              "label": "女",
+              "value": "female"
+            }
+          ],
+          "required": true,
+          "type": "select"
+        },
+        {
+          "helpText": "例如：浙江省杭州市西湖区；填写城市和区县即可，无需详细地址。",
+          "key": "birthplace",
+          "label": "出生地",
+          "placeholder": "省 / 市 / 区县",
+          "required": true,
+          "type": "text"
+        }
+      ]
+    },
+    "name": "八字命理",
+    "riskLevel": "medium",
+    "sortOrder": 10,
+    "sourceRef": "ai-module-skills/bazi-skill@112a5d8",
+    "sourceType": "reviewed_skill",
+    "status": "enabled",
+    "version": "2.0.0"
+  },
+  {
+    "capabilities": [
+      "chat",
+      "stream",
+      "structured_input",
+      "auto_route",
+      "reasoning_status"
+    ],
+    "category": "divination",
+    "code": "marriage",
+    "createdAt": "2026-06-28T10:00:00+08:00",
+    "description": "测算姻缘婚恋走势",
+    "icon": "/icons/marriage.png",
+    "id": 3,
+    "inputSchema": {
+      "fields": [
+        {
+          "defaultValue": "personal",
+          "helpText": "关系背景是本专题的主要依据，生日为补充资料。",
+          "key": "mode",
+          "label": "测算方式",
+          "options": [
+            {
+              "description": "梳理自己的关系期待与相处模式",
+              "label": "个人姻缘",
+              "value": "personal"
+            },
+            {
+              "description": "结合双方背景，讨论相处与沟通",
+              "label": "双方合盘",
+              "value": "matching"
+            }
+          ],
+          "required": true,
+          "type": "select"
+        },
+        {
+          "helpText": "选填公历生日；不知道可以留空，解读会以您描述的关系背景为主。",
+          "key": "birthDate",
+          "label": "你的出生日期",
+          "required": false,
+          "type": "date"
+        },
+        {
+          "helpText": "选填对方的公历生日；只填写您已知的信息。",
+          "key": "partnerBirthDate",
+          "label": "对方出生日期",
+          "required": false,
+          "type": "date",
+          "visibleWhen": {
+            "key": "mode",
+            "value": "matching"
+          }
+        }
+      ]
+    },
+    "name": "姻缘测算",
+    "riskLevel": "medium",
+    "sortOrder": 20,
+    "sourceRef": "ai-module-skills/yinyuan-skills@b091c88",
+    "sourceType": "reviewed_skill",
+    "status": "enabled",
+    "version": "2.0.0"
+  },
+  {
+    "capabilities": [
+      "chat",
+      "stream",
+      "structured_input",
+      "mcp",
+      "auto_route",
+      "reasoning_status"
+    ],
+    "category": "divination",
+    "code": "tarot",
+    "createdAt": "2026-06-28T10:00:00+08:00",
+    "description": "塔罗牌占卜指引",
+    "icon": "/icons/tarot.png",
+    "id": 4,
+    "inputSchema": {
+      "fields": [
+        {
+          "defaultValue": "single",
+          "helpText": "按这次问题选择一种牌阵；提交后完成抽牌。",
+          "key": "spread",
+          "label": "牌阵",
+          "options": [
+            {
+              "description": "聚焦一个问题，获得一条提醒",
+              "label": "单牌",
+              "value": "single"
+            },
+            {
+              "description": "从多个角度梳理事情的线索",
+              "label": "三牌阵",
+              "value": "three"
+            },
+            {
+              "description": "关注感受、关系与相处",
+              "label": "爱情牌阵",
+              "value": "love"
+            },
+            {
+              "description": "比较选择，思考各自的得失",
+              "label": "抉择牌阵",
+              "value": "decision"
+            }
+          ],
+          "required": true,
+          "type": "select"
+        }
+      ]
+    },
+    "name": "塔罗牌",
+    "riskLevel": "medium",
+    "sortOrder": 30,
+    "sourceRef": "ai-module-skills/tarot-skill@2d15f52",
+    "sourceType": "reviewed_skill",
+    "status": "enabled",
+    "version": "2.0.0"
+  },
+  {
+    "capabilities": [
+      "chat",
+      "stream",
+      "structured_input",
+      "auto_route",
+      "reasoning_status",
+      "vision"
+    ],
+    "category": "divination",
+    "code": "fengshui",
+    "createdAt": "2026-06-28T10:00:00+08:00",
+    "description": "居家风水布局建议",
+    "icon": "/icons/fengshui.png",
+    "id": 5,
+    "inputSchema": {
+      "fields": [
+        {
+          "defaultValue": "home",
+          "helpText": "下一步请描述布局、使用方式和困扰，已知信息越具体越好。",
+          "key": "scene",
+          "label": "场景",
+          "options": [
+            {
+              "description": "起居、采光与生活动线",
+              "label": "住宅",
+              "value": "home"
+            },
+            {
+              "description": "工位、协作与工作环境",
+              "label": "办公",
+              "value": "office"
+            },
+            {
+              "description": "门面、陈列与顾客动线",
+              "label": "商铺",
+              "value": "shop"
+            }
+          ],
+          "required": true,
+          "type": "select"
+        },
+        {
+          "helpText": "填写所在城市，例如：上海市。无需定位或详细住址。",
+          "key": "location",
+          "label": "地点",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "helpText": "例如：入户门朝南、书桌朝东；不清楚可以留空，无需猜测角度。",
+          "key": "orientation",
+          "label": "朝向",
+          "required": false,
+          "type": "text"
+        }
+      ]
+    },
+    "name": "风水分析",
+    "riskLevel": "medium",
+    "sortOrder": 40,
+    "sourceRef": "ai-module-skills/fengshui.skill@dc6ffb4",
+    "sourceType": "reviewed_skill",
+    "status": "enabled",
+    "version": "2.0.0"
+  },
+  {
+    "capabilities": [
+      "chat",
+      "stream",
+      "structured_input",
+      "mcp",
+      "auto_route",
+      "reasoning_status"
+    ],
+    "category": "divination",
+    "code": "qimen",
+    "createdAt": "2026-06-28T10:00:00+08:00",
+    "description": "奇门遁甲预测决策",
+    "icon": "/icons/qimen.png",
+    "id": 6,
+    "inputSchema": {
+      "fields": [
+        {
+          "helpText": "按北京时间（UTC+8）填写；若问的是当下，可以使用当前时间。",
+          "key": "eventTime",
+          "label": "起局时间",
+          "required": true,
+          "type": "datetime"
+        },
+        {
+          "helpText": "填写所在城市，例如：上海市。无需定位或详细住址。",
+          "key": "location",
+          "label": "所在地",
+          "required": true,
+          "type": "text"
+        }
+      ]
+    },
+    "name": "奇门遁甲",
+    "riskLevel": "medium",
+    "sortOrder": 50,
+    "sourceRef": "ai-module-skills/Numerologist_skills/qimen-dunjia@ea28c3f",
+    "sourceType": "reviewed_skill",
+    "status": "enabled",
+    "version": "2.0.0"
+  },
+  {
+    "capabilities": [
+      "chat",
+      "stream",
+      "structured_input",
+      "mcp",
+      "auto_route",
+      "reasoning_status"
+    ],
+    "category": "divination",
+    "code": "ziwei",
+    "createdAt": "2026-06-28T10:00:00+08:00",
+    "description": "紫微斗数命盘解析",
+    "icon": "/icons/ziwei.png",
+    "id": 7,
+    "inputSchema": {
+      "fields": [
+        {
+          "defaultValue": "solar",
+          "helpText": "先确认公历或农历。农历闰月暂请换算为公历后填写。",
+          "key": "calendarType",
+          "label": "历法",
+          "options": [
+            {
+              "label": "公历",
+              "value": "solar"
+            },
+            {
+              "label": "农历",
+              "value": "lunar"
+            }
+          ],
+          "required": true,
+          "type": "select"
+        },
+        {
+          "helpText": "填写 1900–2100 年的出生年月日。农历按 YYYY-MM-DD 输入，例如 1990-02-30；不确定时请先核对出生记录。",
+          "key": "birthDate",
+          "label": "出生日期",
+          "required": true,
+          "type": "date"
+        },
+        {
+          "helpText": "填写出生记录中的时、分；不确定时不要随意猜测，可返回直接问事。",
+          "key": "birthTime",
+          "label": "出生时间",
+          "required": true,
+          "type": "time"
+        },
+        {
+          "helpText": "用于传统排盘规则，请按出生资料选择。",
+          "key": "gender",
+          "label": "性别",
+          "options": [
+            {
+              "label": "男",
+              "value": "male"
+            },
+            {
+              "label": "女",
+              "value": "female"
+            }
+          ],
+          "required": true,
+          "type": "select"
+        },
+        {
+          "helpText": "例如：浙江省杭州市西湖区；填写城市和区县即可，无需详细地址。",
+          "key": "birthplace",
+          "label": "出生地",
+          "placeholder": "省 / 市 / 区县",
+          "required": true,
+          "type": "text"
+        }
+      ]
+    },
+    "name": "紫微斗数",
+    "riskLevel": "medium",
+    "sortOrder": 60,
+    "sourceRef": "ai-module-skills/Numerologist_skills/ziwei-doushu@ea28c3f",
+    "sourceType": "reviewed_skill",
+    "status": "enabled",
+    "version": "2.0.0"
+  },
+  {
+    "capabilities": [
+      "chat",
+      "stream",
+      "structured_input",
+      "mcp",
+      "auto_route",
+      "reasoning_status"
+    ],
+    "category": "divination",
+    "code": "liuyao",
+    "createdAt": "2026-06-28T10:00:00+08:00",
+    "description": "六爻梅花易数占断",
+    "icon": "/icons/liuyao.png",
+    "id": 8,
+    "inputSchema": {
+      "fields": [
+        {
+          "defaultValue": "auto",
+          "helpText": "选一种即可，系统只收集该方式需要的资料。",
+          "key": "method",
+          "label": "起卦方式",
+          "options": [
+            {
+              "description": "系统起卦，无需填写数字或时间",
+              "label": "自动起卦",
+              "value": "auto"
+            },
+            {
+              "description": "用您指定的问事时间起卦",
+              "label": "时间起卦",
+              "value": "time"
+            },
+            {
+              "description": "用您想到的 2–3 个整数起卦",
+              "label": "数字起卦",
+              "value": "number"
+            }
+          ],
+          "required": true,
+          "type": "select"
+        },
+        {
+          "helpText": "输入 2–3 个 0–999999 的整数，用空格或逗号隔开，例如：12 34 56。",
+          "key": "numbers",
+          "label": "起卦数字",
+          "placeholder": "例如：12 34 56",
+          "required": false,
+          "requiredWhen": {
+            "key": "method",
+            "value": "number"
+          },
+          "type": "text",
+          "validation": "divination-numbers",
+          "visibleWhen": {
+            "key": "method",
+            "value": "number"
+          }
+        },
+        {
+          "helpText": "选择最贴近问题的一项；具体人物、背景和期待在下一步说明。",
+          "key": "yongShenTarget",
+          "label": "这次主要关心什么",
+          "options": [
+            {
+              "description": "工作、求职、职责与规则",
+              "label": "事业与规则",
+              "value": "官鬼"
+            },
+            {
+              "description": "收入、支出与资源安排",
+              "label": "财务与资源",
+              "value": "妻财"
+            },
+            {
+              "description": "成果、身心状态与生活感受",
+              "label": "成果与健康",
+              "value": "子孙"
+            },
+            {
+              "description": "学习、考试、合同与长辈",
+              "label": "文书与长辈",
+              "value": "父母"
+            },
+            {
+              "description": "伙伴关系、竞争与协作",
+              "label": "合作与竞争",
+              "value": "兄弟"
+            }
+          ],
+          "required": true,
+          "type": "select"
+        },
+        {
+          "helpText": "按北京时间（UTC+8）填写；若问的是当下，可以使用当前时间。",
+          "key": "eventTime",
+          "label": "起卦时间",
+          "required": false,
+          "requiredWhen": {
+            "key": "method",
+            "value": "time"
+          },
+          "type": "datetime",
+          "visibleWhen": {
+            "key": "method",
+            "value": "time"
+          }
+        }
+      ]
+    },
+    "name": "六爻梅花",
+    "riskLevel": "medium",
+    "sortOrder": 70,
+    "sourceRef": "ai-module-skills/taibu@4ef4d7a",
+    "sourceType": "reviewed_skill",
+    "status": "enabled",
+    "version": "2.0.0"
+  }
+]
