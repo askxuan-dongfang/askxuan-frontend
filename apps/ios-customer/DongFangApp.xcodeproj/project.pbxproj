@@ -82,6 +82,8 @@
 		FA8DF5C8136C3083A7CF725F /* Booking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4ED0B783D1D7DB113786B0 /* Booking.swift */; };
 		FD62D7B13DCFE5C4B52992F0 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FF6AD3EC1893B3135324CFB /* RemoteImage.swift */; };
 		A19E00990C0D4A1890010001 /* AiReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19E00990C0D4A1890010002 /* AiReportView.swift */; };
+		656124897C13B598ACB2F443 /* RewardExperience.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130D0FCAC7C61B35FF5C2A3F /* RewardExperience.swift */; };
+		DC122C8A987776E80E4BA27D /* RewardExperienceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33AB8BFC9CE629D10EFE35E /* RewardExperienceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -176,6 +178,8 @@
 		F92542A7AC56799BC20F9544 /* TempleDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempleDetailViewModel.swift; sourceTree = "<group>"; };
 		FB598B67C7D0B2F9D42CD48A /* TagPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagPill.swift; sourceTree = "<group>"; };
 		A19E00990C0D4A1890010002 /* AiReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AiReportView.swift; sourceTree = "<group>"; };
+		130D0FCAC7C61B35FF5C2A3F /* RewardExperience.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RewardExperience.swift; sourceTree = "<group>"; };
+		B33AB8BFC9CE629D10EFE35E /* RewardExperienceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RewardExperienceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -235,6 +239,7 @@
 			isa = PBXGroup;
 			children = (
 				A1CAF6EB22243DA0583289CD /* DiyEditorTests.swift */,
+				B33AB8BFC9CE629D10EFE35E /* RewardExperienceTests.swift */,
 			);
 			path = DongFangAppTests;
 			sourceTree = "<group>";
@@ -410,6 +415,7 @@
 			isa = PBXGroup;
 			children = (
 				91E72CF0968B77B4343B884E /* ProfileSubPages.swift */,
+				130D0FCAC7C61B35FF5C2A3F /* RewardExperience.swift */,
 				8973AE6B8C93BC3385082D4E /* ProfileView.swift */,
 				4BA68B8CE6DA0E3B274EBA07 /* ProfileViewModel.swift */,
 			);
@@ -688,6 +694,7 @@
 				9F7CF3BFD9FF110C82111947 /* OpenIMManager.swift in Sources */,
 				06F52E38224283AD3D9B67C4 /* PrimaryButton.swift in Sources */,
 				695BB1CBB602AAC1393D6EDF /* ProfileSubPages.swift in Sources */,
+				656124897C13B598ACB2F443 /* RewardExperience.swift in Sources */,
 				0219386E4E4B912F99D9A121 /* ProfileView.swift in Sources */,
 				17F3236A93A522F132A5503A /* ProfileViewModel.swift in Sources */,
 				FD62D7B13DCFE5C4B52992F0 /* RemoteImage.swift in Sources */,
@@ -722,6 +729,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8C2BD7EBA97EE7FB4FEE6EFD /* DiyEditorTests.swift in Sources */,
+				DC122C8A987776E80E4BA27D /* RewardExperienceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
