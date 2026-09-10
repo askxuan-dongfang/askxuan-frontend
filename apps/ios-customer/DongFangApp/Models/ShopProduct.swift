@@ -31,10 +31,10 @@ struct ShopProduct: Codable, Identifiable, Hashable {
         case productNo, categoryId, categoryName, marketPrice, createTime, updateTime
     }
 
-    var priceText: String { "¥\(String(format: "%.0f", price))" }
+    var priceText: String { "¥\(String(format: "%.2f", price))" }
     var marketPriceText: String? {
         guard let mp = marketPrice, mp > price else { return nil }
-        return "¥\(String(format: "%.0f", mp))"
+        return "¥\(String(format: "%.2f", mp))"
     }
 }
 

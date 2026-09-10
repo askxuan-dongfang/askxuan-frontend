@@ -1,300 +1,135 @@
-//
-//  ShopView.swift
-//  DongFangApp
-//
-//  商城列表页：顶部搜索栏 + promo banner + 分类图标横滑 + 商品瀑布网格。
-//  对齐产品原型 shop.html。作为主 Tab 之一。
-//
-
 import SwiftUI
 
+/// 商品导航由后台分类驱动；排序与库存过滤在服务端分页前完成。
 struct ShopView: View {
-    @StateObject private var viewModel = ShopViewModel()
+    @StateObject private var viewModel: ShopViewModel
+    private let loadsRemoteData: Bool
+    init(viewModel: ShopViewModel? = nil, loadsRemoteData: Bool = true) {
+        _viewModel = StateObject(wrappedValue: viewModel ?? ShopViewModel())
+        self.loadsRemoteData = loadsRemoteData
+    }
     @StateObject private var cart = ShopCartStore.shared
-
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
-        VStack(spacing: 0) {
-            topBar
-            searchBar
+        ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    promoBanner
-                    HStack(spacing:12) {
-                        NavigationLink { ShopOrderListView() } label: { Label("我的订单",systemImage:"shippingbox") }
-                        NavigationLink { PointsView() } label: { Label("积分商城",systemImage:"gift") }
-                    }.font(.system(size:13,weight:.medium)).foregroundStyle(Color.accentDefault)
-                        .padding(18).frame(maxWidth:.infinity).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius:16)).padding(.horizontal,16).padding(.top,12)
-                    categoryBar
-                    content
-                }
-                .padding(.bottom, AppSpacing.navBottom)
-            }
-            .softScrollEdge(.bottom)
-        }
-        .background(Color.bgPrimary)
-        .toolbar(.hidden, for: .navigationBar)
-        .task {
-            if viewModel.products.isEmpty { await viewModel.load() }
-        }
-        .refreshable { await viewModel.load() }
-    }
-
-    // MARK: - 顶部栏（标题 + 购物车）
-    private var topBar: some View {
-        ZStack {
-            Text("商城")
-                .font(AppTypography.title(17))
-                .foregroundStyle(.accentDefault)
-
-            HStack {
-                Spacer()
-                cartButton
-            }
-        }
-        .frame(height: 44)
-        .padding(.horizontal, AppSpacing.lg)
-    }
-
-    private var cartButton: some View {
-        NavigationLink {
-            ShopCartView()
-        } label: {
-            Image(systemName: "cart")
-                .font(.system(size: 20))
-                .foregroundStyle(.textPrimary)
-                .overlay(alignment: .topTrailing) {
-                    if cart.itemCount > 0 {
-                        Text("\(cart.itemCount)")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(minWidth: 16, minHeight: 16)
-                            .padding(.horizontal, 3)
-                            .background(Color.brandDefault)
-                            .clipShape(Capsule())
-                            .overlay(Capsule().stroke(Color.bgPrimary, lineWidth: 1.5))
-                            .offset(x: 10, y: -8)
-                    }
-                }
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - 搜索栏
-    private var searchBar: some View {
-        HStack(spacing: AppSpacing.sm) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 14))
-                .foregroundStyle(.textTertiary)
-            TextField("搜索佛珠/香道/护身符...", text: $viewModel.keyword)
-                .font(.system(size: 13))
-                .foregroundStyle(.textPrimary)
-                .submitLabel(.search)
-                .onSubmit { viewModel.search() }
-            if !viewModel.keyword.isEmpty {
-                Button {
-                    viewModel.keyword = ""
-                    viewModel.search()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundStyle(.textTertiary)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, AppSpacing.md)
-        .frame(height: 36)
-        .background(Color.bgSecondary)
-        .overlay(Capsule().stroke(Color.borderDefault, lineWidth: 1))
-        .clipShape(Capsule())
-        .padding(.horizontal, AppSpacing.lg)
-        .padding(.vertical, AppSpacing.sm)
-    }
-
-    // MARK: - Promo Banner
-    private var promoBanner: some View {
-        Button {
-            viewModel.keyword = "礼盒"
-            viewModel.search()
-        } label: {
-            ZStack(alignment: .leading) {
-                LinearGradient(
-                    colors: [Color.brandDefault, Color(hex: "7A2E1A"), Color(hex: "3A1A10")],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("好物有心，日常有礼")
-                        .font(AppTypography.title(20))
-                        .foregroundStyle(.white)
-                    Text("精选文创礼品 · 发现生活之美")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.accentDefault)
-                    Text("挑选礼物")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, AppSpacing.lg)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.2))
-                        .overlay(Capsule().stroke(Color.white.opacity(0.4), lineWidth: 1))
-                        .clipShape(Capsule())
-                        .padding(.top, 6)
-                }
-                .padding(.horizontal, 20)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 100)
-        }
-        .buttonStyle(.plain)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
-        .padding(.horizontal, AppSpacing.lg)
-        .padding(.top, AppSpacing.sm)
-    }
-
-    // MARK: - 分类图标横滑
-    private var categoryBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 20) {
-                ForEach(viewModel.shopCategories) { cat in
-                    let isSelected = viewModel.selectedCategoryId == cat.id
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            viewModel.selectCategory(cat.id)
+                VStack(alignment: .leading, spacing: 22) {
+                    HStack(alignment: .bottom) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("THE EVERYDAY COLLECTION").font(Font.custom("HelveticaNeue", size: 9, relativeTo: .body)).tracking(1.6).foregroundStyle(Color.textTertiary)
+                            Text("好物，有心").font(AppTypography.title(27))
                         }
-                    } label: {
-                        VStack(spacing: 6) {
-                            ZStack {
-                                Circle()
-                                    .fill(isSelected ? Color.brandDefault : Color.bgSecondary)
-                                    .frame(width: 44, height: 44)
-                                Image(systemName: cat.icon)
-                                    .font(.system(size: 20))
-                                    .foregroundStyle(isSelected ? Color.white : Color.textTertiary)
+                        Spacer()
+                        NavigationLink { ShopOrderListView() } label: { Text("订单") }
+                        NavigationLink { ShopCartView() } label: { Label(cart.itemCount > 0 ? "\(cart.itemCount)" : "购物车", systemImage: "cart") }
+                    }.font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body)).foregroundStyle(Color.accentDefault)
+                    hero { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { proxy.scrollTo("catalog", anchor: .top) } }
+                    HStack(spacing: 12) {
+                        NavigationLink { PointsView() } label: { pathway("积分换心意", caption: "日常积累，一份好礼", icon: "gift") }
+                        NavigationLink { DiyBraceletView() } label: { pathway("亲手设计一份", caption: "自由选材，随心搭配", icon: "sparkles") }
+                    }.buttonStyle(.plain)
+                    VStack(alignment: .leading, spacing: 15) {
+                        HStack {
+                            Text("慢慢逛，好好选").font(AppTypography.title(22))
+                            Spacer()
+                            Text(viewModel.isLoading ? "寻找好物…" : "\(viewModel.total) 件好物").font(Font.custom("HelveticaNeue", size: 12, relativeTo: .body)).foregroundStyle(Color.textTertiary)
+                        }.id("catalog")
+                        searchBar
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 9) {
+                                ForEach(viewModel.shopCategories) { cat in
+                                    Button { viewModel.selectCategory(cat.id) } label: {
+                                        Text(cat.name).font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body)).padding(.horizontal, 15).padding(.vertical, 11)
+                                            .background(viewModel.selectedCategoryId == cat.id ? Color.accentDefault.opacity(0.2) : Color.bgSecondary)
+                                            .clipShape(Capsule()).overlay(Capsule().stroke(viewModel.selectedCategoryId == cat.id ? Color.accentDefault : Color.borderDefault))
+                                    }.accessibilityAddTraits(viewModel.selectedCategoryId == cat.id ? .isSelected : [])
+                                }
                             }
-                            Text(cat.name)
-                                .font(.system(size: 11))
-                                .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
+                        }.buttonStyle(.plain).foregroundStyle(Color.accentDefault)
+                        if let message = viewModel.categoryError { Button(message) { Task { await viewModel.loadCategories() } }.font(Font.custom("HelveticaNeue", size: 12, relativeTo: .body)) }
+                        HStack {
+                            Picker("商品排序", selection: $viewModel.sort) {
+                                Text("最新商品").tag("newest"); Text("价格从低到高").tag("price_asc"); Text("价格从高到低").tag("price_desc")
+                            }.tint(Color.accentDefault).onChange(of: viewModel.sort) { _, _ in viewModel.search() }
+                            Spacer()
+                            Toggle("只看有货", isOn: $viewModel.inStock).font(Font.custom("HelveticaNeue", size: 12, relativeTo: .body)).fixedSize().tint(Color.accentDefault)
+                                .onChange(of: viewModel.inStock) { _, _ in viewModel.search() }
+                        }
+                        if let message = viewModel.errorMessage {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(message).font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body))
+                                Button("重新加载") { Task { if viewModel.products.isEmpty { await viewModel.load() } else { await viewModel.loadMore() } } }
+                            }.foregroundStyle(Color.accentDefault).padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 16))
+                        }
+                        if viewModel.isLoading { DFLoadingView().frame(maxWidth: .infinity, minHeight: 200) }
+                        else if viewModel.products.isEmpty && viewModel.errorMessage == nil {
+                            VStack(spacing: 12) { Text("这次还没有找到").font(AppTypography.title(20)); Text("换个关键词，或看看其他分类。").font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body)); Button("查看全部好物") { viewModel.reset() } }.frame(maxWidth: .infinity).padding(.vertical, 42)
+                        } else {
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) { ForEach(viewModel.products) { productCard($0) } }
+                            if viewModel.hasMore {
+                                Button { Task { await viewModel.loadMore() } } label: { Text(viewModel.isLoadingMore ? "正在加载…" : "再看看 · 已展示 \(viewModel.products.count) / \(viewModel.total)").font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body)).frame(maxWidth: .infinity).padding(16) }.disabled(viewModel.isLoadingMore)
+                            }
                         }
                     }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, AppSpacing.lg)
-            .padding(.vertical, AppSpacing.lg)
-        }
+                }.padding(18).padding(.bottom, AppSpacing.navBottom)
+            }.softScrollEdge(.bottom)
+        }.background(Color.bgPrimary).foregroundStyle(Color.textPrimary)
+            .toolbar(.hidden, for: .navigationBar)
+            .task { if loadsRemoteData { if viewModel.products.isEmpty { await viewModel.load() }; await viewModel.loadCategories() } }
+            .refreshable { if loadsRemoteData { await viewModel.load(); await viewModel.loadCategories() } }
     }
-
-    // MARK: - 内容区
-    @ViewBuilder
-    private var content: some View {
-        if viewModel.isLoading && viewModel.products.isEmpty {
-            DFLoadingView()
-                .frame(height: 240)
-        } else if viewModel.products.isEmpty {
-            DFEmptyState(icon: "bag", title: "暂无商品", subtitle: "下拉刷新试试")
-                .frame(height: 240)
-        } else {
-            productGrid
-        }
-    }
-
-    // MARK: - 商品瀑布网格（2列）
-    private var productGrid: some View {
-        let left = viewModel.products.indices.filter { $0 % 2 == 0 }.map { viewModel.products[$0] }
-        let right = viewModel.products.indices.filter { $0 % 2 != 0 }.map { viewModel.products[$0] }
-
-        return HStack(alignment: .top, spacing: AppSpacing.lg) {
-            LazyVStack(spacing: AppSpacing.lg) {
-                ForEach(left) { productCard($0) }
+    private func hero(action: @escaping () -> Void) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 15) {
+                Text("一份心意 · 一种日常").font(Font.custom("HelveticaNeue", size: 12, relativeTo: .body)).foregroundStyle(Color.accentDefault)
+                Text("把喜欢的，\n留在生活里。").font(AppTypography.title(30))
+                Text("从随身小物，到案头清欢。\n慢慢挑选，与心意相逢。").font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body)).lineSpacing(5).foregroundStyle(Color.textSecondary)
+                Button(action: action) { Text("逛逛好物 ↓").font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body)).padding(.vertical, 11).padding(.horizontal, 18).overlay(Capsule().stroke(Color.accentDefault.opacity(0.5))) }.tint(Color.accentDefault)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            LazyVStack(spacing: AppSpacing.lg) {
-                ForEach(right) { productCard($0) }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.horizontal, AppSpacing.lg)
-        .padding(.top, AppSpacing.sm)
+            Spacer(minLength: 0)
+            ZStack {
+                Circle().stroke(Color.accentDefault.opacity(0.2)).frame(width: 92, height: 92)
+                ForEach(0..<12) { i in Circle().fill(Color.accentDefault.opacity(0.6)).frame(width: 14, height: 14).offset(y: -37).rotationEffect(.degrees(Double(i) * 30)) }
+                Text("缘").font(AppTypography.title(25)).foregroundStyle(Color.accentDefault)
+            }.frame(width: 96).accessibilityHidden(true)
+        }.padding(22).frame(maxWidth: .infinity, alignment: .leading)
+            .background(LinearGradient(colors: [Color.accentDefault.opacity(0.2), Color.bgSecondary], startPoint: .topLeading, endPoint: .bottomTrailing))
+            .clipShape(RoundedRectangle(cornerRadius: 24)).overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.accentDefault.opacity(0.3)))
     }
-
-    // MARK: - 商品卡片
+    private func pathway(_ title: String, caption: String, icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: icon).foregroundStyle(Color.accentDefault)
+            Text(title).font(AppTypography.title(17)).foregroundStyle(Color.textPrimary)
+            Text(caption).font(Font.custom("HelveticaNeue", size: 11, relativeTo: .body)).foregroundStyle(Color.textTertiary)
+        }.frame(maxWidth: .infinity, alignment: .leading).padding(16).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+    private var searchBar: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass").foregroundStyle(Color.textTertiary)
+            TextField("搜一件喜欢的好物", text: $viewModel.keyword).submitLabel(.search).onSubmit { viewModel.search() }
+            if !viewModel.keyword.isEmpty { Button { viewModel.keyword = ""; viewModel.search() } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel("清除搜索") }
+            Button("搜索") { viewModel.search() }.tint(Color.accentDefault)
+        }.font(Font.custom("HelveticaNeue", size: 14, relativeTo: .body)).padding(14).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 15)).overlay(RoundedRectangle(cornerRadius: 15).stroke(Color.borderDefault))
+    }
     private func productCard(_ product: ShopProduct) -> some View {
-        NavigationLink {
-            ShopProductDetailView(product: product)
-        } label: {
+        NavigationLink { ShopProductDetailView(product: product) } label: {
             VStack(alignment: .leading, spacing: 0) {
-            // 图片（正方形）+ 标签
-            ZStack(alignment: .topLeading) {
-                RemoteImage(urlString: imageAsset(for: product),
-                            placeholderIcon: "bag.fill",
-                            contentMode: .fill)
-                    .aspectRatio(1, contentMode: .fit)
-                    .frame(maxWidth: .infinity)
-                    .clipped()
-
-                if let tag = firstTag(product) {
-                    Text(tag)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(Color.brandDefault)
-                        .clipShape(Capsule())
-                        .padding(8)
-                }
-            }
-
-            // 名称 + 价格 + 销量
-            VStack(alignment: .leading, spacing: 4) {
-                Text(product.name)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.textPrimary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .frame(height: 36, alignment: .top)
-
-                HStack(alignment: .bottom) {
-                    Text(product.priceText)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.brandDefault)
-                    Spacer()
-                    Text("库存 \(product.stock)")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.textTertiary)
-                }
-            }
-            .padding(10)
-            }
-            .background(Color.bgSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
-            .contentShape(RoundedRectangle(cornerRadius: AppRadius.lg))
-        }
-        .buttonStyle(.plain)
+                RemoteImage(urlString: product.mainImage, placeholderIcon: "bag", contentMode: .fill)
+                    .aspectRatio(1, contentMode: .fit).clipped()
+                    .overlay(alignment: .topLeading) {
+                        if product.stock <= 0 { badge("暂时售罄") }
+                        else if let tag = product.tags?.split(whereSeparator: { $0 == "," || $0 == "，" }).first { badge(String(tag)) }
+                    }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(viewModel.shopCategories.first(where: { $0.id == product.categoryId })?.name ?? "东方好物").font(Font.custom("HelveticaNeue", size: 10, relativeTo: .body)).foregroundStyle(Color.textTertiary).lineLimit(1)
+                    Text(product.name).font(AppTypography.title(17)).lineLimit(2).frame(height: 44, alignment: .top)
+                    Text(product.description).font(Font.custom("HelveticaNeue", size: 11, relativeTo: .body)).foregroundStyle(Color.textTertiary).lineLimit(1)
+                    Text(product.priceText).font(Font.custom("HelveticaNeue", size: 18, relativeTo: .body).weight(.semibold)).foregroundStyle(Color.accentDefault).monospacedDigit()
+                }.padding(13).frame(maxWidth: .infinity, alignment: .leading)
+            }.background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.borderDefault))
+        }.buttonStyle(.plain)
     }
-
-    // MARK: - 辅助方法
-
-    /// 商品图片：优先用 ImageMapper 映射本地 asset，否则使用 mainImage（URL 或 asset 名）
-    private func imageAsset(for product: ShopProduct) -> String {
-        if product.mainImage.hasPrefix("http") { return product.mainImage }
-        if let mapped = ImageMapper.productImage(for: product.name) { return mapped }
-        return product.mainImage
-    }
-
-    /// 取首个标签
-    private func firstTag(_ product: ShopProduct) -> String? {
-        guard let tags = product.tags, !tags.isEmpty else { return nil }
-        return tags.split(separator: ",").first.map(String.init)
-    }
-
-    /// 格式化销量（千分位）
-    private func salesText(_ count: Int) -> String {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        return "已售 \(f.string(from: NSNumber(value: count)) ?? "\(count)")"
-    }
+    private func badge(_ text: String) -> some View { Text(text).font(Font.custom("HelveticaNeue", size: 10, relativeTo: .body)).padding(7).background(Color.bgPrimary.opacity(0.85)).clipShape(Capsule()).padding(8) }
 }
 
 struct ShopProductDetailView: View {
@@ -352,7 +187,7 @@ struct ShopProductDetailView: View {
 
                 VStack(alignment: .leading, spacing: AppSpacing.md) {
                     Text(viewModel.product.name)
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(AppTypography.title(24))
                         .foregroundStyle(.textPrimary)
                     HStack(alignment: .firstTextBaseline) {
                         Text("¥\(unitPrice, specifier: "%.2f")")
@@ -413,6 +248,7 @@ struct ShopProductDetailView: View {
 
                     if let message = viewModel.errorMessage {
                         Text(message).font(.system(size: 12)).foregroundStyle(.stateWarning)
+                        Button("重新加载商品") { Task { await viewModel.load() } }
                     }
                 }
                 .padding(.horizontal, AppSpacing.lg)
@@ -452,7 +288,7 @@ struct ShopProductDetailView: View {
                         }
                 }.buttonStyle(.plain)
                 DFPrimaryButton(title: added ? "已加入购物车" : "加入购物车", icon: added ? "checkmark" : "cart.badge.plus",
-                                isEnabled: availableStock > 0) {
+                                isEnabled: viewModel.verified && !viewModel.isLoading && availableStock > 0 && viewModel.product.status == "on_shelf") {
                     cart.add(product: viewModel.product, sku: selectedSku, quantity: quantity)
                     withAnimation { added = true }
                 }

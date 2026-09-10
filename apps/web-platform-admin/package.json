@@ -5,9 +5,9 @@
   "description": "问玄东方 P05 平台总管理台",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --config vite.config.ts",
     "prebuild": "node ../../scripts/sync-admin-ui-components.mjs --check && node ../../scripts/sync-typography.mjs --check",
-    "build": "vue-tsc -b && vite build",
+    "build": "vue-tsc -b && vite build --config vite.config.ts",
     "preview": "vite preview"
   },
   "dependencies": {

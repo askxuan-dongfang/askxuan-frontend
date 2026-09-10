@@ -12,100 +12,73 @@ import SwiftUI
 final class ShopViewModel: ObservableObject {
     @Published var products: [ShopProduct] = []
     @Published var categories: [ProductCategory] = []
-    @Published var selectedCategoryId: Int64? = nil
-    @Published var keyword: String = ""
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String? = nil
-
-    /// 商城分类（含「全部」，对齐 shop.html 原型 8 个分类 + 全部）
-    let shopCategories: [ShopCategory] = ShopCategory.all
-
-    private let apiClient: APIClient
-    private var currentPage: Int = 1
-    private let pageSize: Int = 20
-    private var hasMore: Bool = true
-
-    init(apiClient: APIClient = .shared) {
-        self.apiClient = apiClient
+    @Published var selectedCategoryId: Int64?
+    @Published var keyword = ""
+    @Published var sort = "newest"
+    @Published var inStock = false
+    @Published var isLoading = false
+    @Published var isLoadingMore = false
+    @Published var total = 0
+    @Published var errorMessage: String?
+    @Published var categoryError: String?
+    var hasMore: Bool { products.count < total }
+    var shopCategories: [ShopCategory] { [ShopCategory(id: nil, name: "全部好物", icon: "square.grid.2x2")] + Self.flatten(categories) }
+    static func flatten(_ rows: [ProductCategory], prefix: String = "") -> [ShopCategory] {
+        rows.sorted { ($0.sort ?? 0, $0.id) < ($1.sort ?? 0, $1.id) }.flatMap { row in
+            [ShopCategory(id: row.id, name: prefix + row.name, icon: "tag")] + flatten(row.children ?? [], prefix: prefix + row.name + " / ")
+        }
     }
-
+    private let apiClient: APIClient
+    private var currentPage = 1
+    private let pageSize = 20
+    private var generation = 0
+    private var appliedKeyword = ""
+    init(apiClient: APIClient = .shared) { self.apiClient = apiClient }
+    private func endpoint(page: Int) -> Endpoint {
+        .products(categoryId: selectedCategoryId, keyword: appliedKeyword, page: page, size: pageSize, sort: sort, inStock: inStock)
+    }
     func load() async {
-        isLoading = true
-        errorMessage = nil
-        currentPage = 1
-        hasMore = true
-
-        async let productsResult: Result<[ShopProduct], Error> = fetchProducts(isRefresh: true)
-        async let categoriesResult: Result<[ProductCategory], Error> = fetchCategories()
-
-        let (productsRes, categoriesRes) = await (productsResult, categoriesResult)
-
-        switch productsRes {
-        case .success(let list):
-            self.products = list
-        case .failure(let error):
-            self.products = []
-            self.errorMessage = error.localizedDescription
+        generation += 1
+        appliedKeyword = keyword.trimmingCharacters(in: .whitespacesAndNewlines)
+        let current = generation, request = endpoint(page: 1)
+        currentPage = 1; isLoading = true; isLoadingMore = false; errorMessage = nil
+        products = []; total = 0
+        do {
+            let response: PageResponse<ShopProduct> = try await apiClient.request(request)
+            guard generation == current else { return }
+            products = response.list; total = response.total
+        } catch {
+            guard generation == current else { return }
+            errorMessage = error.localizedDescription
         }
-
-        switch categoriesRes {
-        case .success(let list):
-            self.categories = list
-        case .failure(let error):
-            self.categories = []
-            if self.errorMessage == nil { self.errorMessage = error.localizedDescription }
-        }
-
+        guard generation == current else { return }
         isLoading = false
     }
-
+    func loadCategories() async {
+        categoryError = nil
+        do {
+            let response: ListResponse<ProductCategory> = try await apiClient.request(.productCategories)
+            categories = response.list
+        } catch { categoryError = "分类暂未加载，点击重试" }
+    }
     func loadMore() async {
-        guard hasMore, !isLoading else { return }
-        let nextPage = currentPage + 1
+        guard hasMore, !isLoading, !isLoadingMore else { return }
+        let next = currentPage + 1, current = generation, request = endpoint(page: currentPage + 1)
+        isLoadingMore = true; errorMessage = nil
+        defer { if generation == current { isLoadingMore = false } }
         do {
-            let resp: PageResponse<ShopProduct> = try await apiClient.request(
-                .products(categoryId: selectedCategoryId,
-                          keyword: keyword.isEmpty ? nil : keyword,
-                          page: nextPage, size: pageSize))
-            if !resp.list.isEmpty {
-                self.products.append(contentsOf: resp.list)
-                self.currentPage = nextPage
-            }
-            self.hasMore = resp.list.count == pageSize
+            let response: PageResponse<ShopProduct> = try await apiClient.request(request)
+            guard generation == current else { return }
+            let ids = Set(products.map(\.id))
+            products.append(contentsOf: response.list.filter { !ids.contains($0.id) })
+            total = response.total; currentPage = next
         } catch {
-            self.hasMore = false
+            if generation == current { errorMessage = error.localizedDescription }
         }
     }
-
-    func selectCategory(_ id: Int64?) {
-        selectedCategoryId = id
-        Task { await load() }
-    }
-
-    func search() {
-        Task { await load() }
-    }
-
-    private func fetchProducts(isRefresh: Bool) async -> Result<[ShopProduct], Error> {
-        do {
-            let resp: PageResponse<ShopProduct> = try await apiClient.request(
-                .products(categoryId: selectedCategoryId,
-                          keyword: keyword.isEmpty ? nil : keyword,
-                          page: 1, size: pageSize))
-            return .success(resp.list)
-        } catch {
-            return .failure(error)
-        }
-    }
-
-    private func fetchCategories() async -> Result<[ProductCategory], Error> {
-        do {
-            let resp: ListResponse<ProductCategory> = try await apiClient.request(.productCategories)
-            return .success(resp.list)
-        } catch {
-            return .failure(error)
-        }
-    }
+    func selectCategory(_ id: Int64?) { selectedCategoryId = id; search() }
+    func search() { Task { await load() } }
+    func reset() { selectedCategoryId = nil; keyword = ""; sort = "newest"; inStock = false; search() }
 
     static let previewProducts: [ShopProduct] = [
         ShopProduct(id: 1, productNo: "P001", name: "灵隐檀香佛珠",
@@ -214,6 +187,7 @@ final class ShopCartStore: ObservableObject {
 final class ShopProductDetailViewModel: ObservableObject {
     @Published var product: ShopProduct
     @Published var isLoading = false
+    @Published var verified = false
     @Published var errorMessage: String?
 
     private let apiClient: APIClient
@@ -225,9 +199,11 @@ final class ShopProductDetailViewModel: ObservableObject {
 
     func load() async {
         isLoading = true
+        verified = false
         defer { isLoading = false }
         do {
             product = try await apiClient.request(.productById(product.id))
+            verified = true
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
@@ -347,15 +323,5 @@ struct ShopCategory: Identifiable, Hashable {
     let name: String
     let icon: String     // SF Symbol 名称
 
-    static let all: [ShopCategory] = [
-        ShopCategory(id: nil, name: "全部", icon: "square.grid.2x2"),
-        ShopCategory(id: 1, name: "佛珠", icon: "circle.hexagongrid"),
-        ShopCategory(id: 2, name: "香道", icon: "flame"),
-        ShopCategory(id: 3, name: "经书", icon: "book"),
-        ShopCategory(id: 4, name: "护身符", icon: "shield"),
-        ShopCategory(id: 5, name: "法器", icon: "bell"),
-        ShopCategory(id: 6, name: "禅茶", icon: "cup.and.saucer"),
-        ShopCategory(id: 7, name: "文具", icon: "pencil"),
-        ShopCategory(id: 8, name: "定制", icon: "sparkles"),
-    ]
+
 }

@@ -25,6 +25,8 @@ docker image inspect "$node_image" >/dev/null
 for app in web-h5 web-platform-admin web-shop-admin web-temple-admin; do
  docker run --rm --user 0:0 -v "$candidate/frontend:/workspace" -v "$base/runtime/npm-cache:/root/.npm" -w "/workspace/apps/$app" "$node_image" sh -c 'npm ci --registry=https://registry.npmmirror.com && npm run build' > "$candidate/build-$app.log" 2>&1
  test -s "$candidate/frontend/apps/$app/dist/index.html"
+ # Dependencies are regenerable and belong only to this candidate. Free disk before the next app.
+ rm -rf -- "$candidate/frontend/apps/$app/node_modules"
  echo "BUILT $app"
 done
 cp -a "$previous/." "$public/"

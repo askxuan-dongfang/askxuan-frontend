@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     port: 5210,
+    fs: { allow: [fileURLToPath(new URL('../..', import.meta.url))] },
     proxy: {
       '/api': {
         target: process.env.VITE_DEV_PROXY_TARGET || 'http://localhost:8080',

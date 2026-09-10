@@ -187,3 +187,31 @@ private struct RewardWheelMotionFixture: View {
         window.isHidden=true
     }
 }
+
+@MainActor final class StorefrontNativeTests: XCTestCase {
+    func testCatalogNavigationAndServerFilters() {
+        let child = ProductCategory(id: 8, parentId: 7, name: "线香", level: 2, sort: 0, children: nil)
+        let rows = [ProductCategory(id: 7, parentId: 0, name: "草木与香", level: 1, sort: 2, children: [child]), ProductCategory(id: 9, parentId: 0, name: "随身好物", level: 1, sort: 1, children: nil)]
+        XCTAssertEqual(ShopViewModel.flatten(rows).map(\.name), ["随身好物", "草木与香", "草木与香 / 线香"])
+        let query = Endpoint.products(categoryId: 9, keyword: "香", page: 2, size: 20, sort: "price_asc", inStock: true).queryItems ?? []
+        let values = Dictionary(uniqueKeysWithValues: query.map { ($0.name, $0.value ?? "") })
+        XCTAssertEqual(values["sort"], "price_asc"); XCTAssertEqual(values["inStock"], "true"); XCTAssertEqual(values["page"], "2")
+    }
+    func testNativeStorefrontRender() async throws {
+        let model = ShopViewModel()
+        model.products = ShopViewModel.previewProducts; model.total = model.products.count
+        model.categories = [ProductCategory(id: 1, parentId: 0, name: "随身好物", level: 1, sort: 1, children: nil), ProductCategory(id: 2, parentId: 0, name: "草木与香", level: 1, sort: 2, children: nil)]
+        for width in [320.0, 390.0, 768.0] {
+            let view = NavigationStack { ShopView(viewModel: model, loadsRemoteData: false) }.environmentObject(AuthStore.shared).preferredColorScheme(.dark)
+            let controller = UIHostingController(rootView: view)
+            let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+            let window = UIWindow(windowScene: scene); window.frame = CGRect(x: 0, y: 0, width: width, height: 900)
+            window.rootViewController = controller; window.makeKeyAndVisible(); controller.view.frame = window.bounds
+            controller.view.setNeedsLayout(); controller.view.layoutIfNeeded(); try await Task.sleep(for: .milliseconds(300))
+            let image = UIGraphicsImageRenderer(bounds: controller.view.bounds).image { _ in controller.view.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true) }
+            XCTAssertEqual(image.size.width, width, accuracy: 1)
+            let attachment = XCTAttachment(image: image); attachment.name = "ios-storefront-\(Int(width))"; attachment.lifetime = .keepAlways; add(attachment)
+            window.isHidden = true
+        }
+    }
+}

@@ -267,7 +267,7 @@ enum Endpoint {
     case intentionTags
 
     // MARK: - 商城
-    case products(categoryId: Int64?, keyword: String?, page: Int, size: Int)
+    case products(categoryId: Int64?, keyword: String?, page: Int, size: Int, sort: String = "newest", inStock: Bool = false)
     case productById(Int64)
     case productCategories
     case shopOrderCreate(ShopOrderCreateRequest)
@@ -583,11 +583,13 @@ enum Endpoint {
                          URLQueryItem(name: "size", value: "\(size)")]
             if let code, !code.isEmpty { items.append(URLQueryItem(name: "code", value: code)) }
             return items
-        case .products(let categoryId, let keyword, let page, let size):
+        case .products(let categoryId, let keyword, let page, let size, let sort, let inStock):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
                          URLQueryItem(name: "size", value: "\(size)")]
             if let categoryId { items.append(URLQueryItem(name: "categoryId", value: "\(categoryId)")) }
             if let keyword, !keyword.isEmpty { items.append(URLQueryItem(name: "keyword", value: keyword)) }
+            items.append(URLQueryItem(name: "sort", value: sort))
+            if inStock { items.append(URLQueryItem(name: "inStock", value: "true")) }
             return items
         case .shopOrders(let status, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
