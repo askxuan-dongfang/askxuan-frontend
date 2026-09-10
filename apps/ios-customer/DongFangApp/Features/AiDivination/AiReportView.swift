@@ -143,7 +143,7 @@ struct AiReportWorkspace: View {
             }.font(.system(size: 12))
             Text(step == 0 ? "为这次解读，补充一点线索" : "这一次，您最在意什么？").font(AppTypography.section).padding(.top, 8)
             if step == 0 {
-                Text("准确的背景，让解读更贴近实际情况。带 * 的资料为必填。").font(.footnote).foregroundStyle(.secondary)
+                Text("补充标注“必填”的资料；选填内容不确定时可以留空。").font(.footnote).foregroundStyle(.secondary)
                 ForEach(visibleFields) { field in fieldView(field) }
                 primary("下一步，说说问题 →") { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { step = 1 } }.disabled(skill == nil || !fieldsReady)
             } else {
