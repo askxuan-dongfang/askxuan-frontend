@@ -539,8 +539,8 @@ struct AiDivinationView: View {
                         .foregroundStyle(Color.brandDefault)
                     }
                 } else {
-                    Text(message.content)
-                        .lineSpacing(4)
+                    if message.role == "user" { Text(message.content).lineSpacing(4) }
+                    else { AiMarkdownText(text: message.content) }
                 }
             }
             .font(.system(size: 15))
