@@ -224,22 +224,22 @@ function goBooking(id: string) {
   margin-bottom: 14px;
 }
 .card-title {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 16px;
-  font-weight: 600;
+  font-family: var(--font-serif);
+  font-size: var(--type-size-reading);
+  font-weight: var(--type-weight-semibold);
   color: #2a1e1a;
 }
 .todo-section {
   margin-bottom: 16px;
 }
 .todo-sub {
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: #8a7a6a;
   margin-bottom: 8px;
   padding-left: 2px;
 }
 .todo-empty {
-  font-size: 13px;
+  font-size: var(--type-size-label);
   color: #b0a090;
   padding: 12px 0;
   text-align: center;
@@ -259,12 +259,12 @@ function goBooking(id: string) {
   background: #faf6f0;
 }
 .todo-no {
-  font-size: 14px;
+  font-size: var(--type-size-body);
   color: #2a1e1a;
   font-weight: 500;
 }
 .todo-meta {
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: #8a7a6a;
   margin-top: 2px;
 }

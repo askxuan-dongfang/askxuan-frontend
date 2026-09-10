@@ -24,11 +24,11 @@ struct StatCard: View {
                             .foregroundStyle(tint)
                     }
                     Text(title)
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(.textSecondary)
                 }
                 Text(value)
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .font(AppTypography.numeric(22))
                     .foregroundStyle(.textPrimary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)

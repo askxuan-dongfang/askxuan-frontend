@@ -181,7 +181,7 @@ onMounted(() => {
 }
 .price {
   color: var(--primary);
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
 @media (max-width: 767px) {
   .filter-bar { padding: 12px; }

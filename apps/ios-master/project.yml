@@ -36,6 +36,9 @@ targets:
     type: application
     platform: iOS
     sources:
+      - path: ../../packages/design-tokens/fonts
+        includes: ["AskXuanSerif-Semibold.ttf", "OFL.txt"]
+        buildPhase: resources
       - path: MasterApp
         excludes:
           - "Resources/Info.plist"
@@ -49,6 +52,7 @@ targets:
     info:
       path: MasterApp/Resources/Info.plist
       properties:
+        UIAppFonts: ["AskXuanSerif-Semibold.ttf"]
         CFBundleDisplayName: 问玄东方
         CFBundleShortVersionString: "1.0.0"
         CFBundleVersion: "1"

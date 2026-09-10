@@ -8,7 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, radius } from '../theme/tokens';
+import { colors, radius, typography } from '../theme/tokens';
 
 interface DFPrimaryButtonProps {
   title: string;
@@ -61,6 +61,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   text: {
+    ...typography.control,
     color: colors.text.primary,
     fontSize: 16,
     fontWeight: '600',

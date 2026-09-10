@@ -135,7 +135,7 @@ struct LoginView: View {
                                 Image(systemName: "exclamationmark.triangle.fill")
                                     .font(.system(size: 12))
                                 Text(errorMessage)
-                                    .font(.caption)
+                                    .font(AppTypography.caption)
                             }
                             .foregroundStyle(.stateError)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -174,7 +174,7 @@ struct DFTextField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.textSecondary)
             HStack(spacing: 8) {
                 if let icon {
@@ -183,7 +183,7 @@ struct DFTextField: View {
                         .foregroundStyle(.textTertiary)
                 }
                 TextField(placeholder, text: $text)
-                    .font(.body)
+                    .font(AppTypography.body)
                     .foregroundStyle(.textPrimary)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
@@ -210,7 +210,7 @@ struct DFSecureField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.textSecondary)
             HStack(spacing: 8) {
                 if let icon {
@@ -225,7 +225,7 @@ struct DFSecureField: View {
                         TextField(placeholder, text: $text)
                     }
                 }
-                .font(.body)
+                .font(AppTypography.body)
                 .foregroundStyle(.textPrimary)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)

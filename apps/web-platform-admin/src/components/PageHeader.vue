@@ -43,11 +43,11 @@ export default {
   align-items: center;
   margin: 0;
   color: var(--color-text-primary, var(--text-dark, #2a1e1a));
-  font-family: var(--font-serif, 'Noto Serif SC', 'Songti SC', serif);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  line-height: 1.35;
+  font-family: var(--font-serif);
+  font-size: var(--type-size-page);
+  font-weight: var(--type-weight-semibold);
+  letter-spacing: .02em;
+  line-height: var(--type-line-title);
 }
 .aui-page-header__title::before {
   width: 4px;
@@ -62,7 +62,7 @@ export default {
 .aui-page-header__subtitle {
   margin: 6px 0 0 14px;
   color: var(--color-text-tertiary, var(--admin-text-tertiary, var(--text-light, #8a7a6a)));
-  font-size: 13px;
+  font-size: var(--type-size-label);
   line-height: 1.6;
 }
 .aui-page-header__actions {
@@ -79,7 +79,7 @@ export default {
     padding-bottom: 14px;
   }
   .aui-page-header__title {
-    font-size: 20px;
+    font-size: var(--type-size-section);
   }
   .aui-page-header__actions {
     justify-content: stretch;

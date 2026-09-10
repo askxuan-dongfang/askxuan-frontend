@@ -102,7 +102,7 @@ struct MasterProfileView: View {
                     .padding(.top, 140)
 
                 Text(viewModel.master?.dharmaName ?? "法师")
-                    .font(.custom(AppFont.serif[0], size: 20).weight(.bold))
+                    .font(AppTypography.title(20))
                     .foregroundStyle(Color.accentDefault)
 
                 if let master = viewModel.master {
@@ -224,7 +224,7 @@ struct MasterProfileView: View {
                     .font(.cardTitle)
                     .foregroundStyle(Color.textPrimary)
                 Text("法师修行多年，深谙佛理，致力于弘法利生，广结善缘。擅长为信众提供禅修指导、祈福法事、开光加持等服务，深受信众敬仰。")
-                    .font(.body)
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.textSecondary)
                     .lineSpacing(4)
             }
@@ -244,7 +244,7 @@ struct MasterProfileView: View {
                     Image(systemName: "checkmark.seal.fill")
                         .foregroundStyle(Color.stateSuccess)
                     Text(viewModel.master?.authStatus ?? "已认证")
-                        .font(.body)
+                        .font(AppTypography.body)
                         .foregroundStyle(Color.textPrimary)
                 }
             }
@@ -291,7 +291,7 @@ struct MasterProfileView: View {
                     .padding(.horizontal, AppSpacing.lg)
 
                 Text("先完成付费咨询，再预约服务（咨询入口见底部按钮）")
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .padding(.horizontal, AppSpacing.lg)
 
@@ -322,7 +322,7 @@ struct MasterProfileView: View {
         VStack(alignment: .leading, spacing: AppSpacing.lg) {
             HStack {
                 Text("预约确认")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
                 Button {
@@ -348,7 +348,7 @@ struct MasterProfileView: View {
             .cornerRadius(AppRadius.lg)
 
             Text("演示环境：点击确认后自动完成模拟支付，预约将进入待大师确认状态。")
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(Color.textTertiary)
 
             DFPrimaryButton(title: isSubmittingDirectBooking ? "提交中…" : "确认预约并支付 ¥\(Int(selectedDirectTagPrice))", icon: "creditcard") {
@@ -492,12 +492,12 @@ struct MasterProfileView: View {
                 .foregroundStyle(Color.textPrimary)
                 .padding(.top, AppSpacing.md)
             Text("法师将为您解答佛学疑问、指引修行方向。")
-                .font(.body)
+                .font(AppTypography.body)
                 .foregroundStyle(Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, AppSpacing.xl)
             Text("即时咨询单独付费，不要求先预约服务；预约法事、祈福等服务需另行下单。")
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(Color.textTertiary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, AppSpacing.xl)
@@ -622,7 +622,7 @@ struct MasterProfileView: View {
                         }
                         Spacer()
                         Text("¥\(Int(quote.consultFee))")
-                            .font(.system(size: 24, weight: .bold))
+                            .font(.system(size: 24, weight: .semibold))
                             .foregroundStyle(Color.brandDefault)
                     }
 

@@ -5,6 +5,7 @@
 // ================================================================
 
 import SwiftUI
+import UIKit
 
 // MARK: - Colors
 extension Color {
@@ -85,7 +86,7 @@ extension ShapeStyle where Self == Color {
 // MARK: - Fonts
 enum AppFont {
     /// 标题字体：Noto Serif SC（衬线，禅意）
-    static let serif = "Noto Serif SC"
+    static let serif = AppTypography.serifName ?? "TimesNewRomanPSMT"
     /// 正文字体：Noto Sans SC（无衬线）
     static let sans = "Noto Sans SC"
     /// 系统回退字体
@@ -93,21 +94,34 @@ enum AppFont {
     static let sansFallback = ["Noto Sans SC", "PingFang SC", "Microsoft YaHei"]
 }
 
-// MARK: - Typography 便捷构造
+// MARK: - Product typography (shared roles with design-tokens/tokens.json)
+// Resolve installed font names explicitly: Font.custom does not accept a fallback array.
+enum AppTypography {
+    static let serifName = ["AskXuanSerif-Semibold", "NotoSerifSC-SemiBold", "SongtiSC-Regular", "STSongti-SC-Regular"]
+        .first { UIFont(name: $0, size: 17) != nil }
+
+    static func title(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
+        if let name = serifName { return .custom(name, size: size, relativeTo: .headline).weight(weight) }
+        return .system(size: size, weight: weight, design: .serif)
+    }
+    static func numeric(_ size: CGFloat, weight: Font.Weight = .medium) -> Font {
+        .custom("HelveticaNeue", size: size, relativeTo: .body).weight(weight).monospacedDigit()
+    }
+    static let body = Font.custom("HelveticaNeue", size: 14, relativeTo: .body)
+    static let caption = Font.custom("HelveticaNeue", size: 12, relativeTo: .caption)
+    static let navigation = title(17)
+    static let hero = title(28)
+    static let page = title(24)
+    static let section = title(20)
+    static let card = title(18)
+    static let control = Font.custom("HelveticaNeue", size: 15, relativeTo: .body).weight(.semibold)
+}
+
 extension Font {
-    /// 大标题（品牌名）Noto Serif SC 24pt
-    static let brandTitle = Font.custom(AppFont.serif, size: 24).weight(.semibold)
-    /// 页面标题 Noto Serif SC 20pt
-    static let pageTitle = Font.custom(AppFont.serif, size: 20).weight(.semibold)
-    /// 区块标题 Noto Sans SC 17pt
-    static let sectionTitle = Font.system(size: 17, weight: .semibold)
-    /// 卡片标题 Noto Sans SC 15pt
-    static let cardTitle = Font.system(size: 15, weight: .semibold)
-    /// 正文 Noto Sans SC 14pt
-    static let body = Font.system(size: 14)
-    /// 辅助文字 13pt
-    static let caption = Font.system(size: 13)
-    /// 小标签 11pt
+    static let brandTitle = AppTypography.page
+    static let pageTitle = AppTypography.page
+    static let sectionTitle = AppTypography.section
+    static let cardTitle = AppTypography.card
     static let micro = Font.system(size: 11)
 }
 

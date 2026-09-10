@@ -42,7 +42,7 @@ struct MasterCard<Content: View>: View {
                     .font(.cardTitle)
                     .foregroundStyle(.textPrimary)
                 Text("3 项待处理预约")
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)

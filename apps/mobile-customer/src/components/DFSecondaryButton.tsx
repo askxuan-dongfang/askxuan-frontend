@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   type ViewStyle,
 } from 'react-native';
-import { colors, radius } from '../theme/tokens';
+import { colors, radius, typography } from '../theme/tokens';
 
 interface DFSecondaryButtonProps {
   title: string;
@@ -53,6 +53,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   text: {
+    ...typography.control,
     color: colors.accent.default,
     fontSize: 16,
     fontWeight: '600',

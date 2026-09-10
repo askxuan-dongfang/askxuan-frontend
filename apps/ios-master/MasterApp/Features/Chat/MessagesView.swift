@@ -168,7 +168,7 @@ struct MessagesView: View {
                     .foregroundStyle(isSelected ? .textPrimary : .textTertiary)
                 if badge > 0 {
                     Text("\(badge)")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(minWidth: 16, minHeight: 16)
                         .padding(.horizontal, 4)
@@ -312,7 +312,7 @@ struct MessagesView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Image(systemName: "chevron.right")
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)
         }
         .padding(.horizontal, AppSpacing.lg)

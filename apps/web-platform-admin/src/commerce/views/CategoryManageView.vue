@@ -175,12 +175,12 @@ onMounted(() => {
 .total-bar {
   padding: 12px 24px;
   color: var(--text-light);
-  font-size: 13px;
+  font-size: var(--type-size-label);
   border-top: 1px solid var(--border);
 }
 .form-tip {
   margin-left: 8px;
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: var(--text-light);
 }
 </style>

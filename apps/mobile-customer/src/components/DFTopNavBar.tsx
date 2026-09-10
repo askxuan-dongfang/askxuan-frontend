@@ -5,7 +5,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { colors, spacing } from '../theme/tokens';
+import { colors, spacing, typography } from '../theme/tokens';
 
 interface DFTopNavBarProps {
   title: string;
@@ -77,6 +77,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
+    ...typography.navigation,
     flex: 1,
     textAlign: 'center',
     fontSize: 17,

@@ -43,7 +43,7 @@ struct ShopView: View {
     private var topBar: some View {
         ZStack {
             Text("商城")
-                .font(.custom(AppFont.serif[0], size: 17).weight(.bold))
+                .font(AppTypography.title(17))
                 .foregroundStyle(.accentDefault)
 
             HStack {
@@ -126,7 +126,7 @@ struct ShopView: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("好物有心，日常有礼")
-                        .font(.custom(AppFont.serif[0], size: 20).weight(.bold))
+                        .font(AppTypography.title(20))
                         .foregroundStyle(.white)
                     Text("精选文创礼品 · 发现生活之美")
                         .font(.system(size: 13))
@@ -257,7 +257,7 @@ struct ShopView: View {
 
                 HStack(alignment: .bottom) {
                     Text(product.priceText)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.brandDefault)
                     Spacer()
                     Text("库存 \(product.stock)")
@@ -356,7 +356,7 @@ struct ShopProductDetailView: View {
                         .foregroundStyle(.textPrimary)
                     HStack(alignment: .firstTextBaseline) {
                         Text("¥\(unitPrice, specifier: "%.2f")")
-                            .font(.system(size: 24, weight: .bold))
+                            .font(.system(size: 24, weight: .semibold))
                             .foregroundStyle(.brandDefault)
                         if let market = viewModel.product.marketPrice, market > unitPrice {
                             Text("¥\(market, specifier: "%.2f")")
@@ -446,7 +446,7 @@ struct ShopProductDetailView: View {
                         .clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
                         .overlay(alignment: .topTrailing) {
                             if cart.itemCount > 0 {
-                                Text("\(cart.itemCount)").font(.system(size: 9, weight: .bold))
+                                Text("\(cart.itemCount)").font(.system(size: 9, weight: .semibold))
                                     .foregroundStyle(.white).padding(5).background(Color.brandDefault).clipShape(Circle())
                             }
                         }
@@ -513,7 +513,7 @@ struct ShopCartView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("合计").font(.system(size: 11)).foregroundStyle(.textTertiary)
                         Text("¥\(cart.total, specifier: "%.2f")")
-                            .font(.system(size: 20, weight: .bold)).foregroundStyle(.brandDefault)
+                            .font(.system(size: 20, weight: .semibold)).foregroundStyle(.brandDefault)
                     }
                     NavigationLink { ShopCheckoutView() } label: {
                         Label("去结算", systemImage: "creditcard")
@@ -538,7 +538,7 @@ struct ShopCartView: View {
                 Text(item.productName).font(.system(size: 14, weight: .semibold)).foregroundStyle(.textPrimary).lineLimit(2)
                 Text(item.skuSpec).font(.system(size: 11)).foregroundStyle(.textTertiary)
                 Text("¥\(item.unitPrice, specifier: "%.2f")")
-                    .font(.system(size: 15, weight: .bold)).foregroundStyle(.brandDefault)
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(.brandDefault)
             }
             Spacer(minLength: 4)
             VStack(alignment: .trailing) {
@@ -657,7 +657,7 @@ struct ShopCheckoutView: View {
         .safeAreaInset(edge: .bottom) {
             HStack(spacing: AppSpacing.md) {
                 Text("¥\(cart.total, specifier: "%.2f")")
-                    .font(.system(size: 20, weight: .bold)).foregroundStyle(.brandDefault)
+                    .font(.system(size: 20, weight: .semibold)).foregroundStyle(.brandDefault)
                 DFPrimaryButton(title: "提交并模拟支付", icon: "creditcard",
                                 isEnabled: viewModel.selectedAddressId != nil && !cart.items.isEmpty,
                                 isLoading: viewModel.isSubmitting) {
@@ -699,7 +699,7 @@ struct ShopPaymentResultView: View {
                 .font(.system(size: 68)).foregroundStyle(succeeded ? Color.stateSuccess : Color.stateWarning)
             VStack(spacing: AppSpacing.sm) {
                 Text(succeeded ? "支付成功" : "支付结果待确认")
-                    .font(.system(size: 24, weight: .bold)).foregroundStyle(.textPrimary)
+                    .font(.system(size: 24, weight: .semibold)).foregroundStyle(.textPrimary)
                 Text(succeeded ? "本次使用本地模拟支付，订单已进入待发货流程。" : "支付单已创建，可稍后在订单中查询结果。")
                     .font(.system(size: 13)).foregroundStyle(.textSecondary).multilineTextAlignment(.center)
             }
@@ -780,7 +780,7 @@ struct ShopOrderListView: View {
                 .font(.system(size: 14, weight: .semibold)).foregroundStyle(.textPrimary)
             HStack {
                 Text(order.createTime).font(.system(size: 11)).foregroundStyle(.textTertiary)
-                Spacer(); Text("¥\(order.payAmount, specifier: "%.2f")").font(.system(size: 16, weight: .bold)).foregroundStyle(.brandDefault)
+                Spacer(); Text("¥\(order.payAmount, specifier: "%.2f")").font(.system(size: 16, weight: .semibold)).foregroundStyle(.brandDefault)
             }
         }
         .padding(AppSpacing.md).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
@@ -809,7 +809,7 @@ struct ShopOrderDetailView: View {
             if let order {
                 Section("订单进度") {
                     Text(order.statusText).font(.title2.bold()).foregroundStyle(Color.accentDefault)
-                    Text(order.orderNo).font(.caption).textSelection(.enabled)
+                    Text(order.orderNo).font(AppTypography.caption).textSelection(.enabled)
                     HStack{Text("订单实付");Spacer();Text(String(format:"¥%.2f",order.payAmount)).bold()}
                     if let logistics=order.logistics,!logistics.trackingNo.isEmpty {Label("\(logistics.expressCompany) · \(logistics.trackingNo)",systemImage:"shippingbox").textSelection(.enabled)}
                 }
@@ -818,7 +818,7 @@ struct ShopOrderDetailView: View {
                 if order.status=="shipped" {Button("确认收货"){confirmReceipt=true}.disabled(busy)}
                 if ["paid","shipped","completed"].contains(order.status) && !returns.contains(where:{$0.status != "rejected"}) {Section("申请售后") {TextField("填写退货或退款原因",text:$reason,axis:.vertical).lineLimit(3...5);Button("提交售后申请"){Task{await act("return")}}.disabled(busy||reason.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)}}
                 ForEach(returns){r in Section("售后进度") {
-                    Text(r.statusText).font(.headline);Text(r.returnNo).font(.caption);Text(r.reason)
+                    Text(r.statusText).font(.headline);Text(r.returnNo).font(AppTypography.caption);Text(r.reason)
                     if !r.reviewNote.isEmpty{Text("审核说明：\(r.reviewNote)")}
                     if !r.trackingNo.isEmpty{Text("\(r.carrier) · \(r.trackingNo)").textSelection(.enabled)}
                     if r.status=="approved"{Text("请先与商家核对退货地址，寄出后填写运单。").font(.footnote);TextField("物流公司",text:$carrier);TextField("运单号",text:$tracking);Button("提交寄回物流"){Task{await act("ship",returnId:r.id)}}.disabled(busy||carrier.isEmpty||tracking.isEmpty)}

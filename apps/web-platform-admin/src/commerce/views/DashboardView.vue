@@ -315,8 +315,8 @@ onBeforeUnmount(() => {
   justify-content: space-between;
 }
 .chart-header h3 {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--type-size-control);
+  font-weight: var(--type-weight-semibold);
   color: var(--text-dark);
   margin: 0;
 }

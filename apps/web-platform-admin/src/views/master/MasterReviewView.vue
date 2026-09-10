@@ -142,10 +142,10 @@ onMounted(loadData)
   justify-content: center;
   background: var(--color-bg-tertiary);
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--type-size-caption);
 }
 .muted {
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--type-size-caption);
 }
 </style>

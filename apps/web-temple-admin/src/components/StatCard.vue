@@ -78,6 +78,7 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
 
 <style scoped>
 .aui-stat-card {
+  container: stat-card / inline-size;
   display: flex;
   align-items: center;
   min-width: 0;
@@ -111,7 +112,7 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
 .aui-stat-card__label {
   overflow: hidden;
   color: var(--color-text-tertiary, var(--text-light, #8a7a6a));
-  font-size: 13px;
+  font-size: var(--type-size-label);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -119,10 +120,10 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
   margin-top: 3px;
   overflow-wrap: anywhere;
   color: var(--color-text-primary, var(--text-dark, #2a1e1a));
-  font-family: var(--font-serif, 'Noto Serif SC', 'Songti SC', serif);
-  font-size: 26px;
+  font-family: var(--font-sans);
+  font-size: var(--type-size-hero);
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
+  font-weight: var(--type-weight-semibold);
   line-height: 1.25;
 }
 .aui-stat-card__trend {
@@ -131,10 +132,15 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
   gap: 3px;
   margin-top: 5px;
   color: var(--color-text-tertiary, var(--text-light, #8a7a6a));
-  font-size: 12px;
+  font-size: var(--type-size-caption);
 }
 .aui-stat-card__trend.is-up { color: var(--admin-success, #3f7d52); }
 .aui-stat-card__trend.is-down { color: var(--admin-danger, #b84632); }
+/* Dense overview grids give the number priority over a decorative icon. */
+@container stat-card (max-width: 220px) {
+  .aui-stat-card__icon { display: none; }
+  .aui-stat-card__value { font-size: var(--type-size-section); }
+}
 @media (prefers-reduced-motion: reduce) {
   .aui-stat-card { transition: none; }
   .aui-stat-card:hover { transform: none; }

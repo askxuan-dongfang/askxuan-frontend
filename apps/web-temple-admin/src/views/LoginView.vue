@@ -122,10 +122,10 @@ async function handleLogin() {
   position: absolute;
   right: -40px;
   bottom: -80px;
-  font-family: 'Noto Serif SC', serif;
+  font-family: var(--font-serif);
   font-size: 360px;
   color: rgba(200, 169, 110, 0.06);
-  font-weight: 700;
+  font-weight: var(--type-weight-semibold);
   line-height: 1;
 }
 .login-card {
@@ -150,18 +150,18 @@ async function handleLogin() {
   flex-shrink: 0;
 }
 .login-title {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 22px;
-  font-weight: 700;
+  font-family: var(--font-serif);
+  font-size: var(--type-size-page);
+  font-weight: var(--type-weight-semibold);
   color: #2a1e1a;
 }
 .login-sub {
-  font-size: 13px;
+  font-size: var(--type-size-label);
   color: #8a7a6a;
   margin-top: 2px;
 }
 .login-desc {
-  font-size: 13px;
+  font-size: var(--type-size-label);
   color: #6a5a4a;
   margin: 14px 0 24px;
 }
@@ -169,7 +169,7 @@ async function handleLogin() {
   width: 100%;
   margin-top: 6px;
   height: 44px;
-  font-size: 15px;
+  font-size: var(--type-size-control);
   letter-spacing: 4px;
 }
 .login-tip {
@@ -178,7 +178,7 @@ async function handleLogin() {
   background: #faf6f0;
   border: 1px dashed #e8d5b8;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: #8a7a6a;
   display: flex;
   align-items: center;
@@ -191,7 +191,7 @@ async function handleLogin() {
   position: absolute;
   bottom: 20px;
   color: rgba(240, 230, 218, 0.4);
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   z-index: 1;
 }
 </style>

@@ -27,7 +27,7 @@ struct EmptyState: View {
 
             if let message {
                 Text(message)
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textTertiary)
                     .multilineTextAlignment(.center)
             }

@@ -126,14 +126,14 @@ struct TempleDetailView: View {
     private var infoBar: some View {
         VStack(alignment: .leading, spacing: AppSpacing.sm) {
             Text(viewModel.temple?.name ?? templeName)
-                .font(.custom(AppFont.serif[0], size: 22).weight(.bold))
+                .font(AppTypography.title(22))
                 .foregroundStyle(Color.accentDefault)
 
             HStack(spacing: AppSpacing.sm) {
                 Text(viewModel.temple?.region ?? "")
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
-                Text("·").font(.caption).foregroundStyle(Color.textTertiary)
+                Text("·").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
                 Text(viewModel.temple?.sect ?? "")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(Color.brandDefault)
@@ -150,7 +150,7 @@ struct TempleDetailView: View {
 
             if let desc = viewModel.temple?.description {
                 Text(desc)
-                    .font(.body)
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(3)
                     .padding(.top, 4)
@@ -241,7 +241,7 @@ struct TempleDetailView: View {
                 Text(label).font(.system(size: 13)).foregroundStyle(Color.textTertiary)
                 Spacer()
                 Text(value)
-                    .font(.body)
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.textPrimary)
                     .multilineTextAlignment(.trailing)
                     .frame(maxWidth: 220, alignment: .trailing)
@@ -373,7 +373,7 @@ struct TempleDetailView: View {
                 ShopView()
             } label: {
                 Label("浏览商城法物", systemImage: "bag")
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.brandDefault)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, AppSpacing.lg)

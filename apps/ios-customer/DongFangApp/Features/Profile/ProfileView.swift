@@ -101,7 +101,7 @@ struct ProfileView: View {
                     .overlay(Circle().stroke(Color.accentDefault.opacity(0.35), lineWidth: 1.5))
 
                 Text("问玄东方")
-                    .font(.custom(AppFont.serif[0], size: 24).weight(.semibold))
+                    .font(AppTypography.title(24))
                     .foregroundStyle(Color.accentDefault)
 
                 Text("登录后即可管理您的预约、订单和地址")
@@ -198,7 +198,7 @@ struct ProfileView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(viewModel.displayName)
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(Color.textPrimary)
                     Text("ID: \(viewModel.maskedMobile)")
                         .font(.system(size: 13))

@@ -104,7 +104,7 @@ struct LoginView: View {
             .frame(width: 88, height: 88)
 
             Text("问玄东方")
-                .font(.custom(AppFont.serif[0], size: 26).weight(.bold))
+                .font(AppTypography.title(26))
                 .foregroundStyle(Color.accentDefault)
 
             Text("结缘佛法  祈福纳祥")

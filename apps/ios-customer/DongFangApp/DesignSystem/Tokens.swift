@@ -5,6 +5,7 @@
 // ================================================================
 
 import SwiftUI
+import UIKit
 
 // MARK: - Colors
 extension Color {
@@ -84,7 +85,7 @@ extension ShapeStyle where Self == Color {
 
 // MARK: - Fonts
 enum AppFont {
-    static let serif = ["Noto Serif SC", "STSong", "SimSun"]
+    static let serif = [AppTypography.serifName ?? "TimesNewRomanPSMT"]
     static let sans = ["Noto Sans SC", "PingFang SC", "Microsoft YaHei"]
 }
 
@@ -108,12 +109,31 @@ enum AppSpacing {
     static let navBottom: CGFloat = 60
 }
 
-// MARK: - Font 便捷扩展（项目内统一文字层级）
+// MARK: - Product typography (shared roles with design-tokens/tokens.json)
+// Resolve installed font names explicitly: Font.custom does not accept a fallback array.
+enum AppTypography {
+    static let serifName = ["AskXuanSerif-Semibold", "NotoSerifSC-SemiBold", "SongtiSC-Regular", "STSongti-SC-Regular"]
+        .first { UIFont(name: $0, size: 17) != nil }
+
+    static func title(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
+        if let name = serifName { return .custom(name, size: size, relativeTo: .headline).weight(weight) }
+        return .system(size: size, weight: weight, design: .serif)
+    }
+    static func numeric(_ size: CGFloat, weight: Font.Weight = .medium) -> Font {
+        .custom("HelveticaNeue", size: size, relativeTo: .body).weight(weight).monospacedDigit()
+    }
+    static let body = Font.custom("HelveticaNeue", size: 14, relativeTo: .body)
+    static let caption = Font.custom("HelveticaNeue", size: 12, relativeTo: .caption)
+    static let navigation = title(17)
+    static let hero = title(28)
+    static let page = title(24)
+    static let section = title(20)
+    static let card = title(18)
+    static let control = Font.custom("HelveticaNeue", size: 15, relativeTo: .body).weight(.semibold)
+}
+
 extension Font {
-    /// 品牌标题（首页顶部「问玄东方」）
-    static let brandTitle = Font.custom(AppFont.serif[0], size: 22).weight(.bold)
-    /// 卡片标题
-    static let cardTitle = Font.system(size: 15, weight: .semibold)
-    /// 区块标题
-    static let sectionTitle = Font.custom(AppFont.serif[0], size: 17).weight(.semibold)
+    static let brandTitle = AppTypography.page
+    static let cardTitle = AppTypography.card
+    static let sectionTitle = AppTypography.section
 }

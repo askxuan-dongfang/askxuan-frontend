@@ -277,7 +277,7 @@ onMounted(() => {
   gap: 0 24px;
 }
 .render-grid :deep(.el-slider) { width: 220px; }
-.bead-preview-wrap { display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 52px; color: var(--text-light); font-size: 13px; }
+.bead-preview-wrap { display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 52px; color: var(--text-light); font-size: var(--type-size-label); }
 .bead-preview { width: 44px; height: 44px; border-radius: 50%; box-shadow: inset -9px -10px 14px rgba(0,0,0,.22), inset 8px 7px 12px rgba(255,255,255,.42), 0 5px 12px rgba(0,0,0,.14); }
 .bead-preview.shape-disc { width: 22px; }
 .bead-preview.shape-barrel { width: 52px; border-radius: 15px; }
@@ -285,7 +285,7 @@ onMounted(() => {
 .bead-preview.finish-matte { filter: saturate(.8); box-shadow: inset -6px -7px 10px rgba(0,0,0,.17), 0 4px 10px rgba(0,0,0,.12); }
 .form-tip {
   margin-left: 8px;
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: var(--text-light);
 }
 @media (max-width: 767px) {

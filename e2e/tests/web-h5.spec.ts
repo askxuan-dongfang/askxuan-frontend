@@ -255,6 +255,8 @@ async function mockH5Api(page: Page) {
         description: '精选天然菩提，手工打磨。', mainImage: '', status: 'on_shelf', price: 199, marketPrice: 239,
         stock: 20, tags: '寺院甄选,手工', skus: [{ id: 11, productId: 1, specName: '珠径', specValue: '10mm', price: 199, stock: 20 }], images: []
       }
+    } else if (path === '/orders/1/returns' || path === '/ai/topics') {
+      data = []
     } else if (path === '/orders/1') {
       data = {
         id: 1, orderNo: 'SO202609040001', userId: '1', totalAmount: 199, payAmount: 199, status: 'shipped', addressId: 1,

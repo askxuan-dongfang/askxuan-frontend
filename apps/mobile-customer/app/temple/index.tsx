@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   },
   cardName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.text.primary,
   },
   rating: {

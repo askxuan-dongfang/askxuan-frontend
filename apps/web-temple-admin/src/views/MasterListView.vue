@@ -159,12 +159,12 @@ onMounted(load)
   gap: 10px;
 }
 .master-name {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--type-size-body);
+  font-weight: var(--type-weight-semibold);
   color: #2a1e1a;
 }
 .master-lay {
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: #8a7a6a;
 }
 .spec-tag {
@@ -175,6 +175,6 @@ onMounted(load)
 }
 .rate-text {
   color: #c8a96e;
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
 </style>

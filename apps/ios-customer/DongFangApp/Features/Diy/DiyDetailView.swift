@@ -89,10 +89,10 @@ struct DiyDetailView: View {
                 .padding(.top, 90)
 
                 Text(viewModel.currentDesign?.name ?? "我的手串")
-                    .font(.custom(AppFont.serif[0], size: 20).weight(.bold))
+                    .font(AppTypography.title(20))
                     .foregroundStyle(Color.accentDefault)
                 Text("¥\(Int(viewModel.currentDesign?.totalPrice ?? 0))")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Color.brandDefault)
             }
         }
@@ -120,7 +120,7 @@ struct DiyDetailView: View {
                     .foregroundStyle(Color.textTertiary)
                 Spacer()
                 Text(value)
-                    .font(.body)
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.textPrimary)
             }
             .padding(.horizontal, AppSpacing.lg)
@@ -160,7 +160,7 @@ struct DiyDetailView: View {
 
             if viewModel.cartItems.isEmpty {
                 Text("材料配置暂未加载")
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, AppSpacing.lg)
@@ -202,7 +202,7 @@ struct DiyDetailView: View {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Color.textSecondary)
             Text(item.subtotalText)
-                .font(.system(size: 14, weight: .bold))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Color.brandDefault)
                 .frame(width: 60, alignment: .trailing)
         }

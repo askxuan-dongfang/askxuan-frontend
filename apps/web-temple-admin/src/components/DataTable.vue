@@ -61,7 +61,7 @@ function changeSort(value: { prop?: string | null; order?: string | null }) {
         :stripe="false"
         :border="false"
         style="width: 100%"
-        :header-cell-style="{ background: 'var(--color-bg-tertiary, #faf6f0)', color: 'var(--color-text-secondary, #6a5a4a)', fontWeight: 600 }"
+        :header-cell-style="{ background: 'var(--color-bg-tertiary, #faf6f0)', color: 'var(--color-text-secondary, #6a5a4a)', fontWeight: 'var(--type-weight-semibold)' }"
         :cell-style="{ color: 'var(--color-text-primary, #2a1e1a)' }"
         @sort-change="changeSort"
       >

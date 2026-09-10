@@ -120,7 +120,7 @@ struct BlessingTaskDetailView: View {
                                             Image(systemName: "link.circle")
                                                 .foregroundStyle(.accentDefault)
                                             Text(url)
-                                                .font(.caption)
+                                                .font(AppTypography.caption)
                                                 .foregroundStyle(.accentDefault)
                                                 .lineLimit(1)
                                         }
@@ -165,7 +165,7 @@ struct BlessingTaskDetailView: View {
                         .font(.pageTitle)
                         .foregroundStyle(.textPrimary)
                     Text("编号：\(task.taskNo)")
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(.textTertiary)
                 }
                 Spacer()
@@ -194,11 +194,11 @@ struct BlessingTaskDetailView: View {
     private func infoRow(_ label: String, _ value: String) -> some View {
         HStack(alignment: .top) {
             Text(label)
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)
                 .frame(width: 72, alignment: .leading)
             Text(value)
-                .font(.body)
+                .font(AppTypography.body)
                 .foregroundStyle(.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -208,7 +208,7 @@ struct BlessingTaskDetailView: View {
     private func actionSection(_ task: BlessingTask) -> some View {
         if let error = viewModel.errorMessage {
             Text(error)
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.stateError)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -216,7 +216,7 @@ struct BlessingTaskDetailView: View {
         let status = task.statusEnum
         if status.isTerminal {
             Text("该任务已结束")
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, AppSpacing.md)
@@ -226,10 +226,10 @@ struct BlessingTaskDetailView: View {
                 if status == .inProgress {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("加持证书 URL（多个用逗号分隔）")
-                            .font(.caption)
+                            .font(AppTypography.caption)
                             .foregroundStyle(.textSecondary)
                         TextField("https://..., https://...", text: $viewModel.certificateInput, axis: .vertical)
-                            .font(.body)
+                            .font(AppTypography.body)
                             .foregroundStyle(.textPrimary)
                             .padding(AppSpacing.md)
                             .background(Color.bgTertiary)

@@ -128,6 +128,6 @@ onMounted(() => {
 }
 .price {
   color: var(--primary);
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
 </style>

@@ -22,7 +22,7 @@
           <el-icon :size="22" :color="todo.color"><component :is="todo.icon" /></el-icon>
           <div class="todo-item__info">
             <div class="todo-item__label">{{ todo.label }}</div>
-            <div class="todo-item__count dfx-serif">{{ todo.count }}</div>
+            <div class="todo-item__count">{{ todo.count }}</div>
           </div>
         </router-link>
       </div>
@@ -242,8 +242,9 @@ onBeforeUnmount(() => {
   padding: 18px 20px;
 }
 .chart-card__title {
-  font-size: 15px;
-  font-weight: 600;
+  font-family: var(--font-serif);
+  font-size: var(--type-size-card);
+  font-weight: var(--type-weight-semibold);
   color: var(--color-text-primary);
   margin-bottom: 12px;
   padding-left: 10px;
@@ -285,12 +286,14 @@ onBeforeUnmount(() => {
   transform: translateY(-2px);
 }
 .todo-item__label {
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: var(--color-text-tertiary);
 }
 .todo-item__count {
-  font-size: 22px;
-  font-weight: 700;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--type-size-page);
+  font-weight: var(--type-weight-semibold);
   color: var(--color-text-primary);
   margin-top: 4px;
 }
@@ -334,13 +337,13 @@ onBeforeUnmount(() => {
   .chart-card__mobile-summary strong {
     margin: 4px 0 12px;
     color: var(--admin-text);
-    font-size: 26px;
+    font-size: var(--type-size-hero);
     font-variant-numeric: tabular-nums;
   }
   .chart-card__mobile-summary a {
     color: var(--admin-primary);
-    font-size: 13px;
-    font-weight: 600;
+    font-size: var(--type-size-label);
+    font-weight: var(--type-weight-semibold);
   }
 }
 </style>

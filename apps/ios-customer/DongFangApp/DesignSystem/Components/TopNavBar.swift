@@ -35,7 +35,7 @@ struct DFTopNavBar<Leading: View, Trailing: View>: View {
             Spacer()
 
             Text(title)
-                .font(.custom(AppFont.serif[0], size: 17).weight(.bold))
+                .font(AppTypography.title(17))
                 .foregroundStyle(Color.accentDefault)
                 .lineLimit(1)
 
@@ -89,7 +89,7 @@ struct DFBackButton: View {
                         .stroke(Color.borderDefault, lineWidth: 1)
                 }
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(AppTypography.control)
                     .foregroundStyle(Color.accentDefault)
             }
             .frame(width: 36, height: 36)

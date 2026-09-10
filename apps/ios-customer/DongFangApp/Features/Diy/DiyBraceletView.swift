@@ -35,7 +35,7 @@ struct DiyBraceletView: View {
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(Color.accentDefault)
             Text("从一颗珠子开始")
-                .font(.custom(AppFont.serif[0], size: 22).weight(.bold))
+                .font(AppTypography.title(22))
                 .foregroundStyle(Color.textPrimary)
                 .padding(.top, 4)
 

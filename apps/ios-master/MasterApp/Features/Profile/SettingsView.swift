@@ -29,7 +29,7 @@ struct SettingsView: View {
                 // 通用
                 VStack(alignment: .leading, spacing: AppSpacing.sm) {
                     Text("通用")
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(.textTertiary)
                         .padding(.leading, AppSpacing.xs)
                     MasterCard(padding: AppSpacing.md) {
@@ -50,7 +50,7 @@ struct SettingsView: View {
                 // 关于
                 VStack(alignment: .leading, spacing: AppSpacing.sm) {
                     Text("关于")
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(.textTertiary)
                         .padding(.leading, AppSpacing.xs)
                     MasterCard(padding: AppSpacing.md) {
@@ -103,12 +103,12 @@ struct SettingsView: View {
                 .foregroundStyle(tint)
                 .frame(width: 24)
             Text(title)
-                .font(.body)
+                .font(AppTypography.body)
                 .foregroundStyle(.textPrimary)
             Spacer()
             if let value {
                 Text(value)
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
             }
             if showArrow {

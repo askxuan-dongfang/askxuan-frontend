@@ -130,13 +130,13 @@ onMounted(loadData)
 .content-preview {
   margin-top: 4px;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--type-size-label);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .muted {
   color: var(--color-text-tertiary);
-  font-size: 13px;
+  font-size: var(--type-size-label);
 }
 </style>

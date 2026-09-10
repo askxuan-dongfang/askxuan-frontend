@@ -226,7 +226,7 @@ function clearSingle() {
 .aui-image-uploader__hint {
   margin: 7px 0 0;
   color: var(--color-text-tertiary, var(--text-light, #8a7a6a));
-  font-size: 12px;
+  font-size: var(--type-size-caption);
 }
 .sr-only {
   position: absolute;

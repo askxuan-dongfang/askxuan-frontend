@@ -227,21 +227,21 @@ onMounted(async () => {
   gap: 10px;
 }
 .master-cell__name {
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
   color: var(--color-text-primary);
 }
 .master-cell__lay {
   font-weight: 400;
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--type-size-caption);
 }
 .master-cell__id {
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: var(--color-text-tertiary);
 }
 .star {
   color: var(--color-accent);
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
 .unit { margin-left: 8px; color: var(--color-text-tertiary); }
 </style>

@@ -98,7 +98,7 @@ struct DiyMyDesignsView: View {
 
             VStack(alignment: .trailing, spacing: 6) {
                 Text("¥\(design.totalPrice, specifier: "%.2f")")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color.brandDefault)
                 if let time = design.updateTime, !time.isEmpty {
                     Text(String(time.prefix(10)))

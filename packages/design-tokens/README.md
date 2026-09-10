@@ -2,6 +2,12 @@
 
 问玄东方App 跨端共享 Design Token 系统。以单一数据源 `tokens.json` 为基准，自动生成 iOS（Swift）、Web（CSS / Tailwind）与小程序（uni.scss / JS）各端所需的样式常量，确保多端色彩、字体、圆角、间距完全一致。
 
+## 产品文字规范（2026-09）
+
+已接入的应用以 `tokens.json` 的 `typography` 为字号、字重和行高源，运行 `node scripts/sync-typography.mjs`（仓库根目录）更新共享 CSS、H5 独立仓库镜像及两套 iOS 的标题角色；`--check` 检查漂移。旧 `gen:ios` 仅生成基础示例，不要覆盖已扩展的应用 `Tokens.swift`。
+
+标题采用随应用提供的 AskXuan Serif 600（Noto Serif SC 的重命名副本），正文与控制项采用平台无衬线；金额使用等宽数字。字体、来源及 OFL 授权见 `fonts/README.md`。H5 独立仓库保存 WOFF2 镜像，各 Web 的 `public/fonts/OFL.txt` 随静态站点发布；原生通过 UIAppFonts 注册 TTF，RN 通过 expo-font 加载。更新字体资源时须同步这些副本和授权。
+
 ## 目录结构
 
 ```

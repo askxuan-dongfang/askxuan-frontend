@@ -58,7 +58,7 @@ struct ChatView: View {
     private var topNav: some View {
         ZStack {
             Text("对话")
-                .font(.custom(AppFont.serif[0], size: 17).weight(.bold))
+                .font(AppTypography.title(17))
                 .foregroundStyle(Color.accentDefault)
 
             HStack(spacing: 6) {
@@ -200,7 +200,7 @@ struct ChatView: View {
             .overlay(alignment: .topTrailing) {
                 if conversation.unreadCount > 0 {
                     Text("\(conversation.unreadCount)")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(Color.white)
                         .padding(.horizontal, 4)
                         .frame(minWidth: 16, minHeight: 16)
@@ -214,7 +214,7 @@ struct ChatView: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(conversation.masterName)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Color.textPrimary)
                     Spacer()
                     Text(conversation.lastTime)
@@ -262,7 +262,7 @@ struct ChatView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text(record.name)
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Color.textPrimary)
                         Spacer()
                         Text(record.time)
@@ -318,7 +318,7 @@ private struct ChatFavoritesPanel: View {
                                 RemoteAvatar(urlString: master.avatar, size: 48)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(master.dharmaName)
-                                        .font(.system(size: 14, weight: .bold))
+                                        .font(.system(size: 14, weight: .semibold))
                                         .foregroundStyle(Color.textPrimary)
                                     Text(master.templeName.isEmpty ? "独立大师" : master.templeName)
                                         .font(.system(size: 12))
@@ -403,7 +403,7 @@ private struct CommunityPlazaView: View {
                             Image(systemName: "dot.radiowaves.left.and.right").foregroundStyle(Color.stateError)
                             Text(room.title).font(.subheadline.weight(.semibold)).foregroundStyle(Color.textPrimary)
                             Spacer()
-                            Text("直播中").font(.caption).foregroundStyle(Color.stateError)
+                            Text("直播中").font(AppTypography.caption).foregroundStyle(Color.stateError)
                         }
                         .padding(.horizontal, AppSpacing.lg)
                         .frame(height: 46)
@@ -465,7 +465,7 @@ private struct CommunityPostCard: View {
 
             Text(post.title).font(.subheadline.weight(.semibold)).foregroundStyle(Color.textPrimary).lineLimit(2)
             HStack {
-                Text("大师 \(post.masterId)").font(.caption).foregroundStyle(Color.textTertiary).lineLimit(1)
+                Text("大师 \(post.masterId)").font(AppTypography.caption).foregroundStyle(Color.textTertiary).lineLimit(1)
                 Spacer()
                 Label("\(post.likeCount)", systemImage: "heart").font(.caption2).foregroundStyle(Color.textSecondary)
             }
@@ -508,7 +508,7 @@ private struct CommunityPostDetailView: View {
                     }
 
                     Text(post.title).font(.title3.weight(.bold)).foregroundStyle(Color.textPrimary)
-                    Text(post.content).font(.body).foregroundStyle(Color.textSecondary)
+                    Text(post.content).font(AppTypography.body).foregroundStyle(Color.textSecondary)
 
                     HStack(spacing: 12) {
                         Button { Task { await toggleLike() } } label: {
@@ -532,12 +532,12 @@ private struct CommunityPostDetailView: View {
                     ForEach(comments) { comment in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(comment.content).foregroundStyle(Color.textPrimary)
-                            Text("用户 \(comment.userId)").font(.caption).foregroundStyle(Color.textTertiary)
+                            Text("用户 \(comment.userId)").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, 6)
                     }
-                    if let message { Text(message).font(.caption).foregroundStyle(Color.stateWarning) }
+                    if let message { Text(message).font(AppTypography.caption).foregroundStyle(Color.stateWarning) }
                 }
                 .padding(AppSpacing.lg)
             } else if let message {
@@ -648,7 +648,7 @@ private struct CommunityVideoPage: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("大师 \(post.masterId)").font(.subheadline.weight(.semibold))
                 Text(post.title).font(.headline)
-                Label("\(post.likeCount)", systemImage: "heart.fill").font(.caption)
+                Label("\(post.likeCount)", systemImage: "heart.fill").font(AppTypography.caption)
             }
             .foregroundStyle(.white)
             .padding(20)
@@ -674,7 +674,7 @@ private struct MediaPlaybackView: View {
                 VideoPlayer(player: AVPlayer(url: url))
                     .aspectRatio(9 / 16, contentMode: .fit)
                 Text(title).font(.headline).frame(maxWidth: .infinity, alignment: .leading)
-                Text("审核状态：\(media.auditStatus)").font(.caption).foregroundStyle(.secondary)
+                Text("审核状态：\(media.auditStatus)").font(AppTypography.caption).foregroundStyle(.secondary)
             } else if let message {
                 ContentUnavailableView("视频暂不可用", systemImage: "video.slash", description: Text(message))
             } else {
@@ -720,7 +720,7 @@ private struct LiveViewerView: View {
                 }
                 .disabled(chatText.isEmpty || room.openimGroupId.isEmpty)
             }
-            if !sendState.isEmpty { Text(sendState).font(.caption).foregroundStyle(.secondary) }
+            if !sendState.isEmpty { Text(sendState).font(AppTypography.caption).foregroundStyle(.secondary) }
         }
         .padding()
         .navigationTitle(room.title)

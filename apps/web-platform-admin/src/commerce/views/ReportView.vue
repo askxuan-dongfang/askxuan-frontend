@@ -317,8 +317,8 @@ onBeforeUnmount(() => {
   justify-content: space-between;
 }
 .chart-header h3 {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--type-size-control);
+  font-weight: var(--type-weight-semibold);
   color: var(--text-dark);
   margin: 0;
 }
@@ -328,7 +328,7 @@ onBeforeUnmount(() => {
 }
 .price {
   color: var(--primary);
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
 .mobile-report-summary {
   display: none;

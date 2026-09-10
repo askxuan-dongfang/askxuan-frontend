@@ -165,7 +165,7 @@ struct CalendarView: View {
         HStack(spacing: 0) {
             ForEach(weeks, id: \.self) { w in
                 Text(w)
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textTertiary)
                     .frame(maxWidth: .infinity)
             }
@@ -244,7 +244,7 @@ struct CalendarView: View {
                     .foregroundStyle(.textPrimary)
                 Spacer()
                 Text(DFDateFormatter.dayOnly(viewModel.selectedDateString))
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textTertiary)
             }
 
@@ -261,7 +261,7 @@ struct CalendarView: View {
                                 Image(systemName: "clock.fill")
                                     .foregroundStyle(.accentDefault)
                                 Text(slot)
-                                    .font(.body)
+                                    .font(AppTypography.body)
                                     .foregroundStyle(.textPrimary)
                                 Spacer()
                                 Text(viewModel.selectedSlots.contains(slot) ? "可预约" : "休息")
@@ -299,10 +299,10 @@ struct CalendarView: View {
                 .disabled(viewModel.isSaving)
 
                 if let success = viewModel.successMessage {
-                    Text(success).font(.caption).foregroundStyle(.stateSuccess)
+                    Text(success).font(AppTypography.caption).foregroundStyle(.stateSuccess)
                 }
                 if let error = viewModel.errorMessage {
-                    Text(error).font(.caption).foregroundStyle(.stateError)
+                    Text(error).font(AppTypography.caption).foregroundStyle(.stateError)
                 }
             }
         }

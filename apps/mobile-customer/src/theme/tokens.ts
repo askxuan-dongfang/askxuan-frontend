@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 // 设计令牌 - 从 packages/design-tokens/tokens.json 同步派生
 // 严格使用，所有颜色统一从此文件引用
 
@@ -65,9 +66,19 @@ export const spacing = {
 
 // 字体族：标题 serif，正文 sans
 export const fontFamilies = {
-  serif: 'Noto Serif SC',
-  sans: 'Noto Sans SC',
+  serif: 'AskXuanSerif-Semibold',
+  sans: Platform.select({ ios: 'System', android: 'sans-serif', default: 'sans-serif' })!,
 } as const;
 
 // 便捷别名（与单层 token 风格兼容）
 export const c = colors;
+
+export const typography = {
+  page: { fontFamily: fontFamilies.serif, fontSize: 24, lineHeight: 36, fontWeight: '600' as const },
+  section: { fontFamily: fontFamilies.serif, fontSize: 20, lineHeight: 30, fontWeight: '600' as const },
+  card: { fontFamily: fontFamilies.serif, fontSize: 18, lineHeight: 27, fontWeight: '600' as const },
+  navigation: { fontFamily: fontFamilies.serif, fontSize: 17, lineHeight: 25, fontWeight: '600' as const },
+  body: { fontFamily: fontFamilies.sans, fontSize: 14, lineHeight: 24 },
+  control: { fontFamily: fontFamilies.sans, fontSize: 15, lineHeight: 23, fontWeight: '600' as const },
+  caption: { fontFamily: fontFamilies.sans, fontSize: 12, lineHeight: 20 },
+};

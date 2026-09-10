@@ -18,7 +18,7 @@ struct LoadingView: View {
                 .tint(.accentDefault)
                 .scaleEffect(1.2)
             Text(message)
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)
         }
         .frame(maxWidth: .infinity, maxHeight: fullScreen ? .infinity : nil)

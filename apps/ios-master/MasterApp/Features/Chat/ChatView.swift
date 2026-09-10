@@ -101,7 +101,7 @@ struct ChatView: View {
             // 输入栏
             HStack(spacing: AppSpacing.sm) {
                 TextField("输入回复...", text: $viewModel.inputText, axis: .vertical)
-                    .font(.body)
+                    .font(AppTypography.body)
                     .foregroundStyle(.textPrimary)
                     .lineLimit(1...3)
                     .padding(.horizontal, AppSpacing.md)
@@ -153,7 +153,7 @@ struct ChatView: View {
             if bubble.isMe { Spacer(minLength: 60) }
             VStack(alignment: bubble.isMe ? .trailing : .leading, spacing: 4) {
                 Text(bubble.text)
-                    .font(.body)
+                    .font(AppTypography.body)
                     .foregroundStyle(bubble.isMe ? .white : .textPrimary)
                     .padding(.horizontal, AppSpacing.md)
                     .padding(.vertical, AppSpacing.sm)

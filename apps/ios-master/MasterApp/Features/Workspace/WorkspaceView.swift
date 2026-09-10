@@ -186,7 +186,7 @@ struct WorkspaceView: View {
                         .font(.headline)
                         .foregroundStyle(.textPrimary)
                     Text("上传短视频并管理直播状态")
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(.textSecondary)
                 }
                 Spacer()
@@ -211,7 +211,7 @@ struct WorkspaceView: View {
                 .font(.pageTitle)
                 .foregroundStyle(.textPrimary)
             Text("今日有 \(viewModel.pendingBookings.count) 个预约待处理，\(viewModel.assignedTasks.count) 个加持任务")
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -233,7 +233,7 @@ struct WorkspaceView: View {
                 let stat = stats[index]
                 VStack(spacing: 4) {
                     Text(stat.value)
-                        .font(.system(size: stat.highlight ? 18 : 22, weight: .bold))
+                        .font(.system(size: stat.highlight ? 18 : 22, weight: .semibold))
                         .foregroundStyle(stat.highlight ? .accentDefault : .textPrimary)
                     Text(stat.label)
                         .font(.micro)
@@ -307,7 +307,7 @@ struct WorkspaceView: View {
                     BookingsView()
                 } label: {
                     Text("查看全部")
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(.textSecondary)
                 }
             }
@@ -317,7 +317,7 @@ struct WorkspaceView: View {
 
             if viewModel.todayBookings.isEmpty {
                 Text("今日暂无预约")
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textTertiary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, AppSpacing.lg)
@@ -442,7 +442,7 @@ struct WorkspaceView: View {
             .buttonStyle(.plain)
             } else {
                 Text("暂无待接单加持任务")
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textTertiary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, AppSpacing.lg)
@@ -678,11 +678,11 @@ private struct MediaStudioView: View {
                         HStack {
                             Text(post.title).font(.headline)
                             Spacer()
-                            Text(statusText(post.status)).font(.caption).foregroundStyle(statusColor(post.status))
+                            Text(statusText(post.status)).font(AppTypography.caption).foregroundStyle(statusColor(post.status))
                         }
-                        Text("点赞 \(post.likeCount) · 评论 \(post.commentCount)").font(.caption).foregroundStyle(.secondary)
+                        Text("点赞 \(post.likeCount) · 评论 \(post.commentCount)").font(AppTypography.caption).foregroundStyle(.secondary)
                         if let remark = post.auditRemark, !remark.isEmpty {
-                            Text("驳回原因：\(remark)").font(.caption).foregroundStyle(.red)
+                            Text("驳回原因：\(remark)").font(AppTypography.caption).foregroundStyle(.red)
                         }
                         HStack {
                             if ["draft", "rejected"].contains(post.status) {

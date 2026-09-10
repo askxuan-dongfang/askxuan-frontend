@@ -215,11 +215,11 @@ onMounted(loadData)
   color: var(--color-text-tertiary);
 }
 .banner-cell__title {
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
   color: var(--color-text-primary);
 }
 .muted {
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--type-size-caption);
 }
 </style>

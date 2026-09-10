@@ -127,7 +127,7 @@ struct ProfileView: View {
             // 寺院 + 已认证 badge
             HStack(spacing: AppSpacing.sm) {
                 Text(viewModel.profile?.templeId ?? "未关联寺院")
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
                 HStack(spacing: 4) {
                     Image(systemName: "star.fill")
@@ -154,7 +154,7 @@ struct ProfileView: View {
 
             // 角色
             Text(viewModel.profile?.position ?? "")
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.textSecondary)
                 .padding(.top, 4)
         }
@@ -213,7 +213,7 @@ struct ProfileView: View {
                 // 额外信息
                 if let extra = item.extra {
                     Text(extra)
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(.textTertiary)
                         .padding(.trailing, AppSpacing.sm)
                 }

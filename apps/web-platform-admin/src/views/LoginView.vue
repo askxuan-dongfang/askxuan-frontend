@@ -145,21 +145,21 @@ async function onSubmit() {
 }
 .login__title {
   margin: 0;
-  font-size: 26px;
-  font-weight: 700;
+  font-size: var(--type-size-hero);
+  font-weight: var(--type-weight-semibold);
   color: #f0e6da;
   letter-spacing: 4px;
 }
 .login__subtitle {
   margin: 6px 0 0;
-  font-size: 13px;
+  font-size: var(--type-size-label);
   color: #c5b097;
   letter-spacing: 2px;
 }
 .login__submit {
   width: 100%;
   height: 44px;
-  font-size: 16px;
+  font-size: var(--type-size-reading);
   letter-spacing: 6px;
   background: linear-gradient(135deg, var(--color-brand), var(--color-cinnabar));
   border: none;
@@ -167,7 +167,7 @@ async function onSubmit() {
 .login__hint {
   margin: 0;
   text-align: center;
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: var(--color-text-tertiary);
 }
 </style>

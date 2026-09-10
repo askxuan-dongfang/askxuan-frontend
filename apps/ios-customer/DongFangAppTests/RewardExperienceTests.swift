@@ -124,6 +124,24 @@ private struct RewardWheelMotionFixture: View {
 }
 
 @MainActor final class AiTopicNativeRenderTests: XCTestCase {
+    func testProductTypographyRendersChineseAndNumericContent() async throws {
+        XCTAssertEqual(AppTypography.serifName, "AskXuanSerif-Semibold")
+        XCTAssertNotNil(UIFont(name: "HelveticaNeue", size: 14))
+        for width in [320.0, 390.0, 768.0] {
+            let content = VStack(alignment: .leading, spacing: 18) {
+                Text("专题解读 · 问玄东方").font(AppTypography.navigation)
+                Text("让每一次探索，有迹可循").font(AppTypography.hero)
+                Text("我的积分与活动").font(AppTypography.section)
+                Text("日常的每一份积累，都有清晰的记录。标题、正文与数字使用各自的文字层级。").font(AppTypography.body)
+                Text("¥12,345.67 · 1,024 积分").font(AppTypography.numeric(28))
+                Text("继续查看完整内容 →").font(AppTypography.control)
+                Text("辅助说明 · 2026/9/10 16:30").font(AppTypography.caption)
+            }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
+                .foregroundStyle(Color.textPrimary).background(Color.bgPrimary)
+            try await render(content, name: "ios-product-typography-\(Int(width))", width: width, height: 700)
+        }
+    }
+
     func testSevenTopicLayoutsAndMotion() async throws {
         let codes = ["bazi", "ziwei", "marriage", "fengshui", "liuyao", "qimen", "tarot"]
         let names = ["八字命理", "紫微斗数", "姻缘合盘", "风水布局", "六爻占卜", "奇门遁甲", "塔罗指引"]

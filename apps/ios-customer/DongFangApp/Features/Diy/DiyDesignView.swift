@@ -191,7 +191,7 @@ struct DiyDesignView: View {
                     UISelectionFeedbackGenerator().selectionChanged()
                 } label: {
                     Image(systemName: materialPanelExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(.accentDefault)
                         .frame(width: 34, height: 34)
                         .background(Color.bgTertiary)
@@ -316,7 +316,7 @@ struct DiyDesignView: View {
                     )
                     if count > 0 {
                         Text("×\(count)")
-                            .font(.system(size: 8, weight: .bold))
+                            .font(.system(size: 8, weight: .semibold))
                             .foregroundStyle(Color.white)
                             .padding(.horizontal, 4)
                             .frame(minHeight: 16)
@@ -542,7 +542,7 @@ private struct DiyBraceletStage: View {
                     Text("\(wristSizeMm / 10) cm")
                         .font(.system(size: 12, weight: .semibold))
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 8, weight: .bold))
+                        .font(.system(size: 8, weight: .semibold))
                 }
                 .foregroundStyle(.textPrimary)
                 .padding(.horizontal, 9)
@@ -569,7 +569,7 @@ private struct DiyBraceletStage: View {
                     .font(.system(size: 8))
                     .foregroundStyle(.textTertiary)
                 Text("¥\(Int(totalPrice))")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.accentLight)
             }
         }
@@ -610,7 +610,7 @@ private struct DiyBraceletStage: View {
                 } else {
                     HStack(alignment: .firstTextBaseline, spacing: 3) {
                         Text("\(slots.count)")
-                            .font(.system(size: 32, weight: .bold))
+                            .font(.system(size: 32, weight: .semibold))
                             .foregroundStyle(.textPrimary)
                         Text("颗")
                             .font(.system(size: 10))

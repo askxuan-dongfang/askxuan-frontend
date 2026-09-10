@@ -29,10 +29,10 @@ struct DFPrimaryButton: View {
                         .scaleEffect(0.9)
                 } else if let icon {
                     Image(systemName: icon)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(AppTypography.control)
                 }
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(AppTypography.control)
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
@@ -67,10 +67,10 @@ struct DFSecondaryButton: View {
             HStack(spacing: 6) {
                 if let icon {
                     Image(systemName: icon)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(AppTypography.control)
                 }
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(AppTypography.control)
             }
             .foregroundStyle(Color.accentDefault)
             .frame(maxWidth: .infinity)

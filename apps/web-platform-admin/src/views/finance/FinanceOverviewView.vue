@@ -216,17 +216,17 @@ onBeforeUnmount(() => {
 }
 .summary-grid span, .muted {
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--type-size-caption);
 }
 .summary-grid b {
-  font-size: 18px;
+  font-size: var(--type-size-card);
   font-variant-numeric: tabular-nums;
 }
 .config-field {
   display: grid;
   gap: 6px;
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: var(--type-size-caption);
 }
 .config-field :deep(.el-input-number) {
   width: 100%;
@@ -235,8 +235,8 @@ onBeforeUnmount(() => {
   padding: 18px 20px;
 }
 .section-title {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--type-size-control);
+  font-weight: var(--type-weight-semibold);
   color: var(--color-text-primary);
   margin-bottom: 16px;
   padding-left: 10px;

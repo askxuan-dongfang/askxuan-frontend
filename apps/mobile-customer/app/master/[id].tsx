@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   },
   dharmaName: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.text.primary,
     fontFamily: fontFamilies.serif,
     marginTop: spacing.md,

@@ -119,13 +119,13 @@ onMounted(loadData)
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--type-size-section);
+  font-weight: var(--type-weight-semibold);
   color: var(--color-text-primary);
 }
 .profile__meta {
   margin-top: 6px;
-  font-size: 13px;
+  font-size: var(--type-size-label);
   color: var(--color-text-tertiary);
 }
 .profile-grid {
@@ -139,7 +139,7 @@ onMounted(loadData)
   gap: 6px;
 }
 .profile-item .label {
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: var(--color-text-tertiary);
 }
 .stat-row {
@@ -148,8 +148,8 @@ onMounted(loadData)
   gap: 16px;
 }
 .section-title {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--type-size-control);
+  font-weight: var(--type-weight-semibold);
   color: var(--color-text-primary);
   margin-bottom: 16px;
   padding-left: 10px;

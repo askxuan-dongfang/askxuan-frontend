@@ -258,19 +258,19 @@ onMounted(() => {
   justify-content: center;
   background: #f5f0eb;
   color: var(--text-light);
-  font-size: 12px;
+  font-size: var(--type-size-caption);
 }
 .product-name {
   font-weight: 500;
   color: var(--text-dark);
 }
 .product-no {
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: var(--text-light);
   margin-top: 2px;
 }
 .price {
   color: var(--primary);
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
 </style>

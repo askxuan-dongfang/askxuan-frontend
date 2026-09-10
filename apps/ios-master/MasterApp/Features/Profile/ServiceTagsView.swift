@@ -34,7 +34,7 @@ struct ServiceTagsView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: AppSpacing.md) {
                         Text("勾选你提供的服务并定价；取消勾选即下架该标签。")
-                            .font(.caption)
+                            .font(AppTypography.caption)
                             .foregroundStyle(Color.textTertiary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, AppSpacing.lg)

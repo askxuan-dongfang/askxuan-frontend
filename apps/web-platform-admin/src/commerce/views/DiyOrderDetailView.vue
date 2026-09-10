@@ -256,8 +256,8 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 .section-title {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--type-size-control);
+  font-weight: var(--type-weight-semibold);
   color: var(--text-dark);
   padding: 16px 0;
   border-bottom: 1px solid var(--border);
@@ -265,13 +265,13 @@ onMounted(() => {
 }
 .price {
   color: var(--primary);
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
 .cert-list {
   margin-top: 16px;
 }
 .cert-title {
-  font-size: 13px;
+  font-size: var(--type-size-label);
   color: var(--text-medium);
   margin-bottom: 8px;
 }

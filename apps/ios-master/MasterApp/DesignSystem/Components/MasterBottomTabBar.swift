@@ -79,7 +79,7 @@ struct MasterBottomTabBar: View {
                     HStack {
                         Spacer()
                         Text("\(badge)")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 4)
                             .frame(minWidth: 16, minHeight: 16)

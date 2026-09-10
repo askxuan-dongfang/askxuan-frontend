@@ -467,8 +467,8 @@ onMounted(() => {
   margin-bottom: 0;
 }
 .section-title {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--type-size-control);
+  font-weight: var(--type-weight-semibold);
   color: var(--text-dark);
   padding: 16px 0;
   margin-top: 16px;

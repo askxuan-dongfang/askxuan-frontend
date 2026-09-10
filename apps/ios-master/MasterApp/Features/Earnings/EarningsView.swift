@@ -138,7 +138,7 @@ struct EarningsView: View {
                     PricingView()
                 } label: {
                     Text("定价")
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(.accentDefault)
                 }
             }
@@ -164,10 +164,10 @@ struct EarningsView: View {
         MasterCard(padding: AppSpacing.lg) {
             VStack(spacing: AppSpacing.md) {
                 Text("可提现余额（元）")
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
                 Text(String(format: "%.2f", viewModel.summary?.withdrawable ?? 0))
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .font(AppTypography.numeric(36))
                     .foregroundStyle(.accentDefault)
 
                 HStack(spacing: AppSpacing.xl) {
@@ -186,7 +186,7 @@ struct EarningsView: View {
                 .font(.micro)
                 .foregroundStyle(.textTertiary)
             Text("¥\(String(format: "%.2f", value))")
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .font(AppTypography.numeric(15))
                 .foregroundStyle(.textPrimary)
         }
     }
@@ -207,10 +207,10 @@ struct EarningsView: View {
                     MasterCard(padding: AppSpacing.lg) {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("可提现余额")
-                                .font(.caption)
+                                .font(AppTypography.caption)
                                 .foregroundStyle(.textSecondary)
                             Text("¥\(String(format: "%.2f", viewModel.maxWithdrawable))")
-                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .font(AppTypography.numeric(24))
                                 .foregroundStyle(.accentDefault)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -225,7 +225,7 @@ struct EarningsView: View {
 
                     if let msg = viewModel.withdrawMessage, viewModel.showWithdrawSheet {
                         Text(msg)
-                            .font(.caption)
+                            .font(AppTypography.caption)
                             .foregroundStyle(msg.contains("已提交") ? .stateSuccess : .stateError)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -271,7 +271,7 @@ struct EarningsView: View {
                     ForEach(trend) { item in
                         HStack(spacing: AppSpacing.md) {
                             Text(item.month)
-                                .font(.caption)
+                                .font(AppTypography.caption)
                                 .foregroundStyle(.textSecondary)
                                 .frame(width: 56, alignment: .leading)
                             GeometryReader { geo in
@@ -287,7 +287,7 @@ struct EarningsView: View {
                             }
                             .frame(height: 10)
                             Text("¥\(String(format: "%.0f", item.amount))")
-                                .font(.caption)
+                                .font(AppTypography.caption)
                                 .foregroundStyle(.textPrimary)
                                 .frame(width: 64, alignment: .trailing)
                         }
@@ -295,7 +295,7 @@ struct EarningsView: View {
                     }
                     if trend.isEmpty {
                         Text("暂无趋势数据")
-                            .font(.caption)
+                            .font(AppTypography.caption)
                             .foregroundStyle(.textTertiary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, AppSpacing.md)
@@ -333,7 +333,7 @@ struct EarningsView: View {
                             Spacer()
                             VStack(alignment: .trailing, spacing: 4) {
                                 Text("¥\(String(format: "%.2f", item.amount))")
-                                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                    .font(AppTypography.numeric(15))
                                     .foregroundStyle(.accentDefault)
                                 Text(item.settleStatusText)
                                     .font(.micro)

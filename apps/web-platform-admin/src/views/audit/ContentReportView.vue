@@ -219,16 +219,16 @@ onMounted(loadData)
   justify-content: center;
   background: var(--color-bg-tertiary);
   color: var(--color-text-tertiary);
-  font-size: 11px;
+  font-size: var(--type-size-micro);
 }
 .muted {
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--type-size-caption);
 }
 .dialog-info p {
   margin: 4px 0;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--type-size-label);
 }
 .dialog-info span {
   color: var(--color-text-tertiary);

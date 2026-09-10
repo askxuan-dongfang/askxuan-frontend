@@ -220,22 +220,22 @@ onMounted(load)
   margin-bottom: 16px;
 }
 .section-title {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 15px;
-  font-weight: 600;
+  font-family: var(--font-serif);
+  font-size: var(--type-size-control);
+  font-weight: var(--type-weight-semibold);
   color: #2a1e1a;
   margin-bottom: 14px;
 }
 .price {
   color: #c45a3c;
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
 .ml-2 {
   margin-left: 8px;
 }
 .muted {
   color: #8a7a6a;
-  font-size: 13px;
+  font-size: var(--type-size-label);
 }
 .review-head {
   display: flex;
@@ -265,7 +265,7 @@ onMounted(load)
   border-top: 1px dashed #e8e0d8;
 }
 .reply-label {
-  font-size: 13px;
+  font-size: var(--type-size-label);
   color: #6a5a4a;
   margin-bottom: 8px;
 }
@@ -280,7 +280,7 @@ onMounted(load)
   text-align: right;
 }
 .log-line {
-  font-size: 14px;
+  font-size: var(--type-size-body);
 }
 .log-from {
   color: #8a7a6a;
@@ -291,7 +291,7 @@ onMounted(load)
 }
 .log-to {
   color: #c45a3c;
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
 .log-meta {
   margin-top: 4px;
@@ -300,7 +300,7 @@ onMounted(load)
   gap: 8px;
 }
 .log-remark {
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: #8a7a6a;
 }
 </style>

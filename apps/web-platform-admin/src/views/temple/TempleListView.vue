@@ -176,18 +176,18 @@ onMounted(async () => {
   background: var(--color-bg-tertiary);
   color: var(--color-accent);
   font-family: var(--font-serif);
-  font-weight: 700;
+  font-weight: var(--type-weight-semibold);
 }
 .temple-cell__name {
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
   color: var(--color-text-primary);
 }
 .temple-cell__id {
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: var(--color-text-tertiary);
 }
 .star {
   color: var(--color-accent);
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
 </style>

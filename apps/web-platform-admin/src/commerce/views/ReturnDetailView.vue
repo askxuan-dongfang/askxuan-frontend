@@ -171,8 +171,8 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 .section-title {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--type-size-control);
+  font-weight: var(--type-weight-semibold);
   color: var(--text-dark);
   padding: 16px 0;
   border-bottom: 1px solid var(--border);
@@ -180,7 +180,7 @@ onMounted(() => {
 }
 .price {
   color: var(--primary);
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
 .reason-box {
   padding: 12px 16px;
@@ -192,7 +192,7 @@ onMounted(() => {
 }
 .form-tip {
   margin-left: 8px;
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: var(--text-light);
 }
 </style>

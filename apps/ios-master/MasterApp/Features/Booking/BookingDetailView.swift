@@ -154,7 +154,7 @@ struct BookingDetailView: View {
                         .font(.pageTitle)
                         .foregroundStyle(.textPrimary)
                     Text("单号：\(booking.id)")
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(.textTertiary)
                 }
                 Spacer()
@@ -183,11 +183,11 @@ struct BookingDetailView: View {
     private func infoRow(_ label: String, _ value: String) -> some View {
         HStack(alignment: .top) {
             Text(label)
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)
                 .frame(width: 64, alignment: .leading)
             Text(value)
-                .font(.body)
+                .font(AppTypography.body)
                 .foregroundStyle(.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -197,7 +197,7 @@ struct BookingDetailView: View {
     private func actionSection(_ booking: Booking) -> some View {
         if let error = viewModel.errorMessage {
             Text(error)
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.stateError)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -205,7 +205,7 @@ struct BookingDetailView: View {
         let status = booking.statusEnum
         if status.isTerminal {
             Text("该预约已结单")
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, AppSpacing.md)

@@ -23,7 +23,7 @@ struct DFEmptyState: View {
                 .foregroundStyle(.textSecondary)
             if let subtitle {
                 Text(subtitle)
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textTertiary)
                     .multilineTextAlignment(.center)
             }

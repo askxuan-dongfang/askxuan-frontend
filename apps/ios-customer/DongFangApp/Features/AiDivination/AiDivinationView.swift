@@ -672,7 +672,7 @@ struct AiDivinationView: View {
                     sendMessage()
                 } label: {
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 40, height: 40)
                         .background(canSend ? Color.brandDefault : Color.textTertiary)

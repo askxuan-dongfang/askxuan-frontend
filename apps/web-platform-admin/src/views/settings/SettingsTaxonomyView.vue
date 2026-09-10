@@ -158,6 +158,6 @@ onMounted(load)
 <style scoped>
 .taxonomy-section { margin-bottom: 24px; }
 .section-head { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:12px; }
-.section-head h2 { margin:0 0 4px; font-size:17px; }
-.section-head p { margin:0; color:var(--dfx-text-secondary); font-size:13px; }
+.section-head h2 { margin:0 0 4px; font-size: var(--type-size-nav); }
+.section-head p { margin:0; color:var(--dfx-text-secondary); font-size: var(--type-size-label); }
 </style>

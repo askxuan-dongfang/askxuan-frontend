@@ -188,7 +188,7 @@ struct MasterListView: View {
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 8) {
                     Text(master.dharmaName)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
 
@@ -269,7 +269,7 @@ struct MasterListView: View {
                         .foregroundStyle(master.isOnline == true ? Color.stateSuccess : Color.textTertiary)
                     Spacer()
                     Text(masterPriceText(master))
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Color.brandDefault)
                 }
             }

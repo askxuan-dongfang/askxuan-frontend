@@ -104,7 +104,7 @@ function renderCharts() {
           type: 'bar',
           data: rank.map((m) => m.revenue),
           itemStyle: { color: '#C8A96E', borderRadius: [0, 4, 4, 0] },
-          label: { show: true, position: 'right', formatter: (p: any) => formatMoney(p.value), color: '#6A5A4A', fontSize: 11 }
+          label: { show: true, position: 'right', formatter: (p: any) => formatMoney(p.value), color: '#6A5A4A', fontSize: 'var(--type-size-micro)' }
         }
       ]
     })
@@ -204,9 +204,9 @@ onBeforeUnmount(() => {
   padding: 18px 20px;
 }
 .chart-title {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 15px;
-  font-weight: 600;
+  font-family: var(--font-serif);
+  font-size: var(--type-size-control);
+  font-weight: var(--type-weight-semibold);
   color: #2a1e1a;
   margin-bottom: 12px;
 }

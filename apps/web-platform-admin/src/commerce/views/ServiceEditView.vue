@@ -142,7 +142,7 @@ onMounted(() => {
 }
 .form-tip {
   margin-left: 8px;
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: var(--text-light);
 }
 </style>

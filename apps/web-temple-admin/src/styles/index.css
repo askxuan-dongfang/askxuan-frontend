@@ -1,4 +1,5 @@
 @import './tokens.css';
+@import '../../../../packages/design-tokens/typography.css';
 @import '../../../../packages/admin-ui/styles/index.css';
 
 @tailwind base;

@@ -48,7 +48,7 @@ function resolvedTone(): StatusTone {
 .aui-status-tag {
   max-width: 100%;
   border-width: 1px;
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
   white-space: nowrap;
 }
 </style>

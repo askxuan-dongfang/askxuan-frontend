@@ -84,6 +84,8 @@
 		A19E00990C0D4A1890010001 /* AiReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19E00990C0D4A1890010002 /* AiReportView.swift */; };
 		656124897C13B598ACB2F443 /* RewardExperience.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130D0FCAC7C61B35FF5C2A3F /* RewardExperience.swift */; };
 		DC122C8A987776E80E4BA27D /* RewardExperienceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33AB8BFC9CE629D10EFE35E /* RewardExperienceTests.swift */; };
+		65423D79DDE1EFAEA4ED2F8F /* AskXuanSerif-Semibold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5C049B0B68DE5B5B9B8C1046 /* AskXuanSerif-Semibold.ttf */; };
+		F63C7D9987D73CB035103185 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = CE8BD727D152A1B5273ADE40 /* OFL.txt */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -180,6 +182,8 @@
 		A19E00990C0D4A1890010002 /* AiReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AiReportView.swift; sourceTree = "<group>"; };
 		130D0FCAC7C61B35FF5C2A3F /* RewardExperience.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RewardExperience.swift; sourceTree = "<group>"; };
 		B33AB8BFC9CE629D10EFE35E /* RewardExperienceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RewardExperienceTests.swift; sourceTree = "<group>"; };
+		5C049B0B68DE5B5B9B8C1046 /* AskXuanSerif-Semibold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "AskXuanSerif-Semibold.ttf"; path = "../../packages/design-tokens/fonts/AskXuanSerif-Semibold.ttf"; sourceTree = SOURCE_ROOT; };
+		CE8BD727D152A1B5273ADE40 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = file; name = "OFL.txt"; path = "../../packages/design-tokens/fonts/OFL.txt"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -570,6 +574,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F63C7D9987D73CB035103185 /* OFL.txt in Resources */,
+				65423D79DDE1EFAEA4ED2F8F /* AskXuanSerif-Semibold.ttf in Resources */,
 				929252235D6B2452438425AF /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

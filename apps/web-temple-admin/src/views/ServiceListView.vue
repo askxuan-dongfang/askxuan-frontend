@@ -124,7 +124,7 @@ onMounted(load)
 }
 .price {
   color: #c45a3c;
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
 .slot-tag {
   margin: 2px 4px 2px 0;

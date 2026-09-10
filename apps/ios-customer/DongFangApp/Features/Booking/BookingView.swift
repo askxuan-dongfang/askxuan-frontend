@@ -407,7 +407,7 @@ struct BookingView: View {
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
                 Text("¥\(total)")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(Color.brandDefault)
             }
 

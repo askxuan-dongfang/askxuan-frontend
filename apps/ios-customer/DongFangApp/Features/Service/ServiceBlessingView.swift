@@ -105,7 +105,7 @@ struct ServiceContainerView: View {
                 .padding(.top, 80)
 
                 Text(serviceType.rawValue)
-                    .font(.custom(AppFont.serif[0], size: 22).weight(.bold))
+                    .font(AppTypography.title(22))
                     .foregroundStyle(Color.accentDefault)
                 Text(serviceType.subtitle)
                     .font(.system(size: 13))
@@ -128,7 +128,7 @@ struct ServiceContainerView: View {
             }
 
             Text(serviceType.detail)
-                .font(.body)
+                .font(AppTypography.body)
                 .foregroundStyle(Color.textSecondary)
                 .lineSpacing(5)
         }
@@ -158,7 +158,7 @@ struct ServiceContainerView: View {
 
             if viewModel.blessingServices.isEmpty {
                 Text("暂无可选套餐，请稍后再试")
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, AppSpacing.lg)
@@ -208,7 +208,7 @@ struct ServiceContainerView: View {
             Spacer()
 
             Text(service.priceText)
-                .font(.system(size: 16, weight: .bold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(Color.brandDefault)
         }
         .padding(AppSpacing.md)
@@ -229,7 +229,7 @@ struct ServiceContainerView: View {
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
                 Text("不指定则为全寺执行")
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }
             .padding(.horizontal, AppSpacing.lg)
@@ -237,7 +237,7 @@ struct ServiceContainerView: View {
 
             if viewModel.masters.isEmpty {
                 Text(viewModel.templeId == nil ? "暂无可指定法师" : "本寺暂无可执行该服务的法师，默认全寺执行")
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .padding(.horizontal, AppSpacing.lg)
             } else {

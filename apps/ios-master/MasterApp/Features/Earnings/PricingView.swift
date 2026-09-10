@@ -108,7 +108,7 @@ struct PricingView: View {
 
                 if let msg = viewModel.message {
                     Text(msg)
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(msg.contains("已更新") ? .stateSuccess : .stateError)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -137,7 +137,7 @@ struct PricingView: View {
                         .foregroundStyle(.textPrimary)
                 }
                 TextEditor(text: $viewModel.pricingText)
-                    .font(.body)
+                    .font(AppTypography.body)
                     .foregroundStyle(.textPrimary)
                     .frame(minHeight: 100)
                     .padding(AppSpacing.sm)
@@ -192,7 +192,7 @@ struct PricingView: View {
                 Image(systemName: "info.circle.fill")
                     .foregroundStyle(.accentDefault)
                 Text("定价说明将展示给信众，建议明确各档位对应的服务内容。档位调整不影响已下单的预约。")
-                    .font(.caption)
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
             }
         }

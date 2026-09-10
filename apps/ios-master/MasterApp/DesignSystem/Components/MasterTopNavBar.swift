@@ -38,7 +38,7 @@ struct MasterTopNavBar<Leading: View, Trailing: View>: View {
             Spacer()
 
             Text(title)
-                .font(.custom(AppFont.serif, size: 17).weight(.bold))
+                .font(AppTypography.title(17))
                 .foregroundStyle(Color.accentDefault)
                 .lineLimit(1)
 

@@ -169,10 +169,10 @@ onMounted(loadData)
 }
 .amount {
   color: var(--color-accent);
-  font-weight: 700;
+  font-weight: var(--type-weight-semibold);
 }
 .muted {
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--type-size-caption);
 }
 </style>

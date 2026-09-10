@@ -17,7 +17,7 @@ struct DFLoadingView: View {
                 .tint(.accentDefault)
                 .scaleEffect(1.2)
             Text(text)
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

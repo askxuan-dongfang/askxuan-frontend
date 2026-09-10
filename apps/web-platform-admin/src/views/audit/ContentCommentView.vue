@@ -119,7 +119,7 @@ onMounted(loadData)
 }
 .snapshot {
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--type-size-label);
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -128,6 +128,6 @@ onMounted(loadData)
 }
 .muted {
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--type-size-caption);
 }
 </style>

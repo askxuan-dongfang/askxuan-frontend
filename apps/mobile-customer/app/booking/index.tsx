@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
   },
   summaryName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.text.primary,
   },
   summaryMeta: {
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
   },
   priceTotal: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.brand.default,
   },
   bottomBar: {

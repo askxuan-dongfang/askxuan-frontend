@@ -150,12 +150,12 @@ onMounted(load)
   margin-bottom: 16px;
 }
 .muted {
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: #8a7a6a;
 }
 .price {
   color: #c45a3c;
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
 @media (max-width: 767px) {
   .list-card { padding: 12px; }

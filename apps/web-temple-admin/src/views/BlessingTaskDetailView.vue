@@ -106,7 +106,7 @@ onMounted(load)
 
 <style scoped>
 .detail-card, .assignment-card, .certificate-card { padding: 20px; margin-bottom: 16px; }
-h3 { margin: 0 0 16px; font-size: 16px; color: #2a1e1a; }
+h3 { margin: 0 0 16px; font-size: var(--type-size-reading); color: #2a1e1a; }
 .assignment-row { display: grid; grid-template-columns: minmax(260px, 420px) auto; gap: 12px; justify-content: start; }
 .certificate { width: 120px; height: 120px; margin-right: 12px; border-radius: 6px; }
 </style>

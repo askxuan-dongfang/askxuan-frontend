@@ -338,7 +338,7 @@ private struct CustomerDiyOrderDetailView: View {
                 List {
                     Section("制作与交付") {
                         if let logistics=order.logistics {Text("\(logistics.expressCompany) · \(logistics.trackingNo)").textSelection(.enabled)}
-                        Text("选材 → 审核 → 制作 → 加持（选购）→ 发货 → 收货").font(.caption).foregroundStyle(Color.accentDefault)
+                        Text("选材 → 审核 → 制作 → 加持（选购）→ 发货 → 收货").font(AppTypography.caption).foregroundStyle(Color.accentDefault)
                         if let errorMessage {Text(errorMessage).foregroundStyle(.red)}
                         if order.status=="shipped" {Button("确认收到作品"){confirmReceipt=true}.disabled(busy)}
                         if order.status=="pending_review" && order.paymentStatus != "success" {Button("继续模拟支付"){Task{await act(false)}}.disabled(busy)}
@@ -359,7 +359,7 @@ private struct CustomerDiyOrderDetailView: View {
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(item.materialName)
                                         Text("\(item.spec) × \(item.quantity)")
-                                            .font(.caption)
+                                            .font(AppTypography.caption)
                                             .foregroundStyle(Color.textTertiary)
                                     }
                                     Spacer()
@@ -629,7 +629,7 @@ struct FavoritesView: View {
             RemoteAvatar(urlString: master.avatar, size: 48)
             VStack(alignment: .leading, spacing: 3) {
                 Text(master.dharmaName)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text(master.templeName)
                     .font(.system(size: 12))
@@ -648,7 +648,7 @@ struct FavoritesView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 3) {
                 Text(temple.name)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text("\(temple.region) · \(temple.sect)")
                     .font(.system(size: 12))
@@ -667,7 +667,7 @@ struct FavoritesView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 3) {
                 Text(product.name)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text("¥\(product.price, specifier: "%.2f")")
                     .font(.system(size: 12))
@@ -1066,7 +1066,7 @@ struct CouponView: View {
                     HStack(spacing: 0) {
                         VStack(spacing: 2) {
                             Text(item.valueText)
-                                .font(.system(size: 26, weight: .bold))
+                                .font(.system(size: 26, weight: .semibold))
                                 .foregroundStyle(Color.brandDefault)
                                 .monospacedDigit()
                             Text(item.minAmount > 0 ? "满¥\(Int(item.minAmount))可用" : "无门槛")
@@ -1153,12 +1153,12 @@ struct PointsWalletCard: View {
     let onRules: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack { Text("A LITTLE THANK YOU").font(.caption2).tracking(2); Spacer(); Button("积分规则", action: onRules).font(.caption) }.foregroundStyle(Color.accentDefault)
+            HStack { Text("A LITTLE THANK YOU").font(.caption2).tracking(2); Spacer(); Button("积分规则", action: onRules).font(AppTypography.caption) }.foregroundStyle(Color.accentDefault)
             Text("每一份喜爱，都有回馈").font(.system(size: 22, weight: .medium, design: .serif))
-            Text("可用积分").font(.caption).foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline) { Text(balance.map { $0.formatted() } ?? "—").font(.system(size: 54, weight: .medium, design: .serif)).minimumScaleFactor(0.6).lineLimit(1).contentTransition(.numericText()); Text("积分").font(.caption) }.foregroundStyle(Color.accentDefault)
+            Text("可用积分").font(AppTypography.caption).foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline) { Text(balance.map { $0.formatted() } ?? "—").font(.system(size: 54, weight: .medium, design: .serif)).minimumScaleFactor(0.6).lineLimit(1).contentTransition(.numericText()); Text("积分").font(AppTypography.caption) }.foregroundStyle(Color.accentDefault)
             Divider().overlay(Color.accentDefault.opacity(0.2))
-            Text("每笔实付满 100 元得 1 积分").font(.caption).foregroundStyle(.secondary)
+            Text("每笔实付满 100 元得 1 积分").font(AppTypography.caption).foregroundStyle(.secondary)
             if (balance ?? 0) < 0 { Text("退款扣回后余额不足，后续获得的积分先补足余额。").font(.caption2).foregroundStyle(.secondary) }
         }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
             .background(LinearGradient(colors: [Color.brown.opacity(0.45), Color.bgSecondary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24))
@@ -1173,7 +1173,7 @@ struct PointsRulesSheet: View {
                 Section("01 · 消费积累") { Text("每笔实付满 100 元得 1 积分，不足部分舍去。例如 199 元得 1 积分，200 元得 2 积分。") }
                 Section("02 · 兑换与参与") { Text("积分商城按标价兑换；转盘和大奖池按本期规则扣分，每人每期一次。成功参与后无论中奖与否均不退回，奖品预算由平台承担。") }
                 Section("03 · 退款与记录") { Text("退款按净实付重算所得积分，余额不足时可能为负；后续获得的积分先补足。取消待发货兑换会退回积分。所有变动可查积分明细。") }
-                Text("功德值独立记录成长，不用于兑换，也不影响中奖概率。").font(.caption).foregroundStyle(.secondary)
+                Text("功德值独立记录成长，不用于兑换，也不影响中奖概率。").font(AppTypography.caption).foregroundStyle(.secondary)
             }.navigationTitle("积分规则").navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .confirmationAction) { Button("知道了") { dismiss() } } }
         }.tint(Color.accentDefault)
     }
@@ -1201,7 +1201,7 @@ struct PointsView: View {
                     RewardCategoryEntry(kind: "wheel")
                     RewardCategoryEntry(kind: "pool")
                 }.listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0)).listRowBackground(Color.clear)
-                Text("每期参与积分在活动页明示；奖品预算由平台承担，功德值独立成长。").font(.caption).foregroundStyle(.secondary)
+                Text("每期参与积分在活动页明示；奖品预算由平台承担，功德值独立成长。").font(AppTypography.caption).foregroundStyle(.secondary)
             }
             Picker("积分", selection: $tab) { Text("明细").tag(0); Text("积分商城").tag(1); Text("兑换记录").tag(2) }.pickerStyle(.segmented).disabled(busy)
             if let error { Text(error).foregroundStyle(.red); Button("重试") { Task { await load() } } }
@@ -1224,7 +1224,7 @@ struct PointsView: View {
                     Button { selected = p } label: {
                         HStack {
                             if let url = URL(string: p.image), !p.image.isEmpty { AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { Color.gray.opacity(0.15) }.frame(width: 64, height: 64).clipped().cornerRadius(12) } else { Image(systemName: "gift.fill").font(.title).foregroundStyle(Color.accentDefault).frame(width: 64, height: 64).background(Color.accentDefault.opacity(0.12), in: RoundedRectangle(cornerRadius: 12)) }
-                            VStack(alignment: .leading, spacing: 6) { Text(p.name).foregroundStyle(Color.textPrimary); Text("\(p.pointsPrice) 积分 · 库存 \(p.stock)").foregroundStyle(Color.accentDefault); Text(p.stock < 1 ? "已兑完" : (balance ?? 0) < p.pointsPrice ? "还差 \(p.pointsPrice - (balance ?? 0)) 积分" : "立即兑换 →").font(.caption).foregroundStyle(.secondary) }
+                            VStack(alignment: .leading, spacing: 6) { Text(p.name).foregroundStyle(Color.textPrimary); Text("\(p.pointsPrice) 积分 · 库存 \(p.stock)").foregroundStyle(Color.accentDefault); Text(p.stock < 1 ? "已兑完" : (balance ?? 0) < p.pointsPrice ? "还差 \(p.pointsPrice - (balance ?? 0)) 积分" : "立即兑换 →").font(AppTypography.caption).foregroundStyle(.secondary) }
                         }
                     }
                 }
@@ -1234,8 +1234,8 @@ struct PointsView: View {
                         Text("\(o.productName) × \(o.quantity)").font(.headline)
                         Text("\(o.pointsTotal) 积分 · \(o.statusText)")
                         if o.status != "cancelled" { RewardDeliverySteps(status: o.status, firstLabel: "已兑换") }
-                        DisclosureGroup("订单与收货信息") { Text(o.orderNo).font(.caption2); Text(o.address).font(.caption); Text(o.createdAt).font(.caption2) }
-                        if !o.trackingNo.isEmpty { Text("\(o.carrier)：\(o.trackingNo)").font(.caption) }
+                        DisclosureGroup("订单与收货信息") { Text(o.orderNo).font(.caption2); Text(o.address).font(AppTypography.caption); Text(o.createdAt).font(.caption2) }
+                        if !o.trackingNo.isEmpty { Text("\(o.carrier)：\(o.trackingNo)").font(AppTypography.caption) }
                         if o.status == "pending" || o.status == "shipped" { Button(o.status == "pending" ? "取消兑换" : "确认收货") { pendingAction = o }.disabled(busy) }
                     }
                 }
@@ -1292,7 +1292,7 @@ struct PointsRedeemSheet: View {
                     if addresses.isEmpty { Text("请先在“我的”添加收货地址") }
                     Picker("地址", selection: $addressID) { ForEach(addresses) { a in Text("\(a.name) \(a.phone) \(a.fullAddress)").tag(a.id) } }.disabled(busy || request != nil)
                 }
-                Section("兑换合计") { Text("\(Int64(quantity) * product.pointsPrice) 积分").font(.title2).foregroundStyle(Color.accentDefault); Text(balance >= Int64(quantity) * product.pointsPrice ? "兑换后剩余 \(balance - Int64(quantity) * product.pointsPrice) 积分" : "还差 \(Int64(quantity) * product.pointsPrice - balance) 积分").font(.caption).foregroundStyle(.secondary) }
+                Section("兑换合计") { Text("\(Int64(quantity) * product.pointsPrice) 积分").font(.title2).foregroundStyle(Color.accentDefault); Text(balance >= Int64(quantity) * product.pointsPrice ? "兑换后剩余 \(balance - Int64(quantity) * product.pointsPrice) 积分" : "还差 \(Int64(quantity) * product.pointsPrice - balance) 积分").font(AppTypography.caption).foregroundStyle(.secondary) }
                 if let error { Text(error).foregroundStyle(.red) }
                 Button(busy ? "兑换中…" : request == nil ? "确认兑换" : "重试本次兑换") { Task { await redeem() } }.disabled(busy || addressID == 0 || product.stock < quantity || balance < Int64(quantity) * product.pointsPrice)
             }
@@ -1723,7 +1723,7 @@ struct AboutView: View {
                         .clipShape(Circle())
                         .overlay(Circle().stroke(Color.accentDefault, lineWidth: 2))
                     Text("问玄东方")
-                        .font(.custom(AppFont.serif[0], size: 20).weight(.bold))
+                        .font(AppTypography.title(20))
                         .foregroundStyle(Color.accentDefault)
                     Text("版本 1.0.0 (1)")
                         .font(.system(size: 12))

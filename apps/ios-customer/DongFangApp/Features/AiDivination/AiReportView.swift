@@ -30,7 +30,7 @@ struct AiTopicEntrances: View {
             HStack {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("EXPLORE · 专题探索").font(.system(size: 10)).tracking(2).opacity(0.7)
-                    Text("一事一解，自有章法").font(.system(size: 23, design: .serif))
+                    Text("一事一解，自有章法").font(AppTypography.title(23))
                 }
                 Spacer()
                 Button("我的报告 ↗") { library = true }.font(.system(size: 12))
@@ -87,7 +87,7 @@ struct AiReportWorkspace: View {
             }.padding(20).frame(maxWidth: 760).frame(maxWidth: .infinity)
         }
         }.background(reportPaper).foregroundStyle(accent).preferredColorScheme(.light)
-        .toolbar { ToolbarItem(placement: .topBarLeading) { Button("返回问事") { dismiss() } }; ToolbarItem(placement: .principal) { Text("问玄 · 专题").font(.system(.headline, design: .serif)) } }
+        .toolbar { ToolbarItem(placement: .topBarLeading) { Button("返回问事") { dismiss() } }; ToolbarItem(placement: .principal) { Text("问玄 · 专题").font(AppTypography.navigation) } }
         .navigationBarTitleDisplayMode(.inline)
         .task { await load(); await refreshBalance() }
         .task(id: report?.status) {
@@ -113,7 +113,7 @@ struct AiReportWorkspace: View {
         HStack(spacing: 5) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("EXPLORE / 专题解读").font(.system(size: 9)).tracking(2).opacity(0.6)
-                Text(title).font(.system(size: 32, design: .serif)).foregroundStyle(accent)
+                Text(title).font(AppTypography.title(28)).foregroundStyle(accent)
                 Text(subtitle).font(.system(size: 13)).lineSpacing(5).foregroundStyle(.secondary)
             }.frame(maxWidth: .infinity, alignment: .leading)
             AiTopicArtwork(code: topic?.code ?? report?.skillCode ?? "fengshui").frame(width: 116, height: 135)
@@ -123,7 +123,7 @@ struct AiReportWorkspace: View {
         VStack(alignment: .leading, spacing: 16, content: content).padding(22).frame(maxWidth: .infinity, alignment: .leading).background(Color.white.opacity(0.9)).clipShape(RoundedRectangle(cornerRadius: 20)).overlay(RoundedRectangle(cornerRadius: 20).stroke(accent.opacity(0.10)))
     }
     private func chapters(_ list: [String]) -> some View {
-        ForEach(Array(list.enumerated()), id: \.offset) { index, title in HStack(spacing: 16) { Text(String(format: "%02d", index + 1)).font(.system(.body, design: .serif)).opacity(0.5); Text(title).font(.system(size: 14)); Spacer() }.padding(.vertical, 5) }
+        ForEach(Array(list.enumerated()), id: \.offset) { index, title in HStack(spacing: 16) { Text(String(format: "%02d", index + 1)).font(AppTypography.title(14)).opacity(0.5); Text(title).font(.system(size: 14)); Spacer() }.padding(.vertical, 5) }
     }
     private func primary(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { Text(busy ? "正在处理…" : title).font(.system(size: 14, weight: .medium)).frame(maxWidth: .infinity).padding(16).background(accent).foregroundStyle(.white).clipShape(RoundedRectangle(cornerRadius: 12)) }.disabled(busy)
@@ -137,7 +137,7 @@ struct AiReportWorkspace: View {
                 Rectangle().frame(height: 1).opacity(0.2)
                 Label("说说问题", systemImage: "2.circle.fill").opacity(step == 1 ? 1 : 0.4)
             }.font(.system(size: 12))
-            Text(step == 0 ? "先从认识您开始" : "这一次，您最在意什么？").font(.system(.title2, design: .serif)).padding(.top, 8)
+            Text(step == 0 ? "先从认识您开始" : "这一次，您最在意什么？").font(AppTypography.section).padding(.top, 8)
             if step == 0 {
                 Text("准确的背景，让解读更贴近实际情况。带 * 的资料为必填。").font(.footnote).foregroundStyle(.secondary)
                 if let skill { ForEach(skill.inputSchema.fields) { field in fieldView(field) } }
@@ -176,23 +176,23 @@ struct AiReportWorkspace: View {
         } else if r.status == "failed" {
             card { Text("这次生成未能完成").font(.headline); Text(r.errorMessage); primary("免费重试") { Task { await retry(r) } } }
         } else {
-            card { Text("分析摘要").font(.system(.title2, design: .serif)); Text(r.summary).lineSpacing(7) }
+            card { Text("分析摘要").font(AppTypography.section); Text(r.summary).lineSpacing(7) }
             if r.unlocked {
                 card {
-                    HStack { Text("完整分析 · 已解锁").font(.system(.title2, design: .serif)); Spacer(); Button(largeType ? "标准字号" : "放大字号") { largeType.toggle() }.font(.caption) }
+                    HStack { Text("完整分析 · 已解锁").font(AppTypography.section); Spacer(); Button(largeType ? "标准字号" : "放大字号") { largeType.toggle() }.font(AppTypography.caption) }
                     DisclosureGroup("章节导航") {
                         ForEach(Array(r.content.components(separatedBy: "\n").enumerated()), id: \.offset) { index, line in
                             if line.hasPrefix("#") { Button(line.trimmingCharacters(in: CharacterSet(charactersIn: "# "))) { withAnimation(reduceMotion ? nil : .easeInOut) { proxy.scrollTo("chapter-\(index)", anchor: .top) } }.font(.subheadline).padding(.vertical, 5) }
                         }
                     }
                     ForEach(Array(r.content.components(separatedBy: "\n").enumerated()), id: \.offset) { index, line in
-                        if line.hasPrefix("#") { Text(line.trimmingCharacters(in: CharacterSet(charactersIn: "# "))).font(.system(largeType ? .title : .title2, design: .serif)).foregroundStyle(accent).padding(.top, 20).id("chapter-\(index)") }
+                        if line.hasPrefix("#") { Text(line.trimmingCharacters(in: CharacterSet(charactersIn: "# "))).font(AppTypography.title(largeType ? 24 : 20)).foregroundStyle(accent).padding(.top, 20).id("chapter-\(index)") }
                         else if !line.isEmpty { Text(.init(line)).font(largeType ? .title3 : .body).foregroundStyle(Color(red: 0.26, green: 0.31, blue: 0.25)).textSelection(.enabled).lineSpacing(8) }
                     }
-                    Text("✦ 让解读回到生活，让行动带来答案。").font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 20);
+                    Text("✦ 让解读回到生活，让行动带来答案。").font(AppTypography.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 20);
  ShareLink(item: r.title + "\n\n" + r.content) { Label("保存或分享报告", systemImage: "square.and.arrow.up") }; primary("围绕这份报告继续问事 →") { Task { await followup(r) } }; Text("自动带入报告内容，聊天按账户正常额度使用。").font(.footnote).foregroundStyle(.secondary) }
             } else {
-                card { Text("把线索，展开成完整答案").font(.system(.title2, design: .serif)); chapters(r.chapters); HStack(alignment: .firstTextBaseline) { Text("\(r.pointsPrice)").font(.system(size: 36, design: .serif)); Text("积分"); Spacer(); Text("一次购买 · 随时回看").font(.caption) }; Text("可用积分：" + (balance.map(String.init) ?? "暂未获取") + "。现金支付暂未开放。").font(.footnote).foregroundStyle(.secondary); if let balance {
+                card { Text("把线索，展开成完整答案").font(AppTypography.section); chapters(r.chapters); HStack(alignment: .firstTextBaseline) { Text("\(r.pointsPrice)").font(AppTypography.title(36)); Text("积分"); Spacer(); Text("一次购买 · 随时回看").font(AppTypography.caption) }; Text("可用积分：" + (balance.map(String.init) ?? "暂未获取") + "。现金支付暂未开放。").font(.footnote).foregroundStyle(.secondary); if let balance {
                     if balance >= r.pointsPrice { primary("解锁完整报告") { confirm = true } }
                     else { Text("还差 \(r.pointsPrice - balance) 积分，摘要已为您保留。").font(.footnote).padding(14).frame(maxWidth: .infinity).background(accent.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 10)) }
                 } else { Button("重新获取积分余额") { Task { await refreshBalance() } } } }
@@ -235,10 +235,10 @@ struct AiReportLibrary: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text("每一次探索，都有迹可循。").font(.system(.title2, design: .serif)).padding(.vertical, 20)
+                Text("每一次探索，都有迹可循。").font(AppTypography.section).padding(.vertical, 20)
                 if !error.isEmpty { Text(error).foregroundStyle(.red); Button("重试") { Task { await load() } } }
                 if reports.isEmpty && !busy { Text("还没有专题报告，从一个关心的问题开始。").foregroundStyle(.secondary).padding(.vertical, 40) }
-                ForEach(reports) { report in NavigationLink { AiReportWorkspace(reportID: report.id) } label: { VStack(alignment: .leading, spacing: 10) { HStack { AiTopicArtwork(code: report.skillCode).frame(width: 62, height: 52); Text(report.title).font(.system(.title3, design: .serif)); Spacer(); Image(systemName: "arrow.up.right") }; Text(report.question).font(.subheadline).lineLimit(2); Text(report.status == "ready" ? "查看报告" : report.status == "failed" ? "生成失败，可重试" : "生成中").font(.caption).foregroundStyle(.secondary) }.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(.white).clipShape(RoundedRectangle(cornerRadius: 18)) } }
+                ForEach(reports) { report in NavigationLink { AiReportWorkspace(reportID: report.id) } label: { VStack(alignment: .leading, spacing: 10) { HStack { AiTopicArtwork(code: report.skillCode).frame(width: 62, height: 52); Text(report.title).font(AppTypography.card); Spacer(); Image(systemName: "arrow.up.right") }; Text(report.question).font(.subheadline).lineLimit(2); Text(report.status == "ready" ? "查看报告" : report.status == "failed" ? "生成失败，可重试" : "生成中").font(AppTypography.caption).foregroundStyle(.secondary) }.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(.white).clipShape(RoundedRectangle(cornerRadius: 18)) } }
                 if busy { ProgressView() } else if more && !reports.isEmpty { Button("加载更多") { Task { await load() } } }
             }.padding(20)
         }.background(reportPaper).foregroundStyle(reportGreen).navigationTitle("我的报告")
@@ -328,8 +328,8 @@ struct AiTopicTile: View {
         ZStack(alignment: .bottomTrailing) {
             AiTopicArtwork(code: topic.code).frame(width: 120, height: 105).opacity(0.8).offset(x: 16, y: 17)
             VStack(alignment: .leading, spacing: 9) {
-                Text(topic.seal).font(.system(size: 11, design: .serif)).foregroundStyle(AiTopicPresentation(code: topic.code).color)
-                Text(topic.title).font(.system(size: 19, design: .serif))
+                Text(topic.seal).font(AppTypography.title(11)).foregroundStyle(AiTopicPresentation(code: topic.code).color)
+                Text(topic.title).font(AppTypography.title(19))
                 Text(AiTopicPresentation(code: topic.code).caption).font(.system(size: 10)).foregroundStyle(.secondary).lineSpacing(4).frame(maxWidth: 95, alignment: .leading)
                 Spacer(minLength: 10)
             }.padding(16).frame(maxWidth: .infinity, alignment: .leading)

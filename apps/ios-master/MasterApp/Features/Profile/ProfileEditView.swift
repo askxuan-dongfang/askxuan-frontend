@@ -112,7 +112,7 @@ struct ProfileEditView: View {
                         if #available(iOS 26.0, *) {
                             RichTextToolbar(attributedText: $bioAttributed)
                             TextEditor(text: $bioAttributed)
-                                .font(.body)
+                                .font(AppTypography.body)
                                 .foregroundStyle(.textPrimary)
                                 .frame(minHeight: 100)
                                 .padding(AppSpacing.sm)
@@ -124,7 +124,7 @@ struct ProfileEditView: View {
                                 )
                         } else {
                             TextEditor(text: $viewModel.bio)
-                                .font(.body)
+                                .font(AppTypography.body)
                                 .foregroundStyle(.textPrimary)
                                 .frame(minHeight: 100)
                                 .padding(AppSpacing.sm)
@@ -150,7 +150,7 @@ struct ProfileEditView: View {
                                 .foregroundStyle(.textPrimary)
                         }
                         TextField("如：开光、化太岁、超度", text: $viewModel.specialtiesText, axis: .vertical)
-                            .font(.body)
+                            .font(AppTypography.body)
                             .foregroundStyle(.textPrimary)
                             .padding(AppSpacing.sm)
                             .background(Color.bgTertiary)
@@ -175,7 +175,7 @@ struct ProfileEditView: View {
                                 .foregroundStyle(.textPrimary)
                         }
                         TextEditor(text: $viewModel.pricing)
-                            .font(.body)
+                            .font(AppTypography.body)
                             .foregroundStyle(.textPrimary)
                             .frame(minHeight: 80)
                             .padding(AppSpacing.sm)
@@ -190,7 +190,7 @@ struct ProfileEditView: View {
 
                 if let msg = viewModel.message {
                     Text(msg)
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(msg.contains("已保存") ? .stateSuccess : .stateError)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }

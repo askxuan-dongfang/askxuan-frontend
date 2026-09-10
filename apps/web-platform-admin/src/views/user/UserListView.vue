@@ -121,11 +121,11 @@ onMounted(loadData)
   gap: 10px;
 }
 .user-cell__name {
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
   color: var(--color-text-primary);
 }
 .user-cell__id {
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: var(--color-text-tertiary);
 }
 </style>

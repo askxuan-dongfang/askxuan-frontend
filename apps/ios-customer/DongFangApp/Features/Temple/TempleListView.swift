@@ -143,7 +143,7 @@ struct TempleListView: View {
             VStack(spacing: 0) {
                 HStack(alignment: .center, spacing: 8) {
                     Text(temple.name)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Color.textPrimary)
                     HStack(spacing: 4) {
                         Text(temple.type)
@@ -176,7 +176,7 @@ struct TempleListView: View {
                         .foregroundStyle(Color.textTertiary)
                     Spacer()
                     Text(startPriceText(for: temple))
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(priceColor(for: temple))
                 }
                 .padding(.top, 4)

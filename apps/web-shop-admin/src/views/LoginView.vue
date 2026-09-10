@@ -166,14 +166,14 @@ async function handleLogin() {
   display: block;
 }
 .login-logo h1 {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 28px;
+  font-family: var(--font-serif);
+  font-size: var(--type-size-hero);
   color: #d4b36d;
   letter-spacing: 6px;
   margin: 0 0 8px;
 }
 .login-logo p {
-  font-size: 14px;
+  font-size: var(--type-size-body);
   color: #d9c9b5;
   letter-spacing: 3px;
   margin: 0;
@@ -206,8 +206,8 @@ async function handleLogin() {
 .login-btn {
   width: 100%;
   height: 48px;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--type-size-reading);
+  font-weight: var(--type-weight-semibold);
   letter-spacing: 4px;
   background: linear-gradient(135deg, var(--primary) 0%, #d47a5e 100%);
   border: none;

@@ -137,8 +137,8 @@ onMounted(loadData)
   padding: 18px 20px;
 }
 .section-title {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--type-size-control);
+  font-weight: var(--type-weight-semibold);
   color: var(--color-text-primary);
   margin-bottom: 16px;
   padding-left: 10px;

@@ -249,21 +249,21 @@ onMounted(() => {
   justify-content: center;
   background: #f5f0eb;
   color: var(--text-light);
-  font-size: 12px;
+  font-size: var(--type-size-caption);
 }
 .material-name {
   font-weight: 500;
   color: var(--text-dark);
 }
 .material-spec {
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: var(--text-light);
   margin-top: 2px;
 }
 .price {
   color: var(--primary);
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
-.render-cell { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-light); }
+.render-cell { display: flex; align-items: center; gap: 6px; font-size: var(--type-size-caption); color: var(--text-light); }
 .color-swatch { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(0,0,0,.12); flex: none; }
 </style>

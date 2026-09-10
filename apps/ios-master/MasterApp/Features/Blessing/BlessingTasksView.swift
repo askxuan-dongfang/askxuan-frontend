@@ -159,12 +159,12 @@ struct BlessingTasksView: View {
                     Label(task.taskNo, systemImage: "number")
                     Label(DFDateFormatter.dayOnly(task.assignTime), systemImage: "calendar")
                 }
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.textSecondary)
 
                 HStack {
                     Text("DIY 订单：\(task.diyOrderNo)")
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(.textTertiary)
                     Spacer()
                     if task.canAccept {

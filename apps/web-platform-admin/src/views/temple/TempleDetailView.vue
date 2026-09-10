@@ -144,12 +144,12 @@ onMounted(loadData)
   background: var(--color-bg-tertiary);
   color: var(--color-accent);
   font-family: var(--font-serif);
-  font-weight: 900;
-  font-size: 48px;
+  font-weight: var(--type-weight-semibold);
+  font-size: var(--type-size-large-metric);
 }
 .detail-info__name {
   margin: 0 0 12px;
-  font-size: 22px;
+  font-size: var(--type-size-page);
   color: var(--color-text-primary);
 }
 .detail-info__meta {
@@ -160,10 +160,10 @@ onMounted(loadData)
 }
 .star {
   color: var(--color-accent);
-  font-weight: 600;
+  font-weight: var(--type-weight-semibold);
 }
 .detail-info__row {
-  font-size: 14px;
+  font-size: var(--type-size-body);
   color: var(--color-text-secondary);
   line-height: 1.9;
 }
@@ -171,8 +171,8 @@ onMounted(loadData)
   color: var(--color-text-tertiary);
 }
 .section-title {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--type-size-control);
+  font-weight: var(--type-weight-semibold);
   color: var(--color-text-primary);
   margin-bottom: 16px;
   padding-left: 10px;

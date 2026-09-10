@@ -188,11 +188,11 @@ onMounted(async () => {
 .service-type-picker { width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .service-type-tag { min-height: 64px; padding: 10px 12px; border: 1px solid var(--el-border-color); border-radius: 6px; background: var(--el-bg-color); color: var(--el-text-color-primary); text-align: left; cursor: pointer; }
 .service-type-tag span, .service-type-tag small { display: block; }
-.service-type-tag span { font-size: 14px; font-weight: 600; }
+.service-type-tag span { font-size: var(--type-size-body); font-weight: var(--type-weight-semibold); }
 .service-type-tag small { margin-top: 4px; color: var(--el-text-color-secondary); }
 .service-type-tag.selected { border-color: var(--el-color-primary); background: var(--el-color-primary-light-9); color: var(--el-color-primary); }
 .service-type-tag.unavailable { opacity: 0.45; cursor: not-allowed; }
-.selected-type-hint { margin-top: 8px; color: var(--el-text-color-secondary); font-size: 12px; }
+.selected-type-hint { margin-top: 8px; color: var(--el-text-color-secondary); font-size: var(--type-size-caption); }
 @media (max-width: 760px) { .slot-row { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 760px) { .service-type-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>

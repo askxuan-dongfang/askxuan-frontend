@@ -114,7 +114,7 @@ struct ReviewsView: View {
         HStack(spacing: AppSpacing.lg) {
             VStack(spacing: 2) {
                 Text(String(format: "%.1f", viewModel.averageRating))
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .font(AppTypography.numeric(32))
                     .foregroundStyle(.accentDefault)
                 Text("平均评分")
                     .font(.micro)
@@ -186,7 +186,7 @@ struct ReviewsView: View {
                         .cornerRadius(AppRadius.sm)
                 }
                 Text(review.content.isEmpty ? "（用户未填写评价内容）" : review.content)
-                    .font(.body)
+                    .font(AppTypography.body)
                     .foregroundStyle(.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
 

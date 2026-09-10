@@ -115,7 +115,7 @@ struct HomeView: View {
     private var headerSection: some View {
         HStack(spacing: 8) {
             Text("问玄东方")
-                .font(.custom(AppFont.serif[0], size: 18).weight(.semibold))
+                .font(AppTypography.title(18))
                 .foregroundStyle(Color.accentDefault)
                 .lineLimit(1)
 
@@ -180,7 +180,7 @@ struct HomeView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(banner.title)
-                    .font(.custom(AppFont.serif[0], size: 18).weight(.bold))
+                    .font(AppTypography.title(18))
                     .foregroundStyle(Color.textPrimary)
                 if let subtitle = banner.subtitle {
                     Text(subtitle)
@@ -238,7 +238,7 @@ struct HomeView: View {
                         .font(.system(size: 28))
                         .foregroundStyle(Color.accentDefault)
                     Text(title)
-                        .font(.custom(AppFont.serif[0], size: 16).weight(.semibold))
+                        .font(AppTypography.title(16))
                         .foregroundStyle(Color.accentDefault)
                 }
             }
@@ -668,7 +668,7 @@ private struct IntentionHubView: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(heroTitle)
-                        .font(.custom(AppFont.serif[0], size: 22).weight(.bold))
+                        .font(AppTypography.title(22))
                         .foregroundStyle(Color.textPrimary)
                     Text(heroSummary)
                         .font(.system(size: 13))
@@ -726,7 +726,7 @@ private struct IntentionHubView: View {
                     .font(.system(size: 11, weight: .semibold)).foregroundStyle(Color.accentDefault)
                 Text(item.title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.textPrimary).lineLimit(2)
                 Text(item.subtitle).font(.system(size: 12)).foregroundStyle(Color.textSecondary).lineLimit(1)
-                Text("¥\(Int(item.price))").font(.system(size: 15, weight: .bold)).foregroundStyle(Color.brandDefault)
+                Text("¥\(Int(item.price))").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.brandDefault)
             }
             Spacer()
             Image(systemName: "chevron.right").font(.system(size: 12)).foregroundStyle(Color.textTertiary)
@@ -813,7 +813,7 @@ private struct BeliefTopicView: View {
                         .font(.system(size: 30))
                         .foregroundStyle(Color.accentDefault)
                     Text(viewModel.profile?.name ?? entry.title)
-                        .font(.custom(AppFont.serif[0], size: 28).weight(.bold))
+                        .font(AppTypography.title(28))
                     Text(viewModel.profile?.summary ?? entry.subtitle)
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Color.accentDefault)
@@ -869,7 +869,7 @@ private struct BeliefTopicView: View {
     private func topicSection<Content: View>(title: String, more: HomeRoute, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(title).font(.custom(AppFont.serif[0], size: 19).weight(.semibold))
+                Text(title).font(AppTypography.title(19))
                 Spacer()
                 NavigationLink(value: more) { Text("更多").font(.system(size: 13)).foregroundStyle(Color.accentDefault) }
             }

@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.text.primary,
   },
   rating: {
@@ -243,6 +243,6 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 13,
     color: colors.brand.default,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

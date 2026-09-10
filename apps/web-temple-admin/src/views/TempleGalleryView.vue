@@ -122,9 +122,9 @@ onMounted(loadData)
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 .gallery-item { overflow: hidden; border: 1px solid #e8e0d8; border-radius: 8px; background: #fff; }
 .gallery-image, .gallery-fallback { display: flex; width: 100%; height: 180px; align-items: center; justify-content: center; }
-.gallery-fallback { color: #8a7a6a; background: #f5f0eb; font-size: 13px; }
+.gallery-fallback { color: #8a7a6a; background: #f5f0eb; font-size: var(--type-size-label); }
 .gallery-meta { display: flex; min-height: 52px; padding: 8px 10px; align-items: center; justify-content: space-between; }
-.sort { margin-left: 8px; color: #8a7a6a; font-size: 12px; }
+.sort { margin-left: 8px; color: #8a7a6a; font-size: var(--type-size-caption); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 720px) { .gallery-grid, .form-row { grid-template-columns: 1fr; } }
 </style>

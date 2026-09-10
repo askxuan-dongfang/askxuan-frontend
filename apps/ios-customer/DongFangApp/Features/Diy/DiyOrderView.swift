@@ -98,7 +98,7 @@ struct DiyOrderView: View {
             HStack(alignment: .bottom, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(viewModel.currentDesign?.name ?? "我的手串")
-                        .font(.custom(AppFont.serif[0], size: 17).weight(.bold))
+                        .font(AppTypography.title(17))
                         .foregroundStyle(Color.textPrimary)
                     Text("\(checkoutSlots.count) 颗 · \(materialLines.count) 种材料")
                         .font(.system(size: 10))
@@ -106,7 +106,7 @@ struct DiyOrderView: View {
                 }
                 Spacer()
                 Text("¥\(String(format: "%.2f", viewModel.currentDesign?.totalPrice ?? viewModel.totalPrice))")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(Color.brandDefault)
             }
             .padding(.horizontal, AppSpacing.md)
@@ -318,7 +318,7 @@ struct DiyOrderView: View {
                     }
                     Spacer()
                     Text("+\(service.priceText)")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.brandDefault)
                 }
                 .padding(AppSpacing.md)
@@ -414,7 +414,7 @@ struct DiyOrderView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(Color.textTertiary)
                 Text(totalFeeText)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(Color.brandDefault)
             }
             Spacer()
@@ -544,7 +544,7 @@ private struct DiyPaymentFlowView: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(Color.textPrimary)
             Text("¥\(String(format: "%.2f", order.totalFee))")
-                .font(.system(size: 30, weight: .bold))
+                .font(.system(size: 30, weight: .semibold))
                 .foregroundStyle(Color.brandDefault)
             Text(order.orderNo)
                 .font(.system(size: 12))
@@ -708,7 +708,7 @@ private struct DiyOrderResultDetailView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(item.materialName)
                                 Text("\(item.spec) × \(item.quantity)")
-                                    .font(.caption)
+                                    .font(AppTypography.caption)
                                     .foregroundStyle(Color.textTertiary)
                             }
                             Spacer()

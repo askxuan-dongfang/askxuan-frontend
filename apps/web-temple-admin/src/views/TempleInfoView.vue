@@ -151,14 +151,14 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: 'Noto Serif SC', serif;
-  font-size: 15px;
-  font-weight: 600;
+  font-family: var(--font-serif);
+  font-size: var(--type-size-control);
+  font-weight: var(--type-weight-semibold);
   color: #2a1e1a;
   margin-bottom: 16px;
 }
 .cover-preview-label {
-  font-size: 12px;
+  font-size: var(--type-size-caption);
   color: #8a7a6a;
   margin: 16px 0 8px;
 }
