@@ -57,9 +57,9 @@ instance.interceptors.response.use(
     if (res === null || typeof res !== 'object' || !('code' in res)) {
       return res as any
     }
-    // 非 0 code 视为业务错误；40101 表示 JWT 失效，触发登出
+    // 网关以业务码返回未登录、凭证无效和过期，需要统一退出失效会话。
     if (res.code !== 0) {
-      if (res.code === 40101) {
+      if ([40101, 40102, 40103].includes(res.code)) {
         localStorage.removeItem('df_platform_admin_token')
         localStorage.removeItem('df_platform_admin_refresh_token')
         ElMessage.error('登录已过期，请重新登录')

@@ -79,20 +79,22 @@ struct ShopView: View {
             .refreshable { if loadsRemoteData { await viewModel.load(); await viewModel.loadCategories() } }
     }
     private func hero(action: @escaping () -> Void) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 15) {
-                Text("一份心意 · 一种日常").font(Font.custom("HelveticaNeue", size: 12, relativeTo: .body)).foregroundStyle(Color.accentDefault)
-                Text("把喜欢的，\n留在生活里。").font(AppTypography.title(30))
-                Text("从随身小物，到案头清欢。\n慢慢挑选，与心意相逢。").font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body)).lineSpacing(5).foregroundStyle(Color.textSecondary)
+        VStack(alignment: .leading, spacing: 15) {
+            Text("一份心意 · 一种日常").font(Font.custom("HelveticaNeue", size: 12, relativeTo: .body)).foregroundStyle(Color.accentDefault)
+            Text("把喜欢的，\n留在生活里。").font(AppTypography.title(30))
+            Text("从随身小物，到案头清欢。\n慢慢挑选，与心意相逢。").font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body)).lineSpacing(5).foregroundStyle(Color.textSecondary)
+            HStack {
                 Button(action: action) { Text("逛逛好物 ↓").font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body)).padding(.vertical, 11).padding(.horizontal, 18).overlay(Capsule().stroke(Color.accentDefault.opacity(0.5))) }.tint(Color.accentDefault)
+                Spacer()
             }
-            Spacer(minLength: 0)
-            ZStack {
-                Circle().stroke(Color.accentDefault.opacity(0.2)).frame(width: 92, height: 92)
-                ForEach(0..<12) { i in Circle().fill(Color.accentDefault.opacity(0.6)).frame(width: 14, height: 14).offset(y: -37).rotationEffect(.degrees(Double(i) * 30)) }
-                Text("缘").font(AppTypography.title(25)).foregroundStyle(Color.accentDefault)
-            }.frame(width: 96).accessibilityHidden(true)
-        }.padding(22).frame(maxWidth: .infinity, alignment: .leading)
+        }.frame(maxWidth: .infinity, alignment: .leading).padding(22)
+            .background(alignment: .bottomTrailing) {
+                ZStack {
+                    Circle().stroke(Color.accentDefault.opacity(0.2)).frame(width: 78, height: 78)
+                    ForEach(0..<12) { i in Circle().fill(Color.accentDefault.opacity(0.6)).frame(width: 12, height: 12).offset(y: -32).rotationEffect(.degrees(Double(i) * 30)) }
+                    Text("缘").font(AppTypography.title(23)).foregroundStyle(Color.accentDefault)
+                }.frame(width: 82, height: 82).padding(16).opacity(0.5).accessibilityHidden(true)
+            }
             .background(LinearGradient(colors: [Color.accentDefault.opacity(0.2), Color.bgSecondary], startPoint: .topLeading, endPoint: .bottomTrailing))
             .clipShape(RoundedRectangle(cornerRadius: 24)).overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.accentDefault.opacity(0.3)))
     }

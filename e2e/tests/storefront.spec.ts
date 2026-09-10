@@ -248,6 +248,8 @@ async function adminFixture(page: Page, failDetail = false) {
     ).toString("base64url") +
     ".fixture";
   await page.addInitScript((t) => {
+    if (sessionStorage.getItem("storeSeeded")) return;
+    sessionStorage.setItem("storeSeeded", "1");
     localStorage.setItem("df_platform_admin_token", t);
     localStorage.setItem(
       "df_platform_admin_user",
@@ -386,3 +388,11 @@ for (const width of [390, 1440])
       "随身好物",
     );
   });
+
+for (const code of [40102, 40103]) test(`expired admin session redirects on business code ${code}`, async ({ page }) => {
+  await adminFixture(page);
+  await page.route('**/api/v1/admin/products?**', route => route.fulfill({json:{code,message:'token 无效'}}));
+  await page.goto(admin + '/commerce/products');
+  await expect(page).toHaveURL(/\/admin\/login$/);
+  await expect(page.getByPlaceholder('管理员账号')).toBeVisible();
+});
