@@ -236,7 +236,7 @@ onMounted(() => {
           <div class="catalog-preview-copy">
             <small>{{ row.categoryName || "东方好物" }}</small>
             <h3>{{ row.name }}</h3>
-            <p>{{ row.description || "尚未填写商品介绍" }}</p>
+
             <strong>{{ formatMoney(row.price) }}</strong
             ><StatusTag :status="row.status" domain="product" />
           </div>
@@ -444,7 +444,7 @@ onMounted(() => {
   color: var(--text-light);
 }
 .catalog-preview-copy h3 {
-  font: 600 18px/1.6 var(--font-serif);
+  font: 500 14px/1.55 var(--font-sans);
   margin: 7px 0;
 }
 .catalog-preview-copy p {

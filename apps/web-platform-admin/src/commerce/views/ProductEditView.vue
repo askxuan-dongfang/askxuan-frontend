@@ -319,7 +319,11 @@ watch(() => route.params.id, loadDetail, { immediate: true });
           <span>实时预览</span>
         </div>
         <div class="store-preview-device">
-          <div class="store-preview-brand">好物，有心</div>
+          <div class="store-preview-brand">商城 <small>购物车</small></div>
+          <div class="store-preview-search">搜索商品名称 <span>搜索</span></div>
+          <div class="store-preview-category">
+            全部商品　 /　{{ categoryName }}
+          </div>
           <article class="store-preview-product">
             <div class="store-preview-media">
               <el-image v-if="imageValid" :src="form.mainImage" fit="cover"
@@ -331,9 +335,7 @@ watch(() => route.params.id, loadDetail, { immediate: true });
               ><small v-else-if="tagList[0]">{{ tagList[0] }}</small>
             </div>
             <div class="store-preview-copy">
-              <small>{{ categoryName }}</small>
               <h3>{{ form.name || "给这份好物一个名字" }}</h3>
-              <p>{{ form.description || "补充材质、工艺与使用细节" }}</p>
               <div>
                 <strong>¥{{ Number(form.price || 0).toFixed(2) }}</strong
                 ><del v-if="(form.marketPrice || 0) > form.price"
@@ -351,7 +353,9 @@ watch(() => route.params.id, loadDetail, { immediate: true });
               item.ok ? "已就绪" : "待完善"
             }}</b>
           </p>
-          <small>预览不会创建订单或改变商品状态。</small>
+          <small
+            >列表突出主图、名称与价格；完整介绍显示在商品详情。预览不会改变商品状态。</small
+          >
         </section>
         <a
           v-if="isEdit"
@@ -459,7 +463,34 @@ watch(() => route.params.id, loadDetail, { immediate: true });
   margin: 0 0 18px;
   color: #c8a96e;
 }
+.store-preview-brand small {
+  float: right;
+  font: 12px var(--font-sans);
+  padding-top: 8px;
+}
+.store-preview-search {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #c8a96e;
+  border-radius: 24px;
+  padding: 5px 5px 5px 13px;
+  font-size: 11px;
+  color: #bba794;
+}
+.store-preview-search span {
+  background: #c45a3c;
+  color: white;
+  padding: 6px 13px;
+  border-radius: 18px;
+}
+.store-preview-category {
+  font-size: 11px;
+  padding: 14px 0;
+  color: #c8a96e;
+}
 .store-preview-product {
+  max-width: 200px;
   border: 1px solid #c8a96e33;
   border-radius: 17px;
   overflow: hidden;
@@ -496,14 +527,14 @@ watch(() => route.params.id, loadDetail, { immediate: true });
   text-overflow: ellipsis;
 }
 .store-preview-copy {
-  padding: 14px;
+  padding: 10px;
 }
 .store-preview-copy > small {
   color: #968675;
   font-size: 11px;
 }
 .store-preview-copy h3 {
-  font: 600 18px/1.6 var(--font-serif);
+  font: 500 14px/1.55 var(--font-sans);
   margin: 8px 0;
   overflow-wrap: anywhere;
 }
@@ -521,7 +552,7 @@ watch(() => route.params.id, loadDetail, { immediate: true });
   flex-wrap: wrap;
 }
 .store-preview-copy strong {
-  color: #c8a96e;
+  color: #e17b5b;
   font-size: 22px;
   font-variant-numeric: tabular-nums;
 }

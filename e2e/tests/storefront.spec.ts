@@ -145,8 +145,10 @@ for (const width of [320, 390, 768])
       ),
     ).toBeTruthy();
     await page.screenshot({ path: `/private/tmp/askxuan-store-${width}.png` });
-    await page.getByRole("button", { name: "逛逛好物" }).click();
-    await page.waitForTimeout(400);
+    expect(
+      (await page.locator(".store-product").first().boundingBox())!.y,
+    ).toBeLessThan(600);
+    await page.locator(".store-product").first().scrollIntoViewIfNeeded();
     await page.screenshot({
       path: `/private/tmp/askxuan-store-catalog-${width}.png`,
     });
@@ -200,21 +202,26 @@ test("pagination failure retries same page without duplicating items", async ({
 });
 test("SKU stock, cents, gallery and cart feedback", async ({ page }) => {
   await fixtures(page);
+  await page.setViewportSize({ width: 390, height: 900 });
   await page.goto(h5 + "/c/shop/1");
   await expect(
     page.getByRole("button", { name: "加入购物车", exact: true }),
   ).toBeEnabled();
+  await page.getByRole("button", { name: "加入购物车", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByRole("button", { name: /特大号/ })).toBeDisabled();
   await page.getByRole("button", { name: /尺寸 · 大号/ }).click();
   await expect(page.locator(".store-detail-copy")).toContainText("78.80");
   await page.getByRole("button", { name: "增加数量" }).click();
   await page.getByRole("button", { name: "增加数量" }).click();
   await expect(page.getByRole("button", { name: "增加数量" })).toBeDisabled();
+  await page.screenshot({ path: "/private/tmp/askxuan-market-sheet.png" });
+  await page.getByRole("button", { name: "确认加入购物车" }).click();
   await page.getByRole("button", { name: "查看商品图片2" }).click();
   await expect(
     page.getByRole("button", { name: "查看商品图片2" }),
   ).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "加入购物车", exact: true }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect(page.locator(".store-detail-cart-note")).toContainText(
     "已放入购物车",
   );
@@ -256,6 +263,12 @@ async function adminFixture(page: Page, failDetail = false) {
       JSON.stringify({ userId: 9901, nickname: "本地商城验收" }),
     );
   }, token);
+  await page.route("**/fixture-product.svg", (r) =>
+    r.fulfill({
+      contentType: "image/svg+xml",
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500"><rect width="500" height="500" fill="#423021"/><circle cx="250" cy="250" r="130" stroke="#c6a066" stroke-width="44" fill="none"/></svg>',
+    }),
+  );
   const saved: any[] = [];
   await page.route("**/api/v1/**", (r) => {
     const p = new URL(r.request().url()).pathname;
@@ -370,7 +383,7 @@ for (const width of [390, 1440])
       page.getByText("天然香珠手串", { exact: true }).first(),
     ).toBeVisible();
     await page.getByText("顾客视角", { exact: true }).click();
-    await expect(page.getByRole("radio", {name:"顾客视角"})).toBeChecked();
+    await expect(page.getByRole("radio", { name: "顾客视角" })).toBeChecked();
     await expect(page.locator(".catalog-preview-grid article")).toContainText(
       product.name,
     );
@@ -389,10 +402,248 @@ for (const width of [390, 1440])
     );
   });
 
-for (const code of [40102, 40103]) test(`expired admin session redirects on business code ${code}`, async ({ page }) => {
-  await adminFixture(page);
-  await page.route('**/api/v1/admin/products?**', route => route.fulfill({json:{code,message:'token 无效'}}));
-  await page.goto(admin + '/commerce/products');
-  await expect(page).toHaveURL(/\/admin\/login$/);
-  await expect(page.getByPlaceholder('管理员账号')).toBeVisible();
+for (const code of [40102, 40103])
+  test(`expired admin session redirects on business code ${code}`, async ({
+    page,
+  }) => {
+    await adminFixture(page);
+    await page.route("**/api/v1/admin/products?**", (route) =>
+      route.fulfill({ json: { code, message: "token 无效" } }),
+    );
+    await page.goto(admin + "/commerce/products");
+    await expect(page).toHaveURL(/\/admin\/login$/);
+    await expect(page.getByPlaceholder("管理员账号")).toBeVisible();
+  });
+
+// Local-only checkout fixtures: no production orders or payments are created.
+const basketItem = (
+  skuId: number,
+  name: string,
+  price: number,
+  quantity = 1,
+) => ({
+  productId: 1,
+  skuId,
+  productName: name,
+  skuSpec: skuId === 11 ? "尺寸：小号" : "尺寸：大号",
+  image: "/fixture-product.svg",
+  price,
+  quantity,
+  stock: 3,
+});
+async function checkoutFixture(
+  page: Page,
+  { failCreate = false, stockChanged = false } = {},
+) {
+  await fixtures(page);
+  const calls: any[] = [],
+    payments: any[] = [];
+  let paid = false,
+    failed = false;
+  await page.addInitScript(
+    (items) => {
+      if (!sessionStorage.getItem("cartSeeded")) {
+        localStorage.setItem(
+          "askxuan-cart-v1",
+          JSON.stringify({ state: { baskets: { "1": items } }, version: 0 }),
+        );
+        sessionStorage.setItem("cartSeeded", "1");
+      }
+    },
+    [basketItem(11, "小号手串", 68.35, 2), basketItem(12, "大号手串", 78.8)],
+  );
+  await page.route("**/api/v1/users/addresses", (r) =>
+    r.fulfill({
+      json: {
+        code: 0,
+        data: {
+          list: [
+            {
+              id: 5,
+              name: "本地验收",
+              phone: "13800000000",
+              province: "上海市",
+              city: "上海市",
+              district: "浦东新区",
+              detail: "测试地址，不发货",
+              isDefault: true,
+            },
+          ],
+        },
+      },
+    }),
+  );
+  const order = () => ({
+    id: 81,
+    orderNo: "LOCAL-81",
+    status: paid ? "paid" : "pending_payment",
+    payAmount: 136.7,
+    totalAmount: 136.7,
+    items: calls[0]?.items || [],
+    userId: "1",
+    addressId: 5,
+    createTime: "2026-09-10T12:00:00",
+  });
+  await page.route("**/api/v1/orders", async (r) => {
+    if (r.request().method() !== "POST") return r.fallback();
+    calls.push(r.request().postDataJSON());
+    if (failCreate && !failed) {
+      failed = true;
+      return r.fulfill({
+        status: 503,
+        json: { code: 500, message: "网络中断，请重试" },
+      });
+    }
+    return r.fulfill({
+      json: { code: 0, data: { id: 81, orderNo: "LOCAL-81" } },
+    });
+  });
+  await page.route("**/api/v1/orders/81", (r) =>
+    r.fulfill({ json: { code: 0, data: order() } }),
+  );
+  await page.route("**/api/v1/orders/81/returns", (r) =>
+    r.fulfill({ json: { code: 0, data: [] } }),
+  );
+  await page.route("**/api/v1/payments", (r) => {
+    payments.push(r.request().postDataJSON());
+    paid = true;
+    return r.fulfill({
+      json: { code: 0, data: { id: 91, paymentNo: "LOCAL-PAY" } },
+    });
+  });
+  await page.route("**/api/v1/payments/91", (r) =>
+    r.fulfill({
+      json: {
+        code: 0,
+        data: {
+          id: 91,
+          status: "success",
+          amount: 136.7,
+          paymentNo: "LOCAL-PAY",
+        },
+      },
+    }),
+  );
+  if (stockChanged)
+    await page.route("**/api/v1/products/1", (r) =>
+      r.fulfill({
+        json: { code: 0, data: { ...product, stock: 0, skus: [] } },
+      }),
+    );
+  return { calls, payments };
+}
+test("selected cart checkout survives reload and preserves unselected items", async ({
+  page,
+}) => {
+  const { calls, payments } = await checkoutFixture(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto(h5 + "/c/shop/cart");
+  await page.getByRole("checkbox", { name: "选择大号手串" }).uncheck();
+  await expect(page.locator(".market-cart-bar")).toContainText("136.70");
+  await page.screenshot({ path: "/private/tmp/askxuan-market-cart-320.png" });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBeTruthy();
+  await page.getByRole("button", { name: "去结算 (2)" }).click();
+  await page.reload();
+  await expect(
+    page.getByRole("region", { name: "本次结算商品" }),
+  ).not.toContainText("大号手串");
+  await expect(
+    page.getByRole("button", { name: "提交并模拟支付" }),
+  ).toBeEnabled();
+  await page.screenshot({
+    path: "/private/tmp/askxuan-market-checkout-320.png",
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "提交并模拟支付" }).click();
+  await expect(page).toHaveURL(/orders\/81/);
+  expect(calls).toHaveLength(1);
+  expect(calls[0].items.map((i: any) => i.skuId)).toEqual([11]);
+  expect(calls[0].items[0].quantity).toBe(2);
+  expect(payments[0].amount).toBe(136.7);
+  await page.goto(h5 + "/c/shop/cart");
+  await expect(page.locator(".market-cart-item")).toHaveCount(1);
+  await expect(page.locator(".market-cart-item")).toContainText("大号手串");
+});
+test("buy now creates a separate checkout and leaves cart untouched", async ({
+  page,
+}) => {
+  const { calls } = await checkoutFixture(page);
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto(h5 + "/c/shop/1");
+  await page.getByRole("button", { name: "立即购买", exact: true }).click();
+  await page.getByRole("button", { name: "确认并去结算" }).click();
+  await expect(page.locator(".market-cart-item")).toHaveCount(1);
+  await expect(page.locator(".market-cart-bar")).toContainText("68.35");
+  await page.getByRole("button", { name: "提交并模拟支付" }).click();
+  await expect(page).toHaveURL(/orders\/81/);
+  expect(calls[0].items).toHaveLength(1);
+  expect(calls[0].items[0].quantity).toBe(1);
+  await page.goto(h5 + "/c/shop/cart");
+  await expect(page.locator(".market-cart-item")).toHaveCount(2);
+  await expect(page.locator(".market-cart-bar")).toContainText("215.50");
+});
+test("checkout retry after refresh reuses the original request", async ({
+  page,
+}) => {
+  const { calls } = await checkoutFixture(page, { failCreate: true });
+  await page.goto(h5 + "/c/shop/cart");
+  await page.getByRole("button", { name: "去结算 (3)" }).click();
+  await page.getByRole("button", { name: "提交并模拟支付" }).click();
+  await expect(page.getByRole("alert")).toContainText("网络中断");
+  await page.reload();
+  await page.getByRole("button", { name: "提交并模拟支付" }).click();
+  await expect(page).toHaveURL(/orders\/81/);
+  expect(calls).toHaveLength(2);
+  expect(calls[1]).toEqual(calls[0]);
+});
+test("sold out cart item blocks checkout without writing an order", async ({
+  page,
+}) => {
+  const { calls } = await checkoutFixture(page, { stockChanged: true });
+  await page.goto(h5 + "/c/shop/cart");
+  await page.getByRole("button", { name: "去结算 (3)" }).click();
+  await page.getByRole("button", { name: "提交并模拟支付" }).click();
+  await expect(page.getByRole("alert")).toContainText("库存不足");
+  expect(calls).toHaveLength(0);
+});
+test("order cards show real status and totals without fabricated payment success", async ({
+  page,
+}) => {
+  await fixtures(page);
+  await page.route("**/api/v1/orders?*", (r) =>
+    r.fulfill({
+      json: {
+        code: 0,
+        data: {
+          list: [
+            {
+              id: 81,
+              orderNo: "LOCAL-81",
+              status: "pending_payment",
+              payAmount: 136.7,
+              totalAmount: 136.7,
+              items: [{ id: 1, ...basketItem(11, "小号手串", 68.35, 2) }],
+            },
+          ],
+          total: 1,
+        },
+      },
+    }),
+  );
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto(h5 + "/c/shop/orders");
+  await expect(page.locator(".market-order")).toContainText("待付款");
+  await expect(page.locator(".market-order")).toContainText("共 2 件");
+  await expect(page.locator(".market-order")).not.toContainText("模拟支付成功");
+  await expect(page.getByRole("link", { name: "去付款" })).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBeTruthy();
+  await page.screenshot({ path: "/private/tmp/askxuan-market-orders-320.png" });
 });

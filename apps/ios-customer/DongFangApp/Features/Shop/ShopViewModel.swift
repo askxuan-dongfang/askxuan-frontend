@@ -149,7 +149,7 @@ final class ShopCartStore: ObservableObject {
         let safeQuantity = max(1, min(99, min(quantity, sku?.stock ?? product.stock)))
         if let index = items.firstIndex(where: { $0.id == key }) {
             var updated = items[index]
-            updated.quantity = min(updated.stock, updated.quantity + safeQuantity)
+            updated.quantity = min(99, min(updated.stock, updated.quantity + safeQuantity))
             items[index] = updated
             return
         }
@@ -170,12 +170,23 @@ final class ShopCartStore: ObservableObject {
         if quantity <= 0 {
             items.remove(at: index)
         } else {
-            items[index].quantity = min(items[index].stock, quantity)
+            items[index].quantity = min(99, min(items[index].stock, quantity))
         }
     }
 
     func remove(_ item: ShopCartItem) { items.removeAll { $0.id == item.id } }
     func clear() { items.removeAll() }
+    /// Only remove the purchased quantities, preserving unselected and subsequently added items.
+    func consume(_ purchased: [ShopCartItem]) {
+        items = Self.remaining(items, after: purchased)
+    }
+    static func remaining(_ items: [ShopCartItem], after purchased: [ShopCartItem]) -> [ShopCartItem] {
+        items.compactMap { item in
+            var remaining = item
+            remaining.quantity -= purchased.filter { $0.id == item.id }.reduce(0) { $0 + $1.quantity }
+            return remaining.quantity > 0 ? remaining : nil
+        }
+    }
 
     private func persist() {
         guard let data = try? JSONEncoder().encode(items) else { return }
@@ -253,6 +264,8 @@ final class ShopCheckoutViewModel: ObservableObject {
         errorMessage = nil
         defer { isSubmitting = false }
 
+        let account = authStore.userId
+        guard authStore.isLoggedIn, pendingRequest == nil || pendingRequest?.userId == account else { return false }
         let request = pendingRequest ?? ShopOrderCreateRequest(
             requestId: UUID().uuidString.lowercased(),
             userId: authStore.userId,
@@ -272,10 +285,13 @@ final class ShopCheckoutViewModel: ObservableObject {
                     let sku=p.skus?.first(where:{$0.id==item.skuId})
                     guard p.status=="on_shelf",(item.skuId==0 || sku != nil),(sku?.stock ?? p.stock)>=item.quantity,abs((sku?.price ?? p.price)-item.unitPrice)<0.005 else {throw NSError(domain:"Commerce",code:409,userInfo:[NSLocalizedDescriptionKey:"\(item.productName) 的价格或库存已变化，请重新加入购物车后确认"])}
                 }
+                guard authStore.userId == account else { return false }
                 pendingRequest=request
             }
             if createdOrderID == nil {let created:ShopOrderCreateResult=try await apiClient.request(.shopOrderCreate(pendingRequest!));createdOrderID=created.id}
+            guard authStore.userId == account else { return false }
             let order: ShopOrder = try await apiClient.request(.shopOrderById(createdOrderID!))
+            guard authStore.userId == account else { return false }
             completedOrder=order
             let paymentResult: PaymentCreateResult = try await apiClient.request(
                 .paymentCreate(PaymentCreateRequest(orderType: "shop_order", orderNo: order.orderNo,
@@ -285,7 +301,7 @@ final class ShopCheckoutViewModel: ObservableObject {
             let paymentRecord: PaymentRecord = try await apiClient.request(.paymentById(paymentResult.id))
             completedOrder = order
             payment = paymentRecord
-            return paymentRecord.status == "success"
+            return authStore.userId == account && paymentRecord.status == "success"
         } catch {
             errorMessage = error.localizedDescription
             return false

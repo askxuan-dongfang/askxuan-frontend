@@ -189,6 +189,16 @@ private struct RewardWheelMotionFixture: View {
 }
 
 @MainActor final class StorefrontNativeTests: XCTestCase {
+    func testPurchasedQuantitiesPreserveOtherSelectionsAndLaterAdditions() {
+        let first = ShopCartItem(productId: 1, skuId: 11, productName: "小号", skuSpec: "小", image: "", unitPrice: 68.35, quantity: 3, stock: 10)
+        let second = ShopCartItem(productId: 1, skuId: 12, productName: "大号", skuSpec: "大", image: "", unitPrice: 78.8, quantity: 1, stock: 10)
+        var purchased = first; purchased.quantity = 2
+        let remaining = ShopCartStore.remaining([first, second], after: [purchased])
+        XCTAssertEqual(remaining.map(\.id), ["1:11", "1:12"])
+        XCTAssertEqual(remaining.map(\.quantity), [1, 1])
+        XCTAssertEqual(ShopCartStore.remaining([first, second], after: [first]).map(\.id), ["1:12"])
+    }
+
     func testCatalogNavigationAndServerFilters() {
         let child = ProductCategory(id: 8, parentId: 7, name: "线香", level: 2, sort: 0, children: nil)
         let rows = [ProductCategory(id: 7, parentId: 0, name: "草木与香", level: 1, sort: 2, children: [child]), ProductCategory(id: 9, parentId: 0, name: "随身好物", level: 1, sort: 1, children: nil)]
