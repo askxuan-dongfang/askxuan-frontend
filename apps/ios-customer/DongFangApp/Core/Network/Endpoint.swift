@@ -69,6 +69,9 @@ struct LiveRoomListResponse: Decodable {
 }
 
 struct CommunityAsset: Decodable, Identifiable {
+    let url: String?
+    let coverUrl: String?
+    let duration: Double?
     let id: Int64
     let mediaId: Int64
     let assetType: String
@@ -87,6 +90,8 @@ struct CommunityPost: Decodable, Identifiable, Hashable {
     let likeCount: Int64
     let commentCount: Int64
     let liked: Bool
+    let following: Bool?
+    let coverUrl: String?
     let assets: [CommunityAsset]
     let createTime: String
 
@@ -241,7 +246,7 @@ enum Endpoint {
 	case mediaComplete(id: Int64, MediaCompleteRequest)
 
     // MARK: - 社区内容 / 大师广场
-    case communityFeed(type: String?, beliefCode: String?, page: Int, size: Int)
+    case communityFeed(type: String?, beliefCode: String?, page: Int, size: Int, following: Bool = false, keyword: String? = nil, sort: String = "latest")
     case communityPostById(String)
     case communityPostLike(String)
     case communityPostUnlike(String)
@@ -563,11 +568,14 @@ enum Endpoint {
             return [URLQueryItem(name: "userId", value: userId),
                     URLQueryItem(name: "page", value: "\(page)"),
                     URLQueryItem(name: "size", value: "\(size)")]
-        case .communityFeed(let type, let beliefCode, let page, let size):
+        case .communityFeed(let type, let beliefCode, let page, let size, let following, let keyword, let sort):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
                          URLQueryItem(name: "size", value: "\(size)")]
             if let type, !type.isEmpty { items.append(URLQueryItem(name: "type", value: type)) }
             if let beliefCode, !beliefCode.isEmpty { items.append(URLQueryItem(name: "beliefCode", value: beliefCode)) }
+            if following { items.append(URLQueryItem(name: "following", value: "true")) }
+            if let keyword, !keyword.isEmpty { items.append(URLQueryItem(name: "keyword", value: keyword)) }
+            items.append(URLQueryItem(name: "sort", value: sort))
             return items
         case .communityComments(_, let page, let size):
             return [URLQueryItem(name: "page", value: "\(page)"),

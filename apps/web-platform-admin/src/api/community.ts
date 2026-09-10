@@ -12,6 +12,8 @@ export interface CommunityPost {
   likeCount: number
   commentCount: number
   createTime: string
+  coverUrl?: string
+  assets?: Array<{ id: number; mediaId: number; assetType: string; url?: string; coverUrl?: string }>
 }
 
 export interface CommunityComment {

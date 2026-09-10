@@ -204,10 +204,7 @@ struct AiReportWorkspace: View {
                             if line.hasPrefix("#") { Button(line.trimmingCharacters(in: CharacterSet(charactersIn: "# "))) { withAnimation(reduceMotion ? nil : .easeInOut) { proxy.scrollTo("chapter-\(index)", anchor: .top) } }.font(.subheadline).padding(.vertical, 5) }
                         }
                     }
-                    ForEach(Array(r.content.components(separatedBy: "\n").enumerated()), id: \.offset) { index, line in
-                        if line.hasPrefix("#") { Text(line.trimmingCharacters(in: CharacterSet(charactersIn: "# "))).font(AppTypography.title(largeType ? 24 : 20)).foregroundStyle(accent).padding(.top, 20).id("chapter-\(index)") }
-                        else if !line.isEmpty { Text(.init(line)).font(largeType ? .title3 : .body).foregroundStyle(Color(red: 0.26, green: 0.31, blue: 0.25)).textSelection(.enabled).lineSpacing(8) }
-                    }
+                    AiMarkdownText(text: r.content, large: largeType).foregroundStyle(Color(red: 0.26, green: 0.31, blue: 0.25))
                     Text("✦ 让解读回到生活，让行动带来答案。").font(AppTypography.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 20);
  ShareLink(item: r.title + "\n\n" + r.content) { Label("保存或分享报告", systemImage: "square.and.arrow.up") }; primary("围绕这份报告继续问事 →") { Task { await followup(r) } }; Text("自动带入报告内容，聊天按账户正常额度使用。").font(.footnote).foregroundStyle(.secondary) }
             } else {
@@ -353,5 +350,61 @@ struct AiTopicTile: View {
                 Spacer(minLength: 10)
             }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
         }.frame(height: 143).background(AiTopicPresentation(code: topic.code).color.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(AiTopicPresentation(code: topic.code).color.opacity(0.2)))
+    }
+}
+
+
+// Block layout plus Foundation inline Markdown, shared by streamed answers and saved reports.
+struct AiMarkdownText: View {
+    let text: String
+    var large = false
+    private struct Block: Identifiable { let id: Int; let kind: String; let value: String }
+    private var blocks: [Block] {
+        let lines = text.components(separatedBy: "\n"); var result: [Block] = []; var i = 0
+        while i < lines.count {
+            let line = lines[i]; let trim = line.trimmingCharacters(in: .whitespaces)
+            if trim.hasPrefix("```") {
+                let start = i; i += 1; var code: [String] = []
+                while i < lines.count && !lines[i].trimmingCharacters(in: .whitespaces).hasPrefix("```") { code.append(lines[i]); i += 1 }
+                result.append(Block(id: start, kind: "code", value: code.joined(separator: "\n")))
+            } else if trim.hasPrefix("|"), i + 1 < lines.count, lines[i + 1].contains("---") {
+                let start = i; var table = [line]; i += 2
+                while i < lines.count && lines[i].trimmingCharacters(in: .whitespaces).hasPrefix("|") { table.append(lines[i]); i += 1 }
+                result.append(Block(id: start, kind: "table", value: table.joined(separator: "\n"))); continue
+            } else if trim.range(of: "^#{1,6}\\s+", options: .regularExpression) != nil {
+                result.append(Block(id: i, kind: "heading", value: trim.replacingOccurrences(of: "^#{1,6}\\s+", with: "", options: .regularExpression)))
+            } else if ["---", "***", "___"].contains(trim) { result.append(Block(id: i, kind: "rule", value: ""))
+            } else if trim.hasPrefix("> ") { result.append(Block(id: i, kind: "quote", value: String(trim.dropFirst(2))))
+            } else if trim.range(of: "^[-*+]\\s+", options: .regularExpression) != nil { result.append(Block(id: i, kind: "list", value: trim.replacingOccurrences(of: "^[-*+]\\s+", with: "", options: .regularExpression)))
+            } else if !trim.isEmpty { result.append(Block(id: i, kind: "text", value: line)) }
+            i += 1
+        }
+        return result
+    }
+    private func inline(_ value: String) -> AttributedString {
+        var parsed = (try? AttributedString(markdown: value, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(value)
+        for run in parsed.runs { if let link = run.link, !["https", "http", "mailto"].contains(link.scheme?.lowercased() ?? "") { parsed[run.range].link = nil } }
+        return parsed
+    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(blocks) { block in
+                Group {
+                    switch block.kind {
+                    case "heading": Text(inline(block.value)).font(.system(size: large ? 23 : 18, weight: .semibold)).padding(.top, 10)
+                    case "rule": Divider().padding(.vertical, 8)
+                    case "code": ScrollView(.horizontal) { Text(block.value).font(.system(size: 12, design: .monospaced)).padding(12) }.background(.primary.opacity(0.05)).clipShape(RoundedRectangle(cornerRadius: 8))
+                    case "quote": HStack(alignment: .top, spacing: 10) { Rectangle().fill(.primary.opacity(0.35)).frame(width: 3); Text(inline(block.value)).padding(.vertical, 5) }.fixedSize(horizontal: false, vertical: true).padding(.horizontal, 8).background(.primary.opacity(0.04))
+                    case "list": HStack(alignment: .top, spacing: 9) { Text("•"); Text(inline(block.value)).frame(maxWidth: .infinity, alignment: .leading) }
+                    case "table": table(block.value)
+                    default: Text(inline(block.value))
+                    }
+                }.id("chapter-\(block.id)")
+            }
+        }.font(large ? .title3 : .body).lineSpacing(5).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
+    }
+    private func table(_ value: String) -> some View {
+        let rows = value.components(separatedBy: "\n").map { line in line.trimmingCharacters(in: CharacterSet(charactersIn: "| ")).components(separatedBy: "|") }
+        return ScrollView(.horizontal) { VStack(alignment: .leading, spacing: 0) { ForEach(Array(rows.enumerated()), id: \.offset) { index, row in HStack(alignment: .top, spacing: 0) { ForEach(Array(row.enumerated()), id: \.offset) { _, cell in Text(inline(cell.trimmingCharacters(in: .whitespaces))).font(.system(size: 13, weight: index == 0 ? .semibold : .regular)).frame(width: 140, alignment: .leading).padding(10) } }.background(.primary.opacity(index == 0 ? 0.07 : 0.02)); Divider() } } }.clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }

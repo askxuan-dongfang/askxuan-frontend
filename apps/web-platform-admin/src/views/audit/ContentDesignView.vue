@@ -45,8 +45,9 @@
         <el-table-column label="提交时间" width="170">
           <template #default="{ row }">{{ formatDate(row.createTime) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column label="操作" width="210" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" @click="preview = row">查看内容</el-button>
             <AuditAction v-if="row.status === 'pending'" :on-confirm="(a, r) => doAudit(row, a, r)" @success="loadData" />
             <span v-else class="muted">已处理</span>
           </template>
@@ -60,6 +61,7 @@
             <div class="mobile-task-card__meta">{{ row.content || '暂无内容摘要' }}</div>
             <div class="mobile-task-card__foot">
               <span>{{ formatDate(row.createTime) }}</span>
+              <el-button link type="primary" @click="preview = row">查看内容</el-button>
               <AuditAction v-if="row.status === 'pending'" :on-confirm="(a, r) => doAudit(row, a, r)" @success="loadData" />
               <b v-else>已处理</b>
             </div>
@@ -67,6 +69,18 @@
         </template>
       </MobileTaskList>
     </div>
+    <el-dialog :model-value="!!preview" title="内容审核预览" width="min(720px, 94vw)" destroy-on-close @close="preview = null">
+      <article v-if="preview" class="community-review-preview">
+        <h2>{{ preview.title }}</h2><p class="review-meta">{{ preview.type === 'video' ? '视频' : '图文' }} · {{ preview.assets?.length || 0 }} 份素材 · 作者 {{ preview.masterId }}</p>
+        <div class="review-media"><template v-for="asset in preview.assets || []" :key="asset.id">
+          <video v-if="asset.assetType === 'video' && asset.url" :src="asset.url" :poster="preview.coverUrl || asset.coverUrl" controls preload="metadata" />
+          <el-image v-else-if="asset.url" :src="asset.url" :preview-src-list="(preview.assets || []).filter(a => a.assetType === 'image' && a.url).map(a => a.url!)" fit="contain" preview-teleported />
+          <el-alert v-else title="素材暂不可预览，请核对后再审核" type="warning" :closable="false" />
+        </template></div>
+        <p class="review-body">{{ preview.content }}</p><el-alert v-if="preview.auditRemark" :title="preview.auditRemark" type="info" :closable="false" />
+      </article>
+      <template #footer><el-button @click="preview = null">关闭预览</el-button><AuditAction v-if="preview?.status === 'pending'" :on-confirm="(a, r) => doAudit(preview!, a, r)" @success="preview = null; loadData()" /></template>
+    </el-dialog>
   </div>
 </template>
 
@@ -83,6 +97,7 @@ import { useAuthStore } from '@/stores/auth'
 import { formatDate } from '@/utils/format'
 import type { CommunityPost } from '@/api/community'
 
+const preview = ref<CommunityPost | null>(null)
 const auth = useAuthStore()
 const loading = ref(false)
 const loadError = ref(false)
@@ -118,6 +133,13 @@ onMounted(loadData)
 </script>
 
 <style scoped>
+.community-review-preview h2 { margin-top: 0; line-height: 1.5; }
+.review-meta { color: var(--el-text-color-secondary); font-size: 12px; }
+.review-media { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.review-media video { grid-column: 1 / -1; width: 100%; max-height: 440px; background: #111; }
+.review-media .el-image { height: 240px; border-radius: 8px; background: var(--el-fill-color-light); }
+.review-body { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.85; margin-top: 20px; }
+@media(max-width:500px) { .review-media { grid-template-columns: minmax(0,1fr); } }
 .filter-bar {
   display: flex;
   gap: 12px;
