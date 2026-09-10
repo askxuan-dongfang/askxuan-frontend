@@ -1201,11 +1201,6 @@ struct PointsView: View {
                     RewardCategoryEntry(kind: "wheel")
                     RewardCategoryEntry(kind: "pool")
                 }.listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0)).listRowBackground(Color.clear)
-                HStack {
-                    NavigationLink("参与记录") { RewardsView(initialTab: 2) }
-                    Spacer()
-                    NavigationLink("我的奖品") { RewardsView(initialTab: 3) }
-                }.font(.subheadline).buttonStyle(.plain)
                 Text("每期参与积分在活动页明示；奖品预算由平台承担，功德值独立成长。").font(.caption).foregroundStyle(.secondary)
             }
             Picker("积分", selection: $tab) { Text("明细").tag(0); Text("积分商城").tag(1); Text("兑换记录").tag(2) }.pickerStyle(.segmented).disabled(busy)
