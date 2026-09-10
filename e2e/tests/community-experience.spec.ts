@@ -41,10 +41,12 @@ test('both chat APIs failing is retryable, not an empty list', async ({ page }) 
 test('filters, search, following and request races', async ({ page }) => { const fixture = await setup(page, { delay: true }); await page.goto('/c/community'); await expect(page.locator('.community-card')).toHaveCount(12); await page.getByRole('button', { name: '图文', exact: true }).click(); await page.getByRole('button', { name: '视频', exact: true }).click(); await expect(page.locator('.community-card')).toHaveCount(9); await page.waitForTimeout(450); await expect(page.locator('.community-cover.is-video')).toHaveCount(9); await page.getByRole('button', { name: '关注', exact: true }).click(); await expect(page.locator('.community-card')).toHaveCount(12); expect(fixture.calls.some(c => c.includes('following=true'))).toBeTruthy(); await page.getByRole('textbox', { name: '搜索广场内容' }).fill('山间清晨'); await page.getByRole('button', { name: '搜索', exact: true }).click(); await expect(page.locator('.community-card')).toHaveCount(5); await page.getByRole('button', { name: '热门', exact: true }).click(); await expect.poll(() => fixture.calls.some(c => c.includes('sort=popular'))).toBeTruthy(); });
 test('guest following stays in the plaza with an explicit login action', async ({ page }) => {
  const calls: string[] = [];
- await page.route('**/api/v1/**', route => { calls.push(route.request().url()); return route.fulfill({ json: { code: 0, data: { list: [], total: 0 } } }); });
+ await page.route('**/api/v1/**', route => { const url = route.request().url(); calls.push(url); return route.fulfill({ json: url.includes('/live/') || url.includes('following=true') ? { code: 40101, message: '请登录' } : { code: 0, data: { list: [], total: 0 } } }); });
  await page.goto('/c/community?filter=following');
+ await page.waitForLoadState('networkidle');
+ await expect(page).toHaveURL(/\/c\/community\?filter=following$/);
  await expect(page.getByText('登录后查看关注动态')).toBeVisible();
- expect(calls.some(url => url.includes('following=true'))).toBeFalsy();
+ expect(calls.some(url => url.includes('following=true') || url.includes('/live/'))).toBeFalsy();
  await page.getByRole('button', { name: '去登录', exact: true }).click();
  await expect(page).toHaveURL(/\/c\/login$/);
  await expect(page.getByRole('tab', { name: '登录', exact: true })).toBeVisible();
