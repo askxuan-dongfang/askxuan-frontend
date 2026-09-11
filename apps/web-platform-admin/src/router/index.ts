@@ -66,7 +66,7 @@ const routes: RouteRecordRaw[] = [
         path: 'master/create',
         name: 'MasterCreate',
         component: () => import('@/views/master/MasterCreateView.vue'),
-        meta: { title: '新增野生大师', parent: '法师管理' }
+        meta: { title: '新增独立执业大师', parent: '法师管理' }
       },
       {
         path: 'master/detail/:id',
@@ -137,7 +137,7 @@ const routes: RouteRecordRaw[] = [
         path: 'marketing/banner',
         name: 'MarketingBanner',
         component: () => import('@/views/marketing/MarketingBannerView.vue'),
-        meta: { title: 'Banner 管理', parent: '营销管理' }
+        meta: { title: '首页活动与广告', parent: '营销管理' }
       },
       {
         path: 'marketing/activity',

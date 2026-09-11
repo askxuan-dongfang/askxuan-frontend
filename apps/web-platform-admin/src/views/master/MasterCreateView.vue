@@ -1,8 +1,9 @@
 <script setup lang="ts">
-// 新增野生大师：平台创建独立执业大师（无寺庙），创建后待资质审核
-import { ref, reactive } from 'vue'
+// 新增独立执业大师：平台创建独立执业大师（无寺庙），创建后待资质审核
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { taxonomyApi } from '@/api/taxonomy'
 import PageHeader from '@/components/PageHeader.vue'
 import { createWildMaster } from '@/api/master'
 
@@ -10,11 +11,12 @@ const router = useRouter()
 const saving = ref(false)
 const formRef = ref()
 
-const beliefOptions = [
-  { value: 'han_buddhism', label: '汉传佛教' },
-  { value: 'tibetan_buddhism', label: '藏传佛教' },
-  { value: 'taoism', label: '道教' }
-]
+const beliefOptions = ref<{value:string;label:string}[]>([])
+async function loadBeliefs(){
+ try{const data=await taxonomyApi.beliefs();beliefOptions.value=data.list.filter(b=>b.status==='enabled').map(b=>({value:b.code,label:b.name}))}
+ catch{ElMessage.error('分类加载失败，请刷新重试')}
+}
+
 
 const form = reactive({
   dharmaName: '',
@@ -31,12 +33,7 @@ const form = reactive({
 })
 
 function syncType() {
-  const map: Record<string, string> = {
-    han_buddhism: '汉传佛教',
-    tibetan_buddhism: '藏传佛教',
-    taoism: '道教'
-  }
-  form.type = map[form.beliefCode] || '汉传佛教'
+  form.type = beliefOptions.value.find(b => b.value === form.beliefCode)?.label || form.type
 }
 
 async function submit() {
@@ -59,7 +56,7 @@ async function submit() {
       consultValidHours: Number(form.consultValidHours) || 72,
       consultResponseMinutes: Number(form.consultResponseMinutes) || 30
     })
-    ElMessage.success(`已创建野生大师 ${resp.id}，待资质审核通过后上架`)
+    ElMessage.success(`已创建独立执业大师 ${resp.id}，待资质审核通过后上架`)
     router.push('/master/list')
   } catch (e) {
     ElMessage.error('创建失败，请稍后重试')
@@ -67,11 +64,12 @@ async function submit() {
     saving.value = false
   }
 }
+onMounted(loadBeliefs)
 </script>
 
 <template>
   <div class="page-wrap">
-    <PageHeader title="新增野生大师" subtitle="独立执业大师（无寺庙归属），平台认证资质后分发法师端账号；用户先付费咨询再预约服务">
+    <PageHeader title="新增独立执业大师" subtitle="独立执业大师（无寺庙归属），平台认证资质后分发法师端账号；用户先付费咨询再预约服务">
       <template #extra>
         <el-button @click="router.push('/master/list')">返回列表</el-button>
       </template>
@@ -111,7 +109,7 @@ async function submit() {
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" :loading="saving" @click="submit">创建野生大师</el-button>
+          <el-button type="primary" :loading="saving" @click="submit">创建独立执业大师</el-button>
           <span class="text-sm text-muted" style="margin-left: 12px">创建后状态为「待审核」，需在法师审核页认证资质后上架</span>
         </el-form-item>
       </el-form>

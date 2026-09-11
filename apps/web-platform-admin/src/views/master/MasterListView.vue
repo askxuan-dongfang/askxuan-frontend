@@ -18,7 +18,7 @@
         <el-option label="佛教" value="佛教" />
         <el-option label="道教" value="道教" />
       </el-select>
-      <el-button type="primary" @click="router.push('/master/create')">+ 新增野生大师</el-button>
+      <el-button type="primary" @click="router.push('/master/create')">+ 新增独立执业大师</el-button>
             <el-button type="primary" :icon="Search" @click="onSearch">查询</el-button>
       <el-button :icon="RefreshLeft" @click="onReset">重置</el-button>
     </div>
@@ -39,7 +39,7 @@
         <el-table-column label="管理方" width="110">
           <template #default="{ row }">
             <el-tag :type="row.manageBy === 'platform' ? 'success' : 'info'" size="small">
-              {{ row.manageBy === 'platform' ? '野生·平台' : '寺庙绑定' }}
+              {{ row.manageBy === 'platform' ? '独立执业' : '寺庙绑定' }}
             </el-tag>
           </template>
         </el-table-column>

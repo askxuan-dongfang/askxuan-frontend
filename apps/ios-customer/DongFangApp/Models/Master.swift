@@ -27,7 +27,7 @@ struct Master: Codable, Identifiable, Hashable {
     var consultFee: Double
     var consultValidHours: Int
     var consultResponseMinutes: Int
-    /// 管理方：temple=寺庙绑定 / platform=平台(野生)
+    /// 管理方：temple=寺庙绑定 / platform=平台管理的独立执业大师
     var manageBy: String?
     /// 大师服务标签（大师所提供，S001-S013）
     var serviceTags: [MasterServiceTag]?

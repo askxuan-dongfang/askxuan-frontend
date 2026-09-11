@@ -202,8 +202,8 @@ struct MasterListView: View {
                         .lineLimit(1)
                 }
 
-                // 归属：野生大师无寺院
-                Text(master.templeName.isEmpty ? "平台直管 · 野生大师" : "\(master.templeName) · \(master.position.isEmpty ? "寺院法师" : master.position)")
+                // 归属：独立执业大师无寺院
+                Text(master.templeName.isEmpty ? "平台直管 · 独立执业大师" : "\(master.templeName) · \(master.position.isEmpty ? "寺院法师" : master.position)")
                     .font(.system(size: 12))
                     .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)

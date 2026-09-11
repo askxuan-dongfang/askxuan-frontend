@@ -186,7 +186,7 @@ export interface Master {
   consultFee: number
   consultValidHours: number
   consultResponseMinutes: number
-  /** temple=寺庙绑定 / platform=平台(野生) */
+  /** temple=寺庙绑定 / platform=平台管理的独立执业大师 */
   manageBy?: string
   /** 大师服务标签（可提供服务，S001-S013） */
   serviceTags?: MasterServiceTagItem[]
@@ -334,6 +334,7 @@ export interface FinanceReport {
 
 // ========== Marketing ==========
 export interface Banner {
+  placement: string
   id: number
   title: string
   imageUrl: string

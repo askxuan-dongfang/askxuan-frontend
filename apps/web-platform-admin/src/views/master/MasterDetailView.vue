@@ -1,9 +1,10 @@
 <script setup lang="ts">
-// 法师详情 / 平台编辑（野生大师无寺庙归属，平台为唯一管理方）
+// 法师详情 / 平台编辑（独立执业大师无寺庙归属，平台为唯一管理方）
 // 含「可提供服务」标签（master_service_tag，S001-S013）查看与配置
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { taxonomyApi } from '@/api/taxonomy'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
@@ -30,12 +31,13 @@ const loadError = ref('')
 const serviceCatalog = ref<ServiceTypeOption[]>([])
 const serviceTags = ref<MasterServiceTagItem[]>([])
 
-const beliefOptions = [
-  { value: 'han_buddhism', label: '汉传佛教' },
-  { value: 'tibetan_buddhism', label: '藏传佛教' },
-  { value: 'taoism', label: '道教' }
-]
-const beliefName = (code: string) => beliefOptions.find((b) => b.value === code)?.label || code
+const beliefOptions = ref<{value:string;label:string}[]>([])
+async function loadBeliefs(){
+ try{const data=await taxonomyApi.beliefs();beliefOptions.value=data.list.filter(b=>b.status==='enabled').map(b=>({value:b.code,label:b.name}))}
+ catch{ElMessage.error('分类加载失败，请刷新重试')}
+}
+
+const beliefName = (code: string) => beliefOptions.value.find((b) => b.value === code)?.label || code
 const serviceName = (code: string) => serviceCatalog.value.find((s) => s.code === code)?.name || code
 
 const form = ref({
@@ -115,12 +117,7 @@ function removeTag(t: string) {
 }
 
 function syncType() {
-  const map: Record<string, string> = {
-    han_buddhism: '汉传佛教',
-    tibetan_buddhism: '藏传佛教',
-    taoism: '道教'
-  }
-  form.value.type = map[form.value.beliefCode] || form.value.type
+  form.value.type = beliefOptions.value.find(b => b.value === form.value.beliefCode)?.label || form.value.type
 }
 
 async function save() {
@@ -155,12 +152,12 @@ async function save() {
   }
 }
 
-onMounted(loadDetail)
+onMounted(() => { void loadBeliefs(); void loadDetail() })
 </script>
 
 <template>
   <div class="dfx-page" v-loading="loading">
-    <PageHeader title="法师详情" subtitle="法师资料、可提供服务查看与平台编辑（寺院+野生两类大师）">
+    <PageHeader title="法师详情" subtitle="法师资料、可提供服务查看与平台编辑（寺院与独立执业两类大师）">
       <template #actions>
         <el-button @click="router.push('/master/list')">返回列表</el-button>
         <el-button v-if="master && !editing" type="primary" @click="startEdit">编辑资料</el-button>
@@ -181,7 +178,7 @@ onMounted(loadDetail)
             {{ master.dharmaName }}
             <span class="master-head__lay">（{{ master.layName || '未填俗名' }}）</span>
             <el-tag :type="master.manageBy === 'platform' ? 'success' : 'info'" size="small" style="margin-left: 8px">
-              {{ master.manageBy === 'platform' ? '野生·平台直管' : '寺庙绑定' }}
+              {{ master.manageBy === 'platform' ? '独立执业 · 平台管理' : '寺庙绑定' }}
             </el-tag>
           </div>
           <div class="master-head__id">编码 {{ master.id }}</div>
@@ -190,7 +187,7 @@ onMounted(loadDetail)
 
       <el-descriptions :column="2" border style="margin-top: 16px">
         <el-descriptions-item label="管理方">
-          {{ master.manageBy === 'platform' ? '平台（野生大师）' : '寺庙绑定' }}
+          {{ master.manageBy === 'platform' ? '平台（独立执业大师）' : '寺庙绑定' }}
         </el-descriptions-item>
         <el-descriptions-item label="所属寺院">{{ master.templeName || '—' }}</el-descriptions-item>
         <el-descriptions-item label="职位">{{ master.position || '—' }}</el-descriptions-item>
@@ -205,7 +202,7 @@ onMounted(loadDetail)
           <el-tag v-for="t in serviceTags" :key="t.serviceCode" size="small" style="margin-right: 6px">
             {{ serviceName(t.serviceCode) }} ¥{{ t.price }}
           </el-tag>
-          <span v-if="!serviceTags.length" class="muted-text">未配置（C端按可提供服务筛选，野生大师上架前提）</span>
+          <span v-if="!serviceTags.length" class="muted-text">未配置（C端按可提供服务筛选，独立执业大师上架前提）</span>
         </el-descriptions-item>
         <el-descriptions-item label="认证状态"><StatusTag :status="master.authStatus" /></el-descriptions-item>
         <el-descriptions-item label="上架状态"><StatusTag :status="master.shelfStatus" /></el-descriptions-item>

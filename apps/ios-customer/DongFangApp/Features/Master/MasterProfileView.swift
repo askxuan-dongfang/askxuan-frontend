@@ -273,7 +273,7 @@ struct MasterProfileView: View {
         }
     }
 
-    /// 野生大师直约面板：大师服务标签 → 先付费咨询 → 预约服务
+    /// 独立执业大师直约面板：大师服务标签 → 先付费咨询 → 预约服务
     private var directBookingPanel: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             Text("大师服务标签")
@@ -539,7 +539,7 @@ struct MasterProfileView: View {
                     showLoginPrompt = true
                 }
             }
-            // 双轨制：野生大师的预约入口在「预约」Tab 直约面板内（避免底部重复按钮）；
+            // 双轨制：独立执业大师的预约入口在「预约」Tab 直约面板内（避免底部重复按钮）；
             // 寺庙绑定大师保留底部按钮进入寺院服务预约下单页。
             if viewModel.master?.manageBy != "platform" {
                 DFPrimaryButton(title: "预约服务") {

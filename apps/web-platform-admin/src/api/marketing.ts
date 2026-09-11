@@ -3,10 +3,11 @@ import client from './client'
 import type { Banner, Activity, Coupon, PageResult } from '@/types'
 
 // ===== Banner =====
-export function getBanners(params: { status?: string; page?: number; size?: number }) {
+export function getBanners(params: { status?: string; placement?: string; page?: number; size?: number }) {
   return client.get<PageResult<Banner>>('/admin/marketing/banners', { params })
 }
 export function createBanner(params: {
+  placement?: string
   title: string
   imageUrl: string
   linkType: string

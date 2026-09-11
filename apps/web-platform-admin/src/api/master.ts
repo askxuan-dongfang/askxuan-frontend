@@ -53,7 +53,7 @@ export function updateMasterConsultation(id: string, data: {
   return client.put<Master>(`/admin/platform/masters/${id}/consultation`, data)
 }
 
-/** 平台创建野生大师请求 */
+/** 平台创建独立执业大师请求 */
 export interface WildMasterCreateParams {
   dharmaName: string
   layName?: string
@@ -69,17 +69,17 @@ export interface WildMasterCreateParams {
   consultResponseMinutes?: number
 }
 
-/** 创建野生大师（无寺庙，平台管理） */
+/** 创建独立执业大师（无寺庙，平台管理） */
 export function createWildMaster(data: WildMasterCreateParams): Promise<{ id: string }> {
   return client.post<{ id: string }>('/admin/platform/masters', data)
 }
 
-/** 平台法师详情（含野生大师与寺庙绑定大师） */
+/** 平台法师详情（含独立执业大师与寺庙绑定大师） */
 export function getPlatformMasterDetail(id: string): Promise<Master> {
   return client.get<Master>(`/admin/platform/masters/${id}`)
 }
 
-/** 平台编辑法师资料（野生大师唯一管理入口） */
+/** 平台编辑法师资料（独立执业大师唯一管理入口） */
 export function updatePlatformMaster(
   id: string,
   data: Partial<WildMasterCreateParams>
