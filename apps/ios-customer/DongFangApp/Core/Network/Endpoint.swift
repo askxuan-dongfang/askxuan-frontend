@@ -215,6 +215,8 @@ enum Endpoint {
     case diyMyDesigns(page: Int, size: Int)
     case diyDesignSave(DiyDesignSaveRequest)
     case diyDesignById(Int64)
+    case diyDesignCopy(Int64)
+    case diyDesignStatus(Int64, DiyDesignStatusRequest)
     case diyMaterials(category: String?, page: Int, size: Int)
     case diyBlessingServices(page: Int, size: Int)
     case diyOrderCreate(DiyOrderCreateRequest)
@@ -386,6 +388,8 @@ enum Endpoint {
         case .diyDesigns:               return "diy/designs"
         case .diyMyDesigns:             return "diy/my-designs"
         case .diyDesignSave:            return "diy/designs"
+        case .diyDesignCopy(let id): return "diy/designs/\(id)/copy"
+        case .diyDesignStatus(let id, _): return "diy/designs/\(id)/status"
         case .diyDesignById(let id):    return "diy/designs/\(id)"
         case .diyMaterials:             return "diy/materials"
         case .diyBlessingServices:      return "diy/blessing-services"
@@ -462,6 +466,8 @@ enum Endpoint {
     var httpMethod: HTTPMethod {
         switch self {
         case .rewardCampaigns, .rewardDetail, .rewardEntries, .rewardOrders: return .GET
+        case .diyDesignCopy: return .POST
+        case .diyDesignStatus: return .PUT
         case .rewardJoin, .rewardClaim, .rewardComplete: return .POST
         case .aiTopics, .aiReports, .aiReport: return .GET
         case .aiReportConversation, .aiReportCreate, .aiReportRetry, .aiReportUnlock: return .POST
@@ -650,6 +656,8 @@ enum Endpoint {
         case .bookingChatSend(_, let request), .chatSend(_, let request): return AnyEncodable(request)
         case .consultationCreate(let request): return AnyEncodable(request)
         case .consultationPay:             return AnyEncodable([String: String]())
+        case .diyDesignCopy: return AnyEncodable([String: String]())
+        case .diyDesignStatus(_, let req): return AnyEncodable(req)
         case .diyDesignSave(let req):          return AnyEncodable(req)
         case .diyOrderCreate(let req):         return AnyEncodable(req)
         case .diyOrderAvailability(let req):   return AnyEncodable(req)

@@ -14,7 +14,7 @@ enum DiyFitState: Equatable {
         switch self {
         case .loose(let remaining): return "还可加入约 \(remaining) 颗"
         case .good: return "松紧合适"
-        case .tight: return "尺寸偏紧"
+        case .tight: return "尺寸偏松"
         }
     }
 
@@ -42,6 +42,8 @@ private struct LegacyDiyDesignEnvelope: Decodable {
 final class DiyViewModel: ObservableObject {
     // MARK: - Data
     @Published var designs: [DiyDesign] = []
+    @Published var hasMoreDesigns = false
+    private var designsPage = 0
     @Published var materials: [Material] = []
     @Published var orders: [DiyOrder] = []
     @Published var addresses: [UserAddress] = []
@@ -62,6 +64,8 @@ final class DiyViewModel: ObservableObject {
     @Published private(set) var canRedo = false
     @Published private(set) var draftStateText = "新设计"
     @Published var designName = "我的手串"
+    @Published var designDescription = ""
+    @Published var fitAllowanceMm: Double = 8
 
     // MARK: - UI state
     @Published var isLoading = false
@@ -121,7 +125,7 @@ final class DiyViewModel: ObservableObject {
     var usedLengthMm: Double { beadSlots.reduce(0) { $0 + $1.diameterMm } }
 
     var fitState: DiyFitState {
-        let difference = usedLengthMm - (Double(wristSizeMm) + 5)
+        let difference = DiyPhysicalLayout(slots: beadSlots, wrist: Double(wristSizeMm), allowance: fitAllowanceMm).innerMm - Double(wristSizeMm) - fitAllowanceMm
         if difference < -12 {
             return .loose(remainingBeads: max(1, Int(ceil(abs(difference) / 10))))
         }
@@ -137,15 +141,19 @@ final class DiyViewModel: ObservableObject {
     }
 
     // MARK: - Loading
-    func loadDesigns() async {
+    func loadDesigns(append: Bool = false) async {
+        guard !isLoading else { return }
+        let page = append ? designsPage + 1 : 1
         isLoading = true
         errorMessage = nil
         do {
             let response: PageResponse<DiyDesign> = try await apiClient.request(
-                .diyDesigns(page: 1, size: 20))
-            designs = response.list
+                .diyDesigns(page: page, size: 20))
+            designs = append ? designs + response.list : response.list
+            designsPage = page
+            hasMoreDesigns = response.list.count == 20
         } catch {
-            designs = []
+            if !append { designs = [] }
             errorMessage = error.localizedDescription
         }
         isLoading = false
@@ -173,12 +181,11 @@ final class DiyViewModel: ObservableObject {
             async let designRequest: DiyDesign = apiClient.request(.diyDesignById(id))
             async let materialRequest: PageResponse<Material> = apiClient.request(
                 .diyMaterials(category: nil, page: 1, size: 100))
-            async let availabilityRequest: DiyOrderAvailability = apiClient.request(
-                .diyOrderAvailability(DiyOrderAvailabilityRequest(designId: id, items: nil)))
-            let (design, materialResponse, availability) = try await (designRequest, materialRequest, availabilityRequest)
+            let (design, materialResponse) = try await (designRequest, materialRequest)
             materials = materialResponse.list
-            orderAvailability = availability
+            orderAvailability = nil
             currentDesign = design
+            designDescription = design.description ?? ""
             designName = design.name
             if let data = design.designData {
                 restoreDesignData(data)
@@ -276,8 +283,8 @@ final class DiyViewModel: ObservableObject {
     }
 
     func addBead(_ material: Material) {
-        guard beadSlots.count < 30 else {
-            errorMessage = "一条手串最多配置 30 颗珠子"
+        guard beadSlots.count < 60 else {
+            errorMessage = "一条手串最多配置 60 颗珠子"
             return
         }
         guard count(for: material.id) < material.stock else {
@@ -301,7 +308,7 @@ final class DiyViewModel: ObservableObject {
     func duplicateSelectedBead() {
         guard let selectedBeadId,
               let index = beadSlots.firstIndex(where: { $0.id == selectedBeadId }),
-              beadSlots.count < 30 else { return }
+              beadSlots.count < 60 else { return }
         let source = beadSlots[index]
         if let material = materials.first(where: { $0.id == source.materialId }),
            count(for: material.id) >= material.stock {
@@ -405,6 +412,7 @@ final class DiyViewModel: ObservableObject {
         let cordItem = cartItems.first(where: { $0.material.category == "cord" }).map(makeOrderItem)
         return DiyDesignDocument(
             wristSizeMm: wristSizeMm,
+            fitAllowanceMm: fitAllowanceMm,
             beads: orderedBeads,
             cord: cordItem,
             items: cartItems.map(makeOrderItem)
@@ -416,6 +424,7 @@ final class DiyViewModel: ObservableObject {
         let decoder = JSONDecoder()
         if let document = try? decoder.decode(DiyDesignDocument.self, from: data),
            document.version == DiyDesignDocument.currentVersion {
+            fitAllowanceMm = document.fitAllowanceMm
             apply(document)
             persistDraft(stateText: "已恢复设计")
             return
@@ -434,6 +443,26 @@ final class DiyViewModel: ObservableObject {
         persistDraft(stateText: "旧设计已转换")
     }
 
+    var isDesignOwner: Bool { currentDesign?.userId == authStore.userId }
+    func copyCurrentDesign() async -> Bool {
+        guard let currentDesign, !isSubmitting else { return false }
+        isSubmitting = true; defer { isSubmitting = false }
+        do {
+            let copy: DiyDesign = try await apiClient.request(.diyDesignCopy(currentDesign.id))
+            self.currentDesign = copy; designName = copy.name; designDescription = copy.description ?? ""
+            if let raw = copy.designData { restoreDesignData(raw) }
+            return true
+        } catch { errorMessage = error.localizedDescription; return false }
+    }
+    func setPublication(_ published: Bool) async {
+        guard let design = currentDesign, !isSubmitting else { return }
+        isSubmitting = true; defer { isSubmitting = false }
+        do {
+            currentDesign = try await apiClient.request(.diyDesignStatus(design.id, .init(revision: design.revision ?? 1, status: published ? "public" : "private")))
+            successMessage = published ? "作品已发布，可分享与复制" : "作品已转为私密"
+        } catch { errorMessage = error.localizedDescription }
+    }
+
     // MARK: - Saving and checkout
     func saveDesign() async -> Bool {
         guard !beadSlots.isEmpty else {
@@ -448,7 +477,7 @@ final class DiyViewModel: ObservableObject {
         errorMessage = nil
         defer { isSubmitting = false }
 
-        let request = DiyDesignSaveRequest(
+        var request = DiyDesignSaveRequest(
             userId: authStore.userId,
             name: designName,
             designData: designData,
@@ -457,19 +486,13 @@ final class DiyViewModel: ObservableObject {
             blessServiceCode: nil
         )
 
+        if currentDesign?.userId == authStore.userId {
+            request.id = currentDesign?.id; request.revision = currentDesign?.revision
+        }
+        request.description = designDescription
         do {
             let response: DiyDesignSaveResponse = try await apiClient.request(.diyDesignSave(request))
-            currentDesign = DiyDesign(
-                id: response.id,
-                designNo: nil,
-                userId: authStore.userId,
-                name: designName,
-                designData: designData,
-                totalPrice: totalPrice,
-                status: "private",
-                blessServiceCode: nil,
-                createTime: nil
-            )
+            currentDesign = try await apiClient.request(.diyDesignById(response.id))
             successMessage = "设计已保存"
             persistDraft(stateText: "设计已同步")
             return true
@@ -592,7 +615,8 @@ final class DiyViewModel: ObservableObject {
     }
 
     private func apply(_ document: DiyDesignDocument) {
-        beadSlots = document.beads.sorted { $0.position < $1.position }
+        fitAllowanceMm = min(max(document.fitAllowanceMm, 0), 30)
+        beadSlots = Array(document.beads.prefix(60)).sorted { $0.position < $1.position }
         wristSizeMm = min(max(document.wristSizeMm, 140), 200)
         let cordItem = document.cord ?? document.items.first { $0.subtype == "cord" }
         selectedCord = cordItem.map(material(from:))
@@ -612,7 +636,7 @@ final class DiyViewModel: ObservableObject {
                 selectedCord = material(from: item)
                 continue
             }
-            for _ in 0..<min(item.quantity, 30 - beadSlots.count) {
+            for _ in 0..<min(item.quantity, max(0, 60 - beadSlots.count)) {
                 beadSlots.append(DiyBeadSlot(item: item, position: beadSlots.count))
             }
         }

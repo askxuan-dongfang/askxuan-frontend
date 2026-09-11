@@ -12,6 +12,9 @@ struct DiyDetailView: View {
 
     @StateObject private var viewModel: DiyViewModel
     @State private var showOrderPage: Bool = false
+    @State private var showEditor = false
+    @State private var showPublishConfirm = false
+    @State private var show3D = false
     @Environment(\.dismiss) private var dismiss
 
     init(designId: Int64, viewModel: DiyViewModel? = nil) {
@@ -28,6 +31,7 @@ struct DiyDetailView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: AppSpacing.lg) {
                     previewSection
+                    publicationSection
                     infoSection
                     materialsSection
                     if let message = viewModel.availabilityMessage {
@@ -48,55 +52,43 @@ struct DiyDetailView: View {
                 await viewModel.loadDesign(id: designId)
             }
         }
+        .sheet(isPresented: $showEditor) { NavigationStack { DiyDesignView(viewModel: viewModel) } }
+        .confirmationDialog(viewModel.currentDesign?.status == "public" ? "下架后，仅你可见；已有副本与订单保留。" : "发布后，其他人可以分享、复制搭配和定制。", isPresented: $showPublishConfirm, titleVisibility: .visible) {
+            Button(viewModel.currentDesign?.status == "public" ? "确认下架" : "确认发布") { Task { await viewModel.setPublication(viewModel.currentDesign?.status != "public") } }
+        }
+        .alert("提示", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) { Button("好的", role: .cancel) {} } message: { Text(viewModel.errorMessage ?? "") }
         .sheet(isPresented: $showOrderPage) {
             NavigationStack {
-                DiyOrderView(designId: designId, viewModel: viewModel, orderSource: .design)
+                DiyOrderView(designId: viewModel.currentDesign?.id ?? designId, viewModel: viewModel, orderSource: viewModel.isDesignOwner ? .cart : .design)
             }
         }
     }
 
     // MARK: - 作品预览
     private var previewSection: some View {
-        ZStack(alignment: .top) {
-            LinearGradient(
-                colors: [Color.brandDark.opacity(0.7), Color.bgPrimary],
-                startPoint: .top, endPoint: .bottom
-            )
-            .frame(height: 240)
-
+        VStack(spacing: 12) {
+            HStack { DFBackButton(style: .circle); Spacer(); Button(show3D ? "2D 作品" : "3D 环视") { show3D.toggle() }.font(.caption).foregroundStyle(Color.accentDefault) }.padding(.top, 56).padding(.horizontal)
+            if show3D { DiyNativeStage3D(slots: viewModel.beadSlots).frame(height: 280) }
+            else { DiyMiniBracelet(slots: viewModel.beadSlots, fallbackCount: 0).frame(height: 260) }
+            Text(viewModel.currentDesign?.name ?? "我的手串").font(AppTypography.title(24)).foregroundStyle(Color.textPrimary)
+            Text(viewModel.currentDesign?.description ?? "把喜欢的珠子，串成自己的心意。").font(.caption).foregroundStyle(Color.textSecondary).padding(.horizontal)
+            Text(viewModel.totalPriceText).font(.title3).foregroundStyle(Color.accentDefault)
+        }.padding(.bottom, 24).background(Color(hex: "30251E"))
+    }
+    private var publicationSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
-                DFBackButton(style: .circle)
+                if viewModel.isDesignOwner { Button(viewModel.currentDesign?.status == "public" ? "下架作品" : "发布到广场") { showPublishConfirm = true }.disabled(viewModel.isSubmitting) }
                 Spacer()
-            }
-            .padding(.horizontal, AppSpacing.lg)
-            .padding(.top, 56)
-
-            VStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.brandDefault.opacity(0.3), Color.accentDefault.opacity(0.2)],
-                                startPoint: .topLeading, endPoint: .bottomTrailing
-                            )
-                        )
-                        .overlay(Circle().stroke(Color.borderDefault, lineWidth: 1))
-                    Image(systemName: "circle.grid.2x2.fill")
-                        .font(.system(size: 36))
-                        .foregroundStyle(Color.accentDefault)
+                if viewModel.currentDesign?.status == "public", let url = URL(string: "/c/diy/\(viewModel.currentDesign?.id ?? designId)", relativeTo: AppConfig.baseURL)?.absoluteURL {
+                    ShareLink(item: url) { Label("分享作品", systemImage: "square.and.arrow.up") }
                 }
-                .frame(width: 72, height: 72)
-                .padding(.top, 90)
-
-                Text(viewModel.currentDesign?.name ?? "我的手串")
-                    .font(AppTypography.title(20))
-                    .foregroundStyle(Color.accentDefault)
-                Text("¥\(Int(viewModel.currentDesign?.totalPrice ?? 0))")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.brandDefault)
-            }
-        }
-        .frame(height: 240)
+            }.font(.subheadline).foregroundStyle(Color.accentDefault)
+            if let message = viewModel.successMessage { Text(message).font(.caption).foregroundStyle(Color.stateSuccess) }
+            if let source = viewModel.currentDesign?.sourceDesignId, source > 0 { Text("源自作品 #\(source) 的灵感再创作").font(.caption).foregroundStyle(Color.textTertiary) }
+            Text("复制后保留珠子顺序，自由替换材料；原作品不会改变。").font(.caption).foregroundStyle(Color.textSecondary)
+            if let url = URL(string: "/assets/diy/credits.html", relativeTo: AppConfig.baseURL)?.absoluteURL { Link("实拍参考与材质素材来源", destination: url).font(.caption) }
+        }.padding().background(Color.bgSecondary).cornerRadius(AppRadius.md).padding(.horizontal)
     }
 
     // MARK: - 信息卡
@@ -272,8 +264,9 @@ struct DiyDetailView: View {
     // MARK: - 底部操作栏
     private var bottomActionBar: some View {
         HStack(spacing: AppSpacing.md) {
-            DFSecondaryButton(title: "编辑", icon: "pencil") {
-                // 编辑会跳转到 DiyDesignView（简化：暂不实现）
+            DFSecondaryButton(title: viewModel.isDesignOwner ? "继续编辑" : "复制并编辑", icon: "pencil") {
+                if viewModel.isDesignOwner { showEditor = true }
+                else { Task { if await viewModel.copyCurrentDesign() { showEditor = true } } }
             }
             DFPrimaryButton(
                 title: viewModel.isCurrentDesignOrderable ? "立即下单" : "材料需替换",

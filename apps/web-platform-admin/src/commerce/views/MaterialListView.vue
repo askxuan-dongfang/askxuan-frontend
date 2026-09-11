@@ -3,6 +3,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import DiyDesignManager from '@/commerce/components/DiyDesignManager.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import { materialApi, type MaterialListParams } from '@/commerce/api/material'
@@ -10,6 +11,7 @@ import { formatMoney, materialCategoryLabel } from '@/commerce/utils/format'
 import type { Material } from '@/commerce/types'
 
 const router = useRouter()
+const showDesigns = ref(false)
 const loading = ref(false)
 const list = ref<Material[]>([])
 const total = ref(0)
@@ -110,6 +112,9 @@ onMounted(() => {
         </el-button>
       </template>
     </PageHeader>
+    <el-radio-group v-model="showDesigns" style="margin:0 0 20px"><el-radio-button :value="false">材料与素材</el-radio-button><el-radio-button :value="true">设计广场管理</el-radio-button></el-radio-group>
+    <DiyDesignManager v-if="showDesigns"/>
+    <template v-else>
 
     <div class="df-card filter-bar">
       <el-form inline @submit.prevent="handleSearch">
@@ -213,6 +218,7 @@ onMounted(() => {
         />
       </div>
     </div>
+    </template>
   </div>
 </template>
 

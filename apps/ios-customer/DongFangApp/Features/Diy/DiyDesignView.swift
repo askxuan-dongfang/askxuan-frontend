@@ -5,6 +5,7 @@
 
 import SwiftUI
 import UIKit
+import SceneKit
 
 struct DiyDesignView: View {
     @StateObject private var viewModel: DiyViewModel
@@ -13,6 +14,8 @@ struct DiyDesignView: View {
     @State private var checkoutAfterSave = false
     @State private var showOrderPage = false
     @State private var materialSearch = ""
+    @State private var show3D = false
+    @State private var showSavedDetail = false
     @State private var materialPanelExpanded = true
     @Environment(\.dismiss) private var dismiss
 
@@ -32,6 +35,11 @@ struct DiyDesignView: View {
                 topBar
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
+                        Picker("预览方式", selection: $show3D) { Text("2D 搭配").tag(false); Text("3D 环视").tag(true) }.pickerStyle(.segmented).padding()
+                        if show3D {
+                            DiyNativeStage3D(slots: viewModel.beadSlots, wrist: Double(viewModel.wristSizeMm), allowance: viewModel.fitAllowanceMm).frame(height: 360)
+                            Text("拖动旋转 · 双指缩放 · 天然纹理以实物为准").font(.caption2).foregroundStyle(Color.textTertiary).padding(.bottom, 12)
+                        } else {
                         DiyBraceletStage(
                             slots: viewModel.beadSlots,
                             selectedId: viewModel.selectedBeadId,
@@ -44,6 +52,8 @@ struct DiyDesignView: View {
                             onRemove: viewModel.removeBead,
                             onWristChange: viewModel.setWristSize
                         )
+                        }
+                        HStack { Text("佩戴松量").font(.caption); Picker("佩戴松量", selection: $viewModel.fitAllowanceMm) { Text("贴合").tag(0.0); Text("＋5mm").tag(5.0); Text("＋8mm").tag(8.0); Text("＋12mm").tag(12.0) }.pickerStyle(.segmented) }.padding(.horizontal).padding(.vertical, 10)
                         selectedToolbar
                         materialPanel
                     }
@@ -70,10 +80,11 @@ struct DiyDesignView: View {
         }
         .alert("保存设计", isPresented: $showNameDialog) {
             TextField("设计名称", text: $designNameInput)
+            TextField("搭配灵感（可选）", text: $viewModel.designDescription)
             Button("取消", role: .cancel) {}
             Button("保存") { saveDesign() }
         } message: {
-            Text("设计保存后可继续选择加持服务和收货地址")
+            Text("保存后可发布到广场、分享给朋友或继续定制。修改已发布作品会先转为私密。")
         }
         .alert("提示", isPresented: .init(
             get: { viewModel.errorMessage != nil },
@@ -82,6 +93,9 @@ struct DiyDesignView: View {
             Button("好的", role: .cancel) {}
         } message: {
             Text(viewModel.errorMessage ?? "")
+        }
+        .sheet(isPresented: $showSavedDetail) {
+            if let design = viewModel.currentDesign { NavigationStack { DiyDetailView(designId: design.id, viewModel: viewModel) } }
         }
         .sheet(isPresented: $showOrderPage) {
             if let design = viewModel.currentDesign {
@@ -140,7 +154,7 @@ struct DiyDesignView: View {
                     colorHex: selected.colorHex,
                     textureKey: selected.textureKey,
                     finish: selected.finish,
-                    translucency: selected.translucency ?? 0
+                    translucency: selected.translucency ?? 0, renderAssets: selected.renderAssets
                 )
                 VStack(alignment: .leading, spacing: 2) {
                     Text("当前选中")
@@ -312,7 +326,7 @@ struct DiyDesignView: View {
                         colorHex: material.colorHex,
                         textureKey: material.textureKey,
                         finish: material.finish,
-                        translucency: material.translucency ?? 0
+                        translucency: material.translucency ?? 0, renderAssets: material.renderAssets
                     )
                     if count > 0 {
                         Text("×\(count)")
@@ -373,7 +387,7 @@ struct DiyDesignView: View {
                     colorHex: material.colorHex,
                     textureKey: material.textureKey,
                     finish: material.finish,
-                    translucency: material.translucency ?? 0
+                    translucency: material.translucency ?? 0, renderAssets: material.renderAssets
                 )
                 Text(material.name)
                     .font(.system(size: 9, weight: .medium))
@@ -453,7 +467,7 @@ struct DiyDesignView: View {
             let saved = await viewModel.saveDesign()
             if saved && checkoutAfterSave && viewModel.currentDesign != nil {
                 showOrderPage = true
-            }
+            } else if saved { showSavedDetail = true }
         }
     }
 }
@@ -480,9 +494,9 @@ private struct DiyBraceletStage: View {
         GeometryReader { proxy in
             let sceneSize = min(proxy.size.width - 28, 318)
             ZStack {
-                Color(hex: "111315")
+                Color(hex: "241C17")
                 RadialGradient(
-                    colors: [Color(hex: "303236").opacity(0.72), Color(hex: "17191B"), Color(hex: "0D0F10")],
+                    colors: [Color(hex: "544338").opacity(0.72), Color(hex: "30251E"), Color(hex: "201915")],
                     center: UnitPoint(x: 0.5, y: 0.57),
                     startRadius: 18,
                     endRadius: proxy.size.width * 0.72
@@ -628,14 +642,14 @@ private struct DiyBraceletStage: View {
                 DiyMaterialBead(
                     name: slot.materialName,
                     category: slot.subtype,
-                    size: max(28, min(39, 31 + CGFloat(slot.diameterMm - 8) * 1.15)),
+                    size: CGFloat(slot.diameterMm / DiyPhysicalLayout(slots: slots, wrist: Double(wristSizeMm)).radius) * size * 0.35,
                     isSelected: selectedId == slot.id,
                     seed: slot.id,
                     shape: slot.shape ?? "round",
                     colorHex: slot.colorHex,
                     textureKey: slot.textureKey,
                     finish: slot.finish,
-                    translucency: slot.translucency ?? 0
+                    translucency: slot.translucency ?? 0, renderAssets: slot.renderAssets
                 )
                 .rotationEffect(.radians(layout.angle + Double.pi / 2))
                 .scaleEffect(layout.depth)
@@ -699,7 +713,8 @@ private struct DiyBraceletStage: View {
     }
 
     private func beadLayout(index: Int, count: Int, size: CGFloat) -> (point: CGPoint, depth: CGFloat, zIndex: Double, angle: Double) {
-        let angle = rotation + (Double(index) / Double(max(count, 1))) * Double.pi * 2
+        let physical = DiyPhysicalLayout(slots: slots, wrist: Double(wristSizeMm))
+        let angle = rotation + (physical.angles.indices.contains(index) ? physical.angles[index] + Double.pi / 2 : 0)
         let x = size / 2 + cos(angle) * size * 0.35
         let y = size / 2 + sin(angle) * size * 0.315
         let depth = 0.94 + CGFloat((sin(angle) + 1) / 2) * 0.12
@@ -707,17 +722,16 @@ private struct DiyBraceletStage: View {
     }
 
     private func targetIndex(for location: CGPoint, size: CGFloat) -> Int {
-        guard !slots.isEmpty else { return 0 }
-        let dx = (location.x - size / 2) / (size * 0.35)
-        let dy = (location.y - size / 2) / (size * 0.315)
-        var angle = atan2(Double(dy), Double(dx)) - rotation
-        angle = angle.truncatingRemainder(dividingBy: Double.pi * 2)
-        if angle < 0 { angle += Double.pi * 2 }
-        return Int(round(angle / (Double.pi * 2) * Double(slots.count))) % slots.count
+        slots.indices.min { a, b in
+            let p = beadLayout(index: a, count: slots.count, size: size).point
+            let q = beadLayout(index: b, count: slots.count, size: size).point
+            return hypot(location.x - p.x, location.y - p.y) < hypot(location.x - q.x, location.y - q.y)
+        } ?? 0
     }
+
 }
 
-private struct DiyMaterialBead: View {
+struct DiyMaterialBead: View {
     let name: String
     let category: String
     let size: CGFloat
@@ -728,6 +742,7 @@ private struct DiyMaterialBead: View {
     var textureKey: String?
     var finish: String?
     var translucency: Double = 0
+    var renderAssets: String? = nil
 
     private var palette: DiyBeadPalette { .resolve(name: name, category: category, colorHex: colorHex) }
     private var isDiscSpacer: Bool {
@@ -781,6 +796,19 @@ private struct DiyMaterialBead: View {
                 .blur(radius: 1.1)
                 .offset(x: -size * 0.16, y: -size * 0.2)
                 .allowsHitTesting(false)
+        }
+        .overlay {
+            if let assets = DiyRenderAssets.parse(renderAssets), let url = DiyRenderAssets.url(assets.beadImageUrl) {
+                AsyncImage(url: url) { phase in
+                    if let image = phase.image {
+                        if let c = assets.imageCrop, c.width > 0, c.height > 0 {
+                            image.resizable().frame(width: size * c.imageWidth / c.width, height: size * c.imageHeight / c.height)
+                                .offset(x: size * (c.imageWidth / 2 - c.x - c.width / 2) / c.width, y: size * (c.imageHeight / 2 - c.y - c.height / 2) / c.height)
+                                .frame(width: size, height: size).clipShape(Circle())
+                        } else { image.resizable().scaledToFill().frame(width: size, height: size).clipShape(Circle()) }
+                    }
+                }
+            }
         }
         .shadow(color: isSelected ? Color.accentDefault.opacity(0.62) : .clear, radius: 7)
     }
@@ -934,4 +962,56 @@ private struct DiyBeadPalette {
 #Preview {
     NavigationStack { DiyDesignView() }
         .preferredColorScheme(.dark)
+}
+
+struct DiyNativeStage3D: UIViewRepresentable {
+    let slots: [DiyBeadSlot]
+    var wrist: Double = 160
+    var allowance: Double = 8
+    func makeUIView(context: Context) -> SCNView {
+        let view = SCNView(); view.allowsCameraControl = true; view.autoenablesDefaultLighting = false
+        view.backgroundColor = UIColor(red: 0.14, green: 0.105, blue: 0.085, alpha: 1)
+        view.antialiasingMode = .multisampling4X; view.preferredFramesPerSecond = 30
+        view.accessibilityLabel = "手串 3D 预览，拖动旋转，双指缩放"
+        return view
+    }
+    func updateUIView(_ view: SCNView, context: Context) {
+        let signature = String(slots.hashValue) + "-\(wrist)-\(allowance)"
+        guard view.accessibilityIdentifier != signature else { return }
+        view.accessibilityIdentifier = signature
+        let scene = SCNScene(); let layout = DiyPhysicalLayout(slots: slots, wrist: wrist, allowance: allowance)
+        let scale = 1.65 / layout.radius
+        let camera = SCNNode(); camera.camera = SCNCamera(); camera.position = SCNVector3(0, 4, 5.8); camera.look(at: SCNVector3Zero)
+        scene.rootNode.addChildNode(camera); view.pointOfView = camera
+        for (position, intensity, color) in [(SCNVector3(2, 5, 4), CGFloat(1100), UIColor.white), (SCNVector3(-4, 3, -2), CGFloat(700), UIColor(red: 0.75, green: 0.85, blue: 1, alpha: 1))] {
+            let light = SCNNode(); light.light = SCNLight(); light.light?.type = .omni; light.light?.intensity = intensity; light.light?.color = color; light.position = position; scene.rootNode.addChildNode(light)
+        }
+        let ambient = SCNNode(); ambient.light = SCNLight(); ambient.light?.type = .ambient; ambient.light?.intensity = 350; scene.rootNode.addChildNode(ambient)
+        let cord = SCNNode(geometry: SCNTorus(ringRadius: 1.65, pipeRadius: 0.012)); cord.geometry?.firstMaterial?.diffuse.contents = UIColor(Color.accentDefault); scene.rootNode.addChildNode(cord)
+        for (index, bead) in slots.enumerated() {
+            let r = CGFloat(bead.diameterMm * scale / 2)
+            let geometry: SCNGeometry
+            if bead.shape == "disc" || bead.shape == "barrel" { geometry = SCNCylinder(radius: r, height: r * (bead.shape == "disc" ? 0.9 : 2.3)) }
+            else { let sphere = SCNSphere(radius: r); sphere.segmentCount = bead.shape == "faceted" ? 10 : 40; geometry = sphere }
+            let mat = SCNMaterial(); mat.lightingModel = .physicallyBased
+            mat.diffuse.contents = UIColor(Color(hex: bead.colorHex ?? "93795B")); mat.metalness.contents = bead.materialType == "metal" ? 0.85 : 0.0
+            mat.roughness.contents = bead.finish == "matte" || bead.finish == "natural" ? 0.55 : 0.2
+            mat.clearCoat.contents = 0.8; mat.clearCoatRoughness.contents = 0.12
+            geometry.materials = [mat]
+            let node = SCNNode(geometry: geometry); let angle = layout.angles[index]
+            node.position = SCNVector3(cos(angle) * 1.65, 0, sin(angle) * 1.65)
+            if bead.shape == "disc" || bead.shape == "barrel" { node.eulerAngles = SCNVector3(0, -angle, Double.pi / 2) }
+            if bead.shape == "pendant" { node.scale = SCNVector3(0.8, 1.25, 0.7) }
+            scene.rootNode.addChildNode(node)
+            let assets = DiyRenderAssets.parse(bead.renderAssets)
+            for (urlString, property) in [(assets?.albedoMapUrl, mat.diffuse), (assets?.normalMapUrl, mat.normal), (assets?.roughnessMapUrl, mat.roughness)] {
+                guard let url = DiyRenderAssets.url(urlString) else { continue }
+                URLSession.shared.dataTask(with: url) { data, response, _ in
+                    guard let response = response as? HTTPURLResponse, response.statusCode == 200, response.mimeType?.hasPrefix("image/") == true, let data, let image = UIImage(data: data) else { return }
+                    DispatchQueue.main.async { property.contents = image }
+                }.resume()
+            }
+        }
+        view.scene = scene
+    }
 }
