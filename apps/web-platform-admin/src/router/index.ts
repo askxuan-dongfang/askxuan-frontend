@@ -152,6 +152,7 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '优惠券管理', parent: '营销管理' }
       },
       // 系统设置
+      {path:'settings/ai',name:'SettingsAi',component:()=>import('@/views/settings/SettingsAiView.vue'),meta:{title:'AI 模型设置',parent:'系统治理',roles:['platform_super']}},
       {
         path: 'settings/taxonomy',
         name: 'SettingsTaxonomy',

@@ -80,6 +80,7 @@ const allMenuGroups = [
     title: '系统治理',
     icon: 'Setting',
     children: [
+      { path: '/settings/ai', title: 'AI 模型设置' },
       { path: '/settings/role', title: '角色权限' },
       { path: '/settings/dict', title: '数据字典' },
       { path: '/settings/log', title: '操作日志' },

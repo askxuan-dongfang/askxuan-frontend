@@ -108,3 +108,4 @@ e2e/test-results/
 
 # Isolated model-picker browser acceptance artifacts
 e2e/artifacts/ai-models/
+e2e/artifacts/ai-settings/
