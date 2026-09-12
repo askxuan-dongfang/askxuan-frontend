@@ -104,3 +104,4 @@ apps/web-h5/
 # Chat browser verification output
 e2e/artifacts/chat-report/
 e2e/artifacts/chat-results/
+e2e/test-results/
