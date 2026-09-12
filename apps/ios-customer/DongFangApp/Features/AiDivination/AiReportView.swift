@@ -29,18 +29,18 @@ struct AiTopicEntrances: View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("EXPLORE · 专题探索").font(.system(size: 10)).tracking(2).opacity(0.7)
+                    Text("EXPLORE · 专题探索").font(AppTypography.micro).tracking(2).opacity(0.7)
                     Text("一事一解，自有章法").font(AppTypography.title(23))
                 }
                 Spacer()
-                Button("我的报告 ↗") { library = true }.font(.system(size: 12))
+                Button("我的报告 ↗") { library = true }.font(AppTypography.caption)
             }
             if error { Button("专题暂未加载 · 点击重试") { Task { await load() } }.font(.footnote) }
-            Text("想系统地了解一个主题？选一份专题，按引导补充资料。").font(.system(size: 12)).foregroundStyle(.secondary)
+            Text("想系统地了解一个主题？选一份专题，按引导补充资料。").font(AppTypography.caption).foregroundStyle(.secondary)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2), spacing: 10) {
                 ForEach(topics) { topic in Button { selected = topic } label: { AiTopicTile(topic: topic) }.buttonStyle(.plain) }
             }
-            Text("免费生成摘要 · 完整解读按专题使用积分").font(.system(size: 10)).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+            Text("免费生成摘要 · 完整解读按专题使用积分").font(AppTypography.micro).foregroundStyle(.secondary).frame(maxWidth: .infinity)
 
         }.padding(18).foregroundStyle(reportGreen).background(reportPaper).clipShape(RoundedRectangle(cornerRadius: 22))
         .task { await load() }
@@ -87,7 +87,7 @@ struct AiReportWorkspace: View {
                 if loading { ProgressView("正在整理内容…").frame(maxWidth: .infinity).padding(40) }
                 if let report { reportBody(report, proxy: proxy) }
                 else if let topic { topicBody(topic) }
-                Text("问玄东方 · 以文化为镜，以生活为本").font(.system(size: 11)).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 25)
+                Text("问玄东方 · 以文化为镜，以生活为本").font(AppTypography.micro).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 25)
             }.padding(20).frame(maxWidth: 760).frame(maxWidth: .infinity)
         }
         }.background(reportPaper).foregroundStyle(Color.textPrimary)
@@ -118,7 +118,7 @@ struct AiReportWorkspace: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("EXPLORE / 专题解读").font(.system(size: 9)).tracking(2).opacity(0.6)
                 Text(title).font(AppTypography.title(28)).foregroundStyle(accent)
-                Text(subtitle).font(.system(size: 13)).lineSpacing(5).foregroundStyle(.secondary)
+                Text(subtitle).font(AppTypography.supporting).lineSpacing(5).foregroundStyle(.secondary)
             }.frame(maxWidth: .infinity, alignment: .leading)
             AiTopicArtwork(code: topic?.code ?? report?.skillCode ?? "fengshui").frame(width: 116, height: 135)
         }.padding(.vertical, 23)
@@ -127,28 +127,28 @@ struct AiReportWorkspace: View {
         VStack(alignment: .leading, spacing: 16, content: content).padding(22).frame(maxWidth: .infinity, alignment: .leading).background(Color.bgSecondary.opacity(0.9)).clipShape(RoundedRectangle(cornerRadius: 20)).overlay(RoundedRectangle(cornerRadius: 20).stroke(accent.opacity(0.10)))
     }
     private func chapters(_ list: [String]) -> some View {
-        ForEach(Array(list.enumerated()), id: \.offset) { index, title in HStack(spacing: 16) { Text(String(format: "%02d", index + 1)).font(AppTypography.title(14)).opacity(0.5); Text(title).font(.system(size: 14)); Spacer() }.padding(.vertical, 5) }
+        ForEach(Array(list.enumerated()), id: \.offset) { index, title in HStack(spacing: 16) { Text(String(format: "%02d", index + 1)).font(AppTypography.title(14)).opacity(0.5); Text(title).font(AppTypography.body); Spacer() }.padding(.vertical, 5) }
     }
     private func primary(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Text(busy ? "正在处理…" : title).font(.system(size: 14, weight: .medium)).frame(maxWidth: .infinity).padding(16).background(Color.brandDefault).foregroundStyle(Color.textOnBrand).clipShape(RoundedRectangle(cornerRadius: 12)) }.disabled(busy)
+        Button(action: action) { Text(busy ? "正在处理…" : title).font(AppTypography.body.weight(.medium)).frame(maxWidth: .infinity).padding(16).background(Color.brandDefault).foregroundStyle(Color.textOnBrand).clipShape(RoundedRectangle(cornerRadius: 12)) }.disabled(busy)
     }
     @ViewBuilder private func topicBody(_ topic: AiTopic) -> some View {
         hero(topic.title, subtitle: topic.subtitle)
-        HStack { Text("摘要免费"); Text("·"); Text("完整解读 \(topic.pointsPrice) 积分") }.font(.system(size: 11)).foregroundStyle(accent).padding(.bottom, 5)
+        HStack { Text("摘要免费"); Text("·"); Text("完整解读 \(topic.pointsPrice) 积分") }.font(AppTypography.micro).foregroundStyle(accent).padding(.bottom, 5)
         card {
             HStack(spacing: 12) {
                 Label("补充资料", systemImage: step == 1 ? "checkmark.circle.fill" : "1.circle.fill").opacity(step == 0 ? 1 : 0.6)
                 Rectangle().frame(height: 1).opacity(0.2)
                 Label("说说问题", systemImage: "2.circle.fill").opacity(step == 1 ? 1 : 0.4)
-            }.font(.system(size: 12))
+            }.font(AppTypography.caption)
             Text(step == 0 ? "为这次解读，补充一点线索" : "这一次，您最在意什么？").font(AppTypography.section).padding(.top, 8)
             if step == 0 {
                 Text("补充标注“必填”的资料；选填内容不确定时可以留空。").font(.footnote).foregroundStyle(.secondary)
                 ForEach(visibleFields) { field in fieldView(field) }
-                primary("下一步，说说问题 →") { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { step = 1 } }.disabled(skill == nil || !fieldsReady)
+                primary("下一步，说说问题 →") { AppMotion.perform { step = 1 } }.disabled(skill == nil || !fieldsReady)
             } else {
                 ForEach(AiTopicPresentation(code: topic.code).prompts, id: \.self) { prompt in
-                    Button { question = prompt } label: { HStack { Text(prompt).multilineTextAlignment(.leading); Spacer(); Image(systemName: "plus") }.font(.system(size: 12)).padding(13).frame(maxWidth: .infinity, alignment: .leading).background(accent.opacity(0.07)).clipShape(RoundedRectangle(cornerRadius: 12)) }.buttonStyle(.plain).disabled(submittedRequest != nil)
+                    Button { question = prompt } label: { HStack { Text(prompt).multilineTextAlignment(.leading); Spacer(); Image(systemName: "plus") }.font(AppTypography.caption).padding(13).frame(maxWidth: .infinity, alignment: .leading).background(accent.opacity(0.07)).clipShape(RoundedRectangle(cornerRadius: 12)) }.buttonStyle(.plain).disabled(submittedRequest != nil)
                 }
                 Text("最想了解的问题 *").font(.subheadline)
                 TextEditor(text: $question).frame(minHeight: 125).padding(8).scrollContentBackground(.hidden).background(reportPaper).clipShape(RoundedRectangle(cornerRadius: 10)).accessibilityLabel("最想了解的问题").disabled(submittedRequest != nil)
@@ -168,7 +168,7 @@ struct AiReportWorkspace: View {
             if field.type == "select" {
                 VStack(spacing: 9) {
                     ForEach(field.options ?? []) { option in
-                        Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { setInput(field.key, option.value) } } label: {
+                        Button { AppMotion.perform { setInput(field.key, option.value) } } label: {
                             HStack(alignment: .top, spacing: 12) {
                                 VStack(alignment: .leading, spacing: 5) { Text(option.label).font(AppTypography.body); if let description = option.description { Text(description).font(AppTypography.caption).foregroundStyle(.secondary) } }
                                 Spacer(minLength: 8)
@@ -201,7 +201,7 @@ struct AiReportWorkspace: View {
                     HStack { Text("完整分析 · 已解锁").font(AppTypography.section); Spacer(); Button(largeType ? "标准字号" : "放大字号") { largeType.toggle() }.font(AppTypography.caption) }
                     DisclosureGroup("章节导航") {
                         ForEach(Array(r.content.components(separatedBy: "\n").enumerated()), id: \.offset) { index, line in
-                            if line.hasPrefix("#") { Button(line.trimmingCharacters(in: CharacterSet(charactersIn: "# "))) { withAnimation(reduceMotion ? nil : .easeInOut) { proxy.scrollTo("chapter-\(index)", anchor: .top) } }.font(.subheadline).padding(.vertical, 5) }
+                            if line.hasPrefix("#") { Button(line.trimmingCharacters(in: CharacterSet(charactersIn: "# "))) { AppMotion.perform(AppMotion.reveal) { proxy.scrollTo("chapter-\(index)", anchor: .top) } }.font(.subheadline).padding(.vertical, 5) }
                         }
                     }
                     AiMarkdownText(text: r.content, large: largeType).foregroundStyle(Color.textPrimary)
@@ -346,7 +346,7 @@ struct AiTopicTile: View {
             VStack(alignment: .leading, spacing: 9) {
                 Text(topic.seal).font(AppTypography.title(11)).foregroundStyle(AiTopicPresentation(code: topic.code).color)
                 Text(topic.title).font(AppTypography.title(19))
-                Text(AiTopicPresentation(code: topic.code).caption).font(.system(size: 10)).foregroundStyle(.secondary).lineSpacing(4).frame(maxWidth: 95, alignment: .leading)
+                Text(AiTopicPresentation(code: topic.code).caption).font(AppTypography.micro).foregroundStyle(.secondary).lineSpacing(4).frame(maxWidth: 95, alignment: .leading)
                 Spacer(minLength: 10)
             }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
         }.frame(height: 143).background(AiTopicPresentation(code: topic.code).color.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(AiTopicPresentation(code: topic.code).color.opacity(0.2)))
@@ -405,6 +405,6 @@ struct AiMarkdownText: View {
     }
     private func table(_ value: String) -> some View {
         let rows = value.components(separatedBy: "\n").map { line in line.trimmingCharacters(in: CharacterSet(charactersIn: "| ")).components(separatedBy: "|") }
-        return ScrollView(.horizontal) { VStack(alignment: .leading, spacing: 0) { ForEach(Array(rows.enumerated()), id: \.offset) { index, row in HStack(alignment: .top, spacing: 0) { ForEach(Array(row.enumerated()), id: \.offset) { _, cell in Text(inline(cell.trimmingCharacters(in: .whitespaces))).font(.system(size: 13, weight: index == 0 ? .semibold : .regular)).frame(width: 140, alignment: .leading).padding(10) } }.background(.primary.opacity(index == 0 ? 0.07 : 0.02)); Divider() } } }.clipShape(RoundedRectangle(cornerRadius: 8))
+        return ScrollView(.horizontal) { VStack(alignment: .leading, spacing: 0) { ForEach(Array(rows.enumerated()), id: \.offset) { index, row in HStack(alignment: .top, spacing: 0) { ForEach(Array(row.enumerated()), id: \.offset) { _, cell in Text(inline(cell.trimmingCharacters(in: .whitespaces))).font(AppTypography.supporting.weight(index == 0 ? .semibold : .regular)).frame(width: 140, alignment: .leading).padding(10) } }.background(.primary.opacity(index == 0 ? 0.07 : 0.02)); Divider() } } }.clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }

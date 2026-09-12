@@ -66,7 +66,7 @@ struct BookingView: View {
     private var topNav: some View {
         ZStack {
             Text("预约服务")
-                .font(.system(size: 17, weight: .semibold))
+                .font(AppTypography.reading.weight(.semibold))
                 .foregroundStyle(Color.accentDefault)
         }
         .frame(height: AppSpacing.navTop)
@@ -90,16 +90,16 @@ struct BookingView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(master.dharmaName)
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(AppTypography.reading.weight(.semibold))
                             .foregroundStyle(Color.textPrimary)
                         Text("\(master.templeName) · \(master.position)")
-                            .font(.system(size: 13))
+                            .font(AppTypography.supporting)
                             .foregroundStyle(Color.textTertiary)
 
                         HStack(spacing: 8) {
                             if let specialty = master.specialties.first {
                                 Text(specialty)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(AppTypography.caption.weight(.medium))
                                     .foregroundStyle(Color.white)
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 2)
@@ -108,10 +108,10 @@ struct BookingView: View {
                             }
                             HStack(spacing: 2) {
                                 Image(systemName: "star.fill")
-                                    .font(.system(size: 12))
+                                    .font(AppTypography.caption)
                                     .foregroundStyle(Color.accentDefault)
                                 Text(master.ratingText)
-                                    .font(.system(size: 13))
+                                    .font(AppTypography.supporting)
                                     .foregroundStyle(Color.accentDefault)
                             }
                         }
@@ -132,10 +132,10 @@ struct BookingView: View {
                     }
                     VStack(alignment: .leading, spacing: 2) {
                         Text(viewModel.templeName.isEmpty ? "寺院预约" : viewModel.templeName)
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(AppTypography.reading.weight(.semibold))
                             .foregroundStyle(Color.textPrimary)
                         Text("全寺执行 · 不指定法师")
-                            .font(.system(size: 13))
+                            .font(AppTypography.supporting)
                             .foregroundStyle(Color.textTertiary)
                     }
                     Spacer()
@@ -162,7 +162,7 @@ struct BookingView: View {
                 }
 				if viewModel.services.isEmpty && !viewModel.isLoading {
 					Text("该寺院暂无可预约服务")
-						.font(.system(size: 14))
+						.font(AppTypography.body)
 						.foregroundStyle(Color.textTertiary)
 				}
             }
@@ -175,7 +175,7 @@ struct BookingView: View {
 		let isSelected = viewModel.selectedServiceId == service.serviceCode
 
         return Button {
-            withAnimation(.easeInOut(duration: 0.15)) {
+            AppMotion.perform {
 				viewModel.selectedServiceId = service.serviceCode
             }
         } label: {
@@ -194,10 +194,10 @@ struct BookingView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
 					Text(service.serviceName)
-                        .font(.system(size: 15, weight: .medium))
+                        .font(AppTypography.body.weight(.medium))
                         .foregroundStyle(Color.textPrimary)
 					Text("以寺院实时可用时段为准")
-                        .font(.system(size: 13))
+                        .font(AppTypography.supporting)
                         .foregroundStyle(Color.textTertiary)
                 }
 
@@ -205,10 +205,10 @@ struct BookingView: View {
 
                 HStack(spacing: 0) {
 					Text("¥\(Int(service.price))")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.brandDefault)
                     Text("/次")
-                        .font(.system(size: 12))
+                        .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
             }
@@ -237,10 +237,10 @@ struct BookingView: View {
                         let isSelected = viewModel.selectedDateIndex == index
                         VStack(spacing: 4) {
                             Text(AppDateFormatter.dayLabel(for: date))
-                                .font(.system(size: 12))
+                                .font(AppTypography.caption)
                                 .foregroundStyle(isSelected ? Color.textPrimary : Color.textTertiary)
                             Text(AppDateFormatter.shortDay.string(from: date))
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(AppTypography.reading.weight(.semibold))
                                 .foregroundStyle(isSelected ? Color.white : Color.textSecondary)
                         }
                         .frame(width: 60)
@@ -253,7 +253,7 @@ struct BookingView: View {
                         )
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.15)) {
+                            AppMotion.perform {
                                 viewModel.selectedDateIndex = index
                             }
 							Task { await viewModel.refreshAvailability() }
@@ -267,7 +267,7 @@ struct BookingView: View {
 				ForEach(viewModel.availableSlots) { slot in
 					let isSelected = viewModel.selectedSlotCode == slot.slotCode
                     Button {
-                        withAnimation(.easeInOut(duration: 0.15)) {
+                        AppMotion.perform {
 							viewModel.selectedSlotCode = slot.slotCode
                         }
                     } label: {
@@ -276,10 +276,10 @@ struct BookingView: View {
                                 .font(.system(size: 18))
                                 .foregroundStyle(isSelected ? Color.brandDefault : Color.accentDefault)
 							Text(slot.label)
-                                .font(.system(size: 13, weight: .medium))
+                                .font(AppTypography.supporting.weight(.medium))
                                 .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary)
 							Text("\(slot.timeRange) · 余\(slot.remaining)")
-                                .font(.system(size: 11))
+                                .font(AppTypography.micro)
                                 .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                         }
                         .frame(maxWidth: .infinity)
@@ -298,7 +298,7 @@ struct BookingView: View {
             }
 			if viewModel.availableSlots.isEmpty {
 				Text("当日暂无可预约时段")
-					.font(.system(size: 13))
+					.font(AppTypography.supporting)
 					.foregroundStyle(Color.textTertiary)
 			}
         }
@@ -315,7 +315,7 @@ struct BookingView: View {
 
             TextField("请描述您的需求或祈福对象...", text: $viewModel.note, axis: .vertical)
                 .lineLimit(4, reservesSpace: true)
-                .font(.system(size: 14))
+                .font(AppTypography.body)
                 .foregroundStyle(Color.textPrimary)
                 .padding(12)
                 .frame(minHeight: 80)
@@ -339,13 +339,13 @@ struct BookingView: View {
                 ForEach(viewModel.meritTiers) { tier in
                     let isSelected = viewModel.selectedMeritTier == tier
                     Button {
-                        withAnimation(.easeInOut(duration: 0.15)) {
+                        AppMotion.perform {
                             viewModel.selectedMeritTier = tier
                             viewModel.customMeritMoney = ""
                         }
                     } label: {
                         Text("¥\(Int(tier.amount))")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(AppTypography.body.weight(.medium))
                             .foregroundStyle(isSelected ? Color.white : Color.textSecondary)
                             .frame(maxWidth: .infinity)
                             .frame(height: 40)
@@ -363,11 +363,11 @@ struct BookingView: View {
             // 自定义金额
             HStack(spacing: 6) {
                 Text("¥")
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.textTertiary)
                 TextField("自定义金额", text: $viewModel.customMeritMoney)
                     .keyboardType(.numberPad)
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.textPrimary)
             }
             .padding(.horizontal, 12)
@@ -403,7 +403,7 @@ struct BookingView: View {
 
             HStack {
                 Text("合计")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
                 Text("¥\(total)")
@@ -413,10 +413,10 @@ struct BookingView: View {
 
             HStack(spacing: 2) {
                 Image(systemName: "info.circle")
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                 Text("预约成功后24小时内可免费取消")
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }
             .frame(maxWidth: .infinity)
@@ -433,11 +433,11 @@ struct BookingView: View {
     private func priceRow(label: String, value: String, valueColor: Color) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 14))
+                .font(AppTypography.body)
                 .foregroundStyle(Color.textSecondary)
             Spacer()
             Text(value)
-                .font(.system(size: 14))
+                .font(AppTypography.body)
                 .foregroundStyle(valueColor)
         }
         .padding(.vertical, 6)
@@ -464,7 +464,7 @@ struct BookingView: View {
                             .font(.system(size: 18))
                     }
                     Text("确认预约并支付 ¥\(Int(viewModel.displayTotal))")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(AppTypography.reading.weight(.semibold))
                 }
                 .foregroundStyle(Color.white)
                 .frame(maxWidth: .infinity)

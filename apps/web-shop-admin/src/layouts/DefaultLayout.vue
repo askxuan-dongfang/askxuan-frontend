@@ -81,7 +81,7 @@ onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
   >
     <button class="ax-admin-overlay" type="button" aria-label="关闭导航" @click="drawerOpen = false"></button>
 
-    <aside class="ax-admin-sidebar" aria-label="商城管理台主导航">
+    <aside class="ax-admin-sidebar" :inert="mobile && !drawerOpen" aria-label="商城管理台主导航">
       <div class="ax-admin-logo">
         <img class="ax-admin-logo__image" :src="logoUrl" alt="" />
         <div class="ax-admin-logo__copy">
@@ -225,13 +225,5 @@ onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
   background: rgba(var(--admin-accent-rgb),0.08);
 }
 
-.page-enter-active,
-.page-leave-active {
-  transition: opacity 180ms ease;
-}
 
-.page-enter-from,
-.page-leave-to {
-  opacity: 0;
-}
 </style>

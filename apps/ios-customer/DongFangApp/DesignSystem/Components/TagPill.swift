@@ -12,17 +12,25 @@ struct DFTagPill: View {
     var isSelected: Bool = false
     var action: (() -> Void)? = nil
 
+    @ViewBuilder
     var body: some View {
+        if let action {
+            Button { AppMotion.perform { action() } } label: { label }
+                .buttonStyle(CardPressButtonStyle())
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+        } else {
+            label
+        }
+    }
+
+    private var label: some View {
         Text(title)
-            .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
+            .font(AppTypography.caption.weight(isSelected ? .semibold : .regular))
             .foregroundStyle(isSelected ? Color.white : Color.textTertiary)
             .padding(.horizontal, 14)
             .padding(.vertical, 6)
             .background(isSelected ? Color.brandDefault : Color.bgTertiary)
             .clipShape(Capsule())
             .contentShape(Capsule())
-            .onTapGesture {
-                action?()
-            }
     }
 }

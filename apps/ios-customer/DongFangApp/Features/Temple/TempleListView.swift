@@ -103,7 +103,7 @@ struct TempleListView: View {
     private func tagPill(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 12))
+                .font(AppTypography.caption)
                 .foregroundStyle(isSelected ? Color.white : Color.textTertiary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 5)
@@ -121,7 +121,7 @@ struct TempleListView: View {
                     .fill(isSelected ? Color.brandDefault : Color.clear)
                     .frame(width: 2)
                 Text(title)
-                    .font(.system(size: 12, weight: isSelected ? .medium : .regular))
+                    .font(AppTypography.caption.weight(isSelected ? .medium : .regular))
                     .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 11)
@@ -143,13 +143,13 @@ struct TempleListView: View {
             VStack(spacing: 0) {
                 HStack(alignment: .center, spacing: 8) {
                     Text(temple.name)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                     HStack(spacing: 4) {
                         Text(temple.type)
                         Text(temple.sect)
                     }
-                    .font(.system(size: 10, weight: .medium))
+                    .font(AppTypography.micro.weight(.medium))
                     .foregroundStyle(categoryBadgeColor(for: temple.type))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
@@ -158,10 +158,10 @@ struct TempleListView: View {
                     Spacer()
                     HStack(spacing: 3) {
                         Image(systemName: "star.fill")
-                            .font(.system(size: 10))
+                            .font(AppTypography.micro)
                             .foregroundStyle(Color.accentDefault)
                         Text(String(format: "%.1f", temple.rating))
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(AppTypography.supporting.weight(.semibold))
                             .foregroundStyle(Color.accentDefault)
                     }
                 }
@@ -169,14 +169,14 @@ struct TempleListView: View {
                 // 位置 + 价格
                 HStack(spacing: 4) {
                     Image(systemName: "mappin.circle.fill")
-                        .font(.system(size: 11))
+                        .font(AppTypography.micro)
                         .foregroundStyle(Color.textTertiary)
                     Text(temple.region)
-                        .font(.system(size: 12))
+                        .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                     Spacer()
                     Text(startPriceText(for: temple))
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(AppTypography.supporting.weight(.semibold))
                         .foregroundStyle(priceColor(for: temple))
                 }
                 .padding(.top, 4)
@@ -186,7 +186,7 @@ struct TempleListView: View {
                     HStack(spacing: 6) {
                         ForEach((temple.serviceTags ?? []).prefix(4), id: \.self) { tag in
                             Text(tag)
-                                .font(.system(size: 10))
+                                .font(AppTypography.micro)
                                 .foregroundStyle(Color.textSecondary)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
@@ -197,7 +197,7 @@ struct TempleListView: View {
                     Spacer()
                     if let count = temple.serviceCount {
                         Text("\(count)项服务")
-                            .font(.system(size: 10, weight: .medium))
+                            .font(AppTypography.micro.weight(.medium))
                             .foregroundStyle(Color.brandDefault)
                     }
                 }

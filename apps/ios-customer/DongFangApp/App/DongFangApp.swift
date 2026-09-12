@@ -39,12 +39,14 @@ struct DongFangApp: App {
             MainTabView()
             .environmentObject(authStore)
             .preferredColorScheme(AppTheme(rawValue: themeValue)?.colorScheme)
+                .appVisualDefaults()
                 .tint(Color.brandDefault)
                 .task { await chatNotifications.refresh(); await chatNotifications.monitor() }
                 .onChange(of: authStore.isLoggedIn) { _,_ in Task { await chatNotifications.refresh() } }
                 .fullScreenCover(item: $chatNotifications.destination) { destination in
                     if let who=chatNotifications.identity() {
                         ChatExperienceView(conversationID:destination.id,role:who.role,accountID:who.accountID,userID:who.userID,token:who.token,nickname:who.nickname)
+                            .appVisualDefaults()
                     }
                 }
         }

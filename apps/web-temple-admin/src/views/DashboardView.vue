@@ -253,7 +253,7 @@ function goBooking(id: string) {
   padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background-color var(--admin-transition);
 }
 .todo-item:hover {
   background: var(--admin-surface-muted);
@@ -261,7 +261,7 @@ function goBooking(id: string) {
 .todo-no {
   font-size: var(--type-size-body);
   color: var(--admin-text);
-  font-weight: 500;
+  font-weight: var(--type-weight-medium);
 }
 .todo-meta {
   font-size: var(--type-size-caption);

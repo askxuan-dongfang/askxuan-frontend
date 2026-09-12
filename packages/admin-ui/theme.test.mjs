@@ -69,22 +69,34 @@ test('chart theme changes repaint chrome and gradients while preserving data, ca
   const tokens = JSON.parse(await readFile(new URL('../design-tokens/tokens.json', import.meta.url), 'utf8'))
   const chartSource = await readFile(new URL('./chart-theme.ts', import.meta.url), 'utf8')
   let palette = tokens.themes.light.color
+  let reduceMotion = false
+  const windowEvents = new Map()
+  const mediaEvents = new Map()
+  const media = { get matches() { return reduceMotion }, addEventListener: (name, fn) => mediaEvents.set(name, fn), removeEventListener: name => mediaEvents.delete(name) }
   const variable = name => ({
     '--admin-primary': palette.brand.default, '--admin-primary-hover': palette.brand.light,
     '--admin-accent': palette.accent.default, '--admin-text': palette.text.primary,
     '--admin-text-secondary': palette.text.secondary, '--admin-surface': palette.bg.secondary,
     '--admin-border': palette.border.default, '--admin-success': palette.state.success,
-    '--admin-warning': palette.state.warning, '--admin-danger': palette.state.error, '--admin-info': palette.state.info
+    '--admin-warning': palette.state.warning, '--admin-danger': palette.state.error, '--admin-info': palette.state.info,
+    '--font-sans': '-apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif',
+    '--type-size-micro': '11px', '--motion-duration-enter': '280ms', '--motion-duration-standard': '200ms'
   })[name] || ''
-  const context = vm.createContext({ tokens, document: { documentElement: {} }, getComputedStyle: () => ({ getPropertyValue: variable }) })
-  const stripped = stripTypeScriptTypes(chartSource.replace(/^import tokens[^\n]*\n/, ''), { mode: 'strip' }).replace(/\bexport /g, '')
-  vm.runInContext(stripped + '\nthis.repaint = withAdminChartTheme;', context)
+  const context = vm.createContext({ tokens, ADMIN_THEME_EVENT: 'askxuan:admin-theme-change', document: { documentElement: {} }, getComputedStyle: () => ({ getPropertyValue: variable }), window: { matchMedia: () => media, addEventListener: (name, fn) => windowEvents.set(name, fn), removeEventListener: name => windowEvents.delete(name) } })
+  const stripped = stripTypeScriptTypes(chartSource.replace(/^import [^\n]*\n/gm, ''), { mode: 'strip' }).replace(/\bexport /g, '')
+  vm.runInContext(stripped + '\nthis.repaint = withAdminChartTheme; this.watch = watchAdminChartAppearance;', context)
   const formatter = value => String(value)
   const initial = { tooltip: { formatter }, legend: { selected: { '#C45A3C': false } }, dataZoom: [{ start: 20, end: 80 }],
     xAxis: { data: ['#C45A3C', '九月'] }, series: [{ name: '#C45A3C', data: [{ name: '#C45A3C', value: 37 }],
-      itemStyle: { color: '#C45A3C' }, areaStyle: { color: { type: 'linear', colorStops: [{ offset: 0, color: 'rgba(196,90,60,0.3)' }] } } }] }
+      label: { fontSize: 'var(--type-size-micro)' }, itemStyle: { color: '#C45A3C' }, areaStyle: { color: { type: 'linear', colorStops: [{ offset: 0, color: 'rgba(196,90,60,0.3)' }] } } }] }
   const light = context.repaint(initial)
   assert.equal(light.series[0].itemStyle.color, '#284D43')
+  assert.equal(light.series[0].label.fontSize, 11)
+  assert.equal(light.textStyle.fontFamily, variable('--font-sans'))
+  assert.equal(light.legend.textStyle.fontFamily, variable('--font-sans'))
+  assert.equal(light.xAxis.axisLabel.fontFamily, variable('--font-sans'))
+  assert.equal(light.animationDuration, 280)
+  assert.equal(light.animationDurationUpdate, 200)
   assert.equal(light.series[0].areaStyle.color.colorStops[0].color, 'rgba(40,77,67,0.3)')
   assert.equal(light.tooltip.formatter, formatter)
   assert.equal(JSON.stringify(light.series[0].data), JSON.stringify(initial.series[0].data))
@@ -99,4 +111,22 @@ test('chart theme changes repaint chrome and gradients while preserving data, ca
   assert.equal(dark.series[0].areaStyle.color.colorStops[0].color, 'rgba(196,90,60,0.3)')
   assert.equal(dark.textStyle.color, '#F0E6DA')
   assert.equal(dark.legend.selected['#C45A3C'], false)
+  let current = dark
+  const stop = context.watch(() => { current = context.repaint(current) })
+  assert.equal(windowEvents.size, 1)
+  assert.equal(mediaEvents.size, 1)
+  reduceMotion = true
+  mediaEvents.get('change')()
+  assert.equal(current.animation, false)
+  assert.equal(current.animationDuration, 0)
+  assert.equal(current.animationDurationUpdate, 0)
+  assert.equal(current.legend.selected['#C45A3C'], false)
+  assert.equal(current.dataZoom[0].start, 20)
+  reduceMotion = false
+  mediaEvents.get('change')()
+  assert.equal(current.animation, true)
+  assert.equal(current.animationDuration, 280)
+  stop()
+  assert.equal(windowEvents.size, 0)
+  assert.equal(mediaEvents.size, 0)
 })

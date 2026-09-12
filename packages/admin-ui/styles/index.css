@@ -1,4 +1,4 @@
-@font-face { font-family: "AskXuan Serif"; src: url("../../design-tokens/fonts/AskXuanSerif-Semibold.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@import '../../design-tokens/fonts/web/faces.css';
 /* 问玄东方三管理台共享作业主题与响应式壳层。 */
 /* Keep the shared theme above component CSS loaded by lazy routes. */
 html:root {
@@ -34,7 +34,7 @@ html:root {
   --admin-shadow-rgb: 0, 0, 0;
   --admin-shadow-sm: 0 1px 2px rgba(var(--admin-shadow-rgb),.16);
   --admin-shadow-md: 0 8px 24px rgba(var(--admin-shadow-rgb),.22);
-  --admin-transition: 180ms ease;
+  --admin-transition: var(--motion-duration-standard) var(--motion-ease);
 
   /* Legacy commerce aliases share the same theme; generated --color-* remain authoritative. */
   --primary: var(--admin-primary);
@@ -66,7 +66,7 @@ html:root {
   --shadow-sm: var(--admin-shadow-sm);
   --shadow: 0 3px 10px rgba(var(--admin-shadow-rgb),.16);
   --shadow-md: var(--admin-shadow-md);
-  --transition: all var(--admin-transition);
+  --transition: color var(--admin-transition), background-color var(--admin-transition), border-color var(--admin-transition), box-shadow var(--admin-transition);
 
   --el-color-primary: var(--admin-primary);
   --el-color-success: var(--admin-success);
@@ -856,8 +856,19 @@ a:focus-visible,
     margin-left: 0 !important;
   }
 
-  .ax-admin-shell.is-drawer-open .ax-admin-overlay {
+  .ax-admin-overlay {
     display: block;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity var(--motion-duration-exit) var(--motion-ease), visibility 0s var(--motion-duration-exit);
+  }
+
+  .ax-admin-shell.is-drawer-open .ax-admin-overlay {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity var(--motion-duration-standard) var(--motion-ease), visibility 0s;
   }
 
   .ax-admin-logo__copy,
@@ -1103,20 +1114,57 @@ a:focus-visible,
   }
 }
 
-/* Shared product typography, including Element Plus overlays rendered outside the shell. */
-html:root { --el-font-family: var(--font-sans); --el-font-size-base: var(--type-size-body); --el-font-size-small: var(--type-size-caption); --el-font-size-large: var(--type-size-card); }
+/* All text roles also apply to overlays teleported outside the shell. */
+html:root {
+  --el-font-family: var(--font-sans);
+  --el-font-size-extra-small: var(--type-size-caption);
+  --el-font-size-small: var(--type-size-label);
+  --el-font-size-base: var(--type-size-body);
+  --el-font-size-medium: var(--type-size-reading);
+  --el-font-size-large: var(--type-size-card);
+  --el-font-size-extra-large: var(--type-size-section);
+  --el-font-weight-primary: var(--type-weight-medium);
+  --el-font-line-height-primary: calc(var(--type-size-body) * var(--type-line-body));
+}
 body { line-height: var(--type-line-body); font-weight: var(--type-weight-regular); }
-h1, h2, h3, h4, .el-dialog__title, .el-drawer__title, .el-message-box__title { font-family: var(--font-serif); font-weight: var(--type-weight-semibold); line-height: var(--type-line-title); letter-spacing: .02em; }
-h1 { font-size: var(--type-size-page); } h2 { font-size: var(--type-size-section); } h3 { font-size: var(--type-size-card); }
-.el-button, .el-form-item__label, .el-table, .el-input__inner, .el-textarea__inner { font-family: var(--font-sans); }
-.el-button { font-weight: var(--type-weight-medium); }
+b, strong { font-weight: var(--type-weight-semibold); }
+h1, h2, h3, h4, h5, h6,
+.el-dialog__title, .el-drawer__title, .el-message-box__title {
+  font-family: var(--font-serif);
+  font-weight: var(--type-weight-semibold);
+  line-height: var(--type-line-title);
+  letter-spacing: .02em;
+}
+h1 { font-size: var(--type-size-page); }
+h2 { font-size: var(--type-size-section); }
+h3 { font-size: var(--type-size-card); }
+h4, h5, h6 { font-size: var(--type-size-reading); }
+.el-dialog__title, .el-drawer__title, .el-message-box__title { font-size: var(--type-size-card); }
+.el-button, .el-link, .el-form-item__label, .el-table,
+.el-input__inner, .el-textarea__inner, .el-select__wrapper,
+.el-radio__label, .el-checkbox__label, .el-tabs__item,
+.el-dropdown, .el-dropdown-menu, .el-popper, .el-pagination,
+.el-message, .el-notification, .el-alert, .el-menu {
+  font-family: var(--font-sans);
+}
+.el-button, .el-link, .el-form-item__label, .el-tabs__item {
+  font-weight: var(--type-weight-medium);
+}
 .el-button--primary { font-weight: var(--type-weight-semibold); }
-.el-statistic__number, .aui-stat-card__value, .stat-value, .amount, .price { font-family: var(--font-sans); font-variant-numeric: tabular-nums lining-nums; letter-spacing: 0; }
+.el-table, .el-descriptions, .el-pagination, .el-input-number,
+.el-statistic__number, .aui-stat-card__value, .stat-value,
+.ax-task-card__value, .amount, .price {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.el-statistic__number, .aui-stat-card__value, .stat-value,
+.ax-task-card__value, .amount, .price {
+  font-family: var(--font-sans);
+  letter-spacing: 0;
+}
 code, pre { font-family: var(--font-mono); }
 
-
 /* Appearance is available before sign-in and in every operations header. */
-.ax-appearance{display:inline-flex;align-items:center;gap:7px;flex:none;min-height:36px;padding:0 8px 0 10px;border:1px solid var(--admin-border);border-radius:9px;background:var(--admin-surface);color:var(--admin-text-secondary);font-size:12px;line-height:1.4}
+.ax-appearance{display:inline-flex;align-items:center;gap:7px;flex:none;min-height:36px;padding:0 8px 0 10px;border:1px solid var(--admin-border);border-radius:9px;background:var(--admin-surface);color:var(--admin-text-secondary);font-size:var(--type-size-caption);line-height:var(--type-line-control)}
 .ax-appearance>svg{flex:none;color:var(--admin-accent)}
 .ax-appearance select{min-width:72px;min-height:34px;max-width:104px;padding:4px 18px 4px 3px;border:0;border-radius:6px;background:var(--admin-surface);color:var(--admin-text);font:inherit;cursor:pointer;color-scheme:inherit}
 .ax-appearance select:focus-visible{outline:2px solid var(--admin-primary);outline-offset:1px}

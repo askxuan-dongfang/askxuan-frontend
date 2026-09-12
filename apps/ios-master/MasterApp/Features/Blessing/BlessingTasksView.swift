@@ -85,7 +85,7 @@ struct BlessingTasksView: View {
                     ForEach(tabs, id: \.1) { tab in
                         let isActive = viewModel.selectedStatus == tab.0
                         Text(tab.1)
-                            .font(.system(size: 13, weight: isActive ? .semibold : .regular))
+                            .font(AppTypography.supporting.weight(isActive ? .semibold : .regular))
                             .foregroundStyle(isActive ? .white : .textSecondary)
                             .padding(.horizontal, AppSpacing.md)
                             .padding(.vertical, 7)
@@ -127,7 +127,7 @@ struct BlessingTasksView: View {
                         } label: {
                             taskCard(task)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(CardPressButtonStyle())
                         .onAppear {
                             if task.id == viewModel.tasks.last?.id {
                                 Task { await viewModel.loadMore() }

@@ -169,7 +169,7 @@ struct BookingDetailView: View {
             VStack(alignment: .leading, spacing: AppSpacing.md) {
                 HStack(spacing: 6) {
                     Image(systemName: icon)
-                        .font(.system(size: 14))
+                        .font(AppTypography.body)
                         .foregroundStyle(.accentDefault)
                     Text(title)
                         .font(.cardTitle)

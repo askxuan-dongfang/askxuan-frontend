@@ -1,6 +1,8 @@
 @import './tokens.css';
 @import '../../../../packages/design-tokens/typography.css';
+@import '../../../../packages/design-tokens/motion.css';
 @import '../../../../packages/admin-ui/styles/index.css';
+@import '../../../../packages/admin-ui/styles/motion.css';
 
 @tailwind base;
 @tailwind components;

@@ -106,7 +106,7 @@ struct LoginView: View {
                         .font(.brandTitle)
                         .foregroundStyle(.textPrimary)
                     Text("法师工作台")
-                        .font(.system(size: 15, weight: .medium))
+                        .font(AppTypography.body.weight(.medium))
                         .foregroundStyle(.accentDefault)
                 }
                 .padding(.top, AppSpacing.xl * 2)
@@ -122,7 +122,7 @@ struct LoginView: View {
                         if let errorMessage = viewModel.errorMessage {
                             HStack(spacing: 6) {
                                 Image(systemName: "exclamationmark.triangle.fill")
-                                    .font(.system(size: 12))
+                                    .font(AppTypography.caption)
                                 Text(errorMessage)
                                     .font(AppTypography.caption)
                             }
@@ -175,7 +175,7 @@ struct DFTextField: View {
             HStack(spacing: 8) {
                 if let icon {
                     Image(systemName: icon)
-                        .font(.system(size: 14))
+                        .font(AppTypography.body)
                         .foregroundStyle(.textTertiary)
                 }
                 TextField(placeholder, text: $text)
@@ -211,7 +211,7 @@ struct DFSecureField: View {
             HStack(spacing: 8) {
                 if let icon {
                     Image(systemName: icon)
-                        .font(.system(size: 14))
+                        .font(AppTypography.body)
                         .foregroundStyle(.textTertiary)
                 }
                 Group {
@@ -230,7 +230,7 @@ struct DFSecureField: View {
                     isSecure = !isSecure
                 } label: {
                     Image(systemName: isSecure ? "eye.slash" : "eye")
-                        .font(.system(size: 14))
+                        .font(AppTypography.body)
                         .foregroundStyle(.textTertiary)
                 }
             }

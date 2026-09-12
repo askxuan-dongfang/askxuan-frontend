@@ -258,7 +258,7 @@ onMounted(() => {
   font-size: var(--type-size-caption);
 }
 .material-name {
-  font-weight: 500;
+  font-weight: var(--type-weight-medium);
   color: var(--text-dark);
 }
 .material-spec {

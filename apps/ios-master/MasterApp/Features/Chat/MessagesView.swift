@@ -177,11 +177,11 @@ struct MessagesView: View {
         return VStack(spacing: 0) {
             HStack(spacing: 5) {
                 Text(title)
-                    .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
+                    .font(AppTypography.body.weight(isSelected ? .semibold : .regular))
                     .foregroundStyle(isSelected ? .textPrimary : .textTertiary)
                 if badge > 0 {
                     Text("\(badge)")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(AppTypography.micro.weight(.semibold))
                         .foregroundStyle(.white)
                         .frame(minWidth: 16, minHeight: 16)
                         .padding(.horizontal, 4)
@@ -198,7 +198,7 @@ struct MessagesView: View {
         .frame(maxWidth: .infinity)
         .contentShape(Rectangle())
         .onTapGesture {
-            selectedTab = index
+            AppMotion.perform { selectedTab = index }
         }
     }
 
@@ -240,7 +240,7 @@ struct MessagesView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text(m.title)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(AppTypography.body.weight(.medium))
                         .foregroundStyle(.textPrimary)
                     Spacer()
                     if m.isRead == 0 {
@@ -253,7 +253,7 @@ struct MessagesView: View {
                         .foregroundStyle(.textTertiary)
                 }
                 Text(m.content)
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
@@ -277,7 +277,7 @@ struct MessagesView: View {
             LazyVStack(spacing: 0) {
                 ChatNotificationPrompt()
                 HStack {Image(systemName:"magnifyingglass");TextField("搜索姓名、服务或消息",text:$chatSearch)}
-                    .font(.system(size:14)).padding(13).background(Color.bgTertiary,in:RoundedRectangle(cornerRadius:14)).padding(.horizontal,18).padding(.vertical,8)
+                    .font(AppTypography.body).padding(13).background(Color.bgTertiary,in:RoundedRectangle(cornerRadius:14)).padding(.horizontal,18).padding(.vertical,8)
                 if viewModel.chats.isEmpty && !viewModel.isLoading {
                     EmptyState(icon: "bubble.left.slash",
                                title: "暂无咨询",
@@ -290,7 +290,7 @@ struct MessagesView: View {
                         } label: {
                             chatItem(conversation)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(CardPressButtonStyle())
                     }
                 }
             }
@@ -316,7 +316,7 @@ struct MessagesView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text(conversation.peerName)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(AppTypography.body.weight(.medium))
                         .foregroundStyle(.textPrimary)
                     Spacer()
                     Text(DFDateFormatter.friendly(conversation.lastMessageAt))
@@ -324,13 +324,13 @@ struct MessagesView: View {
                         .foregroundStyle(.textTertiary)
                 }
                 Text(conversation.lastMessage)
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            if conversation.unreadCount>0 {Text(conversation.unreadCount>99 ? "99+" : String(conversation.unreadCount)).font(.system(size:11)).foregroundStyle(.white).padding(5).background(Color.brandDefault,in:Capsule())}
+            if conversation.unreadCount>0 {Text(conversation.unreadCount>99 ? "99+" : String(conversation.unreadCount)).font(AppTypography.micro).foregroundStyle(.white).padding(5).background(Color.brandDefault,in:Capsule())}
             Image(systemName: "chevron.right")
                 .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)

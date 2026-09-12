@@ -630,7 +630,7 @@ watch(() => route.params.id, loadDetail, { immediate: true });
   font-size: 12px;
 }
 .store-display-check b {
-  font-weight: 400;
+  font-weight: var(--type-weight-regular);
   color: var(--admin-accent);
 }
 .store-display-check .ready {

@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct HomeView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel = HomeViewModel()
     @EnvironmentObject private var authStore: AuthStore
     @State private var currentBanner: Int = 0
@@ -123,7 +124,7 @@ struct HomeView: View {
 
             NavigationLink(value: HomeRoute.templeList) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(AppTypography.reading.weight(.medium))
                     .foregroundStyle(Color.accentDefault)
                     .frame(width: 30, height: 30)
             }
@@ -157,7 +158,7 @@ struct HomeView: View {
                     Capsule()
                         .fill(index == currentBanner ? Color.brandDefault : Color.textTertiary)
                         .frame(width: index == currentBanner ? 18 : 6, height: 6)
-                        .animation(.easeInOut(duration: 0.3), value: currentBanner)
+                        .animation(reduceMotion ? nil : AppMotion.selection, value: currentBanner)
                 }
             }
         }
@@ -184,7 +185,7 @@ struct HomeView: View {
                     .foregroundStyle(Color.textPrimary)
                 if let subtitle = banner.subtitle {
                     Text(subtitle)
-                        .font(.system(size: 13))
+                        .font(AppTypography.supporting)
                         .foregroundStyle(Color.accentDefault)
                 }
             }
@@ -253,7 +254,7 @@ struct HomeView: View {
     private var beliefSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             Text("按信仰找")
-                .font(.system(size: 17, weight: .semibold))
+                .font(AppTypography.reading.weight(.semibold))
                 .foregroundStyle(Color.textPrimary)
                 .padding(.horizontal, 20)
 
@@ -282,10 +283,10 @@ struct HomeView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(entry.title)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(AppTypography.supporting.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text(entry.subtitle)
-                    .font(.system(size: 11))
+                    .font(AppTypography.micro)
                     .foregroundStyle(Color.textTertiary)
             }
         }
@@ -300,7 +301,7 @@ struct HomeView: View {
     private var intentionSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             Text("按心愿办")
-                .font(.system(size: 17, weight: .semibold))
+                .font(AppTypography.reading.weight(.semibold))
                 .foregroundStyle(Color.textPrimary)
                 .padding(.horizontal, 20)
 
@@ -330,7 +331,7 @@ struct HomeView: View {
                 .clipShape(Circle())
 
             Text(entry.title)
-                .font(.system(size: 11, weight: .medium))
+                .font(AppTypography.micro.weight(.medium))
                 .foregroundStyle(Color.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
@@ -348,11 +349,11 @@ struct HomeView: View {
             NavigationLink(value: HomeRoute.templeList) {
                 HStack {
                     Text("热门寺院")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AppTypography.caption.weight(.semibold))
                         .foregroundStyle(Color.accentDefault)
                 }
                 .padding(.horizontal, 20)
@@ -378,7 +379,7 @@ struct HomeView: View {
                     .frame(width: 168, height: 100)
                     .clipped()
                 Text(temple.type)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(AppTypography.micro.weight(.medium))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 8).padding(.vertical, 2)
                     .background(templeTypeColor(temple.type).opacity(0.85))
@@ -389,21 +390,21 @@ struct HomeView: View {
             VStack(spacing: 4) {
                 HStack {
                     Text(temple.name)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
                     Spacer()
                     Text("★ \(temple.ratingText)")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(AppTypography.micro.weight(.medium))
                         .foregroundStyle(Color.accentDefault)
                 }
                 HStack(spacing: 4) {
                     Image(systemName: "mappin.circle.fill")
-                        .font(.system(size: 11))
+                        .font(AppTypography.micro)
                         .foregroundStyle(Color.textTertiary)
                     Text(temple.region)
-                        .font(.system(size: 11))
+                        .font(AppTypography.micro)
                         .foregroundStyle(Color.textTertiary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
@@ -413,14 +414,14 @@ struct HomeView: View {
                     HStack {
                         if !temple.serviceTagsText.isEmpty {
                             Text(temple.serviceTagsText)
-                                .font(.system(size: 10))
+                                .font(AppTypography.micro)
                                 .foregroundStyle(Color.textSecondary)
                                 .lineLimit(2)
                         }
                         Spacer()
                         if let countText = temple.serviceCountText {
                             Text(countText)
-                                .font(.system(size: 10, weight: .medium))
+                                .font(AppTypography.micro.weight(.medium))
                                 .foregroundStyle(Color.brandDefault)
                         }
                     }
@@ -453,11 +454,11 @@ struct HomeView: View {
             NavigationLink(value: HomeRoute.masterList) {
                 HStack {
                     Text("热门师傅")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AppTypography.caption.weight(.semibold))
                         .foregroundStyle(Color.accentDefault)
                 }
                 .padding(.horizontal, 20)
@@ -481,7 +482,7 @@ struct HomeView: View {
             RemoteAvatar(urlString: master.avatar, size: 56)
 
             Text(master.dharmaName)
-                .font(.system(size: 14, weight: .semibold))
+                .font(AppTypography.body.weight(.semibold))
                 .foregroundStyle(Color.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
@@ -490,13 +491,13 @@ struct HomeView: View {
             HStack(spacing: 4) {
                 if !master.sect.isEmpty {
                     Text(master.sect)
-                        .font(.system(size: 10))
+                        .font(AppTypography.micro)
                         .foregroundStyle(Color.accentDefault)
                         .padding(.horizontal, 6).padding(.vertical, 1)
                         .overlay(Capsule().stroke(Color.accentDefault.opacity(0.25), lineWidth: 1))
                 }
                 Text(master.templeName)
-                    .font(.system(size: 10))
+                    .font(AppTypography.micro)
                     .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -504,7 +505,7 @@ struct HomeView: View {
 
             // 专长标签
             Text(master.specialtiesText)
-                .font(.system(size: 10))
+                .font(AppTypography.micro)
                 .foregroundStyle(Color.textSecondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
@@ -512,10 +513,10 @@ struct HomeView: View {
             // 评分
             HStack(spacing: 2) {
                 Image(systemName: "star.fill")
-                    .font(.system(size: 10))
+                    .font(AppTypography.micro)
                     .foregroundStyle(Color.accentDefault)
                 Text(master.ratingText)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(AppTypography.micro.weight(.medium))
                     .foregroundStyle(Color.accentDefault)
             }
 
@@ -524,14 +525,14 @@ struct HomeView: View {
                 HStack {
                     if !master.specialtiesText.isEmpty {
                         Text(master.specialtiesText)
-                            .font(.system(size: 10))
+                            .font(AppTypography.micro)
                             .foregroundStyle(Color.textSecondary)
                             .lineLimit(2)
                     }
                     Spacer()
                     if let price = master.startPriceText {
                         Text(price)
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(AppTypography.micro.weight(.semibold))
                             .foregroundStyle(Color.brandDefault)
                             .lineLimit(1)
                             .minimumScaleFactor(0.85)
@@ -622,7 +623,7 @@ private struct IntentionHubView: View {
                     ContentUnavailableView("暂无匹配内容", systemImage: "square.grid.2x2")
                 } else {
                     Text("相关寺院服务与大师服务")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                         .padding(.horizontal, 20)
 
@@ -671,7 +672,7 @@ private struct IntentionHubView: View {
                         .font(AppTypography.title(22))
                         .foregroundStyle(Color.textPrimary)
                     Text(heroSummary)
-                        .font(.system(size: 13))
+                        .font(AppTypography.supporting)
                         .foregroundStyle(Color.textSecondary)
                         .lineSpacing(4)
                 }
@@ -698,7 +699,7 @@ private struct IntentionHubView: View {
 
     private var actionLabel: some View {
         Label(heroActionTitle, systemImage: "arrow.right.circle.fill")
-            .font(.system(size: 14, weight: .semibold))
+            .font(AppTypography.body.weight(.semibold))
             .foregroundStyle(Color.white)
             .frame(maxWidth: .infinity)
             .frame(height: 44)
@@ -723,13 +724,13 @@ private struct IntentionHubView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(resourceTypeLabel(item.resourceType))
-                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(Color.accentDefault)
-                Text(item.title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.textPrimary).lineLimit(2)
-                Text(item.subtitle).font(.system(size: 12)).foregroundStyle(Color.textSecondary).lineLimit(1)
-                Text("¥\(Int(item.price))").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.brandDefault)
+                    .font(AppTypography.micro.weight(.semibold)).foregroundStyle(Color.accentDefault)
+                Text(item.title).font(AppTypography.body.weight(.semibold)).foregroundStyle(Color.textPrimary).lineLimit(2)
+                Text(item.subtitle).font(AppTypography.caption).foregroundStyle(Color.textSecondary).lineLimit(1)
+                Text("¥\(Int(item.price))").font(AppTypography.body.weight(.semibold)).foregroundStyle(Color.brandDefault)
             }
             Spacer()
-            Image(systemName: "chevron.right").font(.system(size: 12)).foregroundStyle(Color.textTertiary)
+            Image(systemName: "chevron.right").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
         }
         .padding(10).background(Color.bgSecondary)
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.borderDefault, lineWidth: 1))
@@ -815,10 +816,10 @@ private struct BeliefTopicView: View {
                     Text(viewModel.profile?.name ?? entry.title)
                         .font(AppTypography.title(28))
                     Text(viewModel.profile?.summary ?? entry.subtitle)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.accentDefault)
                     Text(viewModel.profile?.description ?? "正在读取流派简介")
-                        .font(.system(size: 14))
+                        .font(AppTypography.body)
                         .foregroundStyle(Color.textSecondary)
                         .lineSpacing(5)
                 }
@@ -831,8 +832,8 @@ private struct BeliefTopicView: View {
                                 RemoteImage(urlString: master.avatar, placeholderIcon: "person.fill")
                                     .frame(width: 52, height: 52).clipShape(Circle())
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(master.dharmaName).font(.system(size: 15, weight: .semibold))
-                                    Text("\(master.sect) · \(master.templeName)").font(.system(size: 12)).foregroundStyle(Color.textTertiary)
+                                    Text(master.dharmaName).font(AppTypography.body.weight(.semibold))
+                                    Text("\(master.sect) · \(master.templeName)").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
                                 }
                                 Spacer()
                                 Image(systemName: "chevron.right").foregroundStyle(Color.textTertiary)
@@ -848,8 +849,8 @@ private struct BeliefTopicView: View {
                                 RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.2.fill")
                                     .frame(width: 72, height: 52).clipShape(RoundedRectangle(cornerRadius: 6))
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(temple.name).font(.system(size: 15, weight: .semibold))
-                                    Text("\(temple.region) · \(temple.sect)").font(.system(size: 12)).foregroundStyle(Color.textTertiary)
+                                    Text(temple.name).font(AppTypography.body.weight(.semibold))
+                                    Text("\(temple.region) · \(temple.sect)").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
                                 }
                                 Spacer()
                                 Image(systemName: "chevron.right").foregroundStyle(Color.textTertiary)
@@ -871,7 +872,7 @@ private struct BeliefTopicView: View {
             HStack {
                 Text(title).font(AppTypography.title(19))
                 Spacer()
-                NavigationLink(value: more) { Text("更多").font(.system(size: 13)).foregroundStyle(Color.accentDefault) }
+                NavigationLink(value: more) { Text("更多").font(AppTypography.supporting).foregroundStyle(Color.accentDefault) }
             }
             content()
         }.padding(.horizontal, 20)

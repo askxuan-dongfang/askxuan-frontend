@@ -82,7 +82,7 @@ struct TempleDetailView: View {
                     toggleFavorite()
                 } label: {
                     Image(systemName: isFavorited ? "bookmark.fill" : "bookmark")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(isFavorited ? Color.brandDefault : Color.accentDefault)
                         .frame(width: 36, height: 36)
                         .background(Color.bgPrimary.opacity(0.6))
@@ -135,7 +135,7 @@ struct TempleDetailView: View {
                     .foregroundStyle(Color.textTertiary)
                 Text("·").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
                 Text(viewModel.temple?.sect ?? "")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(AppTypography.micro.weight(.medium))
                     .foregroundStyle(Color.brandDefault)
                     .padding(.horizontal, 8).padding(.vertical, 2)
                     .background(Color.brandDefault.opacity(0.15))
@@ -144,7 +144,7 @@ struct TempleDetailView: View {
                 Spacer()
 
                 Text("★ \(viewModel.temple?.ratingText ?? "5.0")")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(AppTypography.supporting.weight(.semibold))
                     .foregroundStyle(Color.accentDefault)
             }
 
@@ -166,11 +166,11 @@ struct TempleDetailView: View {
             ForEach(Array(tabs.enumerated()), id: \.offset) { index, title in
                 let isSelected = viewModel.selectedTab == index
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) { viewModel.selectedTab = index }
+                    AppMotion.perform { viewModel.selectedTab = index }
                 } label: {
                     VStack(spacing: 6) {
                         Text(title)
-                            .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
+                            .font(AppTypography.body.weight(isSelected ? .semibold : .regular))
                             .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                         Capsule()
                             .fill(isSelected ? Color.brandDefault : Color.clear)
@@ -238,7 +238,7 @@ struct TempleDetailView: View {
     private func infoRow(label: String, value: String, isLast: Bool = false) -> some View {
         VStack(spacing: 0) {
             HStack(alignment: .top) {
-                Text(label).font(.system(size: 13)).foregroundStyle(Color.textTertiary)
+                Text(label).font(AppTypography.supporting).foregroundStyle(Color.textTertiary)
                 Spacer()
                 Text(value)
                     .font(AppTypography.body)
@@ -309,10 +309,10 @@ struct TempleDetailView: View {
             .frame(width: 36, height: 36)
 
             Text(service.serviceName)
-                .font(.system(size: 15, weight: .semibold))
+                .font(AppTypography.body.weight(.semibold))
                 .foregroundStyle(Color.textPrimary)
             Text("立即预约")
-                .font(.system(size: 13, weight: .semibold))
+                .font(AppTypography.supporting.weight(.semibold))
                 .foregroundStyle(Color.brandDefault)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -337,17 +337,17 @@ struct TempleDetailView: View {
                             VStack(spacing: 6) {
                                 RemoteAvatar(urlString: master.avatar, size: 64)
                                 Text(master.dharmaName)
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .font(AppTypography.supporting.weight(.semibold))
                                     .foregroundStyle(Color.textPrimary)
                                     .lineLimit(1)
                                 Text(master.position)
-                                    .font(.system(size: 11))
+                                    .font(AppTypography.micro)
                                     .foregroundStyle(Color.brandDefault)
                                     .padding(.horizontal, 8).padding(.vertical, 2)
                                     .background(Color.brandDefault.opacity(0.15))
                                     .clipShape(Capsule())
                                 Text(master.specialtiesText)
-                                    .font(.system(size: 11))
+                                    .font(AppTypography.micro)
                                     .foregroundStyle(Color.textTertiary)
                                     .lineLimit(1)
                             }

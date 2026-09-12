@@ -50,7 +50,7 @@ struct DFBottomTabBar: View {
     private func tabButton(for item: DFTabItem) -> some View {
         let isSelected = selectedTab == item.id
         Button {
-            withAnimation(.easeInOut(duration: 0.15)) {
+            AppMotion.perform {
                 selectedTab = item.id
             }
         } label: {
@@ -61,7 +61,7 @@ struct DFBottomTabBar: View {
                     .frame(height: 24)
 
                 Text(item.title)
-                    .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
+                    .font(AppTypography.micro.weight(isSelected ? .semibold : .regular))
                     .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
             }
             .frame(maxWidth: .infinity)

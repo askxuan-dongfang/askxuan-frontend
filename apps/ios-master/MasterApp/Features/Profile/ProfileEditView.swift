@@ -102,7 +102,7 @@ struct ProfileEditView: View {
                     VStack(alignment: .leading, spacing: AppSpacing.md) {
                         HStack(spacing: 6) {
                             Image(systemName: "text.alignleft")
-                                .font(.system(size: 14))
+                                .font(AppTypography.body)
                                 .foregroundStyle(.accentDefault)
                             Text("个人简介")
                                 .font(.cardTitle)
@@ -143,7 +143,7 @@ struct ProfileEditView: View {
                     VStack(alignment: .leading, spacing: AppSpacing.md) {
                         HStack(spacing: 6) {
                             Image(systemName: "checkmark.seal")
-                                .font(.system(size: 14))
+                                .font(AppTypography.body)
                                 .foregroundStyle(.accentDefault)
                             Text("专长（用顿号分隔）")
                                 .font(.cardTitle)
@@ -168,7 +168,7 @@ struct ProfileEditView: View {
                     VStack(alignment: .leading, spacing: AppSpacing.md) {
                         HStack(spacing: 6) {
                             Image(systemName: "tag")
-                                .font(.system(size: 14))
+                                .font(AppTypography.body)
                                 .foregroundStyle(.accentDefault)
                             Text("定价说明")
                                 .font(.cardTitle)
@@ -258,9 +258,9 @@ struct RichTextToolbar: View {
         Button(action: action) {
             HStack(spacing: 3) {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(AppTypography.caption.weight(.semibold))
                 Text(label)
-                    .font(.system(size: 11))
+                    .font(AppTypography.micro)
             }
             .foregroundStyle(Color.accentDefault)
             .padding(.horizontal, 8)
@@ -268,7 +268,7 @@ struct RichTextToolbar: View {
             .background(Color.accentDefault.opacity(0.1))
             .cornerRadius(6)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardPressButtonStyle())
     }
 }
 

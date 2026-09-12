@@ -106,14 +106,14 @@ struct ProfileView: View {
                     .foregroundStyle(Color.accentDefault)
 
                 Text("登录后即可管理您的预约、订单和地址")
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.textTertiary)
             }
 
             VStack(spacing: 12) {
                 NavigationLink(value: AuthRoute.login) {
                     Text("立即登录 / 注册")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -135,7 +135,7 @@ struct ProfileView: View {
                 }
 
                 Text("未注册手机号将自动创建账号")
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }
             .padding(.horizontal, 40)
@@ -155,7 +155,7 @@ struct ProfileView: View {
                 }
                 userInfoSection
                 Text("功德值用于记录个人成长，不用于支付或兑换；成长记录开放后展示。")
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, AppSpacing.lg)
@@ -181,14 +181,14 @@ struct ProfileView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(Color.brandDefault)
             Text(message)
-                .font(.system(size: 13))
+                .font(AppTypography.supporting)
                 .foregroundStyle(Color.textSecondary)
             Spacer()
             Button {
                 Task { await viewModel.load() }
             } label: {
                 Text("重试")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(AppTypography.supporting.weight(.medium))
                     .foregroundStyle(Color.brandDefault)
             }
         }
@@ -209,17 +209,17 @@ struct ProfileView: View {
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(Color.textPrimary)
                     Text("ID: \(viewModel.maskedMobile)")
-                        .font(.system(size: 13))
+                        .font(AppTypography.supporting)
                         .foregroundStyle(Color.textTertiary)
                     Text("修复版 08-18 · 预约链路 v2")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(AppTypography.micro.weight(.medium))
                         .foregroundStyle(Color.brandDefault)
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.textTertiary)
             }
             .padding(.top, AppSpacing.xl)
@@ -237,7 +237,7 @@ struct ProfileView: View {
                             .foregroundStyle(Color.accentDefault)
                             .monospacedDigit()
                         Text(item.label)
-                            .font(.system(size: 12))
+                            .font(AppTypography.caption)
                             .foregroundStyle(Color.textTertiary)
                     }
                     .frame(maxWidth: .infinity)
@@ -279,10 +279,10 @@ struct ProfileView: View {
                 } label: {
                     HStack(spacing: 2) {
                         Text("查看全部")
-                            .font(.system(size: 13))
+                            .font(AppTypography.supporting)
                             .foregroundStyle(Color.textTertiary)
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 12))
+                            .font(AppTypography.caption)
                             .foregroundStyle(Color.textTertiary)
                     }
                 }
@@ -305,7 +305,7 @@ struct ProfileView: View {
                             .overlay(alignment: .topTrailing) {
                                 if let badge = entry.badge {
                                     Text(badge)
-                                        .font(.system(size: 10, weight: .medium))
+                                        .font(AppTypography.micro.weight(.medium))
                                         .foregroundStyle(Color.white)
                                         .padding(.horizontal, 5)
                                         .padding(.vertical, 2)
@@ -315,7 +315,7 @@ struct ProfileView: View {
                                 }
                             }
                             Text(entry.title)
-                                .font(.system(size: 12))
+                                .font(AppTypography.caption)
                                 .foregroundStyle(Color.textSecondary)
                         }
                         .frame(maxWidth: .infinity)
@@ -352,7 +352,7 @@ struct ProfileView: View {
                                 .monospacedDigit()
                         }
                         Text(asset.label)
-                            .font(.system(size: 12))
+                            .font(AppTypography.caption)
                             .foregroundStyle(Color.textTertiary)
                     }
                     .frame(maxWidth: .infinity)
@@ -382,16 +382,16 @@ struct ProfileView: View {
                             .foregroundStyle(Color.textTertiary)
                             .frame(width: 24)
                         Text(item.title)
-                            .font(.system(size: 14))
+                            .font(AppTypography.body)
                             .foregroundStyle(Color.textPrimary)
                         Spacer()
                         if let trailing = item.trailing {
                             Text(trailing)
-                                .font(.system(size: 13))
+                                .font(AppTypography.supporting)
                                 .foregroundStyle(Color.textTertiary)
                         }
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
+                            .font(AppTypography.body)
                             .foregroundStyle(Color.textTertiary)
                     }
                     .padding(.horizontal, 16)
@@ -422,11 +422,11 @@ struct ProfileView: View {
                             .foregroundStyle(Color.textTertiary)
                             .frame(width: 24)
                         Text(item.title)
-                            .font(.system(size: 14))
+                            .font(AppTypography.body)
                             .foregroundStyle(Color.textPrimary)
                         Spacer()
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
+                            .font(AppTypography.body)
                             .foregroundStyle(Color.textTertiary)
                     }
                     .padding(.horizontal, 16)
@@ -448,7 +448,7 @@ struct ProfileView: View {
                         .foregroundStyle(Color.brandDefault)
                         .frame(width: 24)
                     Text("退出登录")
-                        .font(.system(size: 14))
+                        .font(AppTypography.body)
                         .foregroundStyle(Color.brandDefault)
                     Spacer()
                 }

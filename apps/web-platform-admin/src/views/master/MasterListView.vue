@@ -231,7 +231,7 @@ onMounted(async () => {
   color: var(--color-text-primary);
 }
 .master-cell__lay {
-  font-weight: 400;
+  font-weight: var(--type-weight-regular);
   color: var(--color-text-tertiary);
   font-size: var(--type-size-caption);
 }

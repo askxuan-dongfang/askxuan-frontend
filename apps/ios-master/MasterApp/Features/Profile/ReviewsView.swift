@@ -87,7 +87,7 @@ struct ReviewsView: View {
                     ForEach(filters, id: \.0) { item in
                         let isActive = viewModel.ratingFilter == item.0
                         Text(item.1)
-                            .font(.system(size: 13, weight: isActive ? .semibold : .regular))
+                            .font(AppTypography.supporting.weight(isActive ? .semibold : .regular))
                             .foregroundStyle(isActive ? .white : .textSecondary)
                             .padding(.horizontal, AppSpacing.md)
                             .padding(.vertical, 6)
@@ -114,7 +114,7 @@ struct ReviewsView: View {
         HStack(spacing: AppSpacing.lg) {
             VStack(spacing: 2) {
                 Text(String(format: "%.1f", viewModel.averageRating))
-                    .font(AppTypography.numeric(32))
+                    .appNumericFont(32)
                     .foregroundStyle(.accentDefault)
                 Text("平均评分")
                     .font(.micro)
@@ -174,7 +174,7 @@ struct ReviewsView: View {
             VStack(alignment: .leading, spacing: AppSpacing.sm) {
                 HStack {
                     Text(review.ratingText)
-                        .font(.system(size: 14))
+                        .font(AppTypography.body)
                         .foregroundStyle(.stateWarning)
                     Spacer()
                     Text(review.targetTypeText)

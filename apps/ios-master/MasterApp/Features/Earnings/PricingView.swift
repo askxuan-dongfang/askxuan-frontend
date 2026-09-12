@@ -130,7 +130,7 @@ struct PricingView: View {
             VStack(alignment: .leading, spacing: AppSpacing.md) {
                 HStack(spacing: 6) {
                     Image(systemName: "tag.fill")
-                        .font(.system(size: 14))
+                        .font(AppTypography.body)
                         .foregroundStyle(.accentDefault)
                     Text("定价说明")
                         .font(.cardTitle)
@@ -161,10 +161,10 @@ struct PricingView: View {
                 ForEach(viewModel.presetTiers, id: \.self) { tier in
                     let selected = viewModel.selectedTiers.contains(tier)
                     Button {
-                        viewModel.toggleTier(tier)
+                        AppMotion.perform { viewModel.toggleTier(tier) }
                     } label: {
                         Text(tier)
-                            .font(.system(size: 15, weight: selected ? .bold : .regular))
+                            .font(AppTypography.body.weight(selected ? .bold : .regular))
                             .foregroundStyle(selected ? .white : .textPrimary)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
@@ -180,7 +180,7 @@ struct PricingView: View {
                                     .stroke(selected ? Color.clear : Color.borderDefault, lineWidth: 1)
                             )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(CardPressButtonStyle())
                 }
             }
         }

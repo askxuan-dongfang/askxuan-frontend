@@ -21,7 +21,7 @@ struct DiyBraceletView: View {
                                 quickItem(title: "我的作品", subtitle: "保存每一次灵感", icon: "square.stack")
                             }
                             Button {
-                                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { proxy.scrollTo("inspiration", anchor: .top) }
+                                AppMotion.perform(AppMotion.reveal) { proxy.scrollTo("inspiration", anchor: .top) }
                             } label: {
                                 quickItem(title: "灵感广场", subtitle: "发现心仪的搭配", icon: "sparkles")
                             }
@@ -103,7 +103,7 @@ struct DiyBraceletView: View {
 
     private func journeyStep(_ number: String, _ title: String) -> some View {
         HStack(spacing: 5) {
-            Text(number).font(AppTypography.numeric(12)).foregroundStyle(Color.accentDefault)
+            Text(number).appNumericFont(12).foregroundStyle(Color.accentDefault)
             Text(title).font(.caption).foregroundStyle(Color.textSecondary)
         }.frame(maxWidth: .infinity)
     }
@@ -156,7 +156,7 @@ struct DiyBraceletView: View {
                 HStack {
                     Text("灵感作品").font(.caption).foregroundStyle(Color.textSecondary)
                     Spacer(minLength: 4)
-                    Text(AppDateFormatter.moneyText(design.totalPrice)).font(AppTypography.numeric(14, weight: .semibold)).foregroundStyle(Color.accentLight)
+                    Text(AppDateFormatter.moneyText(design.totalPrice)).appNumericFont(14, weight: .semibold).foregroundStyle(Color.accentLight)
                 }
             }.padding(12)
         }
@@ -215,7 +215,7 @@ struct DiyPressButtonStyle: ButtonStyle {
         configuration.label
             .opacity(isEnabled ? (configuration.isPressed ? 0.82 : 1) : 0.55)
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.975 : 1)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: configuration.isPressed)
+            .animation(reduceMotion ? nil : AppMotion.press, value: configuration.isPressed)
     }
 }
 
@@ -242,7 +242,7 @@ struct DiyPreviewModePicker: View {
 
     private func mode(_ title: String, icon: String, is3D: Bool) -> some View {
         Button {
-            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) { show3D = is3D }
+            AppMotion.perform { show3D = is3D }
         } label: {
             Label(title, systemImage: icon)
                 .font(.subheadline.weight(.medium))

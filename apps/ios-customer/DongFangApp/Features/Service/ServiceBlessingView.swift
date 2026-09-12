@@ -108,7 +108,7 @@ struct ServiceContainerView: View {
                     .font(AppTypography.title(22))
                     .foregroundStyle(Color.accentDefault)
                 Text(serviceType.subtitle)
-                    .font(.system(size: 13))
+                    .font(AppTypography.supporting)
                     .foregroundStyle(Color.textSecondary)
             }
         }
@@ -120,7 +120,7 @@ struct ServiceContainerView: View {
         VStack(alignment: .leading, spacing: AppSpacing.sm) {
             HStack(spacing: 6) {
                 Image(systemName: "text.book.closed")
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.accentDefault)
                 Text("服务介绍")
                     .font(.cardTitle)
@@ -150,7 +150,7 @@ struct ServiceContainerView: View {
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
                 Text(viewModel.priceRangeText)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(AppTypography.caption.weight(.medium))
                     .foregroundStyle(Color.brandDefault)
             }
             .padding(.horizontal, AppSpacing.lg)
@@ -183,23 +183,23 @@ struct ServiceContainerView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(service.serviceName)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                 if !service.description.isEmpty {
                     Text(service.description)
-                        .font(.system(size: 12))
+                        .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                         .lineLimit(2)
                 }
                 HStack(spacing: 6) {
                     if !service.templeName.isEmpty {
                         Text(service.templeName)
-                            .font(.system(size: 11))
+                            .font(AppTypography.micro)
                             .foregroundStyle(Color.textTertiary)
                     }
                     if !service.masterName.isEmpty {
                         Text("· \(service.masterName)")
-                            .font(.system(size: 11))
+                            .font(AppTypography.micro)
                             .foregroundStyle(Color.textTertiary)
                     }
                 }
@@ -208,7 +208,7 @@ struct ServiceContainerView: View {
             Spacer()
 
             Text(service.priceText)
-                .font(.system(size: 16, weight: .semibold))
+                .font(AppTypography.reading.weight(.semibold))
                 .foregroundStyle(Color.brandDefault)
         }
         .padding(AppSpacing.md)
@@ -272,7 +272,7 @@ struct ServiceContainerView: View {
                         }
                     }
                     Text(master.dharmaName)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AppTypography.caption.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
                     Text("可指定执行")
@@ -288,7 +288,7 @@ struct ServiceContainerView: View {
                             .foregroundStyle(Color.textSecondary)
                     }
                     Text("全寺执行")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AppTypography.caption.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                     Text("不指定法师")
                         .font(.system(size: 9))
@@ -309,7 +309,7 @@ struct ServiceContainerView: View {
         VStack(alignment: .leading, spacing: AppSpacing.sm) {
             HStack(spacing: 6) {
                 Image(systemName: "exclamationmark.circle")
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.stateWarning)
                 Text("服务须知")
                     .font(.cardTitle)
@@ -334,10 +334,10 @@ struct ServiceContainerView: View {
     private func noticeItem(_ text: String) -> some View {
         HStack(alignment: .top, spacing: 6) {
             Text("·")
-                .font(.system(size: 12))
+                .font(AppTypography.caption)
                 .foregroundStyle(Color.accentDefault)
             Text(text)
-                .font(.system(size: 12))
+                .font(AppTypography.caption)
                 .foregroundStyle(Color.textSecondary)
                 .lineSpacing(3)
         }

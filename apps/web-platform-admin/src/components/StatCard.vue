@@ -91,10 +91,9 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
   border: 1px solid var(--color-border-divider, var(--admin-border, var(--border, #e8e0d8)));
   border-radius: var(--radius-lg, 12px);
   box-shadow: var(--shadow-sm, 0 4px 16px rgba(70, 45, 32, 0.06));
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  transition: border-color var(--admin-transition), box-shadow var(--admin-transition);
 }
 .aui-stat-card:hover {
-  transform: translateY(-1px);
   border-color: var(--color-border-strong, #d8c9bb);
   box-shadow: var(--shadow-md, 0 8px 24px rgba(70, 45, 32, 0.1));
 }

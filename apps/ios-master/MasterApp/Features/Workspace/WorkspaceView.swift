@@ -198,7 +198,7 @@ struct WorkspaceView: View {
             .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault))
             .cornerRadius(AppRadius.md)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardPressButtonStyle())
         .padding(.horizontal, AppSpacing.pageHorizontal)
         .padding(.bottom, AppSpacing.lg)
     }
@@ -282,7 +282,7 @@ struct WorkspaceView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardPressButtonStyle())
     }
 
     @ViewBuilder
@@ -300,7 +300,7 @@ struct WorkspaceView: View {
         VStack(spacing: 0) {
             HStack {
                 Text("今日预约")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(AppTypography.reading.weight(.semibold))
                     .foregroundStyle(.textPrimary)
                 Spacer()
                 NavigationLink {
@@ -328,7 +328,7 @@ struct WorkspaceView: View {
                 } label: {
                     bookingCard(booking)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(CardPressButtonStyle())
             }
         }
     }
@@ -340,7 +340,7 @@ struct WorkspaceView: View {
             // 时间块
             VStack(spacing: 2) {
                 Text(times.first ?? booking.timeSlot)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(.textPrimary)
                 Text(times.count > 1 ? times[1] : "")
                     .font(.micro)
@@ -351,17 +351,17 @@ struct WorkspaceView: View {
             // 预约信息
             VStack(alignment: .leading, spacing: 2) {
                 Text(booking.serviceName)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(AppTypography.body.weight(.medium))
                     .foregroundStyle(.textPrimary)
                 Text("\(booking.userId) · \(booking.templeName)")
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             // 状态徽章
             Text(badge.text)
-                .font(.system(size: 11, weight: .medium))
+                .font(AppTypography.micro.weight(.medium))
                 .foregroundStyle(badge.color)
                 .padding(.horizontal, AppSpacing.sm)
                 .padding(.vertical, 3)
@@ -393,14 +393,14 @@ struct WorkspaceView: View {
         VStack(spacing: 0) {
             HStack {
                 Text("加持任务")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(.textPrimary)
                 Spacer()
                 NavigationLink {
                     BlessingTasksView()
                 } label: {
                     Text("查看全部 >")
-                        .font(.system(size: 12))
+                        .font(AppTypography.caption)
                         .foregroundStyle(.accentDefault)
                 }
             }
@@ -415,7 +415,7 @@ struct WorkspaceView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("加持任务 \(task.taskNo)")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(AppTypography.supporting.weight(.semibold))
                             .foregroundStyle(.textPrimary)
                         Text("订单 \(task.diyOrderNo) · \(task.assignTime)")
                             .font(.micro)
@@ -423,7 +423,7 @@ struct WorkspaceView: View {
                     }
                     Spacer()
                     Text(task.statusEnum.badgeInfo.text)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(AppTypography.micro.weight(.medium))
                         .foregroundStyle(.brandDefault)
                         .padding(.horizontal, AppSpacing.sm)
                         .padding(.vertical, 3)
@@ -439,7 +439,7 @@ struct WorkspaceView: View {
                 )
                 .padding(.horizontal, AppSpacing.pageHorizontal)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(CardPressButtonStyle())
             } else {
                 Text("暂无待接单加持任务")
                     .font(AppTypography.caption)

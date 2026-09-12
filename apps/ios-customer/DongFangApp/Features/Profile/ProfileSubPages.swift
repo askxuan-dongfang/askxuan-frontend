@@ -87,7 +87,7 @@ struct OrderListView: View {
             HStack(spacing: AppSpacing.sm) {
                 ForEach(tabs, id: \.key) { tab in
                     Text(tab.title)
-                        .font(.system(size: 13, weight: selectedTab == tab.key ? .semibold : .regular))
+                        .font(AppTypography.supporting.weight(selectedTab == tab.key ? .semibold : .regular))
                         .foregroundStyle(selectedTab == tab.key ? Color.accentDefault : Color.textTertiary)
                         .padding(.horizontal, AppSpacing.md)
                         .padding(.vertical, AppSpacing.sm)
@@ -126,7 +126,7 @@ struct OrderListView: View {
                             reviewBooking = booking
                         } label: {
                             Label("评价本次服务", systemImage: "star.bubble")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(AppTypography.supporting.weight(.semibold))
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 38)
                         }
@@ -175,11 +175,11 @@ struct OrderListView: View {
     private func orderSectionTitle(_ title: String, count: Int) -> some View {
         HStack {
             Text(title)
-                .font(.system(size: 14, weight: .semibold))
+                .font(AppTypography.body.weight(.semibold))
                 .foregroundStyle(Color.textPrimary)
             Spacer()
             Text("\(count)单")
-                .font(.system(size: 12))
+                .font(AppTypography.caption)
                 .foregroundStyle(Color.textTertiary)
         }
         .padding(.top, AppSpacing.sm)
@@ -195,26 +195,26 @@ struct OrderListView: View {
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(AppTypography.body.weight(.medium))
                     .foregroundStyle(Color.textPrimary)
                     .lineLimit(1)
                 Text(desc.isEmpty ? "暂无补充信息" : desc)
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 4) {
                 Text(amount)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.accentDefault)
                     .monospacedDigit()
                 Text(status)
-                    .font(.system(size: 11))
+                    .font(AppTypography.micro)
                     .foregroundStyle(Color.stateWarning)
             }
             Image(systemName: "chevron.right")
-                .font(.system(size: 11, weight: .semibold))
+                .font(AppTypography.micro.weight(.semibold))
                 .foregroundStyle(Color.textTertiary)
         }
         .padding(AppSpacing.md)
@@ -629,10 +629,10 @@ struct FavoritesView: View {
             RemoteAvatar(urlString: master.avatar, size: 48)
             VStack(alignment: .leading, spacing: 3) {
                 Text(master.dharmaName)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text(master.templeName)
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }
             Spacer()
@@ -648,10 +648,10 @@ struct FavoritesView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 3) {
                 Text(temple.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text("\(temple.region) · \(temple.sect)")
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }
             Spacer()
@@ -667,10 +667,10 @@ struct FavoritesView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 3) {
                 Text(product.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text("¥\(product.price, specifier: "%.2f")")
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.brandDefault)
             }
             Spacer()
@@ -681,7 +681,7 @@ struct FavoritesView: View {
 
     private var chevron: some View {
         Image(systemName: "chevron.right")
-            .font(.system(size: 12, weight: .semibold))
+            .font(AppTypography.caption.weight(.semibold))
             .foregroundStyle(Color.textTertiary)
     }
 }
@@ -725,14 +725,14 @@ struct AddressListView: View {
                             VStack(alignment: .leading, spacing: AppSpacing.sm) {
                                 HStack(spacing: AppSpacing.sm) {
                                     Text(addr.name)
-                                        .font(.system(size: 15, weight: .semibold))
+                                        .font(AppTypography.body.weight(.semibold))
                                         .foregroundStyle(Color.textPrimary)
                                     Text(addr.maskedPhone)
-                                        .font(.system(size: 13))
+                                        .font(AppTypography.supporting)
                                         .foregroundStyle(Color.textTertiary)
                                     if addr.isDefault {
                                         Text("默认")
-                                            .font(.system(size: 10, weight: .medium))
+                                            .font(AppTypography.micro.weight(.medium))
                                             .foregroundStyle(Color.white)
                                             .padding(.horizontal, 6).padding(.vertical, 2)
                                             .background(Color.brandDefault)
@@ -740,11 +740,11 @@ struct AddressListView: View {
                                     }
                                     Spacer()
                                     Image(systemName: "square.and.pencil")
-                                        .font(.system(size: 14))
+                                        .font(AppTypography.body)
                                         .foregroundStyle(Color.accentDefault)
                                 }
                                 Text(addr.fullAddress)
-                                    .font(.system(size: 13))
+                                    .font(AppTypography.supporting)
                                     .foregroundStyle(Color.textSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
@@ -775,7 +775,7 @@ struct AddressListView: View {
                     showingCreate = true
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(Color.accentDefault)
                 }
             }
@@ -963,23 +963,23 @@ struct ReviewListView: View {
                     VStack(alignment: .leading, spacing: AppSpacing.sm) {
                         HStack {
                             Text(targetName(item))
-                                .font(.system(size: 14, weight: .medium))
+                                .font(AppTypography.body.weight(.medium))
                                 .foregroundStyle(Color.textPrimary)
                             Spacer()
                             HStack(spacing: 2) {
                                 ForEach(0..<5, id: \.self) { i in
                                     Image(systemName: i < item.rating ? "star.fill" : "star")
-                                        .font(.system(size: 11))
+                                        .font(AppTypography.micro)
                                         .foregroundStyle(Color.stateWarning)
                                 }
                             }
                         }
                         Text(item.content)
-                            .font(.system(size: 13))
+                            .font(AppTypography.supporting)
                             .foregroundStyle(Color.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                         Text(item.createTime)
-                            .font(.system(size: 11))
+                            .font(AppTypography.micro)
                             .foregroundStyle(Color.textTertiary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -1070,7 +1070,7 @@ struct CouponView: View {
                                 .foregroundStyle(Color.brandDefault)
                                 .monospacedDigit()
                             Text(item.minAmount > 0 ? "满¥\(Int(item.minAmount))可用" : "无门槛")
-                                .font(.system(size: 10))
+                                .font(AppTypography.micro)
                                 .foregroundStyle(Color.textTertiary)
                         }
                         .frame(width: 92)
@@ -1080,13 +1080,13 @@ struct CouponView: View {
 
                         VStack(alignment: .leading, spacing: 6) {
                             Text(item.name)
-                                .font(.system(size: 14, weight: .medium))
+                                .font(AppTypography.body.weight(.medium))
                                 .foregroundStyle(Color.textPrimary)
                             Text(item.statusText)
-                                .font(.system(size: 12))
+                                .font(AppTypography.caption)
                                 .foregroundStyle(item.status == "unused" ? Color.stateSuccess : Color.textSecondary)
                             Text("\(item.endTime) 到期")
-                                .font(.system(size: 11))
+                                .font(AppTypography.micro)
                                 .foregroundStyle(Color.textTertiary)
                         }
                         .padding(.leading, AppSpacing.md)
@@ -1154,9 +1154,9 @@ struct PointsWalletCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack { Text("A LITTLE THANK YOU").font(.caption2).tracking(2); Spacer(); Button("积分规则", action: onRules).font(AppTypography.caption) }.foregroundStyle(Color.accentDefault)
-            Text("每一份喜爱，都有回馈").font(.system(size: 22, weight: .medium, design: .serif))
+            Text("每一份喜爱，都有回馈").font(AppTypography.title(22, weight: .medium))
             Text("可用积分").font(AppTypography.caption).foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline) { Text(balance.map { $0.formatted() } ?? "—").font(.system(size: 54, weight: .medium, design: .serif)).minimumScaleFactor(0.6).lineLimit(1).contentTransition(.numericText()); Text("积分").font(AppTypography.caption) }.foregroundStyle(Color.accentDefault)
+            HStack(alignment: .firstTextBaseline) { Text(balance.map { $0.formatted() } ?? "—").font(AppTypography.title(54, weight: .medium)).minimumScaleFactor(0.6).lineLimit(1).contentTransition(.numericText()); Text("积分").font(AppTypography.caption) }.foregroundStyle(Color.accentDefault)
             Divider().overlay(Color.accentDefault.opacity(0.2))
             Text("每笔实付满 100 元得 1 积分").font(AppTypography.caption).foregroundStyle(.secondary)
             if (balance ?? 0) < 0 { Text("退款扣回后余额不足，后续获得的积分先补足余额。").font(.caption2).foregroundStyle(.secondary) }
@@ -1348,15 +1348,15 @@ struct HelpView: View {
                     VStack(alignment: .leading, spacing: AppSpacing.sm) {
                         HStack(spacing: AppSpacing.sm) {
                             Image(systemName: "questionmark.circle")
-                                .font(.system(size: 14))
+                                .font(AppTypography.body)
                                 .foregroundStyle(Color.accentDefault)
                             Text(item.q)
-                                .font(.system(size: 14, weight: .medium))
+                                .font(AppTypography.body.weight(.medium))
                                 .foregroundStyle(Color.textPrimary)
                             Spacer()
                         }
                         Text(item.a)
-                            .font(.system(size: 13))
+                            .font(AppTypography.supporting)
                             .foregroundStyle(Color.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -1451,18 +1451,18 @@ struct ProfileEditView: View {
             divider
             HStack {
                 Text("手机号")
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
                 Text(maskedMobile)
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.textTertiary)
             }
             .padding(AppSpacing.md)
             divider
             HStack {
                 Text("性别")
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
                 Picker("性别", selection: $gender) {
@@ -1481,10 +1481,10 @@ struct ProfileEditView: View {
             divider
             VStack(alignment: .leading, spacing: AppSpacing.sm) {
                 Text("个人简介")
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.textPrimary)
                 TextEditor(text: $bio)
-                    .font(.system(size: 13))
+                    .font(AppTypography.supporting)
                     .foregroundStyle(Color.textSecondary)
                     .frame(height: 80)
                     .padding(AppSpacing.sm)
@@ -1507,11 +1507,11 @@ struct ProfileEditView: View {
     private func editRow(label: String, value: Binding<String>) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 14))
+                .font(AppTypography.body)
                 .foregroundStyle(Color.textPrimary)
             Spacer()
             TextField("", text: value)
-                .font(.system(size: 14))
+                .font(AppTypography.body)
                 .foregroundStyle(Color.textSecondary)
                 .multilineTextAlignment(.trailing)
         }
@@ -1604,15 +1604,15 @@ struct NotificationSettingsView: View {
     private func toggleRow(icon: String, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
         HStack(spacing: AppSpacing.md) {
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(AppTypography.reading)
                 .foregroundStyle(Color.textTertiary)
                 .frame(width: 24)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.textPrimary)
                 Text(subtitle)
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }
             Spacer()
@@ -1648,18 +1648,18 @@ struct SecurityView: View {
                         } label: {
                             HStack(spacing: AppSpacing.md) {
                                 Image(systemName: item.icon)
-                                    .font(.system(size: 16))
+                                    .font(AppTypography.reading)
                                     .foregroundStyle(Color.textTertiary)
                                     .frame(width: 24)
                                 Text(item.title)
-                                    .font(.system(size: 14))
+                                    .font(AppTypography.body)
                                     .foregroundStyle(Color.textPrimary)
                                 Spacer()
                                 Text(item.value)
-                                    .font(.system(size: 13))
+                                    .font(AppTypography.supporting)
                                     .foregroundStyle(Color.textTertiary)
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: 12))
+                                    .font(AppTypography.caption)
                                     .foregroundStyle(Color.textTertiary)
                             }
                             .padding(.horizontal, AppSpacing.md)
@@ -1674,7 +1674,7 @@ struct SecurityView: View {
                 .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
 
                 Text("如遇账号异常，请联系客服：400-000-0000")
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .frame(maxWidth: .infinity)
                 Spacer(minLength: AppSpacing.xl)
@@ -1726,7 +1726,7 @@ struct AboutView: View {
                         .font(AppTypography.title(20))
                         .foregroundStyle(Color.accentDefault)
                     Text("版本 1.0.0 (1)")
-                        .font(.system(size: 12))
+                        .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
                 .frame(maxWidth: .infinity)
@@ -1737,15 +1737,15 @@ struct AboutView: View {
                         if index > 0 { divider }
                         HStack(spacing: AppSpacing.md) {
                             Image(systemName: item.icon)
-                                .font(.system(size: 16))
+                                .font(AppTypography.reading)
                                 .foregroundStyle(Color.textTertiary)
                                 .frame(width: 24)
                             Text(item.title)
-                                .font(.system(size: 14))
+                                .font(AppTypography.body)
                                 .foregroundStyle(Color.textPrimary)
                             Spacer()
                             Image(systemName: "chevron.right")
-                                .font(.system(size: 12))
+                                .font(AppTypography.caption)
                                 .foregroundStyle(Color.textTertiary)
                         }
                         .padding(.horizontal, AppSpacing.md)
@@ -1758,7 +1758,7 @@ struct AboutView: View {
                 .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
 
                 Text("© 2026 问玄东方 保留所有权利")
-                    .font(.system(size: 11))
+                    .font(AppTypography.micro)
                     .foregroundStyle(Color.textTertiary)
                 Spacer(minLength: AppSpacing.xl)
             }

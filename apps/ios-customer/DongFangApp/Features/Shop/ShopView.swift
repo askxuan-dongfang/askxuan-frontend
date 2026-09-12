@@ -15,12 +15,12 @@ struct ShopView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     HStack(alignment: .bottom) {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("发现日常好物").font(.system(size: 12)).foregroundStyle(Color.textTertiary)
+                            Text("发现日常好物").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
                             Text("商城").font(AppTypography.title(27))
                         }
                         Spacer()
                         NavigationLink { ShopCartView() } label: { Label(cart.itemCount > 0 ? "\(cart.itemCount)" : "购物车", systemImage: "cart") }
-                    }.font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body)).foregroundStyle(Color.accentDefault)
+                    }.font(AppTypography.supporting).foregroundStyle(Color.accentDefault)
                     searchBar
                     HStack(spacing: 8) {
                         NavigationLink { PointsView() } label: { pathway("积分商城", icon: "gift") }
@@ -29,43 +29,43 @@ struct ShopView: View {
                     }.buttonStyle(.plain)
                     VStack(alignment: .leading, spacing: 15) {
                         HStack {
-                            Text("全部商品").font(.system(size: 17, weight: .semibold))
+                            Text("全部商品").font(AppTypography.reading.weight(.semibold))
                             Spacer()
-                            Text(viewModel.isLoading ? "寻找好物…" : "\(viewModel.total) 件好物").font(Font.custom("HelveticaNeue", size: 12, relativeTo: .body)).foregroundStyle(Color.textTertiary)
+                            Text(viewModel.isLoading ? "寻找好物…" : "\(viewModel.total) 件好物").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
                         }.id("catalog")
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 9) {
                                 ForEach(viewModel.shopCategories) { cat in
                                     Button { viewModel.selectCategory(cat.id) } label: {
-                                        Text(cat.name).font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body)).padding(.horizontal, 15).padding(.vertical, 11)
+                                        Text(cat.name).font(AppTypography.supporting).padding(.horizontal, 15).padding(.vertical, 11)
                                             .background(viewModel.selectedCategoryId == cat.id ? Color.accentDefault.opacity(0.2) : Color.bgSecondary)
                                             .clipShape(Capsule()).overlay(Capsule().stroke(viewModel.selectedCategoryId == cat.id ? Color.accentDefault : Color.borderDefault))
                                     }.accessibilityAddTraits(viewModel.selectedCategoryId == cat.id ? .isSelected : [])
                                 }
                             }
                         }.buttonStyle(.plain).foregroundStyle(Color.accentDefault)
-                        if let message = viewModel.categoryError { Button(message) { Task { await viewModel.loadCategories() } }.font(Font.custom("HelveticaNeue", size: 12, relativeTo: .body)) }
+                        if let message = viewModel.categoryError { Button(message) { Task { await viewModel.loadCategories() } }.font(AppTypography.caption) }
                         HStack {
                             Picker("商品排序", selection: $viewModel.sort) {
                                 Text("最新商品").tag("newest"); Text("价格从低到高").tag("price_asc"); Text("价格从高到低").tag("price_desc")
                             }.tint(Color.accentDefault).onChange(of: viewModel.sort) { _, _ in viewModel.search() }
                             Spacer()
-                            Toggle("只看有货", isOn: $viewModel.inStock).font(Font.custom("HelveticaNeue", size: 12, relativeTo: .body)).fixedSize().tint(Color.accentDefault)
+                            Toggle("只看有货", isOn: $viewModel.inStock).font(AppTypography.caption).fixedSize().tint(Color.accentDefault)
                                 .onChange(of: viewModel.inStock) { _, _ in viewModel.search() }
                         }
                         if let message = viewModel.errorMessage {
                             VStack(alignment: .leading, spacing: 10) {
-                                Text(message).font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body))
+                                Text(message).font(AppTypography.supporting)
                                 Button("重新加载") { Task { if viewModel.products.isEmpty { await viewModel.load() } else { await viewModel.loadMore() } } }
                             }.foregroundStyle(Color.accentDefault).padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 16))
                         }
                         if viewModel.isLoading { DFLoadingView().frame(maxWidth: .infinity, minHeight: 200) }
                         else if viewModel.products.isEmpty && viewModel.errorMessage == nil {
-                            VStack(spacing: 12) { Text("这次还没有找到").font(AppTypography.title(20)); Text("换个关键词，或看看其他分类。").font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body)); Button("查看全部好物") { viewModel.reset() } }.frame(maxWidth: .infinity).padding(.vertical, 42)
+                            VStack(spacing: 12) { Text("这次还没有找到").font(AppTypography.title(20)); Text("换个关键词，或看看其他分类。").font(AppTypography.supporting); Button("查看全部好物") { viewModel.reset() } }.frame(maxWidth: .infinity).padding(.vertical, 42)
                         } else {
                             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) { ForEach(viewModel.products) { productCard($0) } }
                             if viewModel.hasMore {
-                                Button { Task { await viewModel.loadMore() } } label: { Text(viewModel.isLoadingMore ? "正在加载…" : "再看看 · 已展示 \(viewModel.products.count) / \(viewModel.total)").font(Font.custom("HelveticaNeue", size: 13, relativeTo: .body)).frame(maxWidth: .infinity).padding(16) }.disabled(viewModel.isLoadingMore)
+                                Button { Task { await viewModel.loadMore() } } label: { Text(viewModel.isLoadingMore ? "正在加载…" : "再看看 · 已展示 \(viewModel.products.count) / \(viewModel.total)").font(AppTypography.supporting).frame(maxWidth: .infinity).padding(16) }.disabled(viewModel.isLoadingMore)
                             }
                         }
                     }
@@ -80,7 +80,7 @@ struct ShopView: View {
         VStack(spacing: 8) {
             Image(systemName: icon).font(.system(size: 20)).foregroundStyle(Color.accentDefault)
                 .frame(width: 46, height: 46).background(Color.accentDefault.opacity(0.12)).clipShape(RoundedRectangle(cornerRadius: 15))
-            Text(title).font(.system(size: 12)).foregroundStyle(Color.textSecondary)
+            Text(title).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
         }.frame(maxWidth: .infinity).padding(.vertical, 6)
     }
     private var searchBar: some View {
@@ -89,7 +89,7 @@ struct ShopView: View {
             TextField("搜索商品名称", text: $viewModel.keyword).submitLabel(.search).onSubmit { viewModel.search() }
             if !viewModel.keyword.isEmpty { Button { viewModel.keyword = ""; viewModel.search() } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel("清除搜索") }
             Button("搜索") { viewModel.search() }.tint(Color.accentDefault)
-        }.font(Font.custom("HelveticaNeue", size: 14, relativeTo: .body)).padding(14).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 15)).overlay(RoundedRectangle(cornerRadius: 15).stroke(Color.borderDefault))
+        }.font(AppTypography.body).padding(14).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 15)).overlay(RoundedRectangle(cornerRadius: 15).stroke(Color.borderDefault))
     }
     private func productCard(_ product: ShopProduct) -> some View {
         NavigationLink { ShopProductDetailView(product: product) } label: {
@@ -104,13 +104,13 @@ struct ShopView: View {
                         else if let tag = product.tags?.split(whereSeparator: { $0 == "," || $0 == "，" }).first { badge(String(tag)) }
                     }
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(product.name).font(.system(size: 14, weight: .medium)).lineLimit(2).frame(height: 38, alignment: .top)
-                    Text(product.priceText).font(Font.custom("HelveticaNeue", size: 21, relativeTo: .body).weight(.semibold)).foregroundStyle(Color.brandDefault).monospacedDigit()
+                    Text(product.name).font(AppTypography.body.weight(.medium)).lineLimit(2).frame(minHeight: 38, alignment: .top)
+                    Text(product.priceText).appNumericFont(21, weight: .semibold).foregroundStyle(Color.brandDefault).monospacedDigit()
                 }.padding(13).frame(maxWidth: .infinity, alignment: .leading)
             }.background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.borderDefault))
         }.buttonStyle(.plain)
     }
-    private func badge(_ text: String) -> some View { Text(text).font(Font.custom("HelveticaNeue", size: 10, relativeTo: .body)).padding(7).background(Color.bgPrimary.opacity(0.85)).clipShape(Capsule()).padding(8) }
+    private func badge(_ text: String) -> some View { Text(text).font(AppTypography.micro).padding(7).background(Color.bgPrimary.opacity(0.85)).clipShape(Capsule()).padding(8) }
 }
 
 struct ShopProductDetailView: View {
@@ -187,13 +187,13 @@ struct ShopProductDetailView: View {
                             .foregroundStyle(.brandDefault)
                         if let market = viewModel.product.marketPrice, market > unitPrice {
                             Text("¥\(market, specifier: "%.2f")")
-                                .font(.system(size: 13))
+                                .font(AppTypography.supporting)
                                 .foregroundStyle(.textTertiary)
                                 .strikethrough()
                         }
                         Spacer()
                         Text(availableStock > 0 ? "\(viewModel.product.isExperience == true ? "模拟库存" : "库存") \(availableStock)" : "暂时缺货")
-                            .font(.system(size: 12))
+                            .font(AppTypography.caption)
                             .foregroundStyle(availableStock > 0 ? Color.textTertiary : Color.stateError)
                     }
 
@@ -202,25 +202,25 @@ struct ShopProductDetailView: View {
                             Text("选择").foregroundStyle(Color.textTertiary)
                             Text("\(selectedSku?.specValue ?? "默认规格")，\(quantity) 件").foregroundStyle(Color.textPrimary)
                             Spacer(); Image(systemName: "chevron.right").foregroundStyle(Color.textTertiary)
-                        }.font(.system(size: 14)).padding(.vertical, 14)
+                        }.font(AppTypography.body).padding(.vertical, 14)
                     }.buttonStyle(.plain).disabled(!viewModel.verified)
 
                     Divider().overlay(Color.borderDefault)
                     Text("商品说明")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(.textPrimary)
                     Text(viewModel.product.description)
-                        .font(.system(size: 14))
+                        .font(AppTypography.body)
                         .foregroundStyle(.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
 
                     if let source = viewModel.product.sourceUrl, let url = URL(string: source), url.scheme == "https" {
                         Divider().overlay(Color.borderDefault)
-                        Link(viewModel.product.sourceName ?? "查看商品案例来源", destination: url).font(.system(size: 14)).foregroundStyle(Color.accentDefault)
-                        Text(viewModel.product.sourceNote ?? "").font(.system(size: 12)).foregroundStyle(Color.textTertiary)
+                        Link(viewModel.product.sourceName ?? "查看商品案例来源", destination: url).font(AppTypography.body).foregroundStyle(Color.accentDefault)
+                        Text(viewModel.product.sourceNote ?? "").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
                     }
                     if let message = viewModel.errorMessage {
-                        Text(message).font(.system(size: 12)).foregroundStyle(.stateWarning)
+                        Text(message).font(AppTypography.caption).foregroundStyle(.stateWarning)
                         Button("重新加载商品") { Task { await viewModel.load() } }
                     }
                 }
@@ -237,7 +237,7 @@ struct ShopProductDetailView: View {
                     toggleFavorite()
                 } label: {
                     Image(systemName: isFavorited ? "heart.fill" : "heart")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(isFavorited ? Color.brandDefault : Color.accentDefault)
                 }
                 .buttonStyle(.plain)
@@ -261,11 +261,11 @@ struct ShopProductDetailView: View {
                         }
                 }.buttonStyle(.plain)
                 Button { purchaseMode = "add"; showSpecs = true } label: {
-                    Text(added ? "已加入" : "加入购物车").font(.system(size: 13, weight: .semibold)).frame(maxWidth: .infinity, minHeight: 44)
+                    Text(added ? "已加入" : "加入购物车").font(AppTypography.supporting.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 44)
                         .background(Color.accentDefault.opacity(0.22)).foregroundStyle(Color.accentDefault).clipShape(Capsule())
                 }.disabled(!canPurchase)
                 Button { purchaseMode = "buy"; showSpecs = true } label: {
-                    Text("立即购买").font(.system(size: 13, weight: .semibold)).frame(maxWidth: .infinity, minHeight: 44)
+                    Text("立即购买").font(AppTypography.supporting.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 44)
                         .background(Color.brandDefault).foregroundStyle(.white).clipShape(Capsule())
                 }.disabled(!canPurchase)
 
@@ -293,15 +293,15 @@ struct ShopProductDetailView: View {
                 RemoteImage(urlString: imageAsset, placeholderIcon: "bag", contentMode: .fill).frame(width: 80, height: 80).clipped().clipShape(RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 8) {
                     Text("¥\(unitPrice, specifier: "%.2f")").font(.system(size: 24, weight: .semibold)).foregroundStyle(Color.brandDefault)
-                    Text(viewModel.product.name).font(.system(size: 14)).lineLimit(2)
-                    Text("可选 \(availableStock) 件").font(.system(size: 12)).foregroundStyle(Color.textTertiary)
+                    Text(viewModel.product.name).font(AppTypography.body).lineLimit(2)
+                    Text("可选 \(availableStock) 件").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
                 }
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     if let skus = viewModel.product.skus, !skus.isEmpty {
                         Text("选择规格")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(AppTypography.body.weight(.semibold))
                             .foregroundStyle(.textPrimary)
                         FlowLayout(spacing: AppSpacing.sm) {
                             ForEach(skus) { sku in
@@ -310,7 +310,7 @@ struct ShopProductDetailView: View {
                                     quantity = min(quantity, max(1, sku.stock))
                                 } label: {
                                     Text("\(sku.specName) · \(sku.specValue)")
-                                        .font(.system(size: 12))
+                                        .font(AppTypography.caption)
                                         .foregroundStyle(selectedSku?.id == sku.id ? Color.white : Color.textSecondary)
                                         .padding(.horizontal, 12).padding(.vertical, 8)
                                         .background(selectedSku?.id == sku.id ? Color.brandDefault : Color.bgTertiary)
@@ -325,7 +325,7 @@ struct ShopProductDetailView: View {
 
                     HStack {
                         Text("数量")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(AppTypography.body.weight(.semibold))
                             .foregroundStyle(.textPrimary)
                         Spacer()
                         quantityStepper
@@ -362,7 +362,7 @@ struct ShopProductDetailView: View {
                 Image(systemName: "plus").frame(width: 36, height: 34)
             }.disabled(quantity >= min(99, availableStock))
         }
-        .font(.system(size: 13, weight: .semibold)).foregroundStyle(.textPrimary)
+        .font(AppTypography.supporting.weight(.semibold)).foregroundStyle(.textPrimary)
         .background(Color.bgTertiary).clipShape(RoundedRectangle(cornerRadius: AppRadius.sm))
     }
 }
@@ -397,16 +397,16 @@ struct ShopCartView: View {
                 HStack(spacing: 12) {
                     Button {
                         excluded = selected.count == cart.items.count ? Set(cart.items.map(\.id)) : []
-                    } label: { Label("全选", systemImage: selected.count == cart.items.count ? "checkmark.circle.fill" : "circle").font(.system(size: 12)) }.tint(Color.accentDefault)
+                    } label: { Label("全选", systemImage: selected.count == cart.items.count ? "checkmark.circle.fill" : "circle").font(AppTypography.caption) }.tint(Color.accentDefault)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("合计").font(.system(size: 11)).foregroundStyle(.textTertiary)
+                        Text("合计").font(AppTypography.micro).foregroundStyle(.textTertiary)
                         Text("¥\(selectedTotal, specifier: "%.2f")")
                             .font(.system(size: 20, weight: .semibold)).foregroundStyle(.brandDefault)
                     }
                     Button { checkoutItems = selected; showCheckout = true } label: {
                         Label("去结算 (\(selected.reduce(0) { $0 + $1.quantity }))", systemImage: "creditcard")
-                            .font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                            .font(AppTypography.body.weight(.semibold)).foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 44)
                             .background(Color.brandDefault)
                             .clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
@@ -429,22 +429,22 @@ struct ShopCartView: View {
                 .frame(width: 60, height: 70).clipped()
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.sm))
             VStack(alignment: .leading, spacing: 5) {
-                Text(item.productName).font(.system(size: 14, weight: .semibold)).foregroundStyle(.textPrimary).lineLimit(2)
-                Text((item.isExperience == true ? "体验商品 · " : "") + item.skuSpec).font(.system(size: 11)).foregroundStyle(.textTertiary)
+                Text(item.productName).font(AppTypography.body.weight(.semibold)).foregroundStyle(.textPrimary).lineLimit(2)
+                Text((item.isExperience == true ? "体验商品 · " : "") + item.skuSpec).font(AppTypography.micro).foregroundStyle(.textTertiary)
                 Text("¥\(item.unitPrice, specifier: "%.2f")")
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(.brandDefault)
+                    .font(AppTypography.body.weight(.semibold)).foregroundStyle(.brandDefault)
             }
             Spacer(minLength: 4)
             VStack(alignment: .trailing) {
                 Button { cart.remove(item) } label: {
-                    Image(systemName: "trash").font(.system(size: 13)).foregroundStyle(.textTertiary)
+                    Image(systemName: "trash").font(AppTypography.supporting).foregroundStyle(.textTertiary)
                 }.buttonStyle(.plain)
                 Spacer()
                 HStack(spacing: 0) {
                     Button { cart.setQuantity(for: item.id, quantity: item.quantity - 1) } label: {
                         Image(systemName: "minus").frame(width: 30, height: 30)
                     }.disabled(item.quantity <= 1)
-                    Text("\(item.quantity)").font(.system(size: 12)).frame(width: 30).monospacedDigit()
+                    Text("\(item.quantity)").font(AppTypography.caption).frame(width: 30).monospacedDigit()
                     Button { cart.setQuantity(for: item.id, quantity: item.quantity + 1) } label: {
                         Image(systemName: "plus").frame(width: 30, height: 30)
                     }.disabled(item.quantity >= min(99, item.stock))
@@ -509,7 +509,7 @@ struct ShopCheckoutView: View {
                     } else if viewModel.addresses.isEmpty {
                         NavigationLink { AddressListView() } label: {
                             Label("请先添加收货地址", systemImage: "plus.circle")
-                                .font(.system(size: 14, weight: .medium)).foregroundStyle(.accentDefault)
+                                .font(AppTypography.body.weight(.medium)).foregroundStyle(.accentDefault)
                                 .frame(maxWidth: .infinity, minHeight: 64)
                         }
                     } else {
@@ -527,12 +527,12 @@ struct ShopCheckoutView: View {
                         ForEach(checkoutItems) { item in
                             HStack(alignment: .top) {
                                 VStack(alignment: .leading, spacing: 3) {
-                                    Text(item.productName).font(.system(size: 13, weight: .medium)).foregroundStyle(.textPrimary)
-                                    Text("\(item.skuSpec) × \(item.quantity)").font(.system(size: 11)).foregroundStyle(.textTertiary)
+                                    Text(item.productName).font(AppTypography.supporting.weight(.medium)).foregroundStyle(.textPrimary)
+                                    Text("\(item.skuSpec) × \(item.quantity)").font(AppTypography.micro).foregroundStyle(.textTertiary)
                                 }
                                 Spacer()
                                 Text("¥\(item.subtotal, specifier: "%.2f")")
-                                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(.textPrimary)
+                                    .font(AppTypography.supporting.weight(.semibold)).foregroundStyle(.textPrimary)
                             }
                         }
                     }
@@ -540,19 +540,19 @@ struct ShopCheckoutView: View {
 
                 section(title: "订单备注", icon: "square.and.pencil") {
                     TextField("选填，给商城留言", text: $viewModel.note, axis: .vertical)
-                        .font(.system(size: 13)).foregroundStyle(.textPrimary).lineLimit(2...4)
+                        .font(AppTypography.supporting).foregroundStyle(.textPrimary).lineLimit(2...4)
                 }
 
                 VStack(spacing: AppSpacing.sm) {
                     HStack { Text("商品金额"); Spacer(); Text("¥\(checkoutTotal, specifier: "%.2f")") }
                     HStack { Text("运费"); Spacer(); Text("以服务端结算为准") }
                 }
-                .font(.system(size: 13)).foregroundStyle(.textSecondary)
+                .font(AppTypography.supporting).foregroundStyle(.textSecondary)
                 .padding(AppSpacing.md).background(Color.bgSecondary)
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
 
                 if let error = viewModel.errorMessage {
-                    Text(error).font(.system(size: 12)).foregroundStyle(.stateError)
+                    Text(error).font(AppTypography.caption).foregroundStyle(.stateError)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
@@ -581,7 +581,7 @@ struct ShopCheckoutView: View {
 
     private func section<Content: View>(title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Label(title, systemImage: icon).font(.system(size: 14, weight: .semibold)).foregroundStyle(.textPrimary)
+            Label(title, systemImage: icon).font(AppTypography.body.weight(.semibold)).foregroundStyle(.textPrimary)
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -606,7 +606,7 @@ struct ShopPaymentResultView: View {
                 Text(succeeded ? "支付成功" : "支付结果待确认")
                     .font(.system(size: 24, weight: .semibold)).foregroundStyle(.textPrimary)
                 Text(order.isExperience ? "体验订单已记录，支付和物流均为模拟，不实际扣款、发货或发放消费积分。" : (succeeded ? "本次使用本地模拟支付，订单已进入待发货流程。" : "支付单已创建，可稍后在订单中查询结果。"))
-                    .font(.system(size: 13)).foregroundStyle(.textSecondary).multilineTextAlignment(.center)
+                    .font(AppTypography.supporting).foregroundStyle(.textSecondary).multilineTextAlignment(.center)
             }
             VStack(spacing: AppSpacing.sm) {
                 resultRow("订单号", order.orderNo)
@@ -618,7 +618,7 @@ struct ShopPaymentResultView: View {
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
             NavigationLink { ShopOrderListView() } label: {
                 Label("查看商城订单", systemImage: "doc.text")
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                    .font(AppTypography.body.weight(.semibold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).frame(height: 44).background(Color.brandDefault)
                     .clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
             }
@@ -630,7 +630,7 @@ struct ShopPaymentResultView: View {
 
     private func resultRow(_ label: String, _ value: String) -> some View {
         HStack { Text(label).foregroundStyle(.textTertiary); Spacer(); Text(value).foregroundStyle(.textPrimary) }
-            .font(.system(size: 13))
+            .font(AppTypography.supporting)
     }
 }
 
@@ -648,7 +648,7 @@ struct ShopOrderListView: View {
                             selectedStatus = item.0
                             Task { await viewModel.load(status: item.0) }
                         } label: {
-                            Text(item.1).font(.system(size: 12, weight: selectedStatus == item.0 ? .semibold : .regular))
+                            Text(item.1).font(AppTypography.caption.weight(selectedStatus == item.0 ? .semibold : .regular))
                                 .foregroundStyle(selectedStatus == item.0 ? Color.white : Color.textSecondary)
                                 .padding(.horizontal, 13).padding(.vertical, 8)
                                 .background(selectedStatus == item.0 ? Color.brandDefault : Color.bgTertiary)
@@ -678,15 +678,15 @@ struct ShopOrderListView: View {
     private func orderCard(_ order: ShopOrder) -> some View {
         VStack(alignment: .leading, spacing: AppSpacing.sm) {
             HStack {
-                Text(order.orderNo).font(.system(size: 11)).foregroundStyle(.textTertiary)
-                Spacer(); Text(order.statusText).font(.system(size: 12, weight: .medium)).foregroundStyle(.stateWarning)
+                Text(order.orderNo).font(AppTypography.micro).foregroundStyle(.textTertiary)
+                Spacer(); Text(order.statusText).font(AppTypography.caption.weight(.medium)).foregroundStyle(.stateWarning)
             }
-            if order.isExperience { Text("体验订单 · 模拟流程").font(.system(size: 12)).foregroundStyle(Color.accentDefault) }
+            if order.isExperience { Text("体验订单 · 模拟流程").font(AppTypography.caption).foregroundStyle(Color.accentDefault) }
             Text(order.items?.first?.productName ?? "商城订单")
-                .font(.system(size: 14, weight: .semibold)).foregroundStyle(.textPrimary)
+                .font(AppTypography.body.weight(.semibold)).foregroundStyle(.textPrimary)
             HStack {
-                Text(order.createTime).font(.system(size: 11)).foregroundStyle(.textTertiary)
-                Spacer(); Text("¥\(order.payAmount, specifier: "%.2f")").font(.system(size: 16, weight: .semibold)).foregroundStyle(.brandDefault)
+                Text(order.createTime).font(AppTypography.micro).foregroundStyle(.textTertiary)
+                Spacer(); Text("¥\(order.payAmount, specifier: "%.2f")").font(AppTypography.reading.weight(.semibold)).foregroundStyle(.brandDefault)
             }
         }
         .padding(AppSpacing.md).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
@@ -715,7 +715,7 @@ struct ShopOrderDetailView: View {
             if let order {
                 if order.isExperience { Section { experienceNotice() } }
                 Section("订单进度") {
-                    Text(order.statusText).font(.title2.bold()).foregroundStyle(Color.accentDefault)
+                    Text(order.statusText).font(AppTypography.section).foregroundStyle(Color.accentDefault)
                     Text(order.orderNo).font(AppTypography.caption).textSelection(.enabled)
                     HStack{Text("订单实付");Spacer();Text(String(format:"¥%.2f",order.payAmount)).bold()}
                     if let logistics=order.logistics,!logistics.trackingNo.isEmpty {Label("\(logistics.expressCompany) · \(logistics.trackingNo)",systemImage:"shippingbox").textSelection(.enabled)}
@@ -755,8 +755,8 @@ struct ShopOrderDetailView: View {
 
 private func experienceNotice() -> some View {
     VStack(alignment: .leading, spacing: 6) {
-        Label("体验商品 · 模拟流程", systemImage: "sparkles").font(.system(size: 14, weight: .semibold)).foregroundStyle(Color.accentDefault)
-        Text("不实际扣款或发货，不发放消费积分。物流和售后记录仅供体验。").font(.system(size: 12)).foregroundStyle(Color.textSecondary)
+        Label("体验商品 · 模拟流程", systemImage: "sparkles").font(AppTypography.body.weight(.semibold)).foregroundStyle(Color.accentDefault)
+        Text("不实际扣款或发货，不发放消费积分。物流和售后记录仅供体验。").font(AppTypography.caption).foregroundStyle(Color.textSecondary)
     }.frame(maxWidth: .infinity, alignment: .leading).padding(14).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 12)).overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault))
 }
 

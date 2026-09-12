@@ -528,7 +528,7 @@ onMounted(() => {
   font-size: var(--type-size-caption);
 }
 .product-name {
-  font-weight: 500;
+  font-weight: var(--type-weight-medium);
   color: var(--text-dark);
 }
 .product-no {

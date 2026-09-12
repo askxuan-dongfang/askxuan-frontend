@@ -92,12 +92,49 @@ extension View {
 
 }
 
-/// 卡片点击缩放反馈 ButtonStyle：按下时 scaleEffect(0.98)，带 0.15s easeInOut 动画。
+// MARK: - Shared motion
+/// Short, non-bouncy feedback. UIKit's live preference is read for action-driven changes.
+enum AppMotion {
+    static let press = Animation.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.12)
+    static let selection = Animation.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.20)
+    static let reveal = Animation.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.28)
+
+    static func perform(_ animation: Animation = selection, _ changes: () -> Void) {
+        withAnimation(UIAccessibility.isReduceMotionEnabled ? nil : animation, changes)
+    }
+}
+
+private struct AppVisualDefaults: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .font(AppTypography.body)
+            .transaction { transaction in
+                if reduceMotion {
+                    transaction.animation = nil
+                    transaction.disablesAnimations = true
+                }
+            }
+    }
+}
+
+extension View {
+    /// Inherit the same body typography and honor reduced motion in all presented screens.
+    func appVisualDefaults() -> some View { modifier(AppVisualDefaults()) }
+}
+
+/// Press feedback stays local to the control; reduced motion retains a static opacity cue.
 struct CardPressButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isEnabled) private var isEnabled
+
     func makeBody(configuration: Configuration) -> some View {
+        let pressed = isEnabled && configuration.isPressed
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+            .scaleEffect(pressed && !reduceMotion ? 0.985 : 1)
+            .opacity(pressed ? 0.86 : 1)
+            .animation(reduceMotion ? nil : AppMotion.press, value: pressed)
     }
 }
 

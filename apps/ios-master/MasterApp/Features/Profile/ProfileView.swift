@@ -131,7 +131,7 @@ struct ProfileView: View {
                     .foregroundStyle(.textSecondary)
                 HStack(spacing: 4) {
                     Image(systemName: "star.fill")
-                        .font(.system(size: 10))
+                        .font(AppTypography.micro)
                         .foregroundStyle(.accentDefault)
                     Text(viewModel.profile?.authStatusText ?? "未认证")
                         .font(.micro)
@@ -205,7 +205,7 @@ struct ProfileView: View {
 
                 // 标签
                 Text(item.label)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(AppTypography.body.weight(.medium))
                     .foregroundStyle(.textPrimary)
 
                 Spacer()
@@ -220,7 +220,7 @@ struct ProfileView: View {
 
                 // 箭头
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(AppTypography.caption.weight(.medium))
                     .foregroundStyle(.textTertiary)
             }
             .padding(.horizontal, AppSpacing.lg)
@@ -235,7 +235,7 @@ struct ProfileView: View {
                 }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardPressButtonStyle())
     }
 
     // MARK: - 菜单导航目标

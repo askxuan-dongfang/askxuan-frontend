@@ -36,7 +36,8 @@ struct PrimaryButton: View {
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 44)
+            .padding(.vertical, 11)
+            .frame(minHeight: 44)
             .background(
                 LinearGradient(
                     colors: [Color.brandDefault, Color.brandLight],
@@ -47,7 +48,7 @@ struct PrimaryButton: View {
             .cornerRadius(AppRadius.lg)
             .opacity(isEnabled ? 1.0 : 0.5)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardPressButtonStyle())
         .disabled(!isEnabled || isLoading)
     }
 }
@@ -74,7 +75,8 @@ struct SecondaryButton: View {
             }
             .foregroundStyle(Color.accentDefault)
             .frame(maxWidth: .infinity)
-            .frame(height: 44)
+            .padding(.vertical, 11)
+            .frame(minHeight: 44)
             .background(Color.clear)
             .cornerRadius(AppRadius.lg)
             .overlay(
@@ -83,7 +85,7 @@ struct SecondaryButton: View {
             )
             .opacity(isEnabled ? 1.0 : 0.5)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardPressButtonStyle())
         .disabled(!isEnabled)
     }
 }

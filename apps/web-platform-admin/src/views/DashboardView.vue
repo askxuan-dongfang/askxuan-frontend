@@ -66,8 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ADMIN_THEME_EVENT } from "../../../../packages/admin-ui/theme"
-import { withAdminChartTheme } from "../../../../packages/admin-ui/chart-theme"
+import { withAdminChartTheme, watchAdminChartAppearance } from "../../../../packages/admin-ui/chart-theme"
 
 import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
@@ -213,17 +212,19 @@ async function loadDashboard() {
 }
 
 onMounted(async () => {
-  window.addEventListener(ADMIN_THEME_EVENT, refreshChartAppearance)
+  stopChartAppearance = watchAdminChartAppearance(refreshChartAppearance)
   await loadDashboard()
   window.addEventListener('resize', onResize)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener(ADMIN_THEME_EVENT, refreshChartAppearance)
+  stopChartAppearance?.()
   window.removeEventListener('resize', onResize)
   pieChart?.dispose()
   barChart?.dispose()
 })
+
+let stopChartAppearance: (() => void) | undefined
 
 function refreshChartAppearance() {
   for (const chart of [pieChart, barChart]) {
@@ -290,7 +291,7 @@ function refreshChartAppearance() {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   text-decoration: none;
-  transition: all 0.2s;
+  transition: border-color var(--admin-transition), transform var(--admin-transition);
 }
 .todo-item:hover {
   border-color: var(--color-accent);

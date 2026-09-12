@@ -104,11 +104,11 @@ struct BookingsView: View {
                 VStack(spacing: 0) {
                     HStack(spacing: 4) {
                         Text(tab.title)
-                            .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                            .font(AppTypography.supporting.weight(isSelected ? .semibold : .regular))
                             .foregroundStyle(isSelected ? .brandDefault : .textTertiary)
                         if isSelected {
                             Text("\(viewModel.total)")
-                            .font(.system(size: 10))
+                            .font(AppTypography.micro)
                             .foregroundStyle(.brandDefault)
                             .padding(.horizontal, 4)
                             .padding(.vertical, 1)
@@ -127,7 +127,7 @@ struct BookingsView: View {
                 .contentShape(Rectangle())
                 .onTapGesture {
                     guard selectedTabIndex != index else { return }
-                    selectedTabIndex = index
+                    AppMotion.perform { selectedTabIndex = index }
                     Task { await viewModel.switchStatus(tab.status) }
                 }
             }
@@ -161,7 +161,7 @@ struct BookingsView: View {
                         } label: {
                             bookingCard(booking)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(CardPressButtonStyle())
                         .onAppear {
                             guard booking.id == viewModel.bookings.last?.id else { return }
                             Task { await viewModel.loadMore() }
@@ -195,10 +195,10 @@ struct BookingsView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
                     Text(booking.userId.isEmpty ? "匿名信众" : booking.userId)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(AppTypography.body.weight(.medium))
                         .foregroundStyle(.textPrimary)
                     Text(booking.serviceName)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(AppTypography.micro.weight(.medium))
                         .foregroundStyle(.accentDefault)
                         .padding(.horizontal, AppSpacing.sm)
                         .padding(.vertical, 2)
@@ -206,10 +206,10 @@ struct BookingsView: View {
                         .cornerRadius(AppRadius.sm)
                 }
                 Text("\(booking.bookingDate) \(booking.timeSlot) · \(booking.templeName)")
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
                 Text("查看详情")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(AppTypography.caption.weight(.medium))
                     .foregroundStyle(.brandDefault)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -217,10 +217,10 @@ struct BookingsView: View {
             // 右侧金额和状态
             VStack(alignment: .trailing, spacing: 4) {
                 Text(booking.meritMoneyText)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(.accentDefault)
                 Text(badge.text)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(AppTypography.micro.weight(.medium))
                     .foregroundStyle(badge.color)
                     .padding(.horizontal, AppSpacing.sm)
                     .padding(.vertical, 3)

@@ -142,7 +142,7 @@ struct RewardWheelArt: View {
                     Circle().fill(Color(red: 1, green: 0.92, blue: 0.74)).frame(width: 4, height: 4).offset(y: -size / 2).rotationEffect(.degrees(Double(i) * 18))
                 }
                 Circle().fill(Color(hex: "C8A96E")).frame(width: 72, height: 72).overlay(Circle().stroke(.white.opacity(0.4), lineWidth: 4))
-                VStack(spacing: 3) { Text(spinning ? "✦" : "\(cost)").font(.title2.bold()); Text(spinning ? "揭晓中" : "积分 / 次").font(.system(size: 10)) }.foregroundStyle(Color(hex: "1C1210"))
+                VStack(spacing: 3) { Text(spinning ? "✦" : "\(cost)").font(.title2.bold()); Text(spinning ? "揭晓中" : "积分 / 次").font(AppTypography.micro) }.foregroundStyle(Color(hex: "1C1210"))
                 Image(systemName: "arrowtriangle.down.fill").font(.title).foregroundStyle(Color(red: 1, green: 0.9, blue: 0.7)).offset(y: -size / 2 - 4)
             }.frame(width: size, height: size).frame(width: p.size.width, height: p.size.height)
         }.accessibilityElement(children: .ignore).accessibilityLabel(spinning ? "转盘正在减速揭晓" : "八格积分转盘，扇区面积不代表概率")
@@ -161,7 +161,7 @@ struct RewardCampaignCard: View {
                     } else { RewardGiftArt(kind: c.kind) }
                     Text(c.phaseText).font(.caption2.bold()).padding(8).background(Color.bgPrimary.opacity(0.85), in: Capsule())
                 }.frame(height: 190).padding(8).background(Color.accentDefault.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
-                Text(c.title).font(.title3.bold()).foregroundStyle(Color.textPrimary)
+                Text(c.title).font(AppTypography.card).foregroundStyle(Color.textPrimary)
                 Text("\(c.prizeName) × \(c.prizeQuantity)").font(.subheadline)
                 ProgressView(value: Double(c.participantCount), total: Double(c.capacity)).tint(Color.accentDefault)
                 HStack { Text("\(c.participantCount) 人已参与"); Spacer(); Text("限 \(c.capacity) 人") }.font(AppTypography.caption)
@@ -321,7 +321,7 @@ struct RewardDetailView: View {
                     } else if error == nil { ProgressView("正在准备活动…").padding(40) }
                 }.padding(16)
             }.onChange(of: motionID) { _, _ in
-                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { proxy.scrollTo("reward-art", anchor: .top) }
+                AppMotion.perform(AppMotion.reveal) { proxy.scrollTo("reward-art", anchor: .top) }
             }
         }
         .background(Color.bgPrimary)
@@ -381,7 +381,7 @@ struct RewardDetailView: View {
         }
     }
     private func fact(_ title: String, _ value: String) -> some View {
-        VStack(spacing: 7) { Text(value).font(.title3.bold()).foregroundStyle(Color.accentDefault); Text(title).font(.system(size: 10)).foregroundStyle(.secondary) }
+        VStack(spacing: 7) { Text(value).font(.title3.bold()).foregroundStyle(Color.accentDefault); Text(title).font(AppTypography.micro).foregroundStyle(.secondary) }
     }
     private func ticket(_ e: RewardEntry) -> some View {
         VStack(spacing: 14) {
@@ -503,7 +503,7 @@ private struct RewardWheelInfoSheet: View {
                 if records {
                     if let e = detail.mine {
                         Section {
-                            Text(e.outcomeText).font(.title3.bold()).foregroundStyle(Color.accentDefault)
+                            Text(e.outcomeText).font(AppTypography.card).foregroundStyle(Color.accentDefault)
                             Text("\(rewardDate(e.createdAt)) · 消耗 \(e.pointsSpent) 积分").font(AppTypography.caption)
                             Text(e.code).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
                             if e.outcome == "won" { NavigationLink("查看奖品与领奖") { RewardsView(initialTab: 3) } }
@@ -558,7 +558,7 @@ struct RewardResultSheet: View {
             VStack(spacing: 18) {
                 Image(systemName: entry.outcome == "won" ? "sparkles" : entry.outcome == "pending" ? "ticket.fill" : "sparkle").font(.system(size: 48)).foregroundStyle(Color.accentDefault).scaleEffect(appear ? 1 : 0.6)
                 Text("A LITTLE JOY").font(.caption2).tracking(2).foregroundStyle(Color.accentDefault)
-                Text(entry.outcomeText).font(.title2.bold())
+                Text(entry.outcomeText).font(AppTypography.section)
                 Text(entry.outcome == "pending" ? "参与码已为你生成，静候这一期的惊喜。" : entry.outcome == "won" ? "这份小欢喜，属于你。" : "谢谢参与，愿下一份好运与你相逢。").font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 if let prizeName { if entry.outcome == "won" { Text(prizeName).font(.headline).foregroundStyle(Color.accentDefault) } } else { Text(entry.code).font(.system(.subheadline, design: .monospaced)).foregroundStyle(Color.accentDefault) }
                 Text("已扣 \(entry.pointsSpent) 积分").font(AppTypography.caption)

@@ -20,7 +20,7 @@ struct StatCard: View {
                 HStack(spacing: AppSpacing.xs) {
                     if let icon {
                         Image(systemName: icon)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(AppTypography.supporting.weight(.semibold))
                             .foregroundStyle(tint)
                     }
                     Text(title)
@@ -28,7 +28,7 @@ struct StatCard: View {
                         .foregroundStyle(.textSecondary)
                 }
                 Text(value)
-                    .font(AppTypography.numeric(22))
+                    .appNumericFont(22)
                     .foregroundStyle(.textPrimary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -35,7 +35,7 @@ struct DFTopNavBar<Leading: View, Trailing: View>: View {
             Spacer()
 
             Text(title)
-                .font(AppTypography.title(17))
+                .font(AppTypography.navigation)
                 .foregroundStyle(Color.accentDefault)
                 .lineLimit(1)
 
@@ -95,7 +95,7 @@ struct DFBackButton: View {
             .frame(width: 36, height: 36)
             .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardPressButtonStyle())
         .accessibilityLabel("返回")
     }
 }

@@ -95,7 +95,6 @@ struct MainTabView: View {
                 .tag(3)
         }
         .tint(.brandDefault)
-        .animation(.easeInOut(duration: 0.25), value: selectedTab)
         .task { await badgeViewModel.monitor() }
         .onChange(of: selectedTab) { _, _ in
             Task { await badgeViewModel.refresh() }

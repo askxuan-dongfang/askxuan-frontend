@@ -1,0 +1,99 @@
+/* Shared motion for platform, commerce and temple operations. Keep page and
+   overlay wrappers free of transforms so fixed children retain their viewport. */
+html:root {
+  --el-transition-duration: var(--motion-duration-standard);
+  --el-transition-duration-fast: var(--motion-duration-fast);
+  --el-transition-function-ease-in-out-bezier: var(--motion-ease);
+  --el-transition-function-fast-bezier: var(--motion-settle);
+  --el-transition-all: color var(--admin-transition), background-color var(--admin-transition), border-color var(--admin-transition), box-shadow var(--admin-transition);
+  --el-transition-fade: opacity var(--motion-duration-standard) var(--motion-ease);
+  --el-transition-fade-linear: opacity var(--motion-duration-standard) linear;
+  --el-transition-md-fade: opacity var(--motion-duration-standard) var(--motion-ease), transform var(--motion-duration-standard) var(--motion-settle);
+  --el-transition-box-shadow: box-shadow var(--admin-transition);
+  --el-transition-color: color var(--admin-transition);
+}
+
+/* A brief exit avoids a long blank pause with Vue's out-in route mode. */
+.page-enter-active { transition: opacity var(--motion-duration-standard) var(--motion-ease); }
+.page-leave-active { transition: opacity var(--motion-duration-fast) var(--motion-ease); pointer-events: none; }
+.page-enter-from, .page-leave-to { opacity: 0; }
+
+.ax-admin-nav-toggle, .ax-admin-header button, .icon-button,
+.ax-appearance, .ax-appearance select, .mobile-task-card,
+.el-menu-item, .el-sub-menu__title, .el-dropdown-menu__item,
+.el-select-dropdown__item, .el-tabs__item, .el-pager li {
+  transition: color var(--admin-transition), background-color var(--admin-transition), border-color var(--admin-transition);
+}
+.el-button {
+  transition: color var(--admin-transition), background-color var(--admin-transition), border-color var(--admin-transition), box-shadow var(--admin-transition), transform var(--motion-duration-fast) var(--motion-ease);
+}
+.el-button:not(.is-disabled):not(.is-loading):not(.is-link):not(.is-text):active,
+.ax-admin-nav-toggle:active, .icon-button:active {
+  transform: translateY(1px);
+}
+.el-input__wrapper, .el-select__wrapper, .el-textarea__inner {
+  transition: border-color var(--admin-transition), background-color var(--admin-transition), box-shadow var(--admin-transition);
+}
+.el-table__body td.el-table__cell {
+  transition: background-color var(--motion-duration-fast) var(--motion-ease);
+}
+.el-list-enter-active, .el-list-leave-active {
+  transition: opacity var(--motion-duration-standard) var(--motion-ease), transform var(--motion-duration-standard) var(--motion-settle);
+}
+.el-tabs__active-bar {
+  transition: transform var(--motion-duration-standard) var(--motion-settle), width var(--motion-duration-standard) var(--motion-ease);
+}
+
+/* Fade poppers without scaling their text or replacing Popper's positioning
+   transform. This also preserves the mobile date-range panel centering rule. */
+.el-zoom-in-top-enter-active, .el-zoom-in-bottom-enter-active,
+.el-zoom-in-center-enter-active, .el-zoom-in-left-enter-active,
+.el-fade-in-enter-active {
+  transition: opacity var(--motion-duration-standard) var(--motion-ease);
+  transform: none;
+}
+.el-zoom-in-top-leave-active, .el-zoom-in-bottom-leave-active,
+.el-zoom-in-center-leave-active, .el-zoom-in-left-leave-active,
+.el-fade-in-leave-active {
+  transition: opacity var(--motion-duration-exit) var(--motion-ease);
+  transform: none;
+}
+.el-zoom-in-top-enter-from, .el-zoom-in-top-leave-to,
+.el-zoom-in-bottom-enter-from, .el-zoom-in-bottom-leave-to,
+.el-zoom-in-center-enter-from, .el-zoom-in-center-leave-to,
+.el-zoom-in-left-enter-from, .el-zoom-in-left-leave-to {
+  opacity: 0;
+  transform: none;
+}
+
+.dialog-fade-enter-active { animation: ax-overlay-in var(--motion-duration-enter) var(--motion-ease); }
+.dialog-fade-leave-active { animation: ax-overlay-out var(--motion-duration-exit) var(--motion-ease); }
+.dialog-fade-enter-active .el-overlay-dialog,
+.dialog-fade-leave-active .el-overlay-dialog,
+.fade-in-linear-enter-active .el-overlay-message-box,
+.fade-in-linear-leave-active .el-overlay-message-box { animation: none; }
+.fade-in-linear-enter-active { transition-duration: var(--motion-duration-standard); }
+.fade-in-linear-leave-active { transition-duration: var(--motion-duration-exit); }
+.el-drawer:not(.is-dragging) {
+  transition: transform var(--motion-duration-enter) var(--motion-settle);
+}
+.el-drawer-fade-enter-active { transition: background-color var(--motion-duration-enter) var(--motion-ease); }
+.el-drawer-fade-leave-active { transition: background-color var(--motion-duration-exit) var(--motion-ease); }
+.el-drawer-fade-leave-active .el-drawer { transition-duration: var(--motion-duration-exit); }
+.el-drawer__dragger, .el-drawer__dragger::before { transition: background-color var(--admin-transition); }
+
+/* First paint is a single fade, with no repeating card/stagger animation. */
+.login-card { animation: ax-overlay-in var(--motion-duration-enter) var(--motion-ease); }
+@keyframes ax-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ax-overlay-out { from { opacity: 1; } to { opacity: 0; } }
+
+@media (hover: none), (prefers-reduced-motion: reduce) {
+  .ax-task-card:hover, .todo-item:hover, .login-btn:hover { transform: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .el-button:active, .ax-admin-nav-toggle:active, .icon-button:active { transform: none !important; }
+  *, *::before, *::after {
+    animation-delay: 0s !important;
+    transition-delay: 0s !important;
+  }
+}

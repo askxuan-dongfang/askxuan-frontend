@@ -60,7 +60,7 @@ struct ServiceTagsView: View {
                     if isSaving {
                         ProgressView().tint(Color.accentDefault)
                     } else {
-                        Text("保存").font(.system(size: 15, weight: .semibold))
+                        Text("保存").font(AppTypography.body.weight(.semibold))
                             .foregroundStyle(Color.accentDefault)
                     }
                 }
@@ -89,10 +89,10 @@ struct ServiceTagsView: View {
                     .font(.system(size: 20))
                     .foregroundStyle(enabled ? Color.brandDefault : Color.textTertiary)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(CardPressButtonStyle())
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.name).font(.system(size: 15, weight: .medium))
+                Text(item.name).font(AppTypography.body.weight(.medium))
                     .foregroundStyle(Color.textPrimary)
                 Text(item.code).font(.caption2).foregroundStyle(Color.textTertiary)
             }
@@ -102,7 +102,7 @@ struct ServiceTagsView: View {
             if enabled {
                 HStack(spacing: 4) {
                     Text("¥")
-                        .font(.system(size: 13))
+                        .font(AppTypography.supporting)
                         .foregroundStyle(Color.textSecondary)
                     TextField("价格", text: Binding(
                         get: { myTags[item.code].map { String(format: "%.0f", $0) } ?? "" },
@@ -111,7 +111,7 @@ struct ServiceTagsView: View {
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 88)
-                    .font(.system(size: 15))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.brandDefault)
                 }
                 .padding(.horizontal, 12)
