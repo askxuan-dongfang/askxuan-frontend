@@ -10,9 +10,16 @@ import SwiftUI
 
 @main
 struct DongFangApp: App {
+    @UIApplicationDelegateAdaptor(ChatAppDelegate.self) private var chatDelegate
+    @StateObject private var chatNotifications = NativeChatNotifications.shared
     @StateObject private var authStore = AuthStore.shared
 
     init() {
+        NativeChatNotifications.shared.configure {
+            let a=AuthStore.shared
+            guard a.isLoggedIn,let token=a.accessToken else{return nil}
+            return ChatNotificationIdentity(role:"customer",accountID:a.userId,userID:a.userId,token:token,nickname:a.nickname)
+        }
         APIClient.shared.configureBaseURL(AppConfig.baseURL)
         APIClient.shared.tokenProvider = {
             KeychainHelper.readString(service: AppConfig.keychainService, key: AppConfig.tokenKey)
@@ -31,6 +38,13 @@ struct DongFangApp: App {
             MainTabView()
             .environmentObject(authStore)
             .preferredColorScheme(.dark)
+                .task { await chatNotifications.refresh(); await chatNotifications.monitor() }
+                .onChange(of: authStore.isLoggedIn) { _,_ in Task { await chatNotifications.refresh() } }
+                .fullScreenCover(item: $chatNotifications.destination) { destination in
+                    if let who=chatNotifications.identity() {
+                        ChatExperienceView(conversationID:destination.id,role:who.role,accountID:who.accountID,userID:who.userID,token:who.token,nickname:who.nickname)
+                    }
+                }
         }
     }
 

@@ -71,7 +71,7 @@ final class LoginViewModel: ObservableObject {
                     }
                 }
             }
-            await registerMockDeviceToken()
+            await NativeChatNotifications.shared.refresh()
         } catch let error as APIError {
             errorMessage = error.errorDescription
         } catch {
@@ -80,18 +80,7 @@ final class LoginViewModel: ObservableObject {
         isLoading = false
     }
 
-    private func registerMockDeviceToken() async {
-        guard let masterId = AuthStore.shared.masterId else { return }
-        let req = DeviceTokenRegisterRequest(
-            userId: masterId,
-            clientType: AppConfig.clientType,
-            platform: "ios",
-            deviceToken: "mock-apns-token-master-\(masterId)",
-            bundleId: Bundle.main.bundleIdentifier ?? "com.askxuan.master",
-            appVersion: AppConfig.clientVersion
-        )
-        let _: DeviceTokenResponse? = try? await apiClient.request(.registerDeviceToken(req))
-    }
+
 }
 
 struct LoginView: View {

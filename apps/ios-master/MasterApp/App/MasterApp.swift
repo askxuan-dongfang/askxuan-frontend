@@ -10,10 +10,17 @@ import SwiftUI
 
 @main
 struct MasterApp: App {
+    @UIApplicationDelegateAdaptor(ChatAppDelegate.self) private var chatDelegate
+    @StateObject private var chatNotifications = NativeChatNotifications.shared
     /// 全局鉴权状态（登录态、JWT、法师身份），通过 environmentObject 注入
     @StateObject private var authStore = AuthStore.shared
 
     init() {
+        NativeChatNotifications.shared.configure {
+            let a=AuthStore.shared
+            guard a.isLoggedIn,let token=a.token,let master=a.masterId,let user=a.userId else{return nil}
+            return ChatNotificationIdentity(role:"master",accountID:master,userID:user,token:token,nickname:a.nickname ?? "")
+        }
         // 配置 APIClient 的 BaseURL
         APIClient.shared.configureBaseURL(AppConfig.baseURL)
         // 配置 401 未授权回调：登出并回到登录页
@@ -35,6 +42,13 @@ struct MasterApp: App {
             RootView()
                 .environmentObject(authStore)
                 .preferredColorScheme(.dark)
+                .task { await chatNotifications.refresh(); await chatNotifications.monitor() }
+                .onChange(of: authStore.isLoggedIn) { _,_ in Task { await chatNotifications.refresh() } }
+                .fullScreenCover(item: $chatNotifications.destination) { destination in
+                    if let who=chatNotifications.identity() {
+                        ChatExperienceView(conversationID:destination.id,role:who.role,accountID:who.accountID,userID:who.userID,token:who.token,nickname:who.nickname)
+                    }
+                }
         }
     }
 

@@ -48,12 +48,13 @@ struct MasterBookingChatConversation: Identifiable, Decodable {
     let lastMessageAt: String
     let canChat: Bool
     let expiresAt: String
+    var unreadCount: Int = 0
 
     var id: String { conversationId }
 
     enum CodingKeys: String, CodingKey {
         case conversationId, sourceType, sourceId, bookingId, peerId, peerName, peerAvatar
-        case templeName, serviceName, bookingDate, lastMessage, lastMessageAt, canChat, expiresAt
+        case templeName, serviceName, bookingDate, lastMessage, lastMessageAt, canChat, expiresAt, unreadCount
     }
 
     init(from decoder: Decoder) throws {
@@ -71,6 +72,7 @@ struct MasterBookingChatConversation: Identifiable, Decodable {
         lastMessage = try c.decodeIfPresent(String.self, forKey: .lastMessage) ?? ""
         lastMessageAt = try c.decodeIfPresent(String.self, forKey: .lastMessageAt) ?? ""
         canChat = try c.decodeIfPresent(Bool.self, forKey: .canChat) ?? false
+        unreadCount = try c.decodeIfPresent(Int.self, forKey: .unreadCount) ?? 0
         expiresAt = try c.decodeIfPresent(String.self, forKey: .expiresAt) ?? ""
     }
 

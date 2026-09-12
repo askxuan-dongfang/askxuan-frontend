@@ -60,5 +60,9 @@
 	<array>
 		<string>AskXuanSerif-Semibold.ttf</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>用于录制咨询语音和语音通话</string>
+	<key>NSCameraUsageDescription</key>
+	<string>用于视频咨询通话</string>
 </dict>
 </plist>

@@ -82,6 +82,7 @@ final class AuthStore: ObservableObject {
 
     /// 登出：清除 Token 与身份信息
     func logout() {
+        NativeChatNotifications.shared.unbind()
         self.token = nil
         self.refreshToken = nil
         self.masterId = nil

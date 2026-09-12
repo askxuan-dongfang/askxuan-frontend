@@ -46,6 +46,7 @@ private final class MainTabBadgeViewModel: ObservableObject {
 }
 
 struct MainTabView: View {
+    @ObservedObject private var chatNotifications=NativeChatNotifications.shared
     // 支持通过 launch argument 设置初始 Tab（用于截图）：xcrun simctl launch booted com.askxuan.master -tab 2
     @State private var selectedTab: Int = {
         let args = ProcessInfo.processInfo.arguments
@@ -86,7 +87,7 @@ struct MainTabView: View {
 
             NavigationStack { MessagesView().rootTabPage() }
                 .tabItem { Label("消息", systemImage: "bubble.left.and.bubble.right") }
-                .badge(badgeViewModel.unreadMessageCount)
+                .badge(badgeViewModel.unreadMessageCount + chatNotifications.chatUnread)
                 .tag(2)
 
             NavigationStack { ProfileView().rootTabPage() }

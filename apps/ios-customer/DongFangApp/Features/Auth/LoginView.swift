@@ -340,7 +340,7 @@ struct LoginView: View {
                     }
                 }
             }
-            await registerMockDeviceToken(userId: userId)
+            await NativeChatNotifications.shared.refresh()
             return .success
         } catch let APIError.serverError(code, message) {
             // 用户不存在（后端 code 通常为 40401 或 message 含"不存在"）
@@ -374,17 +374,7 @@ struct LoginView: View {
         }
     }
 
-    private func registerMockDeviceToken(userId: String) async {
-        let req = DeviceTokenRegisterRequest(
-            userId: userId,
-            clientType: AppConfig.clientType,
-            platform: "ios",
-            deviceToken: "mock-apns-token-customer-\(userId)",
-            bundleId: Bundle.main.bundleIdentifier ?? "com.askxuan.customer",
-            appVersion: AppConfig.clientVersion
-        )
-        let _: DeviceTokenResponse? = try? await APIClient.shared.request(.registerDeviceToken(req))
-    }
+
 }
 
 #Preview {
