@@ -1,6 +1,6 @@
 {
   "name": "@dongfang/design-tokens",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "问玄东方App 跨端共享 Design Token 系统",
   "main": "tokens.json",
   "scripts": {

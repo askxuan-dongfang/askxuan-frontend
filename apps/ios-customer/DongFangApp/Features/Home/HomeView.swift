@@ -2,7 +2,7 @@
 //  HomeView.swift
 //  DongFangApp
 //
-//  首页（对齐原型 home.html）：
+//  首页：
 //  品牌名「问玄东方」+ 搜索 + Banner轮播 + 双入口 + 信仰/意图入口 + 热门寺院 + 热门师傅。
 //
 
@@ -140,7 +140,7 @@ struct HomeView: View {
         .frame(height: 52)
     }
 
-    // MARK: - Banner 轮播（对齐原型：200px高 + 图片 + 左侧渐变遮罩 + 圆点指示器）
+    // MARK: - Banner 轮播：图片、渐变遮罩与分页指示器
     private var bannerSection: some View {
         VStack(spacing: 0) {
             GeometryReader { proxy in
@@ -158,7 +158,7 @@ struct HomeView: View {
             .frame(height: 200)
             .padding(.horizontal, 20)
 
-            // 圆点指示器（对齐原型：6px圆点，active 18px长条 brand色）
+            // 分页指示器：以品牌色长条标记当前页
             HStack(spacing: 6) {
                 ForEach(0..<viewModel.banners.count, id: \.self) { index in
                     Button {
@@ -184,7 +184,7 @@ struct HomeView: View {
         ZStack(alignment: .leading) {
             RemoteImage(urlString: banner.imageURL, placeholderIcon: "photo")
 
-            // 左侧渐变遮罩（对齐原型：从左 0.7 → 透明 60%）
+            // 左侧渐变遮罩，保证标题与背景对比
             LinearGradient(
                 colors: [
                     Color.bgPrimary.opacity(0.7),
@@ -210,7 +210,7 @@ struct HomeView: View {
         .clipped()
     }
 
-    // MARK: - 双入口卡片（对齐原型：120px高 + 图片背景 + 渐变遮罩 + 图标+文字居中）
+    // MARK: - 寺院与法师双入口卡片
     private var entryCardsSection: some View {
         LazyVGrid(
             columns: [
@@ -240,7 +240,7 @@ struct HomeView: View {
                     .frame(width: proxy.size.width, height: proxy.size.height)
                     .clipped()
 
-                // 渐变遮罩（对齐原型：135deg 0.65 → 0.35）
+                // 入口卡片背景渐变遮罩
                 LinearGradient(
                     colors: [
                         Color.bgPrimary.opacity(0.65),
@@ -457,7 +457,7 @@ struct HomeView: View {
         .appCardSurface(cornerRadius: 12)
     }
 
-    /// 寺院类型标签颜色：道教用紫色（对齐原型 #9E8FB2），其他用 brand
+    /// 寺院类型标签颜色：道教用紫色，其他用品牌色
     private func templeTypeColor(_ type: String) -> Color {
         if type.contains("道") {
             return Color(red: 158/255, green: 143/255, blue: 178/255)

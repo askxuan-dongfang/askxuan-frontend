@@ -2,7 +2,7 @@
 //  ProfileView.swift
 //  DongFangApp
 //
-//  我的页面：对齐产品原型 profile.html 布局。
+//  我的页面：个人资料、业务记录与设置入口。
 //  用户信息卡 + 统计行 + 订单中心 + 资产 + 服务列表 + 系统功能。
 //  作为主 Tab 之一。所有展示数据来自 ProfileViewModel 的真实 API 结果，
 //  字段缺失或 API 失败时显示占位（"—" / 暂无），不使用假数据。

@@ -97,5 +97,5 @@ enum AppConfig {
 
     /// API 客户端识别头
     static let clientType = "master"
-    static let clientVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
+    static let clientVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.1"
 }

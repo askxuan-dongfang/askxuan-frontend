@@ -1,6 +1,6 @@
 {
   "name": "@dongfang/mock-server",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "问玄东方 Mock 数据服务 - 基于统一数据字典",
   "type": "module",

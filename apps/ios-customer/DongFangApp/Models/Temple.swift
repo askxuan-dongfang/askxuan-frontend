@@ -33,9 +33,9 @@ struct Temple: Codable, Identifiable, Hashable {
     let rating: Double
     let description: String
     var images: [String]?
-    /// 服务标签列表（对齐原型 home.html 寺院卡片底部「法事·祈福·供灯·开光」）
+    /// 寺院卡片服务标签列表
     var serviceTags: [String]?
-    /// 服务数量（对齐原型 home.html 寺院卡片「5项服务」）
+    /// 寺院可用服务数量
     var serviceCount: Int?
     /// 服务编码列表（对齐 temple-service ServiceCodes []string）
     var serviceCodes: [String]?

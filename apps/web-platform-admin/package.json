@@ -1,6 +1,6 @@
 {
   "name": "web-platform-admin",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "问玄东方 P05 平台总管理台",
   "type": "module",

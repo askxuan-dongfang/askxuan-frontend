@@ -37,7 +37,7 @@ enum ImageMapper {
         "香": "product-xiangdao",
     ]
 
-    /// Banner asset（对齐原型 home.html 三张 Banner）
+    /// 首页 Banner 的本地资源映射
     static let banners: [String] = ["banner-ad-1", "banner-ad-2", "banner-ad-3"]
 
     /// 双入口卡片背景

@@ -3,7 +3,7 @@
 //  DongFangApp
 //
 //  商城列表 ViewModel：商品分页加载 + 分类筛选 + 关键词搜索。
-//  对齐产品原型 shop.html。
+//  管理商城商品、分类与页面加载状态。
 //
 
 import SwiftUI

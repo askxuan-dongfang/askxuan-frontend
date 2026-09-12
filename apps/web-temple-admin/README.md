@@ -1,57 +1,34 @@
-# 问玄东方 · 寺院管理台 (web-temple-admin)
+# 问玄东方 · 寺院管理台
 
-寺院管理员使用的 Web 后台，基于 Vue 3 + TypeScript + Vite + Element Plus 构建。
+当前产品版本：`0.0.1`。
 
-## 技术栈
+寺院机构使用的 Web 后台，基于 Vue 3、TypeScript、Vite、Element Plus、Pinia 和 ECharts，部署基址 `/temple/`。机构信息、人员、服务、预约和加持任务按寺院权限组织；它与统一运营后台保持不同的工作入口。
 
-- **Vue 3.4** Composition API（`<script setup lang="ts">`）
-- **Vite 5** 构建工具
-- **Element Plus** 组件库（按需自动导入）
-- **Tailwind CSS** 原子化工具类（引入 design-tokens）
-- **Pinia** 状态管理
-- **Vue Router 4** 路由
-- **ECharts 5** 数据可视化
-- **Axios** HTTP 客户端
+## 启动与依赖恢复
 
-## 目录结构
-
-```
-src/
-├── api/            # 接口封装（axios 实例 + 各模块接口）
-├── layouts/        # 布局组件（左侧菜单 + 顶栏）
-├── router/         # 路由定义与守卫
-├── stores/         # Pinia 状态（auth）
-├── styles/         # 全局样式（tokens + tailwind + 禅意主题）
-├── types/          # TypeScript 类型定义
-├── utils/          # 工具函数（格式化、状态映射）
-└── views/          # 页面视图
-```
-
-## 快速开始
+在本目录执行：
 
 ```bash
-# 安装依赖
-npm install
-
-# 启动开发服务器（默认端口 5174，代理 /api → localhost:8080）
+npm ci
 npm run dev
+```
 
-# 构建生产包
+单独启动默认 `http://localhost:5174/login`。从[前端根目录](../../README.md)执行 `make clients-up` 时固定使用 `http://127.0.0.1:5173/login`。
+
+开发 `/api` 默认代理到 `http://localhost:8080`，可通过进程环境变量 `VITE_DEV_PROXY_TARGET` 调整。API 统一响应为 `{ code: 0, message, data }`；后端未启动时页面可打开不代表数据可用。
+
+```bash
 npm run build
-
-# 预览构建产物
 npm run preview
 ```
 
-## 设计规范
+依赖清理后用 `npm ci` 恢复；Vite 缓存自动重建，生产包输出 `dist/`。构建前会生成基础 Web token 并检查共享组件、字体、动效及会话失效处理。
 
-- 主品牌色（朱砂红）：`#C45A3C`
-- 强调色（琉璃金）：`#C8A96E`
-- 内容区采用浅色背景（`#F5F0EB`），侧边栏沿用禅意暗色（`#1C1210`）
-- 字体：Noto Serif SC（标题）+ Noto Sans SC（正文）
-- Design Tokens 来源：`packages/design-tokens/dist/web/`
+## 当前视觉与源码
 
-## API 代理
+- 主题：浅色米白/松绿/暖金，深色深棕/朱砂/暖金；不再固定为“浅内容配深侧栏”。
+- 标题使用随应用提供的 AskXuan Serif，正文、表单和按钮使用平台无衬线。
+- 共同源：`packages/design-tokens/tokens.json`、`packages/admin-ui` 和 `packages/brand`；本端 `public/logos` 是已同步的品牌资源。
+- `src/api` 封装接口；`src/router` 与 `src/stores` 维护路由/会话；`src/layouts`、`src/views` 和 `src/styles` 维护页面与样式。
 
-开发环境通过 Vite proxy 代理至 `http://localhost:8080/api/v1`，
-统一响应格式：`{ code: 0, message: "success", data: ... }`。
+当前规则详见[视觉设计与交互手册](../../../askXuan-docs/docs/guides/视觉设计与交互手册.md)；此链接适用于标准 DongFang 工作区布局。

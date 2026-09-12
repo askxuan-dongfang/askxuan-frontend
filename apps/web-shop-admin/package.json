@@ -1,6 +1,6 @@
 {
   "name": "@dongfang/web-shop-admin",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "问玄东方 - 商城管理台 Web 前端 (P04)",
   "type": "module",

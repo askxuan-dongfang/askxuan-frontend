@@ -4,7 +4,7 @@
 //
 //  MasterTopNavBar 通用顶部导航栏：毛玻璃 + 返回 + 居中标题。
 //  对齐 C 端 DFTopNavBar 设计，使用法师端 design tokens。
-//  标题字体：Noto Serif SC bold（对齐原型 font-family: 'Noto Serif SC'; font-weight: 700）。
+//  标题字体使用 AppTypography.navigation 语义角色。
 //  背景延伸至状态栏（ignoresSafeArea(.top)），内容 HStack 固定 44pt 高度。
 //
 

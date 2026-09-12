@@ -64,7 +64,7 @@ struct SettingsView: View {
                     MasterCard(padding: AppSpacing.md) {
                         VStack(alignment: .leading, spacing: AppSpacing.sm) {
                             settingRow(icon: "info.circle", title: "应用版本",
-                                       value: "1.0.0", tint: .accentDefault)
+                                       value: AppConfig.clientVersion, tint: .accentDefault)
                             Divider().background(Color.borderDivider)
                             settingRow(icon: "doc.text", title: "服务协议",
                                        value: nil, tint: .textSecondary, showArrow: true)

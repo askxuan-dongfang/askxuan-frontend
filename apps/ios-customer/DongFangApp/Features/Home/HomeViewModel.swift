@@ -3,14 +3,14 @@
 //  DongFangApp
 //
 //  首页 ViewModel：加载热门寺院 / 热门法师，提供信仰与意图聚合入口。
-//  Banner 使用本地 asset（对齐原型 home.html）。
+//  Banner 使用本地应用资源。
 //
 
 import SwiftUI
 
 @MainActor
 final class HomeViewModel: ObservableObject {
-    /// 首页 Banner（对齐原型 home.html：新春祈福法会 / AI智能问事 / DIY手串定制）
+    /// 首页推荐 Banner
     /// imageURL 使用本地 asset 名（ImageMapper.banners）
     @Published var banners: [BannerItem] = [
         BannerItem(id: "b1", title: "新春祈福法会", subtitle: "名师主法 · 功德回向",

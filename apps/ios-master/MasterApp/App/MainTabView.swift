@@ -4,7 +4,7 @@
 //
 //  主 TabView 容器：4 个 Tab（工作台/预约/消息/我的），每个 Tab 内部用 NavigationStack。
 //  使用 SwiftUI 原生 TabView，Dock 仅在四个根页面显示。
-//  通过 UITabBarAppearance 配置深色样式，对齐产品原型 master-app.css 的 .bottom-tabs。
+//  通过 UITabBarAppearance 配置当前主题的法师端底部导航。
 //  预约/消息 Tab 支持角标 badge。
 //
 

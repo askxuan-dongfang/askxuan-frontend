@@ -3,7 +3,7 @@
 //  MasterApp
 //
 //  法师端底部 TabBar：4 个 Tab（工作台/预约/消息/我的）。
-//  对齐产品原型 master-app.css 的 .bottom-tabs 样式：
+//  法师端底部导航组件：
 //  - 高度 64pt + 安全区
 //  - 背景 rgba(28,18,16,0.92) + ultraThinMaterial 模糊
 //  - 顶部 1px 琉璃金描边

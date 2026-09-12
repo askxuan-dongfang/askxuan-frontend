@@ -1724,7 +1724,7 @@ struct AboutView: View {
                     Text("问玄东方")
                         .font(AppTypography.title(20))
                         .foregroundStyle(Color.accentDefault)
-                    Text("版本 1.0.0 (1)")
+                    Text("版本 \(AppConfig.clientVersion) (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"))")
                         .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }

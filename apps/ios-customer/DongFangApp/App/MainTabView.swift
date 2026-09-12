@@ -4,7 +4,7 @@
 //
 //  主 TabView 容器：5 个 Tab（首页/对话/AI问事/商城/我的），每个 Tab 内部用 NavigationStack。
 //  使用 SwiftUI 原生 TabView，Dock 仅在五个根页面显示。
-//  通过 UITabBarAppearance 配置深色样式，对齐产品原型 home.html 底部导航。
+//  通过 UITabBarAppearance 配置当前主题的原生底部导航。
 //
 
 import SwiftUI

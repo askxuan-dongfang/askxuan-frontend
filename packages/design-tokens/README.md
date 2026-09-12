@@ -1,150 +1,39 @@
 # @dongfang/design-tokens
 
-问玄东方App 跨端共享 Design Token 系统。以单一数据源 `tokens.json` 为基准，自动生成 iOS（Swift）、Web（CSS / Tailwind）与小程序（uni.scss / JS）各端所需的样式常量，确保多端色彩、字体、圆角、间距完全一致。
+当前产品版本：`0.0.1`。
 
-## 产品文字规范（2026-09）
+问玄东方共享视觉数据。当前颜色、字体角色、基础间距圆角和 Web 动效以本目录 `tokens.json` 为共同源；各端按交互环境接入，不能理解成 Web px、iOS pt、圆角和动效必须逐项完全相同。
 
-已接入的应用以 `tokens.json` 的 `typography` 为字号、字重和行高源，运行 `node scripts/sync-typography.mjs`（仓库根目录）更新共享 CSS、H5 独立仓库镜像及两套 iOS 的标题角色；`--check` 检查漂移。旧 `gen:ios` 仅生成基础示例，不要覆盖已扩展的应用 `Tokens.swift`。
+## 当前交付
 
-标题采用随应用提供的 AskXuan Serif 600（Noto Serif SC 的重命名副本），正文与控制项采用平台无衬线；金额使用等宽数字。字体、来源及 OFL 授权见 `fonts/README.md`。H5 独立仓库保存 WOFF2 镜像，各 Web 的 `public/fonts/OFL.txt` 随静态站点发布；原生通过 UIAppFonts 注册 TTF，RN 通过 expo-font 加载。更新字体资源时须同步这些副本和授权。
+- `tokens.json`：浅深语义色、字体/字号/字重/行高、基础尺寸与 Web 动效数据。
+- `typography.css`、`motion.css`：由仓库根脚本生成的共享 Web 角色。
+- `fonts/`：AskXuan Serif TTF、完整 WOFF2、授权和 Web unicode-range 切片。完整 WOFF2 是切片生成源，不是无用下载缓存。
+- `dist/web/`：基础 CSS 变量及 Tailwind 数据，由 `scripts/gen-web-tokens.js` 生成。
+- `dist/ios/`、`dist/mp/`：基础生成示例；不代表当前原生 App 或小程序已有全部接入。
 
-## 目录结构
+浅色使用米白、松绿与暖金，深色使用深棕、朱砂与暖金。标题使用 AskXuan Serif 600，正文与控制项使用平台无衬线，金额/统计使用等宽数字。完整品牌图形由[packages/brand](../brand/README.md)负责，不能用字体令牌替代 Logo 资产。
 
-```
-packages/design-tokens/
-├── tokens.json              # 统一 Design Token 数据源（唯一编辑入口）
-├── package.json
-├── scripts/
-│   ├── gen-ios-tokens.js    # 生成 Swift
-│   ├── gen-web-tokens.js    # 生成 CSS + Tailwind
-│   └── gen-mp-tokens.js     # 生成 uni.scss + JS
-└── dist/                    # 生成产物（自动创建，请勿手动编辑）
-    ├── ios/Tokens.swift
-    ├── web/tokens.css
-    ├── web/tailwind-tokens.js
-    ├── mp/uni.scss
-    └── mp/tokens.js
-```
+## 生成与检查
 
-## 数据源
-
-`tokens.json` 的色值取自 `问玄东方App/colors_and_type.css`，包含：
-
-- 21 个色彩令牌：背景（bg）、品牌（brand）、点缀金（accent）、朱砂（cinnabar）、文本（text）、边框（border）、状态（state）
-- 衬线 / 无衬线字体栈
-- 圆角：sm / md / lg / xl
-- 导航间距：navTop / navBottom
-
-## 运行生成脚本
+以下命令从 `askXuan-frontend` 仓库根目录执行：
 
 ```bash
-cd packages/design-tokens
-
-# 单端生成
-npm run gen:ios
-npm run gen:web
-npm run gen:mp
-
-# 一键生成全部
-npm run gen:all
-# 或
-npm run build
+node packages/design-tokens/scripts/gen-web-tokens.js
+node scripts/sync-typography.mjs --check
+node scripts/sync-motion.mjs --check
 ```
 
-所有脚本仅依赖 Node 内置 `fs` / `path` 模块，无需安装任何第三方包。
+修改 `tokens.json` 后，移除后两条的 `--check` 才会更新共享输出，并检查各应用差异。管理端 `predev/prebuild` 会生成基础 Web token，构建前检查共享资源漂移；H5 是独立仓库，相关同步副本变化需单独检查其 Git 状态。
 
-## 各端接入
+字体切片按 `fonts/web/README.md` 的 `scripts/build-web-fonts.py` 流程重建与校验；需要 fontTools/WOFF2 工具环境。`fonts/README.md` 和 `OFL.txt` 记录来源与许可。字体与品牌正式资产已随仓库提交，普通 Web 构建不需要重新制作它们。
 
-### iOS（Swift / SwiftUI）
+## 各端接入边界
 
-将 `dist/ios/Tokens.swift` 拖入 Xcode 工程。使用示例：
+- 管理 Web：基础 CSS/Tailwind 令牌叠加 `packages/admin-ui` 的主题、布局和组件。
+- H5：`apps/web-h5/src/theme` 是独立仓的应用令牌与共享文字/动效镜像；品牌、字体切片保留应用本地资源，构建无需读取根工作区历史素材。
+- 原生 iOS：两个 app 的 `DesignSystem/Tokens.swift` 保留 SwiftUI 语义色、Dynamic Type 与原生尺寸；字体由工程引用共享 TTF。`sync-typography` 只同步指定文字角色，**不要用 `gen:ios` 示例覆盖当前扩展的 `Tokens.swift`**。
 
-```swift
-import SwiftUI
+Web 动效为 120/200/280/160ms；原生局部反馈目前是 120/200/280ms，系统 sheet/导航保留原生节奏。减少运动、焦点、圆角与响应式差异以[视觉手册](../../../askXuan-docs/docs/guides/视觉设计与交互手册.md)及各端实现为准。
 
-struct CardView: View {
-    var body: some View {
-        Text("问玄东方")
-            .foregroundColor(.textPrimary)
-            .padding(16)
-            .background(Color.bgSecondary)
-            .cornerRadius(AppRadius.lg)
-    }
-}
-```
-
-可用常量：
-
-- 颜色：`Color.bgPrimary`、`Color.brandDefault`、`Color.brandLight`、`Color.accentDefault`、`Color.cinnabarDefault`、`Color.textPrimary`、`Color.borderDefault`、`Color.stateSuccess` …（含 light/dark/strong/divider 等全部变体）
-- 字体：`AppFont.serif`、`AppFont.sans`（字体名数组）
-- 圆角：`AppRadius.sm/md/lg/xl`（CGFloat）
-- 间距：`AppSpacing.navTop/navBottom`（CGFloat）
-
-边框等带透明度的颜色使用 `Color(.sRGB, red:green:blue:opacity:)` 构造，无需手动换算。
-
-### Web
-
-将 `dist/web/tokens.css` 引入项目根样式：
-
-```css
-@import "./tokens.css";
-```
-
-使用 CSS 变量：
-
-```css
-.card {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  color: var(--color-text-primary);
-}
-```
-
-> `default` 变体同时输出短别名，例如 `--color-brand-default` 与 `--color-brand` 指向同一色值，与原 `colors_and_type.css` 兼容。
-
-Tailwind 接入（`tailwind.config.js`）：
-
-```js
-const tokens = require("./dist/web/tailwind-tokens");
-
-module.exports = {
-  theme: {
-    extend: tokens,
-  },
-};
-```
-
-随后即可使用 `bg-bg-secondary`、`text-text-primary`、`border-border`、`rounded-lg`、`font-serif` 等类名。
-
-### 小程序（uni-app）
-
-将 `dist/mp/uni.scss` 配置为 uni-app 的 `uni.scss`（或在项目 `uni.scss` 中 `@import`）。使用 SCSS 变量：
-
-```scss
-.card {
-  background: $color-bg-secondary;
-  border: 1rpx solid $color-border;
-  border-radius: $radius-lg;
-  color: $color-text-primary;
-}
-```
-
-JS 端使用 `dist/mp/tokens.js`：
-
-```js
-const tokens = require("./dist/mp/tokens");
-
-Page({
-  data: {
-    brandColor: tokens.color.brand.default, // 结构化
-    flatBrand: tokens.flat.brand,           // 扁平化
-  },
-});
-```
-
-## 维护说明
-
-- 修改令牌请编辑 `tokens.json`，再运行 `npm run gen:all` 重新生成各端产物。
-- `dist/` 目录为自动生成，请勿手动编辑。
-- 色值以 `问玄东方App/colors_and_type.css` 为权威来源，保持完全一致。
+`gen:all` 仍可生成基础示例，但不能替代生产应用的同步脚本、类型检查和页面验收。不要手工修改已生成的 CSS/字体二进制，以当前双主题规则和应用验证结果为准。

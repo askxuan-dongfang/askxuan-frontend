@@ -17,7 +17,7 @@ const session = createAdminSessionGuard({
     // A separate, bounded request cannot re-enter these interceptors.
     const { data } = await axios.post<ApiResponse<{ accessToken: string; refreshToken?: string }>>('/api/v1/auth/refresh', { refreshToken }, {
       timeout: 10000,
-      headers: { 'Content-Type': 'application/json', 'X-Client-Type': 'shop-admin', 'X-Client-Version': import.meta.env.VITE_APP_VERSION || '0.1.0' }
+      headers: { 'Content-Type': 'application/json', 'X-Client-Type': 'shop-admin', 'X-Client-Version': import.meta.env.VITE_APP_VERSION || '0.0.1' }
     })
     return data.code === 0 && data.data?.accessToken ? data.data : null
   }
@@ -28,7 +28,7 @@ const instance = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'X-Client-Type': 'shop-admin',
-    'X-Client-Version': import.meta.env.VITE_APP_VERSION || '0.1.0'
+    'X-Client-Version': import.meta.env.VITE_APP_VERSION || '0.0.1'
   }
 })
 
@@ -39,7 +39,7 @@ instance.interceptors.request.use((config: SessionRequest) => {
   if (snapshot) config.headers.Authorization = `Bearer ${snapshot.token}`
   else config.headers.delete('Authorization')
   config.headers['X-Client-Type'] = 'shop-admin'
-  config.headers['X-Client-Version'] = import.meta.env.VITE_APP_VERSION || '0.1.0'
+  config.headers['X-Client-Version'] = import.meta.env.VITE_APP_VERSION || '0.0.1'
   return config
 })
 

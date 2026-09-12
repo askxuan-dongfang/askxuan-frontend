@@ -3,7 +3,7 @@
 //  DongFangApp
 //
 //  DFBottomTabBar 底部 TabBar：5 个 Tab（首页/对话/AI问事/商城/我的）。
-//  对齐产品原型 home.html 底部导航栏。
+//  信众端底部导航组件。
 //
 
 import SwiftUI

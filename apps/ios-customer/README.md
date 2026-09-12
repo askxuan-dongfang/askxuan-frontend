@@ -1,126 +1,48 @@
-# 问玄东方 C端 iOS App (P01)
+# 问玄东方 · 信众 iOS
 
-原生 Swift + SwiftUI + MVVM 架构，使用 XcodeGen 管理工程文件。
+当前产品版本：`0.0.1`。
 
-## 目录结构
+当前信众原生 App，使用 Swift、SwiftUI、MVVM 与 CocoaPods。入口为 `DongFangApp.xcworkspace`。
 
-```
-ios-customer/
-├── DongFangApp/
-│   ├── App/                    Configuration.swift, DongFangApp.swift, MainTabView.swift
-│   ├── Core/Network/           APIClient.swift, APIResponse.swift, Endpoint.swift, AuthStore.swift
-│   ├── DesignSystem/           Tokens.swift, Components/
-│   ├── Features/               11 个功能模块（Home/Temple/Master/Booking/Service/Diy/Shop/Chat/Profile）
-│   ├── Models/                 10 个数据模型
-│   ├── Resources/              Info.plist
-│   └── Utils/                  DateFormatter.swift, JSONHelper.swift
-├── project.yml                 XcodeGen 配置
-└── README.md
-```
+- Bundle ID：`com.dongfang.customer`。
+- 当前工程最低部署目标：iOS 17.0。
+- 源码包含 iOS 26 `glassEffect` 的可用性分支，构建需要支持这些 API 的 Xcode / SDK；低版本运行时回退由源码处理。
+- 页面、接口与状态以 `DongFangApp/Features`、`Core/Network` 和[产品手册](../../../askXuan-docs/docs/guides/手册目录.md)为准，不固定宣称页面总数。
 
-## 环境要求
+## 打开与构建
 
-- macOS 13+
-- Xcode 15+
-- iOS 16.0+ 模拟器
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen)（可选，用于生成 .xcodeproj）
-- [CocoaPods](https://cocoapods.org/)（必需，安装 OpenIMSDK 等依赖）
-
-## 快速开始
-
-### 1. 启动后端基础设施
-
-```bash
-cd /Users/gaofeng/develop/DongFang/askXuan-backend
-docker compose up -d        # 启动 MySQL/Redis/RabbitMQ/MinIO/etcd/MongoDB/Kafka/Zookeeper
-make db-init                # 初始化数据库（首次）
-make start-all              # 启动 18 个微服务 + 1 网关
-```
-
-验证网关可达：`curl http://localhost:8080/api/v1/health`
-
-### 2. 安装 XcodeGen 和 CocoaPods（如未安装）
-
-```bash
-brew install xcodegen cocoapods
-```
-
-### 3. 生成 Xcode 工程
-
-```bash
-cd /Users/gaofeng/develop/DongFang/askXuan-frontend/apps/ios-customer
-xcodegen generate
-```
-
-执行后会生成 `DongFangApp.xcodeproj`。
-
-### 4. 安装 Pod 依赖
+在本目录操作；已有工程日常直接打开 workspace。Pods 缺失时先执行 `pod install`，并保留 `Podfile.lock`：
 
 ```bash
 pod install
-```
-
-执行后会生成 `DongFangApp.xcworkspace`（含 OpenIMSDK 等依赖）。
-
-### 5. 打开并运行
-
-```bash
 open DongFangApp.xcworkspace
 ```
 
-> ⚠️ 务必用 `.xcworkspace` 打开（而非 `.xcodeproj`），否则 Pod 依赖不生效。
-
-在 Xcode 中：
-- 选择模拟器（推荐 iPhone 17 Pro）
-- 按 `Cmd + R` 运行
-- 模拟器启动后 App 自动安装并运行
-
-### 6. 命令行编译与运行（可选）
+使用已安装的 iOS Simulator SDK 做命令行构建：
 
 ```bash
-# 编译（使用 workspace）
 xcodebuild -workspace DongFangApp.xcworkspace \
   -scheme DongFangApp \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -configuration Debug \
+  -destination 'generic/platform=iOS Simulator' \
   -derivedDataPath ./build \
-  build
-
-# 安装并启动
-xcrun simctl boot "iPhone 17 Pro" 2>/dev/null || true
-xcrun simctl install booted ./build/Build/Products/Debug-iphonesimulator/DongFangApp.app
-xcrun simctl launch booted com.dongfang.customer
+  CODE_SIGNING_ALLOWED=NO build
 ```
+
+`build/` 清理后由上述命令或 Xcode Build/Run 重建。构建完成不等于已在模拟器或真机运行；运行时选择本机实际安装的设备。
+
+`project.yml` 提供 XcodeGen 配置。仅在有意更新工程时使用 `xcodegen generate`，随后核对生成差异及 CocoaPods 集成；日常恢复构建缓存不需要重新生成工程。当前已提交 `.xcodeproj` 还含 API/OpenIM 构建设置，不能假设重新生成后完全等价。
 
 ## 后端联调
 
-- Debug 环境 BaseURL：`http://localhost:8080/api/v1`
-- 模拟器可通过 `localhost` 直接访问本机后端服务（网关 8080）
-- Info.plist 已配置 `NSAppTransportSecurity` → `NSAllowsLocalNetworking=true`，允许 HTTP localhost 连接
+`App/Configuration.swift` 从 Info.plist 读取 `ASKXUAN_API_BASE_URL`、`OPENIM_API_URL`、`OPENIM_WS_URL`。当前 `.xcodeproj` 的 Debug/Release 构建设置均指向 `https://101.96.228.71` 下的 API/OpenIM 路径，不能笼统按“Debug 默认本机”使用。
 
-## 真机调试（可选）
+本地或真机联调时在构建设置中调整这三个地址，并核对产物 Info.plist；主 API 包含 `/api/v1`。模拟器可访问本机 localhost，真机应使用可达的局域网地址。网关和即时通信准备方法见[后端 README](../../../askXuan-backend/README.md)。
 
-- 需要 Apple Developer 账号
-- USB 连接 iPhone，在 Xcode > Signing & Capabilities 配置签名
-- 将 `Configuration.swift` 中 baseURL 改为 Mac 局域网 IP（如 `http://192.168.1.100:8080/api/v1`）
-- 选择真机设备后 `Cmd + R`
+真机安装需要配置签名和设备；推送、音视频及完整业务流程仍需对应设备验收。网站部署不代表原生 App 已分发或上架。
 
-## 功能页面（21 页）
+## 视觉与资源
 
-| 模块 | 页面 |
-|------|------|
-| Home | 首页 |
-| Temple | 寺院列表 / 寺院详情 |
-| Master | 法师列表 / 法师主页 |
-| Booking | 预约下单 |
-| Service | 加持 / 开光 / 敬香 / 点灯 / 法事 / 太岁 / 许愿 |
-| Diy | DIY手串 / DIY设计 / DIY详情 / DIY下单 |
-| Shop | 商城 |
-| Chat | 对话列表 / 对话详情 |
-| Profile | 我的 |
+`DesignSystem/Tokens.swift` 维护本端语义色与 Dynamic Type 文字角色，支持浅色米白松绿和深色深棕朱砂。公共设计数据来自 `packages/design-tokens`，共享衬线 TTF 通过工程资源引用；不要用基础生成示例覆盖现有扩展的 `Tokens.swift`。
 
-## 架构说明
-
-- **MVVM**：每个 Feature 含 `View.swift`（UI）+ `ViewModel.swift`（状态与逻辑）
-- **网络层**：`APIClient` 基于 URLSession + async/await，统一解包 `{code,message,data}` 响应
-- **鉴权**：JWT Token 通过 `AuthStore` 存储于 Keychain
-- **设计系统**：深色禅意主题，朱砂红 + 琉璃金配色（Tokens.swift 自动生成）
+登录标识与 DIY 标识位于 `Resources/Assets.xcassets` 的 `brand-logo` / `brand-atelier`，应用图标为 `AppIcon`，均从 `packages/brand` 同步。构建使用当前 Asset Catalog 中的已同步资源。

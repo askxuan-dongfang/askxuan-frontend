@@ -101,11 +101,6 @@ apps/web-h5/
 *.sqlite3
 *.db
 
-# Chat browser verification output
-e2e/artifacts/chat-report/
-e2e/artifacts/chat-results/
+# Generated browser verification output
+e2e/artifacts/
 e2e/test-results/
-
-# Isolated model-picker browser acceptance artifacts
-e2e/artifacts/ai-models/
-e2e/artifacts/ai-settings/
