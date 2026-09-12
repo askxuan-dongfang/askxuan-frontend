@@ -51,7 +51,11 @@ struct ChatNotificationDestination: Identifiable { let id: String }
                 "bundleId":Bundle.main.bundleIdentifier ?? "","appVersion":Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "1.0","environment":Self.environment]
             try await deviceRequest(method:"POST",who:who,payload:payload)
             if identity()?.accountID == who.accountID { registeredIdentity = key; error = nil }
-        } catch { self.error = "消息提醒连接失败，点击重试。" }
+        } catch {
+            if AuthStore.shared.isLoggedIn, !(error is CancellationError), (error as? APIError)?.isCancellation != true {
+                self.error = "消息提醒连接失败，点击重试。"
+            }
+        }
     }
     func monitor() async {
         while !Task.isCancelled {
@@ -68,15 +72,25 @@ struct ChatNotificationDestination: Identifiable { let id: String }
         }
     }
     func unbind() {
+        registeredIdentity = ""; destination = nil; openConversation = nil
+        pendingConversation = nil; seenCall = nil; chatUnread = 0; error = nil
         guard let who = identity(), let deviceToken else { return }
-        registeredIdentity = ""; destination = nil
         Task { try? await deviceRequest(method:"DELETE",who:who,payload:["userId":who.userID,"deviceToken":deviceToken]) }
     }
     private func deviceRequest(method:String,who:ChatNotificationIdentity,payload:[String:String]) async throws {
         var request = URLRequest(url:AppConfig.baseURL.appendingPathComponent("messages/device-token"))
         request.httpMethod = method; request.setValue("Bearer \(who.token)",forHTTPHeaderField:"Authorization")
         request.setValue("application/json",forHTTPHeaderField:"Content-Type");request.httpBody = try JSONSerialization.data(withJSONObject:payload)
-        let (data,response) = try await URLSession.shared.data(for:request)
+        let data: Data
+        let response: URLResponse
+        if method == "DELETE" {
+            // Best-effort cleanup with the departing account's captured token. Never refresh or log out a newer login.
+            (data,response) = try await URLSession.shared.data(for:request)
+        } else {
+            let context = AuthStore.shared.requestSession
+            guard context.accessToken == who.token else { throw CancellationError() }
+            (data,response) = try await APIClient.shared.sessionData(for:request, context:context)
+        }
         guard (response as? HTTPURLResponse)?.statusCode == 200,
               let body = try JSONSerialization.jsonObject(with:data) as? [String:Any],
               (body["code"] as? Int ?? 0) == 0 else { throw URLError(.badServerResponse) }

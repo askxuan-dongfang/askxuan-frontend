@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isAdminSessionExpired } from '@/api/client'
 // 法师详情 / 平台编辑（独立执业大师无寺庙归属，平台为唯一管理方）
 // 含「可提供服务」标签（master_service_tag，S001-S013）查看与配置
 import { ref, computed, onMounted } from 'vue'
@@ -34,7 +35,7 @@ const serviceTags = ref<MasterServiceTagItem[]>([])
 const beliefOptions = ref<{value:string;label:string}[]>([])
 async function loadBeliefs(){
  try{const data=await taxonomyApi.beliefs();beliefOptions.value=data.list.filter(b=>b.status==='enabled').map(b=>({value:b.code,label:b.name}))}
- catch{ElMessage.error('分类加载失败，请刷新重试')}
+ catch(sessionError) { if (isAdminSessionExpired(sessionError)) return;ElMessage.error('分类加载失败，请刷新重试')}
 }
 
 const beliefName = (code: string) => beliefOptions.value.find((b) => b.value === code)?.label || code
@@ -70,7 +71,7 @@ async function loadDetail() {
     master.value = { ...m, specialties: m.specialties || [] }
     serviceCatalog.value = catalog.list || []
     serviceTags.value = tags.list || []
-  } catch (error) {
+  } catch (error) { if (isAdminSessionExpired(error)) return;
     master.value = null
     loadError.value = error instanceof Error ? error.message : '加载法师详情失败'
     ElMessage.error('加载法师详情失败')
@@ -145,7 +146,7 @@ async function save() {
     serviceTags.value = saved.list || []
     ElMessage.success('法师资料与服务标签已更新')
     editing.value = false
-  } catch {
+  } catch (sessionError) { if (isAdminSessionExpired(sessionError)) return;
     ElMessage.error('保存失败，请稍后重试')
   } finally {
     saving.value = false

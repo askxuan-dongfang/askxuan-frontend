@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isAdminSessionExpired } from '@/api/client'
 // DIY 材料编辑 / 新建
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -109,7 +110,7 @@ async function loadDetail() {
   loading.value = true
   try {
     const target = await materialApi.detail(materialId.value)
-    try { Object.assign(assets, JSON.parse(target.renderAssets || '{}')) } catch { ElMessage.warning('材质素材配置无效，请重新填写') }
+    try { Object.assign(assets, JSON.parse(target.renderAssets || '{}')) } catch (sessionError) { if (isAdminSessionExpired(sessionError)) return; ElMessage.warning('材质素材配置无效，请重新填写') }
     Object.assign(form, {
       name: target.name,
       spec: target.spec,

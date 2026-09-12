@@ -50,6 +50,8 @@ final class WebSocketManager: ObservableObject {
         self.authStore = authStore ?? .shared
     }
 
+    deinit { pollTask?.cancel() }
+
     /// 启动实时消息（HTTP 轮询）
     func connect() {
         guard pollTask == nil else { return }
@@ -75,6 +77,7 @@ final class WebSocketManager: ObservableObject {
 
     /// 单次轮询：拉取未读数并触发数据刷新
     private func tick() async {
+        guard authStore.isLoggedIn else { disconnect(); return }
         do {
             let resp: UnreadCountResponse = try await apiClient.request(
                 .unreadCount(userId: authStore.userId))

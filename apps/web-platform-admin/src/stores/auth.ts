@@ -1,3 +1,4 @@
+import { subscribeAdminSession, startAdminSession } from '../../../../packages/admin-ui/session-expiry'
 // 认证状态管理
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
@@ -31,6 +32,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login(params: AdminLoginParams) {
     const res = await adminLogin(params)
+    startAdminSession('df_platform_admin')
     token.value = res.accessToken
     refreshToken.value = res.refreshToken
     userInfo.value = res.userInfo
@@ -41,6 +43,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    localStorage.removeItem('df_platform_admin_session_id')
     token.value = ''
     refreshToken.value = ''
     userInfo.value = null
@@ -48,8 +51,13 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(REFRESH_KEY)
     localStorage.removeItem(USER_KEY)
     // Old bookmarks must not restore a session after an explicit unified logout.
-    for (const suffix of ['token', 'refresh_token', 'user']) localStorage.removeItem(`df_shop_admin_${suffix}`)
+    for (const suffix of ['token', 'refresh_token', 'user', 'session_id']) localStorage.removeItem(`df_shop_admin_${suffix}`)
   }
+
+  subscribeAdminSession('df_platform_admin', logout, () => {
+    token.value = localStorage.getItem('df_platform_admin_token') || ''
+    refreshToken.value = localStorage.getItem('df_platform_admin_refresh_token') || ''
+  })
 
   return { token, refreshToken, userInfo, isLogin, roles, clientId, login, logout }
 })

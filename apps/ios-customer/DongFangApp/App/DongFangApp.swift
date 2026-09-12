@@ -36,7 +36,14 @@ struct DongFangApp: App {
 
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            Group {
+                if authStore.requiresLogin {
+                    NavigationStack { LoginView() }
+                } else {
+                    MainTabView()
+                }
+            }
+            .id(authStore.sessionID)
             .environmentObject(authStore)
             .preferredColorScheme(AppTheme(rawValue: themeValue)?.colorScheme)
                 .appVisualDefaults()

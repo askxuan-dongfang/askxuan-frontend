@@ -48,6 +48,8 @@ final class WebSocketManager: ObservableObject {
         self.apiClient = apiClient
     }
 
+    deinit { pollTask?.cancel() }
+
     /// 启动实时消息（HTTP 轮询）
     func connect() {
         guard pollTask == nil else { return }
@@ -73,6 +75,7 @@ final class WebSocketManager: ObservableObject {
 
     /// 单次轮询：拉取未读消息数并触发数据刷新
     private func tick() async {
+        guard AuthStore.shared.isLoggedIn else { disconnect(); return }
         do {
             // isRead=0 仅查未读，total 即为未读总数
             let resp: MessageListResponse = try await apiClient.request(

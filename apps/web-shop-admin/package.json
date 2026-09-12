@@ -7,7 +7,7 @@
   "scripts": {
     "predev": "node ../../packages/design-tokens/scripts/gen-web-tokens.js",
     "dev": "vite",
-    "prebuild": "node ../../packages/design-tokens/scripts/gen-web-tokens.js && node ../../scripts/sync-admin-ui-components.mjs --check && node ../../scripts/sync-typography.mjs --check && node ../../scripts/sync-motion.mjs --check",
+    "prebuild": "node ../../packages/design-tokens/scripts/gen-web-tokens.js && node ../../scripts/sync-admin-ui-components.mjs --check && node ../../scripts/sync-typography.mjs --check && node ../../scripts/sync-motion.mjs --check && node --test ../../packages/admin-ui/session-expiry.test.mjs",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview"
   },

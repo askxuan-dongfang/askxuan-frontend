@@ -14,11 +14,11 @@ target.hash = window.location.hash
 // A pre-existing unified session takes precedence; never silently switch administrators.
 try {
   if (!localStorage.getItem('df_platform_admin_token') && localStorage.getItem('df_shop_admin_token')) {
-    for (const suffix of ['token', 'refresh_token', 'user']) {
+    for (const suffix of ['token', 'refresh_token', 'user', 'session_id']) {
       const value = localStorage.getItem(`df_shop_admin_${suffix}`)
       if (value) localStorage.setItem(`df_platform_admin_${suffix}`, value)
     }
   }
-  for (const suffix of ['token', 'refresh_token', 'user']) localStorage.removeItem(`df_shop_admin_${suffix}`)
+  for (const suffix of ['token', 'refresh_token', 'user', 'session_id']) localStorage.removeItem(`df_shop_admin_${suffix}`)
 } catch { /* Storage disabled: the unified login remains available. */ }
 window.location.replace(target.href)

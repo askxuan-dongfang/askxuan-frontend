@@ -16,6 +16,10 @@ final class AuthStore: ObservableObject {
 
     static let shared = AuthStore()
 
+    @Published private(set) var sessionID = UUID()
+    @Published private(set) var requiresLogin = false
+
+
     // MARK: - 发布状态
 
     /// 当前 JWT Token
@@ -64,6 +68,8 @@ final class AuthStore: ObservableObject {
     ///   - refreshToken: 后端返回的 refreshToken
     ///   - imToken: OpenIM 登录用的 IM Token（可选，默认 nil 保持向后兼容）
     func didLogin(token: String, refreshToken: String?, imToken: String? = nil) {
+        sessionID = UUID()
+        requiresLogin = false
         self.token = token
         self.refreshToken = refreshToken
         saveRefreshToken(refreshToken)
@@ -71,6 +77,26 @@ final class AuthStore: ObservableObject {
         self.imToken = imToken
         saveIMToken(imToken)
         self.isLoggedIn = (masterId != nil)
+    }
+
+    var requestSession: AuthRequestSession {
+        AuthRequestSession(id: sessionID, accessToken: token, refreshToken: refreshToken, isAuthenticated: isLoggedIn)
+    }
+
+    /// Compare-and-set: a delayed refresh must never overwrite a later sign-in.
+    func acceptRefreshedAccessToken(_ value: String, for expected: AuthRequestSession) -> AuthRequestSession? {
+        guard isLoggedIn, sessionID == expected.id else { return nil }
+        if token != expected.accessToken { return requestSession }
+        guard refreshToken == expected.refreshToken else { return nil }
+        updateAccessToken(value)
+        return requestSession
+    }
+
+    @discardableResult
+    func expireSession(_ failed: AuthRequestSession) -> Bool {
+        guard isLoggedIn, sessionID == failed.id, token == failed.accessToken else { return false }
+        logout(requiresLogin: true)
+        return true
     }
 
     /// refresh 成功后仅更新 access token
@@ -81,8 +107,13 @@ final class AuthStore: ObservableObject {
     }
 
     /// 登出：清除 Token 与身份信息
-    func logout() {
+    func logout(requiresLogin: Bool = false) {
         NativeChatNotifications.shared.unbind()
+        NativeChatNotifications.shared.destination = nil
+        NativeChatNotifications.shared.openConversation = nil
+        OpenIMManager.shared.logout { _ in }
+        sessionID = UUID()
+        self.requiresLogin = requiresLogin
         self.token = nil
         self.refreshToken = nil
         self.masterId = nil

@@ -1,3 +1,4 @@
+import { subscribeAdminSession, startAdminSession } from '../../../../packages/admin-ui/session-expiry'
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { adminLogin } from '@/api/auth'
@@ -39,19 +40,22 @@ export const useAuthStore = defineStore('auth', () => {
     else localStorage.removeItem(REFRESH_KEY)
     if (userInfo.value) localStorage.setItem(USER_KEY, JSON.stringify(userInfo.value))
     else localStorage.removeItem(USER_KEY)
-    localStorage.setItem(TEMPLE_ID_KEY, templeId.value)
-    localStorage.setItem(TEMPLE_NAME_KEY, templeName.value)
+    if (templeId.value) localStorage.setItem(TEMPLE_ID_KEY, templeId.value)
+    else localStorage.removeItem(TEMPLE_ID_KEY)
+    if (templeName.value) localStorage.setItem(TEMPLE_NAME_KEY, templeName.value)
+    else localStorage.removeItem(TEMPLE_NAME_KEY)
   }
 
   async function login(account: string, password: string) {
     const resp = await adminLogin(account, password)
-    token.value = resp.accessToken
-    refreshToken.value = resp.refreshToken
-    userInfo.value = resp.userInfo
     // 寺院管理员必须由后端返回 templeId（服务端隔离依据）；缺失说明账号未绑定寺院
     if (!resp.userInfo?.templeId) {
       throw new Error('账号未绑定寺院，请联系平台管理员')
     }
+    startAdminSession('df_temple_admin')
+    token.value = resp.accessToken
+    refreshToken.value = resp.refreshToken
+    userInfo.value = resp.userInfo
     templeId.value = resp.userInfo.templeId
     templeName.value = resp.userInfo.templeName || templeId.value
     persist()
@@ -65,11 +69,19 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    localStorage.removeItem('df_temple_admin_session_id')
     token.value = ''
     refreshToken.value = ''
     userInfo.value = null
+    templeId.value = ''
+    templeName.value = ''
     persist()
   }
+
+  subscribeAdminSession('df_temple_admin', logout, () => {
+    token.value = localStorage.getItem('df_temple_admin_token') || ''
+    refreshToken.value = localStorage.getItem('df_temple_admin_refresh_token') || ''
+  })
 
   return {
     token,

@@ -63,6 +63,10 @@ enum KeychainHelper {
 final class AuthStore: ObservableObject {
     static let shared = AuthStore()
 
+    @Published private(set) var sessionID = UUID()
+    @Published private(set) var requiresLogin = false
+
+
     /// UserDefaults 键（持久化非敏感的用户信息：userId/nickname/avatar/mobile/imToken）
     private enum UDKey {
         static let userId   = "auth.userId"
@@ -110,7 +114,7 @@ final class AuthStore: ObservableObject {
             self.isLoggedIn = false
             return
         }
-        self.isLoggedIn = self.accessToken != nil
+        self.isLoggedIn = self.accessToken?.isEmpty == false
         // 恢复用户信息（token 存在时一并恢复，避免重启后 userId 退化为默认占位符 U001）
         if self.isLoggedIn {
             self.userId   = persistedUserId ?? AppConfig.defaultUserId
@@ -129,6 +133,8 @@ final class AuthStore: ObservableObject {
     /// 登录成功后保存 Token
     func didLogin(accessToken: String, refreshToken: String?, userId: String,
                   nickname: String?, avatar: String?, mobile: String?, imToken: String? = nil) {
+        sessionID = UUID()
+        requiresLogin = false
         KeychainHelper.save(string: accessToken,
                             service: AppConfig.keychainService,
                             key: AppConfig.tokenKey)
@@ -137,6 +143,9 @@ final class AuthStore: ObservableObject {
                                 service: AppConfig.keychainService,
                                 key: AppConfig.refreshTokenKey)
             self.refreshToken = refresh
+        } else {
+            KeychainHelper.delete(service: AppConfig.keychainService, key: AppConfig.refreshTokenKey)
+            self.refreshToken = nil
         }
         self.accessToken = accessToken
         self.isLoggedIn = true
@@ -154,6 +163,26 @@ final class AuthStore: ObservableObject {
         ud.set(avatar,   forKey: UDKey.avatar)
         ud.set(mobile,   forKey: UDKey.mobile)
         ud.set(imToken,  forKey: UDKey.imToken)
+    }
+
+    var requestSession: AuthRequestSession {
+        AuthRequestSession(id: sessionID, accessToken: accessToken, refreshToken: refreshToken, isAuthenticated: isLoggedIn)
+    }
+
+    /// Compare-and-set: a delayed refresh must never overwrite a later sign-in.
+    func acceptRefreshedAccessToken(_ value: String, for expected: AuthRequestSession) -> AuthRequestSession? {
+        guard isLoggedIn, sessionID == expected.id else { return nil }
+        if accessToken != expected.accessToken { return requestSession }
+        guard refreshToken == expected.refreshToken else { return nil }
+        updateAccessToken(value)
+        return requestSession
+    }
+
+    @discardableResult
+    func expireSession(_ failed: AuthRequestSession) -> Bool {
+        guard isLoggedIn, sessionID == failed.id, accessToken == failed.accessToken else { return false }
+        logout(requiresLogin: true)
+        return true
     }
 
     /// 更新 AccessToken（刷新后调用）
@@ -175,8 +204,13 @@ final class AuthStore: ObservableObject {
     }
 
     /// 登出：清除所有凭据
-    func logout() {
+    func logout(requiresLogin: Bool = false) {
         NativeChatNotifications.shared.unbind()
+        NativeChatNotifications.shared.destination = nil
+        NativeChatNotifications.shared.openConversation = nil
+        OpenIMManager.shared.logout { _ in }
+        sessionID = UUID()
+        self.requiresLogin = requiresLogin
         KeychainHelper.delete(service: AppConfig.keychainService, key: AppConfig.tokenKey)
         KeychainHelper.delete(service: AppConfig.keychainService, key: AppConfig.refreshTokenKey)
         self.accessToken = nil
