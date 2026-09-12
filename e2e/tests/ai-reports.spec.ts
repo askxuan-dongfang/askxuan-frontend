@@ -92,7 +92,7 @@ for(const width of [320,536]) test(`guided conditional fields and single entry $
   else if(path.endsWith('/ai/reports/991'))data={id:991,skillCode:'liuyao',title:'本地验收报告',status:'failed',chapters:[]};
   await route.fulfill({json:{code:0,data}});
  });
- await page.goto('http://127.0.0.1:5382/c/ai');await expect(page.locator('.ai-topic-grid a')).toHaveCount(7);await expect(page.locator('select')).toHaveCount(0);await expect(page.getByText(/^已选：/)).toHaveCount(0);await expect(page.getByRole('button',{name:'六爻梅花',exact:true})).toHaveCount(0);
+ await page.goto('http://127.0.0.1:5382/c/ai');await expect(page.locator('.ai-topic-grid a')).toHaveCount(7);await expect(page.getByRole('combobox',{name:'选择 AI 模型'})).toHaveCount(1);await expect(page.getByText(/^已选：/)).toHaveCount(0);await expect(page.getByRole('button',{name:'六爻梅花',exact:true})).toHaveCount(0);
  await page.screenshot({path:`/private/tmp/ai-guided-home-${width}.png`,fullPage:true});await page.locator('.ai-topic-grid a[href$="liuyao"]').click();
  await expect(page.getByRole('radio',{name:/自动起卦/})).toBeChecked();await expect(page.getByLabel('起卦数字',{exact:true})).toHaveCount(0);await expect(page.getByLabel('起卦时间',{exact:true})).toHaveCount(0);
  await page.getByRole('radio',{name:/数字起卦/}).check();await page.getByLabel('起卦数字',{exact:true}).fill('1 2 3 4');await page.getByRole('radio',{name:/财务与资源/}).check();await page.getByRole('button',{name:'下一步，说说问题'}).click();await expect(page.getByLabel('起卦数字',{exact:true})).toBeVisible();expect(created).toBeUndefined();

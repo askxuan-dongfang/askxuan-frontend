@@ -238,6 +238,7 @@ enum Endpoint {
     case aiReportRetry(Int64)
     case aiReportUnlock(AiReportUnlockRequest)
     case aiSkills
+    case aiModels
     case aiSessions(userId: String, page: Int, size: Int)
     case aiSessionDelete(Int64)
     case aiSessionCreate(AiSessionCreateRequest)
@@ -402,6 +403,7 @@ enum Endpoint {
         case .paymentById(let id):      return "payments/\(id)"
         // AI 问事
         case .aiSkills:                 return "ai/skills"
+        case .aiModels:                 return "ai/models"
         case .aiSessions:               return "ai/sessions"
         case .aiSessionCreate:          return "ai/sessions"
         case .aiSessionDelete(let id):  return "ai/sessions/\(id)"
@@ -476,7 +478,7 @@ enum Endpoint {
 			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById, .bookingChats, .bookingChatMessages,
              .chats, .chatMessages, .consultationQuote,
              .diyDesigns, .diyMyDesigns, .diyDesignById, .diyMaterials, .diyBlessingServices, .diyOrders, .diyOrderById, .paymentById,
-             .aiSkills, .aiSessions, .aiMessages,
+             .aiSkills, .aiModels, .aiSessions, .aiMessages,
              .communityFeed, .communityPostById, .communityComments, .communityMyFollowing,
              .templeFavorites, .productFavorites,
              .mediaDetail, .liveRooms, .liveRoomById,
@@ -723,6 +725,7 @@ struct AiSessionCreateRequest: Encodable {
     let question: String?
     let inputs: [String: String]
 	let attachments: [AiImageAttachment]
+    var model: String? = nil
 }
 
 struct AiMessageSendRequest: Encodable {
@@ -731,6 +734,7 @@ struct AiMessageSendRequest: Encodable {
     let content: String
     let inputs: [String: String]
 	let attachments: [AiImageAttachment]
+    var model: String? = nil
 }
 
 struct AiImageAttachment: Codable, Identifiable {

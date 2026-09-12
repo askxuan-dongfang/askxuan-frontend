@@ -17,6 +17,7 @@ async function setup(page: Page, options: { chatFail?: boolean; chatUnread?: num
   else if (path.endsWith('/chats') || path.endsWith('/bookings/chats')) { if (options.chatFail) return route.fulfill({ status: 503, json: { message: '会话服务不可用' } }); data = { list: [{ conversationId: 'conv-1', peerName: '清和法师', unreadCount: options.chatUnread, sourceType: 'consultation', canChat: true }], total: 1 }; }
   else if (path.endsWith('/chats/unread')) data = { count: options.chatUnread ?? 0 };
   else if (path.endsWith('/messages/unread-count')) data = { count: 16 };
+  else if (path.endsWith('/ai/models')) data = { list: [{ id: 'deepseek-flash', name: 'DeepSeek Flash', description: '文字与图片', supportsVision: true }], defaultModel: 'deepseek-flash', stale: false };
   else if (path.endsWith('/ai/skills')) data = { list: [{ code: 'general', name: '综合问事', inputSchema: { fields: [] } }] };
   else if (path.endsWith('/ai/topics')) data = [];
   else if (path.endsWith('/ai/sessions')) data = { list: [{ id: 1, title: 'Markdown 阅读验收', skillCode: 'general', updatedAt: '2026-09-10' }], total: 1 };

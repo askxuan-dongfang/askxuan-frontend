@@ -71,6 +71,12 @@ struct AiSkill: Decodable, Identifiable {
 
 struct AiSkillListResponse: Decodable { let list: [AiSkill] }
 
+struct AiModelOption: Decodable, Identifiable {
+    let id: String; let name: String; let description: String; let supportsVision: Bool
+}
+struct AiModelListResponse: Decodable { let list: [AiModelOption]; let defaultModel: String; let stale: Bool }
+
+
 struct AiConversation: Decodable, Identifiable {
     let id: Int64
     let sessionNo: String
@@ -97,6 +103,7 @@ struct AiChatMessage: Decodable, Identifiable {
     let errorMessage: String
     let retryable: Bool
     let createdAt: String
+    let model: String?
 }
 
 struct AiSessionCreateResult: Decodable {
@@ -115,6 +122,11 @@ struct AiMessageSendResult: Decodable {
 
 @MainActor
 final class AiDivinationViewModel: ObservableObject {
+    @Published var models: [AiModelOption] = []
+    @Published var selectedModelID = ""
+    @Published var modelsLoading = false
+    @Published var modelsError: String?
+    @Published var modelsStale = false
     @Published var skills: [AiSkill] = []
     @Published var sessions: [AiConversation] = []
     @Published var messages: [AiChatMessage] = []
@@ -154,9 +166,31 @@ final class AiDivinationViewModel: ObservableObject {
     }
 
     func bootstrap() async {
+        await loadModels()
         await loadSkills()
         guard sessions.isEmpty else { return }
         await loadSessions(selectMostRecent: true)
+    }
+
+    var hasConversationImages: Bool { !selectedImages.isEmpty || messages.contains { !($0.attachments ?? []).isEmpty } }
+    var selectedModel: AiModelOption? { models.first { $0.id == selectedModelID } }
+    var modelReady: Bool { selectedModel.map { !hasConversationImages || $0.supportsVision } ?? false }
+    private var modelPreferenceKey: String { "askxuan.ai.model.\(authStore.userId)" }
+    func chooseModel(_ model: AiModelOption) {
+        selectedModelID = model.id
+        UserDefaults.standard.set(model.id, forKey: modelPreferenceKey)
+    }
+    func loadModels() async {
+        guard !modelsLoading else { return }
+        modelsLoading = true; modelsError = nil
+        defer { modelsLoading = false }
+        do {
+            let response: AiModelListResponse = try await apiClient.request(.aiModels)
+            guard !response.list.isEmpty else { modelsError = "当前没有可用模型"; return }
+            models = response.list; modelsStale = response.stale
+            let saved = UserDefaults.standard.string(forKey: modelPreferenceKey) ?? ""
+            selectedModelID = models.first { $0.id == saved }?.id ?? models.first { $0.id == response.defaultModel }?.id ?? models[0].id
+        } catch { modelsError = "模型暂未加载，请重试" }
     }
 
     func loadSkills() async {
@@ -218,7 +252,7 @@ final class AiDivinationViewModel: ObservableObject {
     func send() async {
         let epoch = selectionEpoch
         let content = input.trimmingCharacters(in: .whitespacesAndNewlines)
-		guard (!content.isEmpty || !selectedImages.isEmpty), !isSending else { return }
+		guard (!content.isEmpty || !selectedImages.isEmpty), !isSending, modelReady else { return }
         input = ""
         isSending = true
         errorMessage = nil
@@ -238,7 +272,8 @@ final class AiDivinationViewModel: ObservableObject {
                         userId: authStore.userId,
 						content: question,
 						inputs: [:],
-						attachments: attachments
+						attachments: attachments,
+                        model: selectedModelID
                     ))
                 )
                 pendingMessageId = result.messageId
@@ -249,7 +284,8 @@ final class AiDivinationViewModel: ObservableObject {
                         skillCode: "general",
 						question: question,
 						inputs: [:],
-						attachments: attachments
+						attachments: attachments,
+                        model: selectedModelID
                     ))
                 )
                 sessionId = result.id
@@ -395,6 +431,7 @@ struct AiDivinationView: View {
         ZStack(alignment: .leading) {
             VStack(spacing: 0) {
                 navigationBar
+                modelPicker
                 Divider().overlay(Color.borderDivider)
                 conversation
                 composer
@@ -459,6 +496,42 @@ struct AiDivinationView: View {
         }
         .padding(.horizontal, 12)
         .frame(height: 52)
+    }
+
+    private var modelPicker: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 10) {
+                Text("模型").font(.system(size: 12)).foregroundStyle(Color.textSecondary)
+                Menu {
+                    ForEach(viewModel.models) { model in
+                        Button { viewModel.chooseModel(model) } label: {
+                            Label(model.name, systemImage: viewModel.selectedModelID == model.id ? "checkmark" : (model.supportsVision ? "photo" : "text.alignleft"))
+                        }
+                        .disabled(viewModel.hasConversationImages && !model.supportsVision)
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(viewModel.selectedModel?.name ?? (viewModel.modelsLoading ? "正在加载…" : "暂不可用"))
+                        Image(systemName: "chevron.down").font(.system(size: 10, weight: .semibold))
+                    }
+                    .font(.system(size: 13, weight: .medium)).foregroundStyle(Color.textPrimary)
+                    .padding(.horizontal, 12).frame(minHeight: 36)
+                    .background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .accessibilityLabel("选择 AI 模型")
+                .disabled(viewModel.isSending || viewModel.modelsLoading || viewModel.models.isEmpty)
+                Spacer(minLength: 0)
+            }
+            if let error = viewModel.modelsError {
+                HStack {
+                    Text(error)
+                    Button("重新加载模型") { Task { await viewModel.loadModels() } }.disabled(viewModel.modelsLoading || viewModel.isSending)
+                }.font(.system(size: 11)).foregroundStyle(Color.stateError)
+            } else {
+                Text(!viewModel.modelReady && viewModel.selectedModel != nil ? "会话含图片，请选择支持图片的模型" : "\(viewModel.selectedModel?.description ?? "获取当前可用模型") · 对下一条消息生效")
+                    .font(.system(size: 11)).foregroundStyle(Color.textTertiary)
+            }
+        }.padding(.horizontal, 14).padding(.bottom, 9)
     }
 
     private var conversation: some View {
@@ -541,6 +614,9 @@ struct AiDivinationView: View {
                 } else {
                     if message.role == "user" { Text(message.content).lineSpacing(4) }
                     else { AiMarkdownText(text: message.content) }
+                }
+                if message.role == "assistant", let model = message.model, !model.isEmpty {
+                    Text(model).font(.system(size: 10)).foregroundStyle(Color.textTertiary)
                 }
             }
             .font(.system(size: 15))
@@ -738,7 +814,7 @@ struct AiDivinationView: View {
     }
 
     private var canSend: Bool {
-        (!viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !viewModel.selectedImages.isEmpty) && !viewModel.isSending
+        (!viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !viewModel.selectedImages.isEmpty) && !viewModel.isSending && viewModel.modelReady
     }
 
     private func skillName(_ code: String) -> String {

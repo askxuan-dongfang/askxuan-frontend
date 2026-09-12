@@ -105,3 +105,6 @@ apps/web-h5/
 e2e/artifacts/chat-report/
 e2e/artifacts/chat-results/
 e2e/test-results/
+
+# Isolated model-picker browser acceptance artifacts
+e2e/artifacts/ai-models/
