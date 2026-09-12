@@ -36,22 +36,31 @@ targets:
     type: application
     platform: iOS
     sources:
+      - path: ../../packages/chat-native
       - path: ../../packages/design-tokens/fonts
         includes: ["AskXuanSerif-Semibold.ttf", "OFL.txt"]
         buildPhase: resources
       - path: MasterApp
         excludes:
           - "Resources/Info.plist"
+    entitlements:
+      path: MasterApp/Resources/MasterApp.entitlements
+      properties:
+        aps-environment: $(APS_ENVIRONMENT)
     settings:
       base:
+        APS_ENVIRONMENT: production
         INFOPLIST_FILE: MasterApp/Resources/Info.plist
       configs:
         Debug:
+          APS_ENVIRONMENT: development
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
           OTHER_SWIFT_FLAGS: "-DDEBUG"
     info:
       path: MasterApp/Resources/Info.plist
       properties:
+        NSMicrophoneUsageDescription: 用于录制咨询语音和语音通话
+        NSCameraUsageDescription: 用于视频咨询通话
         UIAppFonts: ["AskXuanSerif-Semibold.ttf"]
         CFBundleDisplayName: 问玄东方
         CFBundleShortVersionString: "1.0.0"

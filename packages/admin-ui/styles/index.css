@@ -449,6 +449,14 @@ a:focus-visible,
   justify-content: flex-end;
 }
 
+.ax-admin-header .ax-admin-user {
+  color: var(--admin-text);
+}
+
+.ax-admin-header .ax-admin-user > .el-icon {
+  color: var(--admin-text-secondary);
+}
+
 .ax-admin-nav-toggle {
   width: 40px;
   height: 40px;

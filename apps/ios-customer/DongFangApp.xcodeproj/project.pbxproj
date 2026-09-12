@@ -16,7 +16,9 @@
 		0EF05DF1C4E58FE9FD15AA30 /* MasterProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4E5FAA5B507CCC9247021D4 /* MasterProfileView.swift */; };
 		1326038FBE973B1514AF0DD2 /* ServiceVowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 576AED6FD494F52074FD9CA8 /* ServiceVowView.swift */; };
 		14308CE165488C4CA71E79BB /* MasterListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95B683B69A6B598E1BC6FA84 /* MasterListViewModel.swift */; };
+		16A8C5BC69691C825BF56038 /* ChatNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F31467865D429854B5BBD6C /* ChatNotifications.swift */; };
 		17F3236A93A522F132A5503A /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA68B8CE6DA0E3B274EBA07 /* ProfileViewModel.swift */; };
+		213C9B316F7E8C247389EB6F /* ChatExperienceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08AA20116C8186FE9DFF9B5D /* ChatExperienceView.swift */; };
 		27E98D4531895A4CF2246E1A /* ShopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D047F538ABC13EAC55361D /* ShopView.swift */; };
 		379E0BF411286D340A8362A0 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C321AEBD19A23F58E9FE7483 /* LoginView.swift */; };
 		388BB00B12C73D7CED013883 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746540EA9040535BB5DA0E12 /* HomeView.swift */; };
@@ -31,6 +33,8 @@
 		615FDBF75C19A78428C9CBE2 /* AiResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0138C84F23ED0F852535C5D /* AiResult.swift */; };
 		61D940E548D42E09DFB9AB44 /* DateFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C2E2CB76CD043E38E68EDD /* DateFormatter.swift */; };
 		62859EDD2DD7DCC2EC29D1B7 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD74EC54937E0812B49D310C /* ChatMessage.swift */; };
+		65423D79DDE1EFAEA4ED2F8F /* AskXuanSerif-Semibold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5C049B0B68DE5B5B9B8C1046 /* AskXuanSerif-Semibold.ttf */; };
+		656124897C13B598ACB2F443 /* RewardExperience.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130D0FCAC7C61B35FF5C2A3F /* RewardExperience.swift */; };
 		6576A18C267456C5DD62A269 /* TempleDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25FDFC04252F879AB3493443 /* TempleDetailView.swift */; };
 		695BB1CBB602AAC1393D6EDF /* ProfileSubPages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91E72CF0968B77B4343B884E /* ProfileSubPages.swift */; };
 		6B98795B1FDC0AFD2756DCAF /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47FA318687B4947262CFF8DD /* HomeViewModel.swift */; };
@@ -48,6 +52,7 @@
 		9DCAC833291B1ACFBB60789D /* EmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616449B3D7AA309EDF8D62DD /* EmptyState.swift */; };
 		9F7CF3BFD9FF110C82111947 /* OpenIMManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3274EF1FAB07EA6E889B2C4 /* OpenIMManager.swift */; };
 		9FF1188411679345C8C92555 /* JSONHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1A4F5DC44274685E3D28B6 /* JSONHelper.swift */; };
+		A19E00990C0D4A1890010001 /* AiReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19E00990C0D4A1890010002 /* AiReportView.swift */; };
 		A31DEA88CCCB3DE7FF454C25 /* Endpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC696A95190CFDED2073D457 /* Endpoint.swift */; };
 		A98A05A40D9DF09AADD47588 /* ServiceIncenseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FBD28CBB485AB876AA47DD9 /* ServiceIncenseView.swift */; };
 		AB46B81C569A50D1B2BB5176 /* AiDivinationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 787EDD761D1A9D8D2F7853A8 /* AiDivinationView.swift */; };
@@ -66,6 +71,7 @@
 		D4D804135148BD21C19EAE3B /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7A6F924ADE80A4DCF100DF1 /* Card.swift */; };
 		D977E1C40A7290458864DCEA /* DiyOrder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24DD6432C6363432E718D930 /* DiyOrder.swift */; };
 		D9D7A823968872F3762432EC /* DiyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9446383FCD8C80FAC5035CE /* DiyViewModel.swift */; };
+		DC122C8A987776E80E4BA27D /* RewardExperienceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33AB8BFC9CE629D10EFE35E /* RewardExperienceTests.swift */; };
 		DD6F2720622FF10453D1D3E1 /* ServiceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99546E19EF4027BB49DBB2B /* ServiceViewModel.swift */; };
 		DFA1B2C3D4E5F6A7B8C9D002 /* DiyMyDesignsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA1B2C3D4E5F6A7B8C9D001 /* DiyMyDesignsView.swift */; };
 		E10148E171165C5D902CC446 /* DiyBraceletView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F14481BA1F32CB1D766AFB69 /* DiyBraceletView.swift */; };
@@ -74,18 +80,15 @@
 		EACF501BF0D8E7C1AD3BB5C5 /* TopNavBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FD827D80189BE654949DBE /* TopNavBar.swift */; };
 		EBFA704044771FB073859654 /* TagPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB598B67C7D0B2F9D42CD48A /* TagPill.swift */; };
 		EE5F51355DD2A3DDD3C8877B /* ServiceRiteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E69B95BFE18EC029686A3B /* ServiceRiteView.swift */; };
+		F35E1589F025577B8CCC9558 /* ChatNativeAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 724188799C0ECC6219E0898D /* ChatNativeAPI.swift */; };
 		F42B55A03DE372F3DA37E304 /* ChatDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88E82F76143FF951B694E509 /* ChatDetailView.swift */; };
 		F4DC4611470AE2F64831F6F6 /* ShopViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50321C15C1346E3FF7B838C4 /* ShopViewModel.swift */; };
+		F63C7D9987D73CB035103185 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = CE8BD727D152A1B5273ADE40 /* OFL.txt */; };
 		F829CD758E338F9260D1FA82 /* BookingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E5A6AA366BD8DB9094DBFD1 /* BookingViewModel.swift */; };
 		FA20A6E964773D1D7030CCA6 /* GlassBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77F6C9921DE3DA835BB90207 /* GlassBackground.swift */; };
 		FA231E1DDC1EA5CF26115C35 /* APIResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F42ECA2DB16A4249D38183C /* APIResponse.swift */; };
 		FA8DF5C8136C3083A7CF725F /* Booking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4ED0B783D1D7DB113786B0 /* Booking.swift */; };
 		FD62D7B13DCFE5C4B52992F0 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FF6AD3EC1893B3135324CFB /* RemoteImage.swift */; };
-		A19E00990C0D4A1890010001 /* AiReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19E00990C0D4A1890010002 /* AiReportView.swift */; };
-		656124897C13B598ACB2F443 /* RewardExperience.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130D0FCAC7C61B35FF5C2A3F /* RewardExperience.swift */; };
-		DC122C8A987776E80E4BA27D /* RewardExperienceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33AB8BFC9CE629D10EFE35E /* RewardExperienceTests.swift */; };
-		65423D79DDE1EFAEA4ED2F8F /* AskXuanSerif-Semibold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5C049B0B68DE5B5B9B8C1046 /* AskXuanSerif-Semibold.ttf */; };
-		F63C7D9987D73CB035103185 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = CE8BD727D152A1B5273ADE40 /* OFL.txt */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -101,8 +104,10 @@
 /* Begin PBXFileReference section */
 		006294936C9F9297CF0B3D70 /* Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
 		03F6BFA411B06AC33CCF6FF2 /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
+		08AA20116C8186FE9DFF9B5D /* ChatExperienceView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChatExperienceView.swift; sourceTree = "<group>"; };
 		0DDC649DCC534DC4F787CD65 /* ServiceLampView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceLampView.swift; sourceTree = "<group>"; };
 		1146E8AE880745088DA214F6 /* Pods_DongFangApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DongFangApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		130D0FCAC7C61B35FF5C2A3F /* RewardExperience.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RewardExperience.swift; sourceTree = "<group>"; };
 		193EEF8E131D20E2F4897CE0 /* Service.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Service.swift; sourceTree = "<group>"; };
 		19C4A2CA2A31EEAEEE340C69 /* DongFangApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DongFangApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1AF936000A9D7B1EC00D512D /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
@@ -122,6 +127,7 @@
 		50FD827D80189BE654949DBE /* TopNavBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopNavBar.swift; sourceTree = "<group>"; };
 		576AED6FD494F52074FD9CA8 /* ServiceVowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceVowView.swift; sourceTree = "<group>"; };
 		5B57228DAF219B76F0CEC6BB /* Pods-DongFangApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DongFangApp.debug.xcconfig"; path = "Target Support Files/Pods-DongFangApp/Pods-DongFangApp.debug.xcconfig"; sourceTree = "<group>"; };
+		5C049B0B68DE5B5B9B8C1046 /* AskXuanSerif-Semibold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "AskXuanSerif-Semibold.ttf"; path = "../../packages/design-tokens/fonts/AskXuanSerif-Semibold.ttf"; sourceTree = SOURCE_ROOT; };
 		5DC8C8E33F8CCD3F87412A11 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		5F42ECA2DB16A4249D38183C /* APIResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIResponse.swift; sourceTree = "<group>"; };
 		5FBD28CBB485AB876AA47DD9 /* ServiceIncenseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceIncenseView.swift; sourceTree = "<group>"; };
@@ -129,6 +135,7 @@
 		616449B3D7AA309EDF8D62DD /* EmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyState.swift; sourceTree = "<group>"; };
 		69E69B95BFE18EC029686A3B /* ServiceRiteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceRiteView.swift; sourceTree = "<group>"; };
 		6A5A6DB8CDF1D86AFAD4F519 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		724188799C0ECC6219E0898D /* ChatNativeAPI.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChatNativeAPI.swift; sourceTree = "<group>"; };
 		72C2E2CB76CD043E38E68EDD /* DateFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatter.swift; sourceTree = "<group>"; };
 		746540EA9040535BB5DA0E12 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		7526F74BD52B1A039609D8DF /* DiyDesignView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyDesignView.swift; sourceTree = "<group>"; };
@@ -143,6 +150,7 @@
 		8973AE6B8C93BC3385082D4E /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		89D472202BFAC67906844A14 /* MasterProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterProfileViewModel.swift; sourceTree = "<group>"; };
 		8C90FB5FC146C32B7F608F0A /* DiyOrderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyOrderView.swift; sourceTree = "<group>"; };
+		8F31467865D429854B5BBD6C /* ChatNotifications.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChatNotifications.swift; sourceTree = "<group>"; };
 		901590AF25B2704F9F890262 /* ImageMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMapper.swift; sourceTree = "<group>"; };
 		91E72CF0968B77B4343B884E /* ProfileSubPages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSubPages.swift; sourceTree = "<group>"; };
 		95B683B69A6B598E1BC6FA84 /* MasterListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterListViewModel.swift; sourceTree = "<group>"; };
@@ -152,18 +160,21 @@
 		9FF6AD3EC1893B3135324CFB /* RemoteImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteImage.swift; sourceTree = "<group>"; };
 		A03E43A4788113300BE29D77 /* Master.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Master.swift; sourceTree = "<group>"; };
 		A0D047F538ABC13EAC55361D /* ShopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopView.swift; sourceTree = "<group>"; };
+		A19E00990C0D4A1890010002 /* AiReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AiReportView.swift; sourceTree = "<group>"; };
 		A1CAF6EB22243DA0583289CD /* DiyEditorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyEditorTests.swift; sourceTree = "<group>"; };
 		A99546E19EF4027BB49DBB2B /* ServiceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceViewModel.swift; sourceTree = "<group>"; };
 		AB1A4F5DC44274685E3D28B6 /* JSONHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONHelper.swift; sourceTree = "<group>"; };
 		AD74EC54937E0812B49D310C /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
 		B0138C84F23ED0F852535C5D /* AiResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AiResult.swift; sourceTree = "<group>"; };
 		B2A96CF5313F198ED89AB1DA /* Pods-DongFangAppTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DongFangAppTests.debug.xcconfig"; path = "Target Support Files/Pods-DongFangAppTests/Pods-DongFangAppTests.debug.xcconfig"; sourceTree = "<group>"; };
+		B33AB8BFC9CE629D10EFE35E /* RewardExperienceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RewardExperienceTests.swift; sourceTree = "<group>"; };
 		C010CD5681C8EF44E54E513F /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		C321AEBD19A23F58E9FE7483 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		C46B2E3B157332FB2B9D170C /* Pods_DongFangAppTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DongFangAppTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C7A6F924ADE80A4DCF100DF1 /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
 		C8A977054AC6636024946C93 /* MasterListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterListView.swift; sourceTree = "<group>"; };
 		CB0018C29D0DC4CD63F43199 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
+		CE8BD727D152A1B5273ADE40 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = file; name = OFL.txt; path = "../../packages/design-tokens/fonts/OFL.txt"; sourceTree = SOURCE_ROOT; };
 		D3274EF1FAB07EA6E889B2C4 /* OpenIMManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenIMManager.swift; sourceTree = "<group>"; };
 		D3D257EEFF4EAD94AEBC2472 /* ShopProduct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopProduct.swift; sourceTree = "<group>"; };
 		D959B591467788C8881269EE /* DiyDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyDetailView.swift; sourceTree = "<group>"; };
@@ -179,11 +190,6 @@
 		F14481BA1F32CB1D766AFB69 /* DiyBraceletView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyBraceletView.swift; sourceTree = "<group>"; };
 		F92542A7AC56799BC20F9544 /* TempleDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempleDetailViewModel.swift; sourceTree = "<group>"; };
 		FB598B67C7D0B2F9D42CD48A /* TagPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagPill.swift; sourceTree = "<group>"; };
-		A19E00990C0D4A1890010002 /* AiReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AiReportView.swift; sourceTree = "<group>"; };
-		130D0FCAC7C61B35FF5C2A3F /* RewardExperience.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RewardExperience.swift; sourceTree = "<group>"; };
-		B33AB8BFC9CE629D10EFE35E /* RewardExperienceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RewardExperienceTests.swift; sourceTree = "<group>"; };
-		5C049B0B68DE5B5B9B8C1046 /* AskXuanSerif-Semibold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "AskXuanSerif-Semibold.ttf"; path = "../../packages/design-tokens/fonts/AskXuanSerif-Semibold.ttf"; sourceTree = SOURCE_ROOT; };
-		CE8BD727D152A1B5273ADE40 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = file; name = "OFL.txt"; path = "../../packages/design-tokens/fonts/OFL.txt"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -248,6 +254,17 @@
 			path = DongFangAppTests;
 			sourceTree = "<group>";
 		};
+		43FD8B4ED90ADA58F0FD03AD /* SharedChat */ = {
+			isa = PBXGroup;
+			children = (
+				08AA20116C8186FE9DFF9B5D /* ChatExperienceView.swift */,
+				724188799C0ECC6219E0898D /* ChatNativeAPI.swift */,
+				8F31467865D429854B5BBD6C /* ChatNotifications.swift */,
+			);
+			name = SharedChat;
+			path = "../../packages/chat-native";
+			sourceTree = SOURCE_ROOT;
+		};
 		4975BAA5847955355B5BAD29 /* Shop */ = {
 			isa = PBXGroup;
 			children = (
@@ -288,6 +305,7 @@
 				2212A00BAC87DC51EDA95F9C /* Products */,
 				D3350D6DEA9950266AD2FDD6 /* Pods */,
 				52DE4B16BCAAE2E4A1D7E2D7 /* Frameworks */,
+				43FD8B4ED90ADA58F0FD03AD /* SharedChat */,
 			);
 			sourceTree = "<group>";
 		};
@@ -727,6 +745,9 @@
 				EACF501BF0D8E7C1AD3BB5C5 /* TopNavBar.swift in Sources */,
 				6CB8C86D488358AA9ACC986C /* UserProfile.swift in Sources */,
 				C84CB7A281B7808A3AF0BAB8 /* WebSocketManager.swift in Sources */,
+				213C9B316F7E8C247389EB6F /* ChatExperienceView.swift in Sources */,
+				F35E1589F025577B8CCC9558 /* ChatNativeAPI.swift in Sources */,
+				16A8C5BC69691C825BF56038 /* ChatNotifications.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -929,8 +950,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 5B57228DAF219B76F0CEC6BB /* Pods-DongFangApp.debug.xcconfig */;
 			buildSettings = {
+				APS_ENVIRONMENT = development;
 				ASKXUAN_API_BASE_URL = "https://101.96.228.71/api/v1";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = DongFangApp/Resources/DongFangApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = DQ3YY8MTFW;
 				INFOPLIST_FILE = DongFangApp/Resources/Info.plist;
@@ -955,8 +978,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = EE55E657E1C568460C3EB674 /* Pods-DongFangApp.release.xcconfig */;
 			buildSettings = {
+				APS_ENVIRONMENT = production;
 				ASKXUAN_API_BASE_URL = "https://101.96.228.71/api/v1";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = DongFangApp/Resources/DongFangApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = DQ3YY8MTFW;
 				INFOPLIST_FILE = DongFangApp/Resources/Info.plist;

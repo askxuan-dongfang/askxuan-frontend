@@ -66,6 +66,9 @@
 </template>
 
 <script setup lang="ts">
+import { ADMIN_THEME_EVENT } from "../../../../packages/admin-ui/theme"
+import { withAdminChartTheme } from "../../../../packages/admin-ui/chart-theme"
+
 import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import PageHeader from '@/components/PageHeader.vue'
@@ -110,7 +113,7 @@ function renderPie() {
   pieChart?.dispose()
   pieChart = echarts.init(pieRef.value)
   const o = overview.value
-  pieChart.setOption({
+  pieChart.setOption(withAdminChartTheme({
     tooltip: { trigger: 'item' },
     legend: { bottom: 0, textStyle: { color: '#C5B097' } },
     series: [
@@ -129,7 +132,7 @@ function renderPie() {
         ]
       }
     ]
-  })
+  }))
 }
 
 function renderBar() {
@@ -137,7 +140,7 @@ function renderBar() {
   barChart?.dispose()
   barChart = echarts.init(barRef.value)
   const a = audit.value
-  barChart.setOption({
+  barChart.setOption(withAdminChartTheme({
     tooltip: { trigger: 'axis' },
     grid: { left: 50, right: 20, top: 30, bottom: 30 },
     xAxis: { type: 'category', data: ['待审核', '已通过', '已驳回'], axisLabel: { color: '#C5B097' }, axisLine: { lineStyle: { color: 'rgba(200,169,110,0.2)' } } },
@@ -153,7 +156,7 @@ function renderBar() {
         ]
       }
     ]
-  })
+  }))
 }
 
 function onResize() {
@@ -210,15 +213,23 @@ async function loadDashboard() {
 }
 
 onMounted(async () => {
+  window.addEventListener(ADMIN_THEME_EVENT, refreshChartAppearance)
   await loadDashboard()
   window.addEventListener('resize', onResize)
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener(ADMIN_THEME_EVENT, refreshChartAppearance)
   window.removeEventListener('resize', onResize)
   pieChart?.dispose()
   barChart?.dispose()
 })
+
+function refreshChartAppearance() {
+  for (const chart of [pieChart, barChart]) {
+    if (chart && !chart.isDisposed()) chart.setOption(withAdminChartTheme(chart.getOption()))
+  }
+}
 </script>
 
 <style scoped>

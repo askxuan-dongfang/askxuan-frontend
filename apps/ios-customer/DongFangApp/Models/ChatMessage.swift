@@ -50,7 +50,7 @@ struct ChatConversation: Identifiable, Hashable, Decodable {
 
     enum CodingKeys: String, CodingKey {
         case conversationId, sourceType, sourceId, bookingId, peerId, peerOpenIMId, peerName, peerAvatar, templeName
-        case lastMessage, lastMessageAt, serviceName, bookingDate, canChat, expiresAt
+        case lastMessage, lastMessageAt, serviceName, bookingDate, canChat, expiresAt, unreadCount
     }
 
     init(from decoder: Decoder) throws {
@@ -66,7 +66,7 @@ struct ChatConversation: Identifiable, Hashable, Decodable {
         templeName = try container.decodeIfPresent(String.self, forKey: .templeName) ?? ""
         lastMessage = try container.decode(String.self, forKey: .lastMessage)
         lastTime = AppDateFormatter.friendly(try container.decodeIfPresent(String.self, forKey: .lastMessageAt))
-        unreadCount = 0
+        unreadCount = try container.decodeIfPresent(Int.self, forKey: .unreadCount) ?? 0
         isOnline = false
         serviceName = try container.decodeIfPresent(String.self, forKey: .serviceName) ?? ""
         bookingDate = try container.decodeIfPresent(String.self, forKey: .bookingDate) ?? ""

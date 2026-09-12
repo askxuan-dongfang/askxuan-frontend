@@ -16,6 +16,11 @@ import Combine
 final class ChatViewModel: ObservableObject {
     // MARK: - 对话列表
     @Published var conversations: [ChatConversation] = []
+    @Published var hasMoreConversations=false
+    @Published var loadingMoreConversations=false
+    private var conversationPage=1
+    private var conversationQuery=""
+    private var conversationEpoch=0
 
     // MARK: - 当前会话消息
     @Published var messages: [ChatBubble] = []
@@ -71,21 +76,28 @@ final class ChatViewModel: ObservableObject {
     // MARK: - 加载有效付费会话
     /// - Parameter silent: 静默模式（轮询触发），不切换 isLoading / errorMessage
     func loadConversations(silent: Bool = false) async {
-        if !silent {
-            isLoading = true
-            errorMessage = nil
-        }
+        let epoch=conversationEpoch
+        if !silent {isLoading=true;errorMessage=nil}
         do {
-            let resp: BookingChatListResponse = try await apiClient.request(.chats(page: 1, size: 20))
-            self.conversations = resp.list
+            var list:[ChatConversation]=[];var total:Int64=0
+            for page in 1...conversationPage {
+                let response:BookingChatListResponse=try await ChatNativeAPI.conversations(page:page,query:conversationQuery)
+                list.append(contentsOf:response.list);total=response.total
+                if list.count>=total {break}
+            }
+            guard epoch==conversationEpoch else{return}
+            var seen=Set<String>();conversations=list.filter{seen.insert($0.id).inserted}
+            hasMoreConversations=conversations.count<total
             applyOnlineStatus(OpenIMManager.shared.onlineUserIDs)
-            OpenIMManager.shared.watchUsers(resp.list.map(\.peerOpenIMId))
-        } catch {
-            // 任务取消（切页/重复刷新触发）不视为错误，且失败时保留已有对话，避免列表闪空
-            if (error as? APIError)?.isCancellation == true || error is CancellationError { return }
-            if !silent { self.errorMessage = error.localizedDescription }
-        }
-        if !silent { isLoading = false }
+            OpenIMManager.shared.watchUsers(list.map(\.peerOpenIMId))
+        }catch{if epoch==conversationEpoch && !silent{errorMessage=error.localizedDescription}}
+        if epoch==conversationEpoch{isLoading=false}
+    }
+    func searchConversations(_ query:String) async {conversationQuery=query;conversationPage=1;conversationEpoch+=1;await loadConversations()}
+    func loadMoreConversations() async {
+        guard hasMoreConversations && !loadingMoreConversations else{return}
+        loadingMoreConversations=true;conversationPage+=1
+        await loadConversations(silent:true);loadingMoreConversations=false
     }
 
     private func applyOnlineStatus(_ onlineUserIDs: Set<String>) {

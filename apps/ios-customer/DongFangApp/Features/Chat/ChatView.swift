@@ -23,6 +23,7 @@ struct ChatView: View {
         return 1
     }()
     @State private var searchText: String = ""
+    @ObservedObject private var chatNotifications=NativeChatNotifications.shared
     @State private var liveRooms: [LiveRoom] = []
 
     private let tabTitles = ["我的收藏", "我的私聊", "大师广场"]
@@ -114,7 +115,7 @@ struct ChatView: View {
                     }
                 } label: {
                     VStack(spacing: 0) {
-                        Text(title)
+                        Text(title + (index == 1 && chatNotifications.chatUnread > 0 ? " · \(chatNotifications.chatUnread)" : ""))
                             .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
                             .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                         Capsule()
@@ -148,12 +149,13 @@ struct ChatView: View {
     private var privatePanel: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
+                ChatNotificationPrompt()
                 // 搜索栏
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 14))
                         .foregroundStyle(Color.textTertiary)
-                    TextField("搜索对话", text: $searchText)
+                    TextField("搜索姓名、服务或消息", text: $searchText)
                         .font(.system(size: 14))
                         .foregroundStyle(Color.textPrimary)
                 }
@@ -174,6 +176,13 @@ struct ChatView: View {
                     .buttonStyle(.plain)
                 }
 
+                if viewModel.hasMoreConversations {
+                    Button(viewModel.loadingMoreConversations ? "加载中…" : "加载更多会话") {Task{await viewModel.loadMoreConversations()}}
+                        .disabled(viewModel.loadingMoreConversations).padding(18)
+                }
+                if let error=viewModel.errorMessage {
+                    VStack{Text(error).font(.caption);Button("重试"){Task{await viewModel.loadConversations()}}}.padding(16)
+                }
                 if viewModel.conversations.isEmpty && !viewModel.isLoading {
                     ContentUnavailableView(
                         "暂无可用私聊",
@@ -185,6 +194,8 @@ struct ChatView: View {
                 Color.clear.frame(height: AppSpacing.navBottom)
             }
         }
+        .task(id:searchText){try? await Task.sleep(for:.milliseconds(300));guard !Task.isCancelled else{return};await viewModel.searchConversations(searchText)}
+        .refreshable{await viewModel.loadConversations()}
     }
 
     private func conversationRow(_ conversation: ChatConversation) -> some View {

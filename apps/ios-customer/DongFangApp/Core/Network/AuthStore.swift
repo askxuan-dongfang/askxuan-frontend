@@ -176,6 +176,7 @@ final class AuthStore: ObservableObject {
 
     /// 登出：清除所有凭据
     func logout() {
+        NativeChatNotifications.shared.unbind()
         KeychainHelper.delete(service: AppConfig.keychainService, key: AppConfig.tokenKey)
         KeychainHelper.delete(service: AppConfig.keychainService, key: AppConfig.refreshTokenKey)
         self.accessToken = nil

@@ -10,6 +10,7 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @ObservedObject private var chatNotifications=NativeChatNotifications.shared
     // 支持通过 launch argument 设置初始 Tab（用于截图）：xcrun simctl launch booted com.dongfang.customer -tab 3
     @State private var selectedTab: Int = {
         let args = ProcessInfo.processInfo.arguments
@@ -59,6 +60,7 @@ struct MainTabView: View {
                     .navigationDestination(for: AuthRoute.self) { _ in LoginView() }
             }
             .tabItem { Label("对话", systemImage: "bubble.left.and.bubble.right") }
+            .badge(chatNotifications.chatUnread)
             .tag(1)
 
             // AI问事：需要登录

@@ -100,3 +100,7 @@ apps/web-h5/
 *.sqlite
 *.sqlite3
 *.db
+
+# Chat browser verification output
+e2e/artifacts/chat-report/
+e2e/artifacts/chat-results/

@@ -17,6 +17,11 @@ import Combine
 final class MessagesViewModel: ObservableObject {
     @Published var messages: [MasterMessage] = []
     @Published var chats: [MasterBookingChatConversation] = []
+    @Published var chatHasMore=false
+    @Published var chatLoading=false
+    private var chatPage=1
+    private var chatQuery=""
+    private var chatEpoch=0
     @Published var filter: Int = -1      // -1 全部 / 0 未读 / 1 已读
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
@@ -74,14 +79,20 @@ final class MessagesViewModel: ObservableObject {
     }
 
     func loadChats() async {
+        let epoch=chatEpoch;chatLoading=true
         do {
-            let resp: MasterBookingChatListResponse = try await apiClient.request(.chats(page: 1, size: 50))
-            chats = resp.list
-        } catch {
-            chats = []
-            errorMessage = error.localizedDescription
-        }
+            var list:[MasterBookingChatConversation]=[];var total:Int64=0
+            for page in 1...chatPage {
+                let response:MasterBookingChatListResponse=try await ChatNativeAPI.conversations(page:page,query:chatQuery)
+                list+=response.list;total=response.total;if list.count>=total{break}
+            }
+            guard epoch==chatEpoch else{return}
+            var seen=Set<String>();chats=list.filter{seen.insert($0.id).inserted};chatHasMore=chats.count<total;errorMessage=nil
+        }catch{if epoch==chatEpoch{errorMessage=error.localizedDescription}}
+        if epoch==chatEpoch{chatLoading=false}
     }
+    func searchChats(_ query:String) async {chatQuery=query;chatPage=1;chatEpoch+=1;await loadChats()}
+    func moreChats() async {guard chatHasMore && !chatLoading else{return};chatPage+=1;await loadChats()}
 
     func loadMore() async {
         guard hasMore, !isLoading else { return }
@@ -112,6 +123,8 @@ final class MessagesViewModel: ObservableObject {
 }
 
 struct MessagesView: View {
+    @State private var chatSearch=""
+    @ObservedObject private var chatNotifications=NativeChatNotifications.shared
     @StateObject private var viewModel = MessagesViewModel()
     @State private var selectedTab: Int = {
         #if DEBUG
@@ -121,7 +134,7 @@ struct MessagesView: View {
             return tab
         }
         #endif
-        return 0
+        return 1
     }() // 0=通知, 1=咨询
 
     var body: some View {
@@ -261,7 +274,10 @@ struct MessagesView: View {
 
     private var chatList: some View {
         ScrollView {
-            VStack(spacing: 0) {
+            LazyVStack(spacing: 0) {
+                ChatNotificationPrompt()
+                HStack {Image(systemName:"magnifyingglass");TextField("搜索姓名、服务或消息",text:$chatSearch)}
+                    .font(.system(size:14)).padding(13).background(Color.bgTertiary,in:RoundedRectangle(cornerRadius:14)).padding(.horizontal,18).padding(.vertical,8)
                 if viewModel.chats.isEmpty && !viewModel.isLoading {
                     EmptyState(icon: "bubble.left.slash",
                                title: "暂无咨询",
@@ -279,8 +295,11 @@ struct MessagesView: View {
                 }
             }
             .padding(.bottom, 70)
+            if viewModel.chatHasMore {Button(viewModel.chatLoading ? "加载中…" : "加载更多会话"){Task{await viewModel.moreChats()}}.disabled(viewModel.chatLoading).padding()}
+            if let error=viewModel.errorMessage {VStack{Text(error).font(.caption);Button("重试"){Task{await viewModel.loadChats()}}}.padding()}
         }
         .softScrollEdge(.bottom)
+        .task(id:chatSearch){try? await Task.sleep(for:.milliseconds(300));guard !Task.isCancelled else{return};await viewModel.searchChats(chatSearch)}
     }
 
     private func chatItem(_ conversation: MasterBookingChatConversation) -> some View {
@@ -311,6 +330,7 @@ struct MessagesView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
+            if conversation.unreadCount>0 {Text(conversation.unreadCount>99 ? "99+" : String(conversation.unreadCount)).font(.system(size:11)).foregroundStyle(.white).padding(5).background(Color.brandDefault,in:Capsule())}
             Image(systemName: "chevron.right")
                 .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)
