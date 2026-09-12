@@ -372,7 +372,7 @@ onMounted(() => {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 20px;
-  background: #fff;
+  background: var(--admin-surface);
 }
 .catalog-overview small {
   display: block;
@@ -412,12 +412,12 @@ onMounted(() => {
   border: 1px solid var(--border);
   border-radius: 17px;
   overflow: hidden;
-  background: #fff;
+  background: var(--admin-surface);
 }
 .catalog-preview-image {
   aspect-ratio: 1;
   position: relative;
-  background: #efe8dc;
+  background: var(--admin-surface-muted);
 }
 .catalog-preview-image > .el-image {
   width: 100%;
@@ -428,16 +428,16 @@ onMounted(() => {
   place-items: center;
   height: 100%;
   font: 40px var(--font-serif);
-  color: #a68555;
+  color: var(--admin-accent);
 }
 .catalog-preview-image > small {
   position: absolute;
   left: 10px;
   top: 10px;
   padding: 5px 9px;
-  background: #2d231bdf;
+  background: rgba(var(--admin-surface-rgb),.87);
   border-radius: 6px;
-  color: #e4c797;
+  color: var(--admin-accent);
   max-width: 90%;
   white-space: nowrap;
   overflow: hidden;
@@ -523,7 +523,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f0eb;
+  background: var(--admin-bg);
   color: var(--text-light);
   font-size: var(--type-size-caption);
 }

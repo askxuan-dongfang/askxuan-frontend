@@ -570,9 +570,9 @@ private struct DiyBraceletStage: View {
         GeometryReader { proxy in
             let sceneSize = min(proxy.size.width - 28, min(proxy.size.height - 32, 318))
             ZStack {
-                Color(hex: "241C17")
+                Color.bgSecondary
                 RadialGradient(
-                    colors: [Color(hex: "544338").opacity(0.72), Color(hex: "30251E"), Color(hex: "201915")],
+                    colors: [Color.bgElevated.opacity(0.72), Color.bgTertiary, Color.bgSecondary],
                     center: UnitPoint(x: 0.5, y: 0.57),
                     startRadius: 18,
                     endRadius: proxy.size.width * 0.72
@@ -603,7 +603,7 @@ private struct DiyBraceletStage: View {
                     }
                     .foregroundStyle(Color.stateError)
                     .frame(width: 104, height: 52)
-                    .background(Color.black.opacity(0.72))
+                    .background(Color.bgElevated.opacity(0.96))
                     .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
                     .overlay {
                         RoundedRectangle(cornerRadius: AppRadius.md)
@@ -1027,7 +1027,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView(); view.allowsCameraControl = true; view.autoenablesDefaultLighting = false
-        view.backgroundColor = UIColor(red: 0.14, green: 0.105, blue: 0.085, alpha: 1)
+        view.backgroundColor = AppPalette.bgSecondary
         view.antialiasingMode = .multisampling4X; view.preferredFramesPerSecond = 30
         view.accessibilityLabel = "手串 3D 预览，拖动旋转，双指缩放"
         return view

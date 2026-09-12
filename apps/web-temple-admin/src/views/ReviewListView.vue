@@ -165,7 +165,7 @@ onMounted(load)
   margin-bottom: 16px;
 }
 .review-content-cell {
-  color: #2a1e1a;
+  color: var(--admin-text);
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -181,13 +181,13 @@ onMounted(load)
   width: 44px;
   height: 44px;
   border-radius: 6px;
-  border: 1px solid #e8e0d8;
+  border: 1px solid var(--admin-border-strong);
 }
 .reply-dialog-content {
-  background: #faf6f0;
+  background: var(--admin-surface-muted);
   padding: 10px 12px;
   border-radius: 8px;
-  color: #2a1e1a;
+  color: var(--admin-text);
   margin: 10px 0;
   line-height: 1.5;
 }

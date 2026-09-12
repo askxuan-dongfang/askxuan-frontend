@@ -21,13 +21,13 @@ const props = withDefaults(
 )
 
 const toneColors: Record<Tone, string> = {
-  brand: '#c45a3c',
-  primary: '#c45a3c',
-  accent: '#c8a96e',
-  success: '#5b8c5a',
-  warning: '#d4a843',
-  info: '#6687a8',
-  danger: '#b84632'
+  brand: 'var(--admin-primary)',
+  primary: 'var(--admin-primary)',
+  accent: 'var(--admin-accent)',
+  success: 'var(--admin-success)',
+  warning: 'var(--admin-warning)',
+  info: 'var(--admin-info)',
+  danger: 'var(--admin-danger)'
 }
 
 function resolvedLabel(): string {
@@ -35,7 +35,9 @@ function resolvedLabel(): string {
 }
 
 function resolvedColor(): string {
-  return props.iconColor || toneColors[props.color || props.tone]
+  const legacy: Record<string, Tone> = { '#c45a3c': 'brand', '#d4735a': 'brand', '#c8a96e': 'accent', '#5b8c5a': 'success', '#d4a843': 'warning', '#6687a8': 'info', '#b84632': 'danger', '#b5453a': 'danger' }
+  const knownTone = props.iconColor ? legacy[props.iconColor.toLowerCase()] : undefined
+  return knownTone ? toneColors[knownTone] : props.iconColor || toneColors[props.color || props.tone]
 }
 
 function displayValue(): string {
@@ -60,7 +62,7 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
     <div
       v-if="icon"
       class="aui-stat-card__icon"
-      :style="{ backgroundColor: `${resolvedColor()}1a`, color: resolvedColor() }"
+      :style="{ backgroundColor: `color-mix(in srgb, ${resolvedColor()} 10%, transparent)`, color: resolvedColor() }"
       aria-hidden="true"
     >
       <el-icon :size="22"><component :is="icon" /></el-icon>
@@ -85,7 +87,7 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
   gap: 16px;
   padding: 20px;
   overflow: hidden;
-  background: var(--color-bg-primary, var(--card-bg, #fff));
+  background: var(--color-bg-secondary, var(--card-bg, #fff));
   border: 1px solid var(--color-border-divider, var(--admin-border, var(--border, #e8e0d8)));
   border-radius: var(--radius-lg, 12px);
   box-shadow: var(--shadow-sm, 0 4px 16px rgba(70, 45, 32, 0.06));

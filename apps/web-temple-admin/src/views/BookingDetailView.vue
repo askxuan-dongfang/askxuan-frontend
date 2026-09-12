@@ -223,18 +223,18 @@ onMounted(load)
   font-family: var(--font-serif);
   font-size: var(--type-size-control);
   font-weight: var(--type-weight-semibold);
-  color: #2a1e1a;
+  color: var(--admin-text);
   margin-bottom: 14px;
 }
 .price {
-  color: #c45a3c;
+  color: var(--admin-primary);
   font-weight: var(--type-weight-semibold);
 }
 .ml-2 {
   margin-left: 8px;
 }
 .muted {
-  color: #8a7a6a;
+  color: var(--admin-text-secondary);
   font-size: var(--type-size-label);
 }
 .review-head {
@@ -244,7 +244,7 @@ onMounted(load)
   margin-bottom: 8px;
 }
 .review-content {
-  color: #2a1e1a;
+  color: var(--admin-text);
   line-height: 1.6;
   margin-bottom: 10px;
 }
@@ -257,21 +257,21 @@ onMounted(load)
   width: 80px;
   height: 80px;
   border-radius: 8px;
-  border: 1px solid #e8e0d8;
+  border: 1px solid var(--admin-border-strong);
 }
 .reply-block {
   margin-top: 16px;
   padding-top: 14px;
-  border-top: 1px dashed #e8e0d8;
+  border-top: 1px dashed var(--admin-border-strong);
 }
 .reply-label {
   font-size: var(--type-size-label);
-  color: #6a5a4a;
+  color: var(--admin-text-secondary);
   margin-bottom: 8px;
 }
 .reply-text {
-  color: #2a1e1a;
-  background: #faf6f0;
+  color: var(--admin-text);
+  background: var(--admin-surface-muted);
   padding: 10px 12px;
   border-radius: 8px;
 }
@@ -283,14 +283,14 @@ onMounted(load)
   font-size: var(--type-size-body);
 }
 .log-from {
-  color: #8a7a6a;
+  color: var(--admin-text-secondary);
 }
 .log-arrow {
   margin: 0 6px;
-  color: #c8a96e;
+  color: var(--admin-accent);
 }
 .log-to {
-  color: #c45a3c;
+  color: var(--admin-primary);
   font-weight: var(--type-weight-semibold);
 }
 .log-meta {
@@ -301,6 +301,6 @@ onMounted(load)
 }
 .log-remark {
   font-size: var(--type-size-caption);
-  color: #8a7a6a;
+  color: var(--admin-text-secondary);
 }
 </style>

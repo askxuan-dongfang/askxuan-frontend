@@ -123,13 +123,13 @@ onMounted(load)
   margin-bottom: 16px;
 }
 .price {
-  color: #c45a3c;
+  color: var(--admin-primary);
   font-weight: var(--type-weight-semibold);
 }
 .slot-tag {
   margin: 2px 4px 2px 0;
 }
 .muted {
-  color: #b0a090;
+  color: var(--admin-text-secondary);
 }
 </style>

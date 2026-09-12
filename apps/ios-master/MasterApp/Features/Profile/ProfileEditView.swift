@@ -210,7 +210,7 @@ struct ProfileEditView: View {
         .background(Color.bgPrimary)
         .navigationTitle("编辑资料")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+
         .onAppear {
             // 特性 3：初始化 AttributedString
             if #available(iOS 26.0, *) {

@@ -121,7 +121,7 @@ struct PricingView: View {
         .background(Color.bgPrimary)
         .navigationTitle("定价管理")
         .navigationBarTitleDisplayMode(.large)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+
         .task { await viewModel.load() }
     }
 

@@ -137,7 +137,7 @@ struct CalendarView: View {
         .background(Color.bgPrimary)
         .navigationTitle("日程日历")
         .navigationBarTitleDisplayMode(.large)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+
         .task { await viewModel.load() }
         .refreshable { await viewModel.load() }
     }

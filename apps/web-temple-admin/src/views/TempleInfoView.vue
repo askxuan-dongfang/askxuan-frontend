@@ -154,12 +154,12 @@ onMounted(async () => {
   font-family: var(--font-serif);
   font-size: var(--type-size-control);
   font-weight: var(--type-weight-semibold);
-  color: #2a1e1a;
+  color: var(--admin-text);
   margin-bottom: 16px;
 }
 .cover-preview-label {
   font-size: var(--type-size-caption);
-  color: #8a7a6a;
+  color: var(--admin-text-secondary);
   margin: 16px 0 8px;
 }
 .cover-preview {
@@ -167,7 +167,7 @@ onMounted(async () => {
   max-height: 180px;
   object-fit: cover;
   border-radius: 8px;
-  border: 1px solid #e8e0d8;
+  border: 1px solid var(--admin-border-strong);
 }
 @media (max-width: 767px) {
   .info-grid { grid-template-columns: minmax(0, 1fr); }

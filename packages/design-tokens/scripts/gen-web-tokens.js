@@ -20,6 +20,11 @@ function kebab(s) {
   return s.replace(/([A-Z])/g, '-$1').toLowerCase();
 }
 
+function hexRgb(value) {
+  if (!/^#[0-9a-f]{6}$/i.test(value)) return null;
+  return [1, 3, 5].map((index) => parseInt(value.slice(index, index + 2), 16)).join(', ');
+}
+
 const color = tokens.color;
 
 // ---- tokens.css ----
@@ -30,14 +35,18 @@ css.push('   Source: packages/design-tokens/tokens.json');
 css.push('   Do not edit manually; run `npm run gen:web` to regenerate.');
 css.push('   ================================================================ */');
 css.push(':root {');
+css.push('  color-scheme: dark;');
 
 Object.keys(color).forEach((group) => {
   css.push(`  /* ${capitalize(group)} */`);
   Object.keys(color[group]).forEach((variant) => {
-    css.push(`  --color-${group}-${variant}: ${color[group][variant]};`);
+    css.push(`  --color-${group}-${kebab(variant)}: ${color[group][variant]};`);
+    const rgb = hexRgb(color[group][variant]);
+    if (rgb) css.push(`  --color-${group}-${kebab(variant)}-rgb: ${rgb};`);
     // default 变体额外输出短别名，与原 colors_and_type.css 兼容
     if (variant === 'default') {
       css.push(`  --color-${group}: ${color[group][variant]};`);
+      if (rgb) css.push(`  --color-${group}-rgb: ${rgb};`);
     }
   });
 });
@@ -62,6 +71,24 @@ Object.keys(tokens.spacing).forEach((k) => {
 css.push('}');
 css.push('');
 
+const light = tokens.themes?.light?.color;
+if (light) {
+  css.push(':root[data-theme=light] {');
+  css.push('  color-scheme: light;');
+  for (const [group, variants] of Object.entries(light)) {
+    for (const [variant, value] of Object.entries(variants)) {
+      css.push(`  --color-${group}-${kebab(variant)}: ${value};`);
+      const rgb = hexRgb(value);
+      if (rgb) css.push(`  --color-${group}-${kebab(variant)}-rgb: ${rgb};`);
+      if (variant === 'default') {
+        css.push(`  --color-${group}: ${value};`);
+        if (rgb) css.push(`  --color-${group}-rgb: ${rgb};`);
+      }
+    }
+  }
+  css.push('}', '');
+}
+
 const cssPath = path.join(outDir, 'tokens.css');
 fs.writeFileSync(cssPath, css.join('\n'));
 console.log(`✓ Generated ${cssPath}`);
@@ -81,7 +108,7 @@ Object.keys(color).forEach((group) => {
   tw.colors[group] = {};
   Object.keys(color[group]).forEach((variant) => {
     const key = variant === 'default' ? 'DEFAULT' : variant;
-    tw.colors[group][key] = color[group][variant];
+    tw.colors[group][key] = `var(--color-${group}${variant === 'default' ? '' : '-' + kebab(variant)})`;
   });
 });
 

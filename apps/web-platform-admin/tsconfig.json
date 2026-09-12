@@ -17,6 +17,7 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
+      "vue": ["./node_modules/vue"],
       "@/*": ["src/*"],
       "@askxuan/domain-status": ["../../packages/domain-status/src/index.ts"]
     },

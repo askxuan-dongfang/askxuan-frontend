@@ -1,32 +1,55 @@
 /* ================================================================
-   问玄东方App - Web Design Tokens
+   问玄东方App - Web Design Tokens (Auto-generated)
    Source: packages/design-tokens/tokens.json
-   复制自 monorepo packages/design-tokens/dist/web/tokens.css
+   Do not edit manually; run `npm run gen:web` to regenerate.
    ================================================================ */
 :root {
+  color-scheme: dark;
   /* Bg */
   --color-bg-primary: #1C1210;
+  --color-bg-primary-rgb: 28, 18, 16;
   --color-bg-secondary: #2A1E1A;
+  --color-bg-secondary-rgb: 42, 30, 26;
   --color-bg-tertiary: #3A2C25;
+  --color-bg-tertiary-rgb: 58, 44, 37;
   --color-bg-elevated: #44342C;
+  --color-bg-elevated-rgb: 68, 52, 44;
   /* Brand */
   --color-brand-default: #C45A3C;
+  --color-brand-default-rgb: 196, 90, 60;
   --color-brand: #C45A3C;
+  --color-brand-rgb: 196, 90, 60;
   --color-brand-light: #D4735A;
+  --color-brand-light-rgb: 212, 115, 90;
   --color-brand-dark: #A64830;
+  --color-brand-dark-rgb: 166, 72, 48;
   /* Accent */
   --color-accent-default: #C8A96E;
+  --color-accent-default-rgb: 200, 169, 110;
   --color-accent: #C8A96E;
+  --color-accent-rgb: 200, 169, 110;
   --color-accent-light: #D4BC8A;
+  --color-accent-light-rgb: 212, 188, 138;
   --color-accent-dark: #A88A50;
+  --color-accent-dark-rgb: 168, 138, 80;
   /* Cinnabar */
   --color-cinnabar-default: #B5453A;
+  --color-cinnabar-default-rgb: 181, 69, 58;
   --color-cinnabar: #B5453A;
+  --color-cinnabar-rgb: 181, 69, 58;
   --color-cinnabar-light: #CC5A4F;
+  --color-cinnabar-light-rgb: 204, 90, 79;
   /* Text */
   --color-text-primary: #F0E6DA;
+  --color-text-primary-rgb: 240, 230, 218;
   --color-text-secondary: #C5B097;
+  --color-text-secondary-rgb: 197, 176, 151;
   --color-text-tertiary: #8A7A6A;
+  --color-text-tertiary-rgb: 138, 122, 106;
+  --color-text-on-brand: #FFFFFF;
+  --color-text-on-brand-rgb: 255, 255, 255;
+  --color-text-on-accent: #1C1210;
+  --color-text-on-accent-rgb: 28, 18, 16;
   /* Border */
   --color-border-default: rgba(200, 169, 110, 0.15);
   --color-border: rgba(200, 169, 110, 0.15);
@@ -34,12 +57,17 @@
   --color-border-divider: rgba(200, 169, 110, 0.08);
   /* State */
   --color-state-success: #5B8C5A;
+  --color-state-success-rgb: 91, 140, 90;
   --color-state-warning: #D4A843;
+  --color-state-warning-rgb: 212, 168, 67;
   --color-state-error: #C45A3C;
+  --color-state-error-rgb: 196, 90, 60;
+  --color-state-info: #8FAECB;
+  --color-state-info-rgb: 143, 174, 203;
 
   /* Fonts */
-  --font-serif: 'Noto Serif SC', 'STSong', 'SimSun', serif;
-  --font-sans: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-serif: 'AskXuan Serif', 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
+  --font-sans: '-apple-system', 'BlinkMacSystemFont', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 
   /* Radius */
   --radius-sm: 4px;
@@ -50,4 +78,60 @@
   /* Spacing */
   --spacing-nav-top: 44px;
   --spacing-nav-bottom: 60px;
+}
+
+:root[data-theme=light] {
+  color-scheme: light;
+  --color-bg-primary: #F6F3EC;
+  --color-bg-primary-rgb: 246, 243, 236;
+  --color-bg-secondary: #FFFDF8;
+  --color-bg-secondary-rgb: 255, 253, 248;
+  --color-bg-tertiary: #EFEDE3;
+  --color-bg-tertiary-rgb: 239, 237, 227;
+  --color-bg-elevated: #E7E7DA;
+  --color-bg-elevated-rgb: 231, 231, 218;
+  --color-brand-default: #284D43;
+  --color-brand-default-rgb: 40, 77, 67;
+  --color-brand: #284D43;
+  --color-brand-rgb: 40, 77, 67;
+  --color-brand-light: #426A59;
+  --color-brand-light-rgb: 66, 106, 89;
+  --color-brand-dark: #1E3C34;
+  --color-brand-dark-rgb: 30, 60, 52;
+  --color-accent-default: #84673D;
+  --color-accent-default-rgb: 132, 103, 61;
+  --color-accent: #84673D;
+  --color-accent-rgb: 132, 103, 61;
+  --color-accent-light: #896B40;
+  --color-accent-light-rgb: 137, 107, 64;
+  --color-accent-dark: #72562F;
+  --color-accent-dark-rgb: 114, 86, 47;
+  --color-cinnabar-default: #A04B3A;
+  --color-cinnabar-default-rgb: 160, 75, 58;
+  --color-cinnabar: #A04B3A;
+  --color-cinnabar-rgb: 160, 75, 58;
+  --color-cinnabar-light: #B5614D;
+  --color-cinnabar-light-rgb: 181, 97, 77;
+  --color-text-primary: #253E36;
+  --color-text-primary-rgb: 37, 62, 54;
+  --color-text-secondary: #66736C;
+  --color-text-secondary-rgb: 102, 115, 108;
+  --color-text-tertiary: #748078;
+  --color-text-tertiary-rgb: 116, 128, 120;
+  --color-text-on-brand: #FFFFFF;
+  --color-text-on-brand-rgb: 255, 255, 255;
+  --color-text-on-accent: #FFFFFF;
+  --color-text-on-accent-rgb: 255, 255, 255;
+  --color-border-default: rgba(40, 77, 67, 0.14);
+  --color-border: rgba(40, 77, 67, 0.14);
+  --color-border-strong: rgba(40, 77, 67, 0.3);
+  --color-border-divider: rgba(40, 77, 67, 0.08);
+  --color-state-success: #357052;
+  --color-state-success-rgb: 53, 112, 82;
+  --color-state-warning: #906D37;
+  --color-state-warning-rgb: 144, 109, 55;
+  --color-state-error: #A04B3A;
+  --color-state-error-rgb: 160, 75, 58;
+  --color-state-info: #426A89;
+  --color-state-info-rgb: 66, 106, 137;
 }

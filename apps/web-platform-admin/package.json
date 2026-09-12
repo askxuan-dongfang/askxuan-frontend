@@ -8,7 +8,7 @@
     "dev": "vite --config vite.config.ts",
     "prebuild": "node ../../scripts/sync-admin-ui-components.mjs --check && node ../../scripts/sync-typography.mjs --check",
     "build": "vue-tsc -b && vite build --config vite.config.ts",
-    "preview": "vite preview"
+    "preview": "vite preview --config vite.config.ts"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",

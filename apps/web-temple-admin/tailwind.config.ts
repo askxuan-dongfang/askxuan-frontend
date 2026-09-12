@@ -3,18 +3,18 @@ import type { Config } from 'tailwindcss'
 // 问玄东方 Design Tokens（内联，避免构建期依赖 monorepo packages 路径）
 const brandTokens = {
   brand: {
-    DEFAULT: '#C45A3C',
-    light: '#D4735A',
-    dark: '#A64830'
+    DEFAULT: 'var(--admin-primary)',
+    light: 'var(--admin-primary-hover)',
+    dark: 'var(--color-brand-dark)'
   },
   accent: {
-    DEFAULT: '#C8A96E',
-    light: '#D4BC8A',
-    dark: '#A88A50'
+    DEFAULT: 'var(--admin-accent)',
+    light: 'var(--color-accent-light)',
+    dark: 'var(--color-accent-dark)'
   },
   cinnabar: {
-    DEFAULT: '#B5453A',
-    light: '#CC5A4F'
+    DEFAULT: 'var(--admin-danger)',
+    light: 'var(--admin-danger)'
   }
 }
 
@@ -27,16 +27,16 @@ const config: Config = {
         ...brandTokens,
         // 管理台浅色画布
         ink: {
-          DEFAULT: '#2A1E1A',
-          medium: '#6A5A4A',
-          light: '#9A8A7A'
+          DEFAULT: 'var(--admin-text)',
+          medium: 'var(--admin-text-secondary)',
+          light: 'var(--admin-text-tertiary)'
         },
         canvas: {
-          DEFAULT: '#F5F0EB',
-          card: '#FFFFFF',
-          subtle: '#FAFAF8'
+          DEFAULT: 'var(--admin-bg)',
+          card: 'var(--admin-surface)',
+          subtle: 'var(--admin-surface-muted)'
         },
-        line: '#E8E0D8'
+        line: 'var(--admin-border)'
       },
       fontFamily: {
         serif: ['Noto Serif SC', 'STSong', 'SimSun', 'serif'],

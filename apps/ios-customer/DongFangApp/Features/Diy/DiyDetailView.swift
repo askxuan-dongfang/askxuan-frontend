@@ -104,7 +104,7 @@ struct DiyDetailView: View {
                 Text("搭配预估 · 以确认订单页为准").font(.caption).foregroundStyle(Color.textSecondary)
             }.padding(.horizontal, 20).padding(.bottom, 24)
         }
-        .background(RadialGradient(colors: [Color(hex: "4B4132"), Color.bgSecondary], center: .center, startRadius: 0, endRadius: 330))
+        .background(RadialGradient(colors: [Color.bgElevated, Color.bgSecondary], center: .center, startRadius: 0, endRadius: 330))
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .overlay { RoundedRectangle(cornerRadius: 24).stroke(Color.borderStrong, lineWidth: 1) }
         .padding(.horizontal, 16)

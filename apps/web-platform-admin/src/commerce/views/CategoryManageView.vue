@@ -225,7 +225,7 @@ onMounted(() => {
   border: 1px solid var(--border);
   border-radius: 18px;
   margin-bottom: 22px;
-  background: linear-gradient(120deg, #fffaf2, #f2e8da);
+  background: linear-gradient(120deg, var(--admin-surface), var(--admin-surface-muted));
 }
 .category-navigation-preview h2 {
   font: 600 20px var(--font-serif);
@@ -242,14 +242,14 @@ onMounted(() => {
   margin-top: 18px;
 }
 .category-navigation-preview nav span {
-  border: 1px solid #c7b395;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 22px;
   padding: 10px 16px;
-  background: #fff;
+  background: var(--admin-surface);
   font-size: 13px;
 }
 .category-navigation-preview nav .all {
-  background: #9f6d44;
+  background: var(--admin-primary);
   color: white;
   border-color: transparent;
 }

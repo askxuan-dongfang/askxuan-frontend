@@ -161,20 +161,20 @@ onMounted(load)
 .master-name {
   font-size: var(--type-size-body);
   font-weight: var(--type-weight-semibold);
-  color: #2a1e1a;
+  color: var(--admin-text);
 }
 .master-lay {
   font-size: var(--type-size-caption);
-  color: #8a7a6a;
+  color: var(--admin-text-secondary);
 }
 .spec-tag {
   margin: 2px 4px 2px 0;
 }
 .muted {
-  color: #b0a090;
+  color: var(--admin-text-secondary);
 }
 .rate-text {
-  color: #c8a96e;
+  color: var(--admin-accent);
   font-weight: var(--type-weight-semibold);
 }
 </style>

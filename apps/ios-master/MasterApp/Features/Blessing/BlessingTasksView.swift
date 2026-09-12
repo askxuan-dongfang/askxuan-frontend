@@ -103,7 +103,7 @@ struct BlessingTasksView: View {
         .background(Color.bgPrimary)
         .navigationTitle("加持任务")
         .navigationBarTitleDisplayMode(.large)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+
         .task { await viewModel.load() }
         .refreshable { await viewModel.load() }
     }

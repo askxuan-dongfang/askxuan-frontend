@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ADMIN_THEME_EVENT } from '../../../../../packages/admin-ui/theme'
+import { withAdminChartTheme } from '../../../../../packages/admin-ui/chart-theme'
 // 商城工作台 - 今日订单 / 销售额 / 待发货 / 商品总数
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
@@ -63,7 +65,7 @@ function initTrendChart() {
   if (!trendChartRef.value) return
   trendChart = echarts.init(trendChartRef.value)
   const { dates, sales, orders } = buildTrendData(null)
-  trendChart.setOption({
+  trendChart.setOption(withAdminChartTheme({
     tooltip: { trigger: 'axis' },
     legend: { data: ['销售额', '订单数'], textStyle: { color: '#6A5A4A' } },
     grid: { left: 50, right: 50, top: 40, bottom: 30 },
@@ -117,7 +119,7 @@ function initTrendChart() {
         symbolSize: 8
       }
     ]
-  })
+  }))
 }
 
 function handleResize() {
@@ -155,10 +157,10 @@ async function loadDashboard() {
     await nextTick()
     if (!trendChart) initTrendChart()
     const { dates, sales, orders } = buildTrendData(report)
-    trendChart?.setOption({
+    trendChart?.setOption(withAdminChartTheme({
       xAxis: { data: dates },
       series: [{ data: sales }, { data: orders }]
-    })
+    }))
   } catch {
     failedModules.value.push('经营报表')
   }
@@ -182,14 +184,22 @@ async function loadDashboard() {
 }
 
 onMounted(async () => {
+  window.addEventListener(ADMIN_THEME_EVENT, refreshChartAppearance)
   window.addEventListener('resize', handleResize)
   await loadDashboard()
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener(ADMIN_THEME_EVENT, refreshChartAppearance)
   window.removeEventListener('resize', handleResize)
   trendChart?.dispose()
 })
+
+function refreshChartAppearance() {
+  for (const chart of [trendChart]) {
+    if (chart && !chart.isDisposed()) chart.setOption(withAdminChartTheme(chart.getOption()))
+  }
+}
 </script>
 
 <template>

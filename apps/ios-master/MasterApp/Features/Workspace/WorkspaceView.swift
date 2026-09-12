@@ -435,7 +435,7 @@ struct WorkspaceView: View {
                 .cornerRadius(10)
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color(hex: "3D2E28"), lineWidth: 1)
+                        .stroke(Color.borderDefault, lineWidth: 1)
                 )
                 .padding(.horizontal, AppSpacing.pageHorizontal)
             }

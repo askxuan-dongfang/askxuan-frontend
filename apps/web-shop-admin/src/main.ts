@@ -1,4 +1,8 @@
+import './styles/index.css'
+import { initAdminTheme } from '../../../packages/admin-ui/theme'
 import { legacyShopTarget } from './router'
+
+initAdminTheme()
 
 const unifiedBase = import.meta.env.DEV ? new URL(import.meta.env.VITE_UNIFIED_ADMIN_URL || 'http://localhost:5210/') : new URL('/admin/', window.location.origin)
 const target = new URL(legacyShopTarget(window.location.pathname).slice(1), unifiedBase)

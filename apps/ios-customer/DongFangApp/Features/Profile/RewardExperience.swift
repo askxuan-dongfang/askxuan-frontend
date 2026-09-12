@@ -54,10 +54,10 @@ struct RewardGiftArt: View {
             GeometryReader { proxy in
                 let side = min(proxy.size.width, proxy.size.height)
                 ZStack {
-                    Circle().stroke(Color.accentDefault.opacity(0.2), lineWidth: 1).padding(side * 0.08)
+                    Circle().stroke(Color(hex: "C8A96E").opacity(0.2), lineWidth: 1).padding(side * 0.08)
                     gift.frame(width: side * 0.72, height: side * 0.72).offset(y: sin(t * 1.4) * 5)
                     ForEach(0..<3) { i in
-                        Image(systemName: "sparkle").font(.system(size: i == 1 ? 18 : 10)).foregroundStyle(Color.accentDefault)
+                        Image(systemName: "sparkle").font(.system(size: i == 1 ? 18 : 10)).foregroundStyle(Color(hex: "C8A96E"))
                             .opacity(reduceMotion ? 0.7 : 0.4 + 0.5 * abs(sin(t + Double(i))))
                             .offset(x: (i == 0 ? -0.38 : 0.36) * side, y: (Double(i) - 1) * side * 0.27)
                     }
@@ -74,8 +74,8 @@ struct RewardGiftArt: View {
                         path.move(to: CGPoint(x: 25, y: 17))
                         path.addCurve(to: CGPoint(x: 25, y: 17), control1: CGPoint(x: -12, y: -9), control2: CGPoint(x: 3, y: 32))
                         path.addCurve(to: CGPoint(x: 25, y: 17), control1: CGPoint(x: 62, y: -9), control2: CGPoint(x: 47, y: 32))
-                    }.stroke(Color.accentDefault, style: StrokeStyle(lineWidth: 3, lineCap: .round)).frame(width: 50, height: 24)
-                    Rectangle().fill(Color.bgPrimary.opacity(0.5)).frame(height: 5).padding(.horizontal, 12)
+                    }.stroke(Color(hex: "C8A96E"), style: StrokeStyle(lineWidth: 3, lineCap: .round)).frame(width: 50, height: 24)
+                    Rectangle().fill(Color(hex: "1C1210").opacity(0.5)).frame(height: 5).padding(.horizontal, 12)
                     Text("安").font(AppTypography.title(36)).foregroundStyle(Color(red: 1, green: 0.88, blue: 0.66)).frame(maxHeight: .infinity)
                 }
             }
@@ -85,12 +85,12 @@ struct RewardGiftArt: View {
                 ZStack {
                     ForEach(0..<14) { i in
                         let angle = Double(i) * .pi * 2 / 14
-                        Circle().fill(LinearGradient(colors: [Color.accentDefault, i == 7 ? .red.opacity(0.55) : .brown], startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .overlay(Circle().stroke(Color.accentDefault.opacity(0.6), lineWidth: 1))
+                        Circle().fill(LinearGradient(colors: [Color(hex: "C8A96E"), i == 7 ? .red.opacity(0.55) : .brown], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .overlay(Circle().stroke(Color(hex: "C8A96E").opacity(0.6), lineWidth: 1))
                             .frame(width: side * 0.19, height: side * 0.19)
                             .offset(x: sin(angle) * side * 0.38, y: -cos(angle) * side * 0.38)
                     }
-                    Text("缘").font(AppTypography.title(25)).foregroundStyle(Color.accentDefault)
+                    Text("缘").font(AppTypography.title(25)).foregroundStyle(Color(hex: "C8A96E"))
                 }.frame(width: p.size.width, height: p.size.height)
             }
         }
@@ -129,20 +129,20 @@ struct RewardWheelArt: View {
             ZStack {
                 ZStack {
                     ForEach(0..<8) { i in
-                        RewardWheelSector(index: i).fill(i.isMultiple(of: 2) ? Color.accentDefault : Color.brown.opacity(0.75))
+                        RewardWheelSector(index: i).fill(i.isMultiple(of: 2) ? Color(hex: "C8A96E") : Color.brown.opacity(0.75))
                         VStack(spacing: 4) {
                             Text(i.isMultiple(of: 2) ? "幸运好礼" : "下次有缘").font(.system(size: size < 250 ? 10 : 12, weight: .medium))
                             Image(systemName: i.isMultiple(of: 2) ? "gift.fill" : "sparkle").font(AppTypography.caption)
-                        }.foregroundStyle(i.isMultiple(of: 2) ? Color.bgPrimary : Color.white.opacity(0.85))
+                        }.foregroundStyle(i.isMultiple(of: 2) ? Color(hex: "1C1210") : Color.white.opacity(0.85))
                             .offset(y: -size * 0.34).rotationEffect(.degrees(Double(i) * 45))
                     }
-                    Circle().stroke(Color.accentDefault, lineWidth: 10)
+                    Circle().stroke(Color(hex: "C8A96E"), lineWidth: 10)
                 }.rotationEffect(.degrees(rotation)).accessibilityIdentifier("reward-wheel-disc")
                 ForEach(0..<20) { i in
                     Circle().fill(Color(red: 1, green: 0.92, blue: 0.74)).frame(width: 4, height: 4).offset(y: -size / 2).rotationEffect(.degrees(Double(i) * 18))
                 }
-                Circle().fill(Color.accentDefault).frame(width: 72, height: 72).overlay(Circle().stroke(.white.opacity(0.4), lineWidth: 4))
-                VStack(spacing: 3) { Text(spinning ? "✦" : "\(cost)").font(.title2.bold()); Text(spinning ? "揭晓中" : "积分 / 次").font(.system(size: 10)) }.foregroundStyle(Color.bgPrimary)
+                Circle().fill(Color(hex: "C8A96E")).frame(width: 72, height: 72).overlay(Circle().stroke(.white.opacity(0.4), lineWidth: 4))
+                VStack(spacing: 3) { Text(spinning ? "✦" : "\(cost)").font(.title2.bold()); Text(spinning ? "揭晓中" : "积分 / 次").font(.system(size: 10)) }.foregroundStyle(Color(hex: "1C1210"))
                 Image(systemName: "arrowtriangle.down.fill").font(.title).foregroundStyle(Color(red: 1, green: 0.9, blue: 0.7)).offset(y: -size / 2 - 4)
             }.frame(width: size, height: size).frame(width: p.size.width, height: p.size.height)
         }.accessibilityElement(children: .ignore).accessibilityLabel(spinning ? "转盘正在减速揭晓" : "八格积分转盘，扇区面积不代表概率")
@@ -476,7 +476,7 @@ struct RewardWheelExperience: View {
                 }.padding(.bottom, 8)
                 Button(action: detail.mine == nil ? onJoin : onResult) {
                     Text(actionLabel).font(.headline).frame(maxWidth: .infinity).padding(.vertical, 15)
-                        .foregroundStyle(Color.bgPrimary).background(LinearGradient(colors: [Color(red: 0.93, green: 0.83, blue: 0.63), Color.accentDefault], startPoint: .leading, endPoint: .trailing), in: Capsule())
+                        .foregroundStyle(Color.textOnAccent).background(LinearGradient(colors: [Color.accentLight, Color.accentDefault], startPoint: .leading, endPoint: .trailing), in: Capsule())
                 }.buttonStyle(.plain).disabled(blocked).opacity(blocked ? 0.5 : 1).accessibilityIdentifier("reward-wheel-draw")
                 Text("可用 \(detail.pointsBalance) 积分 · \(detail.mine == nil ? "每期一次" : "本期已抽奖")").font(.caption2).foregroundStyle(.secondary)
             }.padding(18).frame(maxWidth: .infinity).background(LinearGradient(colors: [Color.brown.opacity(0.35), Color.bgSecondary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 22))

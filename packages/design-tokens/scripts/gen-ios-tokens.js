@@ -16,19 +16,21 @@ function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// 将颜色值转换为 Swift Color 表达式
+// 将颜色值转换为 UIColor，动态 provider 由系统 trait 决定。
 // 支持 #RRGGBB / RRGGBB / rgba(r,g,b,a) / rgb(r,g,b)
-function colorExpr(value) {
+function uiColorExpr(value) {
   const m = value.match(/^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)$/i);
   if (m) {
     const r = parseFloat(m[1]);
     const g = parseFloat(m[2]);
     const b = parseFloat(m[3]);
     const a = m[4] !== undefined ? parseFloat(m[4]) : 1;
-    return `Color(.sRGB, red: ${r}/255.0, green: ${g}/255.0, blue: ${b}/255.0, opacity: ${a})`;
+    return `UIColor(red: ${r}/255.0, green: ${g}/255.0, blue: ${b}/255.0, alpha: ${a})`;
   }
   const hex = value.replace(/^#/, '');
-  return `Color(hex: "${hex}")`;
+  if (!/^[0-9a-f]{6}$/i.test(hex)) throw new Error(`Unsupported token color: ${value}`);
+  const rgb = [0, 2, 4].map((offset) => parseInt(hex.slice(offset, offset + 2), 16));
+  return `UIColor(red: ${rgb[0]}/255.0, green: ${rgb[1]}/255.0, blue: ${rgb[2]}/255.0, alpha: 1)`;
 }
 
 const lines = [];
@@ -40,21 +42,30 @@ lines.push('//  Do not edit manually; run `npm run gen:ios` to regenerate.');
 lines.push('// ================================================================');
 lines.push('');
 lines.push('import SwiftUI');
+lines.push('import UIKit');
 lines.push('');
 
 // ---- Colors ----
 lines.push('// MARK: - Colors');
-lines.push('extension Color {');
-
 const color = tokens.color;
-const colorProps = [];
-Object.keys(color).forEach((group) => {
-  Object.keys(color[group]).forEach((variant) => {
-    const name = group + capitalize(variant);
-    colorProps.push(`    static let ${name} = ${colorExpr(color[group][variant])}`);
-  });
+const lightColor = tokens.themes.light.color;
+const properties = Object.entries(color).flatMap(([group, variants]) =>
+  Object.entries(variants).map(([variant, dark]) => {
+    const light = lightColor[group]?.[variant];
+    if (!light) throw new Error(`Missing light color: ${group}.${variant}`);
+    return { name: group + capitalize(variant), light, dark };
+  })
+);
+lines.push('enum AppPalette {');
+properties.forEach(({ name, light, dark }) => {
+  lines.push(`    static let ${name} = UIColor { traits in`);
+  lines.push(`        traits.userInterfaceStyle == .dark ? ${uiColorExpr(dark)} : ${uiColorExpr(light)}`);
+  lines.push('    }');
 });
-lines.push(colorProps.join('\n'));
+lines.push('}');
+lines.push('');
+lines.push('extension Color {');
+properties.forEach(({ name }) => lines.push(`    static let ${name} = Color(uiColor: AppPalette.${name})`));
 lines.push('');
 lines.push('    /// Initialize a Color from a hex string (3 or 6 digits, leading # optional).');
 lines.push('    init(hex: String) {');

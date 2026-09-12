@@ -3,5 +3,6 @@ import { defineConfig } from 'vite'
 export default defineConfig(({ mode }) => ({
   base: process.env.VITE_PUBLIC_BASE || (mode === 'production' ? '/shop/' : '/'),
   server: { port: 5175 },
+  resolve: { dedupe: ['vue'] },
   build: { target: 'es2015' }
 }))

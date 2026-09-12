@@ -11,6 +11,7 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var authStore: AuthStore
     @State private var showLogoutConfirm: Bool = false
+    @AppStorage(AppTheme.storageKey) private var themeValue = AppTheme.system.rawValue
 
     var body: some View {
         ScrollView {
@@ -34,6 +35,13 @@ struct SettingsView: View {
                         .padding(.leading, AppSpacing.xs)
                     MasterCard(padding: AppSpacing.md) {
                         VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                            NavigationLink { AppearanceSettingsView() } label: {
+                                settingRow(icon: "circle.lefthalf.filled", title: "外观",
+                                           value: AppTheme(rawValue: themeValue)?.title ?? AppTheme.system.title,
+                                           tint: .accentDefault, showArrow: true)
+                            }
+                            .buttonStyle(.plain)
+                            Divider().background(Color.borderDivider)
                             settingRow(icon: "bell.badge", title: "消息通知", value: "已开启",
                                        tint: .accentDefault, showArrow: true)
                             Divider().background(Color.borderDivider)
@@ -84,7 +92,7 @@ struct SettingsView: View {
         .background(Color.bgPrimary)
         .navigationTitle("设置")
         .navigationBarTitleDisplayMode(.large)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+
         .alert("确认退出登录？", isPresented: $showLogoutConfirm) {
             Button("取消", role: .cancel) {}
             Button("退出", role: .destructive) {

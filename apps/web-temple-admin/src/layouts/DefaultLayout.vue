@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -178,6 +179,7 @@ onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
         </div>
 
         <div class="ax-admin-header__right">
+          <AppearanceSelector />
           <el-tag class="ax-admin-header__meta" type="warning" effect="plain" round>{{ auth.templeName }}</el-tag>
           <el-dropdown trigger="click">
             <button class="ax-admin-user header-user" type="button">

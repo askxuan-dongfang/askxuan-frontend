@@ -39,7 +39,7 @@ struct DFPrimaryButton: View {
             .frame(height: 44)
             .background(
                 LinearGradient(
-                    colors: [Color.brandDefault, Color(hex: "D97B4A")],
+                    colors: [Color.brandDefault, Color.brandLight],
                     startPoint: .leading,
                     endPoint: .trailing
                 )

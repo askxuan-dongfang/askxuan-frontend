@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ADMIN_THEME_EVENT } from '../../../../../packages/admin-ui/theme'
+import { withAdminChartTheme } from '../../../../../packages/admin-ui/chart-theme'
 // 商城报表 - ECharts 渲染销售趋势 + Top 商品
 import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
@@ -64,7 +66,7 @@ function renderTrend() {
     trendChart = echarts.init(trendChartRef.value)
   }
   const trend = report.value?.salesTrend || []
-  trendChart.setOption({
+  trendChart.setOption(withAdminChartTheme({
     tooltip: { trigger: 'axis' },
     legend: { data: ['销售额', '订单数'], textStyle: { color: '#6A5A4A' } },
     grid: { left: 60, right: 50, top: 40, bottom: 40 },
@@ -124,7 +126,7 @@ function renderTrend() {
         barWidth: '40%'
       }
     ]
-  })
+  }))
 }
 
 function renderTop() {
@@ -133,7 +135,7 @@ function renderTop() {
     topChart = echarts.init(topChartRef.value)
   }
   const top = (report.value?.topProducts || []).slice(0, 10).reverse()
-  topChart.setOption({
+  topChart.setOption(withAdminChartTheme({
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     grid: { left: 160, right: 40, top: 20, bottom: 30 },
     xAxis: {
@@ -169,7 +171,7 @@ function renderTop() {
         }
       }
     ]
-  })
+  }))
 }
 
 function handleResize() {
@@ -189,15 +191,23 @@ function disposeCharts() {
 }
 
 onMounted(async () => {
+  window.addEventListener(ADMIN_THEME_EVENT, refreshChartAppearance)
   dateRange.value = defaultRange()
   await loadReport()
   window.addEventListener('resize', handleResize)
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener(ADMIN_THEME_EVENT, refreshChartAppearance)
   window.removeEventListener('resize', handleResize)
   disposeCharts()
 })
+
+function refreshChartAppearance() {
+  for (const chart of [trendChart, topChart]) {
+    if (chart && !chart.isDisposed()) chart.setOption(withAdminChartTheme(chart.getOption()))
+  }
+}
 </script>
 
 <template>

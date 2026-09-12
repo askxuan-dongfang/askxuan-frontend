@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
@@ -211,6 +212,7 @@ onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
         </div>
 
         <div class="ax-admin-header__right">
+          <AppearanceSelector />
           <el-dropdown @command="onCommand">
             <button class="ax-admin-user" type="button">
               <el-avatar :size="32" :src="auth.userInfo?.avatar">{{ avatarText }}</el-avatar>

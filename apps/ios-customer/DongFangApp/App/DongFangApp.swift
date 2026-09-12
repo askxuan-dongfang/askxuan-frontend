@@ -11,13 +11,14 @@ import SwiftUI
 @main
 struct DongFangApp: App {
     @StateObject private var authStore = AuthStore.shared
+    @AppStorage(AppTheme.storageKey) private var themeValue = AppTheme.system.rawValue
 
     init() {
         APIClient.shared.configureBaseURL(AppConfig.baseURL)
         APIClient.shared.tokenProvider = {
             KeychainHelper.readString(service: AppConfig.keychainService, key: AppConfig.tokenKey)
         }
-        configureAppearance()
+        AppTheme.configureAppearance()
         configureSmokeCredentials()
         // 初始化 OpenIM SDK（App 启动一次）
         OpenIMManager.shared.initialize()
@@ -30,32 +31,9 @@ struct DongFangApp: App {
         WindowGroup {
             MainTabView()
             .environmentObject(authStore)
-            .preferredColorScheme(.dark)
+            .preferredColorScheme(AppTheme(rawValue: themeValue)?.colorScheme)
+                .tint(Color.brandDefault)
         }
-    }
-
-    /// 统一配置全局外观（TabBar / NavigationBar 深色化）
-    /// 注意：在 App.init() 阶段不能使用 UIColor(Color.bgPrimary)（SwiftUI Color 尚未就绪），
-    /// 需用直接 UIColor 值（与 Tokens.swift 中 bgPrimary 的 hex 1C1210 对齐）。
-    private func configureAppearance() {
-        let bgPrimaryUIColor = UIColor(red: 28/255, green: 18/255, blue: 16/255, alpha: 1.0)
-        let accentUIColor = UIColor(red: 200/255, green: 169/255, blue: 110/255, alpha: 1.0)
-
-        let tabAppearance = UITabBarAppearance()
-        tabAppearance.configureWithOpaqueBackground()
-        tabAppearance.backgroundColor = bgPrimaryUIColor.withAlphaComponent(0.95)
-        UITabBar.appearance().standardAppearance = tabAppearance
-        UITabBar.appearance().scrollEdgeAppearance = tabAppearance
-
-        let navAppearance = UINavigationBarAppearance()
-        navAppearance.configureWithOpaqueBackground()
-        navAppearance.backgroundColor = bgPrimaryUIColor
-        navAppearance.titleTextAttributes = [
-            .foregroundColor: accentUIColor,
-            .font: UIFont.systemFont(ofSize: 17, weight: .semibold)
-        ]
-        UINavigationBar.appearance().standardAppearance = navAppearance
-        UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
     }
 
     private func configureSmokeCredentials() {

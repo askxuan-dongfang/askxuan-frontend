@@ -227,23 +227,23 @@ function goBooking(id: string) {
   font-family: var(--font-serif);
   font-size: var(--type-size-reading);
   font-weight: var(--type-weight-semibold);
-  color: #2a1e1a;
+  color: var(--admin-text);
 }
 .todo-section {
   margin-bottom: 16px;
 }
 .todo-sub {
   font-size: var(--type-size-caption);
-  color: #8a7a6a;
+  color: var(--admin-text-secondary);
   margin-bottom: 8px;
   padding-left: 2px;
 }
 .todo-empty {
   font-size: var(--type-size-label);
-  color: #b0a090;
+  color: var(--admin-text-secondary);
   padding: 12px 0;
   text-align: center;
-  background: #faf6f0;
+  background: var(--admin-surface-muted);
   border-radius: 8px;
 }
 .todo-item {
@@ -256,20 +256,20 @@ function goBooking(id: string) {
   transition: background 0.15s;
 }
 .todo-item:hover {
-  background: #faf6f0;
+  background: var(--admin-surface-muted);
 }
 .todo-no {
   font-size: var(--type-size-body);
-  color: #2a1e1a;
+  color: var(--admin-text);
   font-weight: 500;
 }
 .todo-meta {
   font-size: var(--type-size-caption);
-  color: #8a7a6a;
+  color: var(--admin-text-secondary);
   margin-top: 2px;
 }
 .todo-arrow {
-  color: #c8a96e;
+  color: var(--admin-accent);
 }
 
 @media (max-width: 991px) {

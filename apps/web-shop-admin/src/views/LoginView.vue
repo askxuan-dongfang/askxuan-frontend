@@ -111,7 +111,7 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1c1210 0%, #2a1e1a 40%, #3d2b24 70%, #1c1210 100%);
+  background: linear-gradient(135deg, var(--admin-bg) 0%, var(--admin-surface) 40%, var(--admin-surface-hover) 70%, var(--admin-bg) 100%);
   position: relative;
   overflow: hidden;
 }
@@ -119,8 +119,8 @@ async function handleLogin() {
   content: '';
   position: absolute;
   inset: -50%;
-  background: radial-gradient(ellipse at 30% 20%, rgba(200, 169, 110, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 80%, rgba(196, 90, 60, 0.06) 0%, transparent 50%);
+  background: radial-gradient(ellipse at 30% 20%, rgba(var(--admin-accent-rgb),0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(var(--admin-primary-rgb),0.06) 0%, transparent 50%);
   animation: loginBgMove 20s ease-in-out infinite alternate;
 }
 @keyframes loginBgMove {
@@ -131,7 +131,7 @@ async function handleLogin() {
 /* 装饰圆环 */
 .login-decoration {
   position: absolute;
-  border: 1px solid rgba(200, 169, 110, 0.08);
+  border: 1px solid rgba(var(--admin-accent-rgb),0.08);
   border-radius: 50%;
   z-index: 0;
 }
@@ -144,9 +144,9 @@ async function handleLogin() {
   position: relative;
   width: 100%;
   max-width: 400px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--admin-surface-rgb), 0.92);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(200, 169, 110, 0.2);
+  border: 1px solid rgba(var(--admin-accent-rgb),0.2);
   border-radius: 16px;
   padding: 48px 40px;
   z-index: 1;
@@ -161,62 +161,62 @@ async function handleLogin() {
   height: 64px;
   border-radius: 12px;
   object-fit: cover;
-  border: 1px solid rgba(200, 169, 110, 0.28);
+  border: 1px solid rgba(var(--admin-accent-rgb),0.28);
   margin: 0 auto 12px;
   display: block;
 }
 .login-logo h1 {
   font-family: var(--font-serif);
   font-size: var(--type-size-hero);
-  color: #d4b36d;
+  color: var(--admin-accent);
   letter-spacing: 6px;
   margin: 0 0 8px;
 }
 .login-logo p {
   font-size: var(--type-size-body);
-  color: #d9c9b5;
+  color: var(--admin-accent);
   letter-spacing: 3px;
   margin: 0;
 }
 
-/* 表单暗色适配 */
+/* 表单外观 */
 .login-form :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(197, 176, 151, 0.2);
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border);
   box-shadow: none;
 }
 .login-form :deep(.el-input__wrapper:hover) {
-  border-color: rgba(200, 169, 110, 0.4);
+  border-color: rgba(var(--admin-accent-rgb),0.4);
 }
 .login-form :deep(.el-input__wrapper.is-focus) {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(200, 169, 110, 0.1) !important;
+  box-shadow: 0 0 0 3px rgba(var(--admin-accent-rgb),0.1) !important;
 }
 .login-form :deep(.el-input__inner) {
-  color: #e8e0d8;
+  color: var(--admin-accent);
 }
 .login-form :deep(.el-input__inner::placeholder) {
-  color: rgba(232, 224, 216, 0.72);
+  color: var(--admin-text-secondary);
 }
 .login-form :deep(.el-input__prefix-inner) {
-  color: rgba(232, 224, 216, 0.72);
+  color: var(--admin-text-secondary);
 }
 
-/* 登录按钮 - 朱砂红渐变 */
+/* 登录按钮 - 品牌渐变 */
 .login-btn {
   width: 100%;
   height: 48px;
   font-size: var(--type-size-reading);
   font-weight: var(--type-weight-semibold);
   letter-spacing: 4px;
-  background: linear-gradient(135deg, var(--primary) 0%, #d47a5e 100%);
+  background: linear-gradient(135deg, var(--admin-primary) 0%, var(--admin-primary-hover) 100%);
   border: none;
   border-radius: 8px;
   margin-top: 8px;
 }
 .login-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(196, 90, 60, 0.4);
+  box-shadow: 0 4px 20px rgba(var(--admin-primary-rgb),0.4);
 }
 
 </style>

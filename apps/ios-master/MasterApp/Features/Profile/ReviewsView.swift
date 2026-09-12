@@ -105,7 +105,7 @@ struct ReviewsView: View {
         .background(Color.bgPrimary)
         .navigationTitle("评价管理")
         .navigationBarTitleDisplayMode(.large)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+
         .task { await viewModel.load() }
         .refreshable { await viewModel.load() }
     }

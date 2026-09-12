@@ -131,7 +131,7 @@ struct EarningsView: View {
         .background(Color.bgPrimary)
         .navigationTitle("收益中心")
         .navigationBarTitleDisplayMode(.large)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink {
@@ -246,7 +246,7 @@ struct EarningsView: View {
             .background(Color.bgPrimary)
             .navigationTitle("申请提现")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("取消") { viewModel.showWithdrawSheet = false }
@@ -254,7 +254,7 @@ struct EarningsView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+
     }
 
     // MARK: - 趋势

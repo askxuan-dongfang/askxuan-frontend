@@ -1,5 +1,6 @@
 <template>
   <div class="login">
+    <AppearanceSelector class="ax-appearance-login" />
     <div class="login__bg">
       <div class="login__orb login__orb--1"></div>
       <div class="login__orb login__orb--2"></div>
@@ -29,6 +30,7 @@
 </template>
 
 <script setup lang="ts">
+import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { User, Lock } from '@element-plus/icons-vue'
@@ -114,8 +116,8 @@ async function onSubmit() {
 .login__grid {
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(rgba(200, 169, 110, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(200, 169, 110, 0.04) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(var(--admin-accent-rgb),0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--admin-accent-rgb),0.04) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 .login__panel {
@@ -123,11 +125,11 @@ async function onSubmit() {
   z-index: 1;
   width: 400px;
   padding: 44px 40px 36px;
-  background: rgba(42, 30, 26, 0.92);
+  background: rgba(var(--admin-surface-rgb), 0.92);
   backdrop-filter: blur(12px);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-xl);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 60px rgba(var(--admin-shadow-rgb), 0.16);
 }
 .login__brand {
   text-align: center;
@@ -141,19 +143,19 @@ async function onSubmit() {
   border-radius: var(--radius-md);
   object-fit: cover;
   border: 1px solid var(--color-border-strong);
-  box-shadow: 0 6px 20px rgba(181, 69, 58, 0.4);
+  box-shadow: 0 6px 20px rgba(var(--admin-primary-rgb), 0.2);
 }
 .login__title {
   margin: 0;
   font-size: var(--type-size-hero);
   font-weight: var(--type-weight-semibold);
-  color: #f0e6da;
+  color: var(--admin-text);
   letter-spacing: 4px;
 }
 .login__subtitle {
   margin: 6px 0 0;
   font-size: var(--type-size-label);
-  color: #c5b097;
+  color: var(--admin-text-secondary);
   letter-spacing: 2px;
 }
 .login__submit {
@@ -161,7 +163,7 @@ async function onSubmit() {
   height: 44px;
   font-size: var(--type-size-reading);
   letter-spacing: 6px;
-  background: linear-gradient(135deg, var(--color-brand), var(--color-cinnabar));
+  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-dark));
   border: none;
 }
 .login__hint {

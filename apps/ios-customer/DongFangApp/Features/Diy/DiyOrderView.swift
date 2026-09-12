@@ -115,7 +115,7 @@ struct DiyOrderView: View {
         }
         .background(
             RadialGradient(
-                colors: [Color(hex: "4B4132"), Color(hex: "302920"), Color.bgSecondary],
+                colors: [Color.bgElevated, Color.bgTertiary, Color.bgSecondary],
                 center: .center,
                 startRadius: 24,
                 endRadius: 280

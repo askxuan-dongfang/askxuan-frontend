@@ -148,6 +148,13 @@ struct LoginView: View {
                     }
                 }
 
+                NavigationLink { AppearanceSettingsView() } label: {
+                    Label("外观", systemImage: "circle.lefthalf.filled")
+                        .font(AppTypography.caption)
+                        .foregroundStyle(Color.accentDefault)
+                        .padding(.vertical, 8)
+                }
+
                 Text("使用管理台账号登录（role=master）")
                     .font(.micro)
                     .foregroundStyle(.textTertiary)
@@ -159,7 +166,7 @@ struct LoginView: View {
         .background(Color.bgPrimary)
         .navigationTitle("法师登录")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+
     }
 }
 

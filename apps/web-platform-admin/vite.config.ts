@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => ({
   base: process.env.VITE_PUBLIC_BASE || (mode === 'production' ? '/admin/' : '/'),
   plugins: [vue()],
   resolve: {
+    dedupe: ['vue'],
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       '@askxuan/domain-status': fileURLToPath(new URL('../../packages/domain-status/src/index.ts', import.meta.url))

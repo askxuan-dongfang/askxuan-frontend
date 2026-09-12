@@ -2,12 +2,25 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function () {
+        var preference = 'system';
+        try { var value = localStorage.getItem('askxuan-theme'); if (value === 'light' || value === 'dark' || value === 'system') preference = value; } catch (_) {}
+        var dark = preference === 'dark' || (preference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        var root = document.documentElement;
+        root.dataset.theme = dark ? 'dark' : 'light';
+        root.dataset.themePreference = preference;
+        root.classList.toggle('dark', dark);
+        root.style.colorScheme = dark ? 'dark' : 'light';
+      })();
+    </script>
+    <style>html{background:#1C1210;color:#F0E6DA}html[data-theme=light]{background:#F6F3EC;color:#253E36}</style>
     <link rel="icon" href="%BASE_URL%logos/logo-shop.png" type="image/png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>问玄东方 · 统一运营管理台</title>
   </head>
   <body>
-    <div id="app" style="font:16px system-ui;padding:40px;color:#65483b">正在进入统一运营管理台… <a href="/admin/commerce/dashboard">点击继续</a></div>
+    <div id="app" style="font:16px system-ui;padding:40px;color:inherit">正在进入统一运营管理台… <a href="/admin/commerce/dashboard">点击继续</a></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

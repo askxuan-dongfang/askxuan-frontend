@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => ({
   base: process.env.VITE_PUBLIC_BASE || (mode === 'production' ? '/temple/' : '/'),
   plugins: [vue()],
   resolve: {
+    dedupe: ['vue'],
     alias: {
       '@': path.resolve(__dirname, 'src'),
       '@askxuan/domain-status': path.resolve(__dirname, '../../packages/domain-status/src/index.ts')

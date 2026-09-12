@@ -136,7 +136,7 @@ struct ChatView: View {
         .secondaryPage()
         .navigationTitle(conversation.peerName)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+
         .task { await viewModel.load() }
         .alert("消息发送失败", isPresented: Binding(
             get: { viewModel.errorMessage != nil },

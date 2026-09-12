@@ -17,8 +17,8 @@ struct AiReportUnlockRequest: Encodable { let reportId: Int64; let expectedPoint
 private struct ReportConversationResult: Decodable { let sessionId: Int64 }
 private struct ReportUnlockResult: Decodable { let unlocked: Bool }
 private struct ReportBalance: Decodable { let balance: Int64 }
-private let reportGreen = Color(red: 0.19, green: 0.36, blue: 0.28)
-private let reportPaper = Color(red: 0.97, green: 0.96, blue: 0.93)
+private let reportGreen = Color.textPrimary
+private let reportPaper = Color.bgPrimary
 
 struct AiTopicEntrances: View {
     @State private var topics: [AiTopic] = []
@@ -71,7 +71,7 @@ struct AiReportWorkspace: View {
     @State private var submittedRequest: AiReportCreateRequest?
     @State private var largeType = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    private var accent: Color { AiTopicPresentation(code: topic?.code ?? report?.skillCode ?? "fengshui").color }
+    private var accent: Color { .accentDefault }
     private var fieldsReady: Bool { (skill?.inputSchema.fields ?? []).allSatisfy { $0.valid(in: inputs) } }
     private var visibleFields: [AiSkillField] { (skill?.inputSchema.fields ?? []).filter { $0.visible(in: inputs) } }
     private var cleanInputs: [String: String] { Dictionary(uniqueKeysWithValues: visibleFields.compactMap { field in let value = (inputs[field.key] ?? "").trimmingCharacters(in: .whitespacesAndNewlines); return value.isEmpty ? nil : (field.key, value) }) }
@@ -90,7 +90,7 @@ struct AiReportWorkspace: View {
                 Text("问玄东方 · 以文化为镜，以生活为本").font(.system(size: 11)).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 25)
             }.padding(20).frame(maxWidth: 760).frame(maxWidth: .infinity)
         }
-        }.background(reportPaper).foregroundStyle(accent).preferredColorScheme(.light)
+        }.background(reportPaper).foregroundStyle(Color.textPrimary)
         .toolbar { ToolbarItem(placement: .topBarLeading) { Button("返回问事") { dismiss() } }; ToolbarItem(placement: .principal) { Text("问玄 · 专题").font(AppTypography.navigation) } }
         .navigationBarTitleDisplayMode(.inline)
         .task { await load(); await refreshBalance() }
@@ -124,13 +124,13 @@ struct AiReportWorkspace: View {
         }.padding(.vertical, 23)
     }
     private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 16, content: content).padding(22).frame(maxWidth: .infinity, alignment: .leading).background(Color.white.opacity(0.9)).clipShape(RoundedRectangle(cornerRadius: 20)).overlay(RoundedRectangle(cornerRadius: 20).stroke(accent.opacity(0.10)))
+        VStack(alignment: .leading, spacing: 16, content: content).padding(22).frame(maxWidth: .infinity, alignment: .leading).background(Color.bgSecondary.opacity(0.9)).clipShape(RoundedRectangle(cornerRadius: 20)).overlay(RoundedRectangle(cornerRadius: 20).stroke(accent.opacity(0.10)))
     }
     private func chapters(_ list: [String]) -> some View {
         ForEach(Array(list.enumerated()), id: \.offset) { index, title in HStack(spacing: 16) { Text(String(format: "%02d", index + 1)).font(AppTypography.title(14)).opacity(0.5); Text(title).font(.system(size: 14)); Spacer() }.padding(.vertical, 5) }
     }
     private func primary(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Text(busy ? "正在处理…" : title).font(.system(size: 14, weight: .medium)).frame(maxWidth: .infinity).padding(16).background(accent).foregroundStyle(.white).clipShape(RoundedRectangle(cornerRadius: 12)) }.disabled(busy)
+        Button(action: action) { Text(busy ? "正在处理…" : title).font(.system(size: 14, weight: .medium)).frame(maxWidth: .infinity).padding(16).background(Color.brandDefault).foregroundStyle(Color.textOnBrand).clipShape(RoundedRectangle(cornerRadius: 12)) }.disabled(busy)
     }
     @ViewBuilder private func topicBody(_ topic: AiTopic) -> some View {
         hero(topic.title, subtitle: topic.subtitle)
@@ -204,7 +204,7 @@ struct AiReportWorkspace: View {
                             if line.hasPrefix("#") { Button(line.trimmingCharacters(in: CharacterSet(charactersIn: "# "))) { withAnimation(reduceMotion ? nil : .easeInOut) { proxy.scrollTo("chapter-\(index)", anchor: .top) } }.font(.subheadline).padding(.vertical, 5) }
                         }
                     }
-                    AiMarkdownText(text: r.content, large: largeType).foregroundStyle(Color(red: 0.26, green: 0.31, blue: 0.25))
+                    AiMarkdownText(text: r.content, large: largeType).foregroundStyle(Color.textPrimary)
                     Text("✦ 让解读回到生活，让行动带来答案。").font(AppTypography.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 20);
  ShareLink(item: r.title + "\n\n" + r.content) { Label("保存或分享报告", systemImage: "square.and.arrow.up") }; primary("围绕这份报告继续问事 →") { Task { await followup(r) } }; Text("自动带入报告内容，聊天按账户正常额度使用。").font(.footnote).foregroundStyle(.secondary) }
             } else {
@@ -254,7 +254,7 @@ struct AiReportLibrary: View {
                 Text("每一次探索，都有迹可循。").font(AppTypography.section).padding(.vertical, 20)
                 if !error.isEmpty { Text(error).foregroundStyle(.red); Button("重试") { Task { await load() } } }
                 if reports.isEmpty && !busy { Text("还没有专题报告，从一个关心的问题开始。").foregroundStyle(.secondary).padding(.vertical, 40) }
-                ForEach(reports) { report in NavigationLink { AiReportWorkspace(reportID: report.id) } label: { VStack(alignment: .leading, spacing: 10) { HStack { AiTopicArtwork(code: report.skillCode).frame(width: 62, height: 52); Text(report.title).font(AppTypography.card); Spacer(); Image(systemName: "arrow.up.right") }; Text(report.question).font(.subheadline).lineLimit(2); Text(report.status == "ready" ? "查看报告" : report.status == "failed" ? "生成失败，可重试" : "生成中").font(AppTypography.caption).foregroundStyle(.secondary) }.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(.white).clipShape(RoundedRectangle(cornerRadius: 18)) } }
+                ForEach(reports) { report in NavigationLink { AiReportWorkspace(reportID: report.id) } label: { VStack(alignment: .leading, spacing: 10) { HStack { AiTopicArtwork(code: report.skillCode).frame(width: 62, height: 52); Text(report.title).font(AppTypography.card); Spacer(); Image(systemName: "arrow.up.right") }; Text(report.question).font(.subheadline).lineLimit(2); Text(report.status == "ready" ? "查看报告" : report.status == "failed" ? "生成失败，可重试" : "生成中").font(AppTypography.caption).foregroundStyle(.secondary) }.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 18)) } }
                 if busy { ProgressView() } else if more && !reports.isEmpty { Button("加载更多") { Task { await load() } } }
             }.padding(20)
         }.background(reportPaper).foregroundStyle(reportGreen).navigationTitle("我的报告")

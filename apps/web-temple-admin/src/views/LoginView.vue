@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
@@ -46,6 +47,7 @@ async function handleLogin() {
 
 <template>
   <div class="login-page">
+    <AppearanceSelector class="ax-appearance-login" />
     <div class="login-bg"></div>
     <div class="login-card df-card">
       <div class="login-brand">
@@ -107,15 +109,15 @@ async function handleLogin() {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #1c1210;
+  background: var(--admin-bg);
 }
 .login-bg {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 20% 20%, rgba(196, 90, 60, 0.35), transparent 45%),
-    radial-gradient(circle at 80% 70%, rgba(200, 169, 110, 0.25), transparent 45%),
-    linear-gradient(135deg, #1c1210 0%, #2a1e1a 100%);
+    radial-gradient(circle at 20% 20%, rgba(var(--admin-primary-rgb),0.35), transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(var(--admin-accent-rgb),0.25), transparent 45%),
+    linear-gradient(135deg, var(--admin-bg) 0%, var(--admin-surface) 100%);
 }
 .login-bg::after {
   content: '禅';
@@ -124,7 +126,7 @@ async function handleLogin() {
   bottom: -80px;
   font-family: var(--font-serif);
   font-size: 360px;
-  color: rgba(200, 169, 110, 0.06);
+  color: rgba(var(--admin-accent-rgb),0.06);
   font-weight: var(--type-weight-semibold);
   line-height: 1;
 }
@@ -146,23 +148,23 @@ async function handleLogin() {
   height: 44px;
   border-radius: 10px;
   object-fit: cover;
-  border: 1px solid #e8d5b8;
+  border: 1px solid var(--admin-border-strong);
   flex-shrink: 0;
 }
 .login-title {
   font-family: var(--font-serif);
   font-size: var(--type-size-page);
   font-weight: var(--type-weight-semibold);
-  color: #2a1e1a;
+  color: var(--admin-text);
 }
 .login-sub {
   font-size: var(--type-size-label);
-  color: #8a7a6a;
+  color: var(--admin-text-secondary);
   margin-top: 2px;
 }
 .login-desc {
   font-size: var(--type-size-label);
-  color: #6a5a4a;
+  color: var(--admin-text-secondary);
   margin: 14px 0 24px;
 }
 .login-btn {
@@ -175,22 +177,22 @@ async function handleLogin() {
 .login-tip {
   margin-top: 18px;
   padding: 10px 12px;
-  background: #faf6f0;
-  border: 1px dashed #e8d5b8;
+  background: var(--admin-surface-muted);
+  border: 1px dashed var(--admin-border-strong);
   border-radius: 8px;
   font-size: var(--type-size-caption);
-  color: #8a7a6a;
+  color: var(--admin-text-secondary);
   display: flex;
   align-items: center;
   gap: 6px;
 }
 .login-tip b {
-  color: #c45a3c;
+  color: var(--admin-primary);
 }
 .login-footer {
   position: absolute;
   bottom: 20px;
-  color: rgba(240, 230, 218, 0.4);
+  color: var(--admin-text-secondary);
   font-size: var(--type-size-caption);
   z-index: 1;
 }

@@ -221,8 +221,8 @@ onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
 }
 
 .icon-button:hover {
-  color: #f0e6da;
-  background: rgba(200, 169, 110, 0.08);
+  color: var(--admin-text);
+  background: rgba(var(--admin-accent-rgb),0.08);
 }
 
 .page-enter-active,

@@ -65,6 +65,7 @@ struct ProfileView: View {
     private let systemItems: [(icon: String, title: String)] = [
         ("person", "个人资料"),
         ("bell", "消息通知"),
+        ("circle.lefthalf.filled", "外观"),
         ("lock.shield", "账号安全"),
         ("info.circle", "关于问玄东方")
     ]
@@ -124,6 +125,13 @@ struct ProfileView: View {
                             )
                         )
                         .cornerRadius(AppRadius.md)
+                }
+
+                NavigationLink { AppearanceSettingsView() } label: {
+                    Label("外观", systemImage: "circle.lefthalf.filled")
+                        .font(AppTypography.body)
+                        .foregroundStyle(Color.accentDefault)
+                        .padding(.vertical, 8)
                 }
 
                 Text("未注册手机号将自动创建账号")
@@ -497,6 +505,7 @@ struct ProfileView: View {
         switch title {
         case "个人资料": ProfileEditView()
         case "消息通知": NotificationSettingsView()
+        case "外观": AppearanceSettingsView()
         case "账号安全": SecurityView()
         default: AboutView()
         }

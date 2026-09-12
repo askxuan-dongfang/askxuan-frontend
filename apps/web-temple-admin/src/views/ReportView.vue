@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ADMIN_THEME_EVENT } from '../../../../packages/admin-ui/theme'
+import { withAdminChartTheme } from '../../../../packages/admin-ui/chart-theme'
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { Refresh, Calendar, Wallet, DataAnalysis, CircleCheck } from '@element-plus/icons-vue'
@@ -53,7 +55,7 @@ function renderCharts() {
   if (trendRef.value) {
     trendChart ??= echarts.init(trendRef.value)
     const trend = report.value.bookingTrend || []
-    trendChart.setOption({
+    trendChart.setOption(withAdminChartTheme({
       tooltip: { trigger: 'axis' },
       legend: { data: ['预约数', '功德金'], right: 0, top: 0 },
       grid: { left: 48, right: 56, top: 36, bottom: 32 },
@@ -66,13 +68,13 @@ function renderCharts() {
         { name: '预约数', type: 'bar', data: trend.map((t) => t.bookings), itemStyle: { color: '#C45A3C', borderRadius: [4, 4, 0, 0] } },
         { name: '功德金', type: 'line', yAxisIndex: 1, smooth: true, data: trend.map((t) => t.revenue), itemStyle: { color: '#C8A96E' }, lineStyle: { width: 2 } }
       ]
-    })
+    }))
   }
   // 服务分布
   if (pieRef.value) {
     pieChart ??= echarts.init(pieRef.value)
     const dist = report.value.serviceDistribution || []
-    pieChart.setOption({
+    pieChart.setOption(withAdminChartTheme({
       tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
       legend: { bottom: 0, type: 'scroll' },
       series: [
@@ -87,13 +89,13 @@ function renderCharts() {
           color: ['#C45A3C', '#C8A96E', '#D4A843', '#5B8C5A', '#B5453A', '#8A7A6A']
         }
       ]
-    })
+    }))
   }
   // 法师排行
   if (barRef.value) {
     barChart ??= echarts.init(barRef.value)
     const rank = (report.value.masterRanking || []).slice().reverse()
-    barChart.setOption({
+    barChart.setOption(withAdminChartTheme({
       tooltip: { trigger: 'axis' },
       grid: { left: 80, right: 24, top: 16, bottom: 24 },
       xAxis: { type: 'value', splitLine: { lineStyle: { color: '#F0E9E1' } } },
@@ -107,7 +109,7 @@ function renderCharts() {
           label: { show: true, position: 'right', formatter: (p: any) => formatMoney(p.value), color: '#6A5A4A', fontSize: 'var(--type-size-micro)' }
         }
       ]
-    })
+    }))
   }
 }
 
@@ -127,13 +129,21 @@ function disposeCharts() {
 }
 
 onMounted(() => {
+  window.addEventListener(ADMIN_THEME_EVENT, refreshChartAppearance)
   load()
   window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => {
+  window.removeEventListener(ADMIN_THEME_EVENT, refreshChartAppearance)
   window.removeEventListener('resize', onResize)
   disposeCharts()
 })
+
+function refreshChartAppearance() {
+  for (const chart of [trendChart, pieChart, barChart]) {
+    if (chart && !chart.isDisposed()) chart.setOption(withAdminChartTheme(chart.getOption()))
+  }
+}
 </script>
 
 <template>
@@ -207,7 +217,7 @@ onBeforeUnmount(() => {
   font-family: var(--font-serif);
   font-size: var(--type-size-control);
   font-weight: var(--type-weight-semibold);
-  color: #2a1e1a;
+  color: var(--admin-text);
   margin-bottom: 12px;
 }
 .chart-box {

@@ -145,7 +145,7 @@ struct BlessingTaskDetailView: View {
         .background(Color.bgPrimary)
         .navigationTitle("任务详情")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+
         .task { await viewModel.load() }
         .alert("提示", isPresented: Binding(
             get: { viewModel.successMessage != nil },

@@ -96,7 +96,7 @@ struct DiyBraceletView: View {
             .padding(.top, 6)
         }
         .padding(20)
-        .background(RadialGradient(colors: [Color(hex: "4C4434"), Color(hex: "2F2921"), Color.bgSecondary], center: .center, startRadius: 30, endRadius: 350))
+        .background(RadialGradient(colors: [Color.bgElevated, Color.bgTertiary, Color.bgSecondary], center: .center, startRadius: 30, endRadius: 350))
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .overlay { RoundedRectangle(cornerRadius: 24).stroke(Color.borderStrong, lineWidth: 1) }
     }
@@ -149,7 +149,7 @@ struct DiyBraceletView: View {
         VStack(alignment: .leading, spacing: 0) {
             DiyMiniBracelet(slots: slots(for: design), fallbackCount: 0)
                 .frame(height: 152)
-                .background(RadialGradient(colors: [Color(hex: "4B4132"), Color(hex: "302920")], center: .center, startRadius: 0, endRadius: 130))
+                .background(RadialGradient(colors: [Color.bgElevated, Color.bgTertiary], center: .center, startRadius: 0, endRadius: 130))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 8) {
                 Text(design.name).font(.subheadline.weight(.semibold)).foregroundStyle(Color.textPrimary).lineLimit(1)

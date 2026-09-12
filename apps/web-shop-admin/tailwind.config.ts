@@ -13,16 +13,16 @@ const config: Config = {
       colors: {
         ...tokens.colors,
         ink: {
-          DEFAULT: '#2A1E1A',
-          medium: '#6A5A4A',
-          light: '#9A8A7A'
+          DEFAULT: 'var(--admin-text)',
+          medium: 'var(--admin-text-secondary)',
+          light: 'var(--admin-text-tertiary)'
         },
         canvas: {
-          DEFAULT: '#F5F0EB',
-          card: '#FFFFFF',
-          subtle: '#FAFAF8'
+          DEFAULT: 'var(--admin-bg)',
+          card: 'var(--admin-surface)',
+          subtle: 'var(--admin-surface-muted)'
         },
-        line: '#E8E0D8'
+        line: 'var(--admin-border)'
       }
     }
   },

@@ -83,6 +83,8 @@
 </template>
 
 <script setup lang="ts">
+import { ADMIN_THEME_EVENT } from '../../../../../packages/admin-ui/theme'
+import { withAdminChartTheme } from '../../../../../packages/admin-ui/chart-theme'
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { Refresh } from '@element-plus/icons-vue'
@@ -116,7 +118,7 @@ function renderPie() {
   pieChart = null
   if (!pieRef.value || !overview.value) return
   pieChart = echarts.init(pieRef.value)
-  pieChart.setOption({
+  pieChart.setOption(withAdminChartTheme({
     tooltip: { trigger: 'item' },
     legend: { bottom: 0, textStyle: { color: '#C5B097' } },
     series: [
@@ -134,7 +136,7 @@ function renderPie() {
         ]
       }
     ]
-  })
+  }))
 }
 
 async function loadData() {
@@ -165,13 +167,21 @@ function onResize() {
   pieChart?.resize()
 }
 onMounted(() => {
+  window.addEventListener(ADMIN_THEME_EVENT, refreshChartAppearance)
   loadData()
   window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => {
+  window.removeEventListener(ADMIN_THEME_EVENT, refreshChartAppearance)
   window.removeEventListener('resize', onResize)
   pieChart?.dispose()
 })
+
+function refreshChartAppearance() {
+  for (const chart of [pieChart]) {
+    if (chart && !chart.isDisposed()) chart.setOption(withAdminChartTheme(chart.getOption()))
+  }
+}
 </script>
 
 <style scoped>

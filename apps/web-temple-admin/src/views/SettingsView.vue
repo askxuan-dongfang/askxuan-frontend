@@ -102,12 +102,12 @@ function clearCache() {
   font-family: var(--font-serif);
   font-size: var(--type-size-control);
   font-weight: var(--type-weight-semibold);
-  color: #2a1e1a;
+  color: var(--admin-text);
   margin-bottom: 8px;
 }
 .section-desc {
   font-size: var(--type-size-caption);
-  color: #8a7a6a;
+  color: var(--admin-text-secondary);
   margin: 0 0 16px;
   line-height: 1.6;
 }

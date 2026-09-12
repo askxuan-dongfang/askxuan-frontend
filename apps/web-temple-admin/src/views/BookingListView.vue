@@ -151,10 +151,10 @@ onMounted(load)
 }
 .muted {
   font-size: var(--type-size-caption);
-  color: #8a7a6a;
+  color: var(--admin-text-secondary);
 }
 .price {
-  color: #c45a3c;
+  color: var(--admin-primary);
   font-weight: var(--type-weight-semibold);
 }
 @media (max-width: 767px) {
