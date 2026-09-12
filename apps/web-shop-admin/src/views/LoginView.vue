@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
 // 商城运营登录页 - 禅意暗色背景 + 居中玻璃态卡片
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -9,7 +10,6 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
-const logoUrl = `${import.meta.env.BASE_URL}logos/logo-shop.png`
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
@@ -57,7 +57,7 @@ async function handleLogin() {
 
     <div class="login-card">
       <div class="login-logo">
-        <img class="login-symbol" :src="logoUrl" alt="问玄东方商城管理台" />
+        <BrandLogo class="login-symbol" identity="shop" label="问玄东方商城管理台" />
         <h1>问玄东方</h1>
         <p>商城管理台</p>
       </div>
@@ -159,9 +159,6 @@ async function handleLogin() {
 .login-symbol {
   width: 64px;
   height: 64px;
-  border-radius: 12px;
-  object-fit: cover;
-  border: 1px solid rgba(var(--admin-accent-rgb),0.28);
   margin: 0 auto 12px;
   display: block;
 }

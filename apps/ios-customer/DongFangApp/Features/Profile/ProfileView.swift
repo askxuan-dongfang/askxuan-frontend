@@ -96,10 +96,9 @@ struct ProfileView: View {
             VStack(spacing: 16) {
                 Image("brand-logo")
                     .resizable()
-                    .scaledToFill()
-                    .frame(width: 88, height: 88)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.accentDefault.opacity(0.35), lineWidth: 1.5))
+                    .scaledToFit()
+                    .frame(width: 104, height: 104)
+                    .accessibilityHidden(true)
 
                 Text("问玄东方")
                     .font(AppTypography.title(24))

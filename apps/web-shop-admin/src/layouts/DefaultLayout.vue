@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
 import { computed } from 'vue'
 import { useAdminNavigation } from '../../../../packages/admin-ui/navigation'
 import { useRoute, useRouter } from 'vue-router'
@@ -23,7 +24,6 @@ import {
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-const logoUrl = `${import.meta.env.BASE_URL}logos/logo-shop.png`
 const { collapsed, mobile, drawerOpen, sidebarRef, toggleRef, toggleNavigation, closeNavigation } = useAdminNavigation(() => route.fullPath)
 
 const activeMenu = computed(() => {
@@ -65,7 +65,7 @@ async function handleLogout() {
 
     <aside id="admin-navigation" ref="sidebarRef" class="ax-admin-sidebar" tabindex="-1" :role="mobile && drawerOpen ? 'dialog' : undefined" :aria-modal="mobile && drawerOpen ? true : undefined" :aria-hidden="mobile && !drawerOpen ? true : undefined" :inert="mobile && !drawerOpen" aria-label="商城管理台主导航">
       <div class="ax-admin-logo">
-        <img class="ax-admin-logo__image" :src="logoUrl" alt="" />
+        <BrandLogo class="ax-admin-logo__image" identity="shop" label="问玄东方商城管理台" />
         <div class="ax-admin-logo__copy">
           <div class="ax-admin-logo__title">问玄东方</div>
           <div class="ax-admin-logo__subtitle">商城管理台</div>

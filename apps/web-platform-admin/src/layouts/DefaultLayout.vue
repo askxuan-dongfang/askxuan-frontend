@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
 import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import { computed } from 'vue'
 import { useAdminNavigation } from '../../../../packages/admin-ui/navigation'
@@ -10,7 +11,6 @@ import { useAuthStore } from '@/stores/auth'
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-const logoUrl = `${import.meta.env.BASE_URL}logos/logo-platform.png`
 const { collapsed, mobile, drawerOpen, sidebarRef, toggleRef, toggleNavigation, closeNavigation } = useAdminNavigation(() => route.fullPath)
 
 const allMenuGroups = [
@@ -135,7 +135,7 @@ async function onCommand(cmd: string) {
 
     <aside id="admin-navigation" ref="sidebarRef" class="ax-admin-sidebar" tabindex="-1" :role="mobile && drawerOpen ? 'dialog' : undefined" :aria-modal="mobile && drawerOpen ? true : undefined" :aria-hidden="mobile && !drawerOpen ? true : undefined" :inert="mobile && !drawerOpen" aria-label="平台管理台主导航">
       <div class="ax-admin-logo">
-        <img class="ax-admin-logo__image" :src="logoUrl" alt="" />
+        <BrandLogo class="ax-admin-logo__image" identity="platform" label="问玄东方统一运营管理台" />
         <div class="ax-admin-logo__copy">
           <div class="ax-admin-logo__title">问玄东方</div>
           <div class="ax-admin-logo__subtitle">统一运营管理台</div>

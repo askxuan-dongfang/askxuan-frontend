@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
 import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -9,7 +10,6 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
-const logoUrl = `${import.meta.env.BASE_URL}logos/logo-temple.png`
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
@@ -51,7 +51,7 @@ async function handleLogin() {
     <div class="login-bg"></div>
     <div class="login-card df-card">
       <div class="login-brand">
-        <img class="login-mark" :src="logoUrl" alt="问玄东方寺院管理台" />
+        <BrandLogo class="login-mark" identity="temple" label="问玄东方寺院管理台" />
         <div>
           <div class="login-title">问玄东方</div>
           <div class="login-sub">寺院管理台</div>
@@ -146,9 +146,6 @@ async function handleLogin() {
 .login-mark {
   width: 44px;
   height: 44px;
-  border-radius: 10px;
-  object-fit: cover;
-  border: 1px solid var(--admin-border-strong);
   flex-shrink: 0;
 }
 .login-title {

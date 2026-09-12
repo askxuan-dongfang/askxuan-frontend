@@ -94,13 +94,9 @@ struct LoginView: View {
                 VStack(spacing: AppSpacing.sm) {
                     Image("brand-logo")
                         .resizable()
-                        .scaledToFill()
-                        .frame(width: 72, height: 72)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(Color.accentDefault.opacity(0.35), lineWidth: 1)
-                        )
+                        .scaledToFit()
+                        .frame(width: 96, height: 96)
+                        .accessibilityHidden(true)
                         .padding(.bottom, AppSpacing.xs)
                     Text("问玄东方")
                         .font(.brandTitle)

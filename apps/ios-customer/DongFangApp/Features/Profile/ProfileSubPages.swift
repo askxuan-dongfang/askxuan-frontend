@@ -1718,10 +1718,9 @@ struct AboutView: View {
                 VStack(spacing: AppSpacing.sm) {
                     Image("brand-logo")
                         .resizable()
-                        .scaledToFill()
-                        .frame(width: 84, height: 84)
-                        .clipShape(Circle())
-                        .overlay(Circle().stroke(Color.accentDefault, lineWidth: 2))
+                        .scaledToFit()
+                        .frame(width: 96, height: 96)
+                        .accessibilityHidden(true)
                     Text("问玄东方")
                         .font(AppTypography.title(20))
                         .foregroundStyle(Color.accentDefault)

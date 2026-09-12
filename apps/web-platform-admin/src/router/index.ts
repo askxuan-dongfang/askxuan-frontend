@@ -209,7 +209,7 @@ const router = createRouter({
 // 路由守卫：未登录跳 /login
 router.beforeEach((to, _from, next) => {
   const auth = useAuthStore()
-  document.title = `${to.meta.title || ''} · 问玄东方平台总管理台`
+  document.title = `${to.meta.title || ''} · 问玄东方统一运营管理台`
   if (to.meta.public) {
     if (to.name === 'Login' && auth.isLogin) {
       next(defaultRoute(auth.roles))

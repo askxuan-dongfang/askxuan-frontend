@@ -115,6 +115,12 @@ struct HomeView: View {
     // MARK: - 顶部品牌 + 搜索
     private var headerSection: some View {
         HStack(spacing: 8) {
+            Image("brand-logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 28, height: 28)
+                .accessibilityHidden(true)
+
             Text("问玄东方")
                 .font(AppTypography.title(18))
                 .foregroundStyle(Color.accentDefault)

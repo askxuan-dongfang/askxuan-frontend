@@ -278,9 +278,6 @@ a:focus-visible,
   width: 36px;
   height: 36px;
   flex: 0 0 36px;
-  object-fit: cover;
-  border: 1px solid rgba(var(--admin-accent-rgb),0.3);
-  border-radius: 10px;
 }
 
 .ax-admin-logo__copy,

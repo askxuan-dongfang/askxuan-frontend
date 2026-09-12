@@ -9,7 +9,7 @@
 
     <div class="login__panel dfx-card">
       <div class="login__brand">
-        <img class="login__seal" :src="logoUrl" alt="问玄东方平台总管理台" />
+        <BrandLogo class="login__seal" identity="platform" label="问玄东方统一运营管理台" />
         <h1 class="login__title dfx-serif">问玄东方</h1>
         <p class="login__subtitle">统一运营管理台 · 平台与商城</p>
       </div>
@@ -30,6 +30,7 @@
 </template>
 
 <script setup lang="ts">
+import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
 import { isAdminSessionExpired } from '@/api/client'
 import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import { ref, reactive, onMounted } from 'vue'
@@ -42,7 +43,6 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
-const logoUrl = `${import.meta.env.BASE_URL}logos/logo-platform.png`
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
@@ -141,10 +141,6 @@ async function onSubmit() {
   width: 56px;
   height: 56px;
   margin-bottom: 16px;
-  border-radius: var(--radius-md);
-  object-fit: cover;
-  border: 1px solid var(--color-border-strong);
-  box-shadow: 0 6px 20px rgba(var(--admin-primary-rgb), 0.2);
 }
 .login__title {
   margin: 0;

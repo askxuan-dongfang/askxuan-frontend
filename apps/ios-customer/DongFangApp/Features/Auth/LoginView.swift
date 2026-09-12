@@ -85,23 +85,11 @@ struct LoginView: View {
     // MARK: - 品牌 Logo
     private var logoSection: some View {
         VStack(spacing: AppSpacing.md) {
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.brandDefault.opacity(0.3), Color.accentDefault.opacity(0.15)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(Circle().stroke(Color.accentDefault.opacity(0.3), lineWidth: 1.5))
-
-                Image("brand-logo")
-                    .resizable()
-                    .scaledToFill()
-                    .clipShape(Circle())
-            }
-            .frame(width: 88, height: 88)
+            Image("brand-logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 104, height: 104)
+                .accessibilityHidden(true)
 
             Text("问玄东方")
                 .font(AppTypography.title(26))

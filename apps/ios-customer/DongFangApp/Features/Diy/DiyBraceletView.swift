@@ -62,8 +62,15 @@ struct DiyBraceletView: View {
     private var workbench: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Label("东方珠作 · 手串设计室", systemImage: "sparkle")
-                    .font(.caption.weight(.medium)).foregroundStyle(Color.accentLight)
+                HStack(spacing: 6) {
+                    Image("brand-atelier")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 22, height: 22)
+                        .accessibilityHidden(true)
+                    Text("东方珠作 · 手串设计室")
+                        .font(.caption.weight(.medium)).foregroundStyle(Color.accentLight)
+                }
                 Spacer()
                 Text("DIY").font(.caption.weight(.semibold)).tracking(3)
                     .foregroundStyle(Color.textSecondary)
