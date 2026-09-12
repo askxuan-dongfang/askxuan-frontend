@@ -5,8 +5,9 @@
   "description": "问玄东方 - 商城管理台 Web 前端 (P04)",
   "type": "module",
   "scripts": {
+    "predev": "node ../../packages/design-tokens/scripts/gen-web-tokens.js",
     "dev": "vite",
-    "prebuild": "node ../../scripts/sync-admin-ui-components.mjs --check && node ../../scripts/sync-typography.mjs --check",
+    "prebuild": "node ../../packages/design-tokens/scripts/gen-web-tokens.js && node ../../scripts/sync-admin-ui-components.mjs --check && node ../../scripts/sync-typography.mjs --check",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview"
   },
