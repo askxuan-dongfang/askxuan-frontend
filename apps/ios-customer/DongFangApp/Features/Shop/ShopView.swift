@@ -2,6 +2,8 @@ import SwiftUI
 
 /// 商品导航由后台分类驱动；排序与库存过滤在服务端分页前完成。
 struct ShopView: View {
+    @Namespace private var categorySelection
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel: ShopViewModel
     private let loadsRemoteData: Bool
     init(viewModel: ShopViewModel? = nil, loadsRemoteData: Bool = true) {
@@ -26,24 +28,14 @@ struct ShopView: View {
                         NavigationLink { PointsView() } label: { pathway("积分商城", icon: "gift") }
                         NavigationLink { DiyBraceletView() } label: { pathway("DIY 定制", icon: "sparkles") }
                         NavigationLink { ShopOrderListView() } label: { pathway("我的订单", icon: "list.bullet.rectangle") }
-                    }.buttonStyle(.plain)
+                    }.buttonStyle(CardPressButtonStyle())
                     VStack(alignment: .leading, spacing: 15) {
                         HStack {
                             Text("全部商品").font(AppTypography.reading.weight(.semibold))
                             Spacer()
                             Text(viewModel.isLoading ? "寻找好物…" : "\(viewModel.total) 件好物").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
                         }.id("catalog")
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 9) {
-                                ForEach(viewModel.shopCategories) { cat in
-                                    Button { viewModel.selectCategory(cat.id) } label: {
-                                        Text(cat.name).font(AppTypography.supporting).padding(.horizontal, 15).padding(.vertical, 11)
-                                            .background(viewModel.selectedCategoryId == cat.id ? Color.accentDefault.opacity(0.2) : Color.bgSecondary)
-                                            .clipShape(Capsule()).overlay(Capsule().stroke(viewModel.selectedCategoryId == cat.id ? Color.accentDefault : Color.borderDefault))
-                                    }.accessibilityAddTraits(viewModel.selectedCategoryId == cat.id ? .isSelected : [])
-                                }
-                            }
-                        }.buttonStyle(.plain).foregroundStyle(Color.accentDefault)
+                        categoryFilter
                         if let message = viewModel.categoryError { Button(message) { Task { await viewModel.loadCategories() } }.font(AppTypography.caption) }
                         HStack {
                             Picker("商品排序", selection: $viewModel.sort) {
@@ -59,7 +51,12 @@ struct ShopView: View {
                                 Button("重新加载") { Task { if viewModel.products.isEmpty { await viewModel.load() } else { await viewModel.loadMore() } } }
                             }.foregroundStyle(Color.accentDefault).padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        if viewModel.isLoading { DFLoadingView().frame(maxWidth: .infinity, minHeight: 200) }
+                        if viewModel.isLoading {
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
+                                ForEach(0..<4) { _ in DFLoadingCard() }
+                            }
+                            .accessibilityElement(children: .ignore).accessibilityLabel("正在加载商品")
+                        }
                         else if viewModel.products.isEmpty && viewModel.errorMessage == nil {
                             VStack(spacing: 12) { Text("这次还没有找到").font(AppTypography.title(20)); Text("换个关键词，或看看其他分类。").font(AppTypography.supporting); Button("查看全部好物") { viewModel.reset() } }.frame(maxWidth: .infinity).padding(.vertical, 42)
                         } else {
@@ -70,11 +67,32 @@ struct ShopView: View {
                         }
                     }
                 }.padding(18).padding(.bottom, AppSpacing.navBottom)
-            }.softScrollEdge(.bottom)
+            }.softScrollEdge(.bottom).scrollDismissesKeyboard(.interactively)
         }.background(Color.bgPrimary).foregroundStyle(Color.textPrimary)
             .toolbar(.hidden, for: .navigationBar)
             .task { if loadsRemoteData { if viewModel.products.isEmpty { await viewModel.load() }; await viewModel.loadCategories() } }
             .refreshable { if loadsRemoteData { await viewModel.load(); await viewModel.loadCategories() } }
+    }
+    private var categoryFilter: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 9) {
+                ForEach(viewModel.shopCategories) { cat in
+                    Button { viewModel.selectCategory(cat.id) } label: {
+                        Text(cat.name).font(AppTypography.supporting).padding(.horizontal, 15).padding(.vertical, 11)
+                            .background {
+                                Capsule().fill(Color.bgSecondary)
+                                if viewModel.selectedCategoryId == cat.id {
+                                    Capsule().fill(Color.accentDefault.opacity(0.16))
+                                        .matchedGeometryEffect(id: "category", in: categorySelection)
+                                }
+                            }
+                            .overlay(Capsule().stroke(viewModel.selectedCategoryId == cat.id ? Color.accentDefault : Color.borderDefault))
+                            .contentShape(Capsule())
+                    }.accessibilityAddTraits(viewModel.selectedCategoryId == cat.id ? .isSelected : [])
+                }
+            }
+            .animation(reduceMotion ? nil : AppMotion.selection, value: viewModel.selectedCategoryId)
+        }.buttonStyle(CardPressButtonStyle()).foregroundStyle(Color.accentDefault)
     }
     private func pathway(_ title: String, icon: String) -> some View {
         VStack(spacing: 8) {
@@ -107,8 +125,8 @@ struct ShopView: View {
                     Text(product.name).font(AppTypography.body.weight(.medium)).lineLimit(2).frame(minHeight: 38, alignment: .top)
                     Text(product.priceText).appNumericFont(21, weight: .semibold).foregroundStyle(Color.brandDefault).monospacedDigit()
                 }.padding(13).frame(maxWidth: .infinity, alignment: .leading)
-            }.background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.borderDefault))
-        }.buttonStyle(.plain)
+            }.appCardSurface(cornerRadius: 18)
+        }.buttonStyle(CardPressButtonStyle())
     }
     private func badge(_ text: String) -> some View { Text(text).font(AppTypography.micro).padding(7).background(Color.bgPrimary.opacity(0.85)).clipShape(Capsule()).padding(8) }
 }
@@ -344,7 +362,7 @@ struct ShopProductDetailView: View {
                 showSpecs = false
             }
         }.padding(22).background(Color.bgSecondary).foregroundStyle(Color.textPrimary)
-            .presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
+            .presentationDetents([.medium, .large]).appSheetSurface()
     }
 
     private var imageAsset: String {
@@ -355,13 +373,14 @@ struct ShopProductDetailView: View {
     private var quantityStepper: some View {
         HStack(spacing: 0) {
             Button { quantity = max(1, quantity - 1) } label: {
-                Image(systemName: "minus").frame(width: 36, height: 34)
-            }.disabled(quantity <= 1)
-            Text("\(quantity)").frame(width: 42, height: 34).monospacedDigit()
+                Image(systemName: "minus").frame(width: 44, height: 44)
+            }.disabled(quantity <= 1).accessibilityLabel("减少数量")
+            Text("\(quantity)").frame(minWidth: 42, minHeight: 44).monospacedDigit().appNumericTransition(value: quantity)
             Button { quantity = min(99, min(availableStock, quantity + 1)) } label: {
-                Image(systemName: "plus").frame(width: 36, height: 34)
-            }.disabled(quantity >= min(99, availableStock))
+                Image(systemName: "plus").frame(width: 44, height: 44)
+            }.disabled(quantity >= min(99, availableStock)).accessibilityLabel("增加数量")
         }
+        .buttonStyle(CardPressButtonStyle())
         .font(AppTypography.supporting.weight(.semibold)).foregroundStyle(.textPrimary)
         .background(Color.bgTertiary).clipShape(RoundedRectangle(cornerRadius: AppRadius.sm))
     }

@@ -18,8 +18,12 @@ struct EmptyState: View {
     var body: some View {
         VStack(spacing: AppSpacing.md) {
             Image(systemName: icon)
-                .font(.system(size: 44))
-                .foregroundStyle(.textTertiary)
+                .font(.system(size: 28, weight: .light))
+                .foregroundStyle(.accentDefault)
+                .frame(width: 72, height: 72)
+                .background(Color.accentDefault.opacity(0.07), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(Color.accentDefault.opacity(0.12)))
+                .accessibilityHidden(true)
 
             Text(title)
                 .font(.cardTitle)
@@ -37,6 +41,7 @@ struct EmptyState: View {
                     .frame(maxWidth: 200)
             }
         }
+        .appEntrance()
         .frame(maxWidth: .infinity)
         .padding(AppSpacing.xl)
     }

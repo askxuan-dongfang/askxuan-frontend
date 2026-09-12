@@ -1177,3 +1177,122 @@ code, pre { font-family: var(--font-mono); }
 .el-menu--popup .el-menu-item.is-active{color:var(--admin-primary)}
 .el-button--primary:not(.is-link):not(.is-text):not(.is-plain){color:var(--color-text-on-brand,#fff)}
 @media(max-width:767px){.ax-appearance>span{display:none}.ax-appearance{gap:4px;padding-left:7px}.ax-appearance-login{top:14px;right:14px}}
+
+/* Quiet paper surfaces, warm metal details, and clear interactive hierarchy. */
+html:root {
+  --admin-focus-ring: 0 0 0 3px color-mix(in srgb, var(--admin-primary) 16%, transparent);
+  --admin-overlay-shadow: 0 24px 80px rgba(var(--admin-shadow-rgb), .24), 0 4px 14px rgba(var(--admin-shadow-rgb), .12);
+}
+.ax-admin-menu .el-menu-item {
+  position: relative;
+  border: 1px solid transparent;
+}
+.ax-admin-menu .el-menu-item::before {
+  position: absolute;
+  inset: 50% auto auto 4px;
+  width: 3px;
+  height: 18px;
+  content: '';
+  border-radius: 999px;
+  background: var(--admin-accent);
+  opacity: 0;
+  transform: translateY(-50%) scaleY(.4);
+}
+.ax-admin-menu .el-menu-item.is-active {
+  border-color: color-mix(in srgb, var(--admin-primary) 14%, transparent);
+  box-shadow: none;
+}
+.ax-admin-menu .el-menu-item.is-active::before { opacity: 1; transform: translateY(-50%) scaleY(1); }
+.ax-admin-menu .el-menu-item.is-active > .el-icon { color: var(--admin-accent); }
+.ax-admin-menu .el-sub-menu.is-opened > .el-sub-menu__title { color: var(--admin-sidebar-title); }
+.ax-admin-menu .el-menu-item:focus-visible,
+.ax-admin-menu .el-sub-menu__title:focus-visible { outline-offset: -3px; }
+.ax-admin-sidebar__close {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 44px;
+  margin: 6px 10px 0;
+  padding: 0 10px;
+  border: 1px solid rgba(var(--admin-accent-rgb), .16);
+  border-radius: 9px;
+  color: var(--admin-sidebar-text);
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--type-size-caption);
+}
+.ax-admin-sidebar__close > span:first-child { font-size: 23px; line-height: 1; }
+.ax-admin-sidebar__close:hover { background: rgba(var(--admin-accent-rgb), .08); }
+.ax-admin-sidebar:focus { outline: none; }
+.ax-admin-header { box-shadow: 0 1px 0 rgba(var(--admin-accent-rgb), .04); }
+
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--admin-primary) inset, var(--admin-focus-ring) !important;
+}
+.el-input__wrapper:focus-within, .el-select__wrapper:focus-within { outline: none; }
+.el-form-item:focus-within:not(.is-error) > .el-form-item__label { color: var(--admin-primary); }
+.el-form-item.is-error > .el-form-item__label { color: var(--admin-danger); }
+.el-form-item.is-error .el-input__wrapper,
+.el-form-item.is-error .el-select__wrapper,
+.el-form-item.is-error .el-textarea__inner {
+  box-shadow: 0 0 0 1px var(--admin-danger) inset !important;
+  background: color-mix(in srgb, var(--admin-danger) 3%, var(--admin-surface));
+}
+.el-form-item.is-error .el-input__wrapper:focus-within,
+.el-form-item.is-error .el-select__wrapper:focus-within,
+.el-form-item.is-error .el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--admin-danger) inset, 0 0 0 3px color-mix(in srgb, var(--admin-danger) 12%, transparent) !important;
+}
+.el-form-item__error { padding-top: 5px; font-size: var(--type-size-caption); line-height: 1.4; }
+.el-button:not(.is-link):not(.is-text) { border-radius: 9px; }
+.el-button--primary:not(.is-link):not(.is-text):not(.is-plain):not(.is-disabled) {
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--admin-primary) 18%, transparent), inset 0 1px 0 rgba(255,255,255,.12);
+}
+.el-button.is-loading { cursor: wait; }
+.el-button.is-disabled { box-shadow: none; }
+
+.el-dialog, .el-message-box {
+  border: 1px solid color-mix(in srgb, var(--admin-accent) 18%, var(--admin-border));
+  border-radius: 16px;
+  box-shadow: var(--admin-overlay-shadow);
+}
+.el-dialog__header { padding-bottom: 16px; border-bottom: 1px solid var(--color-border-divider); }
+.el-dialog__body { padding-top: 18px; }
+.el-dialog__footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--color-border-divider); }
+.el-dialog__headerbtn, .el-message-box__headerbtn, .el-drawer__close-btn { border-radius: 9px; }
+.el-dialog__headerbtn:hover, .el-message-box__headerbtn:hover, .el-drawer__close-btn:hover { background: var(--admin-surface-hover); }
+.el-drawer__header { padding-bottom: 18px; border-bottom: 1px solid var(--color-border-divider); }
+.el-drawer__footer { border-top: 1px solid var(--color-border-divider); }
+.el-popper.is-light, .el-dropdown__popper, .el-select__popper {
+  border-color: var(--admin-border-strong);
+  border-radius: 11px;
+  box-shadow: 0 10px 30px rgba(var(--admin-shadow-rgb), .16), 0 2px 5px rgba(var(--admin-shadow-rgb), .08);
+}
+.el-dropdown-menu { padding: 6px; border-radius: 11px; }
+.el-dropdown-menu__item { min-height: 36px; border-radius: 6px; }
+.el-select-dropdown__item { margin: 2px 6px; border-radius: 6px; }
+.el-message, .el-notification { border-radius: 12px; box-shadow: var(--admin-shadow-md); }
+.el-message__content { line-height: var(--type-line-body); }
+
+.el-table__body tr.current-row > td.el-table__cell { background: color-mix(in srgb, var(--admin-primary) 7%, var(--admin-surface)); }
+.el-table__body tr:focus-within > td.el-table__cell { background: var(--admin-surface-muted); }
+.el-table .el-loading-mask { backdrop-filter: blur(1px); }
+.el-loading-spinner .el-loading-text { color: var(--admin-primary); font-size: var(--type-size-caption); }
+.el-pagination button, .el-pagination .el-pager li { border-radius: 7px !important; }
+.el-pagination .el-pager li.is-active { box-shadow: 0 2px 4px rgba(var(--admin-primary-rgb), .16); }
+.filter-card:focus-within { border-color: color-mix(in srgb, var(--admin-primary) 32%, var(--admin-border)); }
+@media (hover: hover) and (pointer: fine) {
+  .ax-task-card:hover { border-color: color-mix(in srgb, var(--admin-accent) 45%, var(--admin-border)); }
+  .el-button--primary:not(.is-link):not(.is-text):not(.is-disabled):not(.is-loading):hover {
+    box-shadow: 0 4px 10px rgba(var(--admin-primary-rgb), .2), inset 0 1px 0 rgba(255,255,255,.12);
+  }
+}
+@media (pointer: coarse) {
+  .ax-admin-nav-toggle { width: 44px; height: 44px; flex-basis: 44px; }
+  .el-button:not(.is-link):not(.is-text):not(.el-button--small),
+  .el-dropdown-menu__item, .el-select-dropdown__item { min-height: 44px; }
+  .el-dialog__headerbtn, .el-message-box__headerbtn, .el-drawer__close-btn { min-width: 44px; min-height: 44px; }
+}

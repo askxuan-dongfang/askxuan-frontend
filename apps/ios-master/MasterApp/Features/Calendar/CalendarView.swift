@@ -118,6 +118,7 @@ struct ScheduleUpdateResponse: Decodable {
 }
 
 struct CalendarView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel = CalendarViewModel()
 
     private let weeks = ["日", "一", "二", "三", "四", "五", "六"]
@@ -269,10 +270,13 @@ struct CalendarView: View {
                                     .foregroundStyle(viewModel.selectedSlots.contains(slot) ? Color.stateSuccess : Color.textTertiary)
                                 Image(systemName: viewModel.selectedSlots.contains(slot) ? "checkmark.circle.fill" : "circle")
                                     .foregroundStyle(viewModel.selectedSlots.contains(slot) ? Color.stateSuccess : Color.textTertiary)
+                                    .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
                             }
+                            .animation(reduceMotion ? nil : AppMotion.selection, value: viewModel.selectedSlots.contains(slot))
                         }
                     }
                     .buttonStyle(CardPressButtonStyle())
+                    .accessibilityAddTraits(viewModel.selectedSlots.contains(slot) ? .isSelected : [])
                 }
 
                 HStack(spacing: AppSpacing.md) {

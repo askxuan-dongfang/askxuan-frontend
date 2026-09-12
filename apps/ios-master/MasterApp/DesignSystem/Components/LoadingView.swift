@@ -16,11 +16,16 @@ struct LoadingView: View {
         VStack(spacing: AppSpacing.md) {
             ProgressView()
                 .tint(.accentDefault)
-                .scaleEffect(1.2)
+                .frame(width: 52, height: 52)
+                .background(Color.accentDefault.opacity(0.08), in: Circle())
+                .overlay(Circle().strokeBorder(Color.accentDefault.opacity(0.14), lineWidth: 1))
+                .accessibilityHidden(true)
             Text(message)
                 .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)
         }
+        .accessibilityElement(children: .combine)
+        .appEntrance()
         .frame(maxWidth: .infinity, maxHeight: fullScreen ? .infinity : nil)
         .padding(AppSpacing.xl)
     }

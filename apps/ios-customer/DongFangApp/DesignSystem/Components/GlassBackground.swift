@@ -124,17 +124,77 @@ extension View {
     func appVisualDefaults() -> some View { modifier(AppVisualDefaults()) }
 }
 
-/// Press feedback stays local to the control; reduced motion retains a static opacity cue.
+/// Keep feedback inside the pressed control so scroll and navigation gestures remain native.
 struct CardPressButtonStyle: ButtonStyle {
+    var prominent = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         let pressed = isEnabled && configuration.isPressed
         configuration.label
-            .scaleEffect(pressed && !reduceMotion ? 0.985 : 1)
-            .opacity(pressed ? 0.86 : 1)
-            .animation(reduceMotion ? nil : AppMotion.press, value: pressed)
+            .scaleEffect(pressed && !reduceMotion ? (prominent ? 0.975 : 0.985) : 1)
+            .offset(y: pressed && !reduceMotion ? 1 : 0)
+            .opacity(pressed ? 0.94 : 1)
+            .brightness(pressed ? -0.025 : 0)
+            .animation(reduceMotion ? nil : (pressed ? AppMotion.press : AppMotion.selection), value: pressed)
+    }
+}
+
+private struct AppEntrance: ViewModifier {
+    var order: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var appeared = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(appeared || reduceMotion ? 1 : 0)
+            .offset(y: appeared || reduceMotion ? 0 : 8)
+            .onAppear {
+                guard !appeared else { return }
+                // This state is never reset on scroll or a return from a detail page.
+                withAnimation(reduceMotion ? nil : AppMotion.reveal.delay(Double(min(max(order, 0), 4)) * 0.035)) {
+                    appeared = true
+                }
+            }
+    }
+}
+
+private struct AppCardSurface: ViewModifier {
+    var cornerRadius: CGFloat
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        content
+            .background(Color.bgSecondary, in: shape)
+            .clipShape(shape)
+            .overlay(shape.strokeBorder(Color.borderDefault, lineWidth: 1))
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.12 : 0.035), radius: 10, x: 0, y: 3)
+    }
+}
+
+private struct AppNumericTransition<Value: Equatable>: ViewModifier {
+    let value: Value
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .contentTransition(reduceMotion ? .identity : .numericText())
+            .animation(reduceMotion ? nil : AppMotion.selection, value: value)
+    }
+}
+
+extension View {
+    /// A single quiet reveal for a small section, without animating the whole page tree.
+    func appEntrance(order: Int = 0) -> some View { modifier(AppEntrance(order: order)) }
+    func appCardSurface(cornerRadius: CGFloat = AppRadius.lg) -> some View { modifier(AppCardSurface(cornerRadius: cornerRadius)) }
+    func appNumericTransition<Value: Equatable>(value: Value) -> some View { modifier(AppNumericTransition(value: value)) }
+    /// Retain the system sheet gesture, detents, keyboard avoidance and dismissal behavior.
+    func appSheetSurface() -> some View {
+        presentationBackground(Color.bgPrimary)
+            .presentationCornerRadius(28)
+            .presentationDragIndicator(.visible)
     }
 }
 

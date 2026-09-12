@@ -58,7 +58,7 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
 </script>
 
 <template>
-  <section class="aui-stat-card">
+  <section class="aui-stat-card" :style="{ '--stat-tone': resolvedColor() }">
     <div
       v-if="icon"
       class="aui-stat-card__icon"
@@ -81,6 +81,7 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
 <style scoped>
 .aui-stat-card {
   container: stat-card / inline-size;
+  position: relative;
   display: flex;
   align-items: center;
   min-width: 0;
@@ -93,9 +94,13 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
   box-shadow: var(--shadow-sm, 0 4px 16px rgba(70, 45, 32, 0.06));
   transition: border-color var(--admin-transition), box-shadow var(--admin-transition);
 }
-.aui-stat-card:hover {
-  border-color: var(--color-border-strong, #d8c9bb);
-  box-shadow: var(--shadow-md, 0 8px 24px rgba(70, 45, 32, 0.1));
+.aui-stat-card::before {
+  position: absolute;
+  inset: 16px auto 16px 0;
+  width: 2px;
+  content: '';
+  background: color-mix(in srgb, var(--stat-tone) 38%, transparent);
+  border-radius: 0 2px 2px 0;
 }
 .aui-stat-card__icon {
   display: flex;
@@ -105,6 +110,8 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
   height: 48px;
   border-radius: 12px;
   flex: 0 0 48px;
+  border: 1px solid color-mix(in srgb, var(--stat-tone) 16%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
 }
 .aui-stat-card__body {
   min-width: 0;

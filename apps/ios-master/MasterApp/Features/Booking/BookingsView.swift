@@ -72,6 +72,8 @@ private struct TabFilterItem {
 }
 
 struct BookingsView: View {
+    @Namespace private var filterSelection
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel = BookingsViewModel()
     @State private var selectedTabIndex: Int = 0
 
@@ -97,47 +99,47 @@ struct BookingsView: View {
     // MARK: - Tab 筛选器
 
     private var tabFilters: some View {
-        HStack(spacing: 0) {
-            ForEach(tabs.indices, id: \.self) { index in
-                let tab = tabs[index]
-                let isSelected = selectedTabIndex == index
-                VStack(spacing: 0) {
-                    HStack(spacing: 4) {
-                        Text(tab.title)
-                            .font(AppTypography.supporting.weight(isSelected ? .semibold : .regular))
-                            .foregroundStyle(isSelected ? .brandDefault : .textTertiary)
-                        if isSelected {
-                            Text("\(viewModel.total)")
-                            .font(AppTypography.micro)
-                            .foregroundStyle(.brandDefault)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(Color.brandDefault.opacity(0.15))
-                            .cornerRadius(AppRadius.sm)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(tabs.indices, id: \.self) { index in
+                    let tab = tabs[index]
+                    let isSelected = selectedTabIndex == index
+                    Button {
+                        guard selectedTabIndex != index else { return }
+                        selectedTabIndex = index
+                        Task { await viewModel.switchStatus(tab.status) }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Text(tab.title)
+                                .font(AppTypography.supporting.weight(isSelected ? .semibold : .regular))
+                            if isSelected {
+                                Text("\(viewModel.total)")
+                                    .font(AppTypography.micro)
+                                    .appNumericTransition(value: viewModel.total)
+                                    .padding(.horizontal, 5).padding(.vertical, 2)
+                                    .background(Color.brandDefault.opacity(0.12), in: Capsule())
+                            }
                         }
+                        .foregroundStyle(isSelected ? Color.brandDefault : Color.textSecondary)
+                        .padding(.horizontal, 14).frame(minHeight: 44)
+                        .background {
+                            if isSelected {
+                                Capsule().fill(Color.brandDefault.opacity(0.10))
+                                    .matchedGeometryEffect(id: "booking-filter", in: filterSelection)
+                            }
+                        }
+                        .contentShape(Capsule())
                     }
-                    .padding(.vertical, 12)
-                    // 底部下划线
-                    Rectangle()
-                        .fill(isSelected ? Color.brandDefault : Color.clear)
-                        .frame(width: 24, height: 3)
-                        .cornerRadius(2)
-                }
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    guard selectedTabIndex != index else { return }
-                    AppMotion.perform { selectedTabIndex = index }
-                    Task { await viewModel.switchStatus(tab.status) }
+                    .buttonStyle(CardPressButtonStyle())
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
                 }
             }
+            .animation(reduceMotion ? nil : AppMotion.selection, value: selectedTabIndex)
+            .padding(.horizontal, AppSpacing.pageHorizontal)
+            .padding(.vertical, 8)
         }
-        .padding(.horizontal, AppSpacing.pageHorizontal)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(Color.borderDefault)
-                .frame(height: 1)
-        }
+        .sensoryFeedback(.selection, trigger: selectedTabIndex)
+        .overlay(alignment: .bottom) { Color.borderDefault.frame(height: 1) }
     }
 
     // MARK: - 预约列表

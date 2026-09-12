@@ -25,12 +25,7 @@ struct MasterCard<Content: View>: View {
     var body: some View {
         content
             .padding(padding)
-            .background(Color.bgSecondary)
-            .cornerRadius(cornerRadius)
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color.borderDefault, lineWidth: 1)
-            )
+            .appCardSurface(cornerRadius: cornerRadius)
     }
 }
 

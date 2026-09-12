@@ -38,6 +38,7 @@ func resolvedMediaURL(_ value: String) -> URL? {
 
 /// 图片加载（远程 URL 或本地 asset 名）
 struct RemoteImage: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let urlString: String?
     var placeholderIcon: String = "photo"
     var contentMode: ContentMode = .fill
@@ -45,7 +46,7 @@ struct RemoteImage: View {
     var body: some View {
         if let urlString, !urlString.isEmpty {
             if let url = resolvedMediaURL(urlString) {
-                AsyncImage(url: url) { phase in
+                AsyncImage(url: url, transaction: Transaction(animation: reduceMotion ? nil : AppMotion.selection)) { phase in
                     switch phase {
                     case .empty:
                         placeholder
@@ -53,6 +54,7 @@ struct RemoteImage: View {
                         image
                             .resizable()
                             .aspectRatio(contentMode: contentMode)
+                            .transition(.opacity)
                     case .failure:
                         placeholder
                     @unknown default:
@@ -82,6 +84,7 @@ struct RemoteImage: View {
 
 /// 圆形头像图片（远程 URL 或本地 asset 名）
 struct RemoteAvatar: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let urlString: String?
     var size: CGFloat = 56
     var placeholderIcon: String = "person.circle.fill"
@@ -89,7 +92,7 @@ struct RemoteAvatar: View {
     var body: some View {
         if let urlString, !urlString.isEmpty {
             if let url = resolvedMediaURL(urlString) {
-                AsyncImage(url: url) { phase in
+                AsyncImage(url: url, transaction: Transaction(animation: reduceMotion ? nil : AppMotion.selection)) { phase in
                     switch phase {
                     case .empty:
                         circlePlaceholder
@@ -100,6 +103,7 @@ struct RemoteAvatar: View {
                             .frame(width: size, height: size)
                             .clipShape(Circle())
                             .overlay(Circle().stroke(Color.accentDefault, lineWidth: 2))
+                            .transition(.opacity)
                     case .failure:
                         circlePlaceholder
                     @unknown default:

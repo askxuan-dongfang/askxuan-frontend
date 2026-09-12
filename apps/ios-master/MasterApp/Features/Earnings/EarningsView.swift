@@ -146,7 +146,7 @@ struct EarningsView: View {
         .task { await viewModel.load() }
         .refreshable { await viewModel.load() }
         .sheet(isPresented: $viewModel.showWithdrawSheet) {
-            withdrawSheet
+            withdrawSheet.appSheetSurface()
         }
         .alert("提示", isPresented: Binding(
             get: { viewModel.withdrawMessage != nil && !viewModel.showWithdrawSheet },

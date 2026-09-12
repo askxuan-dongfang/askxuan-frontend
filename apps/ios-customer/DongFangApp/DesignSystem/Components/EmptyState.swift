@@ -16,8 +16,12 @@ struct DFEmptyState: View {
     var body: some View {
         VStack(spacing: AppSpacing.md) {
             Image(systemName: icon)
-                .font(.system(size: 44))
-                .foregroundStyle(.textTertiary)
+                .font(.system(size: 28, weight: .light))
+                .foregroundStyle(.accentDefault)
+                .frame(width: 72, height: 72)
+                .background(Color.accentDefault.opacity(0.07), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(Color.accentDefault.opacity(0.12)))
+                .accessibilityHidden(true)
             Text(title)
                 .font(AppTypography.body.weight(.medium))
                 .foregroundStyle(.textSecondary)
@@ -28,6 +32,7 @@ struct DFEmptyState: View {
                     .multilineTextAlignment(.center)
             }
         }
+        .appEntrance()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(AppSpacing.xl)
         .background(Color.bgPrimary)

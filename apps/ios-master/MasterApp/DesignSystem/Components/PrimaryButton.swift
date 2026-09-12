@@ -3,7 +3,7 @@
 //  MasterApp
 //
 //  主/次按钮组件：
-//  - PrimaryButton：朱砂渐变(#C45A3C→#D97B4A) + 白色文字 + 圆角 + 44px 高度
+//  - PrimaryButton：朱砂渐变(#C45A3C→#D97B4A) + 白色文字 + 圆角 + 至少 48pt 触控高度
 //  - SecondaryButton：描边琉璃金 + 透明背景 + 金色文字
 //
 
@@ -16,28 +16,33 @@ struct PrimaryButton: View {
     var isEnabled: Bool = true
     var isLoading: Bool = false
     let action: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button(action: {
             guard isEnabled, !isLoading else { return }
             action()
         }) {
-            HStack(spacing: 6) {
-                if isLoading {
-                    ProgressView()
-                        .tint(.white)
-                        .scaleEffect(0.9)
-                } else if let icon {
-                    Image(systemName: icon)
-                        .font(AppTypography.control)
+            ZStack {
+                HStack(spacing: 6) {
+                    if let icon { Image(systemName: icon) }
+                    Text(title)
                 }
-                Text(title)
-                    .font(AppTypography.control)
+                .opacity(isLoading ? 0 : 1)
+                if isLoading {
+                    HStack(spacing: 8) {
+                        ProgressView().tint(.white)
+                        Text("处理中…")
+                    }
+                    .transition(.opacity)
+                }
             }
+            .font(AppTypography.control)
+            .animation(reduceMotion ? nil : AppMotion.selection, value: isLoading)
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 11)
-            .frame(minHeight: 44)
+            .padding(.vertical, 12)
+            .frame(minHeight: 48)
             .background(
                 LinearGradient(
                     colors: [Color.brandDefault, Color.brandLight],
@@ -48,7 +53,9 @@ struct PrimaryButton: View {
             .cornerRadius(AppRadius.lg)
             .opacity(isEnabled ? 1.0 : 0.5)
         }
-        .buttonStyle(CardPressButtonStyle())
+        .buttonStyle(CardPressButtonStyle(prominent: true))
+        .accessibilityLabel(title)
+        .accessibilityValue(isLoading ? "正在处理" : "")
         .disabled(!isEnabled || isLoading)
     }
 }
@@ -75,8 +82,8 @@ struct SecondaryButton: View {
             }
             .foregroundStyle(Color.accentDefault)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 11)
-            .frame(minHeight: 44)
+            .padding(.vertical, 12)
+            .frame(minHeight: 48)
             .background(Color.clear)
             .cornerRadius(AppRadius.lg)
             .overlay(

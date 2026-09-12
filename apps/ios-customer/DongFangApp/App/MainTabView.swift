@@ -96,6 +96,7 @@ struct MainTabView: View {
             .tag(4)
         }
         .tint(.brandDefault)
+        .sensoryFeedback(.selection, trigger: selectedTab)
         // 特性 7：iOS 26+ 滚动时液态玻璃 TabBar 自动最小化为浮动 dock
         .tabBarMinimizeOnScroll()
     }

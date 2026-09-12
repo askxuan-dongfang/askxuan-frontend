@@ -152,10 +152,10 @@ struct WorkspaceView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                greetingSection
-                statsRow
-                quickActionsSection
-                mediaStudioSection
+                greetingSection.appEntrance()
+                statsRow.appEntrance(order: 1)
+                quickActionsSection.appEntrance(order: 2)
+                mediaStudioSection.appEntrance(order: 3)
                 todayBookingsSection
                 if !isWildMaster {
                     blessingTaskSection
@@ -233,7 +233,8 @@ struct WorkspaceView: View {
                 let stat = stats[index]
                 VStack(spacing: 4) {
                     Text(stat.value)
-                        .font(.system(size: stat.highlight ? 18 : 22, weight: .semibold))
+                        .appNumericFont(stat.highlight ? 18 : 22, weight: .semibold)
+                        .appNumericTransition(value: stat.value)
                         .foregroundStyle(stat.highlight ? .accentDefault : .textPrimary)
                     Text(stat.label)
                         .font(.micro)
@@ -241,12 +242,8 @@ struct WorkspaceView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
-                .background(Color.bgSecondary)
-                .cornerRadius(10)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.borderDefault, lineWidth: 1)
-                )
+                .redacted(reason: viewModel.isLoading && viewModel.earnings == nil ? .placeholder : [])
+                .appCardSurface(cornerRadius: 12)
             }
         }
         .padding(.horizontal, AppSpacing.pageHorizontal)

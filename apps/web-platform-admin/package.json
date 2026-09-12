@@ -6,9 +6,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts",
-    "prebuild": "node ../../scripts/sync-admin-ui-components.mjs --check && node ../../scripts/sync-typography.mjs --check && node ../../scripts/sync-motion.mjs --check && node --test ../../packages/admin-ui/session-expiry.test.mjs",
+    "prebuild": "node ../../scripts/sync-admin-ui-components.mjs --check && node ../../scripts/sync-typography.mjs --check && node ../../scripts/sync-motion.mjs --check && node --test ../../packages/admin-ui/session-expiry.test.mjs && npm run test:interaction",
     "build": "vue-tsc -b && vite build --config vite.config.ts",
-    "preview": "vite preview --config vite.config.ts"
+    "preview": "vite preview --config vite.config.ts",
+    "test:interaction": "node --test ../../packages/admin-ui/navigation.test.mjs"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",

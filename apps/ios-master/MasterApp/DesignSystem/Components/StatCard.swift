@@ -29,6 +29,7 @@ struct StatCard: View {
                 }
                 Text(value)
                     .appNumericFont(22)
+                    .appNumericTransition(value: value)
                     .foregroundStyle(.textPrimary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)

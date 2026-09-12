@@ -97,3 +97,23 @@ html:root {
     transition-delay: 0s !important;
   }
 }
+
+/* Animate only the navigation marker; never move positioned menu/popover roots. */
+.ax-admin-menu .el-menu-item::before {
+  transition: opacity var(--motion-duration-fast) var(--motion-ease), transform var(--motion-duration-standard) var(--motion-settle);
+}
+.ax-admin-sidebar__close, .el-form-item__label, .filter-card {
+  transition: color var(--admin-transition), background-color var(--admin-transition), border-color var(--admin-transition);
+}
+.el-dialog__headerbtn, .el-message-box__headerbtn, .el-drawer__close-btn {
+  transition: color var(--admin-transition), background-color var(--admin-transition);
+}
+/* Flat, non-moving surfaces remain legible while a panel is presented. */
+.dialog-fade-enter-active .el-dialog { animation: ax-dialog-surface-in var(--motion-duration-enter) var(--motion-ease); }
+@keyframes ax-dialog-surface-in {
+  from { box-shadow: 0 4px 16px rgba(var(--admin-shadow-rgb), .08); }
+  to { box-shadow: var(--admin-overlay-shadow); }
+}
+@media (hover: none) {
+  .aui-stat-card:hover { box-shadow: var(--admin-shadow-sm); }
+}

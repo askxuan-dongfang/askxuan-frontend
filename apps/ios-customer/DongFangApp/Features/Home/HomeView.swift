@@ -20,10 +20,10 @@ struct HomeView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: AppSpacing.lg) {
-                    bannerSection
-                    entryCardsSection
-                    beliefSection
-                    intentionSection
+                    bannerSection.appEntrance()
+                    entryCardsSection.appEntrance(order: 1)
+                    beliefSection.appEntrance(order: 2)
+                    intentionSection.appEntrance(order: 3)
                     hotTemplesSection
                     hotMastersSection
                     Color.clear.frame(height: AppSpacing.navBottom + 32)
@@ -126,9 +126,9 @@ struct HomeView: View {
                 Image(systemName: "magnifyingglass")
                     .font(AppTypography.reading.weight(.medium))
                     .foregroundStyle(Color.accentDefault)
-                    .frame(width: 30, height: 30)
+                    .frame(width: 44, height: 44)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(CardPressButtonStyle())
         }
         .padding(.horizontal, 20)
         .frame(height: 52)
@@ -136,7 +136,7 @@ struct HomeView: View {
 
     // MARK: - Banner 轮播（对齐原型：200px高 + 图片 + 左侧渐变遮罩 + 圆点指示器）
     private var bannerSection: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 0) {
             GeometryReader { proxy in
                 TabView(selection: $currentBanner) {
                     ForEach(Array(viewModel.banners.enumerated()), id: \.element.id) { index, banner in
@@ -155,10 +155,20 @@ struct HomeView: View {
             // 圆点指示器（对齐原型：6px圆点，active 18px长条 brand色）
             HStack(spacing: 6) {
                 ForEach(0..<viewModel.banners.count, id: \.self) { index in
-                    Capsule()
-                        .fill(index == currentBanner ? Color.brandDefault : Color.textTertiary)
-                        .frame(width: index == currentBanner ? 18 : 6, height: 6)
-                        .animation(reduceMotion ? nil : AppMotion.selection, value: currentBanner)
+                    Button {
+                        guard currentBanner != index else { return }
+                        AppMotion.perform { currentBanner = index }
+                    } label: {
+                        Capsule()
+                            .fill(index == currentBanner ? Color.brandDefault : Color.textTertiary.opacity(0.5))
+                            .frame(width: index == currentBanner ? 22 : 6, height: 6)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(CardPressButtonStyle())
+                    .accessibilityLabel("第 \(index + 1) 页：\(viewModel.banners[index].title)")
+                    .accessibilityAddTraits(index == currentBanner ? .isSelected : [])
+                    .animation(reduceMotion ? nil : AppMotion.selection, value: currentBanner)
                 }
             }
         }
@@ -264,7 +274,7 @@ struct HomeView: View {
                         NavigationLink(value: HomeRoute.belief(entry)) {
                             beliefItem(entry)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(CardPressButtonStyle())
                     }
                 }
                 .padding(.horizontal, 20)
@@ -314,7 +324,7 @@ struct HomeView: View {
                     ) {
                         intentionItem(entry)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(CardPressButtonStyle())
                 }
             }
             .padding(.horizontal, 20)
@@ -358,12 +368,15 @@ struct HomeView: View {
                 }
                 .padding(.horizontal, 20)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(CardPressButtonStyle())
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.md) {
+                    if viewModel.isLoading && viewModel.hotTemples.isEmpty {
+                        ForEach(0..<3) { _ in DFLoadingCard().frame(width: 168) }
+                    }
                     ForEach(viewModel.hotTemples) { temple in
-                        NavigationLink(value: temple) { templeCard(temple) }
+                        NavigationLink(value: temple) { templeCard(temple).appEntrance() }
                             .buttonStyle(CardPressButtonStyle())
                     }
                 }
@@ -435,9 +448,7 @@ struct HomeView: View {
             .padding(10)
         }
         .frame(width: 168)
-        .background(Color.bgSecondary)
-        .cornerRadius(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1))
+        .appCardSurface(cornerRadius: 12)
     }
 
     /// 寺院类型标签颜色：道教用紫色（对齐原型 #9E8FB2），其他用 brand
@@ -463,12 +474,15 @@ struct HomeView: View {
                 }
                 .padding(.horizontal, 20)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(CardPressButtonStyle())
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.md) {
+                    if viewModel.isLoading && viewModel.hotMasters.isEmpty {
+                        ForEach(0..<3) { _ in DFLoadingCard(avatar: true).frame(width: 188) }
+                    }
                     ForEach(viewModel.hotMasters) { master in
-                        NavigationLink(value: master) { masterCard(master) }
+                        NavigationLink(value: master) { masterCard(master).appEntrance() }
                             .buttonStyle(CardPressButtonStyle())
                     }
                 }
@@ -548,9 +562,7 @@ struct HomeView: View {
         .frame(width: 168)
         .padding(.vertical, 12)
         .padding(.horizontal, 10)
-        .background(Color.bgSecondary)
-        .cornerRadius(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1))
+        .appCardSurface(cornerRadius: 12)
     }
 
     // MARK: - 服务路由
@@ -630,7 +642,7 @@ private struct IntentionHubView: View {
                     LazyVStack(spacing: 10) {
                         ForEach(viewModel.resources) { item in
                             NavigationLink { destination(for: item) } label: { resourceRow(item) }
-                                .buttonStyle(.plain)
+                                .buttonStyle(CardPressButtonStyle())
                         }
                     }.padding(.horizontal, 20)
                 }
@@ -682,12 +694,12 @@ private struct IntentionHubView: View {
                 NavigationLink(value: HomeRoute.diyBracelet) {
                     actionLabel
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(CardPressButtonStyle())
             } else if let service = heroService {
                 NavigationLink(value: HomeRoute.service(service)) {
                     actionLabel
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(CardPressButtonStyle())
             }
         }
         .padding(16)
@@ -838,7 +850,7 @@ private struct BeliefTopicView: View {
                                 Spacer()
                                 Image(systemName: "chevron.right").foregroundStyle(Color.textTertiary)
                             }.padding(.vertical, 6)
-                        }.buttonStyle(.plain)
+                        }.buttonStyle(CardPressButtonStyle())
                     }
                 }
 
@@ -855,7 +867,7 @@ private struct BeliefTopicView: View {
                                 Spacer()
                                 Image(systemName: "chevron.right").foregroundStyle(Color.textTertiary)
                             }.padding(.vertical, 6)
-                        }.buttonStyle(.plain)
+                        }.buttonStyle(CardPressButtonStyle())
                     }
                 }
             }.padding(.vertical, 20)

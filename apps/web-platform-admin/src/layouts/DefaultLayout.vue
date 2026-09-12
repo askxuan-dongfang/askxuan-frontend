@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed } from 'vue'
+import { useAdminNavigation } from '../../../../packages/admin-ui/navigation'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { canAccessRoute, defaultRoute } from '@/router/access'
@@ -10,10 +11,7 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const logoUrl = `${import.meta.env.BASE_URL}logos/logo-platform.png`
-const collapsed = ref(false)
-const mobile = ref(false)
-const drawerOpen = ref(false)
-let mobileQuery: MediaQueryList | undefined
+const { collapsed, mobile, drawerOpen, sidebarRef, toggleRef, toggleNavigation, closeNavigation } = useAdminNavigation(() => route.fullPath)
 
 const allMenuGroups = [
   {title:'商城与权益',icon:'Shop',children:[
@@ -105,15 +103,7 @@ const avatarText = computed(() => (auth.userInfo?.nickname || '管').slice(0, 1)
 const pageTitle = computed(() => (route.meta.title as string) || '平台管理台')
 const pageParent = computed(() => (route.meta.parent as string) || '平台管理台')
 
-function syncViewport(event?: MediaQueryListEvent) {
-  mobile.value = event ? event.matches : Boolean(mobileQuery?.matches)
-  if (!mobile.value) drawerOpen.value = false
-}
 
-function toggleNavigation() {
-  if (mobile.value) drawerOpen.value = !drawerOpen.value
-  else collapsed.value = !collapsed.value
-}
 
 async function onCommand(cmd: string) {
   if (cmd === 'logout') {
@@ -133,15 +123,7 @@ async function onCommand(cmd: string) {
   }
 }
 
-watch(() => route.fullPath, () => { drawerOpen.value = false })
 
-onMounted(() => {
-  mobileQuery = window.matchMedia('(max-width: 991px)')
-  syncViewport()
-  mobileQuery.addEventListener('change', syncViewport)
-})
-
-onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
 </script>
 
 <template>
@@ -149,9 +131,9 @@ onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
     class="ax-admin-shell"
     :class="{ 'is-collapsed': collapsed && !mobile, 'is-drawer-open': drawerOpen }"
   >
-    <button class="ax-admin-overlay" type="button" aria-label="关闭导航" @click="drawerOpen = false"></button>
+    <button class="ax-admin-overlay" type="button" aria-label="关闭导航" tabindex="-1" :aria-hidden="!drawerOpen" @click="closeNavigation"></button>
 
-    <aside class="ax-admin-sidebar" :inert="mobile && !drawerOpen" aria-label="平台管理台主导航">
+    <aside id="admin-navigation" ref="sidebarRef" class="ax-admin-sidebar" tabindex="-1" :role="mobile ? 'dialog' : undefined" :aria-modal="mobile && drawerOpen ? true : undefined" :inert="mobile && !drawerOpen" aria-label="平台管理台主导航">
       <div class="ax-admin-logo">
         <img class="ax-admin-logo__image" :src="logoUrl" alt="" />
         <div class="ax-admin-logo__copy">
@@ -159,6 +141,10 @@ onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
           <div class="ax-admin-logo__subtitle">统一运营管理台</div>
         </div>
       </div>
+
+      <button v-if="mobile" class="ax-admin-sidebar__close" type="button" aria-label="关闭主导航" @click="closeNavigation">
+        <span aria-hidden="true">×</span><span>关闭导航</span>
+      </button>
 
       <el-menu
         :default-active="activeMenu"
@@ -190,13 +176,15 @@ onBeforeUnmount(() => mobileQuery?.removeEventListener('change', syncViewport))
       <div class="ax-admin-version">统一运营管理台</div>
     </aside>
 
-    <section class="ax-admin-content">
+    <section class="ax-admin-content" :inert="mobile && drawerOpen">
       <header class="ax-admin-header">
         <div class="ax-admin-header__left">
           <button
+            ref="toggleRef"
             class="ax-admin-nav-toggle"
+            aria-controls="admin-navigation"
             type="button"
-            aria-label="切换主导航"
+            :aria-label="mobile ? (drawerOpen ? '关闭主导航' : '打开主导航') : (collapsed ? '展开主导航' : '收起主导航')"
             :aria-expanded="mobile ? drawerOpen : !collapsed"
             @click="toggleNavigation"
           >
