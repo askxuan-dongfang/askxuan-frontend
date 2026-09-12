@@ -133,7 +133,7 @@ async function onCommand(cmd: string) {
   >
     <button class="ax-admin-overlay" type="button" aria-label="关闭导航" tabindex="-1" :aria-hidden="!drawerOpen" @click="closeNavigation"></button>
 
-    <aside id="admin-navigation" ref="sidebarRef" class="ax-admin-sidebar" tabindex="-1" :role="mobile ? 'dialog' : undefined" :aria-modal="mobile && drawerOpen ? true : undefined" :inert="mobile && !drawerOpen" aria-label="平台管理台主导航">
+    <aside id="admin-navigation" ref="sidebarRef" class="ax-admin-sidebar" tabindex="-1" :role="mobile && drawerOpen ? 'dialog' : undefined" :aria-modal="mobile && drawerOpen ? true : undefined" :aria-hidden="mobile && !drawerOpen ? true : undefined" :inert="mobile && !drawerOpen" aria-label="平台管理台主导航">
       <div class="ax-admin-logo">
         <img class="ax-admin-logo__image" :src="logoUrl" alt="" />
         <div class="ax-admin-logo__copy">
