@@ -24,7 +24,7 @@ struct ChatExperienceView: View {
                                 userID: userID, token: token, nickname: nickname,
                                 theme: colorScheme == .dark ? "dark" : "light",
                                 onClose: { dismiss() }, onFailure: { failure = $0; loading = false },
-                                onReady: { loading = false })
+                                onReady: { failure = nil; loading = false })
                 .id(reload)
             if loading { ProgressView("正在打开对话…").tint(Color.accentDefault).foregroundStyle(Color.textSecondary) }
             if let failure {
@@ -79,6 +79,17 @@ private struct ConversationWebView: UIViewRepresentable {
         """
     }
 
+    private func authenticationScript(token: String) -> String {
+        let state: [String: Any] = ["token": token, "role": role, "userId": Int(userID) ?? 0,
+                                    "masterId": role == "master" ? (Int(accountID) ?? 0) : 0,
+                                    "displayName": nickname]
+        let data = try! JSONSerialization.data(withJSONObject: ["state": state, "version": 0])
+        let auth = String(decoding: data, as: UTF8.self)
+        let quotedToken = String(decoding: try! JSONSerialization.data(withJSONObject: [token]), as: UTF8.self)
+        let quotedOrigin = String(decoding: try! JSONSerialization.data(withJSONObject: [Self.origin.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))]), as: UTF8.self)
+        return "if(window.location.origin===\(quotedOrigin)[0]){localStorage.setItem('h5_token',\(quotedToken)[0]);localStorage.setItem('h5-auth',JSON.stringify(\(auth)));window.__ASKXUAN_NATIVE_CHAT__=true;}"
+    }
+
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
@@ -91,14 +102,7 @@ private struct ConversationWebView: UIViewRepresentable {
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
         config.userContentController.add(context.coordinator, name: "chatNative")
-        let state: [String: Any] = ["token": token, "role": role, "userId": Int(userID) ?? 0,
-                                    "masterId": role == "master" ? (Int(accountID) ?? 0) : 0,
-                                    "displayName": nickname]
-        let data = try! JSONSerialization.data(withJSONObject: ["state": state, "version": 0])
-        let auth = String(decoding: data, as: UTF8.self)
-        let quotedToken = String(decoding: try! JSONSerialization.data(withJSONObject: [token]), as: UTF8.self)
-        let quotedOrigin = String(decoding: try! JSONSerialization.data(withJSONObject: [Self.origin.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))]), as: UTF8.self)
-        let script = "if(window.location.origin===\(quotedOrigin)[0]){localStorage.setItem('h5_token',\(quotedToken)[0]);localStorage.setItem('h5-auth',JSON.stringify(\(auth)));window.__ASKXUAN_NATIVE_CHAT__=true;}"
+        let script = authenticationScript(token: token)
         context.coordinator.bootstrapScript = script
         context.coordinator.appliedTheme = theme
         config.userContentController.addUserScript(WKUserScript(source: script + "\n" + themeScript, injectionTime: .atDocumentStart, forMainFrameOnly: true))
@@ -113,6 +117,7 @@ private struct ConversationWebView: UIViewRepresentable {
         var url = Self.origin.appendingPathComponent(prefix).appendingPathComponent("chats").appendingPathComponent(conversationID)
         var parts = URLComponents(url: url, resolvingAgainstBaseURL: false)!
         parts.queryItems = [URLQueryItem(name: "embedded", value: "1")]; url = parts.url!
+        context.coordinator.conversationURL = url
         web.load(URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData))
         return web
     }
@@ -138,13 +143,55 @@ private struct ConversationWebView: UIViewRepresentable {
         var parent: ConversationWebView; weak var web: WKWebView?
         var bootstrapScript = ""
         var appliedTheme = ""
-        init(_ parent: ConversationWebView) { self.parent = parent }
+        var conversationURL: URL?
+        private var sessionContext: AuthRequestSession?
+        private var recoveringSession = false
+        private var attemptedSessionRecovery = false
+        init(_ parent: ConversationWebView) {
+            self.parent = parent
+            let current = AuthStore.shared.requestSession
+            if current.isAuthenticated, current.accessToken == parent.token { sessionContext = current }
+        }
+
+        private func recoverSession() {
+            guard !recoveringSession, let context = sessionContext else { return }
+            recoveringSession = true
+            let allowsRefresh = !attemptedSessionRecovery
+            attemptedSessionRecovery = true
+            Task {
+                defer { recoveringSession = false }
+                do {
+                    let renewed = try await APIClient.shared.recoverEmbeddedSession(context, allowsRefresh: allowsRefresh)
+                    guard let token = renewed.accessToken, let web else { return }
+                    sessionContext = renewed
+                    bootstrapScript = parent.authenticationScript(token: token)
+                    let controller = web.configuration.userContentController
+                    controller.removeAllUserScripts()
+                    controller.addUserScript(WKUserScript(source: bootstrapScript + "\n" + parent.themeScript,
+                                                          injectionTime: .atDocumentStart, forMainFrameOnly: true))
+                    // The per-account data store retains drafts; bootstrap the renewed JWT before reloading.
+                    if let conversationURL {
+                        web.load(URLRequest(url: conversationURL, cachePolicy: .reloadIgnoringLocalCacheData))
+                    }
+                } catch {
+                    if AuthStore.shared.isLoggedIn, !(error is CancellationError), (error as? APIError)?.isCancellation != true {
+                        parent.onFailure("登录验证暂时无法完成，请检查网络后重试。")
+                    }
+                }
+            }
+        }
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             webView.evaluateJavaScript(parent.themeScript, completionHandler: nil)
             parent.onReady()
         }
-        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { parent.onFailure("聊天页面暂时无法打开，请检查网络后重试。") }
-        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { parent.onFailure("连接中断，请重新加载对话。") }
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            guard !recoveringSession, (error as? URLError)?.code != .cancelled else { return }
+            parent.onFailure("聊天页面暂时无法打开，请检查网络后重试。")
+        }
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            guard !recoveringSession, (error as? URLError)?.code != .cancelled else { return }
+            parent.onFailure("连接中断，请重新加载对话。")
+        }
         func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { parent.onFailure("聊天页面已暂停，重新加载即可恢复草稿。") }
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             guard action.targetFrame?.isMainFrame != false else { decisionHandler(.cancel); return }
@@ -156,7 +203,7 @@ private struct ConversationWebView: UIViewRepresentable {
             if url.path == root || url.path == root + "/" { decisionHandler(.cancel); parent.onClose(); return }
             guard url.path == root + "/" + parent.conversationID else {
                 decisionHandler(.cancel)
-                if url.path.hasSuffix("/login") { parent.onFailure("登录已失效，请返回并重新登录。") }
+                if url.path.hasSuffix("/login") { recoverSession() }
                 return
             }
             decisionHandler(.allow)
@@ -166,8 +213,13 @@ private struct ConversationWebView: UIViewRepresentable {
             decisionHandler(.prompt)
         }
         func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
-            guard message.frameInfo.isMainFrame, message.frameInfo.securityOrigin.host == ConversationWebView.origin.host,
+            guard message.frameInfo.isMainFrame,
+                  let frameURL = message.frameInfo.request.url,
+                  frameURL.scheme == ConversationWebView.origin.scheme,
+                  frameURL.host == ConversationWebView.origin.host,
+                  frameURL.port == ConversationWebView.origin.port,
                   let body = message.body as? [String: String], let action = body["action"] else { return }
+            if action == "session-expired" { recoverSession(); return }
             if action == "close" { parent.onClose() }
             if action == "download", let id = body["attachmentId"], UUID(uuidString: id) != nil {
                 let name = (body["name"] ?? "附件") as NSString
@@ -177,10 +229,11 @@ private struct ConversationWebView: UIViewRepresentable {
         }
         private func download(attachmentID: String, name: String) async {
             let url = AppConfig.baseURL.appendingPathComponent("chats").appendingPathComponent(parent.conversationID).appendingPathComponent("attachments").appendingPathComponent(attachmentID)
-            var request = URLRequest(url: url); request.setValue("Bearer \(parent.token)", forHTTPHeaderField: "Authorization")
+            let request = URLRequest(url: url)
+            guard let context = sessionContext else { return }
             do {
-                let (data,response) = try await URLSession.shared.data(for: request)
-                guard (response as? HTTPURLResponse)?.statusCode == 200, response.mimeType != "application/json", data.count <= 20 * 1024 * 1024 else { throw URLError(.badServerResponse) }
+                let (data,response) = try await APIClient.shared.sessionData(for: request, context: context)
+                guard response.statusCode == 200, response.mimeType != "application/json", data.count <= 20 * 1024 * 1024 else { throw URLError(.badServerResponse) }
                 let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
                 let file = folder.appendingPathComponent(name.isEmpty ? "附件" : name)
@@ -191,7 +244,11 @@ private struct ConversationWebView: UIViewRepresentable {
                 var top = root; while let presented = top.presentedViewController { top = presented }
                 sheet.popoverPresentationController?.sourceView = web
                 top.present(sheet, animated: true)
-            } catch { parent.onFailure("附件下载失败，请返回对话后重试。") }
+            } catch {
+                if AuthStore.shared.isLoggedIn, !(error is CancellationError), (error as? APIError)?.isCancellation != true {
+                    parent.onFailure("附件下载失败，请返回对话后重试。")
+                }
+            }
         }
     }
 }

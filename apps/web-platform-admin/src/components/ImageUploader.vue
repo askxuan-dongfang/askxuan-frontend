@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isAdminSessionExpired } from '@/api/client'
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, UploadFilled } from '@element-plus/icons-vue'
@@ -86,7 +87,7 @@ async function httpRequest(options: UploadRequestOptions) {
     if (!props.multiple) emitURLs([url])
     options.onSuccess({ url })
     if (!props.multiple) ElMessage.success('上传成功')
-  } catch (error) {
+  } catch (error) { if (isAdminSessionExpired(error)) return;
     options.onError(error as any)
     ElMessage.warning('上传失败，可手动填写图片 URL')
   }

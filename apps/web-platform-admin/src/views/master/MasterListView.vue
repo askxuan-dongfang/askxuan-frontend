@@ -112,6 +112,7 @@
 </template>
 
 <script setup lang="ts">
+import { isAdminSessionExpired } from '@/api/client'
 import { useRouter } from 'vue-router'
 const router = useRouter()
 import { ref, reactive, onMounted } from 'vue'
@@ -143,7 +144,7 @@ async function loadData() {
     list.value = res.list || []
     sects.value = [...new Set(list.value.map((item) => item.sect).filter(Boolean))]
     total.value = res.total || 0
-  } catch (e: any) {
+  } catch (e: any) { if (isAdminSessionExpired(e)) return;
     list.value = []
     total.value = 0
     ElMessage.error(e?.message || '法师列表加载失败，请稍后重试')

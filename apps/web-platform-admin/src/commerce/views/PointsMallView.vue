@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isAdminSessionExpired } from '@/api/client'
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import 'element-plus/es/components/message/style/css'
@@ -17,10 +18,10 @@ const shipment=reactive({carrier:'',trackingNo:''})
 const labels:Record<string,string>={draft:'草稿',on_sale:'上架',off_sale:'下架',pending:'待发货',shipped:'已发货',completed:'已完成',cancelled:'已取消'}
 async function load(){busy.value=true;error.value='';try{const [r,rows]=await Promise.all([client.get<typeof report>('/admin/points/report'),client.get<Product[]|Order[]>(`/admin/points/${tab.value}`,{params:{page:page.value,keyword:keyword.value,status:status.value}})]);Object.assign(report,r);loaded.value=true;if(tab.value==='products')products.value=rows as Product[];else orders.value=rows as Order[]}catch(e){error.value=e instanceof Error?e.message:'加载失败'}finally{busy.value=false}}
 function edit(p?:Product){Object.assign(form,p||{id:0,name:'',category:'',description:'',image:'',pointsPrice:1,stock:0,status:'draft',version:0});editing.value=true}
-async function save(){if(!form.name.trim()||!Number.isInteger(form.pointsPrice)||form.pointsPrice<1||!Number.isInteger(form.stock)||form.stock<0){ElMessage.error('请填写商品名称、正整数积分价格和非负整数库存');return}busy.value=true;try{if(form.id)await client.put(`/admin/points/products/${form.id}`,form);else await client.post('/admin/points/products',form);editing.value=false;ElMessage.success('商品已保存');await load()}catch(e){error.value=e instanceof Error?e.message:'操作失败';ElMessage.error(error.value)}finally{busy.value=false}}
-async function cancel(o:Order){try{await ElMessageBox.confirm(`取消 ${o.orderNo}，退回 ${o.pointsTotal} 积分并恢复库存？`,'取消兑换')}catch{return}busy.value=true;try{await client.post(`/admin/points/orders/${o.id}/cancel`);await load()}catch(e){error.value=e instanceof Error?e.message:'操作失败';ElMessage.error(error.value)}finally{busy.value=false}}
+async function save(){if(!form.name.trim()||!Number.isInteger(form.pointsPrice)||form.pointsPrice<1||!Number.isInteger(form.stock)||form.stock<0){ElMessage.error('请填写商品名称、正整数积分价格和非负整数库存');return}busy.value=true;try{if(form.id)await client.put(`/admin/points/products/${form.id}`,form);else await client.post('/admin/points/products',form);editing.value=false;ElMessage.success('商品已保存');await load()}catch(e){ if (isAdminSessionExpired(e)) return;error.value=e instanceof Error?e.message:'操作失败';ElMessage.error(error.value)}finally{busy.value=false}}
+async function cancel(o:Order){try{await ElMessageBox.confirm(`取消 ${o.orderNo}，退回 ${o.pointsTotal} 积分并恢复库存？`,'取消兑换')}catch{return}busy.value=true;try{await client.post(`/admin/points/orders/${o.id}/cancel`);await load()}catch(e){ if (isAdminSessionExpired(e)) return;error.value=e instanceof Error?e.message:'操作失败';ElMessage.error(error.value)}finally{busy.value=false}}
 function openShip(o:Order){shipping.value=o;shipment.carrier='';shipment.trackingNo=''}
-async function ship(){if(!shipping.value||!shipment.carrier.trim()||!shipment.trackingNo.trim()){ElMessage.error('请填写物流公司和运单号');return}busy.value=true;try{await client.post(`/admin/points/orders/${shipping.value.id}/ship`,shipment);shipping.value=null;await load()}catch(e){error.value=e instanceof Error?e.message:'操作失败';ElMessage.error(error.value)}finally{busy.value=false}}
+async function ship(){if(!shipping.value||!shipment.carrier.trim()||!shipment.trackingNo.trim()){ElMessage.error('请填写物流公司和运单号');return}busy.value=true;try{await client.post(`/admin/points/orders/${shipping.value.id}/ship`,shipment);shipping.value=null;await load()}catch(e){ if (isAdminSessionExpired(e)) return;error.value=e instanceof Error?e.message:'操作失败';ElMessage.error(error.value)}finally{busy.value=false}}
 function switchTab(){page.value=1;status.value='';keyword.value='';void load()}
 onMounted(load)
 </script>

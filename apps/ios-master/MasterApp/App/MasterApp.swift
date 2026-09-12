@@ -24,10 +24,6 @@ struct MasterApp: App {
         }
         // 配置 APIClient 的 BaseURL
         APIClient.shared.configureBaseURL(AppConfig.baseURL)
-        // 配置 401 未授权回调：登出并回到登录页
-        APIClient.shared.onUnauthorized = {
-            AuthStore.shared.logout()
-        }
         // 配置随主题变化的系统外观
         AppTheme.configureAppearance()
         configureSmokeCredentials()
@@ -41,6 +37,7 @@ struct MasterApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .id(authStore.sessionID)
                 .environmentObject(authStore)
                 .preferredColorScheme(AppTheme(rawValue: themeValue)?.colorScheme)
                 .appVisualDefaults()

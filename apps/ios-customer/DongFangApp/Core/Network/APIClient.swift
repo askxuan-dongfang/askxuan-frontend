@@ -13,17 +13,25 @@
 
 import Foundation
 
+private struct AuthenticationFailure: Error {
+    let code: Int
+    let message: String
+    var canRefresh: Bool { code != 40105 }
+}
+
+private struct ResponseStatus: Decodable {
+    let code: Int
+    let message: String?
+}
+
 private actor AccessTokenRefreshCoordinator {
-    private var inFlight: Task<String?, Error>?
+    private var inFlight: [AuthRequestSession: Task<AuthRequestSession, Error>] = [:]
 
-    func refresh(using operation: @escaping @Sendable () async throws -> String?) async throws -> String? {
-        if let inFlight {
-            return try await inFlight.value
-        }
-
+    func refresh(for session: AuthRequestSession, using operation: @escaping @Sendable () async throws -> AuthRequestSession) async throws -> AuthRequestSession {
+        if let pending = inFlight[session] { return try await pending.value }
         let task = Task { try await operation() }
-        inFlight = task
-        defer { inFlight = nil }
+        inFlight[session] = task
+        defer { inFlight[session] = nil }
         return try await task.value
     }
 }
@@ -56,12 +64,12 @@ final class APIClient {
         KeychainHelper.readString(service: AppConfig.keychainService, key: AppConfig.refreshTokenKey)
     }
 
-    private init() {
+    init(session: URLSession? = nil) {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = AppConfig.requestTimeout
         config.waitsForConnectivity = true
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
-        self.session = URLSession(configuration: config)
+        self.session = session ?? URLSession(configuration: config)
 
         self.decoder = JSONDecoder()
         self.encoder = JSONEncoder()
@@ -73,43 +81,169 @@ final class APIClient {
         self.baseURL = url
     }
 
-    /// 核心请求方法（解包 {code,message,data}）
-    /// - Parameter endpoint: 端点定义
-    /// - Returns: 解析后的业务数据 T
+    /// Recover only within the login that sent this request. Never replay a write as another account.
     func request<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
+        let context = await MainActor.run { AuthStore.shared.requestSession }
         let request = try buildRequest(endpoint)
-        do {
-            return try await perform(request: request)
-        } catch APIError.unauthorized {
-            if endpoint.shouldAttemptTokenRefresh {
-                // 另一个请求可能已完成刷新，优先使用当前新 token 重试。
-                if let currentToken = tokenProvider(),
-                   authorizationToken(in: request) != currentToken {
-                    return try await perform(request: authorizedCopy(of: request, token: currentToken))
-                }
-
-                if let newToken = try? await refreshCoordinator.refresh(using: { [weak self] in
-                    guard let self else { return nil }
-                    return try await self.refreshAccessToken()
-                }) {
-                    return try await perform(request: authorizedCopy(of: request, token: newToken))
-                }
-
-                // 刷新等待期间若凭据已被其他请求更新，不能用旧请求的失败覆盖新登录态。
-                if let currentToken = tokenProvider(),
-                   authorizationToken(in: request) != currentToken {
-                    return try await perform(request: authorizedCopy(of: request, token: currentToken))
-                }
-            }
-            // 只清理由这次失败请求携带的凭据，不能让旧请求覆盖后续的新登录态。
-            let failedToken = authorizationToken(in: request)
-            await MainActor.run {
-                if AuthStore.shared.accessToken == failedToken {
-                    AuthStore.shared.logout()
-                }
-            }
-            throw APIError.unauthorized
+        return try await withSessionRecovery(context, usesSession: endpoint.usesSessionAuthorization, allowsRefresh: endpoint.shouldAttemptTokenRefresh) { [self] current in
+            let authorized = authorizedCopy(of: request, token: endpoint.usesSessionAuthorization ? current.accessToken : nil)
+            return try await perform(request: authorized)
         }
+    }
+
+    /// Same-origin native chat endpoints and attachment downloads share the main JWT policy.
+    func sessionData(for request: URLRequest, context supplied: AuthRequestSession? = nil) async throws -> (Data, HTTPURLResponse) {
+        guard let url = request.url, url.scheme == baseURL.scheme, url.host == baseURL.host,
+              url.port == baseURL.port, url.path.hasPrefix(baseURL.path + "/") else { throw APIError.invalidURL }
+        let context: AuthRequestSession
+        if let supplied { context = supplied }
+        else { context = await MainActor.run { AuthStore.shared.requestSession } }
+        guard context.isAuthenticated else { throw CancellationError() }
+        try await ensureCurrentLogin(context)
+        return try await withSessionRecovery(context) { [self] current in
+            let data: Data
+            let response: URLResponse
+            do { (data, response) = try await session.data(for: authorizedCopy(of: request, token: current.accessToken)) }
+            catch { throw APIError.networkError(error) }
+            guard let http = response as? HTTPURLResponse else { throw APIError.networkError(URLError(.badServerResponse)) }
+            if let error = responseError(http, data: data) { throw error }
+            return (data, http)
+        }
+    }
+
+    /// H5 has already rejected this WebView's token. Refresh once before reloading its bootstrap.
+    func recoverEmbeddedSession(_ context: AuthRequestSession, allowsRefresh: Bool) async throws -> AuthRequestSession {
+        var initialAttempt = true
+        return try await withSessionRecovery(context, allowsRefresh: allowsRefresh) { current in
+            if initialAttempt {
+                initialAttempt = false
+                throw AuthenticationFailure(code: 40102, message: "登录已过期，请重新登录")
+            }
+            return current
+        }
+    }
+
+    private func withSessionRecovery<T>(_ context: AuthRequestSession, usesSession: Bool = true, allowsRefresh: Bool = true,
+                                         operation: (AuthRequestSession) async throws -> T) async throws -> T {
+        do {
+            let result = try await operation(context)
+            if usesSession && context.isAuthenticated { try await ensureCurrentLogin(context) }
+            return result
+        } catch let failure as AuthenticationFailure {
+            try Task.checkCancellation()
+            // Login/register errors and anonymous requests do not expire another session.
+            guard usesSession, context.isAuthenticated, context.accessToken?.isEmpty == false else {
+                throw APIError.serverError(failure.code, failure.message)
+            }
+            let current = try await currentLogin(context)
+            var retry: AuthRequestSession?
+            if current.accessToken != context.accessToken {
+                retry = current
+            } else if allowsRefresh, failure.canRefresh, context.refreshToken?.isEmpty == false {
+                do {
+                    retry = try await refreshCoordinator.refresh(for: context) { [self] in
+                        try await refreshAccessToken(for: context)
+                    }
+                } catch is AuthenticationFailure {
+                    return try await expire(context)
+                } catch {
+                    // A cancelled view or temporary network failure cannot erase valid refresh credentials.
+                    try await ensureCurrentLogin(context)
+                    throw error
+                }
+            }
+            guard let retry else { return try await expire(context) }
+            try Task.checkCancellation()
+            try await ensureCurrentLogin(retry)
+            do {
+                let result = try await operation(retry)
+                try await ensureCurrentLogin(retry)
+                return result
+            } catch is AuthenticationFailure {
+                return try await expire(retry)
+            }
+        }
+    }
+
+    private func currentLogin(_ context: AuthRequestSession) async throws -> AuthRequestSession {
+        // Read and validate atomically: a later login must never become the retry identity.
+        try await MainActor.run {
+            let current = AuthStore.shared.requestSession
+            guard current.id == context.id, current.isAuthenticated else { throw CancellationError() }
+            return current
+        }
+    }
+
+    private func ensureCurrentLogin(_ context: AuthRequestSession) async throws {
+        _ = try await currentLogin(context)
+    }
+
+    private func expire<T>(_ context: AuthRequestSession) async throws -> T {
+        let expired = await MainActor.run { AuthStore.shared.expireSession(context) }
+        if !expired { throw CancellationError() }
+        throw APIError.unauthorized
+    }
+
+    private func refreshAccessToken(for context: AuthRequestSession) async throws -> AuthRequestSession {
+        let current = try await currentLogin(context)
+        if current.accessToken != context.accessToken { return current }
+        guard let refreshToken = context.refreshToken, !refreshToken.isEmpty else {
+            throw AuthenticationFailure(code: 40105, message: "登录已过期，请重新登录")
+        }
+        var request = try buildRequest(.authRefresh(refreshToken: refreshToken))
+        request.setValue(nil, forHTTPHeaderField: "Authorization")
+        let response: RefreshResponse = try await perform(request: request)
+        guard !response.accessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw AuthenticationFailure(code: 40105, message: "登录已过期，请重新登录")
+        }
+        let accepted = await MainActor.run {
+            AuthStore.shared.acceptRefreshedAccessToken(response.accessToken, for: context)
+        }
+        guard let accepted else { throw CancellationError() }
+        return accepted
+    }
+
+    private func responseError(_ http: HTTPURLResponse, data: Data) -> Error? {
+        // Permission failures are never a request to replace the current login.
+        if http.statusCode == 403 { return APIError.serverError(403, "暂无访问权限") }
+        // Inspect the envelope before decoding T: error responses may contain null or a different data shape.
+        if let status = try? decoder.decode(ResponseStatus.self, from: data), status.code != 0 {
+            let message = status.message ?? "请求失败"
+            if [40101, 40102, 40103, 40105].contains(status.code) {
+                return AuthenticationFailure(code: status.code, message: message)
+            }
+            return APIError.serverError(status.code, message)
+        }
+        if http.statusCode == 401 {
+            return AuthenticationFailure(code: 401, message: "登录已过期，请重新登录")
+        }
+        if !(200..<300).contains(http.statusCode) {
+            return APIError.serverError(http.statusCode, String(data: data, encoding: .utf8) ?? "未知错误")
+        }
+        return nil
+    }
+
+    private func perform<T: Decodable>(request: URLRequest) async throws -> T {
+        let data: Data
+        let response: URLResponse
+        do { (data, response) = try await session.data(for: request) }
+        catch { throw APIError.networkError(error) }
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.networkError(URLError(.badServerResponse))
+        }
+        if let error = responseError(http, data: data) { throw error }
+        do {
+            if let envelope = try? decoder.decode(APIResponse<T>.self, from: data), envelope.isSuccess, let result = envelope.data {
+                return result
+            }
+            return try decoder.decode(T.self, from: data)
+        } catch { throw APIError.decodingError(error) }
+    }
+
+    private func authorizedCopy(of request: URLRequest, token: String?) -> URLRequest {
+        var copy = request
+        copy.setValue(token.flatMap { $0.isEmpty ? nil : "Bearer \($0)" }, forHTTPHeaderField: "Authorization")
+        return copy
     }
 
     struct AIStreamEvent: Decodable {
@@ -136,24 +270,32 @@ final class APIClient {
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         request.setValue(AppConfig.clientType, forHTTPHeaderField: "X-Client-Type")
         request.setValue(AppConfig.clientVersion, forHTTPHeaderField: "X-Client-Version")
-        if let token = tokenProvider(), !token.isEmpty {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-
-        let (bytes, response) = try await session.bytes(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw APIError.networkError(URLError(.badServerResponse))
-        }
-        if http.statusCode == 401 { throw APIError.unauthorized }
-        guard (200..<300).contains(http.statusCode) else {
+        let context = await MainActor.run { AuthStore.shared.requestSession }
+        let bytes = try await withSessionRecovery(context) { [self] current in
+            let (stream, response) = try await session.bytes(for: authorizedCopy(of: request, token: current.accessToken))
+            guard let http = response as? HTTPURLResponse else {
+                throw APIError.networkError(URLError(.badServerResponse))
+            }
+            if http.value(forHTTPHeaderField: "Content-Type")?.lowercased().contains("text/event-stream") == true {
+                if let error = responseError(http, data: Data()) { throw error }
+                return stream
+            }
+            // Gateways can return HTTP 200 with a JSON 40102/40103 envelope instead of SSE.
+            var data = Data()
+            for try await byte in stream {
+                data.append(byte)
+                if data.count > 65_536 { break }
+            }
+            if let error = responseError(http, data: data) { throw error }
             throw APIError.serverError(http.statusCode, "AI 流式连接失败")
         }
 
         var eventName = "delta"
         var dataLines: [String] = []
-        for try await line in bytes.lines {
+        func consumeLine(_ line: String) async throws {
+            try await ensureCurrentLogin(context)
             if line.isEmpty {
-                guard !dataLines.isEmpty else { continue }
+                guard !dataLines.isEmpty else { return }
                 let data = Data(dataLines.joined().utf8)
                 var payload = try decoder.decode(AIStreamEvent.self, from: data)
                 payload = AIStreamEvent(
@@ -176,6 +318,16 @@ final class APIClient {
                 dataLines.append(String(line.dropFirst(5)).trimmingCharacters(in: .whitespaces))
             }
         }
+        // AsyncBytes.lines omits empty lines, but SSE needs them to delimit events.
+        var lineBytes = Data()
+        for try await byte in bytes {
+            if byte == 10 {
+                if lineBytes.last == 13 { lineBytes.removeLast() }
+                try await consumeLine(String(decoding: lineBytes, as: UTF8.self))
+                lineBytes.removeAll(keepingCapacity: true)
+            } else { lineBytes.append(byte) }
+        }
+        if !lineBytes.isEmpty { try await consumeLine(String(decoding: lineBytes, as: UTF8.self)) }
     }
 
     func upload(_ data: Data, to url: URL, headers: [String: String]) async throws {
@@ -187,69 +339,6 @@ final class APIClient {
               (200..<300).contains(httpResponse.statusCode) else {
             throw APIError.networkError(URLError(.cannotWriteToFile))
         }
-    }
-
-    private func perform<T: Decodable>(request: URLRequest) async throws -> T {
-        let data: Data
-        let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw APIError.networkError(error)
-        }
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.networkError(URLError(.badServerResponse))
-        }
-
-        // 401 鉴权失败
-        if httpResponse.statusCode == 401 {
-            throw APIError.unauthorized
-        }
-
-        // 非 2xx 错误
-        guard (200..<300).contains(httpResponse.statusCode) else {
-            let message = (try? decoder.decode(APIResponse<EmptyData>.self, from: data))?.message
-                ?? String(data: data, encoding: .utf8)
-                ?? "未知错误"
-            throw APIError.serverError(httpResponse.statusCode, message)
-        }
-
-        // 解析统一响应格式 { code, message, data }
-        do {
-            let apiResponse = try decoder.decode(APIResponse<T>.self, from: data)
-            if apiResponse.isSuccess, let result = apiResponse.data {
-                return result
-            }
-            // 业务码 40101：未登录或登录已过期 → 触发登出
-            if apiResponse.code == 40101 {
-                throw APIError.unauthorized
-            }
-            // code 非 0：业务错误
-            throw APIError.serverError(apiResponse.code, apiResponse.message)
-        } catch let error as APIError {
-            throw error
-        } catch {
-            // 兼容某些接口直接返回裸数据（未包装，如 message-service）
-            do {
-                return try decoder.decode(T.self, from: data)
-            } catch {
-                throw APIError.decodingError(error)
-            }
-        }
-    }
-
-    private func refreshAccessToken() async throws -> String? {
-        guard let refreshToken = refreshTokenProvider(), !refreshToken.isEmpty else {
-            return nil
-        }
-        var request = try buildRequest(.authRefresh(refreshToken: refreshToken))
-        request.setValue(nil, forHTTPHeaderField: "Authorization")
-        let resp: RefreshResponse = try await perform(request: request)
-        await MainActor.run {
-            AuthStore.shared.updateAccessToken(resp.accessToken)
-        }
-        return resp.accessToken
     }
 
     /// 构造 URLRequest
@@ -273,7 +362,7 @@ final class APIClient {
         request.setValue(AppConfig.clientVersion, forHTTPHeaderField: "X-Client-Version")
 
         // 注入 JWT Token
-        if let token = tokenProvider(), !token.isEmpty {
+        if endpoint.usesSessionAuthorization, let token = tokenProvider(), !token.isEmpty {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
@@ -290,16 +379,7 @@ final class APIClient {
         return request
     }
 
-    private func authorizationToken(in request: URLRequest) -> String? {
-        request.value(forHTTPHeaderField: "Authorization")?
-            .replacingOccurrences(of: "Bearer ", with: "")
-    }
 
-    private func authorizedCopy(of request: URLRequest, token: String) -> URLRequest {
-        var copy = request
-        copy.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        return copy
-    }
 }
 
 /// 空数据占位（用于解析仅含 code/message 的错误响应）

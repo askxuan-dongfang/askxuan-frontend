@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isAdminSessionExpired } from '@/api/client'
 // 新增独立执业大师：平台创建独立执业大师（无寺庙），创建后待资质审核
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -14,7 +15,7 @@ const formRef = ref()
 const beliefOptions = ref<{value:string;label:string}[]>([])
 async function loadBeliefs(){
  try{const data=await taxonomyApi.beliefs();beliefOptions.value=data.list.filter(b=>b.status==='enabled').map(b=>({value:b.code,label:b.name}))}
- catch{ElMessage.error('分类加载失败，请刷新重试')}
+ catch(sessionError) { if (isAdminSessionExpired(sessionError)) return;ElMessage.error('分类加载失败，请刷新重试')}
 }
 
 
@@ -58,7 +59,7 @@ async function submit() {
     })
     ElMessage.success(`已创建独立执业大师 ${resp.id}，待资质审核通过后上架`)
     router.push('/master/list')
-  } catch (e) {
+  } catch (e) { if (isAdminSessionExpired(e)) return;
     ElMessage.error('创建失败，请稍后重试')
   } finally {
     saving.value = false

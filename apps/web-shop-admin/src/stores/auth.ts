@@ -1,3 +1,4 @@
+import { subscribeAdminSession, startAdminSession } from '../../../../packages/admin-ui/session-expiry'
 // 认证状态管理 - Pinia store
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
@@ -34,6 +35,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function setSession(result: LoginResult): void {
+    startAdminSession('df_shop_admin')
     token.value = result.accessToken
     refreshToken.value = result.refreshToken
     userInfo.value = result.userInfo
@@ -44,6 +46,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   /** 退出登录 */
   function logout(): void {
+    localStorage.removeItem('df_shop_admin_session_id')
     token.value = ''
     refreshToken.value = ''
     userInfo.value = null
@@ -51,6 +54,11 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('df_shop_admin_refresh_token')
     localStorage.removeItem('df_shop_admin_user')
   }
+
+  subscribeAdminSession('df_shop_admin', logout, () => {
+    token.value = localStorage.getItem('df_shop_admin_token') || ''
+    refreshToken.value = localStorage.getItem('df_shop_admin_refresh_token') || ''
+  })
 
   return {
     token,

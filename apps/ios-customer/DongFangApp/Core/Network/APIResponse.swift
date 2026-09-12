@@ -61,8 +61,17 @@ enum APIError: Error, LocalizedError {
     /// 取消不应被当作错误展示，也不应清空已有数据。
     var isCancellation: Bool {
         if case .networkError(let underlying) = self {
+            if underlying is CancellationError { return true }
             return (underlying as? URLError)?.code == .cancelled
         }
         return false
     }
+}
+
+/// A request belongs to one login generation, even if two logins receive identical JWTs.
+struct AuthRequestSession: Hashable, Sendable {
+    let id: UUID
+    let accessToken: String?
+    let refreshToken: String?
+    let isAuthenticated: Bool
 }

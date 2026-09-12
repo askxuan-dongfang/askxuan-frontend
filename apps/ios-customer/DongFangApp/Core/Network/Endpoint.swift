@@ -694,6 +694,14 @@ enum Endpoint {
         }
     }
 
+    /// Authentication forms never send or invalidate a previous login token.
+    var usesSessionAuthorization: Bool {
+        switch self {
+        case .authLogin, .authRegister, .authRefresh: return false
+        default: return true
+        }
+    }
+
     var shouldAttemptTokenRefresh: Bool {
         switch self {
         case .authLogin, .authRegister, .authRefresh, .authLogout:

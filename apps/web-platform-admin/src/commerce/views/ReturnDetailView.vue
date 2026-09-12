@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isAdminSessionExpired } from '@/api/client'
 // 退货详情（含审核 / 退款操作）
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -86,7 +87,7 @@ async function handleRefund() {
   }
 }
 
-async function receiveReturn(){try{await ElMessageBox.confirm('确认已收到退回商品并完成核验？','确认收货');await client.put(`/admin/orders/returns/${returnId.value}/receive`);ElMessage.success('已确认收货，可发起退款');await loadDetail()}catch(e){if(e instanceof Error)ElMessage.error(e.message)}}
+async function receiveReturn(){try{await ElMessageBox.confirm('确认已收到退回商品并完成核验？','确认收货');await client.put(`/admin/orders/returns/${returnId.value}/receive`);ElMessage.success('已确认收货，可发起退款');await loadDetail()}catch(e){ if (isAdminSessionExpired(e)) return;if(e instanceof Error)ElMessage.error(e.message)}}
 onMounted(() => {
   loadDetail()
 })

@@ -30,6 +30,7 @@
 </template>
 
 <script setup lang="ts">
+import { isAdminSessionExpired } from '@/api/client'
 import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -69,7 +70,7 @@ async function onSubmit() {
       const requested = typeof route.query.redirect === 'string' ? route.query.redirect : ''
       const redirect = requested.startsWith('/') && !requested.startsWith('//') ? requested : defaultRoute(auth.roles)
       router.push(redirect)
-    } catch (e: any) {
+    } catch (e: any) { if (isAdminSessionExpired(e)) return;
       ElMessage.error(e?.message || '登录失败，请检查账号密码')
     } finally {
       loading.value = false
