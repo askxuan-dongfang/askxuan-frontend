@@ -100,7 +100,7 @@ struct DiyDetailView: View {
                     Label("\(viewModel.beadSlots.count) 颗", systemImage: "circle.dotted")
                     Label(String(format: "%.1f cm 手围", Double(viewModel.wristSizeMm) / 10), systemImage: "ruler")
                 }.font(.caption).foregroundStyle(Color.textSecondary)
-                Text(viewModel.totalPriceText).font(AppTypography.numeric(28, weight: .semibold)).foregroundStyle(Color.accentLight)
+                Text(viewModel.totalPriceText).appNumericFont(28, weight: .semibold).foregroundStyle(Color.accentLight)
                 Text("搭配预估 · 以确认订单页为准").font(.caption).foregroundStyle(Color.textSecondary)
             }.padding(.horizontal, 20).padding(.bottom, 24)
         }
@@ -145,7 +145,7 @@ struct DiyDetailView: View {
         VStack(spacing: 0) {
             HStack {
                 Text(label)
-                    .font(.system(size: 13))
+                    .font(AppTypography.supporting)
                     .foregroundStyle(Color.textTertiary)
                 Spacer()
                 Text(value)
@@ -182,7 +182,7 @@ struct DiyDetailView: View {
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
                 Text("\(viewModel.cartItems.count) 种")
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }
             .padding(.horizontal, AppSpacing.lg)
@@ -216,20 +216,20 @@ struct DiyDetailView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.material.name)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(AppTypography.body.weight(.medium))
                     .foregroundStyle(Color.textPrimary)
                 Text("\(item.material.spec) · \(item.material.categoryDisplay)")
-                    .font(.system(size: 11))
+                    .font(AppTypography.micro)
                     .foregroundStyle(Color.textTertiary)
             }
 
             Spacer()
 
             Text("×\(item.quantity)")
-                .font(.system(size: 13, weight: .semibold))
+                .font(AppTypography.supporting.weight(.semibold))
                 .foregroundStyle(Color.textSecondary)
             Text(item.subtotalText)
-                .font(.system(size: 14, weight: .semibold))
+                .font(AppTypography.body.weight(.semibold))
                 .foregroundStyle(Color.brandDefault)
                 .frame(width: 60, alignment: .trailing)
         }
@@ -242,13 +242,13 @@ struct DiyDetailView: View {
     private func availabilityWarning(_ message: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Label("该作品暂不可直接下单", systemImage: "exclamationmark.triangle.fill")
-                .font(.system(size: 14, weight: .semibold))
+                .font(AppTypography.body.weight(.semibold))
                 .foregroundStyle(Color.stateWarning)
             Text(message)
-                .font(.system(size: 12))
+                .font(AppTypography.caption)
                 .foregroundStyle(Color.textSecondary)
             Text("请进入编辑器替换已失效材料。")
-                .font(.system(size: 12))
+                .font(AppTypography.caption)
                 .foregroundStyle(Color.textTertiary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -264,7 +264,7 @@ struct DiyDetailView: View {
         VStack(alignment: .leading, spacing: AppSpacing.sm) {
             HStack(spacing: 6) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.accentDefault)
                 Text("法师加持")
                     .font(.cardTitle)
@@ -277,10 +277,10 @@ struct DiyDetailView: View {
                     .foregroundStyle(Color.stateSuccess)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("可享法师开光加持")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                     Text("下单时可选择加持服务，由法师诵经开光加持。")
-                        .font(.system(size: 12))
+                        .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                         .lineSpacing(3)
                 }

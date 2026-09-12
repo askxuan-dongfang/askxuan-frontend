@@ -102,7 +102,7 @@ struct MasterListView: View {
     private func tagPill(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 12))
+                .font(AppTypography.caption)
                 .foregroundStyle(isSelected ? Color.white : Color.textTertiary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 5)
@@ -126,7 +126,7 @@ struct MasterListView: View {
             } label: {
                 HStack(spacing: 2) {
                     Text(title)
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(AppTypography.micro.weight(.semibold))
                         .foregroundStyle(isExpanded ? Color.accentDefault : Color.textTertiary)
                         .lineLimit(1)
                     Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
@@ -156,7 +156,7 @@ struct MasterListView: View {
                     .fill(isSelected ? Color.brandDefault : Color.clear)
                     .frame(width: 2)
                 Text(title)
-                    .font(.system(size: 11, weight: isSelected ? .medium : .regular))
+                    .font(AppTypography.micro.weight(isSelected ? .medium : .regular))
                     .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                     .lineLimit(1)
                     .frame(maxWidth: .infinity)
@@ -188,12 +188,12 @@ struct MasterListView: View {
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 8) {
                     Text(master.dharmaName)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
 
                     Text("\(master.type)·\(master.sect)")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(AppTypography.micro.weight(.medium))
                         .foregroundStyle(masterTypeColor(for: master).opacity(0.95))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 2)
@@ -204,23 +204,23 @@ struct MasterListView: View {
 
                 // 归属：独立执业大师无寺院
                 Text(master.templeName.isEmpty ? "平台直管 · 独立执业大师" : "\(master.templeName) · \(master.position.isEmpty ? "寺院法师" : master.position)")
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)
 
                 // 专长（大师资料字段）
                 HStack(spacing: 6) {
                     Text("专长")
-                        .font(.system(size: 10))
+                        .font(AppTypography.micro)
                         .foregroundStyle(Color.textTertiary)
                     if master.specialties.isEmpty {
                         Text("暂无")
-                            .font(.system(size: 10))
+                            .font(AppTypography.micro)
                             .foregroundStyle(Color.textTertiary)
                     } else {
                         ForEach(master.specialties.prefix(2), id: \.self) { specialty in
                             Text(specialty)
-                                .font(.system(size: 10))
+                                .font(AppTypography.micro)
                                 .foregroundStyle(Color.brandDefault)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
@@ -234,12 +234,12 @@ struct MasterListView: View {
                 // 可提供服务（大师服务标签，S001-S013 自定价）
                 HStack(spacing: 6) {
                     Text("可约")
-                        .font(.system(size: 10))
+                        .font(AppTypography.micro)
                         .foregroundStyle(Color.textTertiary)
                     if let tags = master.serviceTags, !tags.isEmpty {
                         ForEach(tags.prefix(2), id: \.self) { tag in
                             Text(ServiceType.from(serviceCode: tag.serviceCode)?.rawValue ?? tag.serviceCode)
-                                .font(.system(size: 10))
+                                .font(AppTypography.micro)
                                 .foregroundStyle(Color.stateSuccess)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
@@ -249,7 +249,7 @@ struct MasterListView: View {
                         }
                     } else {
                         Text("暂未配置")
-                            .font(.system(size: 10))
+                            .font(AppTypography.micro)
                             .foregroundStyle(Color.textTertiary)
                     }
                 }
@@ -258,18 +258,18 @@ struct MasterListView: View {
                 HStack {
                     HStack(spacing: 3) {
                         Text(String(format: "%.1f", master.rating))
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(AppTypography.supporting.weight(.semibold))
                             .foregroundStyle(Color.accentDefault)
                         Image(systemName: "star.fill")
-                            .font(.system(size: 10))
+                            .font(AppTypography.micro)
                             .foregroundStyle(Color.accentDefault)
                     }
                     Text(master.isOnline == true ? "在线" : "离线")
-                        .font(.system(size: 11))
+                        .font(AppTypography.micro)
                         .foregroundStyle(master.isOnline == true ? Color.stateSuccess : Color.textTertiary)
                     Spacer()
                     Text(masterPriceText(master))
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.brandDefault)
                 }
             }

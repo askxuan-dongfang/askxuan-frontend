@@ -56,7 +56,7 @@ struct DiyOrderView: View {
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Text("确认订单")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(AppTypography.reading.weight(.semibold))
                     .foregroundStyle(Color.accentDefault)
             }
         }
@@ -102,7 +102,7 @@ struct DiyOrderView: View {
                         .font(AppTypography.title(17))
                         .foregroundStyle(Color.textPrimary)
                     Text("\(checkoutSlots.count) 颗 · \(materialLines.count) 种材料")
-                        .font(.system(size: 12))
+                        .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
                 Spacer()
@@ -129,7 +129,7 @@ struct DiyOrderView: View {
     private var materialSection: some View {
         VStack(spacing: 0) {
             Button {
-                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { materialsExpanded.toggle() }
+                AppMotion.perform { materialsExpanded.toggle() }
             } label: {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
@@ -137,12 +137,12 @@ struct DiyOrderView: View {
                             .font(.cardTitle)
                             .foregroundStyle(Color.textPrimary)
                         Text("\(materialLines.count) 种材料")
-                            .font(.system(size: 11))
+                            .font(AppTypography.micro)
                             .foregroundStyle(Color.textTertiary)
                     }
                     Spacer()
                     Image(systemName: materialsExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(AppTypography.micro.weight(.semibold))
                         .foregroundStyle(Color.accentDefault)
                 }
                 .padding(.vertical, 12)
@@ -158,12 +158,12 @@ struct DiyOrderView: View {
                                 .frame(width: 28, height: 28)
                                 .shadow(color: Color.black.opacity(0.3), radius: 3, y: 2)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(line.name).font(.system(size: 12, weight: .medium)).foregroundStyle(Color.textPrimary)
-                                Text("\(line.spec) × \(line.quantity)").font(.system(size: 11)).foregroundStyle(Color.textTertiary)
+                                Text(line.name).font(AppTypography.caption.weight(.medium)).foregroundStyle(Color.textPrimary)
+                                Text("\(line.spec) × \(line.quantity)").font(AppTypography.micro).foregroundStyle(Color.textTertiary)
                             }
                             Spacer()
                             Text("¥\(String(format: "%.2f", line.total))")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(AppTypography.caption.weight(.medium))
                                 .foregroundStyle(Color.textSecondary)
                         }
                         .padding(.vertical, 10)
@@ -182,7 +182,7 @@ struct DiyOrderView: View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             HStack(spacing: 6) {
                 Image(systemName: "location.circle.fill")
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.accentDefault)
                 Text("收货地址")
                     .font(.cardTitle)
@@ -194,14 +194,14 @@ struct DiyOrderView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
                         Text(address.name)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(AppTypography.body.weight(.semibold))
                             .foregroundStyle(Color.textPrimary)
                         Text(address.maskedPhone)
-                            .font(.system(size: 13))
+                            .font(AppTypography.supporting)
                             .foregroundStyle(Color.textSecondary)
                         if address.isDefault {
                             Text("默认")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(AppTypography.caption.weight(.medium))
                                 .foregroundStyle(Color.white)
                                 .padding(.horizontal, 6).padding(.vertical, 1)
                                 .background(Color.brandDefault)
@@ -209,7 +209,7 @@ struct DiyOrderView: View {
                         }
                     }
                     Text(address.fullAddress)
-                        .font(.system(size: 12))
+                        .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                         .lineLimit(2)
                 }
@@ -224,10 +224,10 @@ struct DiyOrderView: View {
                 } label: {
                     HStack {
                         Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 16))
+                            .font(AppTypography.reading)
                             .foregroundStyle(Color.brandDefault)
                         Text("添加收货地址")
-                            .font(.system(size: 14))
+                            .font(AppTypography.body)
                             .foregroundStyle(Color.brandDefault)
                         Spacer()
                     }
@@ -245,7 +245,7 @@ struct DiyOrderView: View {
                     ForEach(viewModel.addresses) { addr in
                         let isSelected = selectedAddress?.id == addr.id
                         Text(addr.name + " " + addr.district)
-                            .font(.system(size: 11))
+                            .font(AppTypography.micro)
                             .foregroundStyle(isSelected ? Color.white : Color.textTertiary)
                             .padding(.horizontal, 10).padding(.vertical, 6)
                             .background(isSelected ? Color.brandDefault : Color.bgTertiary)
@@ -266,7 +266,7 @@ struct DiyOrderView: View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             HStack(spacing: 6) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.accentDefault)
                 Text("法师加持")
                     .font(.cardTitle)
@@ -280,10 +280,10 @@ struct DiyOrderView: View {
                     .foregroundStyle(selectedBlessingService == nil ? Color.brandDefault : Color.textTertiary)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("不需要加持")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                     Text("订单只包含材料和制作费用")
-                        .font(.system(size: 12))
+                        .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
                 Spacer()
@@ -297,7 +297,7 @@ struct DiyOrderView: View {
             )
             .contentShape(Rectangle())
             .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.15)) {
+                AppMotion.perform {
                     selectedBlessingService = nil
                 }
             }
@@ -311,16 +311,16 @@ struct DiyOrderView: View {
                         .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(service.serviceName)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(AppTypography.body.weight(.semibold))
                             .foregroundStyle(Color.textPrimary)
                         Text(service.description)
-                            .font(.system(size: 12))
+                            .font(AppTypography.caption)
                             .foregroundStyle(Color.textTertiary)
                             .lineLimit(2)
                     }
                     Spacer()
                     Text("+\(service.priceText)")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.brandDefault)
                 }
                 .padding(AppSpacing.md)
@@ -357,7 +357,7 @@ struct DiyOrderView: View {
         VStack(spacing: 0) {
             HStack {
                 Text(label)
-                    .font(.system(size: 13))
+                    .font(AppTypography.supporting)
                     .foregroundStyle(highlight ? Color.textPrimary : Color.textTertiary)
                 Spacer()
                 Text(value)
@@ -413,7 +413,7 @@ struct DiyOrderView: View {
         HStack(spacing: AppSpacing.md) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("预估应付")
-                    .font(.system(size: 11))
+                    .font(AppTypography.micro)
                     .foregroundStyle(Color.textTertiary)
                 Text(totalFeeText)
                     .font(.system(size: 18, weight: .semibold))
@@ -446,10 +446,10 @@ struct DiyOrderView: View {
     private func availabilityWarning(_ message: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Label("部分材料需要重新选择", systemImage: "exclamationmark.triangle.fill")
-                .font(.system(size: 14, weight: .semibold))
+                .font(AppTypography.body.weight(.semibold))
                 .foregroundStyle(Color.stateWarning)
             Text(message)
-                .font(.system(size: 12))
+                .font(AppTypography.caption)
                 .foregroundStyle(Color.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -549,7 +549,7 @@ private struct DiyPaymentFlowView: View {
                 .font(.system(size: 30, weight: .semibold))
                 .foregroundStyle(Color.brandDefault)
             Text(order.orderNo)
-                .font(.system(size: 12))
+                .font(AppTypography.caption)
                 .foregroundStyle(Color.textTertiary)
         }
         .frame(maxWidth: .infinity)
@@ -562,10 +562,10 @@ private struct DiyPaymentFlowView: View {
                 .foregroundStyle(Color.stateWarning)
             VStack(alignment: .leading, spacing: 3) {
                 Text("材料价格已更新")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text("作品展示 ¥\(String(format: "%.2f", order.originalMaterialFee ?? 0))，最终材料费 ¥\(String(format: "%.2f", order.materialFee))")
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textSecondary)
             }
             Spacer()
@@ -581,7 +581,7 @@ private struct DiyPaymentFlowView: View {
                 .font(.cardTitle)
                 .foregroundStyle(Color.textPrimary)
             Label("本地模拟支付（仅开发/测试）", systemImage: "testtube.2")
-                .font(.system(size: 14))
+                .font(AppTypography.body)
                 .foregroundStyle(Color.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(AppSpacing.md)
@@ -602,7 +602,7 @@ private struct DiyPaymentFlowView: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(payment.status == "success" ? Color.stateSuccess : Color.stateWarning)
             }
-            .font(.system(size: 14))
+            .font(AppTypography.body)
             .padding(AppSpacing.md)
             .background(Color.bgSecondary)
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))

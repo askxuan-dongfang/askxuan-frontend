@@ -384,6 +384,7 @@ final class AiDivinationViewModel: ObservableObject {
 }
 
 struct AiDivinationView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel = AiDivinationViewModel()
     @State private var isDrawerOpen = false
     @State private var deletionTarget: AiConversation?
@@ -408,7 +409,7 @@ struct AiDivinationView: View {
 
                 historyDrawer
                     .frame(maxWidth: 320)
-                    .transition(.move(edge: .leading))
+                    .transition(reduceMotion ? .opacity : .move(edge: .leading).combined(with: .opacity))
             }
         }
         .confirmationDialog("删除这段会话？", isPresented: $confirmDeletion, titleVisibility: .visible) {
@@ -431,7 +432,7 @@ struct AiDivinationView: View {
 				await MainActor.run { viewModel.selectedImages = images }
 			}
 		}
-        .animation(.easeInOut(duration: 0.2), value: isDrawerOpen)
+        .animation(reduceMotion ? nil : AppMotion.reveal, value: isDrawerOpen)
     }
 
     private var navigationBar: some View {
@@ -443,10 +444,10 @@ struct AiDivinationView: View {
 
             VStack(spacing: 2) {
                 Text("AI问事")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(AppTypography.reading.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text(viewModel.currentTitle)
-                    .font(.system(size: 11))
+                    .font(AppTypography.micro)
                     .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)
             }
@@ -481,7 +482,7 @@ struct AiDivinationView: View {
             .onTapGesture { focusedInput = nil }
             .onChange(of: viewModel.messages.count) {
                 if let last = viewModel.messages.last {
-                    withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                    AppMotion.perform { proxy.scrollTo(last.id, anchor: .bottom) }
                 }
             }
         }
@@ -507,7 +508,7 @@ struct AiDivinationView: View {
 
             if message.role == "assistant" {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.accentDefault)
                     .frame(width: 28, height: 28)
                     .background(Color.accentDefault.opacity(0.12))
@@ -533,7 +534,7 @@ struct AiDivinationView: View {
                             Task { await viewModel.retry(message) }
                         } label: {
                             Label("重试", systemImage: "arrow.clockwise")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(AppTypography.supporting.weight(.semibold))
                         }
                         .buttonStyle(.plain)
                         .foregroundStyle(Color.brandDefault)
@@ -543,7 +544,7 @@ struct AiDivinationView: View {
                     else { AiMarkdownText(text: message.content) }
                 }
             }
-            .font(.system(size: 15))
+            .font(AppTypography.body)
             .foregroundStyle(message.role == "user" ? Color.white : Color.textPrimary)
             .padding(.horizontal, 14)
             .padding(.vertical, 11)
@@ -565,7 +566,7 @@ struct AiDivinationView: View {
         VStack(spacing: 8) {
             if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.stateError)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -609,7 +610,7 @@ struct AiDivinationView: View {
                 .accessibilityLabel("添加图片")
                 TextField("输入你的问题", text: $viewModel.input, axis: .vertical)
                     .lineLimit(1...4)
-                    .font(.system(size: 15))
+                    .font(AppTypography.body)
                     .focused($focusedInput, equals: "question")
                     .submitLabel(.send)
                     .padding(.horizontal, 12)
@@ -626,7 +627,7 @@ struct AiDivinationView: View {
                     sendMessage()
                 } label: {
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(.white)
                         .frame(width: 40, height: 40)
                         .background(canSend ? Color.brandDefault : Color.textTertiary)
@@ -637,7 +638,7 @@ struct AiDivinationView: View {
             }
 
             Text("AI 内容仅供参考，不替代医疗、法律或财务专业意见")
-                .font(.system(size: 10))
+                .font(AppTypography.micro)
                 .foregroundStyle(Color.textTertiary)
         }
         .padding(.horizontal, 12)
@@ -674,7 +675,7 @@ struct AiDivinationView: View {
                 closeDrawer()
             } label: {
                 Label("新建问事", systemImage: "square.and.pencil")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(AppTypography.body.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .frame(height: 40)
             }
@@ -702,11 +703,11 @@ struct AiDivinationView: View {
                                     .foregroundStyle(Color.textTertiary)
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(session.title)
-                                        .font(.system(size: 14, weight: .medium))
+                                        .font(AppTypography.body.weight(.medium))
                                         .foregroundStyle(Color.textPrimary)
                                         .lineLimit(1)
                                     Text(skillName(session.skillCode))
-                                        .font(.system(size: 11))
+                                        .font(AppTypography.micro)
                                         .foregroundStyle(Color.textTertiary)
                                 }
                                 Spacer()
@@ -722,7 +723,7 @@ struct AiDivinationView: View {
                         }
                         .buttonStyle(.plain)
                         Button { deletionTarget = session; confirmDeletion = true } label: {
-                            Image(systemName: "trash").font(.system(size: 16)).frame(width: 44, height: 48)
+                            Image(systemName: "trash").font(AppTypography.reading).frame(width: 44, height: 48)
                         }.buttonStyle(.plain).foregroundStyle(Color.textTertiary)
                             .accessibilityLabel("删除会话：" + session.title).disabled(viewModel.deletingSession)
                         }
@@ -748,7 +749,7 @@ struct AiDivinationView: View {
     private func iconButton(_ systemName: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 17, weight: .medium))
+                .font(AppTypography.reading.weight(.medium))
                 .foregroundStyle(Color.textPrimary)
                 .frame(width: 36, height: 36)
         }

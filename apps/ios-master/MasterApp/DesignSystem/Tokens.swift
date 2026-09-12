@@ -166,13 +166,13 @@ extension ShapeStyle where Self == Color {
 
 // MARK: - Fonts
 enum AppFont {
-    /// 标题字体：Noto Serif SC（衬线，禅意）
+    /// 标题字体：与 H5 共用的 AskXuan Serif。
     static let serif = AppTypography.serifName ?? "TimesNewRomanPSMT"
-    /// 正文字体：Noto Sans SC（无衬线）
-    static let sans = "Noto Sans SC"
+    /// 正文与操作控件使用系统无衬线字体。
+    static let sans = "-apple-system"
     /// 系统回退字体
-    static let serifFallback = ["Noto Serif SC", "STSong", "Songti SC", "SimSun"]
-    static let sansFallback = ["Noto Sans SC", "PingFang SC", "Microsoft YaHei"]
+    static let serifFallback = ["AskXuanSerif-Semibold", "NotoSerifSC-SemiBold", "SongtiSC-Regular"]
+    static let sansFallback = ["-apple-system", "PingFang SC"]
 }
 
 // MARK: - Product typography (shared roles with design-tokens/tokens.json)
@@ -181,21 +181,57 @@ enum AppTypography {
     static let serifName = ["AskXuanSerif-Semibold", "NotoSerifSC-SemiBold", "SongtiSC-Regular", "STSongti-SC-Regular"]
         .first { UIFont(name: $0, size: 17) != nil }
 
+    /// Editorial titles retain the Eastern serif; scaling follows the title's role.
     static func title(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
-        if let name = serifName { return .custom(name, size: size, relativeTo: .headline).weight(weight) }
-        return .system(size: size, weight: weight, design: .serif)
+        let role: Font.TextStyle = size >= 28 ? .largeTitle : size >= 24 ? .title : size >= 20 ? .title2 : .headline
+        if let name = serifName { return .custom(name, size: size, relativeTo: role).weight(weight) }
+        return .system(role, design: .serif).weight(weight)
     }
+
+    /// Numbers use the same native sans family as controls, with stable digit widths.
     static func numeric(_ size: CGFloat, weight: Font.Weight = .medium) -> Font {
-        .custom("HelveticaNeue", size: size, relativeTo: .body).weight(weight).monospacedDigit()
+        .system(size: size, weight: weight).monospacedDigit()
     }
-    static let body = Font.custom("HelveticaNeue", size: 14, relativeTo: .body)
-    static let caption = Font.custom("HelveticaNeue", size: 12, relativeTo: .caption)
+
+    // Native semantic fonts scale with Dynamic Type, including Chinese glyph fallback.
+    static let body = Font.system(.subheadline)
+    static let reading = Font.system(.body)
+    static let supporting = Font.system(.footnote)
+    static let caption = Font.system(.caption)
+    static let micro = Font.system(.caption2)
+    static let control = Font.system(.subheadline).weight(.semibold)
     static let navigation = title(17)
     static let hero = title(28)
     static let page = title(24)
     static let section = title(20)
     static let card = title(18)
-    static let control = Font.custom("HelveticaNeue", size: 15, relativeTo: .body).weight(.semibold)
+
+    static func navigationFont(large: Bool = false) -> UIFont {
+        let size: CGFloat = large ? 34 : 17
+        let font = serifName.flatMap { UIFont(name: $0, size: size) }
+            ?? UIFont.systemFont(ofSize: size, weight: .semibold)
+        return UIFontMetrics(forTextStyle: large ? .largeTitle : .headline).scaledFont(for: font)
+    }
+}
+
+private struct AppNumericTypography: ViewModifier {
+    @ScaledMetric private var size: CGFloat
+    let weight: Font.Weight
+
+    init(size: CGFloat, weight: Font.Weight) {
+        _size = ScaledMetric(wrappedValue: size, relativeTo: .body)
+        self.weight = weight
+    }
+
+    func body(content: Content) -> some View {
+        content.font(AppTypography.numeric(size, weight: weight))
+    }
+}
+
+extension View {
+    func appNumericFont(_ size: CGFloat, weight: Font.Weight = .medium) -> some View {
+        modifier(AppNumericTypography(size: size, weight: weight))
+    }
 }
 
 extension Font {
@@ -203,7 +239,7 @@ extension Font {
     static let pageTitle = AppTypography.page
     static let sectionTitle = AppTypography.section
     static let cardTitle = AppTypography.card
-    static let micro = Font.system(size: 11)
+    static let micro = AppTypography.micro
 }
 
 // MARK: - Corner Radius
@@ -277,9 +313,12 @@ enum AppTheme: String, CaseIterable, Identifiable {
         navigation.backgroundColor = AppPalette.bgPrimary
         navigation.titleTextAttributes = [
             .foregroundColor: AppPalette.accentDefault,
-            .font: UIFont.systemFont(ofSize: 17, weight: .semibold)
+            .font: AppTypography.navigationFont()
         ]
-        navigation.largeTitleTextAttributes = [.foregroundColor: AppPalette.textPrimary]
+        navigation.largeTitleTextAttributes = [
+            .foregroundColor: AppPalette.textPrimary,
+            .font: AppTypography.navigationFont(large: true)
+        ]
         UINavigationBar.appearance().standardAppearance = navigation
         UINavigationBar.appearance().scrollEdgeAppearance = navigation
         UINavigationBar.appearance().compactAppearance = navigation

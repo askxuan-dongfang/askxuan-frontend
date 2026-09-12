@@ -167,7 +167,7 @@ struct EarningsView: View {
                     .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
                 Text(String(format: "%.2f", viewModel.summary?.withdrawable ?? 0))
-                    .font(AppTypography.numeric(36))
+                    .appNumericFont(36)
                     .foregroundStyle(.accentDefault)
 
                 HStack(spacing: AppSpacing.xl) {
@@ -186,7 +186,7 @@ struct EarningsView: View {
                 .font(.micro)
                 .foregroundStyle(.textTertiary)
             Text("¥\(String(format: "%.2f", value))")
-                .font(AppTypography.numeric(15))
+                .appNumericFont(15)
                 .foregroundStyle(.textPrimary)
         }
     }
@@ -210,7 +210,7 @@ struct EarningsView: View {
                                 .font(AppTypography.caption)
                                 .foregroundStyle(.textSecondary)
                             Text("¥\(String(format: "%.2f", viewModel.maxWithdrawable))")
-                                .font(AppTypography.numeric(24))
+                                .appNumericFont(24)
                                 .foregroundStyle(.accentDefault)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -333,7 +333,7 @@ struct EarningsView: View {
                             Spacer()
                             VStack(alignment: .trailing, spacing: 4) {
                                 Text("¥\(String(format: "%.2f", item.amount))")
-                                    .font(AppTypography.numeric(15))
+                                    .appNumericFont(15)
                                     .foregroundStyle(.accentDefault)
                                 Text(item.settleStatusText)
                                     .font(.micro)

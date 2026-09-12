@@ -37,7 +37,7 @@ struct LoginRequiredView: View {
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text(subtitle)
-                    .font(.system(size: 14))
+                    .font(AppTypography.body)
                     .foregroundStyle(Color.textTertiary)
                     .multilineTextAlignment(.center)
             }
@@ -46,7 +46,7 @@ struct LoginRequiredView: View {
                 // 登录按钮
                 NavigationLink(value: AuthRoute.login) {
                     Text("立即登录")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -62,7 +62,7 @@ struct LoginRequiredView: View {
 
                 // 注册提示
                 Text("未注册手机号将自动创建账号")
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }
             .padding(.horizontal, 40)

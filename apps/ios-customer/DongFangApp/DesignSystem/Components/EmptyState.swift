@@ -19,7 +19,7 @@ struct DFEmptyState: View {
                 .font(.system(size: 44))
                 .foregroundStyle(.textTertiary)
             Text(title)
-                .font(.system(size: 15, weight: .medium))
+                .font(AppTypography.body.weight(.medium))
                 .foregroundStyle(.textSecondary)
             if let subtitle {
                 Text(subtitle)

@@ -95,7 +95,7 @@ struct DiyDesignView: View {
         }
         .confirmationDialog("清空当前搭配？清空后仍可通过撤销恢复。", isPresented: $showClearConfirmation, titleVisibility: .visible) {
             Button("清空搭配", role: .destructive) {
-                withAnimation(reduceMotion ? nil : .snappy(duration: 0.24)) { viewModel.clearCart() }
+                AppMotion.perform { viewModel.clearCart() }
                 UINotificationFeedbackGenerator().notificationOccurred(.warning)
             }
         }
@@ -133,7 +133,7 @@ struct DiyDesignView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("设计你的手串")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(AppTypography.reading.weight(.semibold))
                     .foregroundStyle(.textPrimary)
                 Text(viewModel.draftStateText)
                     .font(.caption)
@@ -165,7 +165,7 @@ struct DiyDesignView: View {
     private var sizePanel: some View {
         VStack(alignment: .leading, spacing: 14) {
             Button {
-                withAnimation(reduceMotion ? nil : .snappy(duration: 0.24)) { sizePanelExpanded.toggle() }
+                AppMotion.perform { sizePanelExpanded.toggle() }
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "ruler").foregroundStyle(Color.accentLight)
@@ -227,7 +227,7 @@ struct DiyDesignView: View {
                         .font(.caption)
                         .foregroundStyle(.textTertiary)
                     Text(selected.materialName)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AppTypography.caption.weight(.semibold))
                         .foregroundStyle(.textPrimary)
                         .lineLimit(1)
                 }
@@ -257,21 +257,21 @@ struct DiyDesignView: View {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("材料库")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(.textPrimary)
                     Text("\(filteredMaterials.count) 种材料 · 点按加入搭配")
-                        .font(.system(size: 11))
+                        .font(AppTypography.micro)
                         .foregroundStyle(.textTertiary)
                 }
                 Spacer()
                 Button {
-                    withAnimation(reduceMotion ? nil : .snappy(duration: 0.24)) {
+                    AppMotion.perform {
                         materialPanelExpanded.toggle()
                     }
                     UISelectionFeedbackGenerator().selectionChanged()
                 } label: {
                     Image(systemName: materialPanelExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AppTypography.caption.weight(.semibold))
                         .foregroundStyle(.accentDefault)
                         .frame(width: 44, height: 44)
                         .background(Color.bgTertiary)
@@ -287,9 +287,9 @@ struct DiyDesignView: View {
             if materialPanelExpanded {
                 HStack(spacing: 7) {
                     Image(systemName: "magnifyingglass")
-                        .font(.system(size: 11))
+                        .font(AppTypography.micro)
                     TextField("搜索材质、规格", text: $materialSearch)
-                        .font(.system(size: 11))
+                        .font(AppTypography.micro)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .focused($searchFocused)
@@ -363,12 +363,12 @@ struct DiyDesignView: View {
                 ForEach(viewModel.categories, id: \.code) { category in
                     let isSelected = viewModel.selectedCategory == category.code
                     Button {
-                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.16)) {
+                        AppMotion.perform {
                             viewModel.selectCategory(category.code)
                         }
                     } label: {
                         Text(category.name)
-                            .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                            .font(AppTypography.micro.weight(isSelected ? .semibold : .regular))
                             .foregroundStyle(isSelected ? Color.accentLight : Color.textTertiary)
                             .padding(.horizontal, 10)
                             .frame(minHeight: 44)
@@ -415,7 +415,7 @@ struct DiyDesignView: View {
                     )
                     if count > 0 {
                         Text("×\(count)")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(AppTypography.micro.weight(.semibold))
                             .foregroundStyle(Color.white)
                             .padding(.horizontal, 4)
                             .frame(minHeight: 16)
@@ -425,16 +425,16 @@ struct DiyDesignView: View {
                     }
                 }
                 Text(material.name)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(AppTypography.caption.weight(.semibold))
                     .foregroundStyle(.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
                 Text(material.spec)
-                    .font(.system(size: 11))
+                    .font(AppTypography.micro)
                     .foregroundStyle(.textTertiary)
                     .lineLimit(1)
                 Text(isUnavailable ? (material.stock == 0 ? "暂时售罄" : "已达库存上限") : material.priceText)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(AppTypography.caption.weight(.semibold))
                     .foregroundStyle(.accentLight)
             }
             .frame(maxWidth: .infinity, minHeight: 142)
@@ -475,7 +475,7 @@ struct DiyDesignView: View {
                     translucency: material.translucency ?? 0, renderAssets: material.renderAssets
                 )
                 Text(material.name)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(AppTypography.micro.weight(.medium))
                     .foregroundStyle(.textSecondary)
                     .lineLimit(1)
                     .frame(width: 60)
@@ -493,7 +493,7 @@ struct DiyDesignView: View {
                     .font(.caption).foregroundStyle(Color.textSecondary)
                 Spacer()
                 Text(viewModel.totalPriceText)
-                    .font(AppTypography.numeric(22, weight: .semibold))
+                    .appNumericFont(22, weight: .semibold)
                     .foregroundStyle(Color.accentLight)
                     .contentTransition(.numericText())
             }
@@ -599,7 +599,7 @@ private struct DiyBraceletStage: View {
                     VStack(spacing: 3) {
                         Image(systemName: "trash.fill")
                         Text("松手移除")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(AppTypography.caption.weight(.semibold))
                     }
                     .foregroundStyle(Color.stateError)
                     .frame(width: 104, height: 52)
@@ -623,7 +623,7 @@ private struct DiyBraceletStage: View {
             HStack(spacing: 5) {
                 Circle().fill(fitState.color).frame(width: 6, height: 6)
                 Text(fitState.title)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(AppTypography.caption.weight(.medium))
                     .foregroundStyle(fitState.color)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -631,7 +631,7 @@ private struct DiyBraceletStage: View {
             Spacer(minLength: 4)
             VStack(alignment: .trailing, spacing: 0) {
                 Text("预估")
-                    .font(.system(size: 11))
+                    .font(AppTypography.micro)
                     .foregroundStyle(.textTertiary)
                 Text(AppDateFormatter.moneyText(totalPrice))
                     .font(.system(size: 18, weight: .semibold))
@@ -671,7 +671,7 @@ private struct DiyBraceletStage: View {
                         .font(.system(size: 26))
                         .foregroundStyle(.accentDefault)
                     Text("从下方选择材料")
-                        .font(.system(size: 11))
+                        .font(AppTypography.micro)
                         .foregroundStyle(.textTertiary)
                 } else {
                     HStack(alignment: .firstTextBaseline, spacing: 3) {
@@ -679,11 +679,11 @@ private struct DiyBraceletStage: View {
                             .font(.system(size: 32, weight: .semibold))
                             .foregroundStyle(.textPrimary)
                         Text("颗")
-                            .font(.system(size: 12))
+                            .font(AppTypography.caption)
                             .foregroundStyle(.textTertiary)
                     }
                     Text("已用 \(Int(usedLengthMm)) mm")
-                        .font(.system(size: 12))
+                        .font(AppTypography.caption)
                         .foregroundStyle(.textTertiary)
                 }
             }

@@ -108,7 +108,7 @@ struct LoginView: View {
                 .foregroundStyle(Color.accentDefault)
 
             Text("结缘佛法  祈福纳祥")
-                .font(.system(size: 13))
+                .font(AppTypography.supporting)
                 .foregroundStyle(Color.textTertiary)
         }
     }
@@ -119,13 +119,13 @@ struct LoginView: View {
             // 手机号
             HStack(spacing: 12) {
                 Image(systemName: "phone.fill")
-                    .font(.system(size: 16))
+                    .font(AppTypography.reading)
                     .foregroundStyle(Color.textTertiary)
                     .frame(width: 20)
 
                 TextField("请输入手机号", text: $phone)
                     .keyboardType(.numberPad)
-                    .font(.system(size: 16))
+                    .font(AppTypography.reading)
                     .foregroundStyle(Color.textPrimary)
                     .onChange(of: phone) { _, newValue in
                         if newValue.count > 11 {
@@ -153,13 +153,13 @@ struct LoginView: View {
     private var codeField: some View {
         HStack(spacing: 12) {
             Image(systemName: "shield.lefthalf.filled")
-                .font(.system(size: 16))
+                .font(AppTypography.reading)
                 .foregroundStyle(Color.textTertiary)
                 .frame(width: 20)
 
             TextField("请输入验证码", text: $code)
                 .keyboardType(.numberPad)
-                .font(.system(size: 16))
+                .font(AppTypography.reading)
                 .foregroundStyle(Color.textPrimary)
                 .onChange(of: code) { _, newValue in
                     if newValue.count > 6 { code = String(newValue.prefix(6)) }
@@ -168,7 +168,7 @@ struct LoginView: View {
             Spacer()
             Button { sendCode() } label: {
                 Text(countdown > 0 ? "\(countdown)s" : "获取验证码")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(AppTypography.supporting.weight(.medium))
                     .foregroundStyle(countdown > 0 ? Color.textTertiary : Color.accentDefault)
             }
             .buttonStyle(.plain)
@@ -184,11 +184,11 @@ struct LoginView: View {
     private var nicknameField: some View {
         HStack(spacing: 12) {
             Image(systemName: "person.fill")
-                .font(.system(size: 16))
+                .font(AppTypography.reading)
                 .foregroundStyle(Color.textTertiary)
                 .frame(width: 20)
             TextField("昵称（选填）", text: $nickname)
-                .font(.system(size: 16))
+                .font(AppTypography.reading)
                 .foregroundStyle(Color.textPrimary)
                 .onChange(of: nickname) { _, newValue in
                     if newValue.count > 32 { nickname = String(newValue.prefix(32)) }
@@ -221,11 +221,11 @@ struct LoginView: View {
     private var hintSection: some View {
         VStack(spacing: AppSpacing.sm) {
             Text(mode == .login ? "演示登录验证码固定为 1234" : "注册不发送或校验真实短信验证码")
-                .font(.system(size: 12))
+                .font(AppTypography.caption)
                 .foregroundStyle(Color.textTertiary)
 
             Text(mode == .login ? "没有账号？切换到注册" : "注册成功后将自动登录")
-                .font(.system(size: 11))
+                .font(AppTypography.micro)
                 .foregroundStyle(Color.textTertiary.opacity(0.7))
         }
     }

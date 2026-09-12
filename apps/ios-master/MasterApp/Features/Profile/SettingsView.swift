@@ -40,7 +40,7 @@ struct SettingsView: View {
                                            value: AppTheme(rawValue: themeValue)?.title ?? AppTheme.system.title,
                                            tint: .accentDefault, showArrow: true)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(CardPressButtonStyle())
                             Divider().background(Color.borderDivider)
                             settingRow(icon: "bell.badge", title: "消息通知", value: "已开启",
                                        tint: .accentDefault, showArrow: true)
@@ -107,7 +107,7 @@ struct SettingsView: View {
                             tint: Color, showArrow: Bool = false) -> some View {
         HStack(spacing: AppSpacing.md) {
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(AppTypography.reading)
                 .foregroundStyle(tint)
                 .frame(width: 24)
             Text(title)
@@ -121,7 +121,7 @@ struct SettingsView: View {
             }
             if showArrow {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
+                    .font(AppTypography.caption)
                     .foregroundStyle(.textTertiary)
             }
         }

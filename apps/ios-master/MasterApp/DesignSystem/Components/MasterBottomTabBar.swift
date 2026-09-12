@@ -55,7 +55,7 @@ struct MasterBottomTabBar: View {
     private func tabButton(for item: MasterTabItem) -> some View {
         let isSelected = selectedTab == item.id
         Button {
-            withAnimation(.easeInOut(duration: 0.15)) {
+            AppMotion.perform {
                 selectedTab = item.id
             }
         } label: {
@@ -67,7 +67,7 @@ struct MasterBottomTabBar: View {
                         .frame(height: 24)
 
                     Text(item.title)
-                        .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
+                        .font(AppTypography.micro.weight(isSelected ? .semibold : .regular))
                         .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                 }
                 .frame(maxWidth: .infinity)
@@ -79,7 +79,7 @@ struct MasterBottomTabBar: View {
                     HStack {
                         Spacer()
                         Text("\(badge)")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(AppTypography.micro.weight(.semibold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 4)
                             .frame(minWidth: 16, minHeight: 16)

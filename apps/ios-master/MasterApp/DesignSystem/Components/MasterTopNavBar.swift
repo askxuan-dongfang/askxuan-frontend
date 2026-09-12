@@ -38,7 +38,7 @@ struct MasterTopNavBar<Leading: View, Trailing: View>: View {
             Spacer()
 
             Text(title)
-                .font(AppTypography.title(17))
+                .font(AppTypography.navigation)
                 .foregroundStyle(Color.accentDefault)
                 .lineLimit(1)
 
@@ -66,12 +66,12 @@ private struct BackButton: View {
             dismiss()
         } label: {
             Image(systemName: "chevron.left")
-                .font(.system(size: 17, weight: .semibold))
+                .font(AppTypography.reading.weight(.semibold))
                 .foregroundStyle(Color.accentDefault)
                 .frame(width: 32, height: 32)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardPressButtonStyle())
     }
 }
 

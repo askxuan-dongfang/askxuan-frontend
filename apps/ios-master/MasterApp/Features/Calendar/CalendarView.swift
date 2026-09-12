@@ -205,13 +205,13 @@ struct CalendarView: View {
                         .stroke(Color.accentDefault, lineWidth: 1.5)
                 }
                 Text("\(day)")
-                    .font(.system(size: 15, weight: isSelected ? .bold : .regular))
+                    .font(AppTypography.body.weight(isSelected ? .bold : .regular))
                     .foregroundStyle(isSelected ? .white : (isToday ? .accentDefault : .textPrimary))
             }
             .frame(height: 40)
             .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardPressButtonStyle())
     }
 
     private func daysInMonth() -> [Date] {
@@ -272,7 +272,7 @@ struct CalendarView: View {
                             }
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(CardPressButtonStyle())
                 }
 
                 HStack(spacing: AppSpacing.md) {

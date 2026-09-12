@@ -15,7 +15,7 @@ struct DFStatusBadge: View {
 
     var body: some View {
         Text(displayText)
-            .font(.system(size: 11, weight: .medium))
+            .font(AppTypography.micro.weight(.medium))
             .foregroundStyle(.white)
             .padding(.horizontal, 10)
             .padding(.vertical, 3)

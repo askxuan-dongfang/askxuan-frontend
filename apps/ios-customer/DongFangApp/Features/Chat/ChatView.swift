@@ -83,7 +83,7 @@ struct ChatView: View {
                 .fill(connectionDotColor)
                 .frame(width: 6, height: 6)
             Text(connectionText)
-                .font(.system(size: 10))
+                .font(AppTypography.micro)
                 .foregroundStyle(Color.textTertiary)
         }
     }
@@ -110,13 +110,13 @@ struct ChatView: View {
             ForEach(Array(tabTitles.enumerated()), id: \.offset) { index, title in
                 let isSelected = selectedTab == index
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    AppMotion.perform {
                         selectedTab = index
                     }
                 } label: {
                     VStack(spacing: 0) {
                         Text(title + (index == 1 && chatNotifications.chatUnread > 0 ? " · \(chatNotifications.chatUnread)" : ""))
-                            .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
+                            .font(AppTypography.body.weight(isSelected ? .semibold : .medium))
                             .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                         Capsule()
                             .fill(isSelected ? Color.brandDefault : Color.clear)
@@ -153,10 +153,10 @@ struct ChatView: View {
                 // 搜索栏
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
-                        .font(.system(size: 14))
+                        .font(AppTypography.body)
                         .foregroundStyle(Color.textTertiary)
                     TextField("搜索姓名、服务或消息", text: $searchText)
-                        .font(.system(size: 14))
+                        .font(AppTypography.body)
                         .foregroundStyle(Color.textPrimary)
                 }
                 .padding(.horizontal, 12)
@@ -211,7 +211,7 @@ struct ChatView: View {
             .overlay(alignment: .topTrailing) {
                 if conversation.unreadCount > 0 {
                     Text("\(conversation.unreadCount)")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(AppTypography.micro.weight(.semibold))
                         .foregroundStyle(Color.white)
                         .padding(.horizontal, 4)
                         .frame(minWidth: 16, minHeight: 16)
@@ -225,15 +225,15 @@ struct ChatView: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(conversation.masterName)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                     Spacer()
                     Text(conversation.lastTime)
-                        .font(.system(size: 12))
+                        .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
                 Text(conversation.lastMessage)
-                    .font(.system(size: 13))
+                    .font(AppTypography.supporting)
                     .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)
             }
@@ -273,15 +273,15 @@ struct ChatView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text(record.name)
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(AppTypography.body.weight(.semibold))
                             .foregroundStyle(Color.textPrimary)
                         Spacer()
                         Text(record.time)
-                            .font(.system(size: 12))
+                            .font(AppTypography.caption)
                             .foregroundStyle(Color.textTertiary)
                     }
                     Text(record.duration)
-                        .font(.system(size: 12))
+                        .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
             }
@@ -329,15 +329,15 @@ private struct ChatFavoritesPanel: View {
                                 RemoteAvatar(urlString: master.avatar, size: 48)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(master.dharmaName)
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .font(AppTypography.body.weight(.semibold))
                                         .foregroundStyle(Color.textPrimary)
                                     Text(master.templeName.isEmpty ? "独立大师" : master.templeName)
-                                        .font(.system(size: 12))
+                                        .font(AppTypography.caption)
                                         .foregroundStyle(Color.textTertiary)
                                 }
                                 Spacer()
                                 Text("已关注")
-                                    .font(.system(size: 11))
+                                    .font(AppTypography.micro)
                                     .foregroundStyle(Color.accentDefault)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
@@ -417,7 +417,7 @@ private struct CommunityPlazaView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 6) { Text("日常有悟 · 相遇有缘").font(.caption).foregroundStyle(Color.accentDefault); Text("在这里，看见另一种生活").font(.title3.weight(.semibold)).foregroundStyle(Color.textPrimary) }.padding(.top, 12)
+                VStack(alignment: .leading, spacing: 6) { Text("日常有悟 · 相遇有缘").font(.caption).foregroundStyle(Color.accentDefault); Text("在这里，看见另一种生活").font(AppTypography.section).foregroundStyle(Color.textPrimary) }.padding(.top, 12)
                 Picker("内容分类", selection: $filter) { Text("发现").tag("all"); Text("关注").tag("following"); Text("图文").tag("article"); Text("视频").tag("video") }.pickerStyle(.segmented)
                 HStack { TextField("搜索广场内容", text: $keyword).onSubmit { refresh() }; Button("搜索") { refresh() } }.padding(12).background(Color.bgSecondary).clipShape(Capsule())
                 HStack { Text("慢下来，发现身边的美好").font(.caption).foregroundStyle(Color.textTertiary); Spacer(); Button(popular ? "热门 ↓" : "最新 ↓") { popular.toggle(); refresh() }.font(.caption) }
@@ -508,7 +508,7 @@ private struct CommunityPostDetailView: View {
                     }
 
                     NavigationLink { MasterProfileView(masterId: post.masterId) } label: { Label(author?.dharmaName ?? "广场作者", systemImage: "person.crop.circle").font(.subheadline) }
-                    Text(post.title).font(.title3.weight(.bold)).foregroundStyle(Color.textPrimary)
+                    Text(post.title).font(AppTypography.section).foregroundStyle(Color.textPrimary)
                     Text(post.content).font(AppTypography.body).foregroundStyle(Color.textSecondary)
 
                     HStack(spacing: 12) {

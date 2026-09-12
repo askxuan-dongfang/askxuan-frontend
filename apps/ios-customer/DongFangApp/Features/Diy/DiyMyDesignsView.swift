@@ -107,7 +107,7 @@ struct DiyMyDesignsView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(design.name)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                     .lineLimit(1)
 
@@ -123,11 +123,11 @@ struct DiyMyDesignsView: View {
 
             VStack(alignment: .trailing, spacing: 6) {
                 Text("¥\(design.totalPrice, specifier: "%.2f")")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.accentLight)
                 if let time = design.updateTime, !time.isEmpty {
                     Text(String(time.prefix(10)))
-                        .font(.system(size: 11))
+                        .font(AppTypography.micro)
                         .foregroundStyle(Color.textTertiary)
                 }
             }
@@ -139,7 +139,7 @@ struct DiyMyDesignsView: View {
     private func statusBadge(_ status: String) -> some View {
         let (text, color) = designStatusInfo(status)
         return Text(text)
-            .font(.system(size: 11, weight: .medium))
+            .font(AppTypography.micro.weight(.medium))
             .foregroundStyle(color)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
@@ -148,7 +148,7 @@ struct DiyMyDesignsView: View {
 
     private func orderBadge(_ status: String?) -> some View {
         Text("已下单 · \(orderStatusLabel(status))")
-            .font(.system(size: 11, weight: .medium))
+            .font(AppTypography.micro.weight(.medium))
             .foregroundStyle(Color.stateSuccess)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)

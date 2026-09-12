@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ADMIN_THEME_EVENT } from '../../../../packages/admin-ui/theme'
-import { withAdminChartTheme } from '../../../../packages/admin-ui/chart-theme'
+import { withAdminChartTheme, watchAdminChartAppearance } from '../../../../packages/admin-ui/chart-theme'
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { Refresh, Calendar, Wallet, DataAnalysis, CircleCheck } from '@element-plus/icons-vue'
@@ -129,15 +128,17 @@ function disposeCharts() {
 }
 
 onMounted(() => {
-  window.addEventListener(ADMIN_THEME_EVENT, refreshChartAppearance)
+  stopChartAppearance = watchAdminChartAppearance(refreshChartAppearance)
   load()
   window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => {
-  window.removeEventListener(ADMIN_THEME_EVENT, refreshChartAppearance)
+  stopChartAppearance?.()
   window.removeEventListener('resize', onResize)
   disposeCharts()
 })
+
+let stopChartAppearance: (() => void) | undefined
 
 function refreshChartAppearance() {
   for (const chart of [trendChart, pieChart, barChart]) {

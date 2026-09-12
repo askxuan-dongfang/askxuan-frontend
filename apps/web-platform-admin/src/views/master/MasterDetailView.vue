@@ -290,7 +290,7 @@ onMounted(() => { void loadBeliefs(); void loadDetail() })
   color: var(--color-text-primary);
 }
 .master-head__lay {
-  font-weight: 400;
+  font-weight: var(--type-weight-regular);
   color: var(--color-text-tertiary);
   font-size: var(--type-size-label);
 }

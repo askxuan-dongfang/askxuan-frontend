@@ -108,13 +108,13 @@ struct MasterProfileView: View {
                 if let master = viewModel.master {
                     HStack(spacing: 6) {
                         Text(master.position)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(AppTypography.micro.weight(.medium))
                             .foregroundStyle(Color.brandDefault)
                             .padding(.horizontal, 8).padding(.vertical, 2)
                             .background(Color.brandDefault.opacity(0.15))
                             .clipShape(Capsule())
                         Text(master.templeName)
-                            .font(.system(size: 12))
+                            .font(AppTypography.caption)
                             .foregroundStyle(Color.textTertiary)
                     }
                 }
@@ -143,12 +143,12 @@ struct MasterProfileView: View {
             if let master = viewModel.master, !master.specialties.isEmpty {
                 VStack(alignment: .leading, spacing: AppSpacing.sm) {
                     Text("擅长领域")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(AppTypography.supporting.weight(.semibold))
                         .foregroundStyle(Color.textTertiary)
                     FlowLayout(spacing: 8) {
                         ForEach(master.specialties, id: \.self) { specialty in
                             Text(specialty)
-                                .font(.system(size: 12))
+                                .font(AppTypography.caption)
                                 .foregroundStyle(Color.accentDefault)
                                 .padding(.horizontal, 10).padding(.vertical, 4)
                                 .background(Color.accentDefault.opacity(0.1))
@@ -165,12 +165,12 @@ struct MasterProfileView: View {
     private func statItem(icon: String, value: String, label: String, color: Color) -> some View {
         VStack(spacing: 4) {
             HStack(spacing: 4) {
-                Image(systemName: icon).font(.system(size: 12))
-                Text(value).font(.system(size: 14, weight: .semibold))
+                Image(systemName: icon).font(AppTypography.caption)
+                Text(value).font(AppTypography.body.weight(.semibold))
             }
             .foregroundStyle(color)
             Text(label)
-                .font(.system(size: 11))
+                .font(AppTypography.micro)
                 .foregroundStyle(Color.textTertiary)
         }
         .frame(maxWidth: .infinity)
@@ -183,11 +183,11 @@ struct MasterProfileView: View {
                 ForEach(Array(tabs.enumerated()), id: \.offset) { index, title in
                     let isSelected = viewModel.selectedTab == index
                     Button {
-                        withAnimation(.easeInOut(duration: 0.2)) { viewModel.selectedTab = index }
+                        AppMotion.perform { viewModel.selectedTab = index }
                     } label: {
                         VStack(spacing: 6) {
                             Text(title)
-                                .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
+                                .font(AppTypography.body.weight(isSelected ? .semibold : .regular))
                                 .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                             Capsule()
                                 .fill(isSelected ? Color.brandDefault : Color.clear)
@@ -329,7 +329,7 @@ struct MasterProfileView: View {
                     showDirectPaySheet = false
                 } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.textTertiary)
                         .frame(width: 32, height: 32)
                 }
@@ -365,11 +365,11 @@ struct MasterProfileView: View {
     private func payRow(_ label: String, _ value: String) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 14))
+                .font(AppTypography.body)
                 .foregroundStyle(Color.textTertiary)
             Spacer()
             Text(value)
-                .font(.system(size: 14, weight: .medium))
+                .font(AppTypography.body.weight(.medium))
                 .foregroundStyle(Color.textPrimary)
         }
     }
@@ -402,16 +402,16 @@ struct MasterProfileView: View {
                     RoundedRectangle(cornerRadius: AppRadius.md)
                         .fill(Color.brandDefault.opacity(0.12))
                     Image(systemName: iconName)
-                        .font(.system(size: 16))
+                        .font(AppTypography.reading)
                         .foregroundStyle(Color.brandDefault)
                 }
                 .frame(width: 40, height: 40)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                     Text(String(format: "¥%.2f", tag.price))
-                        .font(.system(size: 12))
+                        .font(AppTypography.caption)
                         .foregroundStyle(Color.brandDefault)
                 }
                 Spacer()
@@ -449,22 +449,22 @@ struct MasterProfileView: View {
                                 RoundedRectangle(cornerRadius: AppRadius.md)
                                     .fill(Color.brandDefault.opacity(0.12))
                                 Image(systemName: type.iconName)
-                                    .font(.system(size: 16))
+                                    .font(AppTypography.reading)
                                     .foregroundStyle(Color.brandDefault)
                             }
                             .frame(width: 40, height: 40)
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(service.serviceName)
-                                    .font(.system(size: 15, weight: .semibold))
+                                    .font(AppTypography.body.weight(.semibold))
                                     .foregroundStyle(Color.textPrimary)
                                 Text(type.subtitle)
-                                    .font(.system(size: 12))
+                                    .font(AppTypography.caption)
                                     .foregroundStyle(Color.textTertiary)
                             }
                             Spacer()
                             Image(systemName: "chevron.right")
-                                .font(.system(size: 12))
+                                .font(AppTypography.caption)
                                 .foregroundStyle(Color.textTertiary)
                         }
                         .padding(AppSpacing.md)
@@ -600,7 +600,7 @@ struct MasterProfileView: View {
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundStyle(Color.textPrimary)
                         Text("文字咨询有效 \(quote.validHours) 小时，法师承诺尽量在 \(quote.responseMinutes) 分钟内响应。预约服务不包含在本订单中。")
-                            .font(.system(size: 13))
+                            .font(AppTypography.supporting)
                             .foregroundStyle(Color.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -614,10 +614,10 @@ struct MasterProfileView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("即时咨询费")
-                                .font(.system(size: 12))
+                                .font(AppTypography.caption)
                                 .foregroundStyle(Color.textTertiary)
                             Text("款项先进入平台总账，再按规则结算")
-                                .font(.system(size: 11))
+                                .font(AppTypography.micro)
                                 .foregroundStyle(Color.textTertiary)
                         }
                         Spacer()
@@ -632,7 +632,7 @@ struct MasterProfileView: View {
                         HStack {
                             if isPurchasingConsultation { ProgressView().tint(.white) }
                             Text(isPurchasingConsultation ? "支付中..." : "模拟支付并开始咨询")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(AppTypography.body.weight(.semibold))
                         }
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 48)
