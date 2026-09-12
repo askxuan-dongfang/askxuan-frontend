@@ -12,50 +12,80 @@ struct DiyMyDesignsView: View {
     @State private var designs: [MyDesignItem] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var selectedFilter = "all"
 
     var body: some View {
         VStack(spacing: 0) {
-            DFTopNavBar("我的设计", showsBackButton: true) {
-                EmptyView()
-            } trailing: {
-                EmptyView()
+            DFTopNavBar("我的作品", showsBackButton: true) { EmptyView() } trailing: {
+                NavigationLink { DiyDesignView() } label: {
+                    Image(systemName: "plus").frame(width: 44, height: 44)
+                }.accessibilityLabel("开始新设计")
             }
-
-            Group {
-                if isLoading && designs.isEmpty {
-                    ProgressView("正在加载设计")
-                        .tint(Color.accentDefault)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if designs.isEmpty {
-                    DFEmptyState(icon: "doc.on.doc", title: "还没有设计",
-                                 subtitle: errorMessage ?? "点击「开始设计」，你保存的草稿和下单的手串都会显示在这里")
-                } else {
-                    ScrollView(showsIndicators: false) {
-                        LazyVStack(spacing: AppSpacing.md) {
-                            ForEach(designs) { design in
-                                NavigationLink {
-                                    DiyDetailView(designId: design.id)
-                                } label: {
-                                    designRow(design)
-                                }
-                                .buttonStyle(CardPressButtonStyle())
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("每一串，都是你的心意").font(AppTypography.title(24)).foregroundStyle(Color.textPrimary)
+                        Text("收藏搭配灵感，随时继续创作。")
+                            .font(.subheadline).foregroundStyle(Color.textSecondary)
+                        NavigationLink { DiyDesignView() } label: {
+                            Label("开始新设计", systemImage: "plus")
+                                .font(.subheadline.weight(.semibold)).foregroundStyle(Color.accentLight)
+                                .frame(minHeight: 44)
+                        }.buttonStyle(DiyPressButtonStyle())
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(20).diySurface(highlighted: true)
+                    if !designs.isEmpty {
+                        Picker("作品筛选", selection: $selectedFilter) {
+                            Text("全部").tag("all")
+                            Text("已公开").tag("public")
+                            Text("已下单").tag("ordered")
+                        }.pickerStyle(.segmented)
+                    }
+                    if isLoading && designs.isEmpty {
+                        ProgressView("正在加载作品").tint(Color.accentDefault)
+                            .frame(maxWidth: .infinity, minHeight: 180)
+                    } else if filteredDesigns.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: errorMessage == nil ? "square.stack" : "wifi.exclamationmark")
+                                .font(.largeTitle).foregroundStyle(Color.accentDefault)
+                            Text(errorMessage == nil ? (designs.isEmpty ? "第一件作品，等你开始" : "暂无符合筛选的作品") : "作品加载失败")
+                                .font(.headline).foregroundStyle(Color.textPrimary)
+                            Text(errorMessage ?? "保存搭配后，就能在这里继续编辑和分享。")
+                                .font(.subheadline).foregroundStyle(Color.textSecondary).multilineTextAlignment(.center)
+                            if errorMessage != nil {
+                                Button("重新加载") { Task { await load() } }.frame(minHeight: 44)
+                            }
+                        }.frame(maxWidth: .infinity, minHeight: 220).padding(16)
+                    } else {
+                        LazyVStack(spacing: 12) {
+                            ForEach(filteredDesigns) { design in
+                                NavigationLink { DiyDetailView(designId: design.id) } label: { designRow(design) }
+                                    .buttonStyle(DiyPressButtonStyle())
                             }
                         }
-                        .padding(.horizontal, AppSpacing.lg)
-                        .padding(.top, AppSpacing.md)
-                        .padding(.bottom, AppSpacing.navBottom + 32)
+                        if let errorMessage {
+                            Text(errorMessage).font(.caption).foregroundStyle(Color.textSecondary)
+                            Button("重新加载") { Task { await load() } }.frame(minHeight: 44)
+                        }
                     }
-                    .refreshable { await load() }
                 }
+                .padding(16).padding(.bottom, AppSpacing.navBottom)
             }
+            .refreshable { await load() }
         }
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
         .task { await load() }
     }
 
+    private var filteredDesigns: [MyDesignItem] {
+        designs.filter { selectedFilter == "all" || (selectedFilter == "ordered" ? $0.hasOrder : $0.status == "public") }
+    }
+
     private func load() async {
-        if designs.isEmpty { isLoading = true }
+        guard !isLoading else { return }
+        isLoading = true
+        defer { isLoading = false }
         errorMessage = nil
         do {
             let resp: PageResponse<MyDesignItem> = try await APIClient.shared.request(
@@ -65,20 +95,15 @@ struct DiyMyDesignsView: View {
             if (error as? APIError)?.isCancellation == true || error is CancellationError { return }
             errorMessage = error.localizedDescription
         }
-        isLoading = false
     }
 
     // MARK: - 行视图
     private func designRow(_ design: MyDesignItem) -> some View {
         HStack(spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: AppRadius.md)
-                    .fill(Color.brandDefault.opacity(0.12))
-                Image(systemName: "circle.grid.2x2.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color.brandDefault)
-            }
-            .frame(width: 56, height: 56)
+            DiyMiniBracelet(slots: DiyDesignPreview.slots(from: design.designData), fallbackCount: 0)
+                .frame(width: 78, height: 84)
+                .background(Color.bgTertiary.opacity(0.6), in: RoundedRectangle(cornerRadius: 14))
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(design.name)
@@ -86,7 +111,7 @@ struct DiyMyDesignsView: View {
                     .foregroundStyle(Color.textPrimary)
                     .lineLimit(1)
 
-                HStack(spacing: 6) {
+                VStack(alignment: .leading, spacing: 6) {
                     statusBadge(design.status)
                     if design.hasOrder {
                         orderBadge(design.orderStatus)
@@ -99,7 +124,7 @@ struct DiyMyDesignsView: View {
             VStack(alignment: .trailing, spacing: 6) {
                 Text("¥\(design.totalPrice, specifier: "%.2f")")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.brandDefault)
+                    .foregroundStyle(Color.accentLight)
                 if let time = design.updateTime, !time.isEmpty {
                     Text(String(time.prefix(10)))
                         .font(.system(size: 11))
@@ -108,15 +133,13 @@ struct DiyMyDesignsView: View {
             }
         }
         .padding(AppSpacing.md)
-        .background(Color.bgSecondary)
-        .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDivider, lineWidth: 1))
+        .diySurface()
     }
 
     private func statusBadge(_ status: String) -> some View {
         let (text, color) = designStatusInfo(status)
         return Text(text)
-            .font(.system(size: 10, weight: .medium))
+            .font(.system(size: 11, weight: .medium))
             .foregroundStyle(color)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
@@ -125,7 +148,7 @@ struct DiyMyDesignsView: View {
 
     private func orderBadge(_ status: String?) -> some View {
         Text("已下单 · \(orderStatusLabel(status))")
-            .font(.system(size: 10, weight: .medium))
+            .font(.system(size: 11, weight: .medium))
             .foregroundStyle(Color.stateSuccess)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)

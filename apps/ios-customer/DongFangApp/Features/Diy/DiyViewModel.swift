@@ -31,6 +31,7 @@ private struct DiyEditorSnapshot {
     let beads: [DiyBeadSlot]
     let cord: Material?
     let wristSizeMm: Int
+    let fitAllowanceMm: Double
 }
 
 private struct LegacyDiyDesignEnvelope: Decodable {
@@ -356,6 +357,13 @@ final class DiyViewModel: ObservableObject {
         finishMutation()
     }
 
+    func setFitAllowance(_ value: Double) {
+        guard value != fitAllowanceMm, (0...30).contains(value) else { return }
+        recordMutation()
+        fitAllowanceMm = value
+        finishMutation()
+    }
+
     func removeFromCart(_ item: DiyCartItem) {
         recordMutation()
         if item.material.category == "cord" {
@@ -602,13 +610,14 @@ final class DiyViewModel: ObservableObject {
     }
 
     private func currentSnapshot() -> DiyEditorSnapshot {
-        DiyEditorSnapshot(beads: beadSlots, cord: selectedCord, wristSizeMm: wristSizeMm)
+        DiyEditorSnapshot(beads: beadSlots, cord: selectedCord, wristSizeMm: wristSizeMm, fitAllowanceMm: fitAllowanceMm)
     }
 
     private func apply(_ snapshot: DiyEditorSnapshot) {
         beadSlots = snapshot.beads
         selectedCord = snapshot.cord
         wristSizeMm = snapshot.wristSizeMm
+        fitAllowanceMm = snapshot.fitAllowanceMm
         selectedBeadId = beadSlots.first?.id
         normalizePositions()
         syncCartItems()

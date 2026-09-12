@@ -21,6 +21,7 @@ struct DiyOrderView: View {
     @State private var selectedBlessingService: BlessingService?
     @State private var checkoutOrder: DiyOrder?
     @State private var materialsExpanded = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(designId: Int64, viewModel: DiyViewModel? = nil, orderSource: DiyOrderSource = .cart) {
         self.designId = designId
@@ -33,7 +34,7 @@ struct DiyOrderView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        VStack(spacing: 0) {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: AppSpacing.lg) {
                     designSummary
@@ -44,11 +45,11 @@ struct DiyOrderView: View {
                         availabilityWarning(message)
                     }
                     feeSection
-                    Spacer(minLength: 100)
+                    Spacer(minLength: 16)
                 }
                 .padding(.top, AppSpacing.md)
             }
-            submitBar
+            .safeAreaInset(edge: .bottom, spacing: 0) { submitBar }
         }
         .background(Color.bgPrimary)
         .navigationBarTitleDisplayMode(.inline)
@@ -101,7 +102,7 @@ struct DiyOrderView: View {
                         .font(AppTypography.title(17))
                         .foregroundStyle(Color.textPrimary)
                     Text("\(checkoutSlots.count) 颗 · \(materialLines.count) 种材料")
-                        .font(.system(size: 10))
+                        .font(.system(size: 12))
                         .foregroundStyle(Color.textTertiary)
                 }
                 Spacer()
@@ -114,20 +115,21 @@ struct DiyOrderView: View {
         }
         .background(
             RadialGradient(
-                colors: [Color(hex: "303236"), Color(hex: "17191B"), Color(hex: "0D0F10")],
+                colors: [Color(hex: "4B4132"), Color(hex: "302920"), Color.bgSecondary],
                 center: .center,
                 startRadius: 24,
                 endRadius: 280
             )
         )
-        .overlay(alignment: .bottom) { Rectangle().fill(Color.borderDefault).frame(height: 1) }
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .overlay { RoundedRectangle(cornerRadius: 24).stroke(Color.borderStrong, lineWidth: 1) }
         .padding(.horizontal, AppSpacing.lg)
     }
 
     private var materialSection: some View {
         VStack(spacing: 0) {
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) { materialsExpanded.toggle() }
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { materialsExpanded.toggle() }
             } label: {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
@@ -135,7 +137,7 @@ struct DiyOrderView: View {
                             .font(.cardTitle)
                             .foregroundStyle(Color.textPrimary)
                         Text("\(materialLines.count) 种材料")
-                            .font(.system(size: 9))
+                            .font(.system(size: 11))
                             .foregroundStyle(Color.textTertiary)
                     }
                     Spacer()
@@ -145,7 +147,7 @@ struct DiyOrderView: View {
                 }
                 .padding(.vertical, 12)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(DiyPressButtonStyle())
 
             if materialsExpanded {
                 VStack(spacing: 0) {
@@ -157,7 +159,7 @@ struct DiyOrderView: View {
                                 .shadow(color: Color.black.opacity(0.3), radius: 3, y: 2)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(line.name).font(.system(size: 12, weight: .medium)).foregroundStyle(Color.textPrimary)
-                                Text("\(line.spec) × \(line.quantity)").font(.system(size: 9)).foregroundStyle(Color.textTertiary)
+                                Text("\(line.spec) × \(line.quantity)").font(.system(size: 11)).foregroundStyle(Color.textTertiary)
                             }
                             Spacer()
                             Text("¥\(String(format: "%.2f", line.total))")
@@ -168,7 +170,7 @@ struct DiyOrderView: View {
                         .overlay(alignment: .bottom) { Rectangle().fill(Color.borderDivider).frame(height: 1) }
                     }
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .transition(.opacity)
             }
         }
         .padding(.horizontal, AppSpacing.lg)
@@ -199,7 +201,7 @@ struct DiyOrderView: View {
                             .foregroundStyle(Color.textSecondary)
                         if address.isDefault {
                             Text("默认")
-                                .font(.system(size: 10, weight: .medium))
+                                .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(Color.white)
                                 .padding(.horizontal, 6).padding(.vertical, 1)
                                 .background(Color.brandDefault)
@@ -234,7 +236,7 @@ struct DiyOrderView: View {
                     .cornerRadius(AppRadius.md)
                     .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(DiyPressButtonStyle())
                 .padding(.horizontal, AppSpacing.lg)
             }
 

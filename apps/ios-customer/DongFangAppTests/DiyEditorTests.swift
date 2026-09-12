@@ -53,6 +53,23 @@ final class DiyEditorTests: XCTestCase {
         XCTAssertEqual(viewModel.beadSlots.map(\.materialId), [2, 1])
     }
 
+    func testFitAllowanceParticipatesInHistoryAndRestoresFromDraft() {
+        viewModel.addBead(material(id: 1, name: "小叶紫檀", price: 28))
+        viewModel.setFitAllowance(12)
+        XCTAssertEqual(viewModel.designDocument().fitAllowanceMm, 12)
+
+        viewModel.undo()
+        XCTAssertEqual(viewModel.fitAllowanceMm, 8)
+        XCTAssertEqual(viewModel.beadSlots.count, 1)
+        viewModel.redo()
+        XCTAssertEqual(viewModel.fitAllowanceMm, 12)
+
+        let restored = DiyViewModel(draftStore: draftStore)
+        XCTAssertEqual(restored.fitAllowanceMm, 12)
+        XCTAssertEqual(restored.beadSlots.count, 1)
+        XCTAssertEqual(restored.draftStateText, "已恢复本机草稿")
+    }
+
     func testVersionTwoDocumentRoundTripsAndRestoresWristSize() throws {
         viewModel.addBead(material(id: 1, name: "小叶紫檀", price: 28))
         viewModel.addBead(material(id: 2, name: "南红玛瑙", price: 42))
@@ -114,6 +131,11 @@ final class DiyEditorTests: XCTestCase {
 
         for _ in 0..<14 { viewModel.addBead(twelveMillimeter) }
         XCTAssertEqual(viewModel.usedLengthMm, 168)
+        XCTAssertEqual(viewModel.fitState, .loose(remainingBeads: 4))
+
+        // 按珠子内侧计算，17 颗的内周长约 166 mm，接近手围加松量。
+        for _ in 0..<3 { viewModel.addBead(twelveMillimeter) }
+        XCTAssertEqual(viewModel.usedLengthMm, 204)
         XCTAssertEqual(viewModel.fitState, .good)
     }
 

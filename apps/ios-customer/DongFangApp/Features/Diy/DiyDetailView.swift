@@ -27,28 +27,41 @@ struct DiyDetailView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: AppSpacing.lg) {
-                    previewSection
-                    publicationSection
-                    infoSection
-                    materialsSection
-                    if let message = viewModel.availabilityMessage {
-                        availabilityWarning(message)
-                    }
-                    blessingSection
-                    Spacer(minLength: 100)
+        VStack(spacing: 0) {
+            DFTopNavBar("作品详情", showsBackButton: true) { EmptyView() } trailing: {
+                if viewModel.currentDesign?.status == "public", let url = URL(string: "/c/diy/\(designId)", relativeTo: AppConfig.baseURL)?.absoluteURL {
+                    ShareLink(item: url) { Image(systemName: "square.and.arrow.up").frame(width: 44, height: 44) }
+                        .accessibilityLabel("分享作品")
                 }
             }
-            .ignoresSafeArea(edges: .top)
-
-            bottomActionBar
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: AppSpacing.lg) {
+                    if viewModel.isLoading && viewModel.currentDesign == nil {
+                        ProgressView("正在展开作品").tint(Color.accentDefault).frame(maxWidth: .infinity, minHeight: 320)
+                    } else if viewModel.currentDesign == nil {
+                        VStack(spacing: 16) {
+                            Image(systemName: "square.stack").font(.largeTitle)
+                            Text("暂时无法打开作品").font(.headline)
+                            Button("重新加载") { Task { await viewModel.loadDesign(id: designId) } }.frame(minHeight: 44)
+                        }.foregroundStyle(Color.textSecondary).frame(maxWidth: .infinity, minHeight: 320)
+                    } else {
+                        previewSection
+                        publicationSection
+                        infoSection
+                        materialsSection
+                        if let message = viewModel.availabilityMessage { availabilityWarning(message) }
+                        blessingSection
+                    }
+                }.padding(.vertical, 16)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if viewModel.currentDesign != nil { bottomActionBar }
+            }
         }
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
         .task {
-            if viewModel.currentDesign == nil {
+            if viewModel.currentDesign?.id != designId {
                 await viewModel.loadDesign(id: designId)
             }
         }
@@ -66,29 +79,53 @@ struct DiyDetailView: View {
 
     // MARK: - 作品预览
     private var previewSection: some View {
-        VStack(spacing: 12) {
-            HStack { DFBackButton(style: .circle); Spacer(); Button(show3D ? "2D 作品" : "3D 环视") { show3D.toggle() }.font(.caption).foregroundStyle(Color.accentDefault) }.padding(.top, 56).padding(.horizontal)
-            if show3D { DiyNativeStage3D(slots: viewModel.beadSlots).frame(height: 280) }
-            else { DiyMiniBracelet(slots: viewModel.beadSlots, fallbackCount: 0).frame(height: 260) }
-            Text(viewModel.currentDesign?.name ?? "我的手串").font(AppTypography.title(24)).foregroundStyle(Color.textPrimary)
-            Text(viewModel.currentDesign?.description ?? "把喜欢的珠子，串成自己的心意。").font(.caption).foregroundStyle(Color.textSecondary).padding(.horizontal)
-            Text(viewModel.totalPriceText).font(.title3).foregroundStyle(Color.accentDefault)
-        }.padding(.bottom, 24).background(Color(hex: "30251E"))
+        VStack(spacing: 16) {
+            DiyPreviewModePicker(show3D: $show3D).padding(.horizontal, 12).padding(.top, 12)
+            Group {
+                if show3D {
+                    DiyNativeStage3D(slots: viewModel.beadSlots, wrist: Double(viewModel.wristSizeMm), allowance: viewModel.fitAllowanceMm)
+                } else {
+                    DiyMiniBracelet(slots: viewModel.beadSlots, fallbackCount: 0)
+                }
+            }.frame(height: 270)
+            VStack(spacing: 10) {
+                Text(designStatusText).font(.caption.weight(.medium)).foregroundStyle(Color.accentLight)
+                    .padding(.horizontal, 12).padding(.vertical, 5)
+                    .background(Color.accentDefault.opacity(0.12), in: Capsule())
+                Text(viewModel.currentDesign?.name ?? "我的手串")
+                    .font(AppTypography.title(26)).foregroundStyle(Color.textPrimary).multilineTextAlignment(.center)
+                Text((viewModel.currentDesign?.description?.isEmpty == false ? viewModel.currentDesign?.description : nil) ?? "把喜欢的珠子，串成自己的心意。")
+                    .font(.subheadline).foregroundStyle(Color.textSecondary).multilineTextAlignment(.center).lineSpacing(4)
+                HStack(spacing: 18) {
+                    Label("\(viewModel.beadSlots.count) 颗", systemImage: "circle.dotted")
+                    Label(String(format: "%.1f cm 手围", Double(viewModel.wristSizeMm) / 10), systemImage: "ruler")
+                }.font(.caption).foregroundStyle(Color.textSecondary)
+                Text(viewModel.totalPriceText).font(AppTypography.numeric(28, weight: .semibold)).foregroundStyle(Color.accentLight)
+                Text("搭配预估 · 以确认订单页为准").font(.caption).foregroundStyle(Color.textSecondary)
+            }.padding(.horizontal, 20).padding(.bottom, 24)
+        }
+        .background(RadialGradient(colors: [Color(hex: "4B4132"), Color.bgSecondary], center: .center, startRadius: 0, endRadius: 330))
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .overlay { RoundedRectangle(cornerRadius: 24).stroke(Color.borderStrong, lineWidth: 1) }
+        .padding(.horizontal, 16)
     }
     private var publicationSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                if viewModel.isDesignOwner { Button(viewModel.currentDesign?.status == "public" ? "下架作品" : "发布到广场") { showPublishConfirm = true }.disabled(viewModel.isSubmitting) }
+                if viewModel.isDesignOwner { Button { showPublishConfirm = true } label: {
+                    Label(viewModel.currentDesign?.status == "public" ? "管理公开作品" : "发布到广场", systemImage: viewModel.currentDesign?.status == "public" ? "eye" : "sparkles")
+                        .frame(minHeight: 44)
+                }.disabled(viewModel.isSubmitting) }
                 Spacer()
                 if viewModel.currentDesign?.status == "public", let url = URL(string: "/c/diy/\(viewModel.currentDesign?.id ?? designId)", relativeTo: AppConfig.baseURL)?.absoluteURL {
-                    ShareLink(item: url) { Label("分享作品", systemImage: "square.and.arrow.up") }
+                    ShareLink(item: url) { Label("分享", systemImage: "square.and.arrow.up").frame(minHeight: 44) }
                 }
             }.font(.subheadline).foregroundStyle(Color.accentDefault)
             if let message = viewModel.successMessage { Text(message).font(.caption).foregroundStyle(Color.stateSuccess) }
             if let source = viewModel.currentDesign?.sourceDesignId, source > 0 { Text("源自作品 #\(source) 的灵感再创作").font(.caption).foregroundStyle(Color.textTertiary) }
             Text("复制后保留珠子顺序，自由替换材料；原作品不会改变。").font(.caption).foregroundStyle(Color.textSecondary)
             if let url = URL(string: "/assets/diy/credits.html", relativeTo: AppConfig.baseURL)?.absoluteURL { Link("实拍参考与材质素材来源", destination: url).font(.caption) }
-        }.padding().background(Color.bgSecondary).cornerRadius(AppRadius.md).padding(.horizontal)
+        }.padding(16).diySurface().padding(.horizontal, 16)
     }
 
     // MARK: - 信息卡
@@ -96,7 +133,7 @@ struct DiyDetailView: View {
         VStack(spacing: 0) {
             infoRow(label: "设计编号", value: viewModel.currentDesign?.designNo ?? "—")
             infoRow(label: "创建时间", value: viewModel.currentDesign?.createTime ?? "—")
-            infoRow(label: "总价", value: "¥\(Int(viewModel.currentDesign?.totalPrice ?? 0))")
+            infoRow(label: "总价", value: AppDateFormatter.moneyText(viewModel.currentDesign?.totalPrice ?? 0))
             infoRow(label: "状态", value: designStatusText, isLast: true)
         }
         .background(Color.bgSecondary)
@@ -113,6 +150,7 @@ struct DiyDetailView: View {
                 Spacer()
                 Text(value)
                     .font(AppTypography.body)
+                    .multilineTextAlignment(.trailing)
                     .foregroundStyle(Color.textPrimary)
             }
             .padding(.horizontal, AppSpacing.lg)
@@ -126,8 +164,8 @@ struct DiyDetailView: View {
 
     private var designStatusText: String {
         switch viewModel.currentDesign?.status ?? "" {
-        case "private":          return "私有"
-        case "public":           return "公开"
+        case "private":          return "私密作品"
+        case "public":           return "公开作品"
         case "pending_review":   return "待审核"
         case "approved":         return "已通过"
         case "rejected":         return "已拒绝"
@@ -170,14 +208,11 @@ struct DiyDetailView: View {
 
     private func materialRow(_ item: DiyCartItem) -> some View {
         HStack(spacing: AppSpacing.md) {
-            ZStack {
-                RoundedRectangle(cornerRadius: AppRadius.md)
-                    .fill(Color.brandDefault.opacity(0.12))
-                Image(systemName: "circle.dashed")
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color.brandDefault)
-            }
-            .frame(width: 36, height: 36)
+            DiyMaterialBead(name: item.material.name, category: item.material.category, size: 38, isSelected: false,
+                            shape: item.material.shape ?? "round", colorHex: item.material.colorHex,
+                            textureKey: item.material.textureKey, finish: item.material.finish,
+                            translucency: item.material.translucency ?? 0, renderAssets: item.material.renderAssets)
+                .frame(width: 44, height: 44).accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.material.name)
@@ -276,6 +311,7 @@ struct DiyDetailView: View {
                 showOrderPage = true
             }
         }
+        .disabled(viewModel.isSubmitting)
         .padding(.horizontal, AppSpacing.lg)
         .padding(.vertical, AppSpacing.md)
         .background(

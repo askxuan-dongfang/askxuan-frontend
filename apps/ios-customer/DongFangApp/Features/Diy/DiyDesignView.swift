@@ -11,6 +11,7 @@ struct DiyDesignView: View {
     @StateObject private var viewModel: DiyViewModel
     @State private var showNameDialog = false
     @State private var designNameInput = "我的手串"
+    @State private var designDescriptionInput = ""
     @State private var checkoutAfterSave = false
     @State private var showOrderPage = false
     @State private var materialSearch = ""
@@ -18,6 +19,10 @@ struct DiyDesignView: View {
     @State private var showSavedDetail = false
     @State private var materialPanelExpanded = true
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @FocusState private var searchFocused: Bool
+    @State private var showClearConfirmation = false
+    @State private var sizePanelExpanded = false
 
     @MainActor
     init() {
@@ -30,47 +35,57 @@ struct DiyDesignView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             VStack(spacing: 0) {
                 topBar
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        Picker("预览方式", selection: $show3D) { Text("2D 搭配").tag(false); Text("3D 环视").tag(true) }.pickerStyle(.segmented).padding()
-                        if show3D {
-                            DiyNativeStage3D(slots: viewModel.beadSlots, wrist: Double(viewModel.wristSizeMm), allowance: viewModel.fitAllowanceMm).frame(height: 360)
-                            Text("拖动旋转 · 双指缩放 · 天然纹理以实物为准").font(.caption2).foregroundStyle(Color.textTertiary).padding(.bottom, 12)
-                        } else {
-                        DiyBraceletStage(
-                            slots: viewModel.beadSlots,
-                            selectedId: viewModel.selectedBeadId,
-                            wristSizeMm: viewModel.wristSizeMm,
-                            fitState: viewModel.fitState,
-                            totalPrice: viewModel.totalPrice,
-                            usedLengthMm: viewModel.usedLengthMm,
-                            onSelect: viewModel.selectBead,
-                            onMove: viewModel.moveBead,
-                            onRemove: viewModel.removeBead,
-                            onWristChange: viewModel.setWristSize
-                        )
+                    VStack(spacing: 16) {
+                        VStack(spacing: 0) {
+                            DiyPreviewModePicker(show3D: $show3D)
+                                .padding(12)
+                            if show3D {
+                                DiyNativeStage3D(slots: viewModel.beadSlots, wrist: Double(viewModel.wristSizeMm), allowance: viewModel.fitAllowanceMm)
+                                    .frame(height: 280)
+                            } else {
+                                DiyBraceletStage(
+                                    slots: viewModel.beadSlots,
+                                    selectedId: viewModel.selectedBeadId,
+                                    wristSizeMm: viewModel.wristSizeMm,
+                                    fitAllowanceMm: viewModel.fitAllowanceMm,
+                                    fitState: viewModel.fitState,
+                                    totalPrice: viewModel.totalPrice,
+                                    usedLengthMm: viewModel.usedLengthMm,
+                                    onSelect: viewModel.selectBead,
+                                    onMove: viewModel.moveBead,
+                                    onRemove: viewModel.removeBead
+                                )
+                            }
+                            Label(show3D ? "拖动旋转 · 双指缩放" : "点按选中 · 拖动排序 · 移出圆环删除", systemImage: "hand.draw")
+                                .font(.caption)
+                                .foregroundStyle(Color.textSecondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
                         }
-                        HStack { Text("佩戴松量").font(.caption); Picker("佩戴松量", selection: $viewModel.fitAllowanceMm) { Text("贴合").tag(0.0); Text("＋5mm").tag(5.0); Text("＋8mm").tag(8.0); Text("＋12mm").tag(12.0) }.pickerStyle(.segmented) }.padding(.horizontal).padding(.vertical, 10)
+                        .diySurface()
+                        sizePanel
                         selectedToolbar
                         materialPanel
                     }
-                    .padding(.bottom, 92)
+                    .padding(16)
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
-            bottomActionBar
+            .safeAreaInset(edge: .bottom, spacing: 0) { bottomActionBar }
+            .disabled(viewModel.isSubmitting)
 
             if viewModel.isSubmitting {
                 Color.black.opacity(0.42).ignoresSafeArea()
                 ProgressView("正在保存设计")
                     .tint(.accentDefault)
                     .foregroundStyle(.textPrimary)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 16)
-                    .background(Color.bgElevated)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
+                    .padding(24)
+                    .background(Color.bgElevated, in: RoundedRectangle(cornerRadius: 20))
+                    .accessibilityAddTraits(.updatesFrequently)
             }
         }
         .background(Color.bgPrimary)
@@ -78,9 +93,15 @@ struct DiyDesignView: View {
         .task {
             if viewModel.materials.isEmpty { await viewModel.loadMaterials() }
         }
+        .confirmationDialog("清空当前搭配？清空后仍可通过撤销恢复。", isPresented: $showClearConfirmation, titleVisibility: .visible) {
+            Button("清空搭配", role: .destructive) {
+                withAnimation(reduceMotion ? nil : .snappy(duration: 0.24)) { viewModel.clearCart() }
+                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            }
+        }
         .alert("保存设计", isPresented: $showNameDialog) {
             TextField("设计名称", text: $designNameInput)
-            TextField("搭配灵感（可选）", text: $viewModel.designDescription)
+            TextField("搭配灵感（可选）", text: $designDescriptionInput)
             Button("取消", role: .cancel) {}
             Button("保存") { saveDesign() }
         } message: {
@@ -115,30 +136,75 @@ struct DiyDesignView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.textPrimary)
                 Text(viewModel.draftStateText)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.textTertiary)
+                    .font(.caption)
+                    .foregroundStyle(.textSecondary)
             }
             Spacer()
-            Button { viewModel.undo() } label: {
+            Button { viewModel.undo(); UISelectionFeedbackGenerator().selectionChanged() } label: {
                 Image(systemName: "arrow.uturn.backward")
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
             }
             .disabled(!viewModel.canUndo)
             .accessibilityLabel("撤销")
-            Button { viewModel.redo() } label: {
+            Button { viewModel.redo(); UISelectionFeedbackGenerator().selectionChanged() } label: {
                 Image(systemName: "arrow.uturn.forward")
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
             }
             .disabled(!viewModel.canRedo)
             .accessibilityLabel("重做")
         }
         .foregroundStyle(.accentDefault)
         .padding(.horizontal, 12)
-        .frame(height: 54)
+        .frame(minHeight: 60)
         .background(Color.bgPrimary.opacity(0.96))
         .overlay(alignment: .bottom) {
             Rectangle().fill(Color.borderDivider).frame(height: 1)
         }
+    }
+
+    private var sizePanel: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Button {
+                withAnimation(reduceMotion ? nil : .snappy(duration: 0.24)) { sizePanelExpanded.toggle() }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "ruler").foregroundStyle(Color.accentLight)
+                    Text("佩戴尺寸").font(.subheadline.weight(.semibold))
+                    Spacer(minLength: 4)
+                    Text(String(format: "%.1f cm · 松量 %.0f mm", Double(viewModel.wristSizeMm) / 10, viewModel.fitAllowanceMm))
+                        .font(.caption).foregroundStyle(Color.textSecondary)
+                    Image(systemName: sizePanelExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption.weight(.semibold)).foregroundStyle(Color.accentLight)
+                }.frame(minHeight: 44)
+            }
+            .buttonStyle(DiyPressButtonStyle())
+            .accessibilityLabel(sizePanelExpanded ? "收起佩戴尺寸设置" : "展开佩戴尺寸设置")
+            if sizePanelExpanded {
+                HStack {
+                    Text("手围").font(.subheadline)
+                    Spacer()
+                    Stepper(value: Binding(get: { viewModel.wristSizeMm }, set: { viewModel.setWristSize($0) }), in: 140...200, step: 5) {
+                        Text(String(format: "%.1f cm", Double(viewModel.wristSizeMm) / 10))
+                            .font(.subheadline.weight(.semibold)).monospacedDigit()
+                            .foregroundStyle(Color.accentLight)
+                    }
+                    .frame(maxWidth: 230)
+                    .accessibilityLabel("手围")
+                }
+                Picker("佩戴松量", selection: Binding(get: { viewModel.fitAllowanceMm }, set: { viewModel.setFitAllowance($0) })) {
+                    Text("贴合").tag(0.0)
+                    Text("＋5 mm").tag(5.0)
+                    Text("＋8 mm").tag(8.0)
+                    Text("＋12 mm").tag(12.0)
+                }
+                .pickerStyle(.segmented)
+                Text("贴腕测量一圈；松量越大，佩戴越宽松。天然材质以实物为准。")
+                    .font(.caption).foregroundStyle(Color.textSecondary)
+            }
+        }
+        .foregroundStyle(Color.textPrimary)
+        .padding(.horizontal, 16).padding(.vertical, 8)
+        .diySurface()
     }
 
     @ViewBuilder
@@ -157,8 +223,8 @@ struct DiyDesignView: View {
                     translucency: selected.translucency ?? 0, renderAssets: selected.renderAssets
                 )
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("当前选中")
-                        .font(.system(size: 9))
+                    Text("第 \((viewModel.beadSlots.firstIndex { $0.id == selected.id } ?? 0) + 1) 颗 · 当前选中")
+                        .font(.caption)
                         .foregroundStyle(.textTertiary)
                     Text(selected.materialName)
                         .font(.system(size: 12, weight: .semibold))
@@ -166,23 +232,23 @@ struct DiyDesignView: View {
                         .lineLimit(1)
                 }
                 Spacer()
-                Button { viewModel.duplicateSelectedBead() } label: {
+                Button { viewModel.duplicateSelectedBead(); UIImpactFeedbackGenerator(style: .light).impactOccurred() } label: {
                     Image(systemName: "plus.square.on.square")
-                        .frame(width: 34, height: 32)
+                        .frame(width: 44, height: 44)
                 }
                 .accessibilityLabel("复制珠子")
                 Button(role: .destructive) { viewModel.removeSelectedBead() } label: {
                     Image(systemName: "trash")
-                        .frame(width: 34, height: 32)
+                        .frame(width: 44, height: 44)
                 }
                 .accessibilityLabel("移除珠子")
             }
             .padding(.horizontal, 16)
-            .frame(minHeight: 58)
-            .background(Color.bgSecondary)
-            .overlay(alignment: .bottom) {
-                Rectangle().fill(Color.borderDivider).frame(height: 1)
-            }
+            .frame(minHeight: 70)
+            .foregroundStyle(Color.accentLight)
+            .buttonStyle(DiyPressButtonStyle())
+            .diySurface(highlighted: true)
+            .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
         }
     }
 
@@ -193,13 +259,13 @@ struct DiyDesignView: View {
                     Text("材料库")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.textPrimary)
-                    Text("\(filteredMaterials.count) 种可选 · 库存实时同步")
-                        .font(.system(size: 9))
+                    Text("\(filteredMaterials.count) 种材料 · 点按加入搭配")
+                        .font(.system(size: 11))
                         .foregroundStyle(.textTertiary)
                 }
                 Spacer()
                 Button {
-                    withAnimation(.snappy(duration: 0.24)) {
+                    withAnimation(reduceMotion ? nil : .snappy(duration: 0.24)) {
                         materialPanelExpanded.toggle()
                     }
                     UISelectionFeedbackGenerator().selectionChanged()
@@ -207,12 +273,12 @@ struct DiyDesignView: View {
                     Image(systemName: materialPanelExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(.accentDefault)
-                        .frame(width: 34, height: 34)
+                        .frame(width: 44, height: 44)
                         .background(Color.bgTertiary)
                         .clipShape(Circle())
                         .overlay { Circle().stroke(Color.borderDefault, lineWidth: 1) }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(DiyPressButtonStyle())
                 .accessibilityLabel(materialPanelExpanded ? "收起材料库" : "展开材料库")
             }
 
@@ -225,10 +291,20 @@ struct DiyDesignView: View {
                     TextField("搜索材质、规格", text: $materialSearch)
                         .font(.system(size: 11))
                         .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .focused($searchFocused)
+                        .submitLabel(.done)
+                        .onSubmit { searchFocused = false }
+                    if !materialSearch.isEmpty {
+                        Button { materialSearch = "" } label: {
+                            Image(systemName: "xmark.circle.fill").frame(width: 44, height: 44)
+                        }
+                        .accessibilityLabel("清除搜索")
+                    }
                 }
                 .foregroundStyle(.textTertiary)
                 .padding(.horizontal, 10)
-                .frame(height: 34)
+                .frame(height: 48)
                 .background(Color.bgTertiary)
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
                 .overlay {
@@ -236,20 +312,34 @@ struct DiyDesignView: View {
                         .stroke(Color.borderDefault, lineWidth: 1)
                 }
 
-                if filteredMaterials.isEmpty && !viewModel.isLoading {
-                    ContentUnavailableView("暂无可选材料", systemImage: "circle.slash")
-                        .foregroundStyle(.textTertiary)
-                        .frame(maxWidth: .infinity, minHeight: 150)
+                if viewModel.isLoading && viewModel.materials.isEmpty {
+                    ProgressView("正在准备材料")
+                        .tint(Color.accentDefault)
+                        .frame(maxWidth: .infinity, minHeight: 160)
+                } else if filteredMaterials.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "magnifyingglass").font(.title2)
+                        Text(materialSearch.isEmpty ? "该分类暂无材料" : "没有找到匹配材料")
+                            .font(.subheadline.weight(.medium))
+                        Button(materialSearch.isEmpty ? "重新加载" : "清除搜索") {
+                            if materialSearch.isEmpty { Task { await viewModel.loadMaterials() } }
+                            else { materialSearch = "" }
+                        }
+                        .font(.subheadline).foregroundStyle(Color.accentLight)
+                        .frame(minHeight: 44)
+                    }
+                    .foregroundStyle(Color.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: 160)
                 } else {
                     LazyVGrid(
-                        columns: [GridItem(.adaptive(minimum: 84, maximum: 104), spacing: 8)],
+                        columns: [GridItem(.adaptive(minimum: 94), spacing: 10)],
                         spacing: 8
                     ) {
                         ForEach(filteredMaterials) { material in
                             materialCard(material)
                         }
                     }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .transition(.opacity)
                 }
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -264,10 +354,7 @@ struct DiyDesignView: View {
             }
         }
         .padding(14)
-        .background(Color.bgSecondary)
-        .overlay(alignment: .top) {
-            Rectangle().fill(Color.borderDefault).frame(height: 1)
-        }
+        .diySurface()
     }
 
     private var categoryTabs: some View {
@@ -276,7 +363,7 @@ struct DiyDesignView: View {
                 ForEach(viewModel.categories, id: \.code) { category in
                     let isSelected = viewModel.selectedCategory == category.code
                     Button {
-                        withAnimation(.easeInOut(duration: 0.16)) {
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.16)) {
                             viewModel.selectCategory(category.code)
                         }
                     } label: {
@@ -284,14 +371,12 @@ struct DiyDesignView: View {
                             .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
                             .foregroundStyle(isSelected ? Color.accentLight : Color.textTertiary)
                             .padding(.horizontal, 10)
-                            .padding(.vertical, 7)
-                            .overlay(alignment: .bottom) {
-                                Rectangle()
-                                    .fill(isSelected ? Color.accentLight : Color.clear)
-                                    .frame(height: 2)
-                            }
+                            .frame(minHeight: 44)
+                            .background(isSelected ? Color.accentDefault.opacity(0.14) : Color.bgTertiary.opacity(0.45), in: Capsule())
+                            .overlay { Capsule().stroke(isSelected ? Color.accentDefault.opacity(0.6) : Color.clear, lineWidth: 1) }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(DiyPressButtonStyle())
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
                 }
             }
         }
@@ -310,7 +395,7 @@ struct DiyDesignView: View {
         let count = viewModel.count(for: material.id)
         let isUnavailable = count >= material.stock
         return Button {
-            withAnimation(.spring(response: 0.36, dampingFraction: 0.72)) {
+            withAnimation(reduceMotion ? nil : .spring(response: 0.36, dampingFraction: 0.8)) {
                 viewModel.addToCart(material)
             }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -330,7 +415,7 @@ struct DiyDesignView: View {
                     )
                     if count > 0 {
                         Text("×\(count)")
-                            .font(.system(size: 8, weight: .semibold))
+                            .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(Color.white)
                             .padding(.horizontal, 4)
                             .frame(minHeight: 16)
@@ -340,19 +425,19 @@ struct DiyDesignView: View {
                     }
                 }
                 Text(material.name)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
                 Text(material.spec)
-                    .font(.system(size: 9))
+                    .font(.system(size: 11))
                     .foregroundStyle(.textTertiary)
                     .lineLimit(1)
-                Text("¥\(Int(material.unitPrice))")
-                    .font(.system(size: 10, weight: .semibold))
+                Text(isUnavailable ? (material.stock == 0 ? "暂时售罄" : "已达库存上限") : material.priceText)
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.accentLight)
             }
-            .frame(maxWidth: .infinity, minHeight: 112)
+            .frame(maxWidth: .infinity, minHeight: 142)
             .padding(.horizontal, 5)
             .background(Color.bgTertiary)
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
@@ -360,19 +445,19 @@ struct DiyDesignView: View {
                 RoundedRectangle(cornerRadius: AppRadius.md)
                     .stroke(count > 0 ? Color.borderStrong : Color.borderDefault, lineWidth: 1)
             }
-            .opacity(isUnavailable ? 0.45 : 1)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DiyPressButtonStyle())
         .disabled(isUnavailable)
         .accessibilityLabel("\(material.name)，\(material.spec)，\(material.priceText)")
-        .accessibilityValue(count > 0 ? "已选 \(count) 件" : "未选择")
+        .accessibilityValue(isUnavailable ? "库存不足，无法继续添加" : (count > 0 ? "已选 \(count) 件" : "未选择"))
+        .accessibilityHint("点按加入搭配")
     }
 
     private func quickMaterialButton(_ material: Material) -> some View {
         let count = viewModel.count(for: material.id)
         let isUnavailable = count >= material.stock
         return Button {
-            withAnimation(.spring(response: 0.34, dampingFraction: 0.76)) {
+            withAnimation(reduceMotion ? nil : .spring(response: 0.34, dampingFraction: 0.8)) {
                 viewModel.addToCart(material)
             }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -390,79 +475,69 @@ struct DiyDesignView: View {
                     translucency: material.translucency ?? 0, renderAssets: material.renderAssets
                 )
                 Text(material.name)
-                    .font(.system(size: 9, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.textSecondary)
                     .lineLimit(1)
                     .frame(width: 60)
             }
-            .opacity(isUnavailable ? 0.42 : 1)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DiyPressButtonStyle())
         .disabled(isUnavailable)
         .accessibilityLabel("添加\(material.name)")
     }
 
     private var bottomActionBar: some View {
-        HStack(spacing: 10) {
-            Button(role: .destructive) { viewModel.clearCart() } label: {
-                Image(systemName: "trash")
-                    .font(.system(size: 15, weight: .semibold))
-                    .frame(width: 38, height: 42)
-                    .background(Color.bgTertiary)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
+        VStack(spacing: 10) {
+            HStack {
+                Text("\(viewModel.beadSlots.count) 颗 · 搭配预估")
+                    .font(.caption).foregroundStyle(Color.textSecondary)
+                Spacer()
+                Text(viewModel.totalPriceText)
+                    .font(AppTypography.numeric(22, weight: .semibold))
+                    .foregroundStyle(Color.accentLight)
+                    .contentTransition(.numericText())
             }
-            .disabled(viewModel.totalQuantity == 0)
-            .accessibilityLabel("清空设计")
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(viewModel.beadSlots.count) 颗")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.textPrimary)
-                Text("下单由服务端重新计价")
-                    .font(.system(size: 8))
-                    .foregroundStyle(.textTertiary)
-                    .lineLimit(1)
+            HStack(spacing: 10) {
+                Button(role: .destructive) { showClearConfirmation = true } label: {
+                    Image(systemName: "trash").frame(width: 48, height: 48)
+                        .background(Color.bgTertiary, in: RoundedRectangle(cornerRadius: 14))
+                }
+                .disabled(viewModel.totalQuantity == 0)
+                .accessibilityLabel("清空设计")
+                Button { presentSaveDialog(checkout: false) } label: {
+                    Text("保存设计").font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .overlay { RoundedRectangle(cornerRadius: 14).stroke(Color.accentDefault.opacity(0.5), lineWidth: 1) }
+                }
+                .disabled(viewModel.beadSlots.isEmpty)
+                Button { presentSaveDialog(checkout: true) } label: {
+                    Label("完成搭配", systemImage: "arrow.right")
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(Color.white)
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .background(LinearGradient(colors: [.brandLight, .brandDefault], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 14))
+                }
+                .disabled(viewModel.beadSlots.isEmpty)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Button { presentSaveDialog(checkout: false) } label: {
-                Text("保存设计")
-                    .font(.system(size: 11, weight: .semibold))
-                    .frame(width: 70, height: 42)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: AppRadius.md)
-                            .stroke(Color.accentDefault.opacity(0.55), lineWidth: 1)
-                    }
-            }
-            .disabled(viewModel.beadSlots.isEmpty)
-
-            Button { presentSaveDialog(checkout: true) } label: {
-                Text("完成设计")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.white)
-                    .frame(width: 78, height: 42)
-                    .background(Color.brandDefault)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
-            }
-            .disabled(viewModel.beadSlots.isEmpty)
+            .foregroundStyle(Color.accentLight)
+            .buttonStyle(DiyPressButtonStyle())
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
+        .padding(.horizontal, 16).padding(.vertical, 12)
         .background(Color.bgPrimary.opacity(0.97).ignoresSafeArea(edges: .bottom))
-        .overlay(alignment: .top) {
-            Rectangle().fill(Color.borderDivider).frame(height: 1)
-        }
+        .overlay(alignment: .top) { Rectangle().fill(Color.borderStrong).frame(height: 1) }
     }
 
     private func presentSaveDialog(checkout: Bool) {
         checkoutAfterSave = checkout
         designNameInput = viewModel.designName
+        designDescriptionInput = viewModel.designDescription
+        searchFocused = false
         showNameDialog = true
     }
 
     private func saveDesign() {
         let trimmed = designNameInput.trimmingCharacters(in: .whitespacesAndNewlines)
         viewModel.designName = trimmed.isEmpty ? "我的手串" : trimmed
+        viewModel.designDescription = designDescriptionInput.trimmingCharacters(in: .whitespacesAndNewlines)
         Task {
             let saved = await viewModel.saveDesign()
             if saved && checkoutAfterSave && viewModel.currentDesign != nil {
@@ -476,13 +551,14 @@ private struct DiyBraceletStage: View {
     let slots: [DiyBeadSlot]
     let selectedId: String?
     let wristSizeMm: Int
+    let fitAllowanceMm: Double
     let fitState: DiyFitState
     let totalPrice: Double
     let usedLengthMm: Double
     let onSelect: (String?) -> Void
     let onMove: (String, Int) -> Void
     let onRemove: (String) -> Void
-    let onWristChange: (Int) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var rotation = -Double.pi / 2
     @State private var rotationStart: Double?
@@ -492,7 +568,7 @@ private struct DiyBraceletStage: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let sceneSize = min(proxy.size.width - 28, 318)
+            let sceneSize = min(proxy.size.width - 28, min(proxy.size.height - 32, 318))
             ZStack {
                 Color(hex: "241C17")
                 RadialGradient(
@@ -523,7 +599,7 @@ private struct DiyBraceletStage: View {
                     VStack(spacing: 3) {
                         Image(systemName: "trash.fill")
                         Text("松手移除")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: 12, weight: .semibold))
                     }
                     .foregroundStyle(Color.stateError)
                     .frame(width: 104, height: 52)
@@ -538,41 +614,16 @@ private struct DiyBraceletStage: View {
                 }
             }
         }
-        .frame(height: 380)
+        .frame(height: 280)
         .clipped()
     }
 
     private var statusRow: some View {
         HStack(spacing: 8) {
-            Menu {
-                ForEach(Array(stride(from: 140, through: 200, by: 10)), id: \.self) { value in
-                    Button("\(value / 10) cm") { onWristChange(value) }
-                }
-            } label: {
-                HStack(spacing: 5) {
-                    Text("手围")
-                        .font(.system(size: 9))
-                        .foregroundStyle(.textTertiary)
-                    Text("\(wristSizeMm / 10) cm")
-                        .font(.system(size: 12, weight: .semibold))
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 8, weight: .semibold))
-                }
-                .foregroundStyle(.textPrimary)
-                .padding(.horizontal, 9)
-                .frame(height: 36)
-                .background(Color(hex: "181A1D").opacity(0.94))
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
-                .overlay {
-                    RoundedRectangle(cornerRadius: AppRadius.md)
-                        .stroke(Color.borderDefault, lineWidth: 1)
-                }
-            }
-
             HStack(spacing: 5) {
                 Circle().fill(fitState.color).frame(width: 6, height: 6)
                 Text(fitState.title)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(fitState.color)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -580,9 +631,9 @@ private struct DiyBraceletStage: View {
             Spacer(minLength: 4)
             VStack(alignment: .trailing, spacing: 0) {
                 Text("预估")
-                    .font(.system(size: 8))
+                    .font(.system(size: 11))
                     .foregroundStyle(.textTertiary)
-                Text("¥\(Int(totalPrice))")
+                Text(AppDateFormatter.moneyText(totalPrice))
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.accentLight)
             }
@@ -590,7 +641,8 @@ private struct DiyBraceletStage: View {
     }
 
     private func braceletScene(size: CGFloat) -> some View {
-        ZStack {
+        let physical = DiyPhysicalLayout(slots: slots, wrist: Double(wristSizeMm), allowance: fitAllowanceMm)
+        return ZStack {
             Circle()
                 .fill(Color.clear)
                 .contentShape(Circle())
@@ -627,22 +679,22 @@ private struct DiyBraceletStage: View {
                             .font(.system(size: 32, weight: .semibold))
                             .foregroundStyle(.textPrimary)
                         Text("颗")
-                            .font(.system(size: 10))
+                            .font(.system(size: 12))
                             .foregroundStyle(.textTertiary)
                     }
                     Text("已用 \(Int(usedLengthMm)) mm")
-                        .font(.system(size: 10))
+                        .font(.system(size: 12))
                         .foregroundStyle(.textTertiary)
                 }
             }
             .allowsHitTesting(false)
 
             ForEach(Array(slots.enumerated()), id: \.element.id) { index, slot in
-                let layout = beadLayout(index: index, count: slots.count, size: size)
+                let layout = beadLayout(index: index, size: size, physical: physical)
                 DiyMaterialBead(
                     name: slot.materialName,
                     category: slot.subtype,
-                    size: CGFloat(slot.diameterMm / DiyPhysicalLayout(slots: slots, wrist: Double(wristSizeMm)).radius) * size * 0.35,
+                    size: CGFloat(slot.diameterMm / physical.radius) * size * 0.35,
                     isSelected: selectedId == slot.id,
                     seed: slot.id,
                     shape: slot.shape ?? "round",
@@ -663,11 +715,15 @@ private struct DiyBraceletStage: View {
                 .gesture(beadDragGesture(slot: slot, size: size))
                 .simultaneousGesture(TapGesture().onEnded { onSelect(slot.id) })
                 .accessibilityLabel("\(slot.materialName)，第 \(index + 1) 位")
-                .accessibilityAddTraits(selectedId == slot.id ? .isSelected : [])
+                .accessibilityAddTraits(selectedId == slot.id ? [.isSelected, .isButton] : .isButton)
+                .accessibilityAction(named: "选中珠子") { onSelect(slot.id) }
+                .accessibilityAction(named: "向前移动") { onMove(slot.id, max(0, index - 1)) }
+                .accessibilityAction(named: "向后移动") { onMove(slot.id, min(slots.count - 1, index + 1)) }
+                .accessibilityAction(named: "移除珠子") { onRemove(slot.id) }
             }
         }
         .coordinateSpace(name: "bracelet-space")
-        .animation(.spring(response: 0.34, dampingFraction: 0.76), value: slots)
+        .animation(reduceMotion ? nil : .spring(response: 0.34, dampingFraction: 0.8), value: slots)
     }
 
     private var rotationGesture: some Gesture {
@@ -712,8 +768,7 @@ private struct DiyBraceletStage: View {
             }
     }
 
-    private func beadLayout(index: Int, count: Int, size: CGFloat) -> (point: CGPoint, depth: CGFloat, zIndex: Double, angle: Double) {
-        let physical = DiyPhysicalLayout(slots: slots, wrist: Double(wristSizeMm))
+    private func beadLayout(index: Int, size: CGFloat, physical: DiyPhysicalLayout) -> (point: CGPoint, depth: CGFloat, zIndex: Double, angle: Double) {
         let angle = rotation + (physical.angles.indices.contains(index) ? physical.angles[index] + Double.pi / 2 : 0)
         let x = size / 2 + cos(angle) * size * 0.35
         let y = size / 2 + sin(angle) * size * 0.315
@@ -722,9 +777,10 @@ private struct DiyBraceletStage: View {
     }
 
     private func targetIndex(for location: CGPoint, size: CGFloat) -> Int {
-        slots.indices.min { a, b in
-            let p = beadLayout(index: a, count: slots.count, size: size).point
-            let q = beadLayout(index: b, count: slots.count, size: size).point
+        let physical = DiyPhysicalLayout(slots: slots, wrist: Double(wristSizeMm), allowance: fitAllowanceMm)
+        return slots.indices.min { a, b in
+            let p = beadLayout(index: a, size: size, physical: physical).point
+            let q = beadLayout(index: b, size: size, physical: physical).point
             return hypot(location.x - p.x, location.y - p.y) < hypot(location.x - q.x, location.y - q.y)
         } ?? 0
     }
@@ -968,6 +1024,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
     let slots: [DiyBeadSlot]
     var wrist: Double = 160
     var allowance: Double = 8
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView(); view.allowsCameraControl = true; view.autoenablesDefaultLighting = false
         view.backgroundColor = UIColor(red: 0.14, green: 0.105, blue: 0.085, alpha: 1)
@@ -976,6 +1033,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
         return view
     }
     func updateUIView(_ view: SCNView, context: Context) {
+        view.defaultCameraController.inertiaEnabled = !reduceMotion
         let signature = String(slots.hashValue) + "-\(wrist)-\(allowance)"
         guard view.accessibilityIdentifier != signature else { return }
         view.accessibilityIdentifier = signature
