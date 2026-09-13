@@ -91,7 +91,7 @@ test('unified logout clears both sessions and old bookmark requires login',async
 })
 
 const product={id:1,name:'积分专属香囊',category:'生活礼品',description:'独立运营',image:'',pointsPrice:2,stock:3,status:'on_sale',version:1}
-test('write: shop admin independently creates a points product and ships redemption',async({page})=>{
+test('write: shop admin independently creates a points product and ships redemption',async({page},testInfo)=>{
  const token='e30.'+Buffer.from(JSON.stringify({roles:['shop_admin'],clientId:'shop-admin'})).toString('base64url')+'.test'
  await page.addInitScript(t=>localStorage.setItem('df_platform_admin_token',t),token)
  let saved:any,shipped:any
@@ -120,7 +120,7 @@ test('write: shop admin independently creates a points product and ships redempt
  await expect(dialog).not.toBeVisible()
  await expect(page.locator('.el-loading-mask')).toHaveCount(0)
  expect(shipped).toEqual({carrier:'顺丰',trackingNo:'SF123456'})
- await page.screenshot({path:'/private/tmp/askxuan-points-admin.png',fullPage:true})
+ await page.screenshot({path:testInfo.outputPath('points-admin.png'),fullPage:true})
 })
 test('write: product create keeps payload and returns to unified list',async({page})=>{
  await session(page,'shop_admin');await fixture(page);let saved:any
@@ -174,7 +174,7 @@ test('write: return review and received goods and refund remain available',async
  await page.locator('.el-message-box').getByRole('button',{name:'确认退款',exact:true}).click()
  await expect(page.locator('.el-dialog:visible')).toHaveCount(0);expect(writes[2].body).toEqual({amount:88})
 })
-test('write: logistics company and freight template persist through unified client',async({page})=>{
+test('write: logistics company and freight template persist through unified client',async({page},testInfo)=>{
  await session(page,'shop_admin');await fixture(page);const writes:any[]=[]
  await page.route('**/api/v1/admin/logistics/**',async route=>{
   if(route.request().method()==='POST')writes.push({path:new URL(route.request().url()).pathname,body:route.request().postDataJSON()})
@@ -188,7 +188,7 @@ test('write: logistics company and freight template persist through unified clie
  dialog=page.locator('.el-dialog:visible');await dialog.getByRole('textbox',{name:'模板名称'}).fill('测试运费')
  await dialog.getByRole('button',{name:'保存',exact:true}).click();await expect(dialog).not.toBeVisible()
  expect(writes[0].body).toMatchObject({code:'TEST',name:'测试物流'});expect(writes[1].body).toMatchObject({name:'测试运费',type:'by_piece'})
- await page.screenshot({path:'/private/tmp/unified-admin-logistics.png',fullPage:true})
+ await page.screenshot({path:testInfo.outputPath('logistics.png'),fullPage:true})
 })
 for(const kind of ['categories','materials','services'])test(`write: ${kind} creation preserves form`,async({page})=>{
  await session(page,'shop_admin');await fixture(page);let saved:any
