@@ -248,7 +248,7 @@ console.log(`后端运行时 HTTP 契约: ${backend.size}`)
 for (const [project, contracts] of frontend.perProject) {
   console.log(`${project} 前端唯一调用契约: ${contracts.size}`)
 }
-console.log(`四个 Web 工程唯一调用契约: ${frontend.all.size}`)
+console.log(`H5、统一管理台和寺院管理台唯一调用契约: ${frontend.all.size}`)
 console.log(`外部预签名上传调用（不参与后端路由比对）: ${frontend.ignoredExternal.length}`)
 console.log(`无法静态解析的 API 调用: ${frontend.unresolved.length}`)
 for (const item of frontend.unresolved) console.log(`- ${item}`)

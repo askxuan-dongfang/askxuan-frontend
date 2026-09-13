@@ -1,6 +1,6 @@
 # 问玄东方前端 0.0.1
 
-本仓库维护信众/法师原生 iOS、统一运营与寺院 Web 后台、商城兼容入口及共享视觉资源。`apps/web-h5` 位于本目录内，但属于独立 Git 仓库，须单独查看状态和提交。
+本仓库维护信众/法师原生 iOS、统一运营与寺院 Web 后台及共享视觉资源。`apps/web-h5` 位于本目录内，但属于独立 Git 仓库，须单独查看状态和提交。
 
 ## 当前入口
 
@@ -9,7 +9,6 @@
 | [web-h5](apps/web-h5/README.md) | 信众与法师 H5 | `/c/*`、`/m/*`；独立仓库 `main` |
 | [web-platform-admin](apps/web-platform-admin/README.md) | 统一运营后台，含商城业务与权限控制 | 部署 `/admin/`，商城 `/admin/commerce/*` |
 | [web-temple-admin](apps/web-temple-admin/README.md) | 寺院机构后台 | 部署 `/temple/` |
-| [web-shop-admin](apps/web-shop-admin/README.md) | 旧商城地址兼容 | 部署 `/shop/`，映射并跳转到统一后台 |
 | [ios-customer](apps/ios-customer/README.md) | 信众原生 SwiftUI App | `DongFangApp.xcworkspace` |
 | [ios-master](apps/ios-master/README.md) | 法师原生 SwiftUI App | `MasterApp.xcworkspace` |
 
@@ -19,22 +18,23 @@
 
 Web CI 使用 Node.js 22；每个 app 有自己的 `package.json` 与锁文件，本仓没有一次安装所有 app 的根依赖命令。首次使用或清理了 `node_modules` 后，在需要的 app 目录执行 `npm ci`。
 
-从本仓根目录启动三个管理入口：
+从本仓根目录启动统一管理台和寺院管理台：
 
 ```bash
 npm --prefix apps/web-platform-admin ci
 npm --prefix apps/web-temple-admin ci
-npm --prefix apps/web-shop-admin ci
 make clients-up
 ```
 
-脚本固定端口：寺院 `5173`、商城兼容 `5174`、统一后台 `5175`；兼容入口跳转到同批启动的统一后台。只运行某个 app 的 `npm run dev` 时，以其 README / Vite 配置端口为准，不能混用两套端口。
+脚本固定端口：寺院 `5173`、统一后台 `5175`；商城业务在统一后台 `/commerce/*`，旧 `/shop/*` 由同一服务提供兼容跳转。只运行某个 app 的 `npm run dev` 时，以其 README / Vite 配置端口为准，不能混用两套端口。
 
 ```bash
 make clients-check
 make clients-logs
 make clients-down
 ```
+
+`/shop/*` 只保留旧书签和旧会话迁移，不再有独立商城应用、依赖安装或构建。兼容页由统一后台生成到 `dist/legacy/shop/index.html`，随同一发布版本交付；不改变寺院 `/temple/` 的独立入口。
 
 `make clients-up` 不启动 H5，也不自动运行 iOS。`OPEN_IOS=1 make clients-up` 可同时打开现有两个 workspace。
 

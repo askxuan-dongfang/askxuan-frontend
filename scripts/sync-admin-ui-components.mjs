@@ -12,11 +12,11 @@ if (write === check) {
 }
 
 const targets = {
-  'PageHeader.vue': ['web-platform-admin', 'web-shop-admin', 'web-temple-admin'],
-  'StatusTag.vue': ['web-platform-admin', 'web-shop-admin', 'web-temple-admin'],
-  'StatCard.vue': ['web-platform-admin', 'web-shop-admin', 'web-temple-admin'],
+  'PageHeader.vue': ['web-platform-admin', 'web-temple-admin'],
+  'StatusTag.vue': ['web-platform-admin', 'web-temple-admin'],
+  'StatCard.vue': ['web-platform-admin', 'web-temple-admin'],
   'DataTable.vue': ['web-platform-admin', 'web-temple-admin'],
-  'ImageUploader.vue': ['web-platform-admin', 'web-shop-admin', 'web-temple-admin']
+  'ImageUploader.vue': ['web-platform-admin', 'web-temple-admin']
 }
 
 const drift = []

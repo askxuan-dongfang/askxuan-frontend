@@ -91,7 +91,7 @@ start_web() {
 
   (
     cd "$ROOT_DIR/apps/$app_dir"
-    VITE_UNIFIED_ADMIN_URL=http://127.0.0.1:5175/ nohup npm run dev -- --host 127.0.0.1 --port "$port" >"$log_file" 2>&1 &
+    nohup npm run dev -- --host 127.0.0.1 --port "$port" >"$log_file" 2>&1 &
     echo $! >"$pid_file"
   )
   echo "OK: 已启动 ${key}，端口 ${port}，日志 ${log_file}"
@@ -106,14 +106,13 @@ else
 fi
 
 start_web "web-temple-admin" "web-temple-admin" "5173"
-start_web "web-shop-admin" "web-shop-admin" "5174"
 start_web "web-platform-admin" "web-platform-admin" "5175"
 
 echo
 echo "Web 管理端："
 echo "  寺院管理台：  http://127.0.0.1:5173/login"
-echo "  商城管理台：  http://127.0.0.1:5174/login"
-echo "  平台管理台：  http://127.0.0.1:5175/login"
+echo "  商城业务：    http://127.0.0.1:5175/commerce/dashboard"
+echo "  统一管理台：  http://127.0.0.1:5175/login"
 echo
 echo "iOS 原生客户端："
 echo "  C 端：        $ROOT_DIR/apps/ios-customer/DongFangApp.xcworkspace"

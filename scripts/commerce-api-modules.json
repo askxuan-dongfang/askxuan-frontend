@@ -1,0 +1,10 @@
+[
+  "category.ts",
+  "report.ts",
+  "product.ts",
+  "order.ts",
+  "diyOrder.ts",
+  "logistics.ts",
+  "material.ts",
+  "service.ts"
+]

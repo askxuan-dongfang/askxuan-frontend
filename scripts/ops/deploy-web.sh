@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build all four Web clients from exact Git archives; keep existing services and data.
+# Build H5 and both admin applications from exact Git archives; keep existing services and data.
 # Usage: bash deploy-web.sh RELEASE FRONTEND_SHA H5_SHA
 set -euo pipefail
 umask 077
@@ -22,7 +22,7 @@ tar -xzf "$base/runtime/askxuan-h5-source-$h5_sha.tar.gz" -C "$candidate/fronten
 node_image="${ASKXUAN_NODE_IMAGE:-node:22-bookworm-slim}"
 if ! docker image inspect "$node_image" >/dev/null 2>&1; then node_image=askxuan/taibu-mcp:local; fi
 docker image inspect "$node_image" >/dev/null
-for app in web-h5 web-platform-admin web-shop-admin web-temple-admin; do
+for app in web-h5 web-platform-admin web-temple-admin; do
  docker run --rm --user 0:0 -v "$candidate/frontend:/workspace" -v "$base/runtime/npm-cache:/root/.npm" -w "/workspace/apps/$app" "$node_image" sh -c 'npm ci --registry=https://registry.npmmirror.com && npm run build' > "$candidate/build-$app.log" 2>&1
  test -s "$candidate/frontend/apps/$app/dist/index.html"
  # Dependencies are regenerable and belong only to this candidate. Free disk before the next app.
@@ -31,12 +31,17 @@ for app in web-h5 web-platform-admin web-shop-admin web-temple-admin; do
 done
 cp -a "$previous/." "$public/"
 cp -a "$candidate/frontend/apps/web-h5/dist/." "$public/"
-for pair in 'web-platform-admin admin' 'web-shop-admin shop' 'web-temple-admin temple'; do
+for pair in 'web-platform-admin admin' 'web-temple-admin temple'; do
  read -r app target <<< "$pair"
  mkdir -p "$public/$target"
  cp -a "$candidate/frontend/apps/$app/dist/." "$public/$target/"
  cmp "$public/$target/index.html" "$candidate/frontend/apps/$app/dist/index.html"
 done
+# /shop is a compatibility URL served from the same admin candidate, never a separate app.
+test -s "$candidate/frontend/apps/web-platform-admin/dist/legacy/shop/index.html"
+rm -rf -- "$public/shop"
+cp -a "$candidate/frontend/apps/web-platform-admin/dist/legacy/shop" "$public/shop"
+cmp "$public/shop/index.html" "$candidate/frontend/apps/web-platform-admin/dist/legacy/shop/index.html"
 chmod -R a+rX "/var/www/askxuan/releases/$release"
 nginx -t
 curl -fsS http://127.0.0.1:8080/api/v1/health > "$candidate/gateway-health.json"

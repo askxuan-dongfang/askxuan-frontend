@@ -1,6 +1,6 @@
 # @dongfang/mock-server
 
-问玄东方 Mock 数据服务，基于 Node.js + Express + TypeScript，为 C 端 App、寺院管理台、法师工作台、商城管理台、平台管理台提供统一联调数据。
+问玄东方 Mock 数据服务，基于 Node.js + Express + TypeScript，为信众、法师、寺院管理台与统一运营管理台（含商城业务）提供联调数据。
 
 ## 数据来源
 

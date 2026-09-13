@@ -30,7 +30,7 @@ SOURCE = ROOT / "packages/design-tokens/fonts/AskXuanSerif-Semibold.woff2"
 OUTPUT = ROOT / "packages/design-tokens/fonts/web"
 H5_OUTPUT = ROOT / "apps/web-h5/src/theme/fonts/web"
 SOURCE_DIRS = ["apps/web-h5/src", "apps/web-platform-admin/src",
-               "apps/web-shop-admin/src", "apps/web-temple-admin/src", "packages/admin-ui"]
+               "apps/web-temple-admin/src", "packages/admin-ui"]
 SOURCE_SUFFIXES = {".ts", ".tsx", ".js", ".jsx", ".vue", ".html", ".css", ".json"}
 
 

@@ -3,7 +3,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 import json,base64,time
 ROOT=Path(__file__).resolve().parents[2] / 'apps'
-APPS={'admin':'web-platform-admin','shop':'web-shop-admin','temple':'web-temple-admin'}
+APPS={'admin':'web-platform-admin','temple':'web-temple-admin'}
 coupon={'id':9,'name':'本地验收券','couponNo':'LOCAL9','type':'full_reduce','value':10,'minAmount':100,'totalCount':100,'receivedCount':1,'startTime':'2026-01-01 00:00:00','endTime':'2026-12-31 23:59:59','status':'enabled'}
 def enc(v):return base64.urlsafe_b64encode(json.dumps(v).encode()).decode().rstrip('=')
 class H(SimpleHTTPRequestHandler):
@@ -19,9 +19,15 @@ class H(SimpleHTTPRequestHandler):
    elif p.endswith('/marketing/coupons'):data={'list':[coupon],'total':1}
    elif '/reports' in p or p.endswith('/report'):data={**data,'totalSales':0,'totalOrders':0,'avgOrderValue':0,'refundRate':0,'salesTrend':[],'topProducts':[],'revenueStats':{},'bookingTrend':[],'serviceDistribution':[],'masterRanking':[]}
    return self.send(data)
-  seg=p.strip('/').split('/',1);app=APPS.get(seg[0]);
+  seg=p.strip('/').split('/',1)
+  if seg[0]=='shop':
+   f=ROOT/'web-platform-admin/dist/legacy/shop/index.html'
+   b=f.read_bytes();self.send_response(200);self.send_header('Content-Type','text/html; charset=utf-8');self.send_header('Content-Length',str(len(b)));self.end_headers();self.wfile.write(b);return
+  app=APPS.get(seg[0])
   if not app:return self.send_error(404)
   root=ROOT/app/'dist'; f=root/(seg[1] if len(seg)>1 else 'index.html')
+  f=f.resolve()
+  if not f.is_relative_to(root.resolve()):return self.send_error(404)
   if not f.is_file():f=root/'index.html'
   b=f.read_bytes();self.send_response(200);self.send_header('Content-Type',self.guess_type(str(f)));self.send_header('Content-Length',str(len(b)));self.end_headers();self.wfile.write(b)
  def do_POST(self):

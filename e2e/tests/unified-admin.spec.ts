@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
-const migration = JSON.parse(readFileSync('../scripts/admin-migration-manifest.json','utf8'))
-const platformPaths: string[] = JSON.parse(readFileSync('../scripts/platform-route-baseline.json','utf8'))
+const migration = JSON.parse(readFileSync('../scripts/commerce-routes.json','utf8'))
+const platformPaths: string[] = JSON.parse(readFileSync('../scripts/platform-routes.json','utf8'))
 const origin = 'http://127.0.0.1:5388'
 function token(role: string) { return 'e30.'+Buffer.from(JSON.stringify({userId:9901,roles:[role],clientId:role==='shop_admin'?'shop-admin':'platform-admin',exp:Math.floor(Date.now()/1000)+3600})).toString('base64url')+'.fixture' }
 async function session(page: Page, role='platform_super', legacy=false) {
@@ -66,6 +66,14 @@ test('anonymous legacy login preserves intended page',async({page})=>{
  await page.goto(origin+'/shop/login?redirect=%2Forders%2F9')
  await expect(page).toHaveURL(origin+'/admin/login?redirect=%2Fcommerce%2Forders%2F9')
  await expect(page.getByPlaceholder('管理员账号')).toBeVisible()
+})
+test('legacy login discards external redirects without issuing an external request',async({page})=>{
+ const external:string[]=[]
+ await page.route('https://outside.invalid/**',route=>{external.push(route.request().url());return route.abort()})
+ await page.goto(origin+'/shop/login?redirect=%2F%2Foutside.invalid%2Flogin&tab=orders#sign-in')
+ await expect(page).toHaveURL(origin+'/admin/login?tab=orders#sign-in')
+ await expect(page.getByPlaceholder('管理员账号')).toBeVisible()
+ expect(external).toEqual([])
 })
 test('existing unified identity wins over old shop session',async({page})=>{
  await session(page);await fixture(page)

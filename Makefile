@@ -3,7 +3,7 @@
 help: ## 显示可用命令
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
 
-clients-up: ## 一键启动五个客户端入口：3 个 Web 管理端 + 2 个 iOS workspace 提示
+clients-up: ## 启动统一管理台、寺院管理台，并提示两个 iOS workspace
 	@bash scripts/dev/clients-up.sh
 
 clients-down: ## 停止本脚本启动的 Web 管理端 dev server

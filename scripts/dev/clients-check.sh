@@ -28,13 +28,13 @@ check_path() {
 }
 
 check_url "寺院管理台" "http://127.0.0.1:5173/login"
-check_url "商城管理台" "http://127.0.0.1:5174/login"
-check_url "平台管理台" "http://127.0.0.1:5175/login"
+check_url "旧商城地址兼容" "http://127.0.0.1:5175/shop/login"
+check_url "统一管理台" "http://127.0.0.1:5175/login"
 check_path "C 端 iOS workspace" "$ROOT_DIR/apps/ios-customer/DongFangApp.xcworkspace"
 check_path "大师端 iOS workspace" "$ROOT_DIR/apps/ios-master/MasterApp.xcworkspace"
 
 if [ "$FAILED" -eq 0 ]; then
-  echo "OK: 五个客户端入口检查通过"
+  echo "OK: 两个管理应用、旧商城兼容地址及两套 iOS 入口检查通过"
 else
   exit 1
 fi

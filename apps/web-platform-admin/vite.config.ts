@@ -1,11 +1,33 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
+import { legacyShopDocument } from './src/compat/legacy-shop.mjs'
 
 // 问玄东方 P05 平台总管理台 - Vite 配置
 export default defineConfig(({ mode }) => ({
   base: process.env.VITE_PUBLIC_BASE || (mode === 'production' ? '/admin/' : '/'),
-  plugins: [vue()],
+  plugins: [vue(), {
+    name: 'unified-admin-legacy-shop',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'legacy/shop/index.html', source: legacyShopDocument(process.env.VITE_PUBLIC_BASE || '/admin/') })
+    },
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        if (!/^\/shop(?:\/|\?|$)/.test(request.url || '')) return next()
+        response.setHeader('Content-Type', 'text/html; charset=utf-8')
+        response.setHeader('Cache-Control', 'no-store')
+        response.end(legacyShopDocument(server.config.base))
+      })
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use((request, response, next) => {
+        if (!/^\/shop(?:\/|\?|$)/.test(request.url || '')) return next()
+        response.setHeader('Content-Type', 'text/html; charset=utf-8')
+        response.setHeader('Cache-Control', 'no-store')
+        response.end(legacyShopDocument(server.config.base))
+      })
+    }
+  }],
   resolve: {
     dedupe: ['vue'],
     alias: {

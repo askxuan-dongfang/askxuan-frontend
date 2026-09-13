@@ -8,6 +8,8 @@ for (const width of [390, 768, 1440]) for (const app of ['shop', 'admin', 'templ
   const key=app==='admin'?'platform':app
   const token='e30.'+Buffer.from(JSON.stringify({userId:9901,roles:[role],clientId:`${key}-admin`,exp:Math.floor(Date.now()/1000)+3600})).toString('base64url')+'.fixture'
   await page.addInitScript(({key,token})=>{
+   if(sessionStorage.getItem('modal-seeded'))return
+   sessionStorage.setItem('modal-seeded','1')
    localStorage.setItem(`df_${key}_admin_token`,token)
    localStorage.setItem(`df_${key}_admin_user`,JSON.stringify({userId:9901,nickname:'本地验收账号',templeId:'TEST',templeName:'本地测试寺院'}))
    localStorage.setItem('df_temple_admin_temple_id','TEST')
