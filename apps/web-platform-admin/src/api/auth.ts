@@ -3,6 +3,8 @@ import client from './client'
 import type { LoginResp, Role, Permission, AdminAccount, PageResult, AdminAccount as AccountItem } from '@/types'
 
 export interface AdminLoginParams {
+ captchaId:string
+ captchaCode:string
   account: string
   password: string
 }

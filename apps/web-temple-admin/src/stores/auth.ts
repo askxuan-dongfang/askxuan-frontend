@@ -46,8 +46,8 @@ export const useAuthStore = defineStore('auth', () => {
     else localStorage.removeItem(TEMPLE_NAME_KEY)
   }
 
-  async function login(account: string, password: string) {
-    const resp = await adminLogin(account, password)
+  async function login(account: string, password: string, proof:{captchaId:string;captchaCode:string}) {
+    const resp = await adminLogin(account, password, proof)
     // 寺院管理员必须由后端返回 templeId（服务端隔离依据）；缺失说明账号未绑定寺院
     if (!resp.userInfo?.templeId) {
       throw new Error('账号未绑定寺院，请联系平台管理员')
@@ -69,6 +69,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    const previous=token.value;
+    if(previous)void fetch('/api/v1/auth/logout',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+previous},body:JSON.stringify({accessToken:previous})}).catch(()=>{});
+
     localStorage.removeItem('df_temple_admin_session_id')
     token.value = ''
     refreshToken.value = ''

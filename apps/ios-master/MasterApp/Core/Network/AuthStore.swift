@@ -10,6 +10,8 @@
 
 import Foundation
 
+private struct AuthLogoutResponse: Decodable { let success: Bool }
+
 /// 鉴权存储（单例）
 @MainActor
 final class AuthStore: ObservableObject {
@@ -108,6 +110,16 @@ final class AuthStore: ObservableObject {
 
     /// 登出：清除 Token 与身份信息
     func logout(requiresLogin: Bool = false) {
+        if let previous = token, !previous.isEmpty {
+            // Use the configured API transport; this endpoint carries only the
+            // captured old token and cannot refresh or attach a newer session.
+            Task {
+                let _: AuthLogoutResponse? = try? await APIClient.shared.request(
+                    .accountAuth(path: "logout", body: ["accessToken": previous])
+                )
+            }
+        }
+
         NativeChatNotifications.shared.unbind()
         NativeChatNotifications.shared.destination = nil
         NativeChatNotifications.shared.openConversation = nil
@@ -140,13 +152,18 @@ final class AuthStore: ObservableObject {
 
     /// 解析 JWT Payload（中间段，Base64URL 解码），提取 masterId/userId/nickname。
     private func applyClaims(from jwt: String) {
-        guard let payload = JWTDecoder.payload(of: jwt) else { return }
+        self.masterId = nil
+        self.userId = nil
+        self.nickname = nil
+        guard let payload = JWTDecoder.payload(of: jwt),
+              let roles = payload["roles"] as? [String], roles.contains("master") else { return }
         // 后端 Claims 字段名兼容多种命名：masterId / MasterID / master_id
         self.masterId = payload["masterId"] as? String
             ?? payload["MasterID"] as? String
             ?? payload["master_id"] as? String
             ?? (payload["masterId"] as? Int).map(String.init)
             ?? (payload["MasterID"] as? Int).map(String.init)
+        if (Int(self.masterId ?? "") ?? 0) <= 0 { self.masterId = nil }
         self.userId = payload["userId"] as? String
             ?? (payload["userId"] as? Int).map(String.init)
             ?? (payload["uid"] as? String)

@@ -43,6 +43,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    const previous=token.value;
+    if(previous)void fetch('/api/v1/auth/logout',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+previous},body:JSON.stringify({accessToken:previous})}).catch(()=>{});
+
     localStorage.removeItem('df_platform_admin_session_id')
     token.value = ''
     refreshToken.value = ''

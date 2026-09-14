@@ -1,372 +1,251 @@
-//
-//  LoginView.swift
-//  DongFangApp
-//
-//  C 端认证页：手机号登录与免真实短信验证注册。
-//
-
 import SwiftUI
 
-struct LoginView: View {
-    @EnvironmentObject private var authStore: AuthStore
-    @Environment(\.dismiss) private var dismiss
-
-    private enum AuthMode: String, CaseIterable, Identifiable {
-        case login = "登录"
-        case register = "注册"
-
-        var id: String { rawValue }
-    }
-
-    @State private var mode: AuthMode = .login
-    @State private var phone: String = ""
-    @State private var code: String = ""
-    @State private var nickname: String = ""
-    @State private var isLoading: Bool = false
-    @State private var errorMessage: String?
-    @State private var countdown: Int = 0
-    @State private var countdownTimer: Timer?
-
-    private var isPhoneValid: Bool {
-        phone.count == 11 && phone.hasPrefix("1")
-    }
-
-    private var canSubmit: Bool {
-        switch mode {
-        case .login:
-            return isPhoneValid && code.count >= 4 && !isLoading
-        case .register:
-            return isPhoneValid && nickname.count <= 32 && !isLoading
-        }
-    }
-
-    var body: some View {
-        ZStack {
-            Color.bgPrimary.ignoresSafeArea()
-
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: AppSpacing.xl) {
-                    logoSection
-                    modePicker
-                    formSection
-                    submitButton
-                    hintSection
-                    Spacer(minLength: 40)
-                }
-                .padding(.horizontal, AppSpacing.xl)
-                .padding(.top, 60)
-            }
-        }
-        .alert(mode == .login ? "登录失败" : "注册失败", isPresented: .init(
-            get: { errorMessage != nil },
-            set: { if !$0 { errorMessage = nil } }
-        )) {
-            Button("好的", role: .cancel) {}
-        } message: {
-            Text(errorMessage ?? "")
-        }
-        .onDisappear {
-            countdownTimer?.invalidate()
-        }
-    }
-
-    private var modePicker: some View {
-        Picker("认证方式", selection: $mode) {
-            ForEach(AuthMode.allCases) { item in
-                Text(item.rawValue).tag(item)
-            }
-        }
-        .pickerStyle(.segmented)
-        .onChange(of: mode) { _, _ in
-            errorMessage = nil
-        }
-    }
-
-    // MARK: - 品牌 Logo
-    private var logoSection: some View {
-        VStack(spacing: AppSpacing.md) {
-            Image("brand-logo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 104, height: 104)
-                .accessibilityHidden(true)
-
-            Text("问玄东方")
-                .font(AppTypography.title(26))
-                .foregroundStyle(Color.accentDefault)
-
-            Text("结缘佛法  祈福纳祥")
-                .font(AppTypography.supporting)
-                .foregroundStyle(Color.textTertiary)
-        }
-    }
-
-    // MARK: - 表单
-    private var formSection: some View {
-        VStack(spacing: AppSpacing.md) {
-            // 手机号
-            HStack(spacing: 12) {
-                Image(systemName: "phone.fill")
-                    .font(AppTypography.reading)
-                    .foregroundStyle(Color.textTertiary)
-                    .frame(width: 20)
-
-                TextField("请输入手机号", text: $phone)
-                    .keyboardType(.numberPad)
-                    .font(AppTypography.reading)
-                    .foregroundStyle(Color.textPrimary)
-                    .onChange(of: phone) { _, newValue in
-                        if newValue.count > 11 {
-                            phone = String(newValue.prefix(11))
-                        }
-                    }
-            }
-            .padding(.horizontal, AppSpacing.lg)
-            .padding(.vertical, 14)
-            .background(Color.bgSecondary)
-            .cornerRadius(AppRadius.lg)
-            .overlay(
-                RoundedRectangle(cornerRadius: AppRadius.lg)
-                    .stroke(isPhoneValid ? Color.accentDefault.opacity(0.3) : Color.borderDefault, lineWidth: 1)
-            )
-
-            if mode == .login {
-                codeField
-            } else {
-                nicknameField
-            }
-        }
-    }
-
-    private var codeField: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "shield.lefthalf.filled")
-                .font(AppTypography.reading)
-                .foregroundStyle(Color.textTertiary)
-                .frame(width: 20)
-
-            TextField("请输入验证码", text: $code)
-                .keyboardType(.numberPad)
-                .font(AppTypography.reading)
-                .foregroundStyle(Color.textPrimary)
-                .onChange(of: code) { _, newValue in
-                    if newValue.count > 6 { code = String(newValue.prefix(6)) }
-                }
-
-            Spacer()
-            Button { sendCode() } label: {
-                Text(countdown > 0 ? "\(countdown)s" : "获取验证码")
-                    .font(AppTypography.supporting.weight(.medium))
-                    .foregroundStyle(countdown > 0 ? Color.textTertiary : Color.accentDefault)
-            }
-            .buttonStyle(.plain)
-            .disabled(countdown > 0 || !isPhoneValid)
-        }
-        .padding(.horizontal, AppSpacing.lg)
-        .padding(.vertical, 14)
-        .background(Color.bgSecondary)
-        .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
-    }
-
-    private var nicknameField: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "person.fill")
-                .font(AppTypography.reading)
-                .foregroundStyle(Color.textTertiary)
-                .frame(width: 20)
-            TextField("昵称（选填）", text: $nickname)
-                .font(AppTypography.reading)
-                .foregroundStyle(Color.textPrimary)
-                .onChange(of: nickname) { _, newValue in
-                    if newValue.count > 32 { nickname = String(newValue.prefix(32)) }
-                }
-        }
-        .padding(.horizontal, AppSpacing.lg)
-        .padding(.vertical, 14)
-        .background(Color.bgSecondary)
-        .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
-    }
-
-    // MARK: - 登录按钮
-    private var submitButton: some View {
-        DFPrimaryButton(title: mode.rawValue,
-                        icon: mode == .login ? "arrow.right.circle.fill" : "person.badge.plus",
-                        isEnabled: canSubmit,
-                        isLoading: isLoading) {
-            Task {
-                if mode == .login {
-                    await performLogin()
-                } else {
-                    await performRegistration()
-                }
-            }
-        }
-    }
-
-    // MARK: - 提示
-    private var hintSection: some View {
-        VStack(spacing: AppSpacing.sm) {
-            Text(mode == .login ? "演示登录验证码固定为 1234" : "注册不发送或校验真实短信验证码")
-                .font(AppTypography.caption)
-                .foregroundStyle(Color.textTertiary)
-
-            Text(mode == .login ? "没有账号？切换到注册" : "注册成功后将自动登录")
-                .font(AppTypography.micro)
-                .foregroundStyle(Color.textTertiary.opacity(0.7))
-        }
-    }
-
-    // MARK: - 操作
-    private func sendCode() {
-        guard isPhoneValid else { return }
-        // 后端无 send-code 接口，mock 阶段直接填入 1234
-        code = "1234"
-        startCountdown()
-    }
-
-    private func startCountdown() {
-        countdown = 60
-        countdownTimer?.invalidate()
-        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if countdown > 0 {
-                countdown -= 1
-            } else {
-                countdownTimer?.invalidate()
-            }
-        }
-    }
-
-    private func performLogin() async {
-        isLoading = true
-        errorMessage = nil
-
-        let loginResult = await tryLogin()
-        switch loginResult {
-        case .success:
-            await MainActor.run {
-                isLoading = false
-                dismiss()
-            }
-        case .userNotFound:
-            await MainActor.run {
-                isLoading = false
-                errorMessage = "该手机号尚未注册，请切换到注册"
-            }
-        case .failure(let msg):
-            await MainActor.run {
-                isLoading = false
-                errorMessage = msg
-            }
-        }
-    }
-
-    private func performRegistration() async {
-        isLoading = true
-        errorMessage = nil
-        switch await tryRegister() {
-        case .success:
-            switch await tryLogin(codeOverride: "1234") {
-            case .success:
-                await MainActor.run {
-                    isLoading = false
-                    dismiss()
-                }
-            case .userNotFound:
-                finishWithError("账号已创建，但自动登录失败，请重试")
-            case .failure(let message):
-                finishWithError("账号已创建，自动登录失败：\(message)")
-            }
-        case .failure(let message):
-            finishWithError(message)
-        }
-    }
-
-    @MainActor
-    private func finishWithError(_ message: String) {
-        isLoading = false
-        errorMessage = message
-    }
-
-    private enum LoginOutcome {
-        case success
-        case userNotFound
-        case failure(String)
-    }
-
-    private enum RegisterOutcome {
-        case success
-        case failure(String)
-    }
-
-    private func tryLogin(codeOverride: String? = nil) async -> LoginOutcome {
-        do {
-            let resp: LoginResponse = try await APIClient.shared.request(
-                .authLogin(LoginRequest(phone: phone, code: codeOverride ?? code, account: nil, password: nil))
-            )
-            let userId = resp.userInfo?.userId.map(String.init) ?? AppConfig.defaultUserId
-            await MainActor.run {
-                authStore.didLogin(
-                    accessToken: resp.accessToken,
-                    refreshToken: resp.refreshToken,
-                    userId: userId,
-                    nickname: resp.userInfo?.nickname,
-                    avatar: resp.userInfo?.avatar,
-                    mobile: resp.userInfo?.mobile ?? phone,
-                    imToken: resp.imToken
-                )
-            }
-            // 登录成功后，用 imToken 登录 OpenIM（C 端 userID 约定为 "u_" + userId）
-            if let imToken = resp.imToken, !imToken.isEmpty {
-                let openimUserID = "u_" + userId
-                OpenIMManager.shared.login(userID: openimUserID, token: imToken) { success, error in
-                    if success {
-                        print("✅ OpenIM 登录成功")
-                    } else {
-                        print("❌ OpenIM 登录失败: \(error?.localizedDescription ?? "")")
-                    }
-                }
-            }
-            await NativeChatNotifications.shared.refresh()
-            return .success
-        } catch let APIError.serverError(code, message) {
-            // 用户不存在（后端 code 通常为 40401 或 message 含"不存在"）
-            if message.contains("不存在") || code == 40401 {
-                return .userNotFound
-            }
-            return .failure(message)
-        } catch APIError.networkError {
-            return .failure("网络连接失败，请检查网络后重试")
-        } catch {
-            return .failure("登录失败：\(error.localizedDescription)")
-        }
-    }
-
-    private func tryRegister() async -> RegisterOutcome {
-        do {
-            let _: RegisterResponse = try await APIClient.shared.request(
-                .authRegister(RegisterRequest(
-                    mobile: phone,
-                    code: nil,
-                    nickname: nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : nickname
-                ))
-            )
-            return .success
-        } catch let APIError.serverError(_, message) {
-            return .failure("注册失败：\(message)")
-        } catch APIError.networkError {
-            return .failure("网络连接失败，请检查网络后重试")
-        } catch {
-            return .failure("注册失败：\(error.localizedDescription)")
-        }
-    }
-
-
+private struct IdentityCaptcha: Decodable {
+  let id: String
+  let image: String
+}
+private struct IdentityOptions: Decodable {
+  let emailEnabled: Bool
+  let smsEnabled: Bool
+  let agreementVersion: String
+}
+private struct IdentityNotice: Decodable {
+  let retryAfter: Int?
+  let message: String?
+  let success: Bool?
+}
+private struct IdentityLogin: Decodable {
+  let accessToken: String
+  let refreshToken: String?
+  let userInfo: IdentityUser?
+  let imToken: String?
+}
+private struct IdentityUser: Decodable {
+  let userId: Int64?
+  let nickname: String?
+  let avatar: String?
+  let mobile: String?
 }
 
-#Preview {
-    LoginView()
-        .environmentObject(AuthStore.shared)
-        .preferredColorScheme(.dark)
+struct LoginView: View {
+  @EnvironmentObject private var authStore: AuthStore
+  @Environment(\.dismiss) private var dismiss
+  @State private var mode = "login"
+  @State private var account = ""
+  @State private var email = ""
+  @State private var username = ""
+  @State private var password = ""
+  @State private var code = ""
+  @State private var human = ""
+  @State private var agreed = false
+  @State private var busy = false
+  @State private var captcha: IdentityCaptcha?
+  @State private var captchaGeneration = UUID()
+  @State private var options: IdentityOptions?
+  @State private var message = ""
+  @State private var failure = ""
+  @State private var retryAt = Date.distantPast
+  @State private var legal: String?
+  private let master = false
+  private var proof: [String: String] { ["captchaId": captcha?.id ?? "", "captchaCode": human] }
+  var body: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 20) {
+        Image("brand-logo").resizable().scaledToFit().frame(width: 52, height: 52)
+          .accessibilityHidden(true)
+        Text("问玄东方 · " + (master ? "师傅工作台" : "与美好相遇")).font(.subheadline).foregroundStyle(
+          .secondary)
+        Text(mode == "login" ? "欢迎回来" : mode == "register" ? "创建你的账户" : "找回密码").font(
+          .largeTitle.bold())
+        if !master && mode != "reset" {
+          Picker("认证方式", selection: $mode) {
+            Text("账号登录").tag("login")
+            Text("邮箱注册").tag("register")
+          }.pickerStyle(.segmented).disabled(busy)
+        }
+        Group {
+          if mode == "login" {
+            TextField("邮箱／用户名", text: $account).textContentType(.username)
+          } else {
+            TextField("邮箱", text: $email).keyboardType(.emailAddress).textContentType(.emailAddress)
+          }
+          if mode == "register" {
+            TextField("用户名（4–32 位字母、数字或下划线）", text: $username).textContentType(.username)
+          }
+          SecureField(mode == "reset" ? "新密码（至少 12 个字符）" : "密码", text: $password).textContentType(
+            mode == "login" ? .password : .newPassword)
+          HStack {
+            TextField("图片验证码", text: $human).keyboardType(.numberPad).accessibilityLabel("图片验证码")
+            Button {
+              Task { await reloadCaptcha() }
+            } label: {
+              if let raw = captcha?.image.split(separator: ",").last,
+                let data = Data(base64Encoded: String(raw)), let image = UIImage(data: data)
+              {
+                Image(uiImage: image).resizable().scaledToFit().frame(width: 140, height: 48)
+              } else {
+                Text("加载验证码").frame(width: 140, height: 48)
+              }
+            }.accessibilityLabel("更换图片验证码").disabled(busy)
+          }
+          if mode != "login" {
+            HStack {
+              TextField("邮箱验证码", text: $code).keyboardType(.numberPad).textContentType(.oneTimeCode)
+              TimelineView(.periodic(from: .now, by: 1)) { context in
+                let seconds = max(0, Int(ceil(retryAt.timeIntervalSince(context.date))))
+                Button(seconds > 0 ? "\(seconds) 秒后重发" : "发送验证码") { Task { await sendCode() } }
+                  .disabled(
+                    busy || seconds > 0 || options?.emailEnabled != true || human.count != 5
+                  ).frame(minHeight: 44)
+              }
+            }
+            Text("发送后图片会更新，提交前请输入新图片验证码。").font(.caption).foregroundStyle(.secondary)
+          }
+        }.textFieldStyle(.roundedBorder).textInputAutocapitalization(.never)
+          .autocorrectionDisabled()
+        if mode == "register" {
+          Toggle("我已阅读并同意", isOn: $agreed)
+          HStack {
+            Button("用户协议") { legal = "用户协议" }
+            Button("隐私政策") { legal = "隐私政策" }
+          }
+        }
+        if !failure.isEmpty {
+          Text(failure).foregroundStyle(.red).accessibilityLabel("错误：" + failure)
+        }
+        if !message.isEmpty { Text(message).font(.callout).foregroundStyle(.secondary) }
+        if mode != "login" && options?.emailEnabled == false {
+          Text("邮箱验证暂未开放，请稍后重试。工作账户可联系管理员。").font(.callout)
+        }
+        Button {
+          Task { await submit() }
+        } label: {
+          HStack {
+            Spacer()
+            if busy { ProgressView() }
+            Text(busy ? "正在处理…" : mode == "login" ? "登录" : mode == "register" ? "注册并登录" : "重置密码")
+            Spacer()
+          }.frame(minHeight: 44)
+        }.buttonStyle(.borderedProminent).disabled(
+          busy || captcha == nil || (mode != "login" && options?.emailEnabled != true))
+        Button(mode == "login" ? "忘记密码" : "返回登录") { mode = mode == "login" ? "reset" : "login" }
+          .frame(minHeight: 44).disabled(busy)
+        if master { Text("工作账户由管理员开通；未绑定验证邮箱请联系管理员。").font(.caption).foregroundStyle(.secondary) }
+      }.padding(24).frame(maxWidth: 480).frame(maxWidth: .infinity)
+    }.background(Color.bgPrimary).task {
+      await loadOptions()
+      await reloadCaptcha()
+    }
+    .onChange(of: mode) { _, _ in
+      password = ""
+      code = ""
+      failure = ""
+      if mode != "login" { message = "" }
+      Task { await reloadCaptcha() }
+    }
+    .sheet(isPresented: Binding(get: { legal != nil }, set: { if !$0 { legal = nil } })) {
+      NavigationStack {
+        ScrollView {
+          VStack(alignment: .leading, spacing: 16) {
+            Text(
+              legal == "用户协议"
+                ? "请使用本人可访问的邮箱注册并妥善保管密码。请勿冒用他人身份、滥用验证码或发布违法内容。注册账户用于保存个人资料、收藏、设计和服务记录。具体服务内容、价格及履约条件以相应页面和订单约定为准。"
+                : "账户系统处理邮箱、用户名和密码哈希，用于身份验证、账户找回和保护账户。密码不以明文保存。验证码限时有效、验证后失效；发送频次和登录尝试记录用于防止滥用。注册成功时记录同意的协议版本。"
+            )
+          }.padding()
+        }.navigationTitle(legal ?? "账户说明").toolbar { Button("完成") { legal = nil } }
+      }
+    }
+  }
+  private func loadOptions() async {
+    do {
+      options = try await APIClient.shared.request(.accountAuth(path: "options", body: nil))
+    } catch { failure = error.localizedDescription }
+  }
+  private func reloadCaptcha() async {
+    let generation = UUID()
+    captchaGeneration = generation
+    human = ""
+    captcha = nil
+    do {
+      let result: IdentityCaptcha = try await APIClient.shared.request(
+        .accountAuth(path: "captcha", body: nil))
+      guard captchaGeneration == generation else { return }
+      captcha = result
+    } catch { if captchaGeneration == generation { failure = "验证码加载失败，请重试" } }
+  }
+  private func sendCode() async {
+    guard !busy else { return }
+    busy = true
+    failure = ""
+    defer { busy = false }
+    do {
+      var body = proof
+      body.merge([
+        "email": email, "purpose": mode == "register" ? "register" : "reset",
+        "domain": master ? "admin" : "user",
+      ]) { _, new in new }
+      let result: IdentityNotice = try await APIClient.shared.request(
+        .accountAuth(path: "email/code", body: body))
+      retryAt = Date().addingTimeInterval(Double(result.retryAfter ?? 60))
+      message = result.message ?? "请检查邮箱"
+    } catch { failure = error.localizedDescription }
+    await reloadCaptcha()
+  }
+  private func submit() async {
+    guard !busy else { return }
+    failure = ""
+    message = ""
+    guard human.count == 5 else {
+      failure = "请输入五位图片验证码"
+      return
+    }
+    if mode == "register" && !agreed {
+      failure = "请阅读并同意用户协议和隐私政策"
+      return
+    }
+    if mode != "login" && !(12...128).contains(password.count) {
+      failure = "密码需为 12–128 个字符"
+      return
+    }
+    busy = true
+    defer { busy = false }
+    do {
+      var body = proof
+      body.merge([
+        "account": account, "password": password, "email": email, "username": username.lowercased(),
+        "code": code, "domain": master ? "admin" : "user",
+        "agreementVersion": options?.agreementVersion ?? "",
+      ]) { _, new in new }
+      if mode == "reset" {
+        let _: IdentityNotice = try await APIClient.shared.request(
+          .accountAuth(path: "password/reset", body: body))
+        mode = "login"
+        password = ""
+        message = "密码已更新，请重新登录"
+      } else {
+        let result: IdentityLogin = try await APIClient.shared.request(
+          .accountAuth(
+            path: mode == "register" ? "email/register" : master ? "admin/login" : "login",
+            body: body))
+        try await accept(result)
+        dismiss()
+      }
+    } catch { failure = error.localizedDescription }
+    await reloadCaptcha()
+  }
+  private func accept(_ result: IdentityLogin) async throws {
+    guard let id = result.userInfo?.userId else {
+      throw NSError(
+        domain: "Identity", code: 1, userInfo: [NSLocalizedDescriptionKey: "登录响应缺少账户信息"])
+    }
+    authStore.didLogin(
+      accessToken: result.accessToken, refreshToken: result.refreshToken, userId: String(id),
+      nickname: result.userInfo?.nickname, avatar: result.userInfo?.avatar,
+      mobile: result.userInfo?.mobile, imToken: result.imToken)
+    if let im = result.imToken {
+      OpenIMManager.shared.login(userID: "u_" + String(id), token: im) { _, _ in }
+    }
+    await NativeChatNotifications.shared.refresh()
+  }
 }

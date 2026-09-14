@@ -20,6 +20,7 @@ enum HTTPMethod: String {
 
 /// API 端点枚举（法师工作台）
 enum Endpoint {
+ case accountAuth(path:String,body:[String:String]?)
     // MARK: - 认证
     /// POST auth/admin/login（管理台登录，role=master）
     case adminLogin(AdminLoginRequest)
@@ -121,6 +122,7 @@ enum Endpoint {
     /// 相对路径（不含 BaseURL 前缀）
     var path: String {
         switch self {
+ case .accountAuth(let path,_): return "auth/"+path
         // 认证
         case .adminLogin:
             return "auth/admin/login"
@@ -221,6 +223,7 @@ enum Endpoint {
     /// HTTP 方法
     var httpMethod: HTTPMethod {
         switch self {
+ case .accountAuth(_,let body): return body == nil ? .GET:.POST
         case .adminLogin, .authRefresh, .authIMToken, .withdrawalApply, .registerDeviceToken, .bookingChatSend, .chatSend,
              .masterServiceTagsUpdate,
              .masterCommunityPostCreate, .mediaUploadCredential, .mediaComplete,
@@ -312,6 +315,7 @@ enum Endpoint {
     /// 请求体（Encodable）
     var body: AnyEncodable? {
         switch self {
+ case .accountAuth(_,let body): return body.map {AnyEncodable($0)}
         case .adminLogin(let req):
             return AnyEncodable(req)
         case .authRefresh(let refresh):
@@ -355,6 +359,7 @@ enum Endpoint {
     /// Authentication forms never send or invalidate a previous login token.
     var usesSessionAuthorization: Bool {
         switch self {
+ case .accountAuth: return false
         case .adminLogin, .authRefresh: return false
         default: return true
         }
@@ -362,6 +367,7 @@ enum Endpoint {
 
     var shouldAttemptTokenRefresh: Bool {
         switch self {
+ case .accountAuth: return false
         case .adminLogin, .authRefresh:
             return false
         default:

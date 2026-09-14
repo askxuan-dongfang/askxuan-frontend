@@ -177,6 +177,7 @@ struct CommunityCommentCreateRequest: Encodable { let content: String }
 
 /// API 端点枚举
 enum Endpoint {
+ case accountAuth(path:String,body:[String:String]?)
     // MARK: - 寺院
     case temples(sect: String?, type: String?, serviceCode: String?, page: Int, size: Int)
     case templesByBelief(String, page: Int, size: Int)
@@ -333,6 +334,7 @@ enum Endpoint {
     /// 相对路径（不含 BaseURL 前缀）
     var path: String {
         switch self {
+ case .accountAuth(let path,_): return "auth/"+path
         case .aiReportConversation(let id): return "ai/reports/\(id)/conversation"
         case .aiTopics: return "ai/topics"
         case .aiReports, .aiReportCreate: return "ai/reports"
@@ -467,6 +469,7 @@ enum Endpoint {
     /// HTTP 方法
     var httpMethod: HTTPMethod {
         switch self {
+ case .accountAuth(_,let body): return body == nil ? .GET:.POST
         case .rewardCampaigns, .rewardDetail, .rewardEntries, .rewardOrders: return .GET
         case .diyDesignCopy: return .POST
         case .diyDesignStatus: return .PUT
@@ -643,6 +646,7 @@ enum Endpoint {
     /// 请求体（Encodable）
     var body: (any Encodable)? {
         switch self {
+ case .accountAuth(_,let body): return body.map {AnyEncodable($0)}
         case .aiReportCreate(let req): return req
         case .aiReportUnlock(let req): return req
         case .aiReportRetry: return AnyEncodable([String:String]())
@@ -697,6 +701,7 @@ enum Endpoint {
     /// Authentication forms never send or invalidate a previous login token.
     var usesSessionAuthorization: Bool {
         switch self {
+ case .accountAuth: return false
         case .authLogin, .authRegister, .authRefresh: return false
         default: return true
         }
@@ -704,6 +709,7 @@ enum Endpoint {
 
     var shouldAttemptTokenRefresh: Bool {
         switch self {
+ case .accountAuth: return false
         case .authLogin, .authRegister, .authRefresh, .authLogout:
             return false
         default:

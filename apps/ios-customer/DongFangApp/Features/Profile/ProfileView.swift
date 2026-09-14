@@ -133,7 +133,7 @@ struct ProfileView: View {
                         .padding(.vertical, 8)
                 }
 
-                Text("未注册手机号将自动创建账号")
+                Text("新用户可通过邮箱验证创建账户")
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }

@@ -1,3 +1,17 @@
+<script setup lang="ts">
+import AccountLogin from '../../../../packages/admin-ui/components/AccountLogin.vue'
+import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
+import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
+import {onMounted} from 'vue'
+import {ElMessage} from 'element-plus'
+import {useRouter,useRoute} from 'vue-router'
+import {useAuthStore} from '@/stores/auth'
+import {defaultRoute} from '@/router/access'
+const router=useRouter();const route=useRoute();const auth=useAuthStore()
+onMounted(()=>{if(route.query.denied==='1')ElMessage.warning('该账号没有本管理台权限，请使用对应角色账号登录')})
+async function login(account:string,password:string,proof:{captchaId:string;captchaCode:string}){await auth.login({account,password,...proof})}
+function complete(){const next=typeof route.query.redirect==='string'?route.query.redirect:'';router.replace(next.startsWith('/')&&!next.startsWith('//')&&!next.includes(String.fromCharCode(92))&&!next.startsWith('/login')?next:defaultRoute(auth.roles))}
+</script>
 <template>
   <div class="login">
     <AppearanceSelector class="ax-appearance-login" />
@@ -14,79 +28,18 @@
         <p class="login__subtitle">统一运营管理台 · 平台与商城</p>
       </div>
 
-      <el-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="onSubmit">
-        <el-form-item prop="account">
-          <el-input v-model="form.account" placeholder="管理员账号" :prefix-icon="User" />
-        </el-form-item>
-        <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" show-password placeholder="登录密码" :prefix-icon="Lock" @keyup.enter="onSubmit" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" class="login__submit" :loading="loading" @click="onSubmit">登 录</el-button>
-        </el-form-item>
-      </el-form>
+      <AccountLogin :login="login" @success="complete" />
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
-import { isAdminSessionExpired } from '@/api/client'
-import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { User, Lock } from '@element-plus/icons-vue'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { defaultRoute } from '@/router/access'
-import { useAuthStore } from '@/stores/auth'
-
-const router = useRouter()
-const route = useRoute()
-const auth = useAuthStore()
-
-const formRef = ref<FormInstance>()
-const loading = ref(false)
-const form = reactive({ account: '', password: '' })
-
-onMounted(() => {
-  if (route.query.denied === '1') {
-    ElMessage.warning('该账号没有本管理台权限，请使用对应角色账号登录')
-  }
-})
-
-const rules: FormRules = {
-  account: [{ required: true, message: '请输入账号', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
-}
-
-async function onSubmit() {
-  if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
-    if (!valid) return
-    loading.value = true
-    try {
-      await auth.login({ account: form.account, password: form.password })
-      ElMessage.success('登录成功')
-      const requested = typeof route.query.redirect === 'string' ? route.query.redirect : ''
-      const redirect = requested.startsWith('/') && !requested.startsWith('//') ? requested : defaultRoute(auth.roles)
-      router.push(redirect)
-    } catch (e: any) { if (isAdminSessionExpired(e)) return;
-      ElMessage.error(e?.message || '登录失败，请检查账号密码')
-    } finally {
-      loading.value = false
-    }
-  })
-}
-</script>
-
 <style scoped>
 .login {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100dvh;
+  overflow-x: hidden;
   background: var(--color-bg-primary);
 }
 .login__bg {
@@ -124,7 +77,9 @@ async function onSubmit() {
 .login__panel {
   position: relative;
   z-index: 1;
-  width: 400px;
+  width: min(400px, calc(100vw - 48px));
+  box-sizing: border-box;
+  margin: 40px 0;
   padding: 44px 40px 36px;
   background: rgba(var(--admin-surface-rgb), 0.92);
   backdrop-filter: blur(12px);

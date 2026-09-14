@@ -1,50 +1,17 @@
 <script setup lang="ts">
-import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
+import AccountLogin from '../../../../packages/admin-ui/components/AccountLogin.vue'
 import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { User, Lock, InfoFilled } from '@element-plus/icons-vue'
-import { useAuthStore } from '@/stores/auth'
+import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
+import {onMounted} from 'vue'
+import {ElMessage} from 'element-plus'
+import {useRouter,useRoute} from 'vue-router'
+import {useAuthStore} from '@/stores/auth'
 
-const router = useRouter()
-const route = useRoute()
-const auth = useAuthStore()
-
-const formRef = ref<FormInstance>()
-const loading = ref(false)
-const form = reactive({ account: '', password: '' })
-
-onMounted(() => {
-  if (route.query.denied === '1') {
-    ElMessage.warning('该账号没有本管理台权限，请使用对应角色账号登录')
-  }
-})
-
-const rules: FormRules = {
-  account: [{ required: true, message: '请输入账号', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
-}
-
-async function handleLogin() {
-  if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
-    if (!valid) return
-    loading.value = true
-    try {
-      await auth.login(form.account, form.password)
-      ElMessage.success('登录成功')
-      const redirect = (route.query.redirect as string) || '/dashboard'
-      router.replace(redirect)
-    } catch {
-      // 错误提示已由 axios 拦截器统一处理
-    } finally {
-      loading.value = false
-    }
-  })
-}
+const router=useRouter();const route=useRoute();const auth=useAuthStore()
+onMounted(()=>{if(route.query.denied==='1')ElMessage.warning('该账号没有本管理台权限，请使用对应角色账号登录')})
+async function login(account:string,password:string,proof:{captchaId:string;captchaCode:string}){await auth.login(account,password,proof)}
+function complete(){const next=typeof route.query.redirect==='string'?route.query.redirect:'';router.replace(next.startsWith('/')&&!next.startsWith('//')&&!next.includes(String.fromCharCode(92))&&!next.startsWith('/login')?next:'/dashboard')}
 </script>
-
 <template>
   <div class="login-page">
     <AppearanceSelector class="ax-appearance-login" />
@@ -59,56 +26,21 @@ async function handleLogin() {
       </div>
       <p class="login-desc">以虔诚之心，护寺院清誉 · 寺院数字化运营管理</p>
 
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        size="large"
-        label-position="top"
-        @keyup.enter="handleLogin"
-      >
-        <el-form-item label="管理员账号" prop="account">
-          <el-input v-model="form.account" placeholder="请输入账号" clearable>
-            <template #prefix><el-icon><User /></el-icon></template>
-          </el-input>
-        </el-form-item>
-        <el-form-item label="密码" prop="password">
-          <el-input
-            v-model="form.password"
-            type="password"
-            placeholder="请输入密码"
-            show-password
-            clearable
-          >
-            <template #prefix><el-icon><Lock /></el-icon></template>
-          </el-input>
-        </el-form-item>
-        <el-button
-          type="primary"
-          class="login-btn"
-          :loading="loading"
-          @click="handleLogin"
-        >
-          登 录
-        </el-button>
-      </el-form>
+      <AccountLogin :login="login" @success="complete" />
 
-      <div class="login-tip">
-        <el-icon><InfoFilled /></el-icon>
-      </div>
+
     </div>
     <div class="login-footer">© 问玄东方 · 寺院管理台 P02</div>
   </div>
 </template>
-
 <style scoped>
 .login-page {
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow-x: hidden;
   background: var(--admin-bg);
 }
 .login-bg {
@@ -133,7 +65,9 @@ async function handleLogin() {
 .login-card {
   position: relative;
   z-index: 1;
-  width: 400px;
+  width: min(400px, calc(100vw - 48px));
+  box-sizing: border-box;
+  margin: 40px 0;
   padding: 36px 32px 28px;
   border-radius: 16px;
 }

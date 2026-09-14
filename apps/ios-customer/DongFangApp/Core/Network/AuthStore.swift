@@ -10,6 +10,8 @@
 
 import Foundation
 
+private struct AuthLogoutResponse: Decodable { let success: Bool }
+
 /// Keychain 简易封装
 enum KeychainHelper {
     static func save(_ data: Data, service: String, key: String) {
@@ -205,6 +207,16 @@ final class AuthStore: ObservableObject {
 
     /// 登出：清除所有凭据
     func logout(requiresLogin: Bool = false) {
+        if let previous = accessToken, !previous.isEmpty {
+            // Use the configured API transport; this endpoint carries only the
+            // captured old token and cannot refresh or attach a newer session.
+            Task {
+                let _: AuthLogoutResponse? = try? await APIClient.shared.request(
+                    .accountAuth(path: "logout", body: ["accessToken": previous])
+                )
+            }
+        }
+
         NativeChatNotifications.shared.unbind()
         NativeChatNotifications.shared.destination = nil
         NativeChatNotifications.shared.openConversation = nil
