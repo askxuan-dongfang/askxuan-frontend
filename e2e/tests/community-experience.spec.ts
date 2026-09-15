@@ -51,16 +51,16 @@ test('guest following stays in the plaza with an explicit login action', async (
  expect(calls.some(url => url.includes('following=true') || url.includes('/live/'))).toBeFalsy();
  await page.getByRole('button', { name: '去登录', exact: true }).click();
  await expect(page).toHaveURL(/\/c\/login$/);
- await expect(page.getByRole('tab', { name: '登录', exact: true })).toBeVisible();
+ await expect(page.getByRole('button', { name: '账号登录', exact: true })).toBeVisible();
 });
 test('expired community authentication clears the role before returning to login', async ({ page }) => {
  await page.addInitScript(() => { if (sessionStorage.getItem('expired-fixture')) return; sessionStorage.setItem('expired-fixture', '1'); localStorage.setItem('h5_token', 'expired'); localStorage.setItem('h5-auth', JSON.stringify({ state: { role: 'customer', token: 'expired', userId: 1 }, version: 0 })); });
  await page.route('**/api/v1/**', route => route.fulfill({ json: { code: 0, data: { list: [], total: 0 } } }));
  await page.route('**/api/v1/community/feed**', route => route.fulfill({ json: { code: 40101, message: '未登录或登录已过期' } }));
  await page.goto('/c/community?filter=following');
- await expect(page).toHaveURL(/\/c\/login$/);
- await expect(page.getByRole('tab', { name: '登录', exact: true })).toBeVisible();
- await expect(page.getByRole('button', { name: '登 录', exact: true })).toBeVisible();
+ await expect(page).toHaveURL('/c/login?redirect=%2Fc%2Fcommunity%3Ffilter%3Dfollowing');
+ await expect(page.getByRole('button', { name: '账号登录', exact: true })).toBeVisible();
+ await expect(page.getByRole('button', { name: '登录', exact: true })).toBeVisible();
 });
 test('like and follow initialize accurately and prevent double submissions', async ({ page }) => { const fixture = await setup(page, { delay: true }); await page.goto('/c/community/P1'); await expect(page.getByRole('button', { name: '已关注', exact: true })).toBeVisible(); await expect(page.getByRole('button', { name: '取消点赞', exact: true })).toHaveAttribute('aria-pressed', 'true'); await page.getByRole('button', { name: '取消点赞', exact: true }).dblclick({ force: true }); await expect(page.getByRole('button', { name: '点赞', exact: true })).toHaveAttribute('aria-pressed', 'false'); expect(fixture.counts().likes).toBe(1); await page.getByRole('button', { name: '已关注', exact: true }).click(); await expect(page.getByRole('button', { name: '+ 关注', exact: true })).toBeVisible(); expect(fixture.counts().follows).toBe(1); });
 test('comments failures do not hide content and submitted comments stay pending', async ({ page }) => { const fixture = await setup(page, { commentsFail: true, delay: true }); await page.goto('/c/community/P2'); await expect(page.locator('.community-detail-main h1')).toContainText('一杯茶'); await expect(page.getByText('评论服务暂时不可用')).toBeVisible(); await page.getByRole('textbox', { name: '写下评论' }).fill('感谢分享，给自己一点安静的时间。'); await page.getByRole('button', { name: '发送', exact: true }).dblclick({ force: true }); await expect(page.getByText('待审核 · 仅自己可见')).toBeVisible(); expect(fixture.counts().comments).toBe(1); await expect(page.locator('.community-comments-heading h2')).toHaveText('一起聊聊 0'); });
