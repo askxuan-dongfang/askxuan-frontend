@@ -58,6 +58,7 @@
 		F1E117240EA0E03EDEA065F4 /* MasterProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117AC1A1E7E1366FE627EB3A /* MasterProfile.swift */; };
 		F71A5213ABF488A6AA8657B0 /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF7347A424F372232E7A162 /* CalendarView.swift */; };
 		FD109E64B5C5E531902E6FE8 /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE37F18E7F2177EAD5C86FF7 /* Card.swift */; };
+		6E1FD61BB3D1FE987182289B /* MasterOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D252E073923435424D957A1 /* MasterOnboardingView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -115,6 +116,7 @@
 		EC96C66D5E02A99B102A3F97 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = file; name = OFL.txt; path = "../../packages/design-tokens/fonts/OFL.txt"; sourceTree = SOURCE_ROOT; };
 		ED213CAB1B21D786432BE9E4 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		EFBFFE694B85B18E8EE8A464 /* Review.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Review.swift; sourceTree = "<group>"; };
+		4D252E073923435424D957A1 /* MasterOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterOnboardingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -214,6 +216,7 @@
 			isa = PBXGroup;
 			children = (
 				CECB7504D8D30BE0BD2E3F1B /* LoginView.swift */,
+				4D252E073923435424D957A1 /* MasterOnboardingView.swift */,
 				AF1204FC48A5BE263D3D4DEF /* WorkspaceView.swift */,
 			);
 			path = Workspace;
@@ -475,6 +478,7 @@
 				B7BFE2307E6C564B3C6FC5F6 /* APIClient.swift in Sources */,
 				6E9A87DA9178D4042FB018C4 /* APIResponse.swift in Sources */,
 				5FE4A3FB40B5AB20BC7436DF /* AuthStore.swift in Sources */,
+				6E1FD61BB3D1FE987182289B /* MasterOnboardingView.swift in Sources */,
 				EB9A110BE9AF604BEDD7362E /* BlessingTask.swift in Sources */,
 				480E47768FDD6309ED5E8C36 /* BlessingTaskDetailView.swift in Sources */,
 				ACA2F2A516B4E7E34582395D /* BlessingTasksView.swift in Sources */,

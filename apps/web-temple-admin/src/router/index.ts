@@ -17,6 +17,7 @@ const routes: RouteRecordRaw[] = [
     // RBAC：仅寺庙管理员（及平台超管）可进入本管理台
     meta: { roles: ['temple_admin', 'platform_super'] },
     children: [
+      {path:'masters/accounts',name:'master-accounts',component:()=>import('@/views/ManagedAccountsView.vue'),meta:{title:'大师账号分配'}},
       {
         path: 'dashboard',
         name: 'dashboard',
@@ -103,6 +104,7 @@ const routes: RouteRecordRaw[] = [
       }
     ]
   },
+  {path:'/onboarding',name:'onboarding',component:()=>import('@/views/OnboardingView.vue'),meta:{title:'寺院入驻',roles:['temple_applicant','temple_admin']}},
   { path: '/:pathMatch(.*)*', redirect: '/dashboard' }
 ]
 
@@ -116,6 +118,7 @@ router.beforeEach((to) => {
   const auth = useAuthStore()
   // 设置标题
   if (to.meta.title) document.title = `${to.meta.title} · 寺院管理台`
+  if(auth.isLogin&&auth.roles.includes('temple_applicant')&&to.name!=='onboarding')return {path:'/onboarding'}
   // 公开路由放行
   if (to.meta.public) {
     if (auth.isLogin && to.name === 'login') return { path: '/dashboard' }

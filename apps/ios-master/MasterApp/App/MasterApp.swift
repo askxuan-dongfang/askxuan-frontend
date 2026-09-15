@@ -56,7 +56,9 @@ struct MasterApp: App {
     /// 根视图：根据登录态切换
     @ViewBuilder
     private func RootView() -> some View {
-        if authStore.isLoggedIn {
+        if authStore.isLoggedIn && authStore.isApplicant {
+            MasterOnboardingView().environmentObject(authStore)
+        } else if authStore.isLoggedIn {
             MainTabView()
         } else {
             NavigationStack {

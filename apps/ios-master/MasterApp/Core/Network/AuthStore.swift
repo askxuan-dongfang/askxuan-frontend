@@ -31,6 +31,7 @@ final class AuthStore: ObservableObject {
 
     /// 是否已登录
     @Published private(set) var isLoggedIn: Bool = false
+    @Published private(set) var isApplicant: Bool = false
 
     /// 法师 ID（从 JWT Claims 解析）
     @Published private(set) var masterId: String? = nil
@@ -60,7 +61,7 @@ final class AuthStore: ObservableObject {
             self.refreshToken = readRefreshToken()
             self.applyClaims(from: saved)
             self.imToken = readIMToken()
-            self.isLoggedIn = (saved.isEmpty == false && masterId != nil)
+            self.isLoggedIn = (saved.isEmpty == false && (masterId != nil || isApplicant))
         }
     }
 
@@ -78,7 +79,7 @@ final class AuthStore: ObservableObject {
         self.applyClaims(from: token)
         self.imToken = imToken
         saveIMToken(imToken)
-        self.isLoggedIn = (masterId != nil)
+        self.isLoggedIn = (masterId != nil || isApplicant)
     }
 
     var requestSession: AuthRequestSession {
@@ -105,7 +106,7 @@ final class AuthStore: ObservableObject {
     func updateAccessToken(_ token: String) {
         self.token = token
         self.applyClaims(from: token)
-        self.isLoggedIn = (masterId != nil)
+        self.isLoggedIn = (masterId != nil || isApplicant)
     }
 
     /// 登出：清除 Token 与身份信息
@@ -133,6 +134,7 @@ final class AuthStore: ObservableObject {
         self.nickname = nil
         self.imToken = nil
         self.isLoggedIn = false
+        self.isApplicant = false
         deleteToken()
         deleteRefreshToken()
         deleteIMToken()
@@ -155,8 +157,10 @@ final class AuthStore: ObservableObject {
         self.masterId = nil
         self.userId = nil
         self.nickname = nil
+        self.isApplicant = false
         guard let payload = JWTDecoder.payload(of: jwt),
-              let roles = payload["roles"] as? [String], roles.contains("master") else { return }
+              let roles = payload["roles"] as? [String], (roles.contains("master") || roles.contains("master_applicant")) else { return }
+        self.isApplicant = roles.contains("master_applicant")
         // 后端 Claims 字段名兼容多种命名：masterId / MasterID / master_id
         self.masterId = payload["masterId"] as? String
             ?? payload["MasterID"] as? String

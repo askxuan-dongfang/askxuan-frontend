@@ -49,14 +49,14 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(account: string, password: string, proof:{captchaId:string;captchaCode:string}) {
     const resp = await adminLogin(account, password, proof)
     // 寺院管理员必须由后端返回 templeId（服务端隔离依据）；缺失说明账号未绑定寺院
-    if (!resp.userInfo?.templeId) {
+    if (!resp.userInfo?.templeId && !jwtRoles(resp.accessToken).includes('temple_applicant')) {
       throw new Error('账号未绑定寺院，请联系平台管理员')
     }
     startAdminSession('df_temple_admin')
     token.value = resp.accessToken
     refreshToken.value = resp.refreshToken
     userInfo.value = resp.userInfo
-    templeId.value = resp.userInfo.templeId
+    templeId.value = resp.userInfo.templeId || ''
     templeName.value = resp.userInfo.templeName || templeId.value
     persist()
     return resp

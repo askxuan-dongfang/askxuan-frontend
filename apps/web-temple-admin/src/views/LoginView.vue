@@ -10,7 +10,7 @@ import {useAuthStore} from '@/stores/auth'
 const router=useRouter();const route=useRoute();const auth=useAuthStore()
 onMounted(()=>{if(route.query.denied==='1')ElMessage.warning('该账号没有本管理台权限，请使用对应角色账号登录')})
 async function login(account:string,password:string,proof:{captchaId:string;captchaCode:string}){await auth.login(account,password,proof)}
-function complete(){const next=typeof route.query.redirect==='string'?route.query.redirect:'';router.replace(next.startsWith('/')&&!next.startsWith('//')&&!next.includes(String.fromCharCode(92))&&!next.startsWith('/login')?next:'/dashboard')}
+function complete(){if(auth.roles.includes('temple_applicant')){router.replace('/onboarding');return;}const next=typeof route.query.redirect==='string'?route.query.redirect:'';router.replace(next.startsWith('/')&&!next.startsWith('//')&&!next.includes(String.fromCharCode(92))&&!next.startsWith('/login')?next:'/dashboard')}
 </script>
 <template>
   <div class="login-page">
@@ -26,7 +26,7 @@ function complete(){const next=typeof route.query.redirect==='string'?route.quer
       </div>
       <p class="login-desc">以虔诚之心，护寺院清誉 · 寺院数字化运营管理</p>
 
-      <AccountLogin :login="login" @success="complete" />
+      <AccountLogin register-kind="temple" :login="login" @success="complete" />
 
 
     </div>

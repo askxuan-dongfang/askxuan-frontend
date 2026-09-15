@@ -85,12 +85,12 @@ struct LoginView: View {
           .accessibilityHidden(true)
         Text("问玄东方 · " + (master ? "师傅工作台" : "与美好相遇")).font(.subheadline).foregroundStyle(
           .secondary)
-        Text(mode == "login" ? "欢迎回来" : mode == "register" ? "创建你的账户" : "找回密码").font(
+        Text(mode == "login" ? "欢迎回来" : mode == "register" ? "注册独立大师账号" : mode == "activate" ? "激活寺院分配账号" : "找回密码").font(
           .largeTitle.bold())
-        if !master && mode != "reset" {
+        if mode != "reset" && mode != "activate" {
           Picker("认证方式", selection: $mode) {
             Text("账号登录").tag("login")
-            Text("邮箱注册").tag("register")
+            Text("独立大师注册").tag("register")
           }.pickerStyle(.segmented).disabled(busy)
         }
         Group {
@@ -133,7 +133,7 @@ struct LoginView: View {
           }
         }.textFieldStyle(.roundedBorder).textInputAutocapitalization(.never)
           .autocorrectionDisabled()
-        if mode == "register" {
+        if mode == "register" || mode == "activate" {
           Toggle("我已阅读并同意", isOn: $agreed)
           HStack {
             Button("用户协议") { legal = "用户协议" }
@@ -153,14 +153,15 @@ struct LoginView: View {
           HStack {
             Spacer()
             if busy { ProgressView() }
-            Text(busy ? "正在处理…" : mode == "login" ? "登录" : mode == "register" ? "注册并登录" : "重置密码")
+            Text(busy ? "正在处理…" : mode == "login" ? "登录" : mode == "register" ? "注册并登录" : mode == "activate" ? "验证邮箱并激活" : "重置密码")
             Spacer()
           }.frame(minHeight: 44)
         }.buttonStyle(.borderedProminent).disabled(
           busy || captcha == nil || (mode != "login" && options?.emailEnabled != true))
         Button(mode == "login" ? "忘记密码" : "返回登录") { mode = mode == "login" ? "reset" : "login" }
           .frame(minHeight: 44).disabled(busy)
-        if master { Text("工作账户由管理员开通；未绑定验证邮箱请联系管理员。").font(.caption).foregroundStyle(.secondary) }
+        Button("寺院分配账号激活") { mode = "activate" }.disabled(busy)
+        Text("独立大师注册后申请平台认证；纳管大师使用寺院分配邮箱激活账号。").font(.caption).foregroundStyle(.secondary)
       }.padding(24).frame(maxWidth: 480).frame(maxWidth: .infinity)
     }.background(Color.bgPrimary).task {
       await loadOptions()
@@ -212,7 +213,7 @@ struct LoginView: View {
     do {
       var body = proof
       body.merge([
-        "email": email, "purpose": mode == "register" ? "register" : "reset",
+        "email": email, "purpose": mode == "register" ? "master_register" : mode == "activate" ? "activate" : "reset",
         "domain": master ? "admin" : "user",
       ]) { _, new in new }
       let result: IdentityNotice = try await APIClient.shared.request(
@@ -230,7 +231,7 @@ struct LoginView: View {
       failure = "请输入五位图片验证码"
       return
     }
-    if mode == "register" && !agreed {
+    if (mode == "register" || mode == "activate") && !agreed {
       failure = "请阅读并同意用户协议和隐私政策"
       return
     }
@@ -243,11 +244,14 @@ struct LoginView: View {
     do {
       var body = proof
       body.merge([
-        "account": account, "password": password, "email": email, "username": username.lowercased(),
+        "kind": "master", "account": account, "password": password, "email": email, "username": username.lowercased(),
         "code": code, "domain": master ? "admin" : "user",
         "agreementVersion": options?.agreementVersion ?? "",
       ]) { _, new in new }
-      if mode == "reset" {
+      if mode == "activate" {
+        let _: IdentityNotice = try await APIClient.shared.request(.accountAuth(path: "work/activate",body: body))
+        mode = "login"; account = email; password = ""; message = "账号已激活，请登录大师端"
+      } else if mode == "reset" {
         let _: IdentityNotice = try await APIClient.shared.request(
           .accountAuth(path: "password/reset", body: body))
         mode = "login"
@@ -256,7 +260,7 @@ struct LoginView: View {
       } else {
         let result: IdentityLogin = try await APIClient.shared.request(
           .accountAuth(
-            path: mode == "register" ? "email/register" : master ? "admin/login" : "login",
+            path: mode == "register" ? "work/register" : master ? "admin/login" : "login",
             body: body))
         try await accept(result)
         dismiss()
@@ -266,8 +270,8 @@ struct LoginView: View {
   }
   private func accept(_ result: IdentityLogin) async throws {
     guard let claims = JWTDecoder.payload(of: result.accessToken),
-      let roles = claims["roles"] as? [String], roles.contains("master"),
-      let masterID = claims["masterId"] as? Int, masterID > 0
+      let roles = claims["roles"] as? [String],
+      roles.contains("master_applicant") || (roles.contains("master") && (claims["masterId"] as? Int ?? 0) > 0)
     else {
       let _: IdentityNotice? = try? await APIClient.shared.request(
         .accountAuth(path: "logout", body: ["accessToken": result.accessToken]))
@@ -276,6 +280,7 @@ struct LoginView: View {
     }
     authStore.didLogin(
       token: result.accessToken, refreshToken: result.refreshToken, imToken: result.imToken)
+    if authStore.isApplicant { return }
     if let im = result.imToken, let id = authStore.masterId {
       OpenIMManager.shared.login(userID: "m_" + id, token: im) { _, _ in }
     }

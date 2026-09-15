@@ -21,6 +21,7 @@ const routes: RouteRecordRaw[] = [
     // 统一入口按每个子路由授权，商城角色不继承平台权限。
     meta: { roles: ['platform_super', 'platform_service', 'shop_admin'] },
     children: [
+      {path:'onboarding/review',name:'onboarding-review',component:()=>import('@/views/OnboardingReviewView.vue'),meta:{title:'认证与入驻审核',roles:['platform_super']}},
       ...commerceRoutes,
       // 概览
       {

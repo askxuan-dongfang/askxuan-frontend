@@ -66,6 +66,7 @@ onMounted(load)
 <template>
   <div class="df-page">
     <PageHeader title="法师管理" subtitle="维护本寺法师信息与上下架状态">
+      <el-button @click="router.push('/masters/accounts')">账号分配</el-button>
       <el-button :icon="Refresh" @click="load">刷新</el-button>
       <el-button type="primary" :icon="Plus" @click="goEdit()">新增法师</el-button>
     </PageHeader>

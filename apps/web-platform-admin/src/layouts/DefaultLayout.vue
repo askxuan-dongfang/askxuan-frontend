@@ -46,6 +46,7 @@ const allMenuGroups = [
     title: '审核中心',
     icon: 'Checked',
     children: [
+      { path: '/onboarding/review', title: '认证与入驻审核' },
       { path: '/temple/review', title: '寺院审核' },
       { path: '/master/review', title: '法师审核' },
       { path: '/audit/comment', title: '评价审核' },
