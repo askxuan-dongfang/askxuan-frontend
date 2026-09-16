@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct TempleListView: View {
+    @State private var searchVisible = false
+    @FocusState private var searchFocused: Bool
     @StateObject private var viewModel: TempleListViewModel
 
     init(initialSect: String? = nil, initialBeliefCode: String? = nil) {
@@ -21,13 +23,27 @@ struct TempleListView: View {
                 EmptyView()
             } trailing: {
                 Button {
-                    // 搜索
+                    searchVisible.toggle()
+                    searchFocused = searchVisible
                 } label: {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 18))
                         .foregroundStyle(Color.accentDefault)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(CardPressButtonStyle())
+                .accessibilityLabel("搜索")
+            }
+
+            if searchVisible || !viewModel.searchText.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(Color.textTertiary)
+                    TextField("搜索寺院名称、地区", text: $viewModel.searchText)
+                        .focused($searchFocused).submitLabel(.search).autocorrectionDisabled()
+                    if !viewModel.searchText.isEmpty { Button { viewModel.searchText = "" } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel("清除搜索") }
+                }.padding(12).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)).padding(.horizontal, 16).padding(.vertical, 6)
+            }
+            if let error = viewModel.errorMessage {
+                HStack { Text(error).font(AppTypography.caption); Spacer(); Button("重试") { Task { await viewModel.load() } } }.padding(12)
             }
 
             // 2. 教派标签横滑
@@ -62,8 +78,7 @@ struct TempleListView: View {
                     DFLoadingView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.filteredTemples.isEmpty {
-                    DFEmptyState(icon: "building.2", title: "暂无寺院", subtitle: "下拉刷新试试")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VStack { DFEmptyState(icon: "building.2", title: "当前筛选无结果", subtitle: "可清除筛选查看全部寺院"); Button("清除筛选") { viewModel.searchText = ""; viewModel.selectedBeliefCode = ""; viewModel.selectedServiceCode = "" } }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     templeListContent
                 }
@@ -75,6 +90,7 @@ struct TempleListView: View {
             if viewModel.temples.isEmpty { await viewModel.load() }
         }
         .refreshable { await viewModel.load() }
+        .scrollDismissesKeyboard(.interactively)
         .navigationDestination(for: Temple.self) { temple in
             TempleDetailView(templeId: temple.id, templeName: temple.name)
         }
@@ -92,7 +108,7 @@ struct TempleListView: View {
                     .buttonStyle(CardPressButtonStyle())
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 12)
             .padding(.top, AppSpacing.sm)
             .padding(.bottom, AppSpacing.navBottom + 32)
         }

@@ -11,6 +11,9 @@ struct DiyDetailView: View {
     let designId: Int64
 
     @StateObject private var viewModel: DiyViewModel
+    @ObservedObject private var auth = AuthStore.shared
+    @State private var showLogin = false
+    @State private var pendingAction: String?
     @State private var showOrderPage: Bool = false
     @State private var showEditor = false
     @State private var showPublishConfirm = false
@@ -65,6 +68,10 @@ struct DiyDetailView: View {
                 await viewModel.loadDesign(id: designId)
             }
         }
+        .sheet(isPresented: $showLogin, onDismiss: {
+            if auth.isLoggedIn, let action = pendingAction { pendingAction = nil; performAction(action) }
+        }) { NavigationStack { LoginView() }.appVisualDefaults() }
+        .onChange(of: auth.isLoggedIn) { _, loggedIn in if loggedIn { showLogin = false } }
         .sheet(isPresented: $showEditor) { NavigationStack { DiyDesignView(viewModel: viewModel) } }
         .confirmationDialog(viewModel.currentDesign?.status == "public" ? "下架后，仅你可见；已有副本与订单保留。" : "发布后，其他人可以分享、复制搭配和定制。", isPresented: $showPublishConfirm, titleVisibility: .visible) {
             Button(viewModel.currentDesign?.status == "public" ? "确认下架" : "确认发布") { Task { await viewModel.setPublication(viewModel.currentDesign?.status != "public") } }
@@ -296,19 +303,25 @@ struct DiyDetailView: View {
         .padding(.top, AppSpacing.lg)
     }
 
+    private func performAction(_ action: String) {
+        guard auth.isLoggedIn else { pendingAction = action; showLogin = true; return }
+        if action == "order" { showOrderPage = true }
+        else if viewModel.isDesignOwner { showEditor = true }
+        else { Task { if await viewModel.copyCurrentDesign() { showEditor = true } } }
+    }
+
     // MARK: - 底部操作栏
     private var bottomActionBar: some View {
         HStack(spacing: AppSpacing.md) {
             DFSecondaryButton(title: viewModel.isDesignOwner ? "继续编辑" : "复制并编辑", icon: "pencil") {
-                if viewModel.isDesignOwner { showEditor = true }
-                else { Task { if await viewModel.copyCurrentDesign() { showEditor = true } } }
+                performAction("edit")
             }
             DFPrimaryButton(
                 title: viewModel.isCurrentDesignOrderable ? "立即下单" : "材料需替换",
                 icon: "creditcard.fill",
                 isEnabled: viewModel.isCurrentDesignOrderable
             ) {
-                showOrderPage = true
+                performAction("order")
             }
         }
         .disabled(viewModel.isSubmitting)

@@ -10,16 +10,7 @@ import SwiftUI
 
 @MainActor
 final class HomeViewModel: ObservableObject {
-    /// 首页推荐 Banner
-    /// imageURL 使用本地 asset 名（ImageMapper.banners）
-    @Published var banners: [BannerItem] = [
-        BannerItem(id: "b1", title: "新春祈福法会", subtitle: "名师主法 · 功德回向",
-                   imageURL: ImageMapper.banners[0]),
-        BannerItem(id: "b2", title: "AI智能问事", subtitle: "玄学大模型 · 即问即答",
-                   imageURL: ImageMapper.banners[1]),
-        BannerItem(id: "b3", title: "DIY手串定制", subtitle: "选珠搭配 · 法师开光",
-                   imageURL: ImageMapper.banners[2])
-    ]
+    @Published var banners: [HomePromotion] = []
 
     @Published var hotTemples: [Temple] = []
     @Published var hotMasters: [Master] = []
@@ -39,6 +30,7 @@ final class HomeViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
+        async let promotionsResult: [HomePromotion] = fetchPromotions()
         async let templesResult: Result<[Temple], Error> = fetchTemples()
         async let mastersResult: Result<[Master], Error> = fetchMasters()
         async let beliefsResult: Result<[BeliefEntry], Error> = fetchBeliefs()
@@ -70,13 +62,21 @@ final class HomeViewModel: ObservableObject {
         }
 
         switch intentionsRes {
-        case .success(let list): intentionEntries = list
+        case .success(let list): intentionEntries = Array((list.filter { $0.landingType == "diy" } + list.filter { $0.landingType != "diy" }).prefix(8))
         case .failure(let error):
             intentionEntries = []
             if errorMessage == nil { errorMessage = error.localizedDescription }
         }
 
+        banners = await promotionsResult
         isLoading = false
+    }
+
+    private func fetchPromotions() async -> [HomePromotion] {
+        do {
+            let response: HomePromotionList = try await apiClient.request(.homePromotions)
+            return response.list.filter { $0.isVisible }.sorted { $0.sort == $1.sort ? $0.id > $1.id : $0.sort < $1.sort }
+        } catch { return [] }
     }
 
     private func fetchTemples() async -> Result<[Temple], Error> {

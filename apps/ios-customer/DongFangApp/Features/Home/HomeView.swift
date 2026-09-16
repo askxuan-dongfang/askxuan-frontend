@@ -19,12 +19,16 @@ struct HomeView: View {
             let viewportWidth = geometry.size.width
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: AppSpacing.lg) {
-                    bannerSection.appEntrance()
-                    entryCardsSection.appEntrance(order: 1)
+                VStack(spacing: 18) {
+                    if !viewModel.banners.isEmpty { bannerSection }
+                    entryCardsSection
+                    if viewModel.isLoading && viewModel.beliefEntries.isEmpty { ProgressView("正在加载首页") }
+                    if let error = viewModel.errorMessage {
+                        HStack { Text("部分内容加载失败：" + error).font(AppTypography.caption); Spacer(); Button("重试") { Task { await viewModel.load() } } }.padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)).padding(.horizontal, 20)
+                    }
                     if authStore.isLoggedIn { JourneyEntryView(home: true).padding(.horizontal, AppSpacing.lg) }
-                    beliefSection.appEntrance(order: 2)
-                    intentionSection.appEntrance(order: 3)
+                    beliefSection
+                    intentionSection
                     hotTemplesSection
                     hotMastersSection
                     Color.clear.frame(height: AppSpacing.navBottom + 32)
@@ -55,6 +59,7 @@ struct HomeView: View {
             }
         }
         .refreshable { await viewModel.load() }
+        .navigationDestination(for: HomePromotion.self) { NativePromotionDestination(promotion: $0) }
         .navigationDestination(for: Temple.self) { temple in
             TempleDetailView(templeId: temple.id, templeName: temple.name)
         }
@@ -78,17 +83,7 @@ struct HomeView: View {
                     )
                 }
             case .diyBracelet:
-                // DIY 手串定制需要登录
-                if authStore.isLoggedIn {
-                    DiyBraceletView()
-                } else {
-                    LoginRequiredView(
-                        icon: "hand.point.up.left.fill",
-                        title: "登录后定制手串",
-                        subtitle: "选珠搭配，法师开光",
-                        isPresented: .constant(false)
-                    )
-                }
+                DiyBraceletView()
             case .booking(let master):
                 // 预约法师需要登录
                 if authStore.isLoggedIn {
@@ -141,223 +136,98 @@ struct HomeView: View {
         .frame(height: 52)
     }
 
-    // MARK: - Banner 轮播：图片、渐变遮罩与分页指示器
+    // MARK: - 后台推荐，原生分页与导航
     private var bannerSection: some View {
-        VStack(spacing: 0) {
-            GeometryReader { proxy in
-                TabView(selection: $currentBanner) {
-                    ForEach(Array(viewModel.banners.enumerated()), id: \.element.id) { index, banner in
-                        bannerSlide(banner)
-                            .frame(width: proxy.size.width, height: 200)
-                            .tag(index)
-                    }
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .frame(width: proxy.size.width, height: 200)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            }
-            .frame(height: 200)
-            .padding(.horizontal, 20)
-
-            // 分页指示器：以品牌色长条标记当前页
-            HStack(spacing: 6) {
-                ForEach(0..<viewModel.banners.count, id: \.self) { index in
-                    Button {
-                        guard currentBanner != index else { return }
-                        AppMotion.perform { currentBanner = index }
-                    } label: {
-                        Capsule()
-                            .fill(index == currentBanner ? Color.brandDefault : Color.textTertiary.opacity(0.5))
-                            .frame(width: index == currentBanner ? 22 : 6, height: 6)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(CardPressButtonStyle())
-                    .accessibilityLabel("第 \(index + 1) 页：\(viewModel.banners[index].title)")
-                    .accessibilityAddTraits(index == currentBanner ? .isSelected : [])
-                    .animation(reduceMotion ? nil : AppMotion.selection, value: currentBanner)
-                }
+        TabView(selection: $currentBanner) {
+            ForEach(Array(viewModel.banners.enumerated()), id: \.element.id) { index, banner in
+                NavigationLink(value: banner) {
+                    GeometryReader { geometry in
+                    ZStack(alignment: .bottomLeading) {
+                        RemoteImage(urlString: banner.imageUrl, placeholderIcon: "photo")
+                            .frame(width: geometry.size.width, height: 184).clipped()
+                        LinearGradient(colors: [.clear, .black.opacity(0.72)], startPoint: .top, endPoint: .bottom)
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("精选推荐").font(AppTypography.caption).tracking(2)
+                            Text(banner.title).font(AppTypography.title(25)).lineLimit(2)
+                            Label("查看详情", systemImage: "arrow.up.right").font(AppTypography.caption)
+                        }.foregroundStyle(.white).padding(20).padding(.bottom, viewModel.banners.count > 1 ? 12 : 0)
+                    }.frame(width: geometry.size.width, height: 184).clipShape(RoundedRectangle(cornerRadius: 16))
+                    }.frame(height: 184)
+                }.buttonStyle(CardPressButtonStyle()).tag(index)
             }
         }
+        .tabViewStyle(.page(indexDisplayMode: viewModel.banners.count > 1 ? .automatic : .never))
+        .frame(height: 184).padding(.horizontal, 20)
     }
 
-    private func bannerSlide(_ banner: BannerItem) -> some View {
-        ZStack(alignment: .leading) {
-            RemoteImage(urlString: banner.imageURL, placeholderIcon: "photo")
-
-            // 左侧渐变遮罩，保证标题与背景对比
-            LinearGradient(
-                colors: [
-                    Color.bgPrimary.opacity(0.7),
-                    Color.bgPrimary.opacity(0.3),
-                    Color.clear
-                ],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(banner.title)
-                    .font(AppTypography.title(18))
-                    .foregroundStyle(Color.textPrimary)
-                if let subtitle = banner.subtitle {
-                    Text(subtitle)
-                        .font(AppTypography.supporting)
-                        .foregroundStyle(Color.accentDefault)
-                }
-            }
-            .padding(.horizontal, 20)
-        }
-        .clipped()
-    }
-
-    // MARK: - 寺院与法师双入口卡片
     private var entryCardsSection: some View {
-        LazyVGrid(
-            columns: [
-                GridItem(.flexible(minimum: 0), spacing: AppSpacing.md),
-                GridItem(.flexible(minimum: 0), spacing: AppSpacing.md)
-            ],
-            spacing: 0
-        ) {
-            NavigationLink(value: HomeRoute.templeList) {
-                entryCard(icon: "building.2.fill", title: "找寺院", asset: ImageMapper.entryTemple)
-            }
-            .buttonStyle(CardPressButtonStyle())
-
-            NavigationLink(value: HomeRoute.masterList) {
-                entryCard(icon: "person.circle.fill", title: "找师傅", asset: ImageMapper.entryMaster)
-            }
-            .buttonStyle(CardPressButtonStyle())
-        }
-        .padding(.horizontal, 20)
-        .frame(height: 120)
+        HStack(spacing: 10) {
+            NavigationLink(value: HomeRoute.templeList) { entryCard(icon: "building.2", title: "找寺院", detail: "探访与服务") }.accessibilityIdentifier("home-temples")
+            NavigationLink(value: HomeRoute.masterList) { entryCard(icon: "person.crop.circle", title: "找师傅", detail: "咨询与交流") }.accessibilityIdentifier("home-masters")
+        }.buttonStyle(CardPressButtonStyle()).padding(.horizontal, 20)
     }
 
-    private func entryCard(icon: String, title: String, asset: String) -> some View {
-        GeometryReader { proxy in
-            ZStack {
-                RemoteImage(urlString: asset, placeholderIcon: "building.2")
-                    .frame(width: proxy.size.width, height: proxy.size.height)
-                    .clipped()
-
-                // 入口卡片背景渐变遮罩
-                LinearGradient(
-                    colors: [
-                        Color.bgPrimary.opacity(0.65),
-                        Color.bgPrimary.opacity(0.35)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-
-                VStack(spacing: 8) {
-                    Image(systemName: icon)
-                        .font(.system(size: 28))
-                        .foregroundStyle(Color.accentDefault)
-                    Text(title)
-                        .font(AppTypography.title(16))
-                        .foregroundStyle(Color.accentDefault)
-                }
-            }
-            .frame(width: proxy.size.width, height: proxy.size.height)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        }
-        .frame(height: 120)
+    private func entryCard(icon: String, title: String, detail: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon).font(.system(size: 23, weight: .regular)).foregroundStyle(Color.accentDefault)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(AppTypography.title(18)).foregroundStyle(Color.textPrimary)
+                Text(detail).font(AppTypography.micro).foregroundStyle(Color.textSecondary)
+            }.lineLimit(1).minimumScaleFactor(0.8)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right").font(.system(size: 10)).foregroundStyle(Color.textTertiary)
+        }.padding(.horizontal, 12).padding(.vertical, 14).frame(maxWidth: .infinity, minHeight: 68)
+            .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.borderDefault, lineWidth: 1))
     }
 
-    // MARK: - 信仰入口
     private var beliefSection: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Text("按信仰找")
-                .font(AppTypography.reading.weight(.semibold))
-                .foregroundStyle(Color.textPrimary)
-                .padding(.horizontal, 20)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: AppSpacing.md) {
-                    ForEach(viewModel.beliefEntries) { entry in
-                        NavigationLink(value: HomeRoute.belief(entry)) {
-                            beliefItem(entry)
-                        }
+        VStack(alignment: .leading, spacing: 10) {
+            Text("信仰流派").font(AppTypography.section).foregroundStyle(Color.textPrimary)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 2), spacing: 1) {
+                ForEach(viewModel.beliefEntries.prefix(4)) { entry in
+                    NavigationLink(value: HomeRoute.templeBelief(entry.id)) { beliefItem(entry) }
                         .buttonStyle(CardPressButtonStyle())
-                    }
                 }
-                .padding(.horizontal, 20)
-            }
-        }
+            }.background(Color.borderDivider).clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.borderDefault, lineWidth: 1))
+        }.padding(.horizontal, 20)
     }
 
     private func beliefItem(_ entry: BeliefEntry) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: entry.iconName)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color.accentDefault)
-                .frame(width: 34, height: 34)
-                .background(Color.accentDefault.opacity(0.12))
-                .clipShape(Circle())
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(entry.title)
-                    .font(AppTypography.supporting.weight(.semibold))
-                    .foregroundStyle(Color.textPrimary)
-                Text(entry.subtitle)
-                    .font(AppTypography.micro)
-                    .foregroundStyle(Color.textTertiary)
-            }
-        }
-        .frame(width: 132, height: 58, alignment: .leading)
-        .padding(.horizontal, 10)
-        .background(Color.bgSecondary)
-        .cornerRadius(10)
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.borderDefault, lineWidth: 1))
+        HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(entry.title).font(AppTypography.title(16)).foregroundStyle(Color.textPrimary)
+                Text(entry.subtitle).font(AppTypography.micro).foregroundStyle(Color.textSecondary).lineLimit(2)
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            Text(String(entry.title.prefix(1))).font(AppTypography.title(16)).foregroundStyle(Color.accentDefault)
+                .frame(width: 26, height: 32).overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.accentDefault.opacity(0.25)))
+        }.padding(12).frame(maxWidth: .infinity, minHeight: 76, alignment: .leading).background(Color.bgSecondary)
     }
 
-    // MARK: - 意图入口
     private var intentionSection: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Text("按心愿办")
-                .font(AppTypography.reading.weight(.semibold))
-                .foregroundStyle(Color.textPrimary)
-                .padding(.horizontal, 20)
-
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: AppSpacing.sm), count: 4), spacing: AppSpacing.sm) {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("按心愿办").font(AppTypography.section).foregroundStyle(Color.textPrimary)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 4), spacing: 1) {
                 ForEach(viewModel.intentionEntries) { entry in
-                    NavigationLink(
-                        value: entry.landingType == "diy"
-                            ? HomeRoute.diyBracelet
-                            : HomeRoute.intention(entry)
-                    ) {
+                    NavigationLink(value: entry.landingType == "diy" ? HomeRoute.diyBracelet : HomeRoute.intention(entry)) {
                         intentionItem(entry)
-                    }
-                    .buttonStyle(CardPressButtonStyle())
+                    }.buttonStyle(CardPressButtonStyle()).accessibilityIdentifier("home-intention-" + entry.id)
                 }
-            }
-            .padding(.horizontal, 20)
-        }
+            }.background(Color.borderDivider).clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1))
+        }.padding(.horizontal, 20)
     }
 
     private func intentionItem(_ entry: IntentionEntry) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: entry.iconName)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color.brandDefault)
-                .frame(width: 36, height: 36)
-                .background(Color.brandDefault.opacity(0.1))
-                .clipShape(Circle())
-
-            Text(entry.title)
-                .font(AppTypography.micro.weight(.medium))
-                .foregroundStyle(Color.textPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 68)
-        .background(Color.bgSecondary)
-        .cornerRadius(10)
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.borderDefault, lineWidth: 1))
+        HStack(spacing: 4) {
+            IntentionLineIcon(code: entry.landingType == "diy" ? "diy" : entry.id)
+                .frame(width: 20, height: 22).foregroundStyle(entry.landingType == "diy" ? Color.brandDefault : Color.accentDefault)
+            Text(entry.landingType == "diy" ? "DIY手串" : entry.title)
+                .font(.system(size: 12, weight: .medium)).lineLimit(1).minimumScaleFactor(0.8)
+        }.foregroundStyle(Color.textPrimary).frame(maxWidth: .infinity, minHeight: 48)
+            .background(entry.landingType == "diy" ? Color.brandDefault.opacity(0.08) : Color.bgSecondary)
+            .accessibilityElement(children: .combine)
     }
 
     // MARK: - 热门寺院（横滑，标题可点击进完整列表）
@@ -383,7 +253,7 @@ struct HomeView: View {
                         ForEach(0..<3) { _ in DFLoadingCard().frame(width: 168) }
                     }
                     ForEach(viewModel.hotTemples) { temple in
-                        NavigationLink(value: temple) { templeCard(temple).appEntrance() }
+                        NavigationLink(value: temple) { templeCard(temple) }
                             .buttonStyle(CardPressButtonStyle())
                     }
                 }
@@ -489,7 +359,7 @@ struct HomeView: View {
                         ForEach(0..<3) { _ in DFLoadingCard(avatar: true).frame(width: 188) }
                     }
                     ForEach(viewModel.hotMasters) { master in
-                        NavigationLink(value: master) { masterCard(master).appEntrance() }
+                        NavigationLink(value: master) { masterCard(master) }
                             .buttonStyle(CardPressButtonStyle())
                     }
                 }
@@ -913,4 +783,129 @@ enum HomeRoute: Hashable {
 
 #Preview {
     NavigationStack { HomeView() }
+}
+
+// Same 24-point artwork as H5, rendered by the native asset catalog.
+struct IntentionLineIcon: View {
+    let code: String
+    var body: some View {
+        Image("intention-" + (["diy", "peace", "wealth", "love", "career", "study", "taisui", "rite"].contains(code) ? code : "peace"))
+            .resizable().renderingMode(.template).scaledToFit().accessibilityHidden(true)
+    }
+}
+
+struct HomePromotionList: Decodable { let list: [HomePromotion] }
+struct HomePromotion: Decodable, Hashable, Identifiable {
+    let id: Int
+    let title, placement, imageUrl, linkType, linkValue, status, startTime, endTime: String
+    let sort: Int
+
+    var route: String? {
+        if ["ai", "diy"].contains(linkType) { return linkValue.isEmpty ? "/c/" + linkType : nil }
+        if linkType == "ad_landing" {
+            return ["/c/ai", "/c/diy", "/c/shop", "/c/rewards", "/c/temples", "/c/masters", "/c/services"].contains(linkValue) ? linkValue : nil
+        }
+        let roots = ["temple": "/c/temples/", "master": "/c/masters/", "product": "/c/shop/", "service": "/c/services/", "activity": "/c/activities/", "reward": "/c/rewards/"]
+        guard let root = roots[linkType], !linkValue.isEmpty,
+              linkValue.range(of: "^[A-Za-z0-9_-]+$", options: .regularExpression) != nil else { return nil }
+        return root + linkValue
+    }
+
+    var isVisible: Bool {
+        guard placement == "customer_home", status == "enabled", route != nil else { return false }
+        let image = URL(string: imageUrl)
+        guard (imageUrl.hasPrefix("/") && !imageUrl.hasPrefix("//")) || (image?.scheme == "https" && image?.host != nil && image?.user == nil && image?.password == nil),
+              !imageUrl.contains("\\"), !imageUrl.contains("\n"), !imageUrl.contains("\r") else { return false }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 8 * 3600)
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        formatter.isLenient = false
+        func date(_ value: String, end: Bool) -> Date? {
+            if value.isEmpty { return end ? .distantFuture : .distantPast }
+            return formatter.date(from: value.count == 10 ? value + (end ? " 23:59:59" : " 00:00:00") : value)
+        }
+        guard let start = date(startTime, end: false), let end = date(endTime, end: true) else { return false }
+        return start <= Date() && Date() <= end
+    }
+}
+
+struct NativePromotionDestination: View {
+    let promotion: HomePromotion
+    var body: some View {
+        NativeDiscoveryDestination(route: promotion.route ?? "", title: promotion.title)
+    }
+}
+
+struct NativeDiscoveryDestination: View {
+    let route: String
+    var title: String = "推荐详情"
+    @State private var product: ShopProduct?
+    @State private var error: String?
+    @State private var loading = false
+    private var parts: [String] { route.split(separator: "/").map(String.init) }
+    private var kind: String { parts.count > 1 ? parts[1] : "" }
+    private var identifier: String? { parts.count > 2 ? parts[2] : nil }
+    var body: some View {
+        Group {
+            switch kind {
+            case "temples":
+                if let id = identifier { TempleDetailView(templeId: id, templeName: title) } else { TempleListView() }
+            case "masters":
+                if let id = identifier { MasterProfileView(masterId: id) } else { MasterListView() }
+            case "diy": DiyBraceletView()
+            case "ai": AiDivinationView().requireAuth(title: "登录后开启 AI 问事")
+            case "shop":
+                if identifier == nil { ShopView() }
+                else if let product { ShopProductDetailView(product: product) }
+                else { VStack { DFTopNavBar(title); Spacer(); if loading { ProgressView() } else { Text(error ?? "商品暂时无法加载"); Button("重试") { Task { await loadProduct() } } }; Spacer() } }
+            case "services":
+                if let id = identifier, let type = ServiceType.from(serviceCode: id) { ServiceContainerView(serviceType: type) }
+                else { ScrollView { VStack { DFTopNavBar("预约服务"); ForEach(ServiceType.allCases, id: \.self) { type in NavigationLink { ServiceContainerView(serviceType: type) } label: { HStack { Text(type.rawValue); Spacer(); Image(systemName: "chevron.right") }.padding(18).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)) } } }.padding(.horizontal, 16) } }
+            case "rewards":
+                if let id = identifier.flatMap(Int64.init) { RewardDetailView(id: id) } else { RewardsView() }
+            case "activities":
+                if let id = identifier { NativeMarketingActivityView(id: id) }
+            default: DFEmptyState(icon: "link", title: "推荐已更新", subtitle: "请返回首页刷新后查看")
+            }
+        }.background(Color.bgPrimary).toolbar(.hidden, for: .navigationBar)
+            .task(id: route) { if kind == "shop", identifier != nil { await loadProduct() } }
+    }
+    private func loadProduct() async {
+        guard let id = identifier.flatMap(Int64.init) else { error = "商品编号无效"; return }
+        loading = true; defer { loading = false }
+        do { product = try await APIClient.shared.request(.productById(id)); error = nil }
+        catch { self.error = error.localizedDescription }
+    }
+}
+
+struct NativeMarketingActivityView: View {
+    let id: String
+    struct Activity: Decodable { let name, startTime, endTime, config: String }
+    struct Details: Decodable { let description: String?; let imageUrl: String?; let location: String? }
+    @State private var activity: Activity?
+    @State private var error: String?
+    var body: some View {
+        VStack(spacing: 0) {
+            DFTopNavBar("活动详情")
+            if let activity {
+                let details = activity.config.data(using: .utf8).flatMap { try? JSONDecoder().decode(Details.self, from: $0) }
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        if let image = details?.imageUrl { RemoteImage(urlString: image, placeholderIcon: "photo").frame(height: 200).clipShape(RoundedRectangle(cornerRadius: 16)) }
+                        Text(activity.name).font(AppTypography.title(28))
+                        Text("活动时间（北京时间）\n\(activity.startTime.isEmpty ? "即日起" : activity.startTime) — \(activity.endTime.isEmpty ? "长期有效" : activity.endTime)").font(AppTypography.supporting).foregroundStyle(Color.textSecondary)
+                        if let location = details?.location { Text("活动地点：" + location) }
+                        Text(details?.description ?? "活动具体安排请以主办方公布的信息为准。").lineSpacing(6)
+                    }.frame(maxWidth: .infinity, alignment: .leading).padding(20)
+                }
+            } else if let error { ContentUnavailableView { Label("活动暂时无法加载", systemImage: "wifi.exclamationmark") } description: { Text(error) } actions: { Button("重试") { Task { await load() } } } }
+            else { Spacer(); ProgressView(); Spacer() }
+        }.background(Color.bgPrimary).toolbar(.hidden, for: .navigationBar).task { await load() }
+    }
+    private func load() async {
+        error = nil
+        do { activity = try await APIClient.shared.request(.marketingActivity(id)) }
+        catch { self.error = error.localizedDescription }
+    }
 }

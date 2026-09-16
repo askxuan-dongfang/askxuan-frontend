@@ -45,7 +45,7 @@ struct DongFangApp: App {
                     MainTabView()
                 }
             }
-            .id(authStore.sessionID)
+            .id(authStore.navigationID)
             .environmentObject(authStore)
             .preferredColorScheme(AppTheme(rawValue: themeValue)?.colorScheme)
                 .appVisualDefaults()
@@ -86,19 +86,20 @@ struct DongFangApp: App {
         return args[index + 1]
     }
 
-    /// app 重启后自动恢复 OpenIM SDK 登录（如有持久化的 imToken）
+    /// Restore chat with a fresh server-issued token; an expired IM token must not sign out the app.
     private func restoreOpenIMLoginIfNeeded() {
-        guard AuthStore.shared.isLoggedIn,
-              let imToken = AuthStore.shared.imToken, !imToken.isEmpty,
-              AuthStore.shared.userId != AppConfig.defaultUserId else {
-            return
-        }
-        let openimUserID = "u_" + AuthStore.shared.userId
-        OpenIMManager.shared.login(userID: openimUserID, token: imToken) { success, error in
-            if success {
-                print("✅ OpenIM 登录恢复成功")
-            } else {
-                print("⚠️ OpenIM 登录恢复失败: \(error?.localizedDescription ?? "")，需重新登录")
+        guard AuthStore.shared.isLoggedIn, AuthStore.shared.userId != AppConfig.defaultUserId else { return }
+        Task { @MainActor in
+            let auth = AuthStore.shared
+            let sessionID = auth.sessionID
+            let userID = auth.userId
+            do {
+                let response: IMTokenResponse = try await APIClient.shared.request(.authIMToken)
+                guard auth.isLoggedIn, auth.sessionID == sessionID, auth.userId == userID, !response.imToken.isEmpty else { return }
+                auth.updateIMToken(response.imToken)
+                OpenIMManager.shared.login(userID: "u_" + userID, token: response.imToken) { _, _ in }
+            } catch {
+                // Keep the business session intact. Chat can retry on its own connection lifecycle.
             }
         }
     }

@@ -14,6 +14,10 @@ final class MasterListViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
 
+    @Published var searchText = ""
+    @Published var selectedSect = "全部"
+    @Published var selectedPrice = "全部"
+
     // 所有筛选状态集中管理
     @Published var selectedBeliefCode: String = ""
     @Published var selectedTemple: String = "全部"         // 左侧：所属寺院
@@ -25,6 +29,8 @@ final class MasterListViewModel: ObservableObject {
 
     var filterGroups: [(title: String, options: [String])] {
         [
+            ("宗派", ["全部"] + unique(masters.map(\.sect))),
+            ("价格区间", ["全部", "100元以下", "100–300元", "300元以上"]),
             ("所属寺院", ["全部"] + unique(masters.map(\.templeName))),
             ("职位", ["全部"] + unique(masters.map(\.position))),
             ("擅长领域", ["全部"] + unique(masters.flatMap(\.specialties))),
@@ -40,11 +46,27 @@ final class MasterListViewModel: ObservableObject {
 
     var filteredMasters: [Master] {
         masters.filter { m in
+            (searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || ([m.dharmaName, m.templeName, m.sect] + m.specialties).joined(separator: " ").localizedStandardContains(searchText.trimmingCharacters(in: .whitespacesAndNewlines))) &&
             (selectedBeliefCode.isEmpty || m.beliefCode == selectedBeliefCode) &&
+            (selectedSect == "全部" || m.sect == selectedSect) &&
+            matchPrice(m) &&
             matchTemple(m, selectedTemple) &&
             matchLevel(m, selectedLevel) &&
             matchSpecialty(m, selectedSpecialty) &&
             matchService(m, selectedService)
+        }
+    }
+
+    func clearFilters() {
+        searchText = ""; selectedBeliefCode = ""; selectedTemple = "全部"; selectedLevel = "全部"; selectedSpecialty = "全部"; selectedService = "全部"; selectedSect = "全部"; selectedPrice = "全部"
+    }
+    private func matchPrice(_ master: Master) -> Bool {
+        guard selectedPrice != "全部" else { return true }
+        guard let price = master.startPrice else { return false }
+        switch selectedPrice {
+        case "100元以下": return price < 100
+        case "100–300元": return price >= 100 && price <= 300
+        default: return price > 300
         }
     }
 

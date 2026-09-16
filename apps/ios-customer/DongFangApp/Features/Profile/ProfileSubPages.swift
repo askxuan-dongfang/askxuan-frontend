@@ -1774,3 +1774,112 @@ struct AboutView: View {
         Rectangle().fill(Color.borderDivider).frame(height: 1).padding(.leading, 52)
     }
 }
+
+// MARK: - 消息中心：业务通知与私聊保持独立
+struct NativeMessageCenterView: View {
+    @EnvironmentObject private var auth: AuthStore
+    @State private var messages: [ChatMessage] = []
+    @State private var page = 1
+    @State private var total = 0
+    @State private var unread = 0
+    @State private var loading = false
+    @State private var busy = false
+    @State private var expandedID: Int64?
+    @State private var deletion: ChatMessage?
+    @State private var error: String?
+    var body: some View {
+        List {
+            Section {
+                HStack {
+                    Text("\(unread) 条未读").foregroundStyle(Color.textSecondary)
+                    Spacer()
+                    Button("全部已读") { Task { await markAll() } }.disabled(busy || unread == 0)
+                }.listRowBackground(Color.bgSecondary)
+            }
+            if let error { Section { Text(error).foregroundStyle(Color.brandDefault); Button("重试") { Task { await load(reset: true) } } } }
+            if messages.isEmpty && !loading { ContentUnavailableView("暂无消息", systemImage: "bell", description: Text("预约和服务进度更新会显示在这里")) }
+            ForEach(messages) { message in
+                VStack(alignment: .leading, spacing: 10) {
+                    Button { Task { await expand(message) } } label: {
+                        HStack(alignment: .top, spacing: 10) {
+                            Circle().fill(message.isReadBool ? Color.clear : Color.brandDefault).frame(width: 7, height: 7).padding(.top, 7)
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(message.title).font(AppTypography.body.weight(message.isReadBool ? .regular : .semibold)).foregroundStyle(Color.textPrimary)
+                                Text(message.createdAt ?? "").font(AppTypography.micro).foregroundStyle(Color.textTertiary)
+                            }
+                            Spacer(minLength: 0)
+                            Image(systemName: expandedID == message.id ? "chevron.up" : "chevron.down").foregroundStyle(Color.textTertiary)
+                        }.frame(minHeight: 44)
+                    }.buttonStyle(.plain).disabled(busy)
+                    if expandedID == message.id {
+                        Text(message.content).font(AppTypography.body).foregroundStyle(Color.textSecondary).textSelection(.enabled)
+                        if message.bizType == "booking", let id = message.bizId, !id.isEmpty {
+                            NavigationLink("查看服务订单") { CustomerBookingDetailView(bookingId: id) }
+                        }
+                    }
+                }.padding(.vertical, 5).listRowBackground(Color.bgSecondary)
+                    .swipeActions { Button("删除", role: .destructive) { deletion = message } }
+            }
+            if loading { ProgressView().frame(maxWidth: .infinity) }
+            if messages.count < total { Button("加载更多") { Task { await load(reset: false) } }.disabled(loading) }
+        }
+        .scrollContentBackground(.hidden).background(Color.bgPrimary)
+        .navigationTitle("消息").navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .task(id: auth.userId) { await load(reset: true) }
+        .refreshable { await load(reset: true) }
+        .confirmationDialog("删除这条消息？", isPresented: Binding(get: { deletion != nil }, set: { if !$0 { deletion = nil } }), titleVisibility: .visible) {
+            Button("删除", role: .destructive) { if let message = deletion { Task { await remove(message) } } }
+            Button("取消", role: .cancel) { deletion = nil }
+        }
+    }
+    private func load(reset: Bool) async {
+        guard auth.isLoggedIn, !loading else { return }
+        let owner = auth.userId
+        loading = true; defer { loading = false }
+        let nextPage = reset ? 1 : page + 1
+        do {
+            let response: PageResponse<ChatMessage> = try await APIClient.shared.request(.messages(userId: owner, isRead: -1, page: nextPage, size: 20))
+            guard owner == auth.userId else { return }
+            if reset { messages = response.list } else { let ids = Set(messages.map(\.id)); messages += response.list.filter { !ids.contains($0.id) } }
+            total = Int(response.total); page = nextPage; error = nil
+            let count: UnreadCountResponse = try await APIClient.shared.request(.unreadCount(userId: owner))
+            guard owner == auth.userId else { return }; unread = Int(count.count)
+        } catch { if owner == auth.userId { self.error = error.localizedDescription } }
+    }
+    private func expand(_ message: ChatMessage) async {
+        expandedID = expandedID == message.id ? nil : message.id
+        guard expandedID != nil, !message.isReadBool else { return }
+        busy = true; defer { busy = false }
+        do {
+            let _: EmptyResponse = try await APIClient.shared.request(.messageRead(String(message.id)))
+            // Refresh the loaded pages so expanding a row does not discard older messages.
+            await refreshLoaded()
+        } catch { self.error = error.localizedDescription }
+    }
+    private func refreshLoaded() async {
+        let owner = auth.userId
+        do {
+            var refreshed: [ChatMessage] = []
+            var refreshedTotal = 0
+            for number in 1...page {
+                let response: PageResponse<ChatMessage> = try await APIClient.shared.request(.messages(userId: owner, isRead: -1, page: number, size: 20))
+                refreshed += response.list; refreshedTotal = response.total
+                if refreshed.count >= refreshedTotal { break }
+            }
+            let count: UnreadCountResponse = try await APIClient.shared.request(.unreadCount(userId: owner))
+            guard owner == auth.userId else { return }
+            messages = refreshed; total = refreshedTotal; unread = Int(count.count)
+        } catch { self.error = error.localizedDescription }
+    }
+    private func markAll() async {
+        busy = true; defer { busy = false }
+        do { let _: EmptyResponse = try await APIClient.shared.request(.readAllMessages(userId: auth.userId)); await refreshLoaded() }
+        catch { self.error = error.localizedDescription }
+    }
+    private func remove(_ message: ChatMessage) async {
+        busy = true; defer { busy = false; deletion = nil }
+        do { let _: EmptyResponse = try await APIClient.shared.request(.deleteMessage(String(message.id))); await refreshLoaded() }
+        catch { self.error = error.localizedDescription }
+    }
+}

@@ -29,7 +29,7 @@ struct DFTopNavBar<Leading: View, Trailing: View>: View {
                 BackButton()
             } else {
                 leading
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
             }
 
             Spacer()
@@ -42,7 +42,7 @@ struct DFTopNavBar<Leading: View, Trailing: View>: View {
             Spacer()
 
             trailing
-                .frame(width: 32, height: 32)
+                .frame(width: 44, height: 44)
         }
         .padding(.horizontal, AppSpacing.lg)
         .frame(height: AppSpacing.navTop)
@@ -92,7 +92,7 @@ struct DFBackButton: View {
                     .font(AppTypography.control)
                     .foregroundStyle(Color.accentDefault)
             }
-            .frame(width: 36, height: 36)
+            .frame(width: 44, height: 44)
             .contentShape(Circle())
         }
         .buttonStyle(CardPressButtonStyle())

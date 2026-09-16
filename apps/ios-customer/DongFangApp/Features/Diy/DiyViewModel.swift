@@ -473,6 +473,7 @@ final class DiyViewModel: ObservableObject {
 
     // MARK: - Saving and checkout
     func saveDesign() async -> Bool {
+        guard authStore.isLoggedIn else { errorMessage = "请登录后同步设计，当前搭配已保留在本机"; return false }
         guard !beadSlots.isEmpty else {
             errorMessage = "请至少选择一颗珠子"
             return false

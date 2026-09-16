@@ -14,6 +14,8 @@ final class TempleListViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
 
+    @Published var searchText = ""
+
     // 所有筛选状态集中管理
     @Published var selectedBeliefCode: String = ""
     @Published var selectedServiceCode: String = ""     // 左侧标准服务编码筛选
@@ -28,6 +30,7 @@ final class TempleListViewModel: ObservableObject {
 
     var filteredTemples: [Temple] {
         temples.filter { t in
+            (searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (t.name + " " + t.region).localizedStandardContains(searchText.trimmingCharacters(in: .whitespacesAndNewlines))) &&
             (selectedBeliefCode.isEmpty || t.beliefCode == selectedBeliefCode) &&
             (selectedServiceCode.isEmpty || (t.serviceCodes ?? []).contains(selectedServiceCode))
         }

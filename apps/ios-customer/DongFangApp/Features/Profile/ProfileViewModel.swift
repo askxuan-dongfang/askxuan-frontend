@@ -13,6 +13,8 @@ final class ProfileViewModel: ObservableObject {
     @Published var profile: UserProfile?
     @Published var recentBookings: [Booking] = []
     @Published var addresses: [UserAddress] = []
+    @Published var couponsLoaded = false
+    @Published var addressesLoaded = false
     @Published var coupons: [UserCoupon] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
@@ -121,16 +123,20 @@ final class ProfileViewModel: ObservableObject {
 
         switch a {
         case .success(let list):
+            self.addressesLoaded = true
             self.addresses = list
         case .failure:
+            self.addressesLoaded = false
             self.addresses = []
             failedParts.append("地址")
         }
 
         switch c {
         case .success(let list):
+            self.couponsLoaded = true
             self.coupons = list
         case .failure:
+            self.couponsLoaded = false
             self.coupons = []
             failedParts.append("优惠券")
         }
@@ -148,6 +154,7 @@ final class ProfileViewModel: ObservableObject {
     }
 
     func reset() {
+        couponsLoaded = false; addressesLoaded = false
         self.profile = nil
         self.pointsBalance = nil
         self.recentBookings = []

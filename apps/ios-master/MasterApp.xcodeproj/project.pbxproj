@@ -735,7 +735,7 @@
 				APS_ENVIRONMENT = development;
 				ASKXUAN_API_BASE_URL = "https://101.96.228.71/api/v1";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = MasterApp/Resources/MasterApp.entitlements;
+				CODE_SIGN_ENTITLEMENTS = MasterApp/Resources/Debug.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = DQ3YY8MTFW;
 				INFOPLIST_FILE = MasterApp/Resources/Info.plist;

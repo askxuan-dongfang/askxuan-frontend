@@ -9,6 +9,9 @@ import SceneKit
 
 struct DiyDesignView: View {
     @StateObject private var viewModel: DiyViewModel
+    @ObservedObject private var authStore = AuthStore.shared
+    @State private var showLogin = false
+    @State private var resumeSaveAfterLogin = false
     @State private var showNameDialog = false
     @State private var designNameInput = "我的手串"
     @State private var designDescriptionInput = ""
@@ -115,6 +118,10 @@ struct DiyDesignView: View {
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
+        .sheet(isPresented: $showLogin, onDismiss: {
+            if resumeSaveAfterLogin && authStore.isLoggedIn { resumeSaveAfterLogin = false; presentSaveDialog(checkout: checkoutAfterSave) }
+        }) { NavigationStack { LoginView() }.appVisualDefaults() }
+        .onChange(of: authStore.isLoggedIn) { _, loggedIn in if loggedIn && showLogin { showLogin = false } }
         .sheet(isPresented: $showSavedDetail) {
             if let design = viewModel.currentDesign { NavigationStack { DiyDetailView(designId: design.id, viewModel: viewModel) } }
         }
@@ -528,6 +535,7 @@ struct DiyDesignView: View {
 
     private func presentSaveDialog(checkout: Bool) {
         checkoutAfterSave = checkout
+        guard authStore.isLoggedIn else { resumeSaveAfterLogin = true; showLogin = true; return }
         designNameInput = viewModel.designName
         designDescriptionInput = viewModel.designDescription
         searchFocused = false

@@ -159,3 +159,34 @@ final class DiyEditorTests: XCTestCase {
         )
     }
 }
+
+import Testing
+
+@Suite("H5 discovery and native routing parity")
+struct DiscoveryParityTests {
+    private func promotion(type: String = "ad_landing", value: String = "/c/masters", image: String = "/media/banner.jpg", status: String = "enabled", start: String = "2000-01-01", end: String = "2099-12-31") throws -> HomePromotion {
+        let raw: [String: Any] = ["id": 1, "title": "推荐", "placement": "customer_home", "imageUrl": image, "linkType": type, "linkValue": value, "sort": 1, "status": status, "startTime": start, "endTime": end]
+        return try JSONDecoder().decode(HomePromotion.self, from: JSONSerialization.data(withJSONObject: raw))
+    }
+    @Test func configuredRecommendationOpensNativeDirectory() throws {
+        let banner = try promotion()
+        #expect(banner.route == "/c/masters")
+        #expect(banner.isVisible)
+        #expect(try promotion(type: "diy", value: "").route == "/c/diy")
+        #expect(try promotion(type: "temple", value: "T001").route == "/c/temples/T001")
+        #expect(try promotion(type: "activity", value: "25").route == "/c/activities/25")
+    }
+    @Test func malformedOrExternalDestinationsAreRejected() throws {
+        #expect(try promotion(value: "https://example.com").route == nil)
+        #expect(try promotion(type: "temple", value: "../profile").route == nil)
+        #expect(try promotion(type: "diy", value: "redirect").route == nil)
+        #expect(try promotion(image: "//example.com/banner.jpg").isVisible == false)
+        #expect(try promotion(image: "https://user:password@example.com/banner.jpg").isVisible == false)
+    }
+    @Test func unpublishedExpiredAndInvalidSchedulesStayHidden() throws {
+        #expect(try promotion(status: "draft").isVisible == false)
+        #expect(try promotion(end: "2000-01-02").isVisible == false)
+        #expect(try promotion(start: "2099-01-01").isVisible == false)
+        #expect(try promotion(start: "bad-date").isVisible == false)
+    }
+}

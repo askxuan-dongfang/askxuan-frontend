@@ -143,21 +143,7 @@ struct CardPressButtonStyle: ButtonStyle {
 
 private struct AppEntrance: ViewModifier {
     var order: Int
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var appeared = false
-
-    func body(content: Content) -> some View {
-        content
-            .opacity(appeared || reduceMotion ? 1 : 0)
-            .offset(y: appeared || reduceMotion ? 0 : 8)
-            .onAppear {
-                guard !appeared else { return }
-                // This state is never reset on scroll or a return from a detail page.
-                withAnimation(reduceMotion ? nil : AppMotion.reveal.delay(Double(min(max(order, 0), 4)) * 0.035)) {
-                    appeared = true
-                }
-            }
-    }
+    func body(content: Content) -> some View { content }
 }
 
 private struct AppCardSurface: ViewModifier {

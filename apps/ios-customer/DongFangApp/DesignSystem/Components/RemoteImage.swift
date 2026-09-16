@@ -31,7 +31,11 @@ private func extractAssetName(_ urlString: String) -> String {
 
 /// Catalog case photos are hosted alongside the API; legacy asset names remain local.
 func resolvedMediaURL(_ value: String) -> URL? {
-    if value.hasPrefix("/catalog-experiences/") { return URL(string: value, relativeTo: AppConfig.baseURL)?.absoluteURL }
+    if value.hasPrefix("/"), !value.hasPrefix("//") {
+        // Shipped assets remain offline-capable; uploaded media resolves against the production host.
+        if value.hasPrefix("/assets/"), UIImage(named: extractAssetName(value)) != nil { return nil }
+        return URL(string: value, relativeTo: AppConfig.baseURL)?.absoluteURL
+    }
     guard let url = URL(string: value), ["https", "http"].contains(url.scheme?.lowercased() ?? "") else { return nil }
     return url
 }

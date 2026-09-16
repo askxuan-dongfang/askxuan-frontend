@@ -49,8 +49,8 @@ struct RewardGiftArt: View {
     let kind: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { timeline in
-            let t = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: true)) { _ in
+            let t: Double = 0
             GeometryReader { proxy in
                 let side = min(proxy.size.width, proxy.size.height)
                 ZStack {

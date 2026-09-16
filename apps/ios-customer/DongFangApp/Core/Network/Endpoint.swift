@@ -177,6 +177,8 @@ struct CommunityCommentCreateRequest: Encodable { let content: String }
 
 /// API 端点枚举
 enum Endpoint {
+    case homePromotions
+    case marketingActivity(String)
  case accountAuth(path:String,body:[String:String]?)
     // MARK: - 寺院
     case temples(sect: String?, type: String?, serviceCode: String?, page: Int, size: Int)
@@ -334,6 +336,8 @@ enum Endpoint {
     /// 相对路径（不含 BaseURL 前缀）
     var path: String {
         switch self {
+        case .homePromotions: return "marketing/banners"
+        case .marketingActivity(let id): return "marketing/activities/\(id)"
  case .accountAuth(let path,_): return "auth/"+path
         case .aiReportConversation(let id): return "ai/reports/\(id)/conversation"
         case .aiTopics: return "ai/topics"
@@ -469,6 +473,7 @@ enum Endpoint {
     /// HTTP 方法
     var httpMethod: HTTPMethod {
         switch self {
+        case .homePromotions, .marketingActivity: return .GET
  case .accountAuth(_,let body): return body == nil ? .GET:.POST
         case .rewardCampaigns, .rewardDetail, .rewardEntries, .rewardOrders: return .GET
         case .diyDesignCopy: return .POST
@@ -512,6 +517,7 @@ enum Endpoint {
     /// 查询参数
     var queryItems: [URLQueryItem]? {
         switch self {
+        case .homePromotions: return [URLQueryItem(name: "placement", value: "customer_home"), URLQueryItem(name: "size", value: "100")]
         case .rewardCampaigns(let page, let kind): return [URLQueryItem(name:"page",value:String(page)),URLQueryItem(name:"kind",value:kind)]
         case .rewardEntries(let page), .rewardOrders(let page): return [URLQueryItem(name:"page",value:String(page))]
         case .aiReports(let page): return [URLQueryItem(name: "page", value: String(page))]

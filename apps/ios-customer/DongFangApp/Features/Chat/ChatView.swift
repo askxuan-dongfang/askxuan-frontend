@@ -22,6 +22,7 @@ struct ChatView: View {
         #endif
         return 1
     }()
+    @State private var unreadOnly = false
     @State private var searchText: String = ""
     @ObservedObject private var chatNotifications=NativeChatNotifications.shared
     @State private var liveRooms: [LiveRoom] = []
@@ -150,6 +151,11 @@ struct ChatView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
                 ChatNotificationPrompt()
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("每一次对话，皆有回应").font(AppTypography.title(26)).foregroundStyle(Color.textPrimary)
+                    HStack { Text("你的即时咨询与预约沟通"); Spacer(); Text("\(viewModel.conversations.count) 个会话") }
+                        .font(AppTypography.caption).foregroundStyle(Color.textSecondary)
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(20)
                 // 搜索栏
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
@@ -158,9 +164,12 @@ struct ChatView: View {
                     TextField("搜索姓名、服务或消息", text: $searchText)
                         .font(AppTypography.body)
                         .foregroundStyle(Color.textPrimary)
+                    Button { unreadOnly.toggle() } label: {
+                        Text("未读").font(AppTypography.caption.weight(.medium)).foregroundStyle(unreadOnly ? Color.brandDefault : Color.textSecondary).frame(minWidth: 44, minHeight: 44)
+                    }.buttonStyle(.plain).accessibilityAddTraits(unreadOnly ? .isSelected : [])
                 }
                 .padding(.horizontal, 12)
-                .frame(height: 36)
+                .frame(height: 48)
                 .background(Color.bgSecondary)
                 .cornerRadius(18)
                 .overlay(Capsule().stroke(Color.borderDefault, lineWidth: 1))
@@ -194,7 +203,7 @@ struct ChatView: View {
                 Color.clear.frame(height: AppSpacing.navBottom)
             }
         }
-        .task(id:searchText){try? await Task.sleep(for:.milliseconds(300));guard !Task.isCancelled else{return};await viewModel.searchConversations(searchText)}
+        .task(id:searchText + "|" + String(unreadOnly)){try? await Task.sleep(for:.milliseconds(300));guard !Task.isCancelled else{return};await viewModel.searchConversations(searchText, unreadOnly: unreadOnly)}
         .refreshable{await viewModel.loadConversations()}
     }
 

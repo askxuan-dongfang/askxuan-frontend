@@ -44,12 +44,9 @@ targets:
       - path: MasterApp
         excludes:
           - "Resources/Info.plist"
-    entitlements:
-      path: MasterApp/Resources/MasterApp.entitlements
-      properties:
-        aps-environment: $(APS_ENVIRONMENT)
     settings:
       base:
+        CODE_SIGN_ENTITLEMENTS: MasterApp/Resources/MasterApp.entitlements
         ASKXUAN_API_BASE_URL: "https://101.96.228.71/api/v1"
         OPENIM_API_URL: "https://101.96.228.71/openim-api"
         OPENIM_WS_URL: "wss://101.96.228.71/openim-ws"
@@ -58,6 +55,7 @@ targets:
         INFOPLIST_FILE: MasterApp/Resources/Info.plist
       configs:
         Debug:
+          CODE_SIGN_ENTITLEMENTS: MasterApp/Resources/Debug.entitlements
           APS_ENVIRONMENT: development
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
           OTHER_SWIFT_FLAGS: "-DDEBUG"

@@ -21,19 +21,18 @@ struct ProfileView: View {
     private var stats: [(label: String, value: String)] {
         let merit = viewModel.profile?.meritValueText ?? "—"
         let points = viewModel.pointsBalance.map { String($0) } ?? "—"
-        let coupons = "\(viewModel.availableCouponCount)"
+        let coupons = viewModel.couponsLoaded ? "\(viewModel.availableCouponCount)" : "—"
         return [("功德值", merit), ("积分", points), ("优惠券", coupons)]
     }
 
     /// 订单中心入口：角标来自 viewModel.recentBookings 的真实状态计数
     private var orderEntries: [(icon: String, title: String, badge: String?)] {
         let pending = viewModel.pendingBookingCount
-        let confirmed = viewModel.confirmedBookingCount
         return [
             ("doc.text", "服务订单", pending > 0 ? "\(pending)待确认" : nil),
             ("bag", "商城订单", nil),
             ("circle.grid.2x1", "DIY手串", nil),
-            ("calendar", "预约记录", confirmed > 0 ? "\(confirmed)待进行" : nil)
+            ("bell", "消息", nil)
         ]
     }
 
@@ -41,8 +40,8 @@ struct ProfileView: View {
     /// 注：UserProfile 模型暂无对应字段，数值显示 "—" 占位
     private var assets: [(label: String, value: String?, icon: String?)] {
         [
-            ("优惠券", "\(viewModel.availableCouponCount)", nil),
-            ("积分明细", nil, "chart.line.uptrend.xyaxis")
+            ("优惠券", viewModel.couponsLoaded ? "\(viewModel.availableCouponCount)" : "—", nil),
+            ("收货地址", viewModel.addressesLoaded ? "\(viewModel.addressCount)" : "—", nil)
         ]
     }
 
@@ -53,10 +52,10 @@ struct ProfileView: View {
             : nil
         return [
             ("heart", "我的收藏", nil),
-            ("clock", "浏览记录", nil),
+            ("bubble.left", "会话", nil),
+            ("bell", "消息", nil),
             ("star", "我的评价", nil),
             ("mappin.and.ellipse", "收货地址", addressTrailing),
-            ("phone", "通话记录", nil),
             ("bell", "帮助与客服", nil)
         ]
     }
@@ -205,44 +204,43 @@ struct ProfileView: View {
                     .overlay(Circle().stroke(Color.accentDefault, lineWidth: 2))
 
                 VStack(alignment: .leading, spacing: 2) {
+                    Text("我的账户").font(AppTypography.micro).foregroundStyle(Color.textTertiary)
                     Text(viewModel.displayName)
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(Color.textPrimary)
-                    Text("ID: \(viewModel.maskedMobile)")
+                    Text(viewModel.maskedMobile == "—" ? "用户 ID: " + authStore.userId : viewModel.maskedMobile)
                         .font(AppTypography.supporting)
                         .foregroundStyle(Color.textTertiary)
-                    Text("修复版 08-18 · 预约链路 v2")
-                        .font(AppTypography.micro.weight(.medium))
-                        .foregroundStyle(Color.brandDefault)
                 }
 
                 Spacer()
 
-                Image(systemName: "chevron.right")
-                    .font(AppTypography.body)
-                    .foregroundStyle(Color.textTertiary)
+                NavigationLink { ProfileEditView() } label: {
+                    HStack(spacing: 3) { Text("编辑资料"); Image(systemName: "chevron.right") }
+                        .font(AppTypography.caption).foregroundStyle(Color.accentDefault).frame(minHeight: 44)
+                }.buttonStyle(CardPressButtonStyle())
             }
-            .padding(.top, AppSpacing.xl)
+            .padding(.top, 18)
             .padding(.bottom, AppSpacing.lg)
 
             // 统计行
             HStack(spacing: 0) {
                 ForEach(Array(stats.enumerated()), id: \.offset) { index, item in
                     NavigationLink {
-                        PointsView()
+                        if item.label == "优惠券" { CouponView() } else { PointsView() }
                     } label: {
                     VStack(spacing: 2) {
                         Text(item.value)
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundStyle(Color.accentDefault)
                             .monospacedDigit()
-                        Text(item.label)
-                            .font(AppTypography.caption)
-                            .foregroundStyle(Color.textTertiary)
+                        Text(item.label).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
+                        Text(item.label == "功德值" ? "成长记录待开放" : item.label == "积分" ? "查看积分明细" : "查看可用优惠")
+                            .font(.system(size: 10)).foregroundStyle(Color.textTertiary)
                     }
                     .frame(maxWidth: .infinity)
                     }
-                    .disabled(item.label != "积分")
+                    .disabled(item.label == "功德值")
 
                     if index < stats.count - 1 {
                         Rectangle()
@@ -259,7 +257,10 @@ struct ProfileView: View {
                 Rectangle().fill(Color.borderDivider).frame(height: 1)
             }
         }
-        .padding(.horizontal, AppSpacing.lg)
+        .padding(.horizontal, 16)
+        .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.borderDefault, lineWidth: 1))
+        .padding(.horizontal, AppSpacing.lg).padding(.top, 16)
     }
 
     // MARK: - Section 2: 订单中心
@@ -291,7 +292,7 @@ struct ProfileView: View {
             HStack(alignment: .top, spacing: 0) {
                 ForEach(Array(orderEntries.enumerated()), id: \.offset) { _, entry in
                     NavigationLink {
-                        OrderListView(initialStatus: orderTab(for: entry.title))
+                        if entry.title == "消息" { NativeMessageCenterView() } else { OrderListView(initialStatus: orderTab(for: entry.title)) }
                     } label: {
                         VStack(spacing: 8) {
                             ZStack {
@@ -330,7 +331,7 @@ struct ProfileView: View {
             .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
         }
         .padding(.horizontal, AppSpacing.lg)
-        .padding(.top, AppSpacing.xl)
+        .padding(.top, 20)
     }
 
     // MARK: - Section 3: 资产
@@ -365,7 +366,7 @@ struct ProfileView: View {
             }
         }
         .padding(.horizontal, AppSpacing.lg)
-        .padding(.top, AppSpacing.xl)
+        .padding(.top, 20)
     }
 
     // MARK: - Section 4: 我的服务
@@ -405,7 +406,7 @@ struct ProfileView: View {
         .cornerRadius(AppRadius.lg)
         .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
         .padding(.horizontal, AppSpacing.lg)
-        .padding(.top, AppSpacing.xl)
+        .padding(.top, 20)
     }
 
     // MARK: - Section 5: 系统功能
@@ -461,7 +462,7 @@ struct ProfileView: View {
         .cornerRadius(AppRadius.lg)
         .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
         .padding(.horizontal, AppSpacing.lg)
-        .padding(.top, AppSpacing.xl)
+        .padding(.top, 20)
     }
 
     private var rowDivider: some View {
@@ -484,6 +485,7 @@ struct ProfileView: View {
         switch title {
         case "优惠券": CouponView()
         case "积分明细": PointsView()
+        case "收货地址": AddressListView()
         default: WalletView()
         }
     }
@@ -492,6 +494,8 @@ struct ProfileView: View {
     private func serviceDestination(_ title: String) -> some View {
         switch title {
         case "我的收藏": FavoritesView()
+        case "会话": ChatView()
+        case "消息": NativeMessageCenterView()
         case "浏览记录": HistoryView()
         case "我的评价": ReviewListView()
         case "收货地址": AddressListView()

@@ -7,7 +7,7 @@ struct DiyBraceletView: View {
     var body: some View {
         VStack(spacing: 0) {
             DFTopNavBar("东方珠作", showsBackButton: true) { EmptyView() } trailing: {
-                NavigationLink { DiyMyDesignsView() } label: {
+                NavigationLink { DiyMyDesignsView().requireAuth(title: "登录后查看我的作品", subtitle: "登录后同步和管理你的手串设计") } label: {
                     Image(systemName: "square.stack").frame(width: 44, height: 44)
                 }
                 .accessibilityLabel("我的作品")
@@ -17,7 +17,7 @@ struct DiyBraceletView: View {
                     VStack(spacing: 22) {
                         workbench
                         HStack(spacing: 12) {
-                            NavigationLink { DiyMyDesignsView() } label: {
+                            NavigationLink { DiyMyDesignsView().requireAuth(title: "登录后查看我的作品", subtitle: "登录后同步和管理你的手串设计") } label: {
                                 quickItem(title: "我的作品", subtitle: "保存每一次灵感", icon: "square.stack")
                             }
                             Button {
@@ -91,7 +91,7 @@ struct DiyBraceletView: View {
             NavigationLink { DiyDesignView() } label: {
                 HStack {
                     Image(systemName: "plus")
-                    Text("开始我的设计")
+                    Text("开始我的设计").accessibilityIdentifier("diy-start")
                     Spacer()
                     Image(systemName: "arrow.up.right")
                 }
@@ -259,6 +259,7 @@ struct DiyPreviewModePicker: View {
         }
         .buttonStyle(DiyPressButtonStyle())
         .accessibilityAddTraits(show3D == is3D ? .isSelected : [])
+        .accessibilityIdentifier(is3D ? "diy-mode-3d" : "diy-mode-2d")
     }
 }
 

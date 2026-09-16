@@ -12,7 +12,7 @@ import Foundation
         guard envelope.code==0,let result=envelope.data else {throw NSError(domain:"Chat",code:envelope.code,userInfo:[NSLocalizedDescriptionKey:envelope.message ?? "会话暂时无法加载"])}
         return result
     }
-    static func conversations<T:Decodable>(page:Int,query:String="") async throws -> T {
-        try await get("chats",query:[URLQueryItem(name:"page",value:String(page)),URLQueryItem(name:"size",value:"30"),URLQueryItem(name:"query",value:query)])
+    static func conversations<T:Decodable>(page:Int,query:String="",unreadOnly:Bool=false) async throws -> T {
+        try await get("chats",query:[URLQueryItem(name:"page",value:String(page)),URLQueryItem(name:"size",value:"30"),URLQueryItem(name:"query",value:query),URLQueryItem(name:"unreadOnly",value:String(unreadOnly))])
     }
 }

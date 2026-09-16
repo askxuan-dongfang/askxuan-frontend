@@ -20,6 +20,7 @@ final class ChatViewModel: ObservableObject {
     @Published var loadingMoreConversations=false
     private var conversationPage=1
     private var conversationQuery=""
+    private var conversationFilter=""
     private var conversationEpoch=0
 
     // MARK: - 当前会话消息
@@ -81,7 +82,7 @@ final class ChatViewModel: ObservableObject {
         do {
             var list:[ChatConversation]=[];var total:Int64=0
             for page in 1...conversationPage {
-                let response:BookingChatListResponse=try await ChatNativeAPI.conversations(page:page,query:conversationQuery)
+                let response:BookingChatListResponse=try await ChatNativeAPI.conversations(page:page,query:conversationQuery,unreadOnly:conversationFilter == "unread")
                 list.append(contentsOf:response.list);total=response.total
                 if list.count>=total {break}
             }
@@ -93,7 +94,7 @@ final class ChatViewModel: ObservableObject {
         }catch{if epoch==conversationEpoch && !silent{errorMessage=error.localizedDescription}}
         if epoch==conversationEpoch{isLoading=false}
     }
-    func searchConversations(_ query:String) async {conversationQuery=query;conversationPage=1;conversationEpoch+=1;await loadConversations()}
+    func searchConversations(_ query:String, unreadOnly:Bool=false) async {conversationFilter=unreadOnly ? "unread" : "";conversationQuery=query;conversationPage=1;conversationEpoch+=1;await loadConversations()}
     func loadMoreConversations() async {
         guard hasMoreConversations && !loadingMoreConversations else{return}
         loadingMoreConversations=true;conversationPage+=1

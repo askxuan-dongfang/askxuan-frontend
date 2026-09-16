@@ -65,6 +65,7 @@ enum KeychainHelper {
 final class AuthStore: ObservableObject {
     static let shared = AuthStore()
 
+    @Published private(set) var navigationID = UUID()
     @Published private(set) var sessionID = UUID()
     @Published private(set) var requiresLogin = false
 
@@ -135,6 +136,7 @@ final class AuthStore: ObservableObject {
     /// 登录成功后保存 Token
     func didLogin(accessToken: String, refreshToken: String?, userId: String,
                   nickname: String?, avatar: String?, mobile: String?, imToken: String? = nil) {
+        if isLoggedIn { navigationID = UUID() }
         sessionID = UUID()
         requiresLogin = false
         KeychainHelper.save(string: accessToken,
@@ -195,6 +197,11 @@ final class AuthStore: ObservableObject {
         self.accessToken = token
     }
 
+    func updateIMToken(_ token: String) {
+        imToken = token
+        UserDefaults.standard.set(token, forKey: UDKey.imToken)
+    }
+
     func updateCachedProfile(nickname: String, avatar: String, mobile: String) {
         self.nickname = nickname
         self.avatar = avatar
@@ -221,6 +228,7 @@ final class AuthStore: ObservableObject {
         NativeChatNotifications.shared.destination = nil
         NativeChatNotifications.shared.openConversation = nil
         OpenIMManager.shared.logout { _ in }
+        navigationID = UUID()
         sessionID = UUID()
         self.requiresLogin = requiresLogin
         KeychainHelper.delete(service: AppConfig.keychainService, key: AppConfig.tokenKey)
