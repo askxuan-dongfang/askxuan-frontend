@@ -2,11 +2,10 @@
 //  BookingDetailView.swift
 //  MasterApp
 //
-//  预约详情（页面 4）：含确认、开始、完成操作。
+//  预约详情：接单、执行、阶段记录与最终回执；由信众确认完成。
 //  GET admin/masters/bookings/:id
 //  PUT admin/masters/bookings/:id/confirm
 //  PUT admin/masters/bookings/:id/start
-//  PUT admin/masters/bookings/:id/complete
 //
 
 import SwiftUI
@@ -27,8 +26,8 @@ final class BookingDetailViewModel: ObservableObject {
         self.apiClient = apiClient
     }
 
-    func load() async {
-        isLoading = true
+    func load(showLoading: Bool = true) async {
+        if showLoading { isLoading = true }
         errorMessage = nil
         do {
             let booking: Booking = try await apiClient.request(.masterBookingDetail(id: bookingId))
@@ -44,11 +43,6 @@ final class BookingDetailViewModel: ObservableObject {
     func confirm() async {
         guard let b = booking, b.statusEnum == .pending else { return }
         await runAction(.masterBookingConfirm(id: bookingId, remark: nil), successText: "已确认预约")
-    }
-
-    func complete() async {
-        guard let b = booking, b.statusEnum == .inProgress else { return }
-        await runAction(.masterBookingComplete(id: bookingId, remark: nil), successText: "已完成服务")
     }
 
     func start() async {
@@ -119,7 +113,7 @@ struct BookingDetailView: View {
                     }
 
                     // 操作按钮
-                    actionSection(booking)
+                    JourneyRecordPanel(bookingId: bookingId) { _ in Task { await viewModel.load(showLoading: false) } }
                 }
                 .padding(.horizontal, AppSpacing.pageHorizontal)
                 .padding(.bottom, AppSpacing.xl)
@@ -193,45 +187,7 @@ struct BookingDetailView: View {
         }
     }
 
-    @ViewBuilder
-    private func actionSection(_ booking: Booking) -> some View {
-        if let error = viewModel.errorMessage {
-            Text(error)
-                .font(AppTypography.caption)
-                .foregroundStyle(.stateError)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
 
-        let status = booking.statusEnum
-        if status.isTerminal {
-            Text("该预约已结单")
-                .font(AppTypography.caption)
-                .foregroundStyle(.textTertiary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, AppSpacing.md)
-        } else {
-            VStack(spacing: AppSpacing.md) {
-                if status == .pending {
-                    PrimaryButton(title: "确认接单", icon: "checkmark.circle.fill",
-                                  isLoading: viewModel.isActionLoading) {
-                        Task { await viewModel.confirm() }
-                    }
-                }
-                if status == .confirmed {
-                    PrimaryButton(title: "开始服务", icon: "play.circle.fill",
-                                  isLoading: viewModel.isActionLoading) {
-                        Task { await viewModel.start() }
-                    }
-                }
-                if status == .inProgress {
-                    PrimaryButton(title: "完成服务", icon: "checkmark.seal.fill",
-                                  isLoading: viewModel.isActionLoading) {
-                        Task { await viewModel.complete() }
-                    }
-                }
-            }
-        }
-    }
 }
 
 #Preview {

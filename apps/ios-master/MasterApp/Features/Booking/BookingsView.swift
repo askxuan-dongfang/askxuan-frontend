@@ -82,6 +82,7 @@ struct BookingsView: View {
         TabFilterItem(title: "待确认", status: .pending),
         TabFilterItem(title: "已确认", status: .confirmed),
         TabFilterItem(title: "进行中", status: .inProgress),
+        TabFilterItem(title: "待确认回执", status: .pendingReceipt),
         TabFilterItem(title: "已完成", status: .completed)
     ]
 

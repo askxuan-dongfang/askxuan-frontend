@@ -36,6 +36,7 @@ targets:
     type: application
     platform: iOS
     sources:
+      - path: ../../packages/service-journey-native
       - path: ../../packages/chat-native
       - path: ../../packages/design-tokens/fonts
         includes: ["AskXuanSerif-Semibold.ttf", "OFL.txt"]
@@ -49,6 +50,10 @@ targets:
         aps-environment: $(APS_ENVIRONMENT)
     settings:
       base:
+        ASKXUAN_API_BASE_URL: "https://101.96.228.71/api/v1"
+        OPENIM_API_URL: "https://101.96.228.71/openim-api"
+        OPENIM_WS_URL: "wss://101.96.228.71/openim-ws"
+        DEVELOPMENT_TEAM: DQ3YY8MTFW
         APS_ENVIRONMENT: production
         INFOPLIST_FILE: MasterApp/Resources/Info.plist
       configs:
@@ -59,10 +64,13 @@ targets:
     info:
       path: MasterApp/Resources/Info.plist
       properties:
+        ASKXUAN_API_BASE_URL: $(ASKXUAN_API_BASE_URL)
+        OPENIM_API_URL: $(OPENIM_API_URL)
+        OPENIM_WS_URL: $(OPENIM_WS_URL)
         NSMicrophoneUsageDescription: 用于录制咨询语音和语音通话
         NSCameraUsageDescription: 用于视频咨询通话
         UIAppFonts: ["AskXuanSerif-Semibold.ttf"]
-        CFBundleDisplayName: 问玄东方
+        CFBundleDisplayName: 问玄法师端
         CFBundleShortVersionString: "0.0.1"
         CFBundleVersion: "1"
         UILaunchScreen:
@@ -73,5 +81,8 @@ targets:
         UIStatusBarStyle: UIStatusBarStyleDefault
         UIViewControllerBasedStatusBarAppearance: true
         NSAppTransportSecurity:
-          NSAllowsArbitraryLoads: true
           NSAllowsLocalNetworking: true
+          NSExceptionDomains:
+            localhost:
+              NSExceptionAllowsInsecureHTTPLoads: true
+              NSIncludesSubdomains: true

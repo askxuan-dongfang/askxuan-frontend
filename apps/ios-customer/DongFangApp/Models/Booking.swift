@@ -14,6 +14,7 @@ enum BookingStatus: String, Codable, Hashable, CaseIterable {
 	case pendingPayment = "pending_payment"
     case pending      = "pending"
     case confirmed    = "confirmed"
+    case pendingReceipt = "pending_receipt"
     case inProgress   = "in_progress"
     case reviewed     = "reviewed"
     case cancelled    = "cancelled"
@@ -25,6 +26,7 @@ enum BookingStatus: String, Codable, Hashable, CaseIterable {
 		case .pendingPayment: return "待支付"
         case .pending:     return "待确认"
         case .confirmed:   return "已确认"
+        case .pendingReceipt: return "待确认回执"
         case .inProgress:  return "进行中"
         case .reviewed:    return "已评价"
         case .cancelled:   return "已取消"
@@ -34,7 +36,7 @@ enum BookingStatus: String, Codable, Hashable, CaseIterable {
 
     /// 是否终态
     var isTerminal: Bool {
-        self == .reviewed || self == .cancelled
+        self == .reviewed || self == .cancelled || self == .completed
     }
 }
 

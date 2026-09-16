@@ -267,7 +267,7 @@ struct OrderListView: View {
     }
 }
 
-private struct CustomerBookingDetailView: View {
+struct CustomerBookingDetailView: View {
     let bookingId: String
     @State private var booking: Booking?
     @State private var errorMessage: String?
@@ -285,6 +285,7 @@ private struct CustomerBookingDetailView: View {
                         detailRow("日期", booking.bookingDate)
                         detailRow("时段", booking.timeSlot)
                     }
+                    Section("服务进度与回执") { JourneyRecordPanel(bookingId: bookingId) { _ in Task { await load() } } }
                     Section("费用与备注") {
                         detailRow("功德金", booking.meritMoneyText)
                         if !booking.note.isEmpty {

@@ -32,6 +32,7 @@ struct DFStatusBadge: View {
         case "reviewed":     return "已评价"
         case "cancelled":    return "已取消"
         case "completed":    return "已完成"
+        case "pending_receipt": return "待确认回执"
         case "on_shelf":     return "上架"
         case "off_shelf":    return "下架"
         case "draft":        return "草稿"
@@ -49,7 +50,7 @@ struct DFStatusBadge: View {
     private var color: Color {
         switch status.lowercased() {
         case "pending", "draft":          return .stateWarning
-        case "confirmed", "on_shelf":     return .accentDefault
+        case "confirmed", "pending_receipt", "on_shelf":     return .accentDefault
         case "in_progress", "dispatched", "assigned", "accepted":
             return .brandDefault
         case "reviewed", "completed", "published":

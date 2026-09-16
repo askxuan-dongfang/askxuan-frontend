@@ -22,6 +22,7 @@ struct HomeView: View {
                 VStack(spacing: AppSpacing.lg) {
                     bannerSection.appEntrance()
                     entryCardsSection.appEntrance(order: 1)
+                    if authStore.isLoggedIn { JourneyEntryView(home: true).padding(.horizontal, AppSpacing.lg) }
                     beliefSection.appEntrance(order: 2)
                     intentionSection.appEntrance(order: 3)
                     hotTemplesSection

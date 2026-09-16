@@ -37,7 +37,9 @@ struct DongFangApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if authStore.requiresLogin {
+                if let id=JourneyHost.smokeBooking {
+                    NavigationStack { JourneyDetailView(bookingId:id) }
+                } else if authStore.requiresLogin {
                     NavigationStack { LoginView() }
                 } else {
                     MainTabView()

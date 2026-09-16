@@ -153,6 +153,7 @@ struct WorkspaceView: View {
         ScrollView {
             VStack(spacing: 0) {
                 greetingSection.appEntrance()
+                JourneyEntryView().padding(16)
                 statsRow.appEntrance(order: 1)
                 quickActionsSection.appEntrance(order: 2)
                 mediaStudioSection.appEntrance(order: 3)

@@ -23,7 +23,7 @@ settings:
     INFOPLIST_FILE: DongFangApp/Resources/Info.plist
     PRODUCT_BUNDLE_IDENTIFIER: com.dongfang.customer
     MARKETING_VERSION: "0.0.1"
-    CURRENT_PROJECT_VERSION: "1"
+    CURRENT_PROJECT_VERSION: "20260818"
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     DEVELOPMENT_TEAM: ""
 
@@ -36,6 +36,7 @@ targets:
     type: application
     platform: iOS
     sources:
+      - path: ../../packages/service-journey-native
       - path: ../../packages/chat-native
       - path: ../../packages/design-tokens/fonts
         includes: ["AskXuanSerif-Semibold.ttf", "OFL.txt"]
@@ -49,6 +50,15 @@ targets:
         aps-environment: $(APS_ENVIRONMENT)
     settings:
       base:
+        ASKXUAN_API_BASE_URL: "https://101.96.228.71/api/v1"
+        OPENIM_API_URL: "https://101.96.228.71/openim-api"
+        OPENIM_WS_URL: "wss://101.96.228.71/openim-ws"
+        DEVELOPMENT_TEAM: DQ3YY8MTFW
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
         APS_ENVIRONMENT: production
         INFOPLIST_FILE: DongFangApp/Resources/Info.plist
       configs:
@@ -59,6 +69,9 @@ targets:
     info:
       path: DongFangApp/Resources/Info.plist
       properties:
+        ASKXUAN_API_BASE_URL: $(ASKXUAN_API_BASE_URL)
+        OPENIM_API_URL: $(OPENIM_API_URL)
+        OPENIM_WS_URL: $(OPENIM_WS_URL)
         NSMicrophoneUsageDescription: 用于录制咨询语音和语音通话
         NSCameraUsageDescription: 用于视频咨询通话
         UIAppFonts: ["AskXuanSerif-Semibold.ttf"]

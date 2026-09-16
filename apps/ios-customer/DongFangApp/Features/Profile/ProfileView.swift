@@ -159,6 +159,7 @@ struct ProfileView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, AppSpacing.lg)
                     .padding(.top, 10)
+                JourneyEntryView().padding(.horizontal, AppSpacing.lg).padding(.top, 16)
                 orderCenterSection
                 assetsSection
                 servicesSection

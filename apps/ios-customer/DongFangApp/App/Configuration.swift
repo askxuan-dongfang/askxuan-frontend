@@ -33,6 +33,9 @@ enum AppConfig {
     /// API BaseURL（已包含版本前缀 /api/v1）
     /// - Debug/Release：构建设置中的公网 IP HTTPS 地址
     static let baseURL: URL = {
+        #if DEBUG
+        if let value=ProcessInfo.processInfo.environment["ASKXUAN_JOURNEY_API_URL"], let url=URL(string:value), ["localhost","127.0.0.1"].contains(url.host ?? "") { return url }
+        #endif
         if let value = Bundle.main.object(forInfoDictionaryKey: "ASKXUAN_API_BASE_URL") as? String,
            let url = URL(string: value), !value.isEmpty {
             return url
