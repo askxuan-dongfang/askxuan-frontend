@@ -5,6 +5,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Check, Close, ChatLineSquare } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
+import BookingFulfillment from '@/components/BookingFulfillment.vue'
+import client from '@/api/client'
 import { getBooking, getBookingStatusLog, getBookingReview, confirmBooking, cancelBooking, replyBookingReview } from '@/api/booking'
 import { formatMoney, formatDate, bookingStatusText, parseImages, isBookingTerminal } from '@/utils/format'
 import type { Booking, BookingStatusLog, BookingReview } from '@/types'
@@ -22,7 +24,7 @@ const replyText = ref('')
 const replying = ref(false)
 
 const canConfirm = computed(() => booking.value?.status === 'pending')
-const canCancel = computed(() => !!booking.value && !isBookingTerminal(booking.value.status))
+const canCancel = computed(() => !!booking.value && ['pending_payment','pending','confirmed','in_progress'].includes(booking.value.status))
 
 async function load() {
   loading.value = true
@@ -85,6 +87,11 @@ function doCancel() {
     .catch(() => {})
 }
 
+async function doStart() {
+ acting.value=true
+ try { await client.put(`/admin/bookings/${bookingId.value}/start`, {remark:'寺院开始执行服务'}); ElMessage.success('服务已开始执行'); await load() } finally { acting.value=false }
+}
+
 async function submitReply() {
   if (!replyText.value.trim()) {
     ElMessage.warning('请输入回复内容')
@@ -109,6 +116,7 @@ onMounted(load)
     <PageHeader title="预约详情" :subtitle="booking?.id">
       <el-button :icon="ArrowLeft" @click="router.back()">返回</el-button>
       <el-button v-if="canConfirm" type="primary" :icon="Check" :loading="acting" @click="doConfirm">确认预约</el-button>
+      <el-button v-if="booking?.status==='confirmed'" type="primary" :loading="acting" @click="doStart">开始执行</el-button>
       <el-button v-if="canCancel" type="danger" plain :icon="Close" :loading="acting" @click="doCancel">取消预约</el-button>
     </PageHeader>
 
@@ -122,7 +130,7 @@ onMounted(load)
               <StatusTag :status="booking.status" kind="booking" />
             </el-descriptions-item>
             <el-descriptions-item label="服务项目">{{ booking.serviceName }}</el-descriptions-item>
-            <el-descriptions-item label="法师">{{ booking.masterName || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="法师">{{ booking.masterName || '全院执行' }}</el-descriptions-item>
             <el-descriptions-item label="预约日期">{{ booking.bookingDate }}</el-descriptions-item>
             <el-descriptions-item label="时段">{{ booking.timeSlot }}</el-descriptions-item>
             <el-descriptions-item label="功德金">
@@ -141,6 +149,7 @@ onMounted(load)
           </el-descriptions>
         </div>
 
+        <BookingFulfillment :id="booking.id" :status="booking.status" @changed="load" />
         <!-- 评价 -->
         <div class="df-card section" v-if="booking.status === 'reviewed'">
           <div class="section-title">信众评价</div>

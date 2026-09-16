@@ -21,8 +21,8 @@ const query = reactive({ status: '', page: 1, size: 20 })
 
 const statusOptions = [
   { value: 'pending', label: '待确认' },
-  { value: 'confirmed', label: '已确认' },
-  { value: 'in_progress', label: '进行中' },
+  { value: 'confirmed', label: '待执行' },
+  { value: 'in_progress', label: '执行中' },
   { value: 'reviewed', label: '已评价' },
   { value: 'cancelled', label: '已取消' }
 ]

@@ -105,8 +105,9 @@ const STATUS_DICTIONARY: Record<StatusDomain, Record<string, StatusMeta>> = {
   booking: {
     pending_payment: meta('待支付', 'warning'),
     pending: meta('待确认', 'warning'),
-    confirmed: meta('已确认', 'success'),
-    in_progress: meta('进行中', 'primary'),
+    confirmed: meta('待执行', 'primary'),
+    in_progress: meta('执行中', 'primary'),
+    pending_receipt: meta('待确认回执', 'warning'),
     completed: meta('已完成', 'success'),
     reviewed: meta('已评价', 'success'),
     cancelled: meta('已取消', 'danger')
