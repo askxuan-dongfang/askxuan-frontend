@@ -204,6 +204,7 @@ struct JourneyRecordPanel: View {
   private struct TimelineRow: Identifiable {
     let id: String
     let title: String
+    let order: Int
     let date: String
     let actor: String
     let content: String
@@ -212,15 +213,24 @@ struct JourneyRecordPanel: View {
   private func timeline(_ p: JourneyProgress) -> [TimelineRow] {
     ((p.logs ?? []).map {
       TimelineRow(
-        id: "log\($0.id)", title: JourneyText.status($0.toStatus), date: $0.createTime,
+        id: "log\($0.id)", title: JourneyText.status($0.toStatus),
+        order: ([
+          "confirmed": 10, "in_progress": 20, "pending_receipt": 40, "completed": 50,
+          "reviewed": 60, "cancelled": 70,
+        ][$0.toStatus] ?? 0), date: $0.createTime,
         actor: $0.operatorType,
         content: $0.toStatus == "pending_receipt" ? "执行方提交了服务说明与影像，等待核对。" : $0.remark, files: [])
     }
       + p.records.filter { $0.kind == "update" }.map {
         TimelineRow(
-          id: $0.id, title: "执行记录", date: $0.createdAt, actor: $0.operatorType, content: $0.content,
+          id: $0.id, title: "执行记录", order: 30, date: $0.createdAt, actor: $0.operatorType,
+          content: $0.content,
           files: $0.files)
-      }).sorted { $0.date == $1.date ? $0.id < $1.id : $0.date < $1.date }
+      }).sorted { a, b in
+        if a.date != b.date { return a.date < b.date }
+        if a.order != b.order { return a.order < b.order }
+        return a.id.localizedStandardCompare(b.id) == .orderedAscending
+      }
   }
   private func statusHint(_ status: String) -> String {
     switch status {
