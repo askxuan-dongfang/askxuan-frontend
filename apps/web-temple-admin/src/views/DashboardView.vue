@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Calendar, Bell, Wallet, UserFilled, Loading, ArrowRight } from '@element-plus/icons-vue'
+import JourneySummary from '@/components/JourneySummary.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StatCard from '@/components/StatCard.vue'
 import StatusTag from '@/components/StatusTag.vue'
@@ -86,6 +87,7 @@ function goBooking(id: string) {
     <PageHeader title="工作台" subtitle="欢迎回来，愿法务兴隆、寺运昌隆">
       <el-button :icon="Loading" :loading="loading" @click="loadAll">刷新</el-button>
     </PageHeader>
+    <JourneySummary/>
 
     <div v-if="loadIssueCount" class="ax-page-feedback" :class="{ 'is-error': loadIssueCount === 5 }" role="status">
       <div class="ax-page-feedback__copy">

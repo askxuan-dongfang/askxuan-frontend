@@ -107,9 +107,9 @@ async function handleLogout() {
           <el-menu-item index="/services">服务管理</el-menu-item>
         </el-sub-menu>
 
-        <el-menu-item index="/bookings">
+        <el-menu-item index="/fulfillment">
           <el-icon><Calendar /></el-icon>
-          <template #title>预约履约</template>
+          <template #title>履约工作台</template>
         </el-menu-item>
         <el-menu-item index="/blessing-tasks">
           <el-icon><MagicStick /></el-icon>
