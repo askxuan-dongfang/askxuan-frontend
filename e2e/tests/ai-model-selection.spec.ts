@@ -9,7 +9,7 @@ async function setup(page:Page,options:{fail?:boolean;image?:boolean;guest?:bool
   let data:any={list:[],total:0};
   if(path.endsWith('/ai/models')){if(state.fail)return route.fulfill({status:503,json:{code:50301,message:'unavailable'}});data={list:state.models,defaultModel:'deepseek-flash',stale:false};}
   else if(path.endsWith('/ai/skills'))data={list:[{code:'general',name:'直接问事',inputSchema:{fields:[]}}]};
-  else if(path.endsWith('/ai/topics'))data=[];
+  else if(path.endsWith('/ai/topics')||path.endsWith('/ai/notes')||path.endsWith('/ai/reports'))data=[];
   else if(path.endsWith('/chats/incoming-call'))data={call:null};
   else if(path.endsWith('/chats/unread'))data={count:0};
   else if(path.endsWith('/ai/sessions')&&request.method()==='GET')data={list:state.messages.length?[{id:7,title:'测试问事',skillCode:'general',status:'active'}]:[],total:state.messages.length?1:0};
@@ -32,7 +32,7 @@ async function choose(page:Page,name:string){
  await expect(sheet(page)).toHaveCount(0);
 }
 for(const width of [375,557,768])test(`model selection persists and request uses chosen model ${width}`,async({page})=>{
- await page.setViewportSize({width,height:900});const state=await setup(page);await page.goto('/c/ai');
+ await page.setViewportSize({width,height:900});const state=await setup(page);await page.goto('/c/ai?view=chat');
  const picker=trigger(page);
  await expect(picker).toContainText('DeepSeek Flash');
  expect((await picker.boundingBox())!.height).toBeLessThanOrEqual(48);
@@ -58,14 +58,14 @@ for(const width of [375,557,768])test(`model selection persists and request uses
  await page.screenshot({path:`artifacts/ai-models/selection-${width}.png`,fullPage:true});
 });
 test('model list error is retryable and removed preference is replaced',async({page})=>{
- const state=await setup(page,{fail:true});await page.goto('/c/ai');await page.getByRole('textbox',{name:'输入问题'}).fill('保留草稿');
+ const state=await setup(page,{fail:true});await page.goto('/c/ai?view=chat');await page.getByRole('textbox',{name:'输入问题'}).fill('保留草稿');
  await expect(page.getByRole('button',{name:'发送',exact:true})).toBeDisabled();await expect(trigger(page)).toContainText('模型未加载');await trigger(page).click();await expect(page.getByText('模型暂未加载，请重试')).toBeVisible();
  state.fail=false;await page.getByRole('button',{name:'重新加载模型'}).click();await expect(sheet(page).getByRole('button',{name:/DeepSeek Flash/})).toHaveAttribute('aria-pressed','true');
  await sheet(page).getByRole('button',{name:/DeepSeek V4 Pro/}).click();await expect(page.getByRole('textbox',{name:'输入问题'})).toHaveValue('保留草稿');
  state.models=[models[0]];await page.reload();await expect(trigger(page)).toContainText('DeepSeek Flash');
 });
 test('image history prevents unsupported model selection',async({page})=>{
- await setup(page,{image:true});await page.goto('/c/ai');await expect(page.getByText('图片问题')).toBeVisible();
+ await setup(page,{image:true});await page.goto('/c/ai?session=7');await expect(page.getByText('图片问题')).toBeVisible();
  await trigger(page).click();
  await expect(sheet(page).getByRole('button',{name:/DeepSeek V4 Pro/})).toBeDisabled();
  await expect(sheet(page).getByText('本次含图片，暂不可选')).toBeVisible();
@@ -76,7 +76,7 @@ test('guest never requests protected model catalog',async({page})=>{
 });
 
 test('dismissal preserves draft and model, backdrop sits above navigation',async({page})=>{
- await setup(page);await page.goto('/c/ai');await expect(trigger(page)).toContainText('DeepSeek Flash');
+ await setup(page);await page.goto('/c/ai?view=chat');await expect(trigger(page)).toContainText('DeepSeek Flash');
  await page.getByRole('textbox',{name:'输入问题'}).fill('不应丢失的问题');await trigger(page).click();
  await page.keyboard.press('Escape');await expect(trigger(page)).toBeFocused();
  await trigger(page).click();await page.mouse.click(8,80);await expect(sheet(page)).toHaveCount(0);
@@ -85,9 +85,21 @@ test('dismissal preserves draft and model, backdrop sits above navigation',async
 test('short narrow viewport supports a long model list and reduced motion',async({page})=>{
  await page.setViewportSize({width:320,height:520});await page.emulateMedia({reducedMotion:'reduce'});
  const state=await setup(page);state.models=Array.from({length:12},(_,i)=>({...models[0],id:'custom-'+i,name:'兼容模型 '+i+' — 较长模型名称示例'}));
- await page.goto('/c/ai');await trigger(page).click();await expect(sheet(page)).toBeVisible();
+ await page.goto('/c/ai?view=chat');await trigger(page).click();await expect(sheet(page)).toBeVisible();
  expect(await sheet(page).evaluate(el=>getComputedStyle(el).animationName)).toBe('none');
  const bounds=await sheet(page).boundingBox();expect(bounds!.y).toBeGreaterThanOrEqual(0);expect(bounds!.y+bounds!.height).toBeLessThanOrEqual(521);
  await sheet(page).getByRole('button',{name:/兼容模型 11/}).click();await expect(sheet(page)).toHaveCount(0);await expect(trigger(page)).toContainText('兼容模型 11');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+});
+
+// A saved conversation must no longer take over the discovery entry.
+test('discovery remains default and chat draft survives navigation',async({page})=>{
+ await setup(page,{image:true});await page.goto('/c/ai');
+ await expect(page.getByRole('heading',{name:'从一件在意的小事开始'})).toBeVisible();
+ await expect(page.getByRole('textbox',{name:'输入问题'})).toBeHidden();
+ await page.getByRole('link',{name:'问事',exact:true}).click();
+ await page.getByRole('textbox',{name:'输入问题'}).fill('回到发现也保留');
+ await page.getByRole('link',{name:'发现',exact:true}).click();
+ await page.getByRole('link',{name:'问事',exact:true}).click();
+ await expect(page.getByRole('textbox',{name:'输入问题'})).toHaveValue('回到发现也保留');
 });
