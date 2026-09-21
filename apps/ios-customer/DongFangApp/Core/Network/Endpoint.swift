@@ -235,6 +235,11 @@ enum Endpoint {
     // MARK: - AI 问事
     case aiReportConversation(Int64)
     case aiTopics
+    case aiExperienceRun(AiExperienceInput)
+    case aiNoteSave(AiNoteSaveRequest)
+    case aiNotes(Int)
+    case aiNote(Int64)
+    case aiNoteDelete(Int64)
     case aiReports(Int)
     case aiReport(Int64)
     case aiReportCreate(AiReportCreateRequest)
@@ -339,6 +344,9 @@ enum Endpoint {
         case .homePromotions: return "marketing/banners"
         case .marketingActivity(let id): return "marketing/activities/\(id)"
  case .accountAuth(let path,_): return "auth/"+path
+        case .aiExperienceRun: return "ai/experiences/run"
+        case .aiNotes, .aiNoteSave: return "ai/notes"
+        case .aiNote(let id), .aiNoteDelete(let id): return "ai/notes/\(id)"
         case .aiReportConversation(let id): return "ai/reports/\(id)/conversation"
         case .aiTopics: return "ai/topics"
         case .aiReports, .aiReportCreate: return "ai/reports"
@@ -479,6 +487,9 @@ enum Endpoint {
         case .diyDesignCopy: return .POST
         case .diyDesignStatus: return .PUT
         case .rewardJoin, .rewardClaim, .rewardComplete: return .POST
+        case .aiNotes, .aiNote: return .GET
+        case .aiExperienceRun, .aiNoteSave: return .POST
+        case .aiNoteDelete: return .DELETE
         case .aiTopics, .aiReports, .aiReport: return .GET
         case .aiReportConversation, .aiReportCreate, .aiReportRetry, .aiReportUnlock: return .POST
         case .shopReturns, .pointsSearch, .pointsAccount, .pointsLedger, .pointsProducts, .pointsOrders, .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief, .serviceTypes,
@@ -520,6 +531,7 @@ enum Endpoint {
         case .homePromotions: return [URLQueryItem(name: "placement", value: "customer_home"), URLQueryItem(name: "size", value: "100")]
         case .rewardCampaigns(let page, let kind): return [URLQueryItem(name:"page",value:String(page)),URLQueryItem(name:"kind",value:kind)]
         case .rewardEntries(let page), .rewardOrders(let page): return [URLQueryItem(name:"page",value:String(page))]
+        case .aiNotes(let page): return [URLQueryItem(name: "page", value: String(page))]
         case .aiReports(let page): return [URLQueryItem(name: "page", value: String(page))]
         case .pointsSearch(let page, let keyword): return [URLQueryItem(name:"page",value:String(page)),URLQueryItem(name:"keyword",value:keyword)]
         case .pointsLedger(let page), .pointsProducts(let page), .pointsOrders(let page): return [URLQueryItem(name: "page", value: String(page))]
@@ -653,6 +665,8 @@ enum Endpoint {
     var body: (any Encodable)? {
         switch self {
  case .accountAuth(_,let body): return body.map {AnyEncodable($0)}
+        case .aiExperienceRun(let req): return req
+        case .aiNoteSave(let req): return req
         case .aiReportCreate(let req): return req
         case .aiReportUnlock(let req): return req
         case .aiReportRetry: return AnyEncodable([String:String]())

@@ -46,3 +46,13 @@ xcodebuild -workspace DongFangApp.xcworkspace \
 `DesignSystem/Tokens.swift` 维护本端语义色与 Dynamic Type 文字角色，支持浅色米白松绿和深色深棕朱砂。公共设计数据来自 `packages/design-tokens`，共享衬线 TTF 通过工程资源引用；不要用基础生成示例覆盖现有扩展的 `Tokens.swift`。
 
 登录标识与 DIY 标识位于 `Resources/Assets.xcassets` 的 `brand-logo` / `brand-atelier`，应用图标为 `AppIcon`，均从 `packages/brand` 同步。构建使用当前 Asset Catalog 中的已同步资源。
+
+## AI 问事（2026-09-21）
+
+AI 页默认进入「发现」，可切换「问事／手记」。姓名灵感支持字义来源、收藏和双候选比较；两难梳理支持因素权重、评分和硬约束。两种体验共用 H5 的服务端规则与私密手记接口，结果不在手机端另算。输入修改后必须重新生成才能保存；网络失败保留输入，保存重试复用幂等键。
+
+聊天输入和体验表单草稿保留在当前 AI 页面内存，退出账号会清除；长期记录须主动保存到手记。原生返回手势、系统导航、Dynamic Type、浅深主题及减少动态效果保留。功能依赖后端增量迁移 `20260921_ai_experiences.sql` 及对应 AI 服务版本。
+
+新增回归：`DongFangAppTests/AiExperienceTests.swift`，覆盖 JSON 契约、幂等键、硬约束快照与原生组件渲染。使用最新源码后，依次 `xcodegen generate`、`pod install`，再打开 **DongFangApp.xcworkspace** 构建；不要直接打开 xcodeproj，否则可能缺少 OpenIMSDK 依赖。
+
+本轮验收：模拟器 SDK 编译、iPhone SDK 无签名编译均通过；`scripts/test-ai-experiences.sh` 使用原生 Swift 模型连接本机隔离代理（18198）验证实际响应，执行前需启动后端 `scripts/dev/ai-experiences` 测试环境。XCTest 目标编译完成，但模拟器测试启动停滞，未计为界面测试通过；手机上的导航、键盘与动态字号仍需安装后验收。

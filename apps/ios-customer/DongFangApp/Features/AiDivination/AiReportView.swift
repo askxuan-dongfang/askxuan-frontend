@@ -4,6 +4,8 @@ struct AiTopic: Decodable, Identifiable {
     var id: String { code }
     let code: String; let title: String; let subtitle: String
     let priceCents: Int64; let pointsPrice: Int64; let chapters: [String]; let version: String
+    var ready: Bool? = nil
+    var executionNote: String? = nil
     var seal: String { ["bazi":"命","ziwei":"星","marriage":"缘","fengshui":"居","liuyao":"卦","qimen":"局","tarot":"心"][code] ?? "问" }
 }
 struct AiReport: Decodable, Identifiable {
@@ -25,20 +27,36 @@ struct AiTopicEntrances: View {
     @State private var selected: AiTopic?
     @State private var library = false
     @State private var error = false
+    @State private var category = "全部"
+    private let categories = ["全部", "认识自己", "关系沟通", "空间生活", "梳理思路"]
+    private var filteredTopics: [AiTopic] {
+        let codes = ["认识自己": ["bazi", "ziwei"], "关系沟通": ["marriage"], "空间生活": ["fengshui"], "梳理思路": ["tarot", "qimen", "liuyao"]]
+        return category == "全部" ? topics : topics.filter { (codes[category] ?? []).contains($0.code) }
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("EXPLORE · 专题探索").font(AppTypography.micro).tracking(2).opacity(0.7)
-                    Text("一事一解，自有章法").font(AppTypography.title(23))
+                    Text("按问题，找一个入口").font(AppTypography.title(23))
                 }
                 Spacer()
                 Button("我的报告 ↗") { library = true }.font(AppTypography.caption)
             }
             if error { Button("专题暂未加载 · 点击重试") { Task { await load() } }.font(.footnote) }
             Text("想系统地了解一个主题？选一份专题，按引导补充资料。").font(AppTypography.caption).foregroundStyle(.secondary)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(categories, id: \.self) { item in
+                        Button { category = item } label: {
+                            Text(item).font(.caption).padding(.horizontal, 12).padding(.vertical, 10)
+                                .background(category == item ? Color.brandDefault.opacity(0.16) : Color.bgSecondary, in: Capsule())
+                        }.buttonStyle(AiExperiencePressStyle()).accessibilityAddTraits(category == item ? .isSelected : [])
+                    }
+                }
+            }.accessibilityLabel("按问题筛选专题")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2), spacing: 10) {
-                ForEach(topics) { topic in Button { selected = topic } label: { AiTopicTile(topic: topic) }.buttonStyle(.plain) }
+                ForEach(filteredTopics) { topic in Button { selected = topic } label: { VStack(alignment: .leading, spacing: 6) { AiTopicTile(topic: topic); if let note = topic.executionNote { Text(note).font(.caption2).foregroundStyle(.secondary) } } }.buttonStyle(.plain).disabled(topic.ready == false) }
             }
             Text("免费生成摘要 · 完整解读按专题使用积分").font(AppTypography.micro).foregroundStyle(.secondary).frame(maxWidth: .infinity)
 

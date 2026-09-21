@@ -169,7 +169,7 @@ final class AiDivinationViewModel: ObservableObject {
         await loadModels()
         await loadSkills()
         guard sessions.isEmpty else { return }
-        await loadSessions(selectMostRecent: true)
+        await loadSessions(selectMostRecent: false)
     }
 
     var hasConversationImages: Bool { !selectedImages.isEmpty || messages.contains { !($0.attachments ?? []).isEmpty } }
@@ -422,6 +422,9 @@ final class AiDivinationViewModel: ObservableObject {
 struct AiDivinationView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel = AiDivinationViewModel()
+    @State private var namingDraft = AiNamingInput()
+    @State private var decisionDraft = AiDecisionInput()
+    @State private var section = "发现"
     @State private var isDrawerOpen = false
     @State private var deletionTarget: AiConversation?
     @State private var confirmDeletion = false
@@ -431,11 +434,20 @@ struct AiDivinationView: View {
     var body: some View {
         ZStack(alignment: .leading) {
             VStack(spacing: 0) {
-                navigationBar
-                modelPicker
-                Divider().overlay(Color.borderDivider)
-                conversation
-                composer
+                Picker("AI 问事栏目", selection: $section) {
+                    ForEach(["发现", "问事", "手记"], id: \.self) { Text($0).tag($0) }
+                }.pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 10)
+                if section == "发现" {
+                    AiDiscoveryView(viewModel: viewModel, naming: $namingDraft, decision: $decisionDraft) { section = "问事" }
+                } else if section == "手记" {
+                    AiNotebookView()
+                } else {
+                    navigationBar
+                    modelPicker
+                    Divider().overlay(Color.borderDivider)
+                    conversation
+                    composer
+                }
             }
             .background(Color.bgPrimary)
 
@@ -458,7 +470,7 @@ struct AiDivinationView: View {
         .navigationBarHidden(true)
         .task { await viewModel.bootstrap() }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("AskXuanReportConversation"))) { event in
-            if let id = event.object as? Int64 { Task { await viewModel.loadSessions(); await viewModel.selectSession(id) } }
+            if let id = event.object as? Int64 { section = "问事"; Task { await viewModel.loadSessions(); await viewModel.selectSession(id) } }
         }
 		.onChange(of: selectedPhotoItems) {
 			Task {

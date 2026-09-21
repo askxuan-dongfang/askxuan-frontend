@@ -66,11 +66,12 @@ struct MainTabView: View {
             // AI问事：需要登录
             NavigationStack {
                 AiDivinationView()
+                    .id(authStore.sessionID)
                     .rootTabPage()
                     .requireAuth(
                         icon: "sparkles",
                         title: "登录后开启 AI 问事",
-                        subtitle: "玄学大模型，即问即答"
+                        subtitle: "整理心事、探索灵感，保存自己的思考"
                     )
                     .navigationDestination(for: AuthRoute.self) { _ in LoginView() }
             }
