@@ -109,7 +109,7 @@ struct AiReportWorkspace: View {
             }.padding(20).frame(maxWidth: 760).frame(maxWidth: .infinity)
         }
         }.background(reportPaper).foregroundStyle(Color.textPrimary)
-        .toolbar { ToolbarItem(placement: .topBarLeading) { Button("返回问事") { dismiss() } }; ToolbarItem(placement: .principal) { Text("问玄 · 专题").font(AppTypography.navigation) } }
+        .toolbar { ToolbarItem(placement: .topBarLeading) { DFBackButton(label: "返回问事") }; ToolbarItem(placement: .principal) { Text("问玄 · 专题").font(AppTypography.navigation) } }
         .navigationBarTitleDisplayMode(.inline)
         .task { await load(); await refreshBalance() }
         .task(id: report?.status) {
@@ -277,7 +277,7 @@ struct AiReportLibrary: View {
                 if busy { ProgressView() } else if more && !reports.isEmpty { Button("加载更多") { Task { await load() } } }
             }.padding(20)
         }.background(reportPaper).foregroundStyle(reportGreen).navigationTitle("我的报告")
-        .toolbar { if showsDismissButton { ToolbarItem(placement: .topBarLeading) { Button("返回问事") { dismiss() } } } }
+        .toolbar { if showsDismissButton { ToolbarItem(placement: .topBarLeading) { DFBackButton(label: "返回问事") } } }
         .task { if reports.isEmpty { await load() } }
     }
     private func load() async { guard !busy else { return }; busy = true; defer { busy = false }; do { let rows: [AiReport] = try await APIClient.shared.request(.aiReports(page)); reports += rows; page += 1; more = rows.count == 20; error = "" } catch { self.error = error.localizedDescription } }

@@ -74,7 +74,7 @@ struct TempleDetailView: View {
                 )
 
             HStack {
-                DFBackButton(style: .circle)
+                DFBackButton()
 
                 Spacer()
 

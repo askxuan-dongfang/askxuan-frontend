@@ -63,40 +63,31 @@ private struct BackButton: View {
     }
 }
 
-/// 统一返回按钮（双客户端统一规范，NavigationStack 原生滑动返回手势默认可用）：
-/// - plain：透明底，用于普通导航栏
-/// - circle：毛玻璃圆底带描边，用于 Hero 大图悬浮
+/// Shared 44-point back control; native NavigationStack gestures remain unchanged.
 struct DFBackButton: View {
-    enum Style {
-        case plain
-        case circle
-    }
-
-    var style: Style = .plain
+    var label = "返回"
     @Environment(\.dismiss) private var dismiss
-
     var body: some View {
-        Button {
-            dismiss()
-        } label: {
-            ZStack {
-                if style == .circle {
-                    Circle()
-                        .fill(Color.bgPrimary.opacity(0.6))
-                        .background(.ultraThinMaterial)
-                        .clipShape(Circle())
-                    Circle()
-                        .stroke(Color.borderDefault, lineWidth: 1)
-                }
-                Image(systemName: "chevron.left")
-                    .font(AppTypography.control)
-                    .foregroundStyle(Color.accentDefault)
-            }
-            .frame(width: 44, height: 44)
-            .contentShape(Circle())
+        Button { dismiss() } label: {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 20, weight: .regular))
+                .foregroundStyle(Color.accentDefault)
+                .frame(width: 44, height: 44)
+                .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1))
+                .contentShape(RoundedRectangle(cornerRadius: 12))
         }
-        .buttonStyle(CardPressButtonStyle())
-        .accessibilityLabel("返回")
+        .buttonStyle(BackPressButtonStyle())
+        .accessibilityLabel(label)
+    }
+}
+
+private struct BackPressButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.72 : 1)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.96 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 

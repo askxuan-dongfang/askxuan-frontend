@@ -81,7 +81,7 @@ struct ServiceContainerView: View {
             .frame(height: 220)
 
             HStack {
-                DFBackButton(style: .circle)
+                DFBackButton()
                 Spacer()
             }
             .padding(.horizontal, AppSpacing.lg)

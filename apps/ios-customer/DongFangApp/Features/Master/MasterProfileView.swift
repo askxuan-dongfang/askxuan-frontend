@@ -91,7 +91,7 @@ struct MasterProfileView: View {
             .frame(height: 240)
 
             HStack {
-                DFBackButton(style: .circle)
+                DFBackButton()
                 Spacer()
             }
             .padding(.horizontal, AppSpacing.lg)

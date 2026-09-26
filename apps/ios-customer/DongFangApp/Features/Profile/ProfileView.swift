@@ -36,15 +36,6 @@ struct ProfileView: View {
         ]
     }
 
-    /// 权益：优惠券 / 积分明细
-    /// 注：UserProfile 模型暂无对应字段，数值显示 "—" 占位
-    private var assets: [(label: String, value: String?, icon: String?)] {
-        [
-            ("优惠券", viewModel.couponsLoaded ? "\(viewModel.availableCouponCount)" : "—", nil),
-            ("收货地址", viewModel.addressesLoaded ? "\(viewModel.addressCount)" : "—", nil)
-        ]
-    }
-
     /// 我的服务：收货地址行展示真实地址数量，其余为导航入口（无假数据）
     private var serviceItems: [(icon: String, title: String, trailing: String?)] {
         let addressTrailing: String? = viewModel.addressCount > 0
@@ -52,7 +43,6 @@ struct ProfileView: View {
             : nil
         return [
             ("heart", "我的收藏", nil),
-            ("bubble.left", "会话", nil),
             ("bell", "消息", nil),
             ("star", "我的评价", nil),
             ("mappin.and.ellipse", "收货地址", addressTrailing),
@@ -170,7 +160,6 @@ struct ProfileView: View {
                 }.padding(.horizontal, AppSpacing.lg).padding(.top, 16)
                 JourneyEntryView().padding(.horizontal, AppSpacing.lg).padding(.top, 16)
                 orderCenterSection
-                assetsSection
                 servicesSection
                 systemSection
                 Color.clear.frame(height: AppSpacing.xl)
@@ -344,41 +333,6 @@ struct ProfileView: View {
         .padding(.top, 20)
     }
 
-    // MARK: - Section 3: 资产
-    private var assetsSection: some View {
-        HStack(spacing: 10) {
-            ForEach(Array(assets.enumerated()), id: \.offset) { _, asset in
-                NavigationLink {
-                    assetDestination(asset.label)
-                } label: {
-                    VStack(spacing: 6) {
-                        if let icon = asset.icon {
-                            Image(systemName: icon)
-                                .font(.system(size: 20))
-                                .foregroundStyle(Color.accentDefault)
-                        } else if let value = asset.value {
-                            Text(value)
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(Color.accentDefault)
-                                .monospacedDigit()
-                        }
-                        Text(asset.label)
-                            .font(AppTypography.caption)
-                            .foregroundStyle(Color.textTertiary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.bgSecondary)
-                    .cornerRadius(AppRadius.lg)
-                    .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, AppSpacing.lg)
-        .padding(.top, 20)
-    }
-
     // MARK: - Section 4: 我的服务
     private var servicesSection: some View {
         VStack(spacing: 0) {
@@ -491,20 +445,9 @@ struct ProfileView: View {
     }
 
     @ViewBuilder
-    private func assetDestination(_ title: String) -> some View {
-        switch title {
-        case "优惠券": CouponView()
-        case "积分明细": PointsView()
-        case "收货地址": AddressListView()
-        default: WalletView()
-        }
-    }
-
-    @ViewBuilder
     private func serviceDestination(_ title: String) -> some View {
         switch title {
         case "我的收藏": FavoritesView()
-        case "会话": ChatView()
         case "消息": NativeMessageCenterView()
         case "浏览记录": HistoryView()
         case "我的评价": ReviewListView()

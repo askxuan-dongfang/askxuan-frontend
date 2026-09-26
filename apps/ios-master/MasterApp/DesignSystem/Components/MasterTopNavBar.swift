@@ -32,7 +32,7 @@ struct MasterTopNavBar<Leading: View, Trailing: View>: View {
                 BackButton()
             } else {
                 leading
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
             }
 
             Spacer()
@@ -45,7 +45,7 @@ struct MasterTopNavBar<Leading: View, Trailing: View>: View {
             Spacer()
 
             trailing
-                .frame(width: 32, height: 32)
+                .frame(width: 44, height: 44)
         }
         .padding(.horizontal, AppSpacing.lg)
         .frame(height: AppSpacing.navTop)
@@ -66,12 +66,24 @@ private struct BackButton: View {
             dismiss()
         } label: {
             Image(systemName: "chevron.left")
-                .font(AppTypography.reading.weight(.semibold))
+                .font(.system(size: 20, weight: .regular))
                 .foregroundStyle(Color.accentDefault)
-                .frame(width: 32, height: 32)
-                .contentShape(Rectangle())
+                .frame(width: 44, height: 44)
+                .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1))
+                .contentShape(RoundedRectangle(cornerRadius: 12))
         }
-        .buttonStyle(CardPressButtonStyle())
+        .buttonStyle(BackPressButtonStyle())
+        .accessibilityLabel("返回")
+    }
+}
+
+private struct BackPressButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.72 : 1)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.96 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
