@@ -119,6 +119,7 @@ async function handleLogout() {
           <el-icon><ChatDotRound /></el-icon>
           <template #title>评价互动</template>
         </el-menu-item>
+        <el-menu-item index="/wallet"><el-icon><Coin /></el-icon><template #title>寺院钱包</template></el-menu-item>
         <el-menu-item index="/report">
           <el-icon><TrendCharts /></el-icon>
           <template #title>经营报表</template>

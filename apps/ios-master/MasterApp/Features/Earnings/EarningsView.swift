@@ -1,360 +1,131 @@
-//
-//  EarningsView.swift
-//  MasterApp
-//
-//  收益概览（页面 10）：含提现入口。
-//  GET admin/masters/earnings/summary
-//  GET admin/masters/earnings/details
-//  POST admin/finance/withdrawals/apply（JWT 保护路由）
-//
-
 import SwiftUI
 
-@MainActor
-final class EarningsViewModel: ObservableObject {
-    @Published var summary: EarningsSummary?
-    @Published var details: [EarningsDetailItem] = []
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String? = nil
-
-    // 提现
-    @Published var showWithdrawSheet: Bool = false
-    @Published var withdrawAmount: String = ""
-    @Published var withdrawBankCard: String = ""
-    @Published var isWithdrawing: Bool = false
-    @Published var withdrawMessage: String? = nil
-
-    private let apiClient: APIClient
-    private var page: Int = 1
-    private let size: Int = 20
-    private var hasMore: Bool = true
-
-    init(apiClient: APIClient = .shared) {
-        self.apiClient = apiClient
-    }
-
-    func load() async {
-        isLoading = true
-        errorMessage = nil
-        async let summaryResult = fetchSummary()
-        async let detailsResult = fetchDetails()
-
-        let (s, d) = await (summaryResult, detailsResult)
-        switch s {
-        case .success(let v): summary = v
-        case .failure: summary = nil
-        }
-        switch d {
-        case .success(let list): details = list
-        case .failure: details = []
-        }
-        isLoading = false
-    }
-
-    private func fetchSummary() async -> Result<EarningsSummary, Error> {
-        do {
-            let v: EarningsSummary = try await apiClient.request(.earningsSummary)
-            return .success(v)
-        } catch { return .failure(error) }
-    }
-
-    private func fetchDetails() async -> Result<[EarningsDetailItem], Error> {
-        do {
-            let resp: EarningsDetailResponse = try await apiClient.request(
-                .earningsDetails(serviceType: nil, page: page, size: size)
-            )
-            hasMore = resp.list.count < Int(resp.total)
-            return .success(resp.list)
-        } catch { return .failure(error) }
-    }
-
-    func loadMore() async {
-        guard hasMore, !isLoading else { return }
-        page += 1
-        do {
-            let resp: EarningsDetailResponse = try await apiClient.request(
-                .earningsDetails(serviceType: nil, page: page, size: size)
-            )
-            details.append(contentsOf: resp.list)
-            hasMore = resp.list.count < Int(resp.total)
-        } catch { }
-    }
-
-    var maxWithdrawable: Double { summary?.withdrawable ?? 0 }
-
-    /// 提现申请
-    func applyWithdrawal() async {
-        let amount = Double(withdrawAmount)
-        let card = withdrawBankCard.trimmingCharacters(in: .whitespaces)
-        guard let amount, amount > 0, !card.isEmpty else {
-            withdrawMessage = "请输入有效金额与银行卡号"
-            return
-        }
-        guard amount <= maxWithdrawable else {
-            withdrawMessage = "提现金额不得超过可提现余额 ¥\(String(format: "%.2f", maxWithdrawable))"
-            return
-        }
-        isWithdrawing = true
-        withdrawMessage = nil
-        do {
-            let req = WithdrawalApplyRequest(amount: amount, bankCard: card)
-            let _: WithdrawalApplyResponse = try await apiClient.request(.withdrawalApply(req))
-            withdrawMessage = "提现申请已提交，等待审核"
-            withdrawAmount = ""
-            withdrawBankCard = ""
-            // 刷新概览
-            await load()
-            showWithdrawSheet = false
-        } catch let error as APIError {
-            withdrawMessage = error.errorDescription
-        } catch {
-            withdrawMessage = "提现失败：\(error.localizedDescription)"
-        }
-        isWithdrawing = false
-    }
+struct ProviderWallet: Decodable {
+    struct Summary: Decodable { let pendingCents: Int64; let confirmedCents: Int64; let recordedPaidCents: Int64 }
+    struct Settlement: Decodable, Identifiable { let id: Int64; let number: String; let sourceType: String; let sourceNo: String; let grossCents: Int64; let commissionCents: Int64; let netCents: Int64; let status: String; let createdAt: String }
+    struct Withdrawal: Decodable, Identifiable { let id: Int64; let number: String; let amountCents: Int64; let status: String; let createdAt: String }
+    let summary: Summary; let settlements: [Settlement]; let withdrawals: [Withdrawal]
+    let total: Int; let withdrawalTotal: Int; let page: Int; let pageSize: Int
+    let withdrawEnabled: Bool; let recordMode: String
 }
-
 struct EarningsView: View {
-    @StateObject private var viewModel = EarningsViewModel()
-
+    @EnvironmentObject private var auth: AuthStore
+    @State private var data: ProviderWallet?
+    @State private var error: String?
+    @State private var tab = 0
+    @State private var page = 1
+    @State private var revision = 0
+    private var requestKey: String { "\(auth.sessionID)-\(page)-\(revision)" }
+    private var total: Int { tab == 0 ? data?.total ?? 0 : data?.withdrawalTotal ?? 0 }
+    private let statuses = ["pending":"待确认结算", "confirmed":"已确认结算", "paid":"账面已结算"]
+    private let withdrawals = ["pending":"待审核", "approved":"审核通过", "processing":"模拟处理中", "success":"模拟完成", "failed":"模拟失败", "rejected":"审核拒绝"]
+    private func money(_ cents: Int64) -> String { (Decimal(cents) / 100).formatted(.currency(code: "CNY")) }
     var body: some View {
-        ScrollView {
-            VStack(spacing: AppSpacing.lg) {
-                summarySection
-                withdrawButton
-                trendSection
-                detailsSection
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 16) {
+                    Label("待确认结算", systemImage: "wallet.bifold").font(.subheadline).foregroundStyle(.secondary)
+                    Text(data.map { money($0.summary.pendingCents) } ?? "—").font(.system(size: 34, weight: .semibold, design: .rounded)).monospacedDigit()
+                    Divider()
+                    HStack { stat("已确认结算", data?.summary.confirmedCents); Spacer(); stat("账面已结算", data?.summary.recordedPaidCents) }
+                }.padding(.vertical, 12)
+                Text("仅统计本人结算份额，不包含寺院收入。当前为账面记录，含演示业务；结算状态不代表银行到账，真实提现暂未开放。").font(.caption).foregroundStyle(.secondary)
             }
-            .padding(.horizontal, AppSpacing.pageHorizontal)
-            .padding(.bottom, AppSpacing.xl)
-        }
-        .background(Color.bgPrimary)
-        .navigationTitle("收益中心")
-        .navigationBarTitleDisplayMode(.large)
-
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink {
-                    PricingView()
-                } label: {
-                    Text("定价")
-                        .font(AppTypography.caption)
-                        .foregroundStyle(.accentDefault)
-                }
-            }
-        }
-        .task { await viewModel.load() }
-        .refreshable { await viewModel.load() }
-        .sheet(isPresented: $viewModel.showWithdrawSheet) {
-            withdrawSheet.appSheetSurface()
-        }
-        .alert("提示", isPresented: Binding(
-            get: { viewModel.withdrawMessage != nil && !viewModel.showWithdrawSheet },
-            set: { if !$0 { viewModel.withdrawMessage = nil } }
-        )) {
-            Button("好的") { viewModel.withdrawMessage = nil }
-        } message: {
-            Text(viewModel.withdrawMessage ?? "")
-        }
-    }
-
-    // MARK: - 概览
-
-    private var summarySection: some View {
-        MasterCard(padding: AppSpacing.lg) {
-            VStack(spacing: AppSpacing.md) {
-                Text("可提现余额（元）")
-                    .font(AppTypography.caption)
-                    .foregroundStyle(.textSecondary)
-                Text(String(format: "%.2f", viewModel.summary?.withdrawable ?? 0))
-                    .appNumericFont(36)
-                    .foregroundStyle(.accentDefault)
-
-                HStack(spacing: AppSpacing.xl) {
-                    summaryItem("本月收益", viewModel.summary?.monthIncome ?? 0)
-                    summaryItem("累计收益", viewModel.summary?.totalIncome ?? 0)
-                }
-                .padding(.top, AppSpacing.sm)
-            }
-            .frame(maxWidth: .infinity)
-        }
-    }
-
-    private func summaryItem(_ title: String, _ value: Double) -> some View {
-        VStack(spacing: 4) {
-            Text(title)
-                .font(.micro)
-                .foregroundStyle(.textTertiary)
-            Text("¥\(String(format: "%.2f", value))")
-                .appNumericFont(15)
-                .foregroundStyle(.textPrimary)
-        }
-    }
-
-    private var withdrawButton: some View {
-        PrimaryButton(title: "申请提现", icon: "arrow.up.circle.fill",
-                      isEnabled: viewModel.maxWithdrawable > 0) {
-            viewModel.showWithdrawSheet = true
-        }
-    }
-
-    // MARK: - 提现弹窗
-
-    private var withdrawSheet: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: AppSpacing.lg) {
-                    MasterCard(padding: AppSpacing.lg) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("可提现余额")
-                                .font(AppTypography.caption)
-                                .foregroundStyle(.textSecondary)
-                            Text("¥\(String(format: "%.2f", viewModel.maxWithdrawable))")
-                                .appNumericFont(24)
-                                .foregroundStyle(.accentDefault)
+            Section { NavigationLink("收入流水与趋势") { EarningsHistoryView() } }
+            Section {
+                Picker("钱包记录", selection: $tab) { Text("结算明细").tag(0); Text("历史提现").tag(1) }.pickerStyle(.segmented)
+                if let error { Text(error).foregroundStyle(.red); Button("重新加载") { revision += 1 } }
+                else if let data {
+                    if tab == 0 {
+                        ForEach(data.settlements) { row in
+                            DisclosureGroup {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text("结算编号：\(row.number)")
+                                    Text("本人分配金额：\(money(row.grossCents))")
+                                    Text("平台费用：\(money(row.commissionCents))")
+                                    Text("应结金额：\(money(row.netCents))")
+                                    Text("来源单号：\(row.sourceNo.isEmpty ? "历史汇总结算" : row.sourceNo)")
+                                    if row.sourceType == "booking", !row.sourceNo.isEmpty {
+                                        NavigationLink("查看预约") { BookingDetailView(bookingId: row.sourceNo) }
+                                    }
+                                }.font(.caption).padding(.vertical, 8).textSelection(.enabled)
+                            } label: { rowLabel(statuses[row.status] ?? row.status, row.createdAt, row.netCents) }
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-
-                    DFTextField(title: "提现金额（元）", text: $viewModel.withdrawAmount,
-                                placeholder: "请输入提现金额", icon: "yensign.circle")
-                        .keyboardType(.decimalPad)
-                    DFTextField(title: "银行卡号", text: $viewModel.withdrawBankCard,
-                                placeholder: "请输入收款银行卡号", icon: "creditcard")
-                        .keyboardType(.numberPad)
-
-                    if let msg = viewModel.withdrawMessage, viewModel.showWithdrawSheet {
-                        Text(msg)
-                            .font(AppTypography.caption)
-                            .foregroundStyle(msg.contains("已提交") ? .stateSuccess : .stateError)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-
-                    PrimaryButton(title: "确认提现",
-                                  isLoading: viewModel.isWithdrawing) {
-                        Task { await viewModel.applyWithdrawal() }
-                    }
-
-                    Text("提现申请提交后将进入审核流程，到账时间以银行为准。")
-                        .font(.micro)
-                        .foregroundStyle(.textTertiary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(.horizontal, AppSpacing.pageHorizontal)
-                .padding(.top, AppSpacing.lg)
-            }
-            .background(Color.bgPrimary)
-            .navigationTitle("申请提现")
-            .navigationBarTitleDisplayMode(.inline)
-
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("取消") { viewModel.showWithdrawSheet = false }
-                        .foregroundStyle(.textSecondary)
-                }
-            }
-        }
-
-    }
-
-    // MARK: - 趋势
-
-    private var trendSection: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Text("收益趋势")
-                .font(.sectionTitle)
-                .foregroundStyle(.textPrimary)
-            MasterCard(padding: AppSpacing.md) {
-                let trend = viewModel.summary?.trend ?? []
-                let maxValue = trend.map { $0.amount }.max() ?? 1
-                VStack(spacing: AppSpacing.sm) {
-                    ForEach(trend) { item in
-                        HStack(spacing: AppSpacing.md) {
-                            Text(item.month)
-                                .font(AppTypography.caption)
-                                .foregroundStyle(.textSecondary)
-                                .frame(width: 56, alignment: .leading)
-                            GeometryReader { geo in
-                                ZStack(alignment: .leading) {
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(Color.bgTertiary)
-                                        .frame(height: 10)
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(LinearGradient(colors: [.brandDefault, .accentDefault],
-                                                             startPoint: .leading, endPoint: .trailing))
-                                        .frame(width: geo.size.width * CGFloat(item.amount / maxValue), height: 10)
-                                }
-                            }
-                            .frame(height: 10)
-                            Text("¥\(String(format: "%.0f", item.amount))")
-                                .font(AppTypography.caption)
-                                .foregroundStyle(.textPrimary)
-                                .frame(width: 64, alignment: .trailing)
-                        }
-                        .frame(height: 22)
-                    }
-                    if trend.isEmpty {
-                        Text("暂无趋势数据")
-                            .font(AppTypography.caption)
-                            .foregroundStyle(.textTertiary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, AppSpacing.md)
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - 明细
-
-    private var detailsSection: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Text("收益明细")
-                .font(.sectionTitle)
-                .foregroundStyle(.textPrimary)
-
-            if viewModel.isLoading && viewModel.details.isEmpty {
-                LoadingView(message: "加载明细...")
-                    .frame(maxWidth: .infinity)
-            } else if viewModel.details.isEmpty {
-                EmptyState(icon: "doc.text.magnifyingglass", title: "暂无明细")
-            } else {
-                ForEach(viewModel.details) { item in
-                    MasterCard(padding: AppSpacing.md) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(item.serviceTypeText)
-                                    .font(.cardTitle)
-                                    .foregroundStyle(.textPrimary)
-                                Text("\(item.userName) · \(DFDateFormatter.dayOnly(item.date))")
-                                    .font(.micro)
-                                    .foregroundStyle(.textTertiary)
-                            }
-                            Spacer()
-                            VStack(alignment: .trailing, spacing: 4) {
-                                Text("¥\(String(format: "%.2f", item.amount))")
-                                    .appNumericFont(15)
-                                    .foregroundStyle(.accentDefault)
-                                Text(item.settleStatusText)
-                                    .font(.micro)
-                                    .foregroundStyle(.textSecondary)
-                            }
+                    } else {
+                        Text("以下为历史模拟提现记录，不代表银行打款成功。").font(.caption).foregroundStyle(.secondary)
+                        ForEach(data.withdrawals) { row in
+                            DisclosureGroup { Text("\(row.number) · 模拟记录").font(.caption).textSelection(.enabled) }
+                            label: { rowLabel(withdrawals[row.status] ?? row.status, row.createdAt, row.amountCents) }
                         }
                     }
-                    .onAppear {
-                        if item.id == viewModel.details.last?.id {
-                            Task { await viewModel.loadMore() }
-                        }
+                    if total == 0 { ContentUnavailableView("暂无记录", systemImage: "doc.text", description: Text("记录生成后会集中展示在这里。")) }
+                    if page > 1 || total > 20 {
+                        HStack { Button("上一页") { page -= 1 }.disabled(page == 1); Spacer(); Text("第 \(page) 页").font(.caption); Spacer(); Button("下一页") { page += 1 }.disabled(page * 20 >= total) }.buttonStyle(.borderless)
                     }
-                }
+                } else { ProgressView("正在读取钱包…") }
             }
-        }
+        }.scrollContentBackground(.hidden).background(Color.bgPrimary)
+        .navigationTitle("我的钱包").navigationBarTitleDisplayMode(.inline).toolbar(.visible, for: .navigationBar)
+        .toolbar { ToolbarItem(placement: .topBarTrailing) { NavigationLink("定价") { PricingView() } } }
+        .onChange(of: tab) { _, _ in page = 1 }
+        .task(id: requestKey) { await load() }.refreshable { revision += 1 }
+    }
+    private func stat(_ title: String, _ cents: Int64?) -> some View {
+        VStack(alignment: .leading, spacing: 6) { Text(title).font(.caption).foregroundStyle(.secondary); Text(cents.map(money) ?? "—").monospacedDigit() }
+    }
+    private func rowLabel(_ title: String, _ date: String, _ cents: Int64) -> some View {
+        HStack { VStack(alignment: .leading, spacing: 6) { Text(title); Text(date).font(.caption2).foregroundStyle(.secondary) }; Spacer(); Text(money(cents)).monospacedDigit() }.padding(.vertical, 6)
+    }
+    @MainActor private func load() async {
+        let key = requestKey; data = nil; error = nil
+        do { let result: ProviderWallet = try await APIClient.shared.request(.providerWallet(page: page)); guard !Task.isCancelled, key == requestKey else { return }; data = result }
+        catch { guard !Task.isCancelled, key == requestKey else { return }; self.error = error.localizedDescription }
     }
 }
 
-#Preview {
-    NavigationStack {
-        EarningsView()
+
+private struct EarningsHistoryView: View {
+    @EnvironmentObject private var auth: AuthStore
+    @State private var summary: EarningsSummary?
+    @State private var details: [EarningsDetailItem] = []
+    @State private var total = 0
+    @State private var page = 1
+    @State private var revision = 0
+    @State private var loading = true
+    @State private var error: String?
+    private var key: String { "\(auth.sessionID)-\(page)-\(revision)" }
+    var body: some View {
+        List {
+            Text("含预约、咨询和加持等已记录收益。与结算单分开核对，不代表可提现余额。").font(.caption).foregroundStyle(.secondary)
+            if let error { Text(error).foregroundStyle(.red); Button("重试") { revision += 1 } }
+            else if loading { ProgressView("正在读取流水…") }
+            else {
+                if let summary {
+                    Section("收益记录") { LabeledContent("本月", value: summary.monthIncome.formatted(.currency(code: "CNY"))); LabeledContent("累计", value: summary.totalIncome.formatted(.currency(code: "CNY"))) }
+                    Section("收益趋势") { ForEach(summary.trend, id: \.month) { row in LabeledContent(row.month, value: row.amount.formatted(.currency(code: "CNY"))) } }
+                }
+                Section("收入明细") {
+                    ForEach(details) { row in
+                        HStack { VStack(alignment: .leading) { Text(row.serviceType == "booking" ? "预约服务" : row.serviceType == "consult" ? "即时咨询" : row.serviceType == "diy_blessing" ? "手串加持" : row.serviceType); Text("\(row.userName) · \(row.date)").font(.caption).foregroundStyle(.secondary) }; Spacer(); Text(row.amount.formatted(.currency(code: "CNY"))).monospacedDigit() }
+                    }
+                    if details.isEmpty { Text("暂无收入流水").foregroundStyle(.secondary) }
+                    if page > 1 || total > 20 {
+                        HStack { Button("上一页") { page -= 1 }.disabled(page == 1); Spacer(); Text("第 \(page) 页"); Spacer(); Button("下一页") { page += 1 }.disabled(page * 20 >= total) }.buttonStyle(.borderless)
+                    }
+                }
+            }
+        }.navigationTitle("收入流水").navigationBarTitleDisplayMode(.inline)
+        .task(id: key) { await load() }.refreshable { revision += 1 }
     }
-    .preferredColorScheme(.dark)
+    @MainActor private func load() async {
+        let current = key; summary = nil; details = []; error = nil; loading = true
+        do {
+            async let s: EarningsSummary = APIClient.shared.request(.earningsSummary)
+            async let d: EarningsDetailResponse = APIClient.shared.request(.earningsDetails(serviceType: nil, page: page, size: 20))
+            let (summary, rows) = try await (s,d)
+            guard !Task.isCancelled, key == current else { return }
+            self.summary = summary; details = rows.list; total = Int(rows.total)
+        } catch { guard !Task.isCancelled, key == current else { return }; self.error = error.localizedDescription }
+        loading = false
+    }
 }

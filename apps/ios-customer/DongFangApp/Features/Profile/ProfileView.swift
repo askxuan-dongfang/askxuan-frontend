@@ -158,6 +158,16 @@ struct ProfileView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, AppSpacing.lg)
                     .padding(.top, 10)
+                NavigationLink { WalletView().id(authStore.sessionID) } label: {
+                    HStack(spacing: 14) {
+                        Image(systemName: "wallet.bifold").font(.title2).foregroundStyle(Color.accentDefault)
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("我的钱包").font(AppTypography.body).foregroundStyle(Color.textPrimary)
+                            Text("消费账单 · 退款进度").font(AppTypography.caption).foregroundStyle(Color.textSecondary)
+                        }
+                        Spacer(); Image(systemName: "chevron.right").foregroundStyle(Color.textTertiary)
+                    }.padding(18).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
+                }.padding(.horizontal, AppSpacing.lg).padding(.top, 16)
                 JourneyEntryView().padding(.horizontal, AppSpacing.lg).padding(.top, 16)
                 orderCenterSection
                 assetsSection

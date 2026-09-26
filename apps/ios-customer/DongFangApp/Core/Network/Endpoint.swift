@@ -331,6 +331,7 @@ enum Endpoint {
     case rewardJoin(Int64, Int64)
     case rewardClaim(Int64, RewardAddressRequest)
     case rewardComplete(Int64)
+    case wallet(mode: String, filter: String, page: Int)
     case pointsAccount
     case pointsLedger(Int)
     case pointsProducts(Int)
@@ -365,6 +366,7 @@ enum Endpoint {
         case .rewardJoin(let id, _): return "marketing/rewards/campaigns/\(id)/join"
         case .rewardClaim(let id, _): return "marketing/rewards/orders/\(id)/claim"
         case .rewardComplete(let id): return "marketing/rewards/orders/\(id)/complete"
+        case .wallet: return "payments/wallet"
         case .pointsAccount: return "points"
         case .pointsLedger: return "points/ledger"
         case .pointsProducts: return "points/products"
@@ -492,7 +494,7 @@ enum Endpoint {
         case .aiNoteDelete: return .DELETE
         case .aiTopics, .aiReports, .aiReport: return .GET
         case .aiReportConversation, .aiReportCreate, .aiReportRetry, .aiReportUnlock: return .POST
-        case .shopReturns, .pointsSearch, .pointsAccount, .pointsLedger, .pointsProducts, .pointsOrders, .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief, .serviceTypes,
+        case .wallet, .shopReturns, .pointsSearch, .pointsAccount, .pointsLedger, .pointsProducts, .pointsOrders, .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief, .serviceTypes,
              .masters, .mastersByBelief, .masterById,
 			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById, .bookingChats, .bookingChatMessages,
              .chats, .chatMessages, .consultationQuote,
@@ -533,6 +535,7 @@ enum Endpoint {
         case .rewardEntries(let page), .rewardOrders(let page): return [URLQueryItem(name:"page",value:String(page))]
         case .aiNotes(let page): return [URLQueryItem(name: "page", value: String(page))]
         case .aiReports(let page): return [URLQueryItem(name: "page", value: String(page))]
+        case .wallet(let mode, let filter, let page): return [URLQueryItem(name: "mode", value: mode), URLQueryItem(name: "filter", value: filter), URLQueryItem(name: "page", value: String(page))]
         case .pointsSearch(let page, let keyword): return [URLQueryItem(name:"page",value:String(page)),URLQueryItem(name:"keyword",value:keyword)]
         case .pointsLedger(let page), .pointsProducts(let page), .pointsOrders(let page): return [URLQueryItem(name: "page", value: String(page))]
         case .temples(let sect, let type, let serviceCode, let page, let size):

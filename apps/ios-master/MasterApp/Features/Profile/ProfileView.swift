@@ -66,7 +66,7 @@ struct ProfileView: View {
                      iconColor: .brandDefault,
                      iconBgColor: Color.brandDefault.opacity(0.12),
                      extra: nil),
-        ProfileMenuItem(icon: "creditcard.fill", label: "收入管理",
+        ProfileMenuItem(icon: "creditcard.fill", label: "我的钱包",
                      iconColor: .stateWarning,
                      iconBgColor: Color.stateWarning.opacity(0.12),
                      extra: nil),

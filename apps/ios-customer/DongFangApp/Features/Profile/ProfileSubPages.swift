@@ -1035,16 +1035,6 @@ struct ReviewListView: View {
     }
 }
 
-// MARK: - 5. 功德金（钱包）
-struct WalletView: View {
-    var body: some View {
-        DFEmptyState(icon: "wallet.pass", title: "暂无功德金记录", subtitle: "订单中的功德金会随预约明细展示")
-        .background(Color.bgPrimary)
-        .navigationTitle("功德金")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
 // MARK: - 6. 优惠券
 struct CouponView: View {
     @EnvironmentObject private var authStore: AuthStore

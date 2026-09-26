@@ -20,6 +20,7 @@ enum HTTPMethod: String {
 
 /// API 端点枚举（法师工作台）
 enum Endpoint {
+    case providerWallet(page: Int)
  case accountAuth(path:String,body:[String:String]?)
     // MARK: - 认证
     /// POST auth/admin/login（管理台登录，role=master）
@@ -215,6 +216,7 @@ enum Endpoint {
         case .liveRoomClose(let id):
             return "live/rooms/\(id)/close"
         // 提现
+        case .providerWallet: return "finance/wallet/master"
         case .withdrawalApply:
             return "admin/finance/withdrawals/apply"
         }
@@ -243,6 +245,7 @@ enum Endpoint {
     /// 查询参数
     var queryItems: [URLQueryItem]? {
         switch self {
+        case .providerWallet(let page): return [URLQueryItem(name: "page", value: String(page))]
         case .masterBookings(let status, let page, let size):
             var items = [
                 URLQueryItem(name: "page", value: String(page)),
