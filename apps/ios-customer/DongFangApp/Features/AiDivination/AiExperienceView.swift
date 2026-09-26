@@ -25,9 +25,9 @@ struct AiExperienceView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text(skill == "naming" ? "让喜欢的字，组成自己的名字" : "把两难摊开，看见自己的取舍")
+                Text(skill == "naming" ? "让喜欢的字，组成自己的名字" : "比较两个选择")
                     .font(AppTypography.title(26))
-                Text(skill == "naming" ? "从字义和审美出发，寻找姓名或笔名的灵感。" : "你来给出感受与权重，工具帮你整理。分数不是成功概率。")
+                Text(skill == "naming" ? "从字义和审美出发，寻找姓名或笔名的灵感。" : "填写两个方案，给在意的因素设置重要性，查看各项得分与取舍。分数来自你的评价，不是成功概率。")
                     .font(.subheadline).foregroundStyle(Color.textSecondary)
                 Group { if skill == "naming" { namingForm } else { decisionForm } }.disabled(busy)
                 if !error.isEmpty { Text(error).font(.footnote).foregroundStyle(.red).accessibilityIdentifier("ai-experience-error") }
@@ -49,7 +49,7 @@ struct AiExperienceView: View {
                     }
                 }
             }.padding(18).frame(maxWidth: 760).frame(maxWidth: .infinity)
-        }.background(Color.bgPrimary).navigationTitle(skill == "naming" ? "姓名灵感" : "两难梳理")
+        }.background(Color.bgPrimary).navigationTitle(skill == "naming" ? "姓名灵感" : "比较两个选择")
             .navigationBarTitleDisplayMode(.inline).toolbar(.visible, for: .navigationBar)
             .scrollDismissesKeyboard(.interactively)
     }

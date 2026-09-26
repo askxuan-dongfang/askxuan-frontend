@@ -5,21 +5,35 @@ struct AiDiscoveryView: View {
     @Binding var naming: AiNamingInput
     @Binding var decision: AiDecisionInput
     let openChat: () -> Void
+    private var hasDraft: Bool {
+        !viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !viewModel.selectedImages.isEmpty
+    }
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("从一件小事，理清心中所想").font(AppTypography.title(27))
-                Text("聊聊近况，试一种思考方式，把有用的发现留下来。")
-                    .font(.subheadline).foregroundStyle(Color.textSecondary)
-                NavigationLink { AiExperienceView(skill: "decision", naming: $naming, decision: $decision) } label: {
-                    entrance("两难梳理", subtitle: "把纠结摊开，看见你真正重视的事", symbol: "scale.3d", prominent: true)
-                }.buttonStyle(AiExperiencePressStyle()).accessibilityIdentifier("ai-decision")
-                NavigationLink { AiExperienceView(skill: "naming", naming: $naming, decision: $decision) } label: {
-                    entrance("姓名灵感", subtitle: "看字义、挑风格，收藏并比较喜欢的名字", symbol: "character.book.closed")
-                }.buttonStyle(AiExperiencePressStyle()).accessibilityIdentifier("ai-naming")
-                Button(action: openChat) {
-                    entrance("随心聊聊", subtitle: "关于生活、关系和当下的心事", symbol: "bubble.left.and.bubble.right")
-                }.buttonStyle(AiExperiencePressStyle())
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("今天想问什么？").font(AppTypography.title(27))
+                    Text("描述事情和顾虑，和 AI 一起梳理思路。")
+                        .font(.subheadline).foregroundStyle(Color.textSecondary)
+                }
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(hasDraft ? "继续补充你的问题" : "写下你想聊的事")
+                        .font(.caption).foregroundStyle(Color.textSecondary)
+                    TextField("例如：想换工作，但担心新工作的稳定性…", text: $viewModel.input, axis: .vertical)
+                        .lineLimit(2...5).font(.body).disabled(viewModel.isSending)
+                        .accessibilityLabel("写下你想聊的事").accessibilityIdentifier("ai-discovery-question")
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 12) { entryHint; Spacer(minLength: 0); chatButton }
+                        VStack(alignment: .leading, spacing: 10) { entryHint; chatButton }
+                    }
+                }.padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.accentDefault.opacity(0.28), lineWidth: 1))
+                if !hasDraft && !viewModel.isSending {
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 4) { examples }
+                        VStack(alignment: .leading, spacing: 4) { examples }
+                    }
+                }
                 if let recent = viewModel.sessions.first {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("继续上次").font(AppTypography.section)
@@ -28,28 +42,62 @@ struct AiDiscoveryView: View {
                             Task { await viewModel.selectSession(recent.id) }
                         } label: {
                             HStack { Text(recent.title).lineLimit(2); Spacer(); Image(systemName: "arrow.up.right") }
-                                .font(.subheadline).padding(16).frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
+                                .font(.subheadline).padding(.vertical, 12).frame(maxWidth: .infinity, alignment: .leading)
                         }.buttonStyle(AiExperiencePressStyle())
                     }
                 }
                 AiTopicEntrances()
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack { Text("实用小工具").font(AppTypography.section); Spacer(); Text("免费体验").font(.caption).foregroundStyle(Color.textSecondary) }
+                    NavigationLink { AiExperienceView(skill: "naming", naming: $naming, decision: $decision) } label: {
+                        entrance("姓名灵感", subtitle: "按风格挑名字，查看字义并收藏候选", symbol: "character.book.closed")
+                    }.buttonStyle(AiExperiencePressStyle()).accessibilityIdentifier("ai-naming")
+                    Divider()
+                    NavigationLink { AiExperienceView(skill: "decision", naming: $naming, decision: $decision) } label: {
+                        entrance("比较两个选择", subtitle: "按你在意的因素评分，比较两边的取舍", symbol: "scale.3d")
+                    }.buttonStyle(AiExperiencePressStyle()).accessibilityIdentifier("ai-decision")
+                }
             }.padding(18).frame(maxWidth: 760).frame(maxWidth: .infinity)
-        }.background(Color.bgPrimary)
+        }.scrollDismissesKeyboard(.interactively).background(Color.bgPrimary)
     }
-    private func entrance(_ title: String, subtitle: String, symbol: String, prominent: Bool = false) -> some View {
-        HStack(spacing: 16) {
-            Image(systemName: symbol).font(.system(size: 25, weight: .light))
-                .frame(width: 46, height: 52).foregroundStyle(Color.accentDefault)
-            VStack(alignment: .leading, spacing: 7) {
-                Text(title).font(AppTypography.title(prominent ? 24 : 21))
-                Text(subtitle).font(.subheadline).foregroundStyle(Color.textSecondary)
+    private var entryHint: some View {
+        Text(viewModel.isSending ? "回答正在生成，可进入对话查看" : "可继续补充，发送后开始回答")
+            .font(.caption).foregroundStyle(Color.textSecondary)
+    }
+    private var chatButton: some View {
+        Button(action: openChat) {
+            HStack { Text(hasDraft || viewModel.isSending ? "继续问事" : "进入对话"); Image(systemName: "arrow.up.right") }
+                .font(.subheadline.weight(.medium)).padding(.horizontal, 16).frame(minHeight: 44)
+                .foregroundStyle(.white).background(Color.brandDefault, in: RoundedRectangle(cornerRadius: 12))
+        }.buttonStyle(AiExperiencePressStyle()).accessibilityIdentifier("ai-open-chat")
+    }
+    @ViewBuilder private var examples: some View {
+        Text("试着问").font(.caption).foregroundStyle(Color.textSecondary)
+        example("工作去留", question: "我想换工作，但担心新工作的稳定性。请先问我几个关键问题，帮我梳理需要考虑的因素。")
+        example("关系沟通", question: "最近和一个重要的人沟通不顺。请先了解发生了什么，再帮我想想怎么表达。")
+        example("理清烦恼", question: "最近有些事情让我烦恼，但还没理清原因。请一步一步提问，帮我说清最在意的事情。")
+    }
+    private func example(_ title: String, question: String) -> some View {
+        Button {
+            viewModel.newConversation()
+            viewModel.input = question
+            openChat()
+        } label: {
+            Text(title).font(.caption).padding(.horizontal, 10).frame(minHeight: 44)
+                .foregroundStyle(Color.textPrimary)
+        }.buttonStyle(AiExperiencePressStyle())
+    }
+    private func entrance(_ title: String, subtitle: String, symbol: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbol).font(.system(size: 23, weight: .light))
+                .frame(width: 30).foregroundStyle(Color.accentDefault)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title).font(.subheadline.weight(.medium))
+                Text(subtitle).font(.caption).foregroundStyle(Color.textSecondary)
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right").font(.caption)
-        }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
-            .foregroundStyle(Color.textPrimary)
-            .background(prominent ? Color.brandDefault.opacity(0.10) : Color.bgSecondary, in: RoundedRectangle(cornerRadius: 20))
+        }.padding(.vertical, 16).frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(Color.textPrimary)
     }
 }
 
@@ -78,7 +126,7 @@ struct AiNotebookView: View {
                     .font(.subheadline).foregroundStyle(Color.textSecondary)
                 if !error.isEmpty { Text(error).font(.footnote).foregroundStyle(.red); Button("重试") { Task { await load(reset: true) } } }
                 if notes.isEmpty && !loading && error.isEmpty {
-                    ContentUnavailableView("还没有手记", systemImage: "book.closed", description: Text("在姓名灵感或两难梳理中，保存一次自己的发现。"))
+                    ContentUnavailableView("还没有手记", systemImage: "book.closed", description: Text("在姓名灵感或选择比较中，保存一次自己的发现。"))
                 }
                 ForEach(notes) { item in
                     HStack(alignment: .top) {
