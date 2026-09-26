@@ -65,8 +65,8 @@ async function submitReply() {
   try {
     await replyReview(currentReview.value.id, String(auth.userInfo?.userId ?? '0'), replyContent.value.trim())
     ElMessage.success('回复成功')
+    currentReview.value.masterReply = replyContent.value.trim()
     replyVisible.value = false
-    load()
   } finally {
     replying.value = false
   }
@@ -109,7 +109,7 @@ onMounted(load)
         <el-table-column prop="reviewNo" label="评价编号" width="160" />
         <el-table-column label="评价内容" min-width="240">
           <template #default="{ row }">
-            <div class="review-content-cell">{{ row.content }}</div>
+            <strong>{{ row.serviceName || '预约服务' }} · {{ row.masterName || '全院执行' }}</strong><div class="review-content-cell">{{ row.content }}</div><p v-if="row.masterReply" class="muted">服务方回复：{{ row.masterReply }}</p>
             <div class="review-imgs" v-if="parseImages(row.images).length">
               <el-image
                 v-for="(img, i) in parseImages(row.images).slice(0, 4)"
@@ -126,7 +126,7 @@ onMounted(load)
         <el-table-column label="评分" width="150">
           <template #default="{ row }"><el-rate :model-value="row.rating" disabled size="small" /></template>
         </el-table-column>
-        <el-table-column prop="targetId" label="关联预约" width="140" />
+        <el-table-column label="关联预约" width="160"><template #default="{ row }"><router-link :to="`/bookings/${row.targetId}`">查看订单与回执</router-link></template></el-table-column>
         <el-table-column label="状态" width="90">
           <template #default="{ row }"><StatusTag :status="row.status" kind="review" /></template>
         </el-table-column>
@@ -135,7 +135,7 @@ onMounted(load)
         </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" :icon="ChatLineSquare" @click="openReply(row as Review)">回复</el-button>
+            <span v-if="row.masterReply">已回复</span><el-button v-else link type="primary" size="small" :icon="ChatLineSquare" @click="openReply(row as Review)">回复</el-button>
           </template>
         </el-table-column>
       </DataTable>
@@ -145,7 +145,7 @@ onMounted(load)
       <div v-if="currentReview" class="reply-dialog">
         <el-rate :model-value="currentReview.rating" disabled />
         <div class="reply-dialog-content">{{ currentReview.content }}</div>
-        <el-input v-model="replyContent" type="textarea" :rows="4" placeholder="请输入回复内容" maxlength="300" show-word-limit />
+        <el-input v-model="replyContent" type="textarea" :rows="4" placeholder="请输入回复内容" maxlength="500" show-word-limit />
       </div>
       <template #footer>
         <el-button @click="replyVisible = false">取消</el-button>

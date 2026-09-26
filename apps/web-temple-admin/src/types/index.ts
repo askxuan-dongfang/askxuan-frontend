@@ -163,6 +163,10 @@ export interface BookingReview {
 
 // ============ 评价（review-service） ============
 export interface Review {
+  serviceName?: string
+  templeName?: string
+  masterName?: string
+  masterReply?: string
   id: number
   reviewNo: string
   userId: string
