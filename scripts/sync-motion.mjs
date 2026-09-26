@@ -10,6 +10,7 @@ const css = [
   ...Object.entries(motion.duration).map(([role, value]) => `  --motion-duration-${role}: ${value}ms;`),
   `  --motion-ease: ${motion.ease};`,
   `  --motion-settle: ${motion.settle};`,
+  `  --motion-travel: ${motion.travel};`,
   '}',
   '/* Include pseudo-elements; keep completion events for dialogs and transitions. */',
   '@media (prefers-reduced-motion: reduce) {',

@@ -125,3 +125,31 @@ test('discovery example is editable, not an automatic model request',async({page
  await page.getByRole('button',{name:'发送',exact:true}).click();
  await expect.poll(()=>state.sent.length).toBe(1);expect(state.sent[0].question).toBe('补充我的实际情况');
 });
+
+test('keyboard-opened modal does not replay entrance when switching to pointer',async({page})=>{
+ await setup(page);await page.goto('/c/ai?view=chat');await expect(trigger(page)).toContainText('DeepSeek Flash');
+ await trigger(page).focus();await page.keyboard.press('Enter');await expect(sheet(page)).toBeVisible();
+ expect(await sheet(page).evaluate(el=>getComputedStyle(el).animationName)).toBe('none');
+ await sheet(page).getByRole('heading',{name:'选择模型'}).click();
+ expect(await sheet(page).evaluate(el=>getComputedStyle(el).animationName)).toBe('none');
+ await page.keyboard.press('Escape');await expect(sheet(page)).toHaveCount(0);await expect(trigger(page)).toBeFocused();
+ expect(await page.evaluate(()=>document.body.style.overflow)).not.toBe('hidden');
+});
+
+test('interrupting modal entrance preserves its current frame and releases scroll lock',async({page})=>{
+ await setup(page);await page.goto('/c/ai?view=chat');await trigger(page).click();
+ // Freeze partway through entrance to deterministically exercise interruption.
+ const initial=await sheet(page).evaluate(el=>{
+  const a=el.getAnimations().find(a=>(a as CSSAnimation).animationName==='modal-surface-enter');
+  if(!a)throw new Error('Expected modal entrance');a.pause();a.currentTime=30;
+  const s=getComputedStyle(el);return {opacity:s.opacity,transform:s.transform};
+ });
+ expect(Number(initial.opacity)).toBeGreaterThan(0);expect(Number(initial.opacity)).toBeLessThan(1);
+ await sheet(page).getByRole('button',{name:'关闭选择模型'}).click({force:true});
+ const captured=await sheet(page).evaluate(el=>({opacity:(el as HTMLElement).style.getPropertyValue('--modal-exit-opacity'),transform:(el as HTMLElement).style.getPropertyValue('--modal-exit-transform')}));
+ expect(captured).toEqual(initial);
+ await expect(sheet(page)).toHaveCount(0);await expect(trigger(page)).toBeFocused();
+ expect(await page.evaluate(()=>document.body.style.overflow)).not.toBe('hidden');
+ await trigger(page).click();await expect(sheet(page)).toBeVisible();
+ await page.keyboard.press('Escape');await expect(sheet(page)).toHaveCount(0);
+});
