@@ -433,12 +433,12 @@ struct AiDivinationView: View {
         ZStack(alignment: .leading) {
             VStack(spacing: 0) {
                 Picker("AI 问事栏目", selection: $section) {
-                    ForEach(["发现", "问事", "手记"], id: \.self) { Text($0).tag($0) }
+                    ForEach(["发现", "问事", "我的报告"], id: \.self) { Text($0).tag($0) }
                 }.pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 10)
                 if section == "发现" {
                     AiDiscoveryView(viewModel: viewModel) { section = "问事" }
-                } else if section == "手记" {
-                    AiNotebookView()
+                } else if section == "我的报告" {
+                    AiReportLibrary(showsDismissButton: false)
                 } else {
                     navigationBar
                     modelPicker
