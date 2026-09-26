@@ -285,6 +285,8 @@ struct CustomerBookingDetailView: View {
                         detailRow("日期", booking.bookingDate)
                         detailRow("时段", booking.timeSlot)
                     }
+                    if let errorMessage { Section { Text(errorMessage).foregroundStyle(.red) } }
+                    if booking.status == "pending_payment" { Section { Button("继续支付") { Task { do { _ = try await CashCheckout.pay("booking", bookingId); await load() } catch { errorMessage = error.localizedDescription } } } } }
                     Section("服务进度与回执") { JourneyRecordPanel(bookingId: bookingId) { _ in Task { await load() } } }
                     Section("费用与备注") {
                         detailRow("功德金", booking.meritMoneyText)
@@ -342,7 +344,7 @@ private struct CustomerDiyOrderDetailView: View {
                         Text("选材 → 审核 → 制作 → 加持（选购）→ 发货 → 收货").font(AppTypography.caption).foregroundStyle(Color.accentDefault)
                         if let errorMessage {Text(errorMessage).foregroundStyle(.red)}
                         if order.status=="shipped" {Button("确认收到作品"){confirmReceipt=true}.disabled(busy)}
-                        if order.status=="pending_review" && order.paymentStatus != "success" {Button("继续模拟支付"){Task{await act(false)}}.disabled(busy)}
+                        if order.status=="pending_review" && order.paymentStatus != "success" {Button("继续支付"){Task{await act(false)}}.disabled(busy)}
                         Button("刷新制作进度"){Task{await load()}}.disabled(busy)
                     }
                     Section("订单") {

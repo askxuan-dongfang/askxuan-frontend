@@ -119,6 +119,7 @@ struct Booking: Codable, Identifiable, Hashable {
 
 /// 创建预约请求体（POST /booking）
 struct CreateBookingRequest: Codable {
+    var manualPayment = true
 	let requestId: String
     let templeId: String
     let templeName: String

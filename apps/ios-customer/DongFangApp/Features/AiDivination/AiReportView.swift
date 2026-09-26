@@ -226,7 +226,7 @@ struct AiReportWorkspace: View {
                     Text("✦ 让解读回到生活，让行动带来答案。").font(AppTypography.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 20);
  ShareLink(item: r.title + "\n\n" + r.content) { Label("保存或分享报告", systemImage: "square.and.arrow.up") }; primary("围绕这份报告继续问事 →") { Task { await followup(r) } }; Text("自动带入报告内容，聊天按账户正常额度使用。").font(.footnote).foregroundStyle(.secondary) }
             } else {
-                card { Text("把线索，展开成完整答案").font(AppTypography.section); chapters(r.chapters); HStack(alignment: .firstTextBaseline) { Text("\(r.pointsPrice)").font(AppTypography.title(36)); Text("积分"); Spacer(); Text("一次购买 · 随时回看").font(AppTypography.caption) }; Text("可用积分：" + (balance.map(String.init) ?? "暂未获取") + "。现金支付暂未开放。").font(.footnote).foregroundStyle(.secondary); if let balance {
+                card { Button("钱包余额支付 ¥\(CashAPI.money(r.priceCents))") { Task { await unlockCash(r) } }.disabled(busy); Text("把线索，展开成完整答案").font(AppTypography.section); chapters(r.chapters); HStack(alignment: .firstTextBaseline) { Text("\(r.pointsPrice)").font(AppTypography.title(36)); Text("积分"); Spacer(); Text("一次购买 · 随时回看").font(AppTypography.caption) }; Text("可用积分：" + (balance.map(String.init) ?? "暂未获取") + "。也可使用钱包余额购买。").font(.footnote).foregroundStyle(.secondary); if let balance {
                     if balance >= r.pointsPrice { primary("解锁完整报告") { confirm = true } }
                     else { Text("还差 \(r.pointsPrice - balance) 积分，摘要已为您保留。").font(.footnote).padding(14).frame(maxWidth: .infinity).background(accent.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 10)) }
                 } else { Button("重新获取积分余额") { Task { await refreshBalance() } } } }
@@ -253,6 +253,10 @@ struct AiReportWorkspace: View {
     private func followup(_ r: AiReport) async {
         guard !busy else { return }; busy = true; defer { busy = false }
         do { let result: ReportConversationResult = try await APIClient.shared.request(.aiReportConversation(r.id)); NotificationCenter.default.post(name: Notification.Name("AskXuanReportConversation"), object: result.sessionId); dismiss() } catch { self.error = error.localizedDescription }
+    }
+    private func unlockCash(_ r: AiReport) async {
+        guard !busy else { return }; busy = true; defer { busy = false }
+        do { _ = try await CashCheckout.pay("ai_report", r.reportNo); report = try await APIClient.shared.request(.aiReport(r.id)) } catch { self.error = error.localizedDescription }
     }
     private func unlock(_ r: AiReport) async {
         guard !busy else { return }; busy = true; error = ""; defer { busy = false }

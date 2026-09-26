@@ -55,10 +55,10 @@ struct BookingView: View {
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
-        .alert("预约成功", isPresented: $viewModel.showSuccess) {
+        .alert(viewModel.submittedBooking?.paymentStatus == "success" ? "预约已支付" : "预约待支付", isPresented: $viewModel.showSuccess) {
             Button("好的") { dismiss() }
         } message: {
-			Text(viewModel.submittedBooking?.simulated == true ? "模拟支付成功，预约已进入寺院待确认。" : "预约已提交，请完成支付。")
+			Text(viewModel.submittedBooking?.paymentStatus == "success" ? (viewModel.submittedBooking?.simulated == true ? "演示支付完成，预约等待确认。" : "支付成功，预约等待确认。") : "订单已保留，请在有效时间内完成支付。")
         }
     }
 

@@ -145,6 +145,7 @@ struct ConsultationQuote: Decodable {
 }
 
 struct ConsultationCreateRequest: Encodable {
+    var manualPayment = true
     let requestId: String
     let masterId: String
     let question: String

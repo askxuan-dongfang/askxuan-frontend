@@ -740,7 +740,7 @@ struct ShopOrderDetailView: View {
                     if let logistics=order.logistics,!logistics.trackingNo.isEmpty {Label("\(logistics.expressCompany) · \(logistics.trackingNo)",systemImage:"shippingbox").textSelection(.enabled)}
                 }
                 Section("商品清单") {ForEach(order.items ?? []) {item in HStack{Text(item.productName);Spacer();Text("×\(item.quantity)");Text(String(format:"¥%.2f",item.price*Double(item.quantity)))}}}
-                if order.status=="pending_payment" {Section{Text("继续支付已有订单，不会重新下单。当前为模拟支付。").font(.footnote);Button("继续模拟支付"){Task{await act("pay")}}.disabled(busy)}}
+                if order.status=="pending_payment" {Section{Text("继续支付已有订单，在收银台选择支付方式。").font(.footnote);Button("继续支付"){Task{await act("pay")}}.disabled(busy)}}
                 if order.status=="shipped" {Button("确认收货"){confirmReceipt=true}.disabled(busy)}
                 if ["paid","shipped","completed"].contains(order.status) && !returns.contains(where:{$0.status != "rejected"}) {Section("申请售后") {TextField("填写退货或退款原因",text:$reason,axis:.vertical).lineLimit(3...5);Button("提交售后申请"){Task{await act("return")}}.disabled(busy||reason.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)}}
                 ForEach(returns){r in Section("售后进度") {

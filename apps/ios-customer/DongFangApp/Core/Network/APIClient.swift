@@ -83,12 +83,33 @@ final class APIClient {
 
     /// Recover only within the login that sent this request. Never replay a write as another account.
     func request<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
+        if case .paymentCreate(let payment) = endpoint {
+            let result = try await CashCheckout.pay(payment.orderType, payment.orderNo)
+            guard let typed = result as? T else { throw APIError.invalidURL }; return typed
+        }
         let context = await MainActor.run { AuthStore.shared.requestSession }
         let request = try buildRequest(endpoint)
-        return try await withSessionRecovery(context, usesSession: endpoint.usesSessionAuthorization, allowsRefresh: endpoint.shouldAttemptTokenRefresh) { [self] current in
+        let result: T = try await withSessionRecovery(context, usesSession: endpoint.usesSessionAuthorization, allowsRefresh: endpoint.shouldAttemptTokenRefresh) { [self] current in
             let authorized = authorizedCopy(of: request, token: endpoint.usesSessionAuthorization ? current.accessToken : nil)
             return try await perform(request: authorized)
         }
+        switch endpoint {
+        case .createBooking:
+            if let booking = result as? CreateBookingResponse, booking.paymentStatus != "success" {
+                do { _ = try await CashCheckout.pay("booking", booking.id); return try await CashAPI.request("bookings/\(booking.id)/pay", body: [:]) } catch { return result }
+            }
+        case .masterBooking:
+            if let booking = result as? DirectBookingResponse, booking.paymentStatus != "success" {
+                do { _ = try await CashCheckout.pay("booking", booking.id); return try await CashAPI.request("bookings/\(booking.id)/pay", body: [:]) } catch { return result }
+            }
+        case .consultationCreate:
+            if let order = result as? ConsultationOrder, order.paymentStatus != "success" {
+                _ = try await CashCheckout.pay("consultation", order.id)
+                return try await CashAPI.request("consultations/\(order.id)")
+            }
+        default: break
+        }
+        return result
     }
 
     /// Same-origin native chat endpoints and attachment downloads share the main JWT policy.

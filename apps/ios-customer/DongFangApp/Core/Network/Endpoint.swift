@@ -135,6 +135,7 @@ struct FavoriteResponse: Decodable { let favorited: Bool }
 
 /// 大师直约请求（先付费咨询后预约服务）
 struct DirectBookingRequest: Encodable {
+    var manualPayment = true
     let serviceCode: String
     let bookingDate: String
     let requestId: String

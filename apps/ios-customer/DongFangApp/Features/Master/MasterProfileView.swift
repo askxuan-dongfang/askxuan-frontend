@@ -519,8 +519,8 @@ struct MasterProfileView: View {
             defer { isSubmittingDirectBooking = false }
             do {
                 let resp: DirectBookingResponse = try await APIClient.shared.request(.masterBooking(master.id, request))
-                let pay = resp.paymentStatus == "success" ? "模拟支付成功" : "支付状态 \(resp.paymentStatus)"
-                directBookingMessage = "预约成功！单号 \(resp.id)，\(pay)，请等待法师确认"
+                let pay = resp.paymentStatus == "success" ? "支付成功，等待确认" : "等待支付，可到服务订单继续支付"
+                directBookingMessage = "预约单号 \(resp.id)，\(pay)"
             } catch {
                 directBookingMessage = error.localizedDescription
             }
