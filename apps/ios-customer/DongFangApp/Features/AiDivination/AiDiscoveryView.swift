@@ -2,8 +2,6 @@ import SwiftUI
 
 struct AiDiscoveryView: View {
     @ObservedObject var viewModel: AiDivinationViewModel
-    @Binding var naming: AiNamingInput
-    @Binding var decision: AiDecisionInput
     let openChat: () -> Void
     private var hasDraft: Bool {
         !viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !viewModel.selectedImages.isEmpty
@@ -47,16 +45,6 @@ struct AiDiscoveryView: View {
                     }
                 }
                 AiTopicEntrances()
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack { Text("实用小工具").font(AppTypography.section); Spacer(); Text("免费体验").font(.caption).foregroundStyle(Color.textSecondary) }
-                    NavigationLink { AiExperienceView(skill: "naming", naming: $naming, decision: $decision) } label: {
-                        entrance("姓名灵感", subtitle: "按风格挑名字，查看字义并收藏候选", symbol: "character.book.closed")
-                    }.buttonStyle(AiExperiencePressStyle()).accessibilityIdentifier("ai-naming")
-                    Divider()
-                    NavigationLink { AiExperienceView(skill: "decision", naming: $naming, decision: $decision) } label: {
-                        entrance("比较两个选择", subtitle: "按你在意的因素评分，比较两边的取舍", symbol: "scale.3d")
-                    }.buttonStyle(AiExperiencePressStyle()).accessibilityIdentifier("ai-decision")
-                }
             }.padding(18).frame(maxWidth: 760).frame(maxWidth: .infinity)
         }.scrollDismissesKeyboard(.interactively).background(Color.bgPrimary)
     }
@@ -87,18 +75,7 @@ struct AiDiscoveryView: View {
                 .foregroundStyle(Color.textPrimary)
         }.buttonStyle(AiExperiencePressStyle())
     }
-    private func entrance(_ title: String, subtitle: String, symbol: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 23, weight: .light))
-                .frame(width: 30).foregroundStyle(Color.accentDefault)
-            VStack(alignment: .leading, spacing: 5) {
-                Text(title).font(.subheadline.weight(.medium))
-                Text(subtitle).font(.caption).foregroundStyle(Color.textSecondary)
-            }
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.caption)
-        }.padding(.vertical, 16).frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(Color.textPrimary)
-    }
+
 }
 
 struct AiExperiencePressStyle: ButtonStyle {

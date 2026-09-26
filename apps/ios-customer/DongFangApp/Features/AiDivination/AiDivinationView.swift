@@ -422,8 +422,6 @@ final class AiDivinationViewModel: ObservableObject {
 struct AiDivinationView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel = AiDivinationViewModel()
-    @State private var namingDraft = AiNamingInput()
-    @State private var decisionDraft = AiDecisionInput()
     @State private var section = "发现"
     @State private var isDrawerOpen = false
     @State private var deletionTarget: AiConversation?
@@ -438,7 +436,7 @@ struct AiDivinationView: View {
                     ForEach(["发现", "问事", "手记"], id: \.self) { Text($0).tag($0) }
                 }.pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 10)
                 if section == "发现" {
-                    AiDiscoveryView(viewModel: viewModel, naming: $namingDraft, decision: $decisionDraft) { section = "问事" }
+                    AiDiscoveryView(viewModel: viewModel) { section = "问事" }
                 } else if section == "手记" {
                     AiNotebookView()
                 } else {
