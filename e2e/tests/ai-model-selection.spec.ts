@@ -153,3 +153,12 @@ test('interrupting modal entrance preserves its current frame and releases scrol
  await trigger(page).click();await expect(sheet(page)).toBeVisible();
  await page.keyboard.press('Escape');await expect(sheet(page)).toHaveCount(0);
 });
+
+test('minified CSS seconds do not finish dialog exit prematurely',async({page})=>{
+ await setup(page);await page.goto('/c/ai?view=chat');await trigger(page).click();await expect(sheet(page)).toBeVisible();
+ await page.evaluate(()=>document.documentElement.style.setProperty('--motion-duration-exit','.4s'));
+ await sheet(page).getByRole('button',{name:'关闭选择模型'}).click();
+ await page.waitForTimeout(120); // Deliberately between the old 50ms bug and the 400ms exit.
+ await expect(sheet(page)).toHaveCount(1);
+ await expect(sheet(page)).toHaveCount(0);await expect(trigger(page)).toBeFocused();
+});
