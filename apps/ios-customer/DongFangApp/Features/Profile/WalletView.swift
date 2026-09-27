@@ -29,7 +29,7 @@ struct WalletView: View {
     private let refunds = ["pending":"待处理", "processing":"退款处理中", "success":"退款完成", "failed":"退款失败"]
     var body: some View {
         List {
-            Section { NavigationLink { CashBalanceView() } label: { VStack(alignment: .leading, spacing: 8) { Label("钱包余额", systemImage: "wallet.bifold"); Text(cashBalance.map { "¥" + CashAPI.money($0.availableCents) } ?? "—").font(.largeTitle.bold()).monospacedDigit(); Text("充值 · 余额流水 · 原路退款").font(.caption).foregroundStyle(.secondary) } } }
+            Section { NavigationLink { CashBalanceView() } label: { VStack(alignment: .leading, spacing: 8) { Label(cashBalance?.mode == "demo" ? "测试余额（模拟）" : "钱包余额", systemImage: "wallet.bifold"); Text(cashBalance.map { "¥" + CashAPI.money($0.availableCents) } ?? "—").font(.largeTitle.bold()).monospacedDigit(); Text("充值 · 余额流水 · 原路退款").font(.caption).foregroundStyle(.secondary) } } }
             Section {
                 Picker("账单渠道", selection: $mode) { Text("真实消费").tag("channel"); Text("演示账单").tag("mock") }.pickerStyle(.segmented)
                 VStack(alignment: .leading, spacing: 18) {
@@ -60,7 +60,7 @@ struct WalletView: View {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text("支付单号：\(entry.paymentNo)")
                                 Text("订单编号：\(entry.orderNo)")
-                                Text("支付渠道：\(entry.channel == "mock" ? "演示支付" : entry.channel == "wechat" ? "微信支付" : entry.channel == "alipay" ? "支付宝" : entry.channel)")
+                                Text("支付渠道：\(entry.channel == "demo_balance" ? "模拟余额支付" : entry.channel == "mock" ? "演示支付" : entry.channel == "wechat" ? "微信支付" : entry.channel == "alipay" ? "支付宝" : entry.channel)")
                                 ForEach(entry.refunds) { refund in
                                     VStack(alignment: .leading, spacing: 6) {
                                         Text("\(refunds[refund.status] ?? refund.status) · \(money(refund.amountCents))").fontWeight(.medium)
@@ -123,12 +123,14 @@ struct WalletView: View {
 
 // Cash and points are independent accounts. Shared by every native checkout.
 struct CashQuote: Decodable {
+    var mode: String? = nil; var balanceChannel: String? = nil
     let payment: CashPayment?
     let amountCents: Int64; let availableCents: Int64
     let balanceEnabled: Bool; let mockEnabled: Bool; let experience: Bool
 }
 struct CashPayment: Decodable { let id: Int64; let paymentNo: String; let status: String; let channel: String }
 struct CashBalance: Decodable {
+    var mode: String? = nil
     struct Channel: Decodable, Identifiable { let id: String; let enabled: Bool }
     struct Entry: Decodable, Identifiable { let id: Int64; let kind: String; let referenceNo: String; let deltaCents: Int64; let balanceAfterCents: Int64; let createdAt: String }
     struct Recharge: Decodable, Identifiable { let rechargeNo: String; var id: String { rechargeNo }; let channel: String; let amountCents: Int64; let status: String; let payUrl: String; let refundCents: Int64; let createdAt: String }
@@ -176,30 +178,42 @@ enum CashAPI {
     }
 }
 private struct NativeCashier: View {
-    let quote: CashQuote; let kind: String; let no: String; let owner: AuthRequestSession
+    @State var quote: CashQuote; let kind: String; let no: String; let owner: AuthRequestSession
     let finish: (Result<PaymentCreateResult, Error>) -> Void
     @State private var channel = "balance"
     @State private var busy = false
     @State private var error: String?
+    var demo: Bool { quote.mode == "demo" }
+    var balanceChannel: String { quote.balanceChannel ?? "balance" }
     var canBalance: Bool { quote.balanceEnabled && quote.availableCents >= quote.amountCents }
     var body: some View {
         NavigationStack {
             Form {
                 Section { Text("¥\(CashAPI.money(quote.amountCents))").font(.largeTitle.bold()).monospacedDigit(); Text("订单 \(no)").font(.caption).foregroundStyle(.secondary) }
                 Section("支付方式") {
-                    Button { channel = "balance" } label: { HStack { Label("钱包余额", systemImage: "wallet.bifold"); Spacer(); if channel == "balance" { Image(systemName: "checkmark.circle.fill") } } }.disabled(busy || !canBalance)
-                    Text(quote.experience ? "体验订单不能使用真实余额" : "可用 ¥\(CashAPI.money(quote.availableCents))\(quote.balanceEnabled ? (canBalance ? "" : " · 余额不足") : " · 暂未开通")").font(.caption).foregroundStyle(.secondary)
+                    Button { channel = balanceChannel } label: { HStack { Label(demo ? "模拟余额支付" : "钱包余额", systemImage: "wallet.bifold"); Spacer(); if channel == balanceChannel { Image(systemName: "checkmark.circle.fill") } } }.disabled(busy || !canBalance)
+                    Text(quote.experience && !demo ? "体验订单不能使用真实余额" : "可用 ¥\(CashAPI.money(quote.availableCents))\(quote.balanceEnabled ? (canBalance ? "" : " · 余额不足") : " · 暂未开通")").font(.caption).foregroundStyle(.secondary)
                     if quote.mockEnabled { Button { channel = "mock" } label: { HStack { Text("演示支付，不扣真实资金"); Spacer(); if channel == "mock" { Image(systemName: "checkmark.circle.fill") } } }.disabled(busy) }
                 }
                 if let error { Section { Text(error).foregroundStyle(.red) } }
                 Section {
-                    Button(busy ? "正在确认…" : channel == "mock" ? "确认演示支付" : "确认支付 ¥\(CashAPI.money(quote.amountCents))") { Task { await pay() } }.disabled(busy || (channel == "balance" && !canBalance))
-                    NavigationLink("查看钱包与充值") { CashBalanceView() }.disabled(busy)
-                } footer: { Text("余额支付的退款退回钱包，充值款可申请原路退回。") }
+                    Button(busy ? "正在确认…" : channel == "mock" ? "确认演示支付" : "\(demo ? "模拟支付" : "确认支付") ¥\(CashAPI.money(quote.amountCents))") { Task { await pay() } }.disabled(busy || (channel == balanceChannel && !canBalance))
+                    NavigationLink("查看钱包与充值") { CashBalanceView().onDisappear { Task { await refreshQuote() } } }.disabled(busy)
+                } footer: { Text(demo ? "扣减测试余额，不收取真实费用。退款退回测试余额。" : "余额支付的退款退回钱包，充值款可申请原路退回。") }
             }.navigationTitle("确认支付").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { finish(.failure(APIError.serverError(409, "订单已保留，可稍后继续支付"))) }.disabled(busy) } }
-        }.onAppear { channel = canBalance ? "balance" : quote.mockEnabled ? "mock" : "balance" }
+        }.task { await refreshQuote() }
     }
+    @MainActor private func refreshQuote() async {
+            do {
+                let refreshed: CashQuote = try await CashAPI.request("payments/checkout?orderType=\(kind)&orderNo=\(no)")
+                guard !Task.isCancelled else { return }
+                if let paid = refreshed.payment, paid.status == "success" { finish(.success(PaymentCreateResult(id: paid.id, paymentNo: paid.paymentNo, payUrl: nil))); return }
+                quote = refreshed
+                channel = canBalance ? balanceChannel : quote.mockEnabled ? "mock" : balanceChannel
+            } catch { self.error = error.localizedDescription }
+    }
+
     @MainActor private func pay() async {
         guard !busy, AuthStore.shared.requestSession == owner else { error = "登录账户已变化，请关闭重试"; return }
         busy = true; defer { busy = false }
@@ -221,10 +235,11 @@ struct CashBalanceView: View {
     @State private var busy = false
     @State private var page = 1
     @State private var refund: CashBalance.Recharge?
+    private var demo: Bool { data?.mode == "demo" }
     private let labels = ["recharge": "充值到账", "payment": "余额支付", "order_refund": "订单退款", "refund_hold": "充值退款冻结", "recharge_refund": "充值款已退回"]
     var body: some View {
         Form {
-            Section("可用余额") {
+            Section(demo ? "测试余额（模拟）" : "可用余额") {
                 Text(data.map { "¥" + CashAPI.money($0.availableCents) } ?? "—").font(.largeTitle.bold()).monospacedDigit()
                 Text("退款冻结 ¥\(CashAPI.money(data?.heldCents ?? 0))").font(.caption).foregroundStyle(.secondary)
                 Button("刷新余额") { Task { await load() } }
@@ -232,18 +247,18 @@ struct CashBalanceView: View {
             if let error { Section { Text(error).foregroundStyle(.red) } }
             Section("充值") {
                 TextField("充值金额（元）", text: $amount).keyboardType(.decimalPad).disabled(busy)
-                Picker("支付方式", selection: $channel) { Text("微信支付").tag("wechat"); Text("支付宝").tag("alipay") }.disabled(busy)
-                Button(busy ? "正在处理…" : "前往支付") { Task { await recharge() } }.disabled(busy || data?.channels.first(where: { $0.id == channel })?.enabled != true)
-                Text(data?.channels.contains(where: \.enabled) == true ? "支付确认后到账。返回后请刷新余额。" : "微信、支付宝充值暂未开通。演示支付不会增加余额。").font(.caption).foregroundStyle(.secondary)
+                Picker("支付方式", selection: $channel) { ForEach(data?.channels ?? []) { c in Text(c.id == "demo" ? "模拟充值" : c.id == "wechat" ? "微信支付" : "支付宝").tag(c.id) } }.disabled(busy)
+                Button(busy ? "正在处理…" : demo ? "确认模拟充值" : "前往支付") { Task { await recharge() } }.disabled(busy || data?.channels.first(where: { $0.id == channel })?.enabled != true)
+                Text(demo ? "测试余额用于体验支付及退款，不代表真实资金，不可兑换或提现。" : data?.channels.contains(where: \.enabled) == true ? "支付确认后到账。返回后请刷新余额。" : "微信、支付宝充值暂未开通。演示支付不会增加余额。").font(.caption).foregroundStyle(.secondary)
             }
             Section("余额流水") {
                 ForEach(data?.entries ?? []) { e in VStack(alignment: .leading, spacing: 6) { HStack { Text(labels[e.kind] ?? e.kind); Spacer(); Text((e.deltaCents > 0 ? "+" : "") + CashAPI.money(e.deltaCents)).monospacedDigit() }; Text(e.createdAt).font(.caption).foregroundStyle(.secondary); Text("余额 ¥\(CashAPI.money(e.balanceAfterCents))").font(.caption) } }
-                if data?.entries.isEmpty == true { Text("暂无真实余额变动").foregroundStyle(.secondary) }
+                if data?.entries.isEmpty == true { Text(demo ? "暂无测试余额变动" : "暂无真实余额变动").foregroundStyle(.secondary) }
                 HStack { Button("上一页") { page -= 1 }.disabled(page == 1); Spacer(); Text("第 \(page) 页"); Spacer(); Button("下一页") { page += 1 }.disabled(data?.hasMore != true) }.buttonStyle(.borderless)
             }
-            Section("充值与原路退款") {
+            Section(demo ? "模拟充值记录" : "充值与原路退款") {
                 ForEach(data?.recharges ?? []) { r in VStack(alignment: .leading, spacing: 8) {
-                    Text("\(r.channel == "wechat" ? "微信" : "支付宝")充值 ¥\(CashAPI.money(r.amountCents))")
+                    Text("\(r.channel == "demo" ? "模拟" : r.channel == "wechat" ? "微信" : "支付宝")充值 ¥\(CashAPI.money(r.amountCents))")
                     Text(["pending":"等待支付确认","success":"充值成功","refund_pending":"原路退款处理中","refunded":"充值退款完成","closed":"充值已关闭"][r.status] ?? r.status).font(.caption).foregroundStyle(.secondary)
                     Text(r.createdAt).font(.caption2)
                     if r.status == "success", (data?.availableCents ?? 0) > 0 { Button("申请原路退回") { refund = r }.disabled(busy) }
@@ -254,12 +269,12 @@ struct CashBalanceView: View {
             .onChange(of: amount) { _, _ in requestID = UUID().uuidString }
             .onChange(of: channel) { _, _ in requestID = UUID().uuidString }
             .onChange(of: scenePhase) { _, value in if value == .active { Task { await load() } } }
-            .confirmationDialog("确认原路退款", isPresented: Binding(get: { refund != nil }, set: { if !$0 { refund = nil } }), presenting: refund) { r in
+            .confirmationDialog(demo ? "撤回测试余额" : "确认原路退款", isPresented: Binding(get: { refund != nil }, set: { if !$0 { refund = nil } }), presenting: refund) { r in
                 Button("退回 ¥\(CashAPI.money(min(r.amountCents, data?.availableCents ?? 0)))") { Task { await refundRecharge(r) } }
                 Button("取消", role: .cancel) { refund = nil }
-            } message: { _ in Text("先冻结相应余额，再退回本次充值的微信／支付宝账户。每笔充值支持一次退款。") }
+            } message: { _ in Text(demo ? "撤回本次充值的测试余额，不向任何账户转账。" : "先冻结相应余额，再退回本次充值的微信／支付宝账户。每笔充值支持一次退款。") }
     }
-    @MainActor private func load() async { do { data = try await CashAPI.request("payments/wallet/balance?page=\(page)"); error = nil } catch { self.error = error.localizedDescription } }
+    @MainActor private func load() async { do { data = try await CashAPI.request("payments/wallet/balance?page=\(page)"); if data?.channels.first(where: { $0.id == channel && $0.enabled }) == nil, let first = data?.channels.first(where: \.enabled) { channel = first.id }; error = nil } catch { self.error = error.localizedDescription } }
     @MainActor private func recharge() async {
         guard !busy else { return }; busy = true; defer { busy = false }
         do {

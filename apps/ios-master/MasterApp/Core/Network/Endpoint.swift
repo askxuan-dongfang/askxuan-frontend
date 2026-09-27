@@ -20,7 +20,8 @@ enum HTTPMethod: String {
 
 /// API 端点枚举（法师工作台）
 enum Endpoint {
-    case providerWallet(page: Int)
+    case providerWallet(page: Int, mode: String = "accounting_only")
+    case simulateWalletPayout(settlementId: Int64)
  case accountAuth(path:String,body:[String:String]?)
     // MARK: - 认证
     /// POST auth/admin/login（管理台登录，role=master）
@@ -216,6 +217,7 @@ enum Endpoint {
         case .liveRoomClose(let id):
             return "live/rooms/\(id)/close"
         // 提现
+        case .simulateWalletPayout: return "finance/wallet/master/simulate-payout"
         case .providerWallet: return "finance/wallet/master"
         case .withdrawalApply:
             return "admin/finance/withdrawals/apply"
@@ -226,7 +228,7 @@ enum Endpoint {
     var httpMethod: HTTPMethod {
         switch self {
  case .accountAuth(_,let body): return body == nil ? .GET:.POST
-        case .adminLogin, .authRefresh, .authIMToken, .withdrawalApply, .registerDeviceToken, .bookingChatSend, .chatSend,
+        case .simulateWalletPayout, .adminLogin, .authRefresh, .authIMToken, .withdrawalApply, .registerDeviceToken, .bookingChatSend, .chatSend,
              .masterServiceTagsUpdate,
              .masterCommunityPostCreate, .mediaUploadCredential, .mediaComplete,
              .liveRoomCreate, .liveRoomStart, .liveRoomClose:
@@ -245,7 +247,7 @@ enum Endpoint {
     /// 查询参数
     var queryItems: [URLQueryItem]? {
         switch self {
-        case .providerWallet(let page): return [URLQueryItem(name: "page", value: String(page))]
+        case .providerWallet(let page, let mode): return [URLQueryItem(name: "page", value: String(page)),URLQueryItem(name: "mode", value: mode)]
         case .masterBookings(let status, let page, let size):
             var items = [
                 URLQueryItem(name: "page", value: String(page)),
@@ -318,6 +320,7 @@ enum Endpoint {
     /// 请求体（Encodable）
     var body: AnyEncodable? {
         switch self {
+        case .simulateWalletPayout(let id): return AnyEncodable(["settlementId":id])
  case .accountAuth(_,let body): return body.map {AnyEncodable($0)}
         case .adminLogin(let req):
             return AnyEncodable(req)

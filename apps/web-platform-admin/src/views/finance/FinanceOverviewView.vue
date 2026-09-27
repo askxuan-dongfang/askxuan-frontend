@@ -14,6 +14,14 @@
       <el-button :loading="loading" @click="loadData">重新加载</el-button>
     </div>
 
+    <details class="dfx-card config-card" @toggle="onDemoToggle">
+      <summary>模拟钱包资金 · 独立测试账目</summary>
+      <p>测试余额订单的收款、退款、分账与模拟提现，不计入正式财务概览。</p>
+      <p v-if="demoError" role="alert">{{demoError}}</p>
+      <div v-if="demoWallet" class="summary-grid"><div><span>模拟收款</span><b>{{demoMoney(demoWallet.totals.receivedCents)}}</b></div><div><span>模拟退款</span><b>{{demoMoney(demoWallet.totals.refundedCents)}}</b></div><div><span>模拟提现</span><b>{{demoMoney(demoWallet.totals.paidCents)}}</b></div><div><span>模拟平台费用</span><b>{{demoMoney(demoWallet.commissionCents)}}</b></div></div>
+      <el-table v-if="demoWallet" :data="demoWallet.settlements"><el-table-column prop="number" label="结算单"/><el-table-column prop="sourceNo" label="业务单"/><el-table-column label="应结金额"><template #default="{row}">{{demoMoney(row.netCents)}}</template></el-table-column><el-table-column prop="status" label="状态"/></el-table>
+      <el-button :loading="demoLoading" @click="loadDemo">刷新测试账目</el-button>
+    </details>
     <div class="stat-row">
       <StatCard label="平台总收入" :value="overview?.totalIncome ?? '—'" icon="Money" icon-color="#C8A96E" :prefix="overview ? '¥' : ''" />
       <StatCard label="寺院结算" :value="overview?.templeIncome ?? '—'" icon="OfficeBuilding" icon-color="#C45A3C" :prefix="overview ? '¥' : ''" />
@@ -84,6 +92,7 @@
 
 <script setup lang="ts">
 import { withAdminChartTheme, watchAdminChartAppearance } from '../../../../../packages/admin-ui/chart-theme'
+import client from '@/api/client'
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { Refresh } from '@element-plus/icons-vue'
@@ -98,6 +107,12 @@ import type { FinanceOverview, CommissionConfig } from '@/types'
 interface ConfigRow extends CommissionConfig {
   _saving?: boolean
 }
+
+interface DemoWallet { totals:{receivedCents:number;refundedCents:number;paidCents:number}; commissionCents:number; settlements:{number:string;sourceNo:string;netCents:number;status:string}[] }
+const demoWallet=ref<DemoWallet|null>(null),demoError=ref(''),demoLoading=ref(false)
+const demoMoney=(cents:number)=>`¥${(cents/100).toFixed(2)}`
+async function loadDemo(){if(demoLoading.value)return;demoLoading.value=true;demoError.value='';try{demoWallet.value=await client.get<DemoWallet>('/finance/wallet/platform/demo')}catch(e){demoError.value=e instanceof Error?e.message:'模拟钱包未开启或暂时不可用'}finally{demoLoading.value=false}}
+function onDemoToggle(event:Event){if((event.target as HTMLDetailsElement).open&&!demoWallet.value)void loadDemo()}
 
 const pieRef = ref<HTMLElement>()
 let pieChart: echarts.ECharts | null = null

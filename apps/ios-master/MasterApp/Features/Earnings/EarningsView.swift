@@ -15,13 +15,18 @@ struct EarningsView: View {
     @State private var tab = 0
     @State private var page = 1
     @State private var revision = 0
-    private var requestKey: String { "\(auth.sessionID)-\(page)-\(revision)" }
+    @State private var mode = "accounting_only"
+    @State private var payout: ProviderWallet.Settlement?
+    @State private var paying = false
+    private var requestKey: String { "\(auth.sessionID)-\(page)-\(revision)-\(mode)" }
     private var total: Int { tab == 0 ? data?.total ?? 0 : data?.withdrawalTotal ?? 0 }
     private let statuses = ["pending":"待确认结算", "confirmed":"已确认结算", "paid":"账面已结算"]
     private let withdrawals = ["pending":"待审核", "approved":"审核通过", "processing":"模拟处理中", "success":"模拟完成", "failed":"模拟失败", "rejected":"审核拒绝"]
     private func money(_ cents: Int64) -> String { (Decimal(cents) / 100).formatted(.currency(code: "CNY")) }
     var body: some View {
         List {
+            Picker("资金类型", selection: $mode) { Text("原有账面记录").tag("accounting_only"); Text("模拟余额结算").tag("demo") }.pickerStyle(.segmented)
+            if mode == "demo" { Text("测试余额订单的独立结算记录，模拟提现不会向银行转账。咨询结束后方可模拟提现。").font(.caption).foregroundStyle(.secondary) }
             Section {
                 VStack(alignment: .leading, spacing: 16) {
                     Label("待确认结算", systemImage: "wallet.bifold").font(.subheadline).foregroundStyle(.secondary)
@@ -40,6 +45,7 @@ struct EarningsView: View {
                         ForEach(data.settlements) { row in
                             DisclosureGroup {
                                 VStack(alignment: .leading, spacing: 10) {
+                                    if mode == "demo", data.withdrawEnabled, row.status != "paid" { Button("模拟提现") { payout = row }.disabled(paying) }
                                     Text("结算编号：\(row.number)")
                                     Text("本人分配金额：\(money(row.grossCents))")
                                     Text("平台费用：\(money(row.commissionCents))")
@@ -67,8 +73,19 @@ struct EarningsView: View {
         }.scrollContentBackground(.hidden).background(Color.bgPrimary)
         .navigationTitle("我的钱包").navigationBarTitleDisplayMode(.inline).toolbar(.visible, for: .navigationBar)
         .toolbar { ToolbarItem(placement: .topBarTrailing) { NavigationLink("定价") { PricingView() } } }
+        .onChange(of: mode) { _, _ in page = 1 }
+        .confirmationDialog("确认模拟提现", isPresented: Binding(get: { payout != nil }, set: { if !$0 { payout = nil } }), presenting: payout) { row in
+            Button("模拟提现 \(money(row.netCents))") { Task { await simulate(row.id) } }
+            Button("取消", role: .cancel) { payout = nil }
+        } message: { _ in Text("只更新测试结算记录，不发生真实转账。") }
         .onChange(of: tab) { _, _ in page = 1 }
         .task(id: requestKey) { await load() }.refreshable { revision += 1 }
+    }
+    @MainActor private func simulate(_ id: Int64) async {
+        guard !paying else { return }; paying = true; defer { paying = false }
+        struct Result: Decodable { let status: String }
+        do { let _: Result = try await APIClient.shared.request(.simulateWalletPayout(settlementId: id)); payout = nil; revision += 1 }
+        catch { self.error = error.localizedDescription }
     }
     private func stat(_ title: String, _ cents: Int64?) -> some View {
         VStack(alignment: .leading, spacing: 6) { Text(title).font(.caption).foregroundStyle(.secondary); Text(cents.map(money) ?? "—").monospacedDigit() }
@@ -78,7 +95,7 @@ struct EarningsView: View {
     }
     @MainActor private func load() async {
         let key = requestKey; data = nil; error = nil
-        do { let result: ProviderWallet = try await APIClient.shared.request(.providerWallet(page: page)); guard !Task.isCancelled, key == requestKey else { return }; data = result }
+        do { let result: ProviderWallet = try await APIClient.shared.request(.providerWallet(page: page, mode: mode)); guard !Task.isCancelled, key == requestKey else { return }; data = result }
         catch { guard !Task.isCancelled, key == requestKey else { return }; self.error = error.localizedDescription }
     }
 }
