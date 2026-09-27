@@ -162,7 +162,7 @@ struct HomeView: View {
 
     private var entryCardsSection: some View {
         HStack(spacing: 10) {
-            NavigationLink(value: HomeRoute.templeList) { entryCard(icon: "building.2", title: "找寺院", detail: "探访与服务") }.accessibilityIdentifier("home-temples")
+            NavigationLink(value: HomeRoute.templeList) { entryCard(icon: "building.columns", title: "找寺院", detail: "探访与服务") }.accessibilityIdentifier("home-temples")
             NavigationLink(value: HomeRoute.masterList) { entryCard(icon: "person.crop.circle", title: "找师傅", detail: "咨询与交流") }.accessibilityIdentifier("home-masters")
         }.buttonStyle(CardPressButtonStyle()).padding(.horizontal, 20)
     }

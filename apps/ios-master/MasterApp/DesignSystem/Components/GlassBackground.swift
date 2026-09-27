@@ -33,8 +33,8 @@ extension View {
     }
 }
 
-// One coordinator per navigation controller: SwiftUI owns the transition and tab-bar
-// presentation, including interactive cancellation. Only restore the edge gesture
+// One coordinator per navigation controller; system push/pop owns the transition.
+// Reconcile the tab bar with the committed stack after cancellation. Restore the edge gesture
 // disabled by custom navigation chrome; never replace the navigation delegate.
 private var navigationGestureKey: UInt8 = 0
 private final class NativePopGestureDelegate: NSObject, UIGestureRecognizerDelegate {
@@ -46,13 +46,44 @@ private final class NativePopGestureDelegate: NSObject, UIGestureRecognizerDeleg
     }
 }
 struct NativeNavigationBridge: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> UIViewController { Observer() }
+    var isRoot = false
+    func makeUIViewController(context: Context) -> UIViewController { Observer(isRoot: isRoot) }
     func updateUIViewController(_ controller: UIViewController, context: Context) {}
     private final class Observer: UIViewController {
+        let isRoot: Bool
+        init(isRoot: Bool) { self.isRoot = isRoot; super.init(nibName: nil, bundle: nil) }
+        required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+        override func viewWillAppear(_ animated: Bool) {
+            super.viewWillAppear(animated)
+            setBarHidden(!isRoot, animated: animated)
+            reconcileAfterTransition()
+        }
+        override func viewWillDisappear(_ animated: Bool) {
+            super.viewWillDisappear(animated)
+            if isRoot, let navigationController, navigationController.viewControllers.count > 1 {
+                setBarHidden(true, animated: animated)
+                reconcileAfterTransition()
+            }
+        }
+        private func setBarHidden(_ hidden: Bool, animated: Bool) {
+            guard let tabs = tabBarController else { return }
+            if #available(iOS 18.0, *) {
+                tabs.setTabBarHidden(hidden, animated: animated && !UIAccessibility.isReduceMotionEnabled)
+            } else {
+                tabs.tabBar.isHidden = hidden
+            }
+        }
+        private func reconcileAfterTransition() {
+            navigationController?.transitionCoordinator?.animate(alongsideTransition: nil) { [weak self] _ in
+                guard let self, let navigation = self.navigationController else { return }
+                self.setBarHidden(navigation.viewControllers.count > 1, animated: false)
+            }
+        }
         override func viewDidAppear(_ animated: Bool) {
             super.viewDidAppear(animated)
             guard let navigationController,
                   let gesture = navigationController.interactivePopGestureRecognizer else { return }
+            setBarHidden(navigationController.viewControllers.count > 1, animated: false)
             let delegate: NativePopGestureDelegate
             if let stored = objc_getAssociatedObject(navigationController, &navigationGestureKey) as? NativePopGestureDelegate {
                 delegate = stored
@@ -68,12 +99,10 @@ struct NativeNavigationBridge: UIViewControllerRepresentable {
 
 extension View {
     func rootTabPage() -> some View {
-        toolbar(.visible, for: .tabBar)
-            .background(NativeNavigationBridge().frame(width: 0, height: 0))
+        background(NativeNavigationBridge(isRoot: true).frame(width: 0, height: 0))
     }
     func secondaryPage() -> some View {
-        toolbar(.hidden, for: .tabBar)
-            .background(NativeNavigationBridge().frame(width: 0, height: 0))
+        background(NativeNavigationBridge().frame(width: 0, height: 0))
     }
 }
 

@@ -51,8 +51,7 @@ struct DFTopNavBar<Leading: View, Trailing: View>: View {
         .padding(.horizontal, AppSpacing.lg)
         .frame(height: AppSpacing.navTop)
         .liquidGlassBackground(0.85)
-        .toolbar(showsBackButton ? .hidden : .visible, for: .tabBar)
-        .background(NativeNavigationBridge().frame(width: 0, height: 0))
+        .background(NativeNavigationBridge(isRoot: !showsBackButton).frame(width: 0, height: 0))
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Color.borderDivider)
