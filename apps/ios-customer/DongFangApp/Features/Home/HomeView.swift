@@ -265,7 +265,7 @@ struct HomeView: View {
     private func templeCard(_ temple: Temple) -> some View {
         VStack(spacing: 0) {
             ZStack(alignment: .topLeading) {
-                RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.2")
+                RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.columns")
                     .frame(width: 168, height: 100)
                     .clipped()
                 Text(temple.type)
@@ -735,7 +735,7 @@ private struct BeliefTopicView: View {
                     ForEach(viewModel.temples.prefix(4)) { temple in
                         NavigationLink(value: temple) {
                             HStack(spacing: 12) {
-                                RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.2.fill")
+                                RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.columns.fill")
                                     .frame(width: 72, height: 52).clipShape(RoundedRectangle(cornerRadius: 6))
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(temple.name).font(AppTypography.body.weight(.semibold))

@@ -578,7 +578,7 @@ struct FavoritesView: View {
     private var emptyIcon: String {
         switch section {
         case .masters:   return "heart"
-        case .temples:   return "building.2"
+        case .temples:   return "building.columns"
         case .products:  return "bag"
         }
     }
@@ -646,7 +646,7 @@ struct FavoritesView: View {
 
     private func templeRow(_ temple: Temple) -> some View {
         HStack(spacing: 12) {
-            RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.2.fill")
+            RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.columns.fill")
                 .frame(width: 48, height: 48)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 3) {

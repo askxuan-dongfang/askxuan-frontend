@@ -65,7 +65,7 @@ struct TempleDetailView: View {
     // MARK: - Hero
     private var heroSection: some View {
         ZStack(alignment: .top) {
-            RemoteImage(urlString: viewModel.temple?.coverImage, placeholderIcon: "building.2.fill")
+            RemoteImage(urlString: viewModel.temple?.coverImage, placeholderIcon: "building.columns.fill")
                 .frame(height: 220)
                 .overlay(
                     LinearGradient(colors: [.clear, Color.bgPrimary],
@@ -211,7 +211,7 @@ struct TempleDetailView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: AppSpacing.md) {
                         ForEach(viewModel.images) { image in
-                            RemoteImage(urlString: image.url, placeholderIcon: "building.2.fill")
+                            RemoteImage(urlString: image.url, placeholderIcon: "building.columns.fill")
                                 .frame(width: 220, height: 132)
                                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
                         }

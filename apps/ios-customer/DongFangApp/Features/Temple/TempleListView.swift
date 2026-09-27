@@ -78,7 +78,7 @@ struct TempleListView: View {
                     DFLoadingView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.filteredTemples.isEmpty {
-                    VStack { DFEmptyState(icon: "building.2", title: "当前筛选无结果", subtitle: "可清除筛选查看全部寺院"); Button("清除筛选") { viewModel.searchText = ""; viewModel.selectedBeliefCode = ""; viewModel.selectedServiceCode = "" } }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VStack { DFEmptyState(icon: "building.columns", title: "当前筛选无结果", subtitle: "可清除筛选查看全部寺院"); Button("清除筛选") { viewModel.searchText = ""; viewModel.selectedBeliefCode = ""; viewModel.selectedServiceCode = "" } }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     templeListContent
                 }
@@ -150,7 +150,7 @@ struct TempleListView: View {
     // MARK: - 寺院卡片（垂直布局：图片+body）
     private func templeCard(_ temple: Temple) -> some View {
         VStack(spacing: 0) {
-            RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.2")
+            RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.columns")
                 .frame(height: 136)
                 .frame(maxWidth: .infinity)
                 .clipped()

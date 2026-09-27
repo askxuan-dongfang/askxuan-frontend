@@ -40,6 +40,6 @@ struct DFEmptyState: View {
 }
 
 #Preview {
-    DFEmptyState(icon: "building.2", title: "暂无寺院", subtitle: "下拉刷新试试")
+    DFEmptyState(icon: "building.columns", title: "暂无寺院", subtitle: "下拉刷新试试")
         .preferredColorScheme(.dark)
 }
