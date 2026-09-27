@@ -1,17 +1,32 @@
-<script lang="ts">
-export default {
-  name: 'AdminPageHeader',
-  props: {
-    title: { type: String, required: true },
-    subtitle: { type: String, default: '' }
-  }
-}
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import FeatureIcon from './FeatureIcon.vue'
+defineProps<{title: string; subtitle?: string}>()
+const route = useRoute()
+const feature = computed(() => {
+  const path = route.path
+  if (/review|comment|report$/.test(path)) return 'review'
+  if (/onboarding|role|account/.test(path)) return 'shield'
+  if (/finance|wallet|earnings|reconcile/.test(path)) return 'wallet'
+  if (/order|booking|fulfillment|blessing/.test(path)) return 'orders'
+  if (/logistics|returns/.test(path)) return 'delivery'
+  if (/master|user/.test(path)) return 'people'
+  if (/gallery|banner|design|media/.test(path)) return 'media'
+  if (/temple/.test(path)) return 'building'
+  if (/marketing|coupon|rewards|points/.test(path)) return 'gift'
+  if (/reports|statistics/.test(path)) return 'chart'
+  if (/settings\/ai/.test(path)) return 'ai'
+  if (/settings/.test(path)) return 'settings'
+  if (/dashboard|^\/commerce$/.test(path)) return 'home'
+  return 'catalog'
+})
 </script>
 
 <template>
   <header class="aui-page-header">
     <div class="aui-page-header__main">
-      <h1 class="aui-page-header__title">{{ title }}</h1>
+      <h1 class="aui-page-header__title"><FeatureIcon :name="feature" :size="24" />{{ title }}</h1>
       <p v-if="subtitle" class="aui-page-header__subtitle">{{ subtitle }}</p>
     </div>
     <div
@@ -49,18 +64,10 @@ export default {
   letter-spacing: .02em;
   line-height: var(--type-line-title);
 }
-.aui-page-header__title::before {
-  width: 4px;
-  height: 20px;
-  margin-right: 10px;
-  display: inline-block;
-  flex: 0 0 4px;
-  content: '';
-  background: linear-gradient(180deg, var(--admin-primary, #c45a3c), var(--admin-accent, #c8a96e));
-  border-radius: 999px;
-}
+.aui-page-header__title { display:flex; align-items:center; gap:10px; }
+.aui-page-header__title > svg { color:var(--color-brand, var(--admin-primary)); }
 .aui-page-header__subtitle {
-  margin: 6px 0 0 14px;
+  margin: 6px 0 0 34px;
   color: var(--color-text-tertiary, var(--admin-text-tertiary, var(--text-light, #8a7a6a)));
   font-size: var(--type-size-label);
   line-height: 1.6;

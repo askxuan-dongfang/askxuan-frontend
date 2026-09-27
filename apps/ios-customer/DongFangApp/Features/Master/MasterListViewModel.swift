@@ -94,18 +94,26 @@ final class MasterListViewModel: ObservableObject {
         return (m.serviceTags ?? []).contains { $0.serviceCode == code }
     }
 
+    private(set) var hasLoaded = false
+
+    func loadIfNeeded() async { if !hasLoaded { await load() } }
+
     func load() async {
+        guard !isLoading else { return }
+        defer { isLoading = false }
         isLoading = true
         errorMessage = nil
         do {
             async let masterRequest: PageResponse<Master> = apiClient.request(.masters(type: nil, templeId: nil, manageBy: "platform", serviceCode: nil, page: 1, size: 100))
             async let beliefRequest: BeliefListResponse = apiClient.request(.beliefs)
             let (masterResponse, beliefResponse) = try await (masterRequest, beliefRequest)
+            guard !Task.isCancelled else { return }
+            hasLoaded = true
             masters = masterResponse.list
             beliefOptions = [BeliefFilterOption(code: "", name: "全部")] + beliefResponse.list.map { BeliefFilterOption(code: $0.code, name: $0.name) }
         } catch {
-            self.masters = []
-            self.beliefOptions = [BeliefFilterOption(code: "", name: "全部")]
+            guard !Task.isCancelled else { return }
+            if beliefOptions.isEmpty { beliefOptions = [BeliefFilterOption(code: "", name: "全部")] }
             self.errorMessage = error.localizedDescription
         }
         isLoading = false

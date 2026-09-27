@@ -72,7 +72,9 @@ targets:
         CFBundleShortVersionString: "0.0.1"
         CFBundleVersion: "1"
         UILaunchScreen:
-          UIColorName: ""
+          UIColorName: "LaunchBackground"
+          UIImageName: "launch-brand"
+          UIImageRespectsSafeAreaInsets: true
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         UIRequiresFullScreen: true

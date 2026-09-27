@@ -33,62 +33,47 @@ extension View {
     }
 }
 
-private struct RootTabVisibilityObserver: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> UIViewController {
-        RootTabVisibilityViewController()
-    }
-
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
-}
-
-private final class RootTabVisibilityViewController: UIViewController, UIGestureRecognizerDelegate {
-    private weak var observedNavigationController: UINavigationController?
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        tabBarController?.tabBar.isHidden = false
-        enableInteractivePopGesture()
-    }
-
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        enableInteractivePopGesture()
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        guard let navigationController, navigationController.viewControllers.count > 1 else { return }
-        tabBarController?.tabBar.isHidden = true
-    }
-
-    deinit {
-        guard observedNavigationController?.interactivePopGestureRecognizer?.delegate === self else { return }
-        observedNavigationController?.interactivePopGestureRecognizer?.delegate = nil
-    }
-
-    private func enableInteractivePopGesture() {
-        guard let navigationController,
-              let gesture = navigationController.interactivePopGestureRecognizer else { return }
-        observedNavigationController = navigationController
-        gesture.delegate = self
-        gesture.isEnabled = true
-    }
-
+// One coordinator per navigation controller: SwiftUI owns the transition and tab-bar
+// presentation, including interactive cancellation. Only restore the edge gesture
+// disabled by custom navigation chrome; never replace the navigation delegate.
+private var navigationGestureKey: UInt8 = 0
+private final class NativePopGestureDelegate: NSObject, UIGestureRecognizerDelegate {
+    weak var navigation: UINavigationController?
+    init(_ navigation: UINavigationController) { self.navigation = navigation }
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        guard let navigationController = observedNavigationController else { return false }
-        return navigationController.viewControllers.count > 1 && navigationController.transitionCoordinator == nil
+        guard let navigation else { return false }
+        return navigation.viewControllers.count > 1 && navigation.transitionCoordinator == nil
+    }
+}
+struct NativeNavigationBridge: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIViewController { Observer() }
+    func updateUIViewController(_ controller: UIViewController, context: Context) {}
+    private final class Observer: UIViewController {
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            guard let navigationController,
+                  let gesture = navigationController.interactivePopGestureRecognizer else { return }
+            let delegate: NativePopGestureDelegate
+            if let stored = objc_getAssociatedObject(navigationController, &navigationGestureKey) as? NativePopGestureDelegate {
+                delegate = stored
+            } else {
+                delegate = NativePopGestureDelegate(navigationController)
+                objc_setAssociatedObject(navigationController, &navigationGestureKey, delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            }
+            gesture.delegate = delegate
+            gesture.isEnabled = true
+        }
     }
 }
 
 extension View {
-    /// 标记 Tab 根页面。push 离开根页面时隐藏 Dock，返回根页面时恢复。
     func rootTabPage() -> some View {
-        background(RootTabVisibilityObserver().frame(width: 0, height: 0))
+        toolbar(.visible, for: .tabBar)
+            .background(NativeNavigationBridge().frame(width: 0, height: 0))
     }
-
-    /// 二级及更深页面显式隐藏 Dock。
     func secondaryPage() -> some View {
         toolbar(.hidden, for: .tabBar)
+            .background(NativeNavigationBridge().frame(width: 0, height: 0))
     }
 }
 
@@ -143,21 +128,9 @@ struct CardPressButtonStyle: ButtonStyle {
 
 private struct AppEntrance: ViewModifier {
     var order: Int
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var appeared = false
-
-    func body(content: Content) -> some View {
-        content
-            .opacity(appeared || reduceMotion ? 1 : 0)
-            .offset(y: appeared || reduceMotion ? 0 : 8)
-            .onAppear {
-                guard !appeared else { return }
-                // This state is never reset on scroll or a return from a detail page.
-                withAnimation(reduceMotion ? nil : AppMotion.reveal.delay(Double(min(max(order, 0), 4)) * 0.035)) {
-                    appeared = true
-                }
-            }
-    }
+    // Native push/pop and sheet transitions already explain navigation. Reappearing
+    // content must not replay a second delayed entrance over those transitions.
+    func body(content: Content) -> some View { content }
 }
 
 private struct AppCardSurface: ViewModifier {

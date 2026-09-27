@@ -10,7 +10,8 @@ import {
   ArrowDown,
   Calendar,
   ChatDotRound,
-  Coin,
+  OfficeBuilding,
+  User,
   Expand,
   Fold,
   MagicStick,
@@ -91,7 +92,7 @@ async function handleLogout() {
 
         <el-sub-menu index="temple-profile">
           <template #title>
-            <el-icon><Coin /></el-icon>
+            <el-icon><OfficeBuilding /></el-icon>
             <span>寺院主页</span>
           </template>
           <el-menu-item index="/temple-info">基本信息</el-menu-item>
@@ -100,7 +101,7 @@ async function handleLogout() {
 
         <el-sub-menu index="people-services">
           <template #title>
-            <el-icon><MagicStick /></el-icon>
+            <el-icon><User /></el-icon>
             <span>人员与服务</span>
           </template>
           <el-menu-item index="/masters">法师管理</el-menu-item>
@@ -119,7 +120,7 @@ async function handleLogout() {
           <el-icon><ChatDotRound /></el-icon>
           <template #title>评价互动</template>
         </el-menu-item>
-        <el-menu-item index="/wallet"><el-icon><Coin /></el-icon><template #title>寺院钱包</template></el-menu-item>
+        <el-menu-item index="/wallet"><el-icon><OfficeBuilding /></el-icon><template #title>寺院钱包</template></el-menu-item>
         <el-menu-item index="/report">
           <el-icon><TrendCharts /></el-icon>
           <template #title>经营报表</template>

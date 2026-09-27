@@ -10,6 +10,7 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @State private var navigationPaths = Array(repeating: NavigationPath(), count: 5)
     @ObservedObject private var chatNotifications=NativeChatNotifications.shared
     // 支持通过 launch argument 设置初始 Tab（用于截图）：xcrun simctl launch booted com.dongfang.customer -tab 3
     @State private var selectedTab: Int = {
@@ -40,7 +41,7 @@ struct MainTabView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             // 首页：游客可访问（公共信息）
-            NavigationStack {
+            NavigationStack(path: $navigationPaths[0]) {
                 HomeView()
                     .rootTabPage()
                     .navigationDestination(for: AuthRoute.self) { _ in LoginView() }
@@ -49,7 +50,7 @@ struct MainTabView: View {
             .tag(0)
 
             // 对话：需要登录
-            NavigationStack {
+            NavigationStack(path: $navigationPaths[1]) {
                 ChatView()
                     .rootTabPage()
                     .requireAuth(
@@ -64,7 +65,7 @@ struct MainTabView: View {
             .tag(1)
 
             // AI问事：需要登录
-            NavigationStack {
+            NavigationStack(path: $navigationPaths[2]) {
                 AiDivinationView()
                     .id(authStore.sessionID)
                     .rootTabPage()
@@ -79,7 +80,7 @@ struct MainTabView: View {
             .tag(2)
 
             // 商城：游客可浏览，下单时拦截
-            NavigationStack {
+            NavigationStack(path: $navigationPaths[3]) {
                 ShopView()
                     .rootTabPage()
                     .navigationDestination(for: AuthRoute.self) { _ in LoginView() }
@@ -88,7 +89,7 @@ struct MainTabView: View {
             .tag(3)
 
             // 我的：未登录显示登录引导
-            NavigationStack {
+            NavigationStack(path: $navigationPaths[4]) {
                 ProfileView()
                     .rootTabPage()
                     .navigationDestination(for: AuthRoute.self) { _ in LoginView() }

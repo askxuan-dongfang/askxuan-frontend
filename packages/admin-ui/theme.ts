@@ -27,6 +27,9 @@ function applyTheme() {
   root.dataset.themePreference = preference
   root.classList.toggle('dark', theme === 'dark')
   root.style.colorScheme = theme
+  const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+  if (favicon) favicon.href = favicon.href.replace(/favicon-(platform|temple)(?:-light|-dark)?\.svg$/, `favicon-$1-${theme}.svg`)
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#1C1210' : '#F6F3EC')
   subscribers.forEach(listener => listener(preference))
   window.dispatchEvent(new CustomEvent(ADMIN_THEME_EVENT, { detail: { preference, theme } }))
 }

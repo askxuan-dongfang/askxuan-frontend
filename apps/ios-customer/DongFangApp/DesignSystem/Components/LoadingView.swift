@@ -13,12 +13,12 @@ struct DFLoadingView: View {
 
     var body: some View {
         VStack(spacing: AppSpacing.md) {
-            ProgressView()
-                .tint(.accentDefault)
-                .frame(width: 52, height: 52)
-                .background(Color.accentDefault.opacity(0.08), in: Circle())
-                .overlay(Circle().strokeBorder(Color.accentDefault.opacity(0.14), lineWidth: 1))
-                .accessibilityHidden(true)
+            ZStack {
+                Image("brand-logo").resizable().scaledToFit()
+                    .frame(width: 36, height: 36).accessibilityHidden(true)
+                ProgressView().controlSize(.large).tint(.accentDefault)
+                    .frame(width: 64, height: 64).offset(y: 44).accessibilityHidden(true)
+            }.padding(.bottom, 38)
             Text(text)
                 .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)

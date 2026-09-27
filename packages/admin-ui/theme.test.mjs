@@ -12,14 +12,16 @@ function setup({ saved, systemDark = false, unavailable = false } = {}) {
   const media = { matches: systemDark, addEventListener: (name, fn) => mediaEvents.set(name, fn) }
   const root = { dataset: {}, style: {}, classList: { toggle(name, enabled) { this[name] = enabled } } }
   const window = { matchMedia: () => media, addEventListener: (name, fn) => windowEvents.set(name, fn), dispatchEvent() {} }
-  const context = vm.createContext({ window, document: { documentElement: root }, localStorage: {
+  const favicon = { href: 'https://example.test/temple/logos/favicon-temple.svg' }
+  const meta = { content: '', setAttribute(_key, value) { this.content = value } }
+  const context = vm.createContext({ window, document: { documentElement: root, querySelector(selector) { return selector.includes('link') ? favicon : meta } }, localStorage: {
     getItem(key) { if (unavailable) throw new Error('Storage blocked'); return values.get(key) ?? null },
     setItem(key, value) { if (unavailable) throw new Error('Storage blocked'); values.set(key, value) }
   }, CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options?.detail } } })
   const stripped = stripTypeScriptTypes(source, { mode: 'strip' }).replace(/\bexport /g, '')
   vm.runInContext(stripped + '\nthis.api = { initAdminTheme, getThemePreference, setThemePreference, subscribeThemePreference, resolveTheme, isThemePreference };', context)
   context.api.initAdminTheme()
-  return { api: context.api, root, values, system(dark) { media.matches = dark; mediaEvents.get('change')?.() }, storage(key, value) { if (value === null) values.delete(key); else values.set(key, value); windowEvents.get('storage')?.({ key }) } }
+  return { api: context.api, root, values, favicon, meta, system(dark) { media.matches = dark; mediaEvents.get('change')?.() }, storage(key, value) { if (value === null) values.delete(key); else values.set(key, value); windowEvents.get('storage')?.({ key }) } }
 }
 
 test('default follows system and explicit choices persist without following subsequent OS changes', () => {
@@ -82,6 +84,8 @@ test('chart theme changes repaint chrome and gradients while preserving data, ca
     '--font-sans': '-apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif',
     '--type-size-micro': '11px', '--motion-duration-enter': '280ms', '--motion-duration-standard': '200ms'
   })[name] || ''
+  const favicon = { href: 'https://example.test/temple/logos/favicon-temple.svg' }
+  const meta = { content: '', setAttribute(_key, value) { this.content = value } }
   const context = vm.createContext({ tokens, ADMIN_THEME_EVENT: 'askxuan:admin-theme-change', document: { documentElement: {} }, getComputedStyle: () => ({ getPropertyValue: variable }), window: { matchMedia: () => media, addEventListener: (name, fn) => windowEvents.set(name, fn), removeEventListener: name => windowEvents.delete(name) } })
   const stripped = stripTypeScriptTypes(chartSource.replace(/^import [^\n]*\n/gm, ''), { mode: 'strip' }).replace(/\bexport /g, '')
   vm.runInContext(stripped + '\nthis.repaint = withAdminChartTheme; this.watch = watchAdminChartAppearance;', context)
@@ -129,4 +133,13 @@ test('chart theme changes repaint chrome and gradients while preserving data, ca
   stop()
   assert.equal(windowEvents.size, 0)
   assert.equal(mediaEvents.size, 0)
+})
+
+test('browser identity follows selected appearance and keeps its deployment base path', () => {
+  const env = setup({ saved: 'dark' })
+  assert.equal(env.favicon.href, 'https://example.test/temple/logos/favicon-temple-dark.svg')
+  assert.equal(env.meta.content, '#1C1210')
+  env.api.setThemePreference('light')
+  assert.equal(env.favicon.href, 'https://example.test/temple/logos/favicon-temple-light.svg')
+  assert.equal(env.meta.content, '#F6F3EC')
 })

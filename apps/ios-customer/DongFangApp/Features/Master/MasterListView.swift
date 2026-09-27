@@ -73,7 +73,7 @@ struct MasterListView: View {
                 .background(Color.bgSecondary)
                 .overlay(Rectangle().fill(Color.borderDivider).frame(width: 1), alignment: .trailing)
 
-                if viewModel.isLoading {
+                if viewModel.isLoading && viewModel.masters.isEmpty {
                     DFLoadingView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.filteredMasters.isEmpty {
@@ -86,7 +86,7 @@ struct MasterListView: View {
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
         .task {
-            if viewModel.masters.isEmpty { await viewModel.load() }
+            await viewModel.loadIfNeeded()
         }
         .refreshable { await viewModel.load() }
         .scrollDismissesKeyboard(.interactively)

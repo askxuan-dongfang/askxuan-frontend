@@ -46,6 +46,7 @@ private final class MainTabBadgeViewModel: ObservableObject {
 }
 
 struct MainTabView: View {
+    @State private var navigationPaths = Array(repeating: NavigationPath(), count: 4)
     @ObservedObject private var chatNotifications=NativeChatNotifications.shared
     // 支持通过 launch argument 设置初始 Tab（用于截图）：xcrun simctl launch booted com.askxuan.master -tab 2
     @State private var selectedTab: Int = {
@@ -76,21 +77,21 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            NavigationStack { WorkspaceView().rootTabPage() }
+            NavigationStack(path: $navigationPaths[0]) { WorkspaceView().rootTabPage() }
                 .tabItem { Label("工作台", systemImage: "square.grid.2x2") }
                 .tag(0)
 
-            NavigationStack { BookingsView().rootTabPage() }
+            NavigationStack(path: $navigationPaths[1]) { BookingsView().rootTabPage() }
                 .tabItem { Label("预约", systemImage: "calendar.badge.plus") }
                 .badge(badgeViewModel.pendingBookingCount)
                 .tag(1)
 
-            NavigationStack { MessagesView().rootTabPage() }
+            NavigationStack(path: $navigationPaths[2]) { MessagesView().rootTabPage() }
                 .tabItem { Label("消息", systemImage: "bubble.left.and.bubble.right") }
                 .badge(badgeViewModel.unreadMessageCount + chatNotifications.chatUnread)
                 .tag(2)
 
-            NavigationStack { ProfileView().rootTabPage() }
+            NavigationStack(path: $navigationPaths[3]) { ProfileView().rootTabPage() }
                 .tabItem { Label("我的", systemImage: "person.crop.circle") }
                 .tag(3)
         }

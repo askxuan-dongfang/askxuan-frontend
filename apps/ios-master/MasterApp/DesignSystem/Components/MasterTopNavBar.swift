@@ -37,10 +37,14 @@ struct MasterTopNavBar<Leading: View, Trailing: View>: View {
 
             Spacer()
 
-            Text(title)
-                .font(AppTypography.navigation)
-                .foregroundStyle(Color.accentDefault)
-                .lineLimit(1)
+            HStack(spacing: 8) {
+                if !showsBackButton {
+                    Image("brand-logo").resizable().scaledToFit()
+                        .frame(width: 26, height: 26).accessibilityHidden(true)
+                }
+                Text(title).font(AppTypography.navigation)
+                    .foregroundStyle(Color.accentDefault).lineLimit(1)
+            }
 
             Spacer()
 
@@ -50,6 +54,8 @@ struct MasterTopNavBar<Leading: View, Trailing: View>: View {
         .padding(.horizontal, AppSpacing.lg)
         .frame(height: AppSpacing.navTop)
         .liquidGlassBackground(0.85)
+        .toolbar(showsBackButton ? .hidden : .visible, for: .tabBar)
+        .background(NativeNavigationBridge().frame(width: 0, height: 0))
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Color.borderDivider)
@@ -83,7 +89,7 @@ private struct BackPressButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.opacity(configuration.isPressed ? 0.72 : 1)
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.96 : 1)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: configuration.isPressed)
+            .animation(reduceMotion ? nil : AppMotion.press, value: configuration.isPressed)
     }
 }
 

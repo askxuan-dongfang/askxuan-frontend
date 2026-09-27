@@ -36,7 +36,13 @@ final class TempleListViewModel: ObservableObject {
         }
     }
 
+    private(set) var hasLoaded = false
+
+    func loadIfNeeded() async { if !hasLoaded { await load() } }
+
     func load() async {
+        guard !isLoading else { return }
+        defer { isLoading = false }
         isLoading = true
         errorMessage = nil
         do {
@@ -44,13 +50,15 @@ final class TempleListViewModel: ObservableObject {
             async let beliefRequest: BeliefListResponse = apiClient.request(.beliefs)
             async let serviceRequest: ServiceCatalogResponse = apiClient.request(.serviceTypes)
             let (templeResponse, beliefResponse, serviceResponse) = try await (templeRequest, beliefRequest, serviceRequest)
+            guard !Task.isCancelled else { return }
+            hasLoaded = true
             temples = templeResponse.list
             beliefOptions = [BeliefFilterOption(code: "", name: "全部")] + beliefResponse.list.map { BeliefFilterOption(code: $0.code, name: $0.name) }
             serviceOptions = [ServiceFilterOption(code: "", name: "全部")] + serviceResponse.list.map { ServiceFilterOption(code: $0.code, name: $0.name) }
         } catch {
-            self.temples = []
-            self.beliefOptions = [BeliefFilterOption(code: "", name: "全部")]
-            self.serviceOptions = [ServiceFilterOption(code: "", name: "全部")]
+            guard !Task.isCancelled else { return }
+            if beliefOptions.isEmpty { beliefOptions = [BeliefFilterOption(code: "", name: "全部")] }
+            if serviceOptions.isEmpty { serviceOptions = [ServiceFilterOption(code: "", name: "全部")] }
             self.errorMessage = error.localizedDescription
         }
         isLoading = false

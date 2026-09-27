@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import DongFangApp
 
 @MainActor
@@ -188,5 +189,23 @@ struct DiscoveryParityTests {
         #expect(try promotion(end: "2000-01-02").isVisible == false)
         #expect(try promotion(start: "2099-01-01").isVisible == false)
         #expect(try promotion(start: "bad-date").isVisible == false)
+    }
+}
+
+@MainActor
+final class NativeBrandTests: XCTestCase {
+    func testBrandAssetsResolveInBothAppearances() {
+        for style in [UIUserInterfaceStyle.light, .dark] {
+            let traits = UITraitCollection(userInterfaceStyle: style)
+            for name in ["brand-logo", "brand-atelier", "launch-brand"] {
+                XCTAssertNotNil(UIImage(named: name, in: Bundle.main, compatibleWith: traits), "Missing \(name) / \(style)")
+            }
+            XCTAssertNotNil(UIColor(named: "LaunchBackground", in: Bundle.main, compatibleWith: traits))
+        }
+    }
+    func testDirectorySymbolsAreAvailableOnTheSupportedRuntime() {
+        for name in ["sun.max", "mountain.2", "leaf", "house.lodge", "building.columns", "person.crop.circle", "sparkles"] {
+            XCTAssertNotNil(UIImage(systemName: name), "Missing SF Symbol: \(name)")
+        }
     }
 }

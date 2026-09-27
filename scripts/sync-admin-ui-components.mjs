@@ -12,6 +12,7 @@ if (write === check) {
 }
 
 const targets = {
+  'FeatureIcon.vue': ['web-platform-admin', 'web-temple-admin'],
   'PageHeader.vue': ['web-platform-admin', 'web-temple-admin'],
   'StatusTag.vue': ['web-platform-admin', 'web-temple-admin'],
   'StatCard.vue': ['web-platform-admin', 'web-temple-admin'],

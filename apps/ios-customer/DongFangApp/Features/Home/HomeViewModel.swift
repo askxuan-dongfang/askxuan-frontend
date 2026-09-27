@@ -129,7 +129,7 @@ struct BeliefEntry: Identifiable, Hashable {
         id = profile.code
         title = profile.name
         subtitle = profile.summary
-        iconName = profile.icon.isEmpty ? "sparkles" : profile.icon
+        iconName = ["han_buddhism": "sun.max", "tibetan_buddhism": "mountain.2", "daoism": "leaf", "folk": "house.lodge"][profile.code] ?? "building.columns"
     }
 }
 

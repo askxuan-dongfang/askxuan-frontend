@@ -74,7 +74,7 @@ struct TempleListView: View {
                 .background(Color.bgSecondary)
                 .overlay(Rectangle().fill(Color.borderDivider).frame(width: 1), alignment: .trailing)
 
-                if viewModel.isLoading {
+                if viewModel.isLoading && viewModel.temples.isEmpty {
                     DFLoadingView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.filteredTemples.isEmpty {
@@ -87,7 +87,7 @@ struct TempleListView: View {
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
         .task {
-            if viewModel.temples.isEmpty { await viewModel.load() }
+            await viewModel.loadIfNeeded()
         }
         .refreshable { await viewModel.load() }
         .scrollDismissesKeyboard(.interactively)

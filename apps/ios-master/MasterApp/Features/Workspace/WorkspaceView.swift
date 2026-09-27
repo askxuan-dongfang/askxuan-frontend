@@ -152,6 +152,11 @@ struct WorkspaceView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
+                HStack(spacing: 8) {
+                    Image("brand-logo").resizable().scaledToFit().frame(width: 28, height: 28).accessibilityHidden(true)
+                    Text("问玄东方 · 师傅工作台").font(AppTypography.navigation).foregroundStyle(Color.accentDefault)
+                    Spacer()
+                }.padding(.horizontal, AppSpacing.pageHorizontal).padding(.top, 12)
                 greetingSection.appEntrance()
                 JourneyEntryView().padding(16)
                 statsRow.appEntrance(order: 1)

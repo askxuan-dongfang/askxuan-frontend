@@ -56,4 +56,23 @@ final class DiscoveryNavigationTests: XCTestCase {
             capture(app, "tab-" + tab)
         }
     }
+    func testCancelledEdgeBackKeepsDetailAndCompletedBackRestoresTabBar() {
+        let app = openApp()
+        let temples = app.buttons["home-temples"]
+        XCTAssertTrue(temples.waitForExistence(timeout: 20))
+        temples.tap()
+        let back = app.buttons["返回"].firstMatch
+        XCTAssertTrue(back.waitForExistence(timeout: 10))
+        let edge = app.coordinate(withNormalizedOffset: CGVector(dx: 0.005, dy: 0.5))
+        let partial = app.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5))
+        edge.press(forDuration: 0.1, thenDragTo: partial, withVelocity: .slow, thenHoldForDuration: 0.3)
+        XCTAssertTrue(back.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.tabBars.buttons["首页"].isHittable)
+        capture(app, "cancelled-native-back")
+        edge.press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)))
+        XCTAssertTrue(temples.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.tabBars.buttons["首页"].isHittable)
+        capture(app, "completed-native-back")
+    }
+
 }
