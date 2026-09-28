@@ -14,6 +14,10 @@ const auth = useAuthStore()
 const { collapsed, mobile, drawerOpen, sidebarRef, toggleRef, toggleNavigation, closeNavigation } = useAdminNavigation(() => route.fullPath)
 
 const allMenuGroups = [
+  {title:'AI 问事',icon:'Connection',children:[
+    {path:'/ai/operations',title:'智能体运营管理'},
+    {path:'/settings/ai',title:'模型连接设置'}
+  ]},
   {title:'商城与权益',icon:'Shop',children:[
     {path:'/commerce',title:'商城运营总览'},
     {path:'/commerce/dashboard',title:'商城工作台'},
@@ -79,7 +83,6 @@ const allMenuGroups = [
     title: '系统治理',
     icon: 'Setting',
     children: [
-      { path: '/settings/ai', title: 'AI 模型设置' },
       { path: '/settings/role', title: '角色权限' },
       { path: '/settings/dict', title: '数据字典' },
       { path: '/settings/log', title: '操作日志' },
