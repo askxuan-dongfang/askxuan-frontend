@@ -1,14 +1,14 @@
 import client from './client'
 
 export interface SkillPolicy { code: string; enabled: boolean; prompt: string; useTool: boolean }
-export interface AgentConfig { name: string; instruction: string; model: string; maxOutputTokens: number; skills: SkillPolicy[] }
+export interface AgentConfig { name: string; instruction: string; model: string; maxOutputTokens: number; skills: SkillPolicy[]; evaluation: EvaluationCase[] }
 export interface InputField { key: string; label?: string; type: string; required?: boolean; options?: { value: string; label?: string }[] }
 export interface SkillInfo { code: string; name: string; version: string; description: string; inputSchema: { fields?: InputField[] }; toolName: string; toolAvailable: boolean; einoSupported: boolean }
 export interface AgentVersion { id: number; actor: string; note: string; createdAt: string }
 export interface AgentWorkspace {
   revision: number; draftSaved: boolean; activeVersion: number; draft: AgentConfig; catalog: SkillInfo[]; active: AgentConfig | null
   versions: AgentVersion[]; audit: { id: number; action: string; versionId: number; actor: string; note: string; createdAt: string }[]
-  tested: boolean; liveEnabled: boolean
+  tested: boolean; liveEnabled: boolean; persistentRecovery: boolean; rollout: { versionId: number; stableVersion: number; percentage: number; revision: number }
 }
 export interface DebugRun {
   id: string; actor: string; revision: number; providerRevision: number; kind: string; skillCode: string; model: string; status: string
@@ -18,9 +18,15 @@ export interface DebugRun {
 }
 export interface ProductionRun { id: number; runNo: string; skillCode: string; skillVersion: string; model: string; status: string; stage: string; startedAt: string; latencyMs: number; promptTokens: number; completionTokens: number; costMicros: number }
 export interface ToolTrace { name: string; status: string; latencyMs: number; createdAt: string }
+export interface EvaluationCase { id: string; name: string; skillCode: string; question: string; inputs: Record<string, unknown>; minChars: number; contains: string[]; excludes: string[]; expectInvalid: boolean }
+export interface EvaluationRun { id: string; revision: number; providerRevision: number; status: string; total: number; startedAt: string; error: string; results: { id: string; name: string; skillCode: string; passed: boolean; checks: string[]; latencyMs: number }[] }
 const base = '/ai/admin/agent'
 export const agentOperationsApi = {
   version: (id: number) => client.get<{ version: AgentVersion; config: AgentConfig }>(`${base}/versions/${id}`),
+  setRollout: (revision: number, percentage: number, note: string) => client.post(`${base}/rollout`, { revision, percentage, note }),
+  startEvaluation: (revision: number) => client.post<EvaluationRun>(`${base}/evaluations`, { revision }),
+  evaluation: (id: string) => client.get<EvaluationRun>(`${base}/evaluations/${encodeURIComponent(id)}`),
+  evaluations: () => client.get<{ list: EvaluationRun[] }>(`${base}/evaluations`),
   workspace: () => client.get<AgentWorkspace>(base),
   save: (revision: number, config: AgentConfig) => client.put(base, { revision, config }),
   publish: (revision: number, note: string) => client.post<{ version: number }>(`${base}/publish`, { revision, note }),
