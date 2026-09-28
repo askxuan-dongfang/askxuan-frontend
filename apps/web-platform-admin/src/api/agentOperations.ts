@@ -6,6 +6,7 @@ export interface InputField { key: string; label?: string; type: string; require
 export interface SkillInfo { code: string; name: string; version: string; description: string; inputSchema: { fields?: InputField[] }; toolName: string; toolAvailable: boolean; einoSupported: boolean }
 export interface AgentVersion { id: number; actor: string; note: string; createdAt: string }
 export interface AgentWorkspace {
+  runtimeMode?: 'harness' | 'classic';
   revision: number; draftSaved: boolean; activeVersion: number; draft: AgentConfig; catalog: SkillInfo[]; active: AgentConfig | null
   versions: AgentVersion[]; audit: { id: number; action: string; versionId: number; actor: string; note: string; createdAt: string }[]
   tested: boolean; liveEnabled: boolean; persistentRecovery: boolean; rollout: { versionId: number; stableVersion: number; percentage: number; revision: number }
@@ -19,7 +20,8 @@ export interface DebugRun {
 export interface ProductionRun { id: number; runNo: string; skillCode: string; skillVersion: string; model: string; status: string; stage: string; startedAt: string; latencyMs: number; promptTokens: number; completionTokens: number; costMicros: number }
 export interface ToolTrace { name: string; status: string; latencyMs: number; createdAt: string }
 export interface EvaluationCase { id: string; name: string; skillCode: string; question: string; inputs: Record<string, unknown>; minChars: number; contains: string[]; excludes: string[]; expectInvalid: boolean }
-export interface EvaluationRun { id: string; revision: number; providerRevision: number; status: string; total: number; startedAt: string; error: string; results: { id: string; name: string; skillCode: string; passed: boolean; checks: string[]; latencyMs: number }[] }
+export interface EvaluationRun {
+  engine?: string; id: string; revision: number; providerRevision: number; status: string; total: number; startedAt: string; error: string; results: { id: string; name: string; skillCode: string; passed: boolean; checks: string[]; latencyMs: number }[] }
 const base = '/ai/admin/agent'
 export const agentOperationsApi = {
   version: (id: number) => client.get<{ version: AgentVersion; config: AgentConfig }>(`${base}/versions/${id}`),
