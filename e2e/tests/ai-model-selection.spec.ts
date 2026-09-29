@@ -99,7 +99,7 @@ test('discovery remains default and chat draft survives navigation',async({page}
  await expect(page.getByRole('textbox',{name:'输入问题'})).toBeHidden();
  await page.getByRole('link',{name:'问 AI',exact:true}).click();
  await page.getByRole('textbox',{name:'输入问题'}).fill('回到发现也保留');
- await page.getByRole('link',{name:'专题',exact:true}).click();
+ await page.getByRole('link',{name:'探索',exact:true}).click();
  await page.getByRole('link',{name:'问 AI',exact:true}).click();
  await expect(page.getByRole('textbox',{name:'输入问题'})).toHaveValue('回到发现也保留');
 });
@@ -112,7 +112,7 @@ for(const width of [320,390])test(`discovery question handoff preserves draft wi
  await page.locator('.ai-question-entry button[type=submit]').click();
  await expect(page.getByRole('textbox',{name:'输入问题'})).toHaveValue('先保留这个问题，不要直接发送');
  expect(state.sent).toHaveLength(0);
- await page.getByRole('link',{name:'专题',exact:true}).click();
+ await page.getByRole('link',{name:'探索',exact:true}).click();
  await page.locator('.ai-direct-question > summary').click();
  await expect(page.getByRole('textbox',{name:'说说你关心的事'})).toHaveValue('先保留这个问题，不要直接发送');
  await expect(page.getByRole('button',{name:'工作去留',exact:true})).toHaveCount(0);
