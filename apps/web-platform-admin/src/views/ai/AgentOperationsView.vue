@@ -204,7 +204,7 @@ onBeforeRouteLeave(async () => {
   try { await ElMessageBox.confirm('当前草稿尚未保存，离开后将丢弃修改。', '离开智能体管理', { confirmButtonText: '离开', cancelButtonText: '继续编辑' }); return true } catch { return false }
 })
 function beforeUnload(e: BeforeUnloadEvent) { if (dirty.value && workspace.value) { e.preventDefault(); e.returnValue = '' } }
-onMounted(() => { window.addEventListener('beforeunload', beforeUnload); void load(); void api.models().then(v => { models.value = v.list }).catch(() => {}) })
+onMounted(() => { window.addEventListener('beforeunload', beforeUnload); void load(); void loadKnowledgeBases(); void api.models().then(v => { models.value = v.list }).catch(() => {}) })
 onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer); stopPoll(); recordGeneration++; window.removeEventListener('beforeunload', beforeUnload) })
 </script>
 
