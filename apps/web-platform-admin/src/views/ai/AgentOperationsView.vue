@@ -98,7 +98,7 @@ const evaluations = ref<EvaluationRun[]>([]), evaluation = ref<EvaluationRun>(),
 const caseInputs = reactive<Record<string, string>>({}), caseErrors = reactive<Record<string, string>>({})
 let evalTimer: ReturnType<typeof setTimeout> | undefined
 function addCase() {
-  if (!form.value || form.value.evaluation.length >= 20) return
+  if (!form.value || form.value.evaluation.length >= 100) return
   form.value.evaluation.push({ id: crypto.randomUUID(), name: '新的评测用例', skillCode: enabledSkills.value[0]?.code || '', question: '请根据合成资料提供审慎的文化与生活参考。', inputs: {}, minChars: 20, contains: [], excludes: [], expectInvalid: false })
 }
 function editCaseInputs(c: EvaluationCase, text: string) {
@@ -285,7 +285,7 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
 
 
       <section v-show="tab === 'evaluation'" class="ops-card">
-        <div class="ops-section-head"><div><h2>可重复的质量检查</h2><p>每个启用技能至少配置一条正常回答用例。仅填写合成资料，用例随版本保存；执行会调用模型和计算工具。</p></div><el-button :disabled="busy || form.evaluation.length >= 20" @click="addCase">添加用例</el-button></div>
+        <div class="ops-section-head"><div><h2>可重复的质量检查</h2><p>每个启用技能至少配置一条正常回答用例。仅填写合成资料，用例随版本保存；执行会调用模型和计算工具。</p></div><el-button :disabled="busy || form.evaluation.length >= 100" @click="addCase">添加用例</el-button></div>
         <el-empty v-if="!form.evaluation.length" description="添加测试问题与预期结果，建立发布检查" />
         <el-collapse>
           <el-collapse-item v-for="c in form.evaluation" :key="c.id" :name="c.id" :title="`${c.name} · ${skillName(c.skillCode)}`">
@@ -300,7 +300,7 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
           </el-collapse-item>
         </el-collapse>
         <div class="ops-debug-actions"><el-button type="primary" :loading="evalBusy || evaluation?.status === 'running'" :disabled="dirty || !workspace.draftSaved || !form.evaluation.length || !!Object.keys(caseErrors).length" @click="startEvaluation">运行评测集</el-button><el-button @click="loadEvaluations">刷新记录</el-button><el-button v-if="evaluation" text @click="pollEvaluation(evaluation.id)">获取本次状态</el-button></div>
-        <p class="ops-hint">单组最多 20 条、总时限 3 分钟。通过结果在 24 小时内可发布；修改草稿或模型连接后需重新评测。检查长度、关键词、资料拦截与工具调用，不代表专业准确性认证。</p>
+        <p class="ops-hint">单组最多 100 条；总时限按用例数分配，最长 30 分钟。通过结果在 24 小时内可发布；修改草稿或模型连接后需重新评测。检查长度、关键词、资料拦截与工具调用，不代表专业准确性认证。</p>
         <el-alert v-if="evalError" :title="evalError" type="error" :closable="false" />
         <template v-if="evaluation"><h3>本次评测 · {{ statusText(evaluation.status) }} · {{ evaluation.results.length }}/{{ evaluation.total }}</h3><el-alert v-if="evaluation.error" :title="evaluation.error" type="error" :closable="false" /><el-table :data="evaluation.results"><el-table-column prop="name" label="用例" min-width="160" /><el-table-column label="结果" width="90"><template #default="{ row }"><el-tag :type="row.passed ? 'success' : 'danger'">{{ row.passed ? '通过' : '未通过' }}</el-tag></template></el-table-column><el-table-column label="检查详情" min-width="220"><template #default="{ row }">{{ row.checks.join('；') || '全部断言通过' }}</template></el-table-column><el-table-column label="耗时" width="90"><template #default="{ row }">{{ (row.latencyMs / 1000).toFixed(1) }}s</template></el-table-column></el-table></template>
         <h3>最近评测</h3><el-table :data="evaluations" empty-text="暂无评测记录"><el-table-column label="草稿" width="100"><template #default="{ row }">r{{ row.revision }}</template></el-table-column><el-table-column label="状态" width="120"><template #default="{ row }">{{ statusText(row.status) }}</template></el-table-column><el-table-column label="时间" min-width="180"><template #default="{ row }">{{ timeText(row.startedAt) }}</template></el-table-column><el-table-column label="操作" width="90"><template #default="{ row }"><el-button link @click="evaluation = row; pollEvaluation(row.id)">查看</el-button></template></el-table-column></el-table>
