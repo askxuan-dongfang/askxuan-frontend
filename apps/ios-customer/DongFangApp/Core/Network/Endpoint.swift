@@ -234,6 +234,8 @@ enum Endpoint {
     case paymentById(Int64)
 
     // MARK: - AI 问事
+    case aiTrace(Int64, Int64)
+    case aiCancelMessage(Int64, Int64)
     case aiReportConversation(Int64)
     case aiTopics
     case aiExperienceRun(AiExperienceInput)
@@ -349,6 +351,8 @@ enum Endpoint {
         case .aiExperienceRun: return "ai/experiences/run"
         case .aiNotes, .aiNoteSave: return "ai/notes"
         case .aiNote(let id), .aiNoteDelete(let id): return "ai/notes/\(id)"
+        case .aiTrace(let session, let message): return "ai/sessions/\(session)/messages/\(message)/trace"
+        case .aiCancelMessage(let session, let message): return "ai/sessions/\(session)/messages/\(message)/cancel"
         case .aiReportConversation(let id): return "ai/reports/\(id)/conversation"
         case .aiTopics: return "ai/topics"
         case .aiReports, .aiReportCreate: return "ai/reports"
@@ -493,8 +497,8 @@ enum Endpoint {
         case .aiNotes, .aiNote: return .GET
         case .aiExperienceRun, .aiNoteSave: return .POST
         case .aiNoteDelete: return .DELETE
-        case .aiTopics, .aiReports, .aiReport: return .GET
-        case .aiReportConversation, .aiReportCreate, .aiReportRetry, .aiReportUnlock: return .POST
+        case .aiTrace, .aiTopics, .aiReports, .aiReport: return .GET
+        case .aiCancelMessage, .aiReportConversation, .aiReportCreate, .aiReportRetry, .aiReportUnlock: return .POST
         case .wallet, .shopReturns, .pointsSearch, .pointsAccount, .pointsLedger, .pointsProducts, .pointsOrders, .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief, .serviceTypes,
              .masters, .mastersByBelief, .masterById,
 			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById, .bookingChats, .bookingChatMessages,
@@ -671,6 +675,7 @@ enum Endpoint {
  case .accountAuth(_,let body): return body.map {AnyEncodable($0)}
         case .aiExperienceRun(let req): return req
         case .aiNoteSave(let req): return req
+        case .aiCancelMessage: return AnyEncodable([String: String]())
         case .aiReportCreate(let req): return req
         case .aiReportUnlock(let req): return req
         case .aiReportRetry: return AnyEncodable([String:String]())

@@ -75,4 +75,32 @@ final class DiscoveryNavigationTests: XCTestCase {
         capture(app, "completed-native-back")
     }
 
+    func testReportFirstGuestExamplesAndNativeBack() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-askxuan.appearance", "light", "-tab", "2"]
+        app.launch()
+        let bazi = app.buttons["ai-topic-bazi"]
+        XCTAssertTrue(bazi.waitForExistence(timeout: 15))
+        capture(app, "report-first-topics")
+        bazi.tap()
+        XCTAssertTrue(app.staticTexts["登录后生成个人报告"].waitForExistence(timeout: 5))
+        let back = app.navigationBars.buttons.firstMatch
+        XCTAssertTrue(back.waitForExistence(timeout: 5)); back.tap()
+        XCTAssertTrue(bazi.waitForExistence(timeout: 5))
+        let examples = app.buttons["先看一份示例报告"]
+        for _ in 0..<8 { if examples.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(examples.isHittable); examples.tap()
+        let sample = app.buttons["ai-example-bazi"]
+        if !sample.isHittable { app.swipeUp() }
+        XCTAssertTrue(sample.waitForExistence(timeout: 5)); sample.tap()
+        XCTAssertTrue(app.navigationBars["示例报告"].waitForExistence(timeout: 5))
+        capture(app, "report-native-example")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.005, dy: 0.5)).press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)))
+        XCTAssertTrue(examples.waitForExistence(timeout: 5))
+        app.segmentedControls.buttons["问 AI"].tap()
+        XCTAssertTrue(app.staticTexts["登录后使用 问 AI"].waitForExistence(timeout: 5))
+        app.segmentedControls.buttons["我的报告"].tap()
+        XCTAssertTrue(app.staticTexts["登录后使用 我的报告"].waitForExistence(timeout: 5))
+    }
+
 }

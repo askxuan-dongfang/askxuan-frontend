@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 struct AiTopic: Decodable, Identifiable {
     var id: String { code }
@@ -6,15 +7,17 @@ struct AiTopic: Decodable, Identifiable {
     let priceCents: Int64; let pointsPrice: Int64; let chapters: [String]; let version: String
     var ready: Bool? = nil
     var executionNote: String? = nil
-    var seal: String { ["bazi":"命","ziwei":"星","marriage":"缘","fengshui":"居","liuyao":"卦","qimen":"局","tarot":"心"][code] ?? "问" }
+    var seal: String { ["bazi":"命","ziwei":"星","marriage":"缘","fengshui":"居","liuyao":"卦","qimen":"局","tarot":"心","naming":"名","dream":"梦","date_select":"日","fortune":"今","face_palm":"相"][code] ?? "问" }
 }
 struct AiReport: Decodable, Identifiable {
     let id: Int64; let reportNo: String; let skillCode: String; let title: String; let version: String
     let question: String; let chapters: [String]; let priceCents: Int64; let pointsPrice: Int64
     let status: String; let summary: String; let content: String; let errorMessage: String
     let unlocked: Bool; let createdAt: String
+    var document: AiReportDocument? = nil
+    var generationStage: String? = nil
 }
-struct AiReportCreateRequest: Encodable { let skillCode: String; let question: String; let inputs: [String:String]; let requestKey: String }
+struct AiReportCreateRequest: Encodable { let skillCode: String; let question: String; let inputs: [String:String]; let requestKey: String; var attachments: [AiImageAttachment]? = nil }
 struct AiReportUnlockRequest: Encodable { let reportId: Int64; let expectedPoints: Int64 }
 private struct ReportConversationResult: Decodable { let sessionId: Int64 }
 private struct ReportUnlockResult: Decodable { let unlocked: Bool }
@@ -23,50 +26,61 @@ private let reportGreen = Color.textPrimary
 private let reportPaper = Color.bgPrimary
 
 struct AiTopicEntrances: View {
+    @ObservedObject private var auth = AuthStore.shared
     @State private var topics: [AiTopic] = []
-    @State private var selected: AiTopic?
-    @State private var library = false
     @State private var error = false
+    @State private var loading = false
     @State private var category = "全部"
-    private let categories = ["全部", "认识自己", "关系沟通", "空间生活", "梳理思路"]
+    private let categories = ["全部", "命盘与关系", "生活与文化", "问事与选择"]
     private var filteredTopics: [AiTopic] {
-        let codes = ["认识自己": ["bazi", "ziwei"], "关系沟通": ["marriage"], "空间生活": ["fengshui"], "梳理思路": ["tarot", "qimen", "liuyao"]]
-        return category == "全部" ? topics : topics.filter { (codes[category] ?? []).contains($0.code) }
+        let codes = ["命盘与关系": ["bazi", "ziwei", "marriage", "face_palm"], "生活与文化": ["naming", "dream", "fengshui", "date_select", "fortune"], "问事与选择": ["liuyao", "qimen", "tarot"]]
+        return topics.sorted { (AiReportCatalog.order.firstIndex(of: $0.code) ?? 99) < (AiReportCatalog.order.firstIndex(of: $1.code) ?? 99) }
+            .filter { category == "全部" || (codes[category] ?? []).contains($0.code) }
     }
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("EXPLORE · 专题探索").font(AppTypography.micro).tracking(2).opacity(0.7)
-                    Text("按问题，找一个入口").font(AppTypography.title(23))
-                }
-                Spacer()
-                Button("我的报告 ↗") { library = true }.font(AppTypography.caption)
-            }
-            if error { Button("专题暂未加载 · 点击重试") { Task { await load() } }.font(.footnote) }
-            Text("想系统地了解一个主题？选一份专题，按引导补充资料。").font(AppTypography.caption).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 16) {
+            Text("选择你的专题").font(AppTypography.title(23))
+            Text("每个专题都有独立报告；计算、图表与解读会在一处呈现。")
+                .font(.subheadline).foregroundStyle(.secondary)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(categories, id: \.self) { item in
                         Button { category = item } label: {
-                            Text(item).font(.caption).padding(.horizontal, 12).padding(.vertical, 10)
-                                .background(category == item ? Color.brandDefault.opacity(0.16) : Color.bgSecondary, in: Capsule())
+                            Text(item).font(.subheadline).padding(.horizontal, 12).frame(minHeight: 44)
+                                .background(category == item ? Color.accentDefault.opacity(0.15) : Color.bgSecondary, in: Capsule())
                         }.buttonStyle(AiExperiencePressStyle()).accessibilityAddTraits(category == item ? .isSelected : [])
                     }
                 }
             }.accessibilityLabel("按问题筛选专题")
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2), spacing: 10) {
-                ForEach(filteredTopics) { topic in Button { selected = topic } label: { VStack(alignment: .leading, spacing: 6) { AiTopicTile(topic: topic); if let note = topic.executionNote { Text(note).font(.caption2).foregroundStyle(.secondary) } } }.buttonStyle(.plain).disabled(topic.ready == false) }
+            if loading { ProgressView("正在展开专题…") }
+            if error { Button("专题暂未加载 · 重试") { Task { await load() } } }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 12)], spacing: 12) {
+                ForEach(filteredTopics) { topic in
+                    NavigationLink(value: AiNativeRoute.topic(topic.code)) { AiTopicTile(topic: topic) }
+                        .buttonStyle(AiExperiencePressStyle()).disabled(topic.ready == false)
+                        .accessibilityIdentifier("ai-topic-" + topic.code)
+                }
             }
-            Text("免费生成摘要 · 完整解读按专题使用积分").font(AppTypography.micro).foregroundStyle(.secondary).frame(maxWidth: .infinity)
-
-        }.padding(18).foregroundStyle(reportGreen).background(reportPaper).clipShape(RoundedRectangle(cornerRadius: 22))
-        .task { await load() }
-        .fullScreenCover(item: $selected) { topic in NavigationStack { AiReportWorkspace(topic: topic) } }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("AskXuanReportConversation"))) { _ in selected = nil; library = false }
-        .fullScreenCover(isPresented: $library) { NavigationStack { AiReportLibrary() } }
+            DisclosureGroup("先看一份示例报告") {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(AiReportCatalog.examples) { sample in
+                        NavigationLink(value: AiNativeRoute.example(sample.code)) {
+                            Label(sample.title, systemImage: AiReportCatalog.icon(sample.code)).frame(minHeight: 44)
+                        }.accessibilityIdentifier("ai-example-" + sample.code)
+                    }
+                }.padding(.top, 8)
+            }
+            Text(auth.isLoggedIn ? "免费生成摘要 · 完整解读按专题使用积分" : "示例可直接阅读 · 登录后生成个人报告")
+                .font(.caption).foregroundStyle(.secondary)
+        }.foregroundStyle(Color.textPrimary).task(id: auth.isLoggedIn) { await load() }
     }
-    private func load() async { do { topics = try await APIClient.shared.request(.aiTopics); error = false } catch { self.error = true } }
+    private func load() async {
+        error = false
+        guard auth.isLoggedIn else { topics = AiReportCatalog.examples.map(\.topic); return }
+        loading = true; defer { loading = false }
+        do { let next: [AiTopic] = try await APIClient.shared.request(.aiTopics); try Task.checkCancellation(); topics = next }
+        catch is CancellationError {} catch { self.error = true }
+    }
 }
 
 struct AiReportWorkspace: View {
@@ -82,20 +96,20 @@ struct AiReportWorkspace: View {
     @State private var busy = false
     @State private var loading = true
     @State private var error = ""
-    @State private var dateField: AiSkillField?
-    @State private var pickedDate = Date()
     @State private var confirm = false
     @State private var step = 0
     @State private var submittedRequest: AiReportCreateRequest?
     @State private var largeType = false
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var photoData: Data?
+    @State private var photoLoading = false
+    @State private var pdfURL: URL?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var accent: Color { .accentDefault }
     private var fieldsReady: Bool { (skill?.inputSchema.fields ?? []).allSatisfy { $0.valid(in: inputs) } }
     private var visibleFields: [AiSkillField] { (skill?.inputSchema.fields ?? []).filter { $0.visible(in: inputs) } }
     private var cleanInputs: [String: String] { Dictionary(uniqueKeysWithValues: visibleFields.compactMap { field in let value = (inputs[field.key] ?? "").trimmingCharacters(in: .whitespacesAndNewlines); return value.isEmpty ? nil : (field.key, value) }) }
-    private func setInput(_ key: String, _ value: String) { inputs[key] = value; inputs = cleanInputs }
-    private func dateFormatter(_ type: String) -> DateFormatter { let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(secondsFromGMT: 8 * 3600); f.dateFormat = type == "date" ? "yyyy-MM-dd" : type == "time" ? "HH:mm" : "yyyy-MM-dd'T'HH:mm"; return f }
-    private var questionReady: Bool { !question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && question.count <= 1500 }
+    private var questionReady: Bool { question.count <= 1500 }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -109,22 +123,23 @@ struct AiReportWorkspace: View {
             }.padding(20).frame(maxWidth: 760).frame(maxWidth: .infinity)
         }
         }.background(reportPaper).foregroundStyle(Color.textPrimary)
-        .toolbar { ToolbarItem(placement: .topBarLeading) { DFBackButton(label: "返回问事") }; ToolbarItem(placement: .principal) { Text("问玄 · 专题").font(AppTypography.navigation) } }
+        .navigationTitle("问玄 · 专题").toolbar(.visible, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
         .task { await load(); await refreshBalance() }
+        .task(id: selectedPhoto) {
+            guard let selectedPhoto else { return }
+            photoLoading = true; defer { photoLoading = false }
+            do {
+                guard let source = try await selectedPhoto.loadTransferable(type: Data.self), let image = UIImage(data: source), let data = image.jpegData(compressionQuality: 0.82), data.count <= 8 * 1024 * 1024 else { error = "请选择 8MB 以内的有效图片"; photoData = nil; return }
+                try Task.checkCancellation(); photoData = data
+            } catch is CancellationError {} catch { self.error = "图片读取失败，请重选" }
+        }
         .task(id: report?.status) {
             guard report?.status == "generating" else { return }
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .seconds(3)); guard let id = report?.id else { return }; let next: AiReport = try await APIClient.shared.request(.aiReport(id)); report = next; if next.status != "generating" { return } }
                 catch { if !Task.isCancelled { self.error = error.localizedDescription }; return }
             }
-        }
-        .sheet(item: $dateField) { field in
-            NavigationStack {
-                DatePicker(field.label, selection: $pickedDate, displayedComponents: field.type == "date" ? [.date] : field.type == "time" ? [.hourAndMinute] : [.date, .hourAndMinute]).datePickerStyle(.wheel).labelsHidden().environment(\.locale, Locale(identifier: "zh_CN")).environment(\.timeZone, TimeZone(secondsFromGMT: 8 * 3600)!).padding()
-                    .navigationTitle(field.label).navigationBarTitleDisplayMode(.inline)
-                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("确定") { setInput(field.key, dateFormatter(field.type).string(from: pickedDate)); dateField = nil } }; ToolbarItem(placement: .cancellationAction) { Button("取消") { dateField = nil } } }
-            }.presentationDetents([.height(340)])
         }
         .confirmationDialog("确认购买完整报告？", isPresented: $confirm, titleVisibility: .visible) {
             if let report { Button("使用 \(report.pointsPrice) 积分解锁") { Task { await unlock(report) } }.disabled(busy || balance == nil || (balance ?? 0) < report.pointsPrice) }
@@ -152,6 +167,9 @@ struct AiReportWorkspace: View {
     }
     @ViewBuilder private func topicBody(_ topic: AiTopic) -> some View {
         hero(topic.title, subtitle: topic.subtitle)
+        if let sample = AiReportCatalog.examples.first(where: { $0.code == topic.code }) {
+            NavigationLink("先看示例 · 图表与完整阅读结构", value: AiNativeRoute.example(sample.code))
+        }
         HStack { Text("摘要免费"); Text("·"); Text("完整解读 \(topic.pointsPrice) 积分") }.font(AppTypography.micro).foregroundStyle(accent).padding(.bottom, 5)
         card {
             HStack(spacing: 12) {
@@ -162,13 +180,18 @@ struct AiReportWorkspace: View {
             Text(step == 0 ? "为这次解读，补充一点线索" : "这一次，您最在意什么？").font(AppTypography.section).padding(.top, 8)
             if step == 0 {
                 Text("补充标注“必填”的资料；选填内容不确定时可以留空。").font(.footnote).foregroundStyle(.secondary)
-                ForEach(visibleFields) { field in fieldView(field) }
-                primary("下一步，说说问题 →") { AppMotion.perform { step = 1 } }.disabled(skill == nil || !fieldsReady)
+                AiNativeFields(fields: skill?.inputSchema.fields ?? [], values: $inputs)
+                if topic.code == "face_palm" {
+                    PhotosPicker(selection: $selectedPhoto, matching: .images) { Label(photoLoading ? "正在读取图片…" : photoData == nil ? "选择用于图解的照片" : "已选择照片 · 更换", systemImage: "photo") }.disabled(busy || photoLoading)
+                    if let data = photoData, let image = UIImage(data: data) { Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 180).clipShape(RoundedRectangle(cornerRadius: 12)) }
+                    Text("仅解释可见特征和文化术语，不凭照片判断性格、健康或命运。").font(.caption).foregroundStyle(.secondary)
+                }
+                primary("下一步，说说问题 →") { AppMotion.perform { step = 1 } }.disabled(skill == nil || !fieldsReady || photoLoading || (topic.code == "face_palm" && photoData == nil))
             } else {
                 ForEach(AiTopicPresentation(code: topic.code).prompts, id: \.self) { prompt in
                     Button { question = prompt } label: { HStack { Text(prompt).multilineTextAlignment(.leading); Spacer(); Image(systemName: "plus") }.font(AppTypography.caption).padding(13).frame(maxWidth: .infinity, alignment: .leading).background(accent.opacity(0.07)).clipShape(RoundedRectangle(cornerRadius: 12)) }.buttonStyle(.plain).disabled(submittedRequest != nil)
                 }
-                Text("最想了解的问题 *").font(.subheadline)
+                Text("本次关注（选填）").font(.subheadline)
                 TextEditor(text: $question).frame(minHeight: 125).padding(8).scrollContentBackground(.hidden).background(reportPaper).clipShape(RoundedRectangle(cornerRadius: 10)).accessibilityLabel("最想了解的问题").disabled(submittedRequest != nil)
                 Text("\(question.count) / 1500").font(.caption2).foregroundStyle(question.count > 1500 ? .red : .secondary).frame(maxWidth: .infinity, alignment: .trailing)
                 if !(skill?.inputSchema.fields.isEmpty ?? true) { Button("← 修改资料") { step = 0 }.font(.footnote).disabled(busy || submittedRequest != nil) }
@@ -178,43 +201,16 @@ struct AiReportWorkspace: View {
         }
         card { DisclosureGroup("这份解读，将为您梳理哪些线索？") { VStack(alignment: .leading, spacing: 12) { chapters(topic.chapters); Text("传统文化参考，不承诺预测结果。主题图形用于视觉表达，不代表您的排盘或抽牌结果。").font(.footnote).foregroundStyle(.secondary) }.padding(.top, 14) }.font(.subheadline).tint(accent) }
     }
-    private func binding(_ key: String) -> Binding<String> { Binding(get: { inputs[key] ?? "" }, set: { setInput(key, $0) }) }
-    @ViewBuilder private func fieldView(_ field: AiSkillField) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack { Text(field.label).font(AppTypography.body); Text(field.needed(in: inputs) ? "必填" : "选填").font(AppTypography.caption).foregroundStyle(.secondary) }
-            if let help = field.helpText { Text(help).font(AppTypography.caption).foregroundStyle(.secondary).lineSpacing(5) }
-            if field.type == "select" {
-                VStack(spacing: 9) {
-                    ForEach(field.options ?? []) { option in
-                        Button { AppMotion.perform { setInput(field.key, option.value) } } label: {
-                            HStack(alignment: .top, spacing: 12) {
-                                VStack(alignment: .leading, spacing: 5) { Text(option.label).font(AppTypography.body); if let description = option.description { Text(description).font(AppTypography.caption).foregroundStyle(.secondary) } }
-                                Spacer(minLength: 8)
-                                Image(systemName: inputs[field.key] == option.value ? "checkmark.circle.fill" : "circle").foregroundStyle(accent)
-                            }.multilineTextAlignment(.leading).padding(14).frame(maxWidth: .infinity, alignment: .leading).background(inputs[field.key] == option.value ? accent.opacity(0.09) : reportPaper).clipShape(RoundedRectangle(cornerRadius: 12)).overlay(RoundedRectangle(cornerRadius: 12).stroke(inputs[field.key] == option.value ? accent : accent.opacity(0.13)))
-                        }.buttonStyle(.plain).accessibilityLabel(option.label).accessibilityValue(inputs[field.key] == option.value ? "已选择" : "未选择").accessibilityAddTraits(inputs[field.key] == option.value ? [.isSelected] : [])
-                    }
-                }
-            } else if field.key == "birthDate" && inputs["calendarType"] == "lunar" {
-                TextField("YYYY-MM-DD，例如 1990-02-30", text: binding(field.key)).font(AppTypography.body).textInputAutocapitalization(.never).autocorrectionDisabled().padding(14).background(reportPaper).clipShape(RoundedRectangle(cornerRadius: 12)).accessibilityLabel("农历出生日期")
-            } else if ["date", "time", "datetime"].contains(field.type) {
-                Button { pickedDate = dateFormatter(field.type).date(from: inputs[field.key] ?? "") ?? Date(); dateField = field } label: { HStack { Text(inputs[field.key] ?? "请选择" + field.label); Spacer(); Image(systemName: field.type == "time" ? "clock" : "calendar") }.padding(14).background(reportPaper).clipShape(RoundedRectangle(cornerRadius: 12)) }.tint(accent)
-                if field.type == "datetime" { Button { setInput(field.key, dateFormatter("datetime").string(from: Date())) } label: { Label("使用当前北京时间", systemImage: "clock") }.font(AppTypography.caption).tint(accent).padding(.vertical, 5) }
-            } else {
-                TextField(field.placeholder ?? "请填写", text: binding(field.key)).font(AppTypography.body).textInputAutocapitalization(.never).autocorrectionDisabled().padding(14).background(reportPaper).clipShape(RoundedRectangle(cornerRadius: 12)).accessibilityLabel(field.label)
-                if !(inputs[field.key] ?? "").isEmpty && !field.valid(in: inputs) { Text("请填写 2–3 个 0–999999 的整数，以空格或逗号分隔。").font(AppTypography.caption).foregroundStyle(.red) }
-            }
-        }
-    }
     @ViewBuilder private func reportBody(_ r: AiReport, proxy: ScrollViewProxy) -> some View {
         hero(r.title, subtitle: r.question)
         if r.status == "generating" {
-            card { AiTopicArtwork(code: r.skillCode).frame(height: 150).frame(maxWidth: .infinity); ProgressView("报告生成中 · 尚未扣除积分").font(.footnote); Text("正在整理您的专题报告").font(.headline); Text("您可以离开，稍后在我的报告查看。当前尚未扣款；超过五分钟可恢复生成。").font(.subheadline); primary("检查并恢复生成") { Task { await retry(r) } } }
+            card { AiTopicArtwork(code: r.skillCode).frame(height: 150).frame(maxWidth: .infinity); ProgressView("报告生成中 · 尚未扣除积分").font(.footnote); Text("正在整理您的专题报告").font(.headline); Text(["checking":"正在核对您填写的资料。", "calculating":"正在排盘并整理计算结果。", "writing":"正在组织分章解读、比较表与行动建议。"][r.generationStage ?? ""] ?? "任务已开始，完成后自动展示。").font(.subheadline); Text("您可以离开，稍后在我的报告查看。当前尚未扣款；超过五分钟可恢复生成。").font(.subheadline); primary("检查并恢复生成") { Task { await retry(r) } } }
         } else if r.status == "failed" {
             card { Text("这次生成未能完成").font(.headline); Text(r.errorMessage); primary("免费重试") { Task { await retry(r) } } }
         } else {
             card { Text("分析摘要").font(AppTypography.section); Text(r.summary).lineSpacing(7) }
             if r.unlocked {
+                if let document = r.document, !(document.blocks ?? []).isEmpty { card { AiReportDocumentView(document: document) } }
                 card {
                     HStack { Text("完整分析 · 已解锁").font(AppTypography.section); Spacer(); Button(largeType ? "标准字号" : "放大字号") { largeType.toggle() }.font(AppTypography.caption) }
                     DisclosureGroup("章节导航") {
@@ -224,6 +220,8 @@ struct AiReportWorkspace: View {
                     }
                     AiMarkdownText(text: r.content, large: largeType).foregroundStyle(Color.textPrimary)
                     Text("✦ 让解读回到生活，让行动带来答案。").font(AppTypography.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 20);
+ Button("生成 PDF（含图表）") { do { pdfURL = try AiReportPDF.export(r) } catch { self.error = error.localizedDescription } }
+                    if let pdfURL { ShareLink(item: pdfURL) { Label("保存或分享 PDF", systemImage: "square.and.arrow.up") } }
  ShareLink(item: r.title + "\n\n" + r.content) { Label("保存或分享报告", systemImage: "square.and.arrow.up") }; primary("围绕这份报告继续问事 →") { Task { await followup(r) } }; Text("自动带入报告内容，聊天按账户正常额度使用。").font(.footnote).foregroundStyle(.secondary) }
             } else {
                 card { Button("钱包余额支付 ¥\(CashAPI.money(r.priceCents))") { Task { await unlockCash(r) } }.disabled(busy); Text("把线索，展开成完整答案").font(AppTypography.section); chapters(r.chapters); HStack(alignment: .firstTextBaseline) { Text("\(r.pointsPrice)").font(AppTypography.title(36)); Text("积分"); Spacer(); Text("一次购买 · 随时回看").font(AppTypography.caption) }; Text("可用积分：" + (balance.map(String.init) ?? "暂未获取") + "。也可使用钱包余额购买。").font(.footnote).foregroundStyle(.secondary); if let balance {
@@ -243,8 +241,12 @@ struct AiReportWorkspace: View {
         catch { balance = nil }
     }
     private func create(_ topic: AiTopic) async {
-        guard !busy else { return }; busy = true; error = ""; defer { busy = false }
-        do { if submittedRequest == nil { submittedRequest = .init(skillCode: topic.code, question: question.trimmingCharacters(in: .whitespacesAndNewlines), inputs: cleanInputs, requestKey: requestKey) }; if let request = submittedRequest { report = try await APIClient.shared.request(.aiReportCreate(request)) } } catch { self.error = error.localizedDescription }
+        guard !busy, skill != nil, topic.ready != false, fieldsReady, questionReady, topic.code != "face_palm" || (photoData != nil && !photoLoading) else { return }; busy = true; error = ""; defer { busy = false }
+        do { if submittedRequest == nil { submittedRequest = .init(skillCode: topic.code, question: question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "请根据已确认资料生成" + topic.title + "专题报告，区分计算依据与文化解释，给出行动建议。" : question.trimmingCharacters(in: .whitespacesAndNewlines), inputs: cleanInputs, requestKey: requestKey, attachments: try await photoAttachments(topic)) }; if let request = submittedRequest { report = try await APIClient.shared.request(.aiReportCreate(request)) } } catch { self.error = error.localizedDescription }
+    }
+    private func photoAttachments(_ topic: AiTopic) async throws -> [AiImageAttachment]? {
+        guard topic.code == "face_palm", let photoData else { return nil }
+        return [try await AiReportUpload.image(photoData)]
     }
     private func retry(_ r: AiReport) async {
         guard !busy else { return }; busy = true; error = ""; defer { busy = false }
@@ -252,7 +254,7 @@ struct AiReportWorkspace: View {
     }
     private func followup(_ r: AiReport) async {
         guard !busy else { return }; busy = true; defer { busy = false }
-        do { let result: ReportConversationResult = try await APIClient.shared.request(.aiReportConversation(r.id)); NotificationCenter.default.post(name: Notification.Name("AskXuanReportConversation"), object: result.sessionId); dismiss() } catch { self.error = error.localizedDescription }
+        do { let result: ReportConversationResult = try await APIClient.shared.request(.aiReportConversation(r.id)); NotificationCenter.default.post(name: Notification.Name("AskXuanReportConversation"), object: result.sessionId, userInfo: ["reportId":r.id]); dismiss() } catch { self.error = error.localizedDescription }
     }
     private func unlockCash(_ r: AiReport) async {
         guard !busy else { return }; busy = true; defer { busy = false }
@@ -277,11 +279,11 @@ struct AiReportLibrary: View {
                 Text("每一次探索，都有迹可循。").font(AppTypography.section).padding(.vertical, 20)
                 if !error.isEmpty { Text(error).foregroundStyle(.red); Button("重试") { Task { await load() } } }
                 if reports.isEmpty && !busy { Text("还没有专题报告，从一个关心的问题开始。").foregroundStyle(.secondary).padding(.vertical, 40) }
-                ForEach(reports) { report in NavigationLink { AiReportWorkspace(reportID: report.id) } label: { VStack(alignment: .leading, spacing: 10) { HStack { AiTopicArtwork(code: report.skillCode).frame(width: 62, height: 52); Text(report.title).font(AppTypography.card); Spacer(); Image(systemName: "arrow.up.right") }; Text(report.question).font(.subheadline).lineLimit(2); Text(report.status == "ready" ? "查看报告" : report.status == "failed" ? "生成失败，可重试" : "生成中").font(AppTypography.caption).foregroundStyle(.secondary) }.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 18)) } }
+                ForEach(reports) { report in NavigationLink(value: AiNativeRoute.report(report.id)) { VStack(alignment: .leading, spacing: 10) { HStack { AiTopicArtwork(code: report.skillCode).frame(width: 62, height: 52); Text(report.title).font(AppTypography.card); Spacer(); Image(systemName: "arrow.up.right") }; Text(report.question).font(.subheadline).lineLimit(2); Text(report.status == "ready" ? "查看报告" : report.status == "failed" ? "生成失败，可重试" : "生成中").font(AppTypography.caption).foregroundStyle(.secondary) }.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 18)) } }
                 if busy { ProgressView() } else if more && !reports.isEmpty { Button("加载更多") { Task { await load() } } }
             }.padding(20)
         }.background(reportPaper).foregroundStyle(reportGreen).navigationTitle("我的报告")
-        .toolbar { if showsDismissButton { ToolbarItem(placement: .topBarLeading) { DFBackButton(label: "返回问事") } } }
+        .toolbar(.visible, for: .navigationBar)
         .task { if reports.isEmpty { await load() } }
     }
     private func load() async { guard !busy else { return }; busy = true; defer { busy = false }; do { let rows: [AiReport] = try await APIClient.shared.request(.aiReports(page)); reports += rows; page += 1; more = rows.count == 20; error = "" } catch { self.error = error.localizedDescription } }
@@ -313,12 +315,12 @@ struct AiTopicArtwork: View {
     let code: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 24, paused: reduceMotion)) { timeline in
+        Group {
             Canvas { original, size in
                 var ctx = original
                 ctx.scaleBy(x: size.width / 240, y: size.height / 200)
                 let color = AiTopicPresentation(code: code).color
-                let time = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
+                let time: Double = 0
                 func stroke(_ points: [CGPoint], width: Double = 1.6, opacity: Double = 1) {
                     var p = Path(); p.addLines(points); ctx.stroke(p, with: .color(color.opacity(opacity)), style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round))
                 }
@@ -364,23 +366,23 @@ struct AiTopicArtwork: View {
 struct AiTopicTile: View {
     let topic: AiTopic
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            AiTopicArtwork(code: topic.code).frame(width: 120, height: 105).opacity(0.8).offset(x: 16, y: 17)
-            VStack(alignment: .leading, spacing: 9) {
-                Text(topic.seal).font(AppTypography.title(11)).foregroundStyle(AiTopicPresentation(code: topic.code).color)
-                Text(topic.title).font(AppTypography.title(19))
-                Text(AiTopicPresentation(code: topic.code).caption).font(AppTypography.micro).foregroundStyle(.secondary).lineSpacing(4).frame(maxWidth: 95, alignment: .leading)
-                Spacer(minLength: 10)
-            }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
-        }.frame(height: 143).background(AiTopicPresentation(code: topic.code).color.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(AiTopicPresentation(code: topic.code).color.opacity(0.2)))
+        VStack(alignment: .leading, spacing: 10) {
+            HStack { Image(systemName: AiReportCatalog.icon(topic.code)).font(.title2); Spacer(); Image(systemName: "arrow.up.right").font(.caption) }.foregroundStyle(Color.accentDefault)
+            Text(topic.title).font(AppTypography.title(20)).fixedSize(horizontal: false, vertical: true)
+            Text(topic.ready == false ? (topic.executionNote ?? "暂未开放") : AiReportCatalog.subtitle(topic.code))
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }.padding(16).frame(maxWidth: .infinity, minHeight: 155, alignment: .topLeading)
+            .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.borderDefault))
     }
 }
-
 
 // Block layout plus Foundation inline Markdown, shared by streamed answers and saved reports.
 struct AiMarkdownText: View {
     let text: String
     var large = false
+    var exporting = false
     private struct Block: Identifiable { let id: Int; let kind: String; let value: String }
     private var blocks: [Block] {
         let lines = text.components(separatedBy: "\n"); var result: [Block] = []; var i = 0
@@ -426,8 +428,15 @@ struct AiMarkdownText: View {
             }
         }.font(large ? .title3 : .body).lineSpacing(5).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
     }
-    private func table(_ value: String) -> some View {
+    @ViewBuilder private func table(_ value: String) -> some View {
         let rows = value.components(separatedBy: "\n").map { line in line.trimmingCharacters(in: CharacterSet(charactersIn: "| ")).components(separatedBy: "|") }
-        return ScrollView(.horizontal) { VStack(alignment: .leading, spacing: 0) { ForEach(Array(rows.enumerated()), id: \.offset) { index, row in HStack(alignment: .top, spacing: 0) { ForEach(Array(row.enumerated()), id: \.offset) { _, cell in Text(inline(cell.trimmingCharacters(in: .whitespaces))).font(AppTypography.supporting.weight(index == 0 ? .semibold : .regular)).frame(width: 140, alignment: .leading).padding(10) } }.background(.primary.opacity(index == 0 ? 0.07 : 0.02)); Divider() } } }.clipShape(RoundedRectangle(cornerRadius: 8))
+        if exporting {
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                    Text(inline(row.map { $0.trimmingCharacters(in: .whitespaces) }.joined(separator: " / "))).font(.system(size: 12, weight: index == 0 ? .semibold : .regular))
+                }
+            }
+        } else { ScrollView(.horizontal) { VStack(alignment: .leading, spacing: 0) { ForEach(Array(rows.enumerated()), id: \.offset) { index, row in HStack(alignment: .top, spacing: 0) { ForEach(Array(row.enumerated()), id: \.offset) { _, cell in Text(inline(cell.trimmingCharacters(in: .whitespaces))).font(AppTypography.supporting.weight(index == 0 ? .semibold : .regular)).frame(width: 140, alignment: .leading).padding(10) } }.background(.primary.opacity(index == 0 ? 0.07 : 0.02)); Divider() } } }.clipShape(RoundedRectangle(cornerRadius: 8))
+        }
     }
 }

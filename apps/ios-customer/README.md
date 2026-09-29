@@ -56,3 +56,14 @@ AI 页默认进入「发现」，可切换「问事／手记」。姓名灵感�
 新增回归：`DongFangAppTests/AiExperienceTests.swift`，覆盖 JSON 契约、幂等键、硬约束快照与原生组件渲染。使用最新源码后，依次 `xcodegen generate`、`pod install`，再打开 **DongFangApp.xcworkspace** 构建；不要直接打开 xcodeproj，否则可能缺少 OpenIMSDK 依赖。
 
 本轮验收：模拟器 SDK 编译、iPhone SDK 无签名编译均通过；`scripts/test-ai-experiences.sh` 使用原生 Swift 模型连接本机隔离代理（18198）验证实际响应，执行前需启动后端 `scripts/dev/ai-experiences` 测试环境。XCTest 目标编译完成，但模拟器测试启动停滞，未计为界面测试通过；手机上的导航、键盘与动态字号仍需安装后验收。
+
+## 2026-09-29：专题报告与 H5 对齐
+
+AI问事默认展示「专题」，保留「问 AI」「我的报告」。十二份公开示例与 H5 `fbf0391c0c80` 使用相同原创内容；`Resources/AiReportExamples.json` 是该发布的本地快照，不调用模型，不包含个人报告。个人报告及会话仍需登录。
+
+- 原生表单支持双方公农历、动态字段、数值范围、干支与起卦数字校验，以及系统照片选择。
+- 解锁报告支持四柱、五行数量、大运、宫位、卦爻、牌阵、配对和明细表。PDF 导出完整展开数据，当前为图像分页；文字分享提供正文。
+- 报告追问连接生产 Harness，保留原始报告；可补充资料、停止运行、查看工具与上下文预算。原生导航和侧滑手势保留，装饰图形不再持续循环动画。
+- API 默认仍为生产配置；本地验收不得用真实付费或个人资料冒充合成测试。无签名构建和模拟器测试不代表手机已安装。
+
+新增回归位于 `DongFangAppTests/AiReportParityTests.swift`；游客示例与返回流程位于 `DiscoveryNavigationTests.testReportFirstGuestExamplesAndNativeBack`。在 Xcode 的 Test 导航器中选择这两组执行；使用 workspace 并安装 Pods。当前工程已生成，新检出只需 `pod install` 后打开 workspace，新增源码时再运行 XcodeGen 并重新安装 Pods。

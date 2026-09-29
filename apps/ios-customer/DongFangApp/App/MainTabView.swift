@@ -64,18 +64,21 @@ struct MainTabView: View {
             .badge(chatNotifications.chatUnread)
             .tag(1)
 
-            // AI问事：需要登录
+            // 专题与示例公开；个人报告和问事按入口校验登录
             NavigationStack(path: $navigationPaths[2]) {
                 AiDivinationView()
+                    .navigationDestination(for: AiNativeRoute.self) { route in
+                        switch route {
+                        case .topic(let code): AiReportTopicEntry(code: code)
+                        case .example(let code): if let sample = AiReportCatalog.examples.first(where: { $0.code == code }) { AiReportExampleView(example: sample) }
+                        case .report(let id): AiReportWorkspace(reportID: id).requireAuth(title: "登录后查看报告")
+                        }
+                    }
                     .id(authStore.sessionID)
                     .rootTabPage()
-                    .requireAuth(
-                        icon: "sparkles",
-                        title: "登录后开启 AI 问事",
-                        subtitle: "整理心事、探索灵感，保存自己的思考"
-                    )
                     .navigationDestination(for: AuthRoute.self) { _ in LoginView() }
             }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("AskXuanReportConversation"))) { _ in navigationPaths[2] = NavigationPath() }
             .tabItem { Label("AI问事", systemImage: "sparkles") }
             .tag(2)
 

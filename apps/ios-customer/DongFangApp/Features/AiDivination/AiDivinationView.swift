@@ -30,20 +30,37 @@ struct AiSkillField: Decodable, Identifiable {
     var visibleWhen: AiFieldCondition? = nil
     var requiredWhen: AiFieldCondition? = nil
     var validation: String? = nil
+    var min: Double? = nil
+    var max: Double? = nil
     var id: String { key }
     func visible(in inputs: [String: String]) -> Bool { visibleWhen.map { inputs[$0.key] == $0.value } ?? true }
     func needed(in inputs: [String: String]) -> Bool { required || (requiredWhen.map { inputs[$0.key] == $0.value } ?? false) }
+    func lunar(in inputs: [String: String]) -> Bool { (key == "birthDate" || key == "partnerBirthDate") && inputs[key == "partnerBirthDate" ? "partnerCalendarType" : "calendarType"] == "lunar" }
     func valid(in inputs: [String: String]) -> Bool {
         guard visible(in: inputs) else { return true }
         let value = (inputs[key] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         if value.isEmpty { return !needed(in: inputs) }
-        if validation == "divination-numbers" { return value.range(of: #"^[0-9]{1,6}([ ,，、\t]+[0-9]{1,6}){1,2}$"#, options: .regularExpression) != nil }
-        if key == "birthDate" && inputs["calendarType"] == "lunar" { return value.range(of: #"^(19[0-9]{2}|20[0-9]{2}|2100)-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|30)$"#, options: .regularExpression) != nil }
+        if ["divination-numbers", "pair-numbers", "triple-numbers"].contains(validation ?? "") {
+            guard value.range(of: #"^[0-9]{1,6}([ ,，、\t]+[0-9]{1,6}){1,2}$"#, options: .regularExpression) != nil else { return false }
+            let count = value.split(whereSeparator: { " ,，、\t".contains($0) }).count
+            return validation == "pair-numbers" ? count == 2 : validation == "triple-numbers" ? count == 3 : true
+        }
+        if lunar(in: inputs) { return value.range(of: #"^(19[0-9]{2}|20[0-9]{2}|2100)-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|30)$"#, options: .regularExpression) != nil }
         if ["date", "time", "datetime"].contains(type) {
             let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.timeZone = TimeZone(secondsFromGMT: 8 * 3600); formatter.isLenient = false
             formatter.dateFormat = type == "date" ? "yyyy-MM-dd" : type == "time" ? "HH:mm" : "yyyy-MM-dd'T'HH:mm"
             guard let date = formatter.date(from: value), formatter.string(from: date) == value else { return false }
-            if key == "birthDate" { let year = Int(value.prefix(4)) ?? 0; return (1900...2100).contains(year) }
+            if key == "birthDate" || key == "partnerBirthDate" { let year = Int(value.prefix(4)) ?? 0; return (1900...2100).contains(year) }
+        }
+        if value.count > 500 { return false }
+        if type == "number" {
+            guard let number = Double(value), number.isFinite else { return false }
+            if let min, number < min { return false }; if let max, number > max { return false }
+            if validation == "integer", number.rounded() != number { return false }
+        }
+        if validation == "pillar" {
+            let chars = Array(value); guard chars.count == 2, let a = Array("甲乙丙丁戊己庚辛壬癸").firstIndex(of: chars[0]), let b = Array("子丑寅卯辰巳午未申酉戌亥").firstIndex(of: chars[1]) else { return false }
+            return a % 2 == b % 2
         }
         if type == "select" { return options?.contains { $0.value == value } == true }
         return true
@@ -104,6 +121,7 @@ struct AiChatMessage: Decodable, Identifiable {
     let retryable: Bool
     let createdAt: String
     let model: String?
+    var agent: AiAgentState? = nil
 }
 
 struct AiSessionCreateResult: Decodable {
@@ -166,6 +184,7 @@ final class AiDivinationViewModel: ObservableObject {
     }
 
     func bootstrap() async {
+        guard authStore.isLoggedIn else { return }
         await loadModels()
         await loadSkills()
         guard sessions.isEmpty else { return }
@@ -224,6 +243,7 @@ final class AiDivinationViewModel: ObservableObject {
         errorMessage = nil
 		selectedImages = []
         await loadMessages()
+        if messages.contains(where: { $0.status == "pending" }) { await pollUntilSettled(sessionId: id) }
     }
 
     func newConversation() {
@@ -249,7 +269,7 @@ final class AiDivinationViewModel: ObservableObject {
         } catch { deletionError = error.localizedDescription; return false }
     }
 
-    func send() async {
+    func send(confirmedInputs: [String: String] = [:]) async {
         let epoch = selectionEpoch
         let content = input.trimmingCharacters(in: .whitespacesAndNewlines)
 		guard (!content.isEmpty || !selectedImages.isEmpty), !isSending, modelReady else { return }
@@ -271,7 +291,7 @@ final class AiDivinationViewModel: ObservableObject {
                         sessionId: String(selectedSessionId),
                         userId: authStore.userId,
 						content: question,
-						inputs: [:],
+						inputs: confirmedInputs,
 						attachments: attachments,
                         model: selectedModelID
                     ))
@@ -283,7 +303,7 @@ final class AiDivinationViewModel: ObservableObject {
                         userId: authStore.userId,
                         skillCode: "general",
 						question: question,
-						inputs: [:],
+						inputs: confirmedInputs,
 						attachments: attachments,
                         model: selectedModelID
                     ))
@@ -359,10 +379,10 @@ final class AiDivinationViewModel: ObservableObject {
     }
 
     private func pollUntilSettled(sessionId: Int64) async {
-        for _ in 0..<30 {
+        for _ in 0..<120 {
             guard selectedSessionId == sessionId else { return }
             if !messages.contains(where: { $0.status == "pending" }) { return }
-            try? await Task.sleep(for: .seconds(1))
+            try? await Task.sleep(for: .seconds(2))
             guard !Task.isCancelled, selectedSessionId == sessionId else { return }
             await loadMessages()
         }
@@ -391,38 +411,36 @@ final class AiDivinationViewModel: ObservableObject {
             }
             guard epoch == selectionEpoch else { return }
             await loadMessages()
+            if messages.contains(where: { $0.id == messageId && $0.status == "pending" }) { await pollUntilSettled(sessionId: sessionId) }
         } catch {
             guard epoch == selectionEpoch else { return }
             await pollUntilSettled(sessionId: sessionId)
         }
     }
 
-	private func uploadSelectedImages() async throws -> [AiImageAttachment] {
-		var attachments: [AiImageAttachment] = []
-		for (index, data) in selectedImages.prefix(3).enumerated() {
-			let credential: MediaUploadCredential = try await apiClient.request(.mediaUploadCredential(MediaUploadCredentialRequest(fileName: "ai-\(Int(Date().timeIntervalSince1970))-\(index).jpg", mediaType: "image", contentType: "image/jpeg", fileSize: Int64(data.count))))
-			guard let uploadURL = URL(string: credential.uploadUrl) else { throw APIError.invalidURL }
-			var headers = credential.uploadHeaders
-			headers["Content-Type"] = "image/jpeg"
-			try await apiClient.upload(data, to: uploadURL, headers: headers)
-			let asset: MediaAsset = try await apiClient.request(.mediaComplete(id: credential.mediaId, MediaCompleteRequest(coverMediaId: nil)))
-			let rawURL = asset.playbackUrl.isEmpty ? asset.coverUrl : asset.playbackUrl
-			attachments.append(AiImageAttachment(mediaId: asset.id, url: absoluteMediaURL(rawURL), contentType: "image/jpeg", width: nil, height: nil))
-		}
-		return attachments
-	}
+    func stop(_ message: AiChatMessage) async {
+        do {
+            struct Result: Decodable { let accepted: Bool }
+            let _: Result = try await apiClient.request(.aiCancelMessage(message.sessionId, message.id))
+            if selectedSessionId == message.sessionId { await loadMessages() }
+        } catch { errorMessage = error.localizedDescription }
+    }
+    private func uploadSelectedImages() async throws -> [AiImageAttachment] {
+        var images: [AiImageAttachment] = []
+        for data in selectedImages.prefix(3) { images.append(try await AiReportUpload.image(data)) }
+        return images
+    }
 
-	private func absoluteMediaURL(_ value: String) -> String {
-		if URL(string: value)?.scheme != nil { return value }
-		guard let origin = URL(string: "/", relativeTo: AppConfig.baseURL)?.absoluteURL else { return value }
-		return URL(string: value, relativeTo: origin)?.absoluteURL.absoluteString ?? value
-	}
 }
 
 struct AiDivinationView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel = AiDivinationViewModel()
-    @State private var section = "发现"
+    @ObservedObject private var auth = AuthStore.shared
+    @State private var section = "专题"
+    @State private var linkedReportID: Int64?
+    @State private var clarification: AiClarification?
+    @State private var clarificationSession: Int64?
     @State private var isDrawerOpen = false
     @State private var deletionTarget: AiConversation?
     @State private var confirmDeletion = false
@@ -433,14 +451,17 @@ struct AiDivinationView: View {
         ZStack(alignment: .leading) {
             VStack(spacing: 0) {
                 Picker("AI 问事栏目", selection: $section) {
-                    ForEach(["发现", "问事", "我的报告"], id: \.self) { Text($0).tag($0) }
+                    ForEach(["专题", "问 AI", "我的报告"], id: \.self) { Text($0).tag($0) }
                 }.pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 10)
-                if section == "发现" {
-                    AiDiscoveryView(viewModel: viewModel) { section = "问事" }
+                if section == "专题" {
+                    AiDiscoveryView(viewModel: viewModel) { section = "问 AI" }
+                } else if !auth.isLoggedIn {
+                    LoginRequiredView(icon: "sparkles", title: "登录后使用 " + section, subtitle: "专题示例可直接阅读，个人报告和会话仅自己可见", isPresented: .constant(false))
                 } else if section == "我的报告" {
                     AiReportLibrary(showsDismissButton: false)
                 } else {
                     navigationBar
+                    if let linkedReportID { NavigationLink("返回这份专题报告", value: AiNativeRoute.report(linkedReportID)).font(.subheadline).padding(10) }
                     modelPicker
                     Divider().overlay(Color.borderDivider)
                     conversation
@@ -467,8 +488,15 @@ struct AiDivinationView: View {
         } message: { Text("会话将从历史问事移除，无法在此恢复。已购买的专题报告仍可在「我的报告」阅读。") }
         .navigationBarHidden(true)
         .task { await viewModel.bootstrap() }
+        .sheet(item: $clarification) { value in
+            AiClarificationView(clarification: value) { inputs in
+                guard let clarificationSession, viewModel.selectedSessionId == clarificationSession else { return }
+                viewModel.input = "已确认补充资料，请继续分析。"
+                await viewModel.send(confirmedInputs: inputs)
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("AskXuanReportConversation"))) { event in
-            if let id = event.object as? Int64 { section = "问事"; Task { await viewModel.loadSessions(); await viewModel.selectSession(id) } }
+            if let id = event.object as? Int64 { linkedReportID = event.userInfo?["reportId"] as? Int64; section = "问 AI"; Task { await viewModel.loadSessions(); await viewModel.selectSession(id) } }
         }
 		.onChange(of: selectedPhotoItems) {
 			Task {
@@ -502,6 +530,7 @@ struct AiDivinationView: View {
 
             iconButton("square.and.pencil", label: "新建问事") {
                 focusedInput = nil
+                linkedReportID = nil
                 viewModel.newConversation()
             }
         }
@@ -579,7 +608,7 @@ struct AiDivinationView: View {
                 Text("今天想问什么？").font(AppTypography.title(24)).foregroundStyle(Color.textPrimary)
                 Text("把困惑写在下方，我们从这件事聊起。").font(AppTypography.body).foregroundStyle(Color.textSecondary)
             }.frame(maxWidth: .infinity, alignment: .leading)
-            AiTopicEntrances()
+            Button("也可以先探索一个主题 →") { section = "专题" }.padding(.top, 8)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 22)
@@ -625,6 +654,13 @@ struct AiDivinationView: View {
                 } else {
                     if message.role == "user" { Text(message.content).lineSpacing(4) }
                     else { AiMarkdownText(text: message.content) }
+                }
+                if message.role == "assistant" {
+                    if message.status == "awaiting_input", let value = message.agent?.clarification {
+                        Button("补充资料并继续") { clarificationSession = message.sessionId; clarification = value }.buttonStyle(.bordered).disabled(viewModel.isSending)
+                    }
+                    if message.status == "pending" { Button("停止生成") { Task { await viewModel.stop(message) } }.font(.caption) }
+                    if message.agent != nil { AiTraceView(message: message) }
                 }
                 if message.role == "assistant", let model = message.model, !model.isEmpty {
                     Text(model).font(.system(size: 10)).foregroundStyle(Color.textTertiary)
@@ -740,6 +776,9 @@ struct AiDivinationView: View {
         case "loading_images": return "正在读取图片"
         case "tool_running": return "正在调用专业排盘"
         case "reasoning": return "正在分析"
+        case "planning": return "正在判断下一步"
+        case "reading_report": return "正在读取报告"
+        case "awaiting_input": return "等待补充资料"
         default: return "正在生成回答"
         }
     }
@@ -757,6 +796,7 @@ struct AiDivinationView: View {
             .frame(height: 54)
 
             Button {
+                linkedReportID = nil
                 viewModel.newConversation()
                 closeDrawer()
             } label: {

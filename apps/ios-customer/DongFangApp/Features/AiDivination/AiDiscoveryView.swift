@@ -6,51 +6,35 @@ struct AiDiscoveryView: View {
     private var hasDraft: Bool {
         !viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !viewModel.selectedImages.isEmpty
     }
+    @ObservedObject private var auth = AuthStore.shared
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("今天想问什么？").font(AppTypography.title(27))
-                    Text("描述事情和顾虑，和 AI 一起梳理思路。")
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("问玄 · 专题探索").font(.caption).foregroundStyle(Color.accentDefault)
+                    Text("一份报告，把关心的事看清").font(AppTypography.title(27))
+                    Text("选专题，填资料，读解读。还有疑问，再交给 AI 深入分析。")
                         .font(.subheadline).foregroundStyle(Color.textSecondary)
                 }
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(hasDraft ? "继续补充你的问题" : "写下你想聊的事")
-                        .font(.caption).foregroundStyle(Color.textSecondary)
-                    TextField("例如：想换工作，但担心新工作的稳定性…", text: $viewModel.input, axis: .vertical)
-                        .lineLimit(2...5).font(.body).disabled(viewModel.isSending)
-                        .accessibilityLabel("写下你想聊的事").accessibilityIdentifier("ai-discovery-question")
-                    ViewThatFits(in: .horizontal) {
-                        HStack(spacing: 12) { entryHint; Spacer(minLength: 0); chatButton }
-                        VStack(alignment: .leading, spacing: 10) { entryHint; chatButton }
+                AiTopicEntrances()
+                if auth.isLoggedIn {
+                    DisclosureGroup("也可以直接问 AI") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            TextField("说说你关心的事", text: $viewModel.input, axis: .vertical)
+                                .lineLimit(2...5).font(.body).disabled(viewModel.isSending)
+                                .accessibilityIdentifier("ai-discovery-question")
+                            chatButton
+                        }.padding(.vertical, 12)
                     }
-                }.padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.accentDefault.opacity(0.28), lineWidth: 1))
-                if !hasDraft && !viewModel.isSending {
-                    ViewThatFits(in: .horizontal) {
-                        HStack(spacing: 4) { examples }
-                        VStack(alignment: .leading, spacing: 4) { examples }
-                    }
-                }
-                if let recent = viewModel.sessions.first {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("继续上次").font(AppTypography.section)
-                        Button {
-                            openChat()
-                            Task { await viewModel.selectSession(recent.id) }
-                        } label: {
-                            HStack { Text(recent.title).lineLimit(2); Spacer(); Image(systemName: "arrow.up.right") }
-                                .font(.subheadline).padding(.vertical, 12).frame(maxWidth: .infinity, alignment: .leading)
+                    if let recent = viewModel.sessions.first {
+                        Button { openChat(); Task { await viewModel.selectSession(recent.id) } } label: {
+                            Label("继续上次：" + recent.title, systemImage: "clock.arrow.circlepath")
+                                .font(.subheadline).frame(minHeight: 44).lineLimit(2)
                         }.buttonStyle(AiExperiencePressStyle())
                     }
                 }
-                AiTopicEntrances()
             }.padding(18).frame(maxWidth: 760).frame(maxWidth: .infinity)
         }.scrollDismissesKeyboard(.interactively).background(Color.bgPrimary)
-    }
-    private var entryHint: some View {
-        Text(viewModel.isSending ? "回答正在生成，可进入对话查看" : "可继续补充，发送后开始回答")
-            .font(.caption).foregroundStyle(Color.textSecondary)
     }
     private var chatButton: some View {
         Button(action: openChat) {
@@ -58,22 +42,6 @@ struct AiDiscoveryView: View {
                 .font(.subheadline.weight(.medium)).padding(.horizontal, 16).frame(minHeight: 44)
                 .foregroundStyle(.white).background(Color.brandDefault, in: RoundedRectangle(cornerRadius: 12))
         }.buttonStyle(AiExperiencePressStyle()).accessibilityIdentifier("ai-open-chat")
-    }
-    @ViewBuilder private var examples: some View {
-        Text("试着问").font(.caption).foregroundStyle(Color.textSecondary)
-        example("工作去留", question: "我想换工作，但担心新工作的稳定性。请先问我几个关键问题，帮我梳理需要考虑的因素。")
-        example("关系沟通", question: "最近和一个重要的人沟通不顺。请先了解发生了什么，再帮我想想怎么表达。")
-        example("理清烦恼", question: "最近有些事情让我烦恼，但还没理清原因。请一步一步提问，帮我说清最在意的事情。")
-    }
-    private func example(_ title: String, question: String) -> some View {
-        Button {
-            viewModel.newConversation()
-            viewModel.input = question
-            openChat()
-        } label: {
-            Text(title).font(.caption).padding(.horizontal, 10).frame(minHeight: 44)
-                .foregroundStyle(Color.textPrimary)
-        }.buttonStyle(AiExperiencePressStyle())
     }
 
 }
