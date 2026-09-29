@@ -95,32 +95,38 @@ test('short narrow viewport supports a long model list and reduced motion',async
 // A saved conversation must no longer take over the discovery entry.
 test('discovery remains default and chat draft survives navigation',async({page})=>{
  await setup(page,{image:true});await page.goto('/c/ai');
- await expect(page.getByRole('heading',{name:'今天想问什么？'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'一份报告，把关心的事看清'})).toBeVisible();
  await expect(page.getByRole('textbox',{name:'输入问题'})).toBeHidden();
- await page.getByRole('link',{name:'问事',exact:true}).click();
+ await page.getByRole('link',{name:'问 AI',exact:true}).click();
  await page.getByRole('textbox',{name:'输入问题'}).fill('回到发现也保留');
- await page.getByRole('link',{name:'发现',exact:true}).click();
- await page.getByRole('link',{name:'问事',exact:true}).click();
+ await page.getByRole('link',{name:'专题',exact:true}).click();
+ await page.getByRole('link',{name:'问 AI',exact:true}).click();
  await expect(page.getByRole('textbox',{name:'输入问题'})).toHaveValue('回到发现也保留');
 });
 
 for(const width of [320,390])test(`discovery question handoff preserves draft without sending ${width}`,async({page})=>{
  await page.setViewportSize({width,height:844});const state=await setup(page);await page.goto('/c/ai');
- const field=page.getByRole('textbox',{name:'写下你想聊的事'});
+ await page.locator('.ai-direct-question > summary').click();
+ const field=page.getByRole('textbox',{name:'说说你关心的事'});
  await expect(field).toBeVisible();await field.fill('先保留这个问题，不要直接发送');
- await page.getByRole('button',{name:'继续问事'}).click();
+ await page.locator('.ai-question-entry button[type=submit]').click();
  await expect(page.getByRole('textbox',{name:'输入问题'})).toHaveValue('先保留这个问题，不要直接发送');
  expect(state.sent).toHaveLength(0);
- await page.getByRole('link',{name:'发现',exact:true}).click();
- await expect(page.getByRole('textbox',{name:'继续补充你的问题'})).toHaveValue('先保留这个问题，不要直接发送');
+ await page.getByRole('link',{name:'专题',exact:true}).click();
+ await page.locator('.ai-direct-question > summary').click();
+ await expect(page.getByRole('textbox',{name:'说说你关心的事'})).toHaveValue('先保留这个问题，不要直接发送');
  await expect(page.getByRole('button',{name:'工作去留',exact:true})).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
 });
-test('discovery example is editable, not an automatic model request',async({page})=>{
+test('topic example is a read-only report and does not start a model request',async({page})=>{
  const state=await setup(page);await page.goto('/c/ai');
- await page.getByRole('button',{name:'工作去留',exact:true}).click();
- await expect(page.getByRole('textbox',{name:'输入问题'})).toHaveValue(/请先问我几个关键问题/);
+ await page.getByText('先看一份示例报告',{exact:true}).click();
+ await page.getByRole('link',{name:'八字排盘',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'八字排盘',exact:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'四柱命盘',exact:true})).toBeVisible();
  expect(state.sent).toHaveLength(0);
+ await page.getByRole('link',{name:'返回专题',exact:true}).click();
+ await page.getByRole('link',{name:'问 AI',exact:true}).click();
  await page.getByRole('textbox',{name:'输入问题'}).fill('补充我的实际情况');
  await page.getByRole('button',{name:'发送',exact:true}).click();
  await expect.poll(()=>state.sent.length).toBe(1);expect(state.sent[0].question).toBe('补充我的实际情况');
