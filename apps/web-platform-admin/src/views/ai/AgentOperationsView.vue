@@ -14,6 +14,11 @@ const dirty = computed(() => JSON.stringify(form.value) !== baseline.value || Ob
 const selectedPolicy = computed(() => form.value?.skills.find(s => s.code === selectedSkill.value))
 const selectedInfo = computed(() => workspace.value?.catalog.find(s => s.code === selectedSkill.value))
 const enabledSkills = computed(() => form.value?.skills.filter(s => s.enabled) || [])
+const missingSkills = computed(() => workspace.value?.catalog.filter(s => !form.value?.skills.some(p => p.code === s.code)) || [])
+function addCatalogSkills() {
+  if (!form.value) return
+  for (const s of missingSkills.value) form.value.skills.push({ code: s.code, enabled: true, prompt: `你是${s.name}助手。${s.description}仅解释工具实际返回的数据，缺少资料时补问。`, useTool: s.toolAvailable && s.einoSupported })
+}
 const skillName = (code: string) => workspace.value?.catalog.find(s => s.code === code)?.name || code
 const statuses: Record<string, string> = { passed: '已通过', running: '执行中', completed: '已完成', failed: '失败', awaiting_input: '待补充资料', expired: '已过期', cancelled: '已结束' }
 const statusText = (s: string) => statuses[s] || s
@@ -97,7 +102,7 @@ watch(tab, value => { if (value === 'evaluation') void loadEvaluations() })
 const debug = reactive({ kind: 'classic', skillCode: '', question: '请根据这份测试资料，说明可以提供哪些有依据的参考。' })
 const inputValues = reactive<Record<string, string>>({}), run = ref<DebugRun>(), debugBusy = ref(false), pollError = ref('')
 const debugInfo = computed(() => workspace.value?.catalog.find(s => s.code === debug.skillCode))
-const debugFields = computed(() => debugInfo.value?.inputSchema.fields || [])
+const debugFields = computed(() => (debugInfo.value?.inputSchema.fields || []).filter(f => !f.visibleWhen || inputValues[f.visibleWhen.key] === f.visibleWhen.value))
 const einoAvailable = computed(() => debugInfo.value?.einoSupported && form.value?.skills.find(s => s.code === debug.skillCode)?.useTool)
 const inProgress = computed(() => run.value?.status === 'running')
 const pending = computed(() => run.value?.status === 'awaiting_input')
@@ -105,11 +110,13 @@ let timer: ReturnType<typeof setTimeout> | undefined, pollGeneration = 0, dispos
 watch(() => debug.skillCode, () => { Object.keys(inputValues).forEach(k => delete inputValues[k]); if (!einoAvailable.value) debug.kind = 'classic' })
 function sample() {
   const values: Record<string, string> = { birthDate: '1990-01-02', birthTime: '12:30', gender: 'male', name: '测试用户', question: '合成资料验证' }
+  Object.assign(values, { calendarType: 'solar', astroBirthDate: '1990-01-02', astroBirthTime: '08:30', latitude: '31.23', longitude: '121.47', transitDateTime: '2026-09-29T12:30', eventTime: '2026-09-29T12:30', targetDate: '2026-09-29', yearPillar: '己巳', monthPillar: '丙子', dayPillar: '丁卯', hourPillar: '甲辰', lunarMonth: '8', lunarDay: '19', hourIndex: '7', yongShenTarget: '父母', pairNumbers: '12 34', tripleNumbers: '12 34 56', numbers: '12 34 56', divinationText: '山水', count: '3', countCategory: 'item', measureKind: '丈尺', majorValue: '1', minorValue: '2', upperCue: '天', lowerCue: '地', hexagramName: '乾为天', movingLine: '3', toPalace: '夫妻' })
+  for (const field of debugInfo.value?.inputSchema.fields || []) if (field.defaultValue) inputValues[field.key] = field.defaultValue
   for (const field of debugFields.value) if (values[field.key]) inputValues[field.key] = values[field.key]
 }
 function inputs() {
   const result: Record<string, unknown> = {}
-  for (const field of debugFields.value) { const value = inputValues[field.key]?.trim(); if (value) result[field.key] = field.type === 'number' ? Number(value) : value }
+  for (const field of debugFields.value) { const value = inputValues[field.key]?.trim(); if (value) result[field.key] = value }
   return result
 }
 function stopPoll() { if (timer) clearTimeout(timer); timer = undefined; pollGeneration++ }
@@ -199,7 +206,7 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
       </section>
 
       <section v-show="tab === 'skills'" class="ops-skills">
-        <aside class="ops-card ops-skill-list"><h2>技能目录</h2><button v-for="skill in form.skills" :key="skill.code" type="button" :class="{ selected: selectedSkill === skill.code }" :aria-pressed="selectedSkill === skill.code" @click="selectedSkill = skill.code"><span>{{ skillName(skill.code) }}</span><span class="ops-pill" :class="{ muted: !skill.enabled }">{{ skill.enabled ? '已启用' : '已停用' }}</span></button></aside>
+        <aside class="ops-card ops-skill-list"><h2>技能目录</h2><p class="ops-hint">{{ workspace.catalog.length }} 项技能 · {{ workspace.catalog.filter(s => s.einoSupported).length }} 项已接入计算工具</p><el-button v-if="missingSkills.length" :disabled="busy" @click="addCatalogSkills">将 {{ missingSkills.length }} 项新技能加入草稿</el-button><button v-for="skill in form.skills" :key="skill.code" type="button" :class="{ selected: selectedSkill === skill.code }" :aria-pressed="selectedSkill === skill.code" @click="selectedSkill = skill.code"><span>{{ skillName(skill.code) }}</span><span class="ops-pill" :class="{ muted: !skill.enabled }">{{ skill.enabled ? '已启用' : '已停用' }}</span></button></aside>
         <div v-if="selectedPolicy && selectedInfo" class="ops-card">
           <div class="ops-section-head"><div><h2>{{ selectedInfo.name }}</h2><p>{{ selectedInfo.description }}</p></div><el-switch v-model="selectedPolicy.enabled" :disabled="busy || selectedPolicy.code === 'general'" :aria-label="`启用${selectedInfo.name}`" /></div>
           <el-form label-position="top" :disabled="busy" @submit.prevent>
@@ -219,7 +226,7 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
             <el-form-item label="执行方式"><el-radio-group v-model="debug.kind" :disabled="inProgress || pending || debugBusy"><el-radio-button value="classic">原问事流程</el-radio-button><el-radio-button value="eino" :disabled="!einoAvailable">Eino 多步验证</el-radio-button></el-radio-group><span class="ops-hint">单次调试用于排查；发布需要通过质量评测。用户端执行模式以上方状态为准。</span></el-form-item>
             <el-form-item label="测试问题"><el-input v-model="debug.question" type="textarea" :rows="3" maxlength="1500" :disabled="inProgress || pending" aria-label="测试问题" /></el-form-item>
             <div class="ops-section-head"><h3>结构化资料</h3><el-button text :disabled="inProgress || debugBusy" @click="sample">填入合成示例</el-button></div>
-            <div class="ops-grid"><el-form-item v-for="field in debugFields" :key="field.key" :label="`${field.label || field.key}${field.required ? ' · 必填' : ''}`"><el-select v-if="field.options?.length" v-model="inputValues[field.key]" clearable :disabled="inProgress || debugBusy" :aria-label="field.label || field.key"><el-option v-for="o in field.options" :key="o.value" :value="o.value" :label="o.label || o.value" /></el-select><el-input v-else v-model="inputValues[field.key]" :disabled="inProgress || debugBusy" :aria-label="field.label || field.key" :placeholder="field.type === 'date' ? 'YYYY-MM-DD' : field.type === 'time' ? 'HH:mm' : '填写测试资料'" maxlength="500" /></el-form-item></div>
+            <div class="ops-grid"><el-form-item v-for="field in debugFields" :key="field.key" :label="`${field.label || field.key}${field.required ? ' · 必填' : ''}`"><el-select v-if="field.options?.length" v-model="inputValues[field.key]" clearable :disabled="inProgress || debugBusy" :aria-label="field.label || field.key"><el-option v-for="o in field.options" :key="o.value" :value="o.value" :label="o.label || o.value" /></el-select><el-input v-else v-model="inputValues[field.key]" :disabled="inProgress || debugBusy" :aria-label="field.label || field.key" :type="field.type === 'datetime' ? 'datetime-local' : field.type === 'date' && inputValues.calendarType === 'lunar' ? 'text' : field.type" :min="field.min" :max="field.max" :step="field.validation === 'integer' ? 1 : 'any'" :placeholder="field.type === 'date' ? 'YYYY-MM-DD' : field.type === 'time' ? 'HH:mm' : '填写测试资料'" maxlength="500" /><span v-if="field.helpText" class="ops-hint">{{ field.helpText }}</span></el-form-item></div>
             <p v-if="!debugFields.length" class="ops-hint">此技能无需额外资料。</p>
             <el-alert v-if="pending" :title="run?.clarification || '请补充资料后继续'" type="warning" :closable="false" />
             <div class="ops-debug-actions"><template v-if="pending"><el-button type="primary" :loading="debugBusy" @click="resumeDebug">补充并继续</el-button><el-button :disabled="debugBusy" @click="cancelDebug">结束本次调试</el-button></template><el-button v-else type="primary" :icon="VideoPlay" :loading="debugBusy || inProgress" :disabled="dirty || !workspace.draftSaved || !debug.skillCode || !debug.question.trim() || busy" @click="startDebug">{{ inProgress ? '正在执行' : '开始调试' }}</el-button><el-button v-if="run" text :icon="Refresh" @click="refreshRun">获取状态</el-button></div>
