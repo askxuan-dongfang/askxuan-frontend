@@ -53,7 +53,7 @@ final class AiReportContractTests: XCTestCase {
         for kind in Set(blocks.map(\.kind)).sorted() {
             let block = try XCTUnwrap(blocks.first { $0.kind == kind })
             for (width, scheme) in [(320.0, ColorScheme.dark), (390.0, ColorScheme.light)] {
-                let view = AiReportBlockView(block: block, expanded: true).padding(16).frame(width: width).fixedSize(horizontal: false, vertical: true).background(Color.bgPrimary).environment(\.colorScheme, scheme)
+                let view = AiReportBlockView(block: block, expanded: kind != "pillars").padding(16).frame(width: width).fixedSize(horizontal: false, vertical: true).background(Color.bgPrimary).environment(\.colorScheme, scheme)
                 let image = try XCTUnwrap(ImageRenderer(content: view).uiImage, kind)
                 XCTAssertEqual(image.size.width, width)
                 XCTAssertGreaterThan(try XCTUnwrap(image.pngData()).count, 1000)

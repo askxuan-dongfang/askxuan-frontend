@@ -106,7 +106,7 @@ struct AiReportBlockView: View {
                 }
             }
         case "pillars", "pairs", "cards":
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: typeSize.isAccessibilitySize ? 240 : block.kind == "pillars" ? 100 : 135))], spacing: 10) {
+            LazyVGrid(columns: block.kind == "pillars" && !typeSize.isAccessibilitySize ? Array(repeating: GridItem(.flexible(minimum: 0), spacing: 8), count: 4) : [GridItem(.adaptive(minimum: typeSize.isAccessibilitySize ? 240 : 135))], spacing: 10) {
                 ForEach(Array(items.enumerated()), id: \.offset) { _, item in tile(item) }
             }
         default:
@@ -117,9 +117,9 @@ struct AiReportBlockView: View {
     func tile(_ item: AiReportItem) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(item.label).font(.caption).foregroundStyle(.secondary)
-            Text(item.value).font(AppTypography.title(block.kind == "pillars" ? 26 : 19))
+            Text(item.value).font(AppTypography.title(block.kind == "pillars" ? 22 : 19))
             if let detail = item.detail { Text(detail).font(.caption).foregroundStyle(.secondary) }
-        }.frame(maxWidth: .infinity, alignment: .leading).padding(12)
+        }.frame(maxWidth: .infinity, alignment: .leading).padding(block.kind == "pillars" ? 8 : 12)
             .background(Color.bgPrimary, in: RoundedRectangle(cornerRadius: 12))
             .accessibilityElement(children: .combine)
     }
