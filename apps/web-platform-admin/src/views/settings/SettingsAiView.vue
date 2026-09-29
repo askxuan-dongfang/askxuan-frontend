@@ -10,16 +10,17 @@ const saved = ref<AIProviderSettings>()
 const loading = ref(true), saving = ref(false), testing = ref(false)
 const loadError = ref(''), testError = ref(''), tested = ref(false)
 const models = ref<AIModelOption[]>([])
-const form = reactive<AIProviderUpdate>({ revision: 0, provider: 'deepseek', baseUrl: 'https://api.deepseek.com', apiKey: '', defaultModel: 'deepseek-flash', visionModel: 'deepseek-flash', enabledModels: [], thinkingEnabled: true, reasoningEffort: 'low', maxOutputTokens: 2048 })
+const form = reactive<AIProviderUpdate>({ revision: 0, provider: 'deepseek', baseUrl: 'https://api.deepseek.com', apiKey: '', defaultModel: 'deepseek-flash', visionModel: 'deepseek-flash', enabledModels: [], thinkingEnabled: true, reasoningEffort: 'low', maxOutputTokens: 8192, complexOutputTokens: 16384, contextWindow: 1048576, maxInputChars: 20000, taskTimeoutSeconds: 180 })
 let baseline = ''
 const dirty = computed(() => JSON.stringify(form) !== baseline)
 const busy = computed(() => loading.value || saving.value || testing.value)
+const selectedCapability = computed(() => models.value.find(item => item.id === form.defaultModel))
 const visionOptions = computed(() => models.value.filter(item => item.supportsVision))
-const names: Record<string, string> = { provider: 'Provider', baseUrl: '接口地址', apiKey: '密钥', defaultModel: '默认模型', visionModel: '图片模型', enabledModels: '开放模型', thinkingEnabled: '思考模式', reasoningEffort: '推理强度', maxOutputTokens: '输出上限' }
+const names: Record<string, string> = { provider: 'Provider', baseUrl: '接口地址', apiKey: '密钥', defaultModel: '默认模型', visionModel: '图片模型', enabledModels: '开放模型', thinkingEnabled: '思考模式', reasoningEffort: '推理强度', maxOutputTokens: '普通输出上限', complexOutputTokens: '复杂输出上限', contextWindow: '上下文额度', maxInputChars: '单次输入字符', taskTimeoutSeconds: '任务时限' }
 
 function useSaved(value: AIProviderSettings) {
   saved.value = value
-  Object.assign(form, { revision: value.revision, provider: value.provider, baseUrl: value.baseUrl, defaultModel: value.defaultModel, visionModel: value.visionModel, enabledModels: [...(value.enabledModels || [])], thinkingEnabled: value.thinkingEnabled, reasoningEffort: value.reasoningEffort || 'low', maxOutputTokens: value.maxOutputTokens, apiKey: '' })
+  Object.assign(form, { revision: value.revision, provider: value.provider, baseUrl: value.baseUrl, defaultModel: value.defaultModel, visionModel: value.visionModel, enabledModels: [...(value.enabledModels || [])], thinkingEnabled: value.thinkingEnabled, reasoningEffort: value.reasoningEffort || 'low', maxOutputTokens: value.maxOutputTokens, complexOutputTokens: value.complexOutputTokens ?? 16384, contextWindow: value.contextWindow ?? 1048576, maxInputChars: value.maxInputChars ?? 20000, taskTimeoutSeconds: value.taskTimeoutSeconds ?? 180, apiKey: '' })
   baseline = JSON.stringify(form)
 }
 async function load() {
@@ -104,8 +105,16 @@ onMounted(load)
               <div class="ai-form-grid">
                 <el-form-item label="思考模式"><div class="ai-switch-row"><el-switch v-model="form.thinkingEnabled" aria-label="思考模式" /><span>{{ form.thinkingEnabled ? '开启' : '关闭' }}</span></div></el-form-item>
                 <el-form-item label="推理强度"><el-select v-model="form.reasoningEffort" aria-label="推理强度" :disabled="!form.thinkingEnabled"><el-option label="低 · 更快回复" value="low" /><el-option label="中 · 均衡" value="medium" /><el-option label="高 · 更多推理" value="high" /></el-select></el-form-item>
-                <el-form-item label="最大输出 Token"><el-input-number v-model="form.maxOutputTokens" aria-label="最大输出 Token" :min="64" :max="32768" :step="256" controls-position="right" /><span class="ai-field-hint">单条问事回复上限；专题报告有独立的结构化输出上限。</span></el-form-item>
+                <el-form-item label="最大输出 Token"><el-input-number v-model="form.maxOutputTokens" aria-label="最大输出 Token" :min="64" :max="32768" :step="256" controls-position="right" /><span class="ai-field-hint">普通问事每次模型调用的输出预算，包含供应商计入的思考 Token。</span></el-form-item>
               </div>
+              <div class="ai-form-grid">
+                <el-form-item label="复杂分析输出 Token"><el-input-number v-model="form.complexOutputTokens" aria-label="复杂分析输出 Token" :min="form.maxOutputTokens" :max="32768" :step="1024" /><span class="ai-field-hint">报告、计算与明确要求深入分析的问题使用此预算。</span></el-form-item>
+                <el-form-item label="平台上下文额度"><el-input-number v-model="form.contextWindow" aria-label="平台上下文额度" :min="32768" :max="1048576" :step="32768" /><span class="ai-field-hint">输入和输出合计；实际取平台额度与模型容量中的较小值。</span></el-form-item>
+                <el-form-item label="单次输入字符上限"><el-input-number v-model="form.maxInputChars" aria-label="单次输入字符上限" :min="2000" :max="100000" :step="2000" /></el-form-item>
+                <el-form-item label="任务时限（秒）"><el-input-number v-model="form.taskTimeoutSeconds" aria-label="任务时限（秒）" :min="60" :max="600" :step="30" /><span class="ai-field-hint">异步执行，用户可停止生成；不会随页面连接断开而重复执行。</span></el-form-item>
+              </div>
+              <el-alert v-if="selectedCapability" type="info" :closable="false" :title="`模型声明：上下文 ${selectedCapability.contextWindow?.toLocaleString() || '未提供（按 32K 保守处理）'} · 最大输出 ${selectedCapability.maxOutputTokens?.toLocaleString() || '未提供'}`" />
+              <p class="ai-field-hint">上下文按文本保守估算装配，保留当前问题与工具结果，必要时压缩旧对话。估算占用不等于计费用量；实际用量以供应商返回为准。</p>
               <p class="ai-field-hint">思考参数由兼容接口传递，实际支持能力取决于所选供应商。</p>
             </el-form>
           </section>
@@ -116,7 +125,7 @@ onMounted(load)
             <div class="ai-live-label"><span /> 当前生效</div>
             <h2>{{ saved.provider === 'deepseek' ? 'DeepSeek' : saved.provider === 'mock' ? '本地模拟' : 'OpenAI 兼容接口' }}</h2>
             <p class="ai-current-model">{{ saved.defaultModel || '尚未设置默认模型' }}</p>
-            <dl><div><dt>配置来源</dt><dd>{{ saved.source === 'platform' ? '管理平台' : '服务器初始配置' }}</dd></div><div><dt>密钥状态</dt><dd>{{ saved.hasApiKey ? '已配置' : '未配置' }}</dd></div><div><dt>版本</dt><dd>v{{ saved.revision }}</dd></div></dl>
+            <dl><div><dt>配置来源</dt><dd>{{ saved.source === 'platform' ? '管理平台' : '服务器初始配置' }}</dd></div><div><dt>密钥状态</dt><dd>{{ saved.hasApiKey ? '已配置' : '未配置' }}</dd></div><div><dt>普通 / 复杂输出</dt><dd>{{ saved.maxOutputTokens }} / {{ saved.complexOutputTokens }} Token</dd></div><div><dt>平台上下文</dt><dd>{{ saved.contextWindow?.toLocaleString() }} Token</dd></div><div><dt>版本</dt><dd>v{{ saved.revision }}</dd></div></dl>
             <div class="ai-flow"><span>管理平台</span><el-icon><ArrowRight /></el-icon><span>AI 服务</span><el-icon><ArrowRight /></el-icon><span>用户端</span></div>
             <p>保存后立即用于新请求。H5 和 iOS 共用此设置，无需重新发布客户端。</p>
           </section>

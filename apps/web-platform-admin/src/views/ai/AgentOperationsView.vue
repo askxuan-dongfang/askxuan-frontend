@@ -194,7 +194,7 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
         <el-form label-position="top" :disabled="busy" @submit.prevent="save">
           <div class="ops-grid"><el-form-item label="名称"><el-input v-model="form.name" maxlength="40" aria-label="智能体名称" /></el-form-item><el-form-item label="默认模型"><el-select v-model="form.model" filterable aria-label="智能体默认模型" placeholder="沿用模型设置中的默认值" clearable><el-option v-if="form.model && !models.some(m => m.id === form?.model)" :value="form.model" :label="form.model" /><el-option v-for="m in models" :key="m.id" :value="m.id" :label="m.name" /></el-select><span class="ops-hint">用于未主动选择模型的文字问事。</span></el-form-item></div>
           <el-form-item label="职责与回答要求"><el-input v-model="form.instruction" type="textarea" :rows="6" maxlength="2500" show-word-limit aria-label="职责与回答要求" /></el-form-item>
-          <el-form-item label="对话回答输出上限"><el-input-number v-model="form.maxOutputTokens" :min="64" :max="4096" :step="128" aria-label="回答输出上限" /><span class="ops-hint">Token；同时受全局模型设置限制。Eino 调试最多输出 512 Token。</span></el-form-item>
+          <el-form-item label="对话回答输出上限"><el-input-number v-model="form.maxOutputTokens" :min="64" :max="32768" :step="1024" aria-label="回答输出上限" /><span class="ops-hint">Token；同时受全局模型设置限制。Eino 调试最多输出 512 Token。</span></el-form-item>
         </el-form>
       </section>
 
