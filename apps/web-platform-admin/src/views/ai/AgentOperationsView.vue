@@ -1,23 +1,51 @@
 <script setup lang="ts">
+import client from '@/api/client'
 import { computed, onMounted, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Setting, Connection, VideoPlay, List, Clock, Refresh, Check, ArrowRight } from '@element-plus/icons-vue'
+import { Setting, Connection, VideoPlay, List, Clock, Refresh, Check, ArrowRight, Plus, Delete, Search } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
+import KnowledgeLibrary from './KnowledgeLibrary.vue'
 import { agentOperationsApi as api, type AgentWorkspace, type AgentConfig, type DebugRun, type ProductionRun, type ToolTrace, type EvaluationRun, type EvaluationCase } from '@/api/agentOperations'
+
+import { addCapability, changeCapability, capabilityKind } from './agentCapabilities'
 
 const workspace = ref<AgentWorkspace>(), loading = ref(true), busy = ref(false), loadError = ref('')
 const form = ref<AgentConfig>(), baseline = ref(''), tab = ref('config'), selectedSkill = ref('')
 const models = ref<{ id: string; name: string }[]>([])
-const sections = [{ id: 'config', name: '智能体配置', icon: Setting }, { id: 'skills', name: '技能与工具', icon: Connection }, { id: 'debug', name: '调试工作台', icon: VideoPlay }, { id: 'evaluation', name: '质量评测', icon: Check }, { id: 'runs', name: '运行记录', icon: List }, { id: 'versions', name: '版本发布', icon: Clock }]
+const knowledgeBases=ref<{id:string;name:string;enabled:boolean}[]>([])
+async function loadKnowledgeBases(){try{const v=await client.get<{list:typeof knowledgeBases.value}>("/ai/admin/knowledge-bases");knowledgeBases.value=v.list||[]}catch{knowledgeBases.value=[]}}
+const workspaceGroups = [{ id:'capabilities',name:'能力中心',tabs:['skills','knowledge'] },{ id:'development',name:'智能体开发',tabs:['config'] },{ id:'release',name:'调试与发布',tabs:['debug','evaluation','runs','versions'] }]
+const currentGroup = computed(()=>workspaceGroups.find(g=>g.tabs.includes(tab.value))!)
+const sections = [{id:'knowledge',name:'知识库',icon:Connection},{ id: 'config', name: '智能体配置', icon: Setting }, { id: 'skills', name: '技能与工具', icon: Connection }, { id: 'debug', name: '调试工作台', icon: VideoPlay }, { id: 'evaluation', name: '质量评测', icon: Check }, { id: 'runs', name: '运行记录', icon: List }, { id: 'versions', name: '版本发布', icon: Clock }]
 const dirty = computed(() => JSON.stringify(form.value) !== baseline.value || Object.keys(caseErrors).length > 0)
 const selectedPolicy = computed(() => form.value?.skills.find(s => s.code === selectedSkill.value))
 const selectedInfo = computed(() => workspace.value?.catalog.find(s => s.code === selectedSkill.value))
 const enabledSkills = computed(() => form.value?.skills.filter(s => s.enabled) || [])
 const missingSkills = computed(() => workspace.value?.catalog.filter(s => !form.value?.skills.some(p => p.code === s.code)) || [])
-function addCatalogSkills() {
-  if (!form.value) return
-  for (const s of missingSkills.value) form.value.skills.push({ code: s.code, enabled: true, prompt: `你是${s.name}助手。${s.description}仅解释工具实际返回的数据，缺少资料时补问。`, useTool: s.toolAvailable && s.einoSupported })
+const capabilityPicker = ref(false), capabilitySearch = ref(''), capabilityFilter = ref('all')
+const kindLabel = (info?: AgentWorkspace['catalog'][number]) => ({ mcp: 'MCP 工具', builtin: '内置工具', skill: '业务技能' }[capabilityKind(info)])
+const availableCapabilities = computed(() => missingSkills.value.filter(s =>
+  (capabilityFilter.value === 'all' || capabilityKind(s) === capabilityFilter.value) &&
+  `${s.name} ${s.code} ${s.description} ${s.toolServer || ''}`.toLowerCase().includes(capabilitySearch.value.trim().toLowerCase())))
+function addSkill(info: AgentWorkspace['catalog'][number]) {
+  if (!form.value || busy.value || !addCapability(form.value, info)) return
+  selectedSkill.value = info.code
+  ElMessage.success(`${info.name}已加入草稿`)
+}
+async function changeSkill(code: string, action: 'remove' | 'disable' | 'enable') {
+  if (!form.value || busy.value || (code === 'general' && action !== 'enable')) return
+  const info = workspace.value?.catalog.find(s => s.code === code)
+  if (action === 'enable' && info?.sourceStatus === 'disabled') { ElMessage.warning('源技能已停用，当前无法启用'); return }
+  const related = form.value.evaluation.filter(c => c.skillCode === code)
+  if (action === 'remove' || (action === 'disable' && related.length)) {
+    const verb = action === 'remove' ? '移除' : '停用'
+    try { await ElMessageBox.confirm(`${verb}“${skillName(code)}”${related.length ? `会同时移除草稿中关联的 ${related.length} 条评测用例` : '只修改当前草稿'}。${action === 'remove' ? '之后可从能力库重新添加；源技能和历史记录保留。' : '技能配置保留，之后可以重新启用。'}发布后才会影响用户端。`, `${verb}能力`, { confirmButtonText: verb, cancelButtonText: '取消', type: 'warning' }) } catch { return }
+  }
+  if (!form.value || !changeCapability(form.value, code, action)) return
+  for (const c of related) if (action !== 'enable') { delete caseInputs[c.id]; delete caseErrors[c.id] }
+  if (!form.value.skills.some(s => s.code === selectedSkill.value)) selectedSkill.value = form.value.skills[0]?.code || ''
+  if (!form.value.skills.some(s => s.code === debug.skillCode && s.enabled)) debug.skillCode = form.value.skills.find(s => s.enabled)?.code || ''
 }
 const skillName = (code: string) => workspace.value?.catalog.find(s => s.code === code)?.name || code
 const statuses: Record<string, string> = { passed: '已通过', running: '执行中', completed: '已完成', failed: '失败', awaiting_input: '待补充资料', expired: '已过期', cancelled: '已结束' }
@@ -34,7 +62,7 @@ async function load(preserve = false) {
       workspace.value = value; return
     }
     Object.keys(caseInputs).forEach(k => delete caseInputs[k]); Object.keys(caseErrors).forEach(k => delete caseErrors[k]); workspace.value = value; form.value = structuredClone(value.draft); form.value.evaluation ||= []; baseline.value = JSON.stringify(form.value)
-    if (!selectedSkill.value) selectedSkill.value = value.draft.skills[0]?.code || ''
+    if (!value.draft.skills.some(s => s.code === selectedSkill.value)) selectedSkill.value = value.draft.skills[0]?.code || ''
     if (!debug.skillCode || !value.draft.skills.some(s => s.code === debug.skillCode && s.enabled)) debug.skillCode = value.draft.skills.find(s => s.enabled)?.code || ''
   } catch { loadError.value = '智能体管理加载失败，请重试；首次接入需要完成数据库迁移。' }
   finally { loading.value = false }
@@ -182,7 +210,7 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
 
 <template>
   <div class="dfx-page agent-ops" v-loading="loading">
-    <PageHeader title="智能体运营管理" subtitle="配置能力、验证效果，让每一次问事都有迹可循">
+    <PageHeader title="AI 问事工作台" subtitle="配置能力、验证效果，让每一次问事都有迹可循">
       <template #actions><el-button :icon="Refresh" :disabled="busy" @click="reload">重新加载</el-button></template>
     </PageHeader>
     <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon><el-button text @click="reload">重试</el-button></el-alert>
@@ -194,29 +222,45 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
         <div class="ops-stat"><span>已启用技能</span><strong>{{ enabledSkills.length }}</strong></div>
         <div class="ops-stat"><span>发布检查</span><strong :class="{ ready: workspace.tested && !dirty }">{{ dirty ? '有未保存修改' : workspace.tested ? '评测已通过' : '待评测' }}</strong></div>
       </section>
-      <nav class="ops-tabs" aria-label="智能体管理模块"><button v-for="item in sections" :key="item.id" type="button" :aria-current="tab === item.id ? 'page' : undefined" :class="{ active: tab === item.id }" @click="tab = item.id"><el-icon><component :is="item.icon" /></el-icon>{{ item.name }}</button></nav>
+      <nav class="ops-workspaces" aria-label="工作区"><button v-for="group in workspaceGroups" :key="group.id" :aria-current="currentGroup.id === group.id ? 'page' : undefined" @click="tab = group.tabs[0]">{{ group.name }}</button></nav>
+      <nav class="ops-tabs" aria-label="智能体管理模块"><button v-for="item in sections.filter(item=>currentGroup.tabs.includes(item.id))" :key="item.id" type="button" :aria-current="tab === item.id ? 'page' : undefined" :class="{ active: tab === item.id }" @click="tab = item.id"><el-icon><component :is="item.icon" /></el-icon>{{ item.name }}</button></nav>
 
+      <KnowledgeLibrary v-if="tab === 'knowledge'"/>
       <section v-show="tab === 'config'" class="ops-card">
         <div class="ops-section-head"><div><h2>定义问事助手</h2><p>职责与技能共同决定回答方式。保存草稿不会立即改变用户端。</p></div><router-link to="/settings/ai">模型连接设置 <el-icon><ArrowRight /></el-icon></router-link></div>
         <el-form label-position="top" :disabled="busy" @submit.prevent="save">
           <div class="ops-grid"><el-form-item label="名称"><el-input v-model="form.name" maxlength="40" aria-label="智能体名称" /></el-form-item><el-form-item label="默认模型"><el-select v-model="form.model" filterable aria-label="智能体默认模型" placeholder="沿用模型设置中的默认值" clearable><el-option v-if="form.model && !models.some(m => m.id === form?.model)" :value="form.model" :label="form.model" /><el-option v-for="m in models" :key="m.id" :value="m.id" :label="m.name" /></el-select><span class="ops-hint">用于未主动选择模型的文字问事。</span></el-form-item></div>
           <el-form-item label="职责与回答要求"><el-input v-model="form.instruction" type="textarea" :rows="6" maxlength="2500" show-word-limit aria-label="职责与回答要求" /></el-form-item>
+          <el-form-item label="绑定知识库"><el-select v-model="form.knowledgeBaseIds" multiple placeholder="选择已审核知识库（不选则不检索）" @visible-change="loadKnowledgeBases" style="width:100%"><el-option v-for="b in knowledgeBases" :key="b.id" :label="b.name+(b.enabled?'':'（停用）')" :value="b.id" :disabled="!b.enabled"/></el-select><p class="ops-hint">知识库范围随智能体版本发布；模型不能自行扩大权限。</p></el-form-item><el-form-item label="知识与记忆"><el-switch v-model="form.knowledgeEnabled" active-text="允许检索已审核知识"/><el-switch v-model="form.memoryEnabled" active-text="允许读取用户明确保存的记忆" style="margin-left:24px"/><p class="ops-hint">随智能体版本评测和发布生效。停用不会删除资料；用户可逐条停用或删除自己的记忆。</p></el-form-item>
           <el-form-item label="对话回答输出上限"><el-input-number v-model="form.maxOutputTokens" :min="64" :max="32768" :step="1024" aria-label="回答输出上限" /><span class="ops-hint">Token；同时受全局模型设置限制。Eino 调试最多输出 512 Token。</span></el-form-item>
         </el-form>
       </section>
 
       <section v-show="tab === 'skills'" class="ops-skills">
-        <aside class="ops-card ops-skill-list"><h2>技能目录</h2><p class="ops-hint">{{ workspace.catalog.length }} 项技能 · {{ workspace.catalog.filter(s => s.einoSupported).length }} 项已接入计算工具</p><el-button v-if="missingSkills.length" :disabled="busy" @click="addCatalogSkills">将 {{ missingSkills.length }} 项新技能加入草稿</el-button><button v-for="skill in form.skills" :key="skill.code" type="button" :class="{ selected: selectedSkill === skill.code }" :aria-pressed="selectedSkill === skill.code" @click="selectedSkill = skill.code"><span>{{ skillName(skill.code) }}</span><span class="ops-pill" :class="{ muted: !skill.enabled }">{{ skill.enabled ? '已启用' : '已停用' }}</span></button></aside>
+        <aside class="ops-card ops-skill-list"><h2>已添加的能力</h2><p class="ops-hint">{{ form.skills.length }} 项已添加 · {{ enabledSkills.length }} 项启用</p><el-button class="ops-add-capability" :icon="Plus" :disabled="busy || !missingSkills.length" @click="capabilityPicker = true">添加能力{{ missingSkills.length ? `（${missingSkills.length}）` : '' }}</el-button><button v-for="skill in form.skills" :key="skill.code" type="button" :class="{ selected: selectedSkill === skill.code }" :aria-pressed="selectedSkill === skill.code" @click="selectedSkill = skill.code"><span>{{ skillName(skill.code) }}</span><span class="ops-pill" :class="{ muted: !skill.enabled }">{{ skill.enabled ? '已启用' : '已停用' }}</span></button><p class="ops-hint">从能力库逐项添加。停用保留配置，移除后仍可重新添加。</p></aside>
         <div v-if="selectedPolicy && selectedInfo" class="ops-card">
-          <div class="ops-section-head"><div><h2>{{ selectedInfo.name }}</h2><p>{{ selectedInfo.description }}</p></div><el-switch v-model="selectedPolicy.enabled" :disabled="busy || selectedPolicy.code === 'general'" :aria-label="`启用${selectedInfo.name}`" /></div>
+          <div class="ops-section-head"><div><h2>{{ selectedInfo.name }}</h2><p>{{ selectedInfo.description }}</p></div><el-switch :model-value="selectedPolicy.enabled" @change="changeSkill(selectedPolicy!.code, $event ? 'enable' : 'disable')" :disabled="busy || selectedPolicy.code === 'general' || (!selectedPolicy.enabled && selectedInfo.sourceStatus === 'disabled')" :aria-label="`启用${selectedInfo.name}`" /></div>
+          <div class="ops-capability-meta"><el-tag>{{ kindLabel(selectedInfo) }}</el-tag><span>{{ selectedInfo.version }}</span><span v-if="selectedInfo.toolServer">服务：{{ selectedInfo.toolServer }}</span></div>
+          <el-alert v-if="selectedInfo.sourceStatus === 'disabled'" title="源技能已停用，请停用或移除当前草稿中的这项能力" type="warning" :closable="false" />
           <el-form label-position="top" :disabled="busy" @submit.prevent>
             <el-form-item label="技能说明与回答规则"><el-input v-model="selectedPolicy.prompt" type="textarea" :rows="9" maxlength="5000" show-word-limit aria-label="技能回答规则" /></el-form-item>
-            <el-form-item label="计算工具"><div class="ops-tool-row"><el-switch v-model="selectedPolicy.useTool" :disabled="!selectedInfo.toolAvailable" aria-label="使用计算工具" /><strong>{{ selectedInfo.toolName || '此技能不需要外部计算工具' }}</strong><el-tag v-if="selectedInfo.einoSupported" size="small" type="info">支持 Eino 调试</el-tag></div></el-form-item>
+            <el-form-item label="允许此智能体调用工具"><div class="ops-tool-row"><el-switch v-model="selectedPolicy.useTool" :disabled="!selectedInfo.toolAvailable || !selectedPolicy.enabled" aria-label="使用计算工具" /><strong>{{ selectedInfo.toolName || '此技能不需要外部计算工具' }}</strong><el-tag v-if="selectedInfo.einoSupported" size="small" type="info">支持 Harness 调用</el-tag></div><span class="ops-hint">关闭后，此智能体不再调用该技能的计算工具；需要计算依据的专题将无法生成。工具接入状态不代表实时连通性，请在调试工作台验证。</span></el-form-item>
           </el-form>
+          <p v-if="selectedInfo.sourceRef" class="ops-hint">来源：{{ selectedInfo.sourceRef }}</p>
           <h3>输入资料要求</h3><p class="ops-hint">随发布版本固定，来自已接入技能的输入契约。</p>
           <el-table :data="selectedInfo.inputSchema.fields || []" empty-text="无需结构化资料"><el-table-column label="资料"><template #default="{ row }">{{ row.label || row.key }}</template></el-table-column><el-table-column prop="type" label="类型" width="120" /><el-table-column label="要求" width="110"><template #default="{ row }">{{ row.required ? '必填' : '按需填写' }}</template></el-table-column></el-table>
+          <div class="ops-capability-footer"><span class="ops-hint">{{ selectedPolicy.code === 'general' ? '日常问事是必要的兜底能力，保持启用。' : '移除只影响当前智能体草稿，源能力与历史报告保留。' }}</span><el-button v-if="selectedPolicy.code !== 'general'" type="danger" plain :icon="Delete" :disabled="busy" @click="changeSkill(selectedPolicy!.code, 'remove')">移除能力</el-button></div>
         </div>
+        <el-empty v-else class="ops-card" description="选择一项能力查看配置" />
       </section>
+
+      <el-drawer v-model="capabilityPicker" title="添加能力" size="min(580px, 100vw)">
+        <p class="ops-hint">从已接入能力库添加到当前智能体。添加后保存草稿、完成评测并发布。</p>
+        <el-input v-model="capabilitySearch" :prefix-icon="Search" clearable placeholder="搜索名称、工具或服务" aria-label="搜索能力" />
+        <el-radio-group v-model="capabilityFilter" class="ops-capability-filters" aria-label="能力类型"><el-radio-button value="all">全部</el-radio-button><el-radio-button value="mcp">MCP 工具</el-radio-button><el-radio-button value="builtin">内置工具</el-radio-button><el-radio-button value="skill">业务技能</el-radio-button></el-radio-group>
+        <el-empty v-if="!availableCapabilities.length" :description="missingSkills.length ? '没有匹配的能力' : '能力库中的项目均已添加'" />
+        <article v-for="info in availableCapabilities" :key="info.code" class="ops-library-item"><div><strong>{{ info.name }}</strong><el-tag size="small">{{ kindLabel(info) }}</el-tag><p>{{ info.description }}</p><small>{{ info.toolServer ? `${info.toolServer} / ` : '' }}{{ info.toolName || info.code }} · {{ info.version }}</small></div><el-button :disabled="busy || info.sourceStatus === 'disabled'" :aria-label="`添加${info.name}`" @click="addSkill(info)">{{ info.sourceStatus === 'disabled' ? '源已停用' : '添加' }}</el-button></article>
+      </el-drawer>
 
       <section v-show="tab === 'debug'" class="ops-debug-grid">
         <div class="ops-card"><div class="ops-section-head"><div><h2>试一次真实问事</h2><p>仅填写测试资料；调用现有模型与工具，会产生模型费用。</p></div></div>
@@ -226,7 +270,7 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
             <el-form-item label="执行方式"><el-radio-group v-model="debug.kind" :disabled="inProgress || pending || debugBusy"><el-radio-button value="classic">原问事流程</el-radio-button><el-radio-button value="eino" :disabled="!einoAvailable">Eino 多步验证</el-radio-button></el-radio-group><span class="ops-hint">单次调试用于排查；发布需要通过质量评测。用户端执行模式以上方状态为准。</span></el-form-item>
             <el-form-item label="测试问题"><el-input v-model="debug.question" type="textarea" :rows="3" maxlength="1500" :disabled="inProgress || pending" aria-label="测试问题" /></el-form-item>
             <div class="ops-section-head"><h3>结构化资料</h3><el-button text :disabled="inProgress || debugBusy" @click="sample">填入合成示例</el-button></div>
-            <div class="ops-grid"><el-form-item v-for="field in debugFields" :key="field.key" :label="`${field.label || field.key}${field.required ? ' · 必填' : ''}`"><el-select v-if="field.options?.length" v-model="inputValues[field.key]" clearable :disabled="inProgress || debugBusy" :aria-label="field.label || field.key"><el-option v-for="o in field.options" :key="o.value" :value="o.value" :label="o.label || o.value" /></el-select><el-input v-else v-model="inputValues[field.key]" :disabled="inProgress || debugBusy" :aria-label="field.label || field.key" :type="field.type === 'datetime' ? 'datetime-local' : field.type === 'date' && inputValues.calendarType === 'lunar' ? 'text' : field.type" :min="field.min" :max="field.max" :step="field.validation === 'integer' ? 1 : 'any'" :placeholder="field.type === 'date' ? 'YYYY-MM-DD' : field.type === 'time' ? 'HH:mm' : '填写测试资料'" maxlength="500" /><span v-if="field.helpText" class="ops-hint">{{ field.helpText }}</span></el-form-item></div>
+            <div class="ops-grid"><el-form-item v-for="field in debugFields" :key="field.key" :label="`${field.label || field.key}${field.required ? ' · 必填' : ''}`"><el-select v-if="field.options?.length" v-model="inputValues[field.key]" clearable :disabled="inProgress || debugBusy" :aria-label="field.label || field.key"><el-option v-for="o in field.options" :key="o.value" :value="o.value" :label="o.label || o.value" /></el-select><el-input v-else v-model="inputValues[field.key]" :disabled="inProgress || debugBusy" :aria-label="field.label || field.key" :type="field.type === 'floorplan' ? 'textarea' : field.type === 'datetime' ? 'datetime-local' : field.type === 'date' && inputValues.calendarType === 'lunar' ? 'text' : field.type" :min="field.min" :max="field.max" :step="field.validation === 'integer' ? 1 : 'any'" :placeholder="field.type === 'date' ? 'YYYY-MM-DD' : field.type === 'time' ? 'HH:mm' : '填写测试资料'" :maxlength="field.type === 'floorplan' ? 20000 : 500" /><span v-if="field.helpText" class="ops-hint">{{ field.helpText }}</span></el-form-item></div>
             <p v-if="!debugFields.length" class="ops-hint">此技能无需额外资料。</p>
             <el-alert v-if="pending" :title="run?.clarification || '请补充资料后继续'" type="warning" :closable="false" />
             <div class="ops-debug-actions"><template v-if="pending"><el-button type="primary" :loading="debugBusy" @click="resumeDebug">补充并继续</el-button><el-button :disabled="debugBusy" @click="cancelDebug">结束本次调试</el-button></template><el-button v-else type="primary" :icon="VideoPlay" :loading="debugBusy || inProgress" :disabled="dirty || !workspace.draftSaved || !debug.skillCode || !debug.question.trim() || busy" @click="startDebug">{{ inProgress ? '正在执行' : '开始调试' }}</el-button><el-button v-if="run" text :icon="Refresh" @click="refreshRun">获取状态</el-button></div>
@@ -290,5 +334,9 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
 </template>
 
 <style scoped>
+.ops-capability-meta{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px;color:var(--el-text-color-secondary);font-size:13px}.ops-capability-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:24px;padding-top:16px;border-top:1px solid var(--el-border-color-light)}.ops-capability-filters{display:flex;flex-wrap:wrap;margin:16px 0}.ops-library-item{display:flex;align-items:flex-start;gap:16px;padding:20px 0;border-bottom:1px solid var(--el-border-color-light)}.ops-library-item>div{flex:1;min-width:0}.ops-library-item strong{margin-right:10px}.ops-library-item p{font-size:13px;line-height:1.7;color:var(--el-text-color-secondary)}.ops-library-item small{overflow-wrap:anywhere;color:var(--el-text-color-secondary)}.ops-add-capability{margin:8px 0}
+
 .ops-rollout-actions{display:flex;gap:6px;flex-wrap:wrap}.ops-rollout-actions .el-button{margin-left:0}.agent-ops{padding-bottom:24px}.ops-overview{display:flex;align-items:center;gap:28px;padding:22px 26px;border:1px solid var(--el-border-color-light);border-radius:16px;background:var(--el-bg-color);margin-bottom:18px}.ops-identity{display:flex;align-items:center;gap:14px;flex:1}.ops-identity strong{font-size:20px}.ops-identity p,.ops-section-head p,.ops-fallback p{margin:7px 0 0;color:var(--el-text-color-secondary);font-size:13px;line-height:1.6}.ops-symbol{width:46px;height:46px;border-radius:13px;background:var(--el-color-primary-light-9);color:var(--el-color-primary);display:grid;place-items:center}.ops-symbol svg{width:25px}.ops-stat{display:grid;gap:8px;min-width:95px}.ops-stat>span{color:var(--el-text-color-secondary);font-size:12px}.ops-stat strong{font-size:15px}.ready{color:var(--el-color-success)}.ops-tabs{display:flex;gap:4px;overflow-x:auto;margin:0 0 20px;border-bottom:1px solid var(--el-border-color-light)}.ops-tabs button{display:flex;align-items:center;gap:7px;white-space:nowrap;padding:14px 19px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--el-text-color-secondary);cursor:pointer;font:inherit}.ops-tabs button.active{color:var(--el-color-primary);border-bottom-color:var(--el-color-primary);font-weight:600}.ops-tabs button:focus-visible,.ops-skill-list button:focus-visible{outline:2px solid var(--el-color-primary);outline-offset:-3px}.ops-card{background:var(--el-bg-color);border:1px solid var(--el-border-color-light);border-radius:16px;padding:24px;min-width:0}.ops-card h2{font-size:17px;margin:0 0 8px}.ops-card h3,.ops-fallback h3{font-size:14px;margin:14px 0 8px}.ops-section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:22px}.ops-section-head a{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--el-color-primary);white-space:nowrap}.ops-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}.ops-hint{display:block;color:var(--el-text-color-secondary);font-size:12px;line-height:1.7;margin-top:8px}.ops-skills{display:grid;grid-template-columns:240px minmax(0,1fr);gap:20px}.ops-skill-list{padding:20px 12px;align-self:start}.ops-skill-list h2{padding:0 12px 12px}.ops-skill-list button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:0;background:transparent;color:var(--el-text-color-primary);padding:13px 12px;border-radius:9px;cursor:pointer;text-align:left;font:inherit;font-size:13px}.ops-skill-list button.selected{background:var(--el-color-primary-light-9);color:var(--el-color-primary)}.ops-pill{font-size:11px;color:var(--el-color-success);white-space:nowrap}.ops-pill.muted{color:var(--el-text-color-placeholder)}.ops-tool-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.ops-debug-grid{display:grid;grid-template-columns:minmax(300px,1fr) minmax(320px,1fr);gap:20px}.ops-debug-result{align-self:start;min-height:360px}.ops-debug-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}.ops-empty{text-align:center;color:var(--el-text-color-secondary);padding:65px 15px}.ops-empty>.el-icon{font-size:34px;color:var(--el-color-primary)}.ops-answer{font-family:inherit;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.9;padding:18px;background:var(--el-fill-color-light);border-radius:10px;max-height:460px;overflow:auto}.ops-events{list-style:none;margin:20px 0;padding:0}.ops-events li{display:flex;gap:12px;padding:0 0 20px;position:relative;font-size:13px}.ops-event-dot{width:8px;height:8px;flex-shrink:0;border-radius:50%;background:var(--el-color-primary);margin-top:5px}.ops-events li:not(:last-child):before{content:'';position:absolute;left:3px;top:15px;bottom:3px;width:1px;background:var(--el-border-color-light)}.ops-events time{display:block;color:var(--el-text-color-placeholder);font-size:11px;margin-top:5px}.ops-run-counts{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--el-text-color-secondary);border-top:1px solid var(--el-border-color-light);padding-top:14px}.ops-record-filters{display:flex;gap:16px;margin:16px 0 20px;flex-wrap:wrap}.ops-record-filters>.el-select{width:160px}.ops-cell-sub{display:block;color:var(--el-text-color-secondary);font-size:11px}.ops-pagination{display:flex;align-items:center;justify-content:flex-end;gap:14px;margin-top:20px;font-size:13px}.ops-fallback{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0;margin:16px 0;border-bottom:1px solid var(--el-border-color-light)}.ops-version-tag{margin-left:8px}.ops-save-bar{position:sticky;bottom:12px;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:20px;padding:14px 20px;background:var(--el-bg-color);border:1px solid var(--el-border-color-light);border-radius:12px;box-shadow:0 6px 24px #00000008;font-size:13px;color:var(--el-text-color-secondary)}.is-dirty{color:var(--el-color-warning)}.ops-card :deep(.el-select){width:100%}.ops-card :deep(.el-form-item__content > .ops-hint){flex-basis:100%}.ops-card :deep(.el-alert){margin-bottom:16px}.ops-card :deep(.el-input-number){width:180px}.ops-tabs button,.ops-skill-list button{transition:background-color 140ms ease,color 140ms ease}@media(max-width:1000px){.ops-overview{flex-wrap:wrap;gap:18px}.ops-identity{flex-basis:100%}.ops-debug-grid{grid-template-columns:1fr}.ops-skills{grid-template-columns:200px minmax(0,1fr)}}@media(max-width:640px){.ops-skills,.ops-grid{grid-template-columns:1fr}.ops-skill-list{max-height:240px;overflow:auto}.ops-card{padding:18px}.ops-section-head{flex-wrap:wrap}.ops-stat{min-width:80px}.ops-tabs button{padding:12px}.ops-overview{padding:18px}.ops-save-bar{bottom:6px;padding:12px}.ops-debug-actions{gap:4px}}@media(prefers-reduced-motion:reduce){.ops-tabs button,.ops-skill-list button{transition:none}}
 </style>
+
+<style scoped>.ops-workspaces{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:24px 0 8px;padding:6px;background:var(--el-fill-color-light);border-radius:14px}.ops-workspaces button{padding:16px;border:0;border-radius:10px;background:transparent;color:var(--el-text-color-regular);font:inherit;cursor:pointer;transition:background-color 160ms,color 160ms}.ops-workspaces button[aria-current=page]{background:var(--el-bg-color);color:var(--el-color-primary);box-shadow:0 2px 8px #0000000a}.ops-workspaces button:focus-visible{outline:2px solid var(--el-color-primary)}@media(prefers-reduced-motion:reduce){.ops-workspaces button{transition:none}}</style>
