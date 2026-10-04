@@ -6,6 +6,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting, Connection, VideoPlay, List, Clock, Refresh, Check, ArrowRight, Plus, Delete, Search } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import KnowledgeLibrary from './KnowledgeLibrary.vue'
+import KnowledgeModels from './KnowledgeModels.vue'
 import { agentOperationsApi as api, type AgentWorkspace, type AgentConfig, type DebugRun, type ProductionRun, type ToolTrace, type EvaluationRun, type EvaluationCase } from '@/api/agentOperations'
 
 import { addCapability, changeCapability, capabilityKind } from './agentCapabilities'
@@ -15,9 +16,11 @@ const form = ref<AgentConfig>(), baseline = ref(''), tab = ref('config'), select
 const models = ref<{ id: string; name: string }[]>([])
 const knowledgeBases=ref<{id:string;name:string;enabled:boolean}[]>([])
 async function loadKnowledgeBases(){try{const v=await client.get<{list:typeof knowledgeBases.value}>("/ai/admin/knowledge-bases");knowledgeBases.value=v.list||[]}catch{knowledgeBases.value=[]}}
-const workspaceGroups = [{ id:'capabilities',name:'知识与能力',tabs:['skills','knowledge'] },{ id:'development',name:'智能体开发',tabs:['config'] },{ id:'release',name:'调试与发布',tabs:['debug','evaluation','runs','versions'] }]
+const workspaceGroups = [{ id:'capabilities',name:'知识与能力',tabs:['models','knowledge','skills'] },{ id:'development',name:'智能体开发',tabs:['config'] },{ id:'release',name:'调试与发布',tabs:['debug','evaluation','runs','versions'] }]
 const currentGroup = computed(()=>workspaceGroups.find(g=>g.tabs.includes(tab.value))!)
-const sections = [{id:'knowledge',name:'知识库',icon:Connection},{ id: 'config', name: '智能体配置', icon: Setting }, { id: 'skills', name: '技能与工具', icon: Connection }, { id: 'debug', name: '调试工作台', icon: VideoPlay }, { id: 'evaluation', name: '质量评测', icon: Check }, { id: 'runs', name: '运行记录', icon: List }, { id: 'versions', name: '版本发布', icon: Clock }]
+const engineModels=ref<{id:string;name:string;type:string}[]>([])
+async function loadEngineModels(){try{engineModels.value=(await client.get<{list:typeof engineModels.value}>("/ai/admin/knowledge-models")).list||[]}catch{engineModels.value=[]}}
+const sections = [{id:'models',name:'模型与连接',icon:Setting},{id:'knowledge',name:'知识库',icon:Connection},{ id: 'config', name: '智能体配置', icon: Setting }, { id: 'skills', name: '技能与工具', icon: Connection }, { id: 'debug', name: '调试工作台', icon: VideoPlay }, { id: 'evaluation', name: '质量评测', icon: Check }, { id: 'runs', name: '运行记录', icon: List }, { id: 'versions', name: '版本发布', icon: Clock }]
 const dirty = computed(() => JSON.stringify(form.value) !== baseline.value || Object.keys(caseErrors).length > 0)
 const selectedPolicy = computed(() => form.value?.skills.find(s => s.code === selectedSkill.value))
 const selectedInfo = computed(() => workspace.value?.catalog.find(s => s.code === selectedSkill.value))
@@ -61,7 +64,7 @@ async function load(preserve = false) {
       if (workspace.value?.revision !== value.revision) { loadError.value = '后台配置已变化，请复制保留未保存内容，再重新加载，避免覆盖其他修改'; return }
       workspace.value = value; return
     }
-    Object.keys(caseInputs).forEach(k => delete caseInputs[k]); Object.keys(caseErrors).forEach(k => delete caseErrors[k]); workspace.value = value; form.value = structuredClone(value.draft); form.value.evaluation ||= []; baseline.value = JSON.stringify(form.value)
+    Object.keys(caseInputs).forEach(k => delete caseInputs[k]); Object.keys(caseErrors).forEach(k => delete caseErrors[k]); workspace.value = value; form.value = structuredClone(value.draft); form.value.evaluation ||= []; form.value.retrieval ||= {candidateCount:12,resultCount:5,rerankModel:'',rerankRequired:false,graphEnabled:false}; form.value.retrieval.candidateCount ||= 12; form.value.retrieval.resultCount ||= 5; baseline.value = JSON.stringify(form.value)
     if (!value.draft.skills.some(s => s.code === selectedSkill.value)) selectedSkill.value = value.draft.skills[0]?.code || ''
     if (!debug.skillCode || !value.draft.skills.some(s => s.code === debug.skillCode && s.enabled)) debug.skillCode = value.draft.skills.find(s => s.enabled)?.code || ''
   } catch { loadError.value = '智能体管理加载失败，请重试；首次接入需要完成数据库迁移。' }
@@ -225,6 +228,7 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
       <nav class="ops-workspaces" aria-label="工作区"><button v-for="group in workspaceGroups" :key="group.id" :aria-current="currentGroup.id === group.id ? 'page' : undefined" @click="tab = group.tabs[0]">{{ group.name }}</button></nav>
       <nav class="ops-tabs" aria-label="智能体管理模块"><button v-for="item in sections.filter(item=>currentGroup.tabs.includes(item.id))" :key="item.id" type="button" :aria-current="tab === item.id ? 'page' : undefined" :class="{ active: tab === item.id }" @click="tab = item.id"><el-icon><component :is="item.icon" /></el-icon>{{ item.name }}</button></nav>
 
+      <KnowledgeModels v-if="tab === 'models'"/>
       <KnowledgeLibrary v-if="tab === 'knowledge'"/>
       <section v-show="tab === 'config'" class="ops-card">
         <div class="ops-section-head"><div><h2>定义问事助手</h2><p>职责与技能共同决定回答方式。保存草稿不会立即改变用户端。</p></div><router-link to="/settings/ai">模型连接设置 <el-icon><ArrowRight /></el-icon></router-link></div>
@@ -232,6 +236,7 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
           <div class="ops-grid"><el-form-item label="名称"><el-input v-model="form.name" maxlength="40" aria-label="智能体名称" /></el-form-item><el-form-item label="默认模型"><el-select v-model="form.model" filterable aria-label="智能体默认模型" placeholder="沿用模型设置中的默认值" clearable><el-option v-if="form.model && !models.some(m => m.id === form?.model)" :value="form.model" :label="form.model" /><el-option v-for="m in models" :key="m.id" :value="m.id" :label="m.name" /></el-select><span class="ops-hint">用于未主动选择模型的文字问事。</span></el-form-item></div>
           <el-form-item label="职责与回答要求"><el-input v-model="form.instruction" type="textarea" :rows="6" maxlength="2500" show-word-limit aria-label="职责与回答要求" /></el-form-item>
           <el-form-item label="绑定知识库"><el-select v-model="form.knowledgeBaseIds" multiple placeholder="选择已审核知识库（不选则不检索）" @visible-change="loadKnowledgeBases" style="width:100%"><el-option v-for="b in knowledgeBases" :key="b.id" :label="b.name+(b.enabled?'':'（停用）')" :value="b.id" :disabled="!b.enabled"/></el-select><p class="ops-hint">知识库范围随智能体版本发布；模型不能自行扩大权限。</p></el-form-item><el-form-item label="知识与记忆"><el-switch v-model="form.knowledgeEnabled" active-text="允许检索已审核知识"/><el-switch v-model="form.memoryEnabled" active-text="允许读取用户明确保存的记忆" style="margin-left:24px"/><p class="ops-hint">随智能体版本评测和发布生效。停用不会删除资料；用户可逐条停用或删除自己的记忆。</p></el-form-item>
+          <template v-if="form.retrieval"><el-divider content-position="left">Harness 检索策略</el-divider><div class="ops-grid"><el-form-item label="候选片段数量"><el-input-number v-model="form.retrieval.candidateCount" :min="5" :max="40"/></el-form-item><el-form-item label="最终引用片段数量"><el-input-number v-model="form.retrieval.resultCount" :min="1" :max="Math.min(10,form.retrieval.candidateCount)"/></el-form-item></div><el-form-item label="重排模型"><el-select v-model="form.retrieval.rerankModel" clearable @change="!form.retrieval.rerankModel && (form.retrieval.rerankRequired=false)" placeholder="关闭专用重排" @visible-change="loadEngineModels"><el-option v-if="form.retrieval.rerankModel&&!engineModels.some(m=>m.id===form?.retrieval?.rerankModel)" :value="form.retrieval.rerankModel" :label="form.retrieval.rerankModel"/><el-option v-for="m in engineModels.filter(m=>m.type==='Rerank')" :key="m.id" :value="m.id" :label="m.name"/></el-select></el-form-item><el-form-item label="重排不可用时"><el-switch v-model="form.retrieval.rerankRequired" :disabled="!form.retrieval.rerankModel" active-text="严格失败，停止本次检索" inactive-text="回退混合检索并记录降级"/></el-form-item><el-form-item label="实体图谱"><el-switch v-model="form.retrieval.graphEnabled" active-text="检索已审核原文关联的实体关系"/><p class="ops-hint">必须先完成 Neo4j 抽取。资料与图谱只作为参考，不作为工具指令。策略与当前草稿一起评测、发布和回滚。</p></el-form-item></template>
           <el-form-item label="对话回答输出上限"><el-input-number v-model="form.maxOutputTokens" :min="64" :max="32768" :step="1024" aria-label="回答输出上限" /><span class="ops-hint">Token；同时受全局模型设置限制。Eino 调试最多输出 512 Token。</span></el-form-item>
         </el-form>
       </section>
