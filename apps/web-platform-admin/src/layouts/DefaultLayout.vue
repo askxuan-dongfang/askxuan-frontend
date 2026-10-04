@@ -15,7 +15,7 @@ const { collapsed, mobile, drawerOpen, sidebarRef, toggleRef, toggleNavigation, 
 
 const allMenuGroups = [
   {title:'AI 问事',icon:'Connection',children:[
-    {path:'/ai/operations',title:'智能体运营管理'},
+    {path:'/ai/operations',title:'问事智能体开发中心'},
     {path:'/settings/ai',title:'模型连接设置'}
   ]},
   {title:'商城与权益',icon:'Shop',children:[
