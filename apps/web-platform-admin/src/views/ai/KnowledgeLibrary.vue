@@ -36,8 +36,8 @@ async function mutate(d:Doc,action:'delete'|'reparse'){try{await ElMessageBox.co
 async function loadChunks(){if(!previewDoc.value)return;const v=await client.get<{list:Chunk[];total:number}>(`${root}/${selected.value}/documents/${previewDoc.value.id}/chunks?page=${chunkPage.value}`);chunks.value=v.list||[];chunkTotal.value=v.total}
 async function showChunks(d:Doc){previewDoc.value=d;chunkPage.value=1;chunks.value=[];preview.value=true;await run(loadChunks)}
 async function search(){await run(async()=>{hits.value=[];searched.value=false;const v=await client.post<{hits:Hit[];mode:string;rerankStatus?:string;graphStatus?:string}>(`${root}/${selected.value}/search`,{query:query.value,retrieval:retrieval.value},{timeout:60000});hits.value=v.hits;retrievalStatus.value=`${v.mode} · 重排：${v.rerankStatus||'未启用'} · 图谱：${v.graphStatus||'未启用'}`;searched.value=true})}
-const status=(s:string)=>({completed:'解析完成',pending:'等待处理',processing:'解析中',failed:'处理失败',deleting:'删除中'}[s]||s)
-onMounted(()=>{void run(loadBases);timer=setInterval(()=>{if(!busy.value&&docs.value.some(d=>['pending','processing'].includes(d.parse_status)))void run(loadDocs)},6000)})
+const status=(s:string)=>({completed:'解析完成',pending:'等待处理',processing:'解析中',finalizing:'知识整理中',failed:'处理失败',deleting:'删除中'}[s]||s)
+onMounted(()=>{void run(loadBases);timer=setInterval(()=>{if(!busy.value&&docs.value.some(d=>['pending','processing','finalizing'].includes(d.parse_status)))void run(loadDocs)},6000)})
 onUnmounted(()=>clearInterval(timer))
 </script>
 <template>
