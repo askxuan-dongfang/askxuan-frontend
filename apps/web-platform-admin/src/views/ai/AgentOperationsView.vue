@@ -15,7 +15,7 @@ const form = ref<AgentConfig>(), baseline = ref(''), tab = ref('config'), select
 const models = ref<{ id: string; name: string }[]>([])
 const knowledgeBases=ref<{id:string;name:string;enabled:boolean}[]>([])
 async function loadKnowledgeBases(){try{const v=await client.get<{list:typeof knowledgeBases.value}>("/ai/admin/knowledge-bases");knowledgeBases.value=v.list||[]}catch{knowledgeBases.value=[]}}
-const workspaceGroups = [{ id:'capabilities',name:'能力中心',tabs:['skills','knowledge'] },{ id:'development',name:'智能体开发',tabs:['config'] },{ id:'release',name:'调试与发布',tabs:['debug','evaluation','runs','versions'] }]
+const workspaceGroups = [{ id:'capabilities',name:'知识与能力',tabs:['skills','knowledge'] },{ id:'development',name:'智能体开发',tabs:['config'] },{ id:'release',name:'调试与发布',tabs:['debug','evaluation','runs','versions'] }]
 const currentGroup = computed(()=>workspaceGroups.find(g=>g.tabs.includes(tab.value))!)
 const sections = [{id:'knowledge',name:'知识库',icon:Connection},{ id: 'config', name: '智能体配置', icon: Setting }, { id: 'skills', name: '技能与工具', icon: Connection }, { id: 'debug', name: '调试工作台', icon: VideoPlay }, { id: 'evaluation', name: '质量评测', icon: Check }, { id: 'runs', name: '运行记录', icon: List }, { id: 'versions', name: '版本发布', icon: Clock }]
 const dirty = computed(() => JSON.stringify(form.value) !== baseline.value || Object.keys(caseErrors).length > 0)
@@ -210,7 +210,7 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
 
 <template>
   <div class="dfx-page agent-ops" v-loading="loading">
-    <PageHeader title="AI 问事工作台" subtitle="配置能力、验证效果，让每一次问事都有迹可循">
+    <PageHeader title="问事智能体开发中心" subtitle="管理知识与工具、编排智能体、评测并发布">
       <template #actions><el-button :icon="Refresh" :disabled="busy" @click="reload">重新加载</el-button></template>
     </PageHeader>
     <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon><el-button text @click="reload">重试</el-button></el-alert>

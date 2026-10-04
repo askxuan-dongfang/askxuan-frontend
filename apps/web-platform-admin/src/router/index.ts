@@ -153,7 +153,7 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '优惠券管理', parent: '营销管理' }
       },
       // 系统设置
-      {path:'ai/operations',name:'AgentOperations',component:()=>import('@/views/ai/AgentOperationsView.vue'),meta:{title:'智能体运营管理',parent:'AI 问事',roles:['platform_super']}},
+      {path:'ai/operations',name:'AgentOperations',component:()=>import('@/views/ai/AgentOperationsView.vue'),meta:{title:'问事智能体开发中心',parent:'AI 问事',roles:['platform_super']}},
       {path:'settings/ai',name:'SettingsAi',component:()=>import('@/views/settings/SettingsAiView.vue'),meta:{title:'AI 模型设置',parent:'系统治理',roles:['platform_super']}},
       {
         path: 'settings/taxonomy',
