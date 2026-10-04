@@ -8,6 +8,7 @@ import client from '@/api/client'
 import { ElMessageBox } from 'element-plus'
 echarts.use([GraphChart, TooltipComponent, CanvasRenderer])
 const props = defineProps<{ baseId: string }>()
+const emit = defineEmits<{changed:[]}>()
 interface State { revision:number; knowledge_count:number; chunk_count:number; processing_count:number; indexing_strategy:{wiki_enabled:boolean;graph_enabled:boolean}; wiki_config?:{synthesis_model_id:string} }
 interface Page {slug:string;title:string;summary:string;content:string;page_type:string;status:string;version:number;source_refs:string[];references:{id:string;source:string;approved:boolean}[];in_links:string[];out_links:string[]}
 interface Stats {total_pages:number;total_links:number;pending_tasks:number;pending_issues:number;orphan_count:number;is_active:boolean}
@@ -30,7 +31,7 @@ async function refresh(reset=false){
 async function configure(){const kb=props.baseId;error.value='';try{const m=await client.get<{id:string;name:string}[]>(path()+'-models');if(kb!==props.baseId)return;models.value=m;enabled.value=!!state.value?.indexing_strategy.wiki_enabled;model.value=state.value?.wiki_config?.synthesis_model_id||m[0]?.id||'';settings.value=true}catch(e){error.value=e instanceof Error?e.message:'读取模型失败'}}
 async function save(){const kb=props.baseId;const root=path();const revision=state.value?.revision;if(!revision)return
  try{await ElMessageBox.confirm(enabled.value?'启用后，新上传或重解析的文档会调用所选模型生成 Wiki，产生模型用量。已有文档请按需重解析并重新审核。':'关闭后不再生成 Wiki，已审核原文检索不受影响。','保存 Wiki 配置',{confirmButtonText:'保存',cancelButtonText:'取消'})}catch{return}
- if(kb!==props.baseId)return;saving.value=true;error.value='';try{await client.put(root,{enabled:enabled.value,model:model.value,revision},{timeout:60000});if(kb===props.baseId){settings.value=false;await refresh()}}catch(e){if(kb===props.baseId)error.value=e instanceof Error?e.message:'保存失败，请刷新重试'}finally{saving.value=false}}
+ if(kb!==props.baseId)return;saving.value=true;error.value='';try{await client.put(root,{enabled:enabled.value,model:model.value,revision},{timeout:60000});if(kb===props.baseId){settings.value=false;await refresh();emit('changed')}}catch(e){if(kb===props.baseId)error.value=e instanceof Error?e.message:'保存失败，请刷新重试'}finally{saving.value=false}}
 async function open(slug:string){const id=++detailRequest;const kb=props.baseId;detail.value=undefined;drawer.value=true;error.value='';try{const p=await client.get<Page>(path()+'/page?slug='+encodeURIComponent(slug));if(id===detailRequest&&kb===props.baseId)detail.value=p}catch(e){if(id===detailRequest)error.value=e instanceof Error?e.message:'读取条目失败'}}
 async function draw(){await nextTick();dispose();if(view.value!=='graph'||!canvas.value||!graph.value?.nodes.length)return
  chart=echarts.init(canvas.value);const nodes=graph.value.nodes
@@ -48,7 +49,7 @@ onBeforeUnmount(()=>{generation++;detailRequest++;dispose()})
   <div v-if="state" class="metrics"><article><strong>{{state.knowledge_count}}</strong><span>原始文档</span></article><article><strong>{{state.processing_count}}</strong><span>解析任务</span></article><article><strong>{{stats?.total_pages??'—'}}</strong><span>Wiki 条目</span></article><article><strong>{{stats?.total_links??'—'}}</strong><span>条目连接</span></article></div>
   <el-alert v-if="state&&!state.indexing_strategy.wiki_enabled" title="当前知识库尚未启用 Wiki 生成" description="文档解析与 Harness 检索仍可使用。在 Wiki 设置中选择已配置模型并启用后，这里会显示真实条目、来源与关系。" type="info" :closable="false" />
   <template v-if="state?.indexing_strategy.wiki_enabled">
-   <p class="status">{{stats?.is_active?'引擎正在生成':'生成队列当前空闲'}} · 待处理 {{stats?.pending_tasks??'—'}} · 待处理问题 {{stats?.pending_issues??'—'}} · 孤立条目 {{stats?.orphan_count??'—'}}</p>
+   <p class="status">{{stats?.is_active?'引擎正在生成':(stats?.pending_tasks??0)>0?'等待生成':'生成队列当前空闲'}} · 待处理 {{stats?.pending_tasks??'—'}} · 待处理问题 {{stats?.pending_issues??'—'}} · 孤立条目 {{stats?.orphan_count??'—'}}</p>
    <el-radio-group v-model="view" aria-label="Wiki 视图"><el-radio-button value="pages">条目与出处</el-radio-button><el-radio-button value="graph">关系图</el-radio-button></el-radio-group>
    <template v-if="view==='pages'"><el-form class="search" @submit.prevent="page=1;refresh()"><el-input v-model="query" placeholder="搜索条目标题与内容" aria-label="Wiki 搜索" maxlength="200" clearable/><el-button native-type="submit">搜索</el-button></el-form>
    <el-table :data="pages" empty-text="还没有条目；请等待生成，或检查模型与处理队列" @row-click="(row:Page)=>open(row.slug)"><el-table-column label="条目" min-width="200"><template #default="{row}"><el-button link type="primary" @click.stop="open(row.slug)">{{row.title}}</el-button><p class="summary">{{row.summary}}</p></template></el-table-column><el-table-column prop="page_type" label="类型" width="110"/><el-table-column prop="status" label="状态" width="100"/><el-table-column prop="version" label="版本" width="80"/></el-table>
