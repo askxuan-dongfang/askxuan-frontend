@@ -2,7 +2,8 @@ import client from './client'
 
 export interface SkillPolicy { code: string; enabled: boolean; prompt: string; useTool: boolean }
 export interface RetrievalPolicy {candidateCount:number;resultCount:number;rerankModel:string;rerankRequired:boolean;graphEnabled:boolean}
-export interface AgentConfig { retrieval?:RetrievalPolicy; knowledgeBaseIds?:string[]; knowledgeEnabled?:boolean; memoryEnabled?:boolean; name: string; instruction: string; model: string; maxOutputTokens: number; skills: SkillPolicy[]; evaluation: EvaluationCase[] }
+export interface AgentConfig {
+  webSearchEnabled?: boolean; retrieval?:RetrievalPolicy; knowledgeBaseIds?:string[]; knowledgeEnabled?:boolean; memoryEnabled?:boolean; name: string; instruction: string; model: string; maxOutputTokens: number; skills: SkillPolicy[]; evaluation: EvaluationCase[] }
 export interface InputField { key: string; label?: string; type: string; required?: boolean; min?: number; max?: number; helpText?: string; defaultValue?: string; validation?: string; visibleWhen?: { key: string; value: string }; requiredWhen?: { key: string; value: string }; options?: { value: string; label?: string }[] }
 export interface SkillInfo { defaultPrompt?: string; sourceStatus?: string; sourceRef?: string; toolServer?: string; code: string; name: string; version: string; description: string; inputSchema: { fields?: InputField[] }; toolName: string; toolAvailable: boolean; einoSupported: boolean }
 export interface AgentVersion { id: number; actor: string; note: string; createdAt: string }

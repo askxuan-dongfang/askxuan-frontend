@@ -9,18 +9,19 @@ import { aiSettingsApi, type AIProviderSettings, type AIProviderUpdate, type AIM
 const saved = ref<AIProviderSettings>()
 const loading = ref(true), saving = ref(false), testing = ref(false)
 const loadError = ref(''), testError = ref(''), tested = ref(false)
+const searchTesting = ref(false), searchResult = ref(''), searchError = ref('')
 const models = ref<AIModelOption[]>([])
-const form = reactive<AIProviderUpdate>({ revision: 0, provider: 'deepseek', baseUrl: 'https://api.deepseek.com', apiKey: '', defaultModel: 'deepseek-flash', visionModel: 'deepseek-flash', enabledModels: [], thinkingEnabled: true, reasoningEffort: 'low', maxOutputTokens: 8192, complexOutputTokens: 16384, contextWindow: 1048576, maxInputChars: 20000, taskTimeoutSeconds: 180 })
+const form = reactive<AIProviderUpdate>({ webSearchProvider:'disabled',webSearchApiKey:'',clearWebSearchKey:false, revision: 0, provider: 'deepseek', baseUrl: 'https://api.deepseek.com', apiKey: '', defaultModel: 'deepseek-flash', visionModel: 'deepseek-flash', enabledModels: [], thinkingEnabled: true, reasoningEffort: 'low', maxOutputTokens: 8192, complexOutputTokens: 16384, contextWindow: 1048576, maxInputChars: 20000, taskTimeoutSeconds: 180 })
 let baseline = ''
 const dirty = computed(() => JSON.stringify(form) !== baseline)
-const busy = computed(() => loading.value || saving.value || testing.value)
+const busy = computed(() => loading.value || saving.value || testing.value || searchTesting.value)
 const selectedCapability = computed(() => models.value.find(item => item.id === form.defaultModel))
 const visionOptions = computed(() => models.value.filter(item => item.supportsVision))
-const names: Record<string, string> = { provider: 'Provider', baseUrl: '接口地址', apiKey: '密钥', defaultModel: '默认模型', visionModel: '图片模型', enabledModels: '开放模型', thinkingEnabled: '思考模式', reasoningEffort: '推理强度', maxOutputTokens: '普通输出上限', complexOutputTokens: '复杂输出上限', contextWindow: '上下文额度', maxInputChars: '单次输入字符', taskTimeoutSeconds: '任务时限' }
+const names: Record<string, string> = { webSearchProvider:'联网搜索服务',webSearchApiKey:'搜索密钥',provider: 'Provider', baseUrl: '接口地址', apiKey: '密钥', defaultModel: '默认模型', visionModel: '图片模型', enabledModels: '开放模型', thinkingEnabled: '思考模式', reasoningEffort: '推理强度', maxOutputTokens: '普通输出上限', complexOutputTokens: '复杂输出上限', contextWindow: '上下文额度', maxInputChars: '单次输入字符', taskTimeoutSeconds: '任务时限' }
 
 function useSaved(value: AIProviderSettings) {
   saved.value = value
-  Object.assign(form, { revision: value.revision, provider: value.provider, baseUrl: value.baseUrl, defaultModel: value.defaultModel, visionModel: value.visionModel, enabledModels: [...(value.enabledModels || [])], thinkingEnabled: value.thinkingEnabled, reasoningEffort: value.reasoningEffort || 'low', maxOutputTokens: value.maxOutputTokens, complexOutputTokens: value.complexOutputTokens ?? 16384, contextWindow: value.contextWindow ?? 1048576, maxInputChars: value.maxInputChars ?? 20000, taskTimeoutSeconds: value.taskTimeoutSeconds ?? 180, apiKey: '' })
+  Object.assign(form, { webSearchProvider:value.webSearchProvider || 'disabled',webSearchApiKey:'',clearWebSearchKey:false,revision: value.revision, provider: value.provider, baseUrl: value.baseUrl, defaultModel: value.defaultModel, visionModel: value.visionModel, enabledModels: [...(value.enabledModels || [])], thinkingEnabled: value.thinkingEnabled, reasoningEffort: value.reasoningEffort || 'low', maxOutputTokens: value.maxOutputTokens, complexOutputTokens: value.complexOutputTokens ?? 16384, contextWindow: value.contextWindow ?? 1048576, maxInputChars: value.maxInputChars ?? 20000, taskTimeoutSeconds: value.taskTimeoutSeconds ?? 180, apiKey: '' })
   baseline = JSON.stringify(form)
 }
 async function load() {
@@ -57,7 +58,13 @@ onBeforeRouteLeave(async () => {
   if (!dirty.value || loading.value || !saved.value) return true
   try { await ElMessageBox.confirm('当前修改尚未保存，离开后将丢弃。', '离开设置页面', { confirmButtonText: '离开', cancelButtonText: '继续编辑' }); return true } catch { return false }
 })
-onBeforeUnmount(() => { form.apiKey = '' })
+async function testSearch() {
+ searchTesting.value=true;searchResult.value='';searchError.value=''
+ try {const result=await aiSettingsApi.testSearch({...form});searchResult.value=`已连接 · 本次返回 ${result.sources.length} 条来源（不代表已启用）`}
+ catch(e){searchError.value=e instanceof Error?e.message:'搜索连接测试失败'}
+ finally{searchTesting.value=false}
+}
+onBeforeUnmount(() => { form.apiKey = '';form.webSearchApiKey='' })
 onMounted(load)
 </script>
 
@@ -70,6 +77,16 @@ onMounted(load)
       <div class="ai-settings-layout">
         <div class="ai-settings-main">
           <section class="ai-setting-card">
+ <div class="ai-section-heading"><div><h2>联网搜索</h2><p>接入独立搜索服务，供 Harness 按需检索公开网页。仅在智能体已发布允许联网、且用户开启联网时使用。</p></div></div>
+ <el-form label-position="top" :disabled="busy || !saved.writable" @submit.prevent>
+ <el-form-item label="搜索服务"><el-select v-model="form.webSearchProvider" @change="searchResult='';searchError=''" aria-label="搜索服务"><el-option label="停用" value="disabled"/><el-option label="Tavily" value="tavily"/><el-option label="Brave Search" value="brave"/></el-select></el-form-item>
+ <el-form-item label="搜索 API Key"><el-input v-model="form.webSearchApiKey" type="password" autocomplete="new-password" show-password :disabled="form.webSearchProvider==='disabled'" :placeholder="saved.hasWebSearchKey?'留空保留；更换服务须填写新密钥':'尚未配置，请填写搜索服务密钥'" @input="searchResult='';searchError=''"/></el-form-item>
+ <el-checkbox v-model="form.clearWebSearchKey">清除已保存的搜索密钥</el-checkbox>
+ <p class="ai-field-hint">密钥加密保存在服务器。DeepSeek 密钥不能代替搜索密钥。连接测试会向所选搜索服务提交一次固定公共查询，可能消耗搜索额度。</p>
+ <el-button :loading="searchTesting" :disabled="form.webSearchProvider==='disabled'||form.clearWebSearchKey" @click="testSearch">测试搜索连接</el-button>
+ <el-alert v-if="searchResult" :title="searchResult" type="success" :closable="false"/><el-alert v-if="searchError" :title="searchError" type="error" :closable="false"/>
+ </el-form></section>
+ <section class="ai-setting-card">
             <div class="ai-section-heading"><span class="ai-step">01</span><div><h2>连接大模型</h2><p>密钥由服务器保管，客户端通过平台调用。</p></div><el-icon class="ai-heading-icon"><Connection /></el-icon></div>
             <el-form label-position="top" :disabled="busy || !saved.writable" @submit.prevent>
               <el-form-item label="Provider">
