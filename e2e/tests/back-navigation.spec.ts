@@ -12,6 +12,8 @@ async function setup(page: Page) {
   if(path.endsWith('/bookings/journeys'))data={list:[],total:0,counts:{active:0,receipt:0,complete:0,confirmed:0,executing:0,revision:0}};
   else if(path.endsWith('/users/profile'))data={userId:42,nickname:'返回测试用户',mobile:'',avatar:''};
   else if(path.endsWith('/points'))data={balance:0};
+  else if(path.endsWith('/payments/wallet'))data={summary:{paidCents:0,refundedCents:0,refundingCents:0},list:[],total:0,page:1,pageSize:20,mode:'channel'};
+  else if(path.endsWith('/payments/wallet/balance'))data={availableCents:0,heldCents:0,enabled:true,channels:[],entries:[],recharges:[],page:1,hasMore:false};
   else if(path.endsWith('/diy/designs/1'))data=design;
   else if(path.endsWith('/diy/designs')&&req.method()==='POST')data={id:1,revision:2};
   else if(path.endsWith('/diy/designs')||path.endsWith('/diy/my-designs'))data={list:[design],total:1};
