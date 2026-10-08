@@ -47,7 +47,7 @@ for(const width of [375,557,768,1440])test(`model selection persists and request
   const b=(await sheet(page).boundingBox())!;
   // The application reserves a stable desktop scrollbar gutter. Center in the
   // actual visible viewport, not innerWidth (which also includes that gutter).
-  const v=await page.evaluate(()=>({x:(visualViewport?.offsetLeft??0)+(visualViewport?.width??document.documentElement.clientWidth)/2,y:(visualViewport?.offsetTop??0)+(visualViewport?.height??innerHeight)/2}));
+  const v=await page.evaluate(()=>({x:(visualViewport?.offsetLeft??0)+Math.min(visualViewport?.width??innerWidth,document.documentElement.clientWidth)/2,y:(visualViewport?.offsetTop??0)+(visualViewport?.height??innerHeight)/2}));
   return Math.abs(b.y+b.height/2-v.y)+Math.abs(b.x+b.width/2-v.x);
  }).toBeLessThan(3);
  if(width<=600)await expect.poll(async()=>{const b=await sheet(page).boundingBox();return Math.abs(b!.y+b!.height-900);}).toBeLessThan(2);
