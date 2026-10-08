@@ -43,6 +43,7 @@ for(const width of [375,557,768,1440])test(`model selection persists and request
  await expect(sheet(page).getByRole('button',{name:/DeepSeek Flash/})).toHaveAttribute('aria-pressed','true');
  const bounds=await sheet(page).boundingBox();
  expect(bounds!.x).toBeGreaterThanOrEqual(0);expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(width);
+ if(width>600)console.log('dialog geometry',await sheet(page).evaluate(e=>({rect:e.getBoundingClientRect().toJSON(),client:[document.documentElement.clientWidth,document.documentElement.clientHeight],viewport:[visualViewport?.width,visualViewport?.height,visualViewport?.offsetTop],style:{inset:getComputedStyle(e).inset,margin:getComputedStyle(e).margin,transform:getComputedStyle(e).transform},vars:document.documentElement.getAttribute('style')})));
  if(width>600)await expect.poll(async()=>{
   const b=(await sheet(page).boundingBox())!;
   // The application reserves a stable desktop scrollbar gutter. Center in the
