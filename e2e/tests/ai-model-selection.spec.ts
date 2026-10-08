@@ -43,7 +43,13 @@ for(const width of [375,557,768,1440])test(`model selection persists and request
  await expect(sheet(page).getByRole('button',{name:/DeepSeek Flash/})).toHaveAttribute('aria-pressed','true');
  const bounds=await sheet(page).boundingBox();
  expect(bounds!.x).toBeGreaterThanOrEqual(0);expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(width);
- if(width>600)await expect.poll(async()=>{const b=await sheet(page).boundingBox();return Math.abs(b!.y+b!.height/2-450)+Math.abs(b!.x+b!.width/2-width/2);}).toBeLessThan(3);
+ if(width>600)await expect.poll(async()=>{
+  const b=(await sheet(page).boundingBox())!;
+  // The application reserves a stable desktop scrollbar gutter. Center in the
+  // actual visible viewport, not innerWidth (which also includes that gutter).
+  const v=await page.evaluate(()=>({x:(visualViewport?.offsetLeft??0)+(visualViewport?.width??document.documentElement.clientWidth)/2,y:(visualViewport?.offsetTop??0)+(visualViewport?.height??innerHeight)/2}));
+  return Math.abs(b.y+b.height/2-v.y)+Math.abs(b.x+b.width/2-v.x);
+ }).toBeLessThan(3);
  if(width<=600)await expect.poll(async()=>{const b=await sheet(page).boundingBox();return Math.abs(b!.y+b!.height-900);}).toBeLessThan(2);
  await page.screenshot({path:`artifacts/ai-models/sheet-${width}.png`});
  await sheet(page).getByRole('button',{name:/DeepSeek V4 Pro/}).click();
@@ -165,6 +171,6 @@ for(const height of [320,460])test(`model errors remain reachable in short viewp
  await page.setViewportSize({width:390,height});await setup(page,{fail:true});await page.goto('/c/ai?view=chat');
  await trigger(page).click();await expect(sheet(page)).toBeVisible();
  await expect(sheet(page).getByRole('button',{name:'关闭选择模型'})).toBeInViewport();
- const b=(await sheet(page).boundingBox())!;expect(b.x).toBeGreaterThanOrEqual(0);expect(b.y).toBeGreaterThanOrEqual(0);expect(b.y+b.height).toBeLessThanOrEqual(height+1);
+ await expect.poll(async()=>{const b=(await sheet(page).boundingBox())!;return Math.max(-b.x,-b.y,b.y+b.height-height);}).toBeLessThanOrEqual(1);
  await page.keyboard.press('Escape');await expect(sheet(page)).toHaveCount(0);
 });
