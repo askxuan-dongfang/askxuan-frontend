@@ -26,12 +26,14 @@
 .el-overlay-dialog .el-dialog__header, .el-overlay-dialog .el-dialog__footer { flex-shrink: 0; }
 .el-overlay-dialog .el-dialog__body { min-height: 0; overflow: auto; overscroll-behavior: contain; overflow-wrap: anywhere; }
 .el-overlay-dialog .el-dialog.is-fullscreen { height: 100%; width: 100%; margin: 0; }
-.el-overlay .el-drawer {
+.el-overlay .el-drawer:is(.rtl, .ltr) {
   top: var(--ax-overlay-top, 0px);
   height: var(--ax-overlay-height, 100dvh);
   max-width: var(--ax-overlay-width, 100vw);
 }
-.el-overlay .el-drawer.ttb, .el-overlay .el-drawer.btt { height: auto; max-height: var(--ax-overlay-height, 100dvh); }
+.el-overlay .el-drawer:is(.ttb, .btt) { max-height: var(--ax-overlay-height, 100dvh); }
+.el-overlay .el-drawer.ttb { top: var(--ax-overlay-top, 0px); }
+.el-overlay .el-drawer.btt { bottom: calc(100dvh - var(--ax-overlay-top, 0px) - var(--ax-overlay-height, 100dvh)); }
 .el-drawer__body { min-height: 0; overscroll-behavior: contain; }
 .el-overlay-message-box {
   top: var(--ax-overlay-top, 0px);

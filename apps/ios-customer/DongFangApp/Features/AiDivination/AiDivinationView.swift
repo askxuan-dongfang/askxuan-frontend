@@ -434,7 +434,6 @@ final class AiDivinationViewModel: ObservableObject {
 }
 
 struct AiDivinationView: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel = AiDivinationViewModel()
     @ObservedObject private var auth = AuthStore.shared
     @State private var section = "探索"
@@ -469,8 +468,6 @@ struct AiDivinationView: View {
                 }
             }
             .background(Color.bgPrimary)
-
-
         }
         .sheet(isPresented: $isDrawerOpen) {
             historyDrawer
@@ -504,7 +501,6 @@ struct AiDivinationView: View {
 				await MainActor.run { viewModel.selectedImages = images }
 			}
 		}
-        .animation(reduceMotion ? nil : AppMotion.reveal, value: isDrawerOpen)
     }
 
     private var navigationBar: some View {
