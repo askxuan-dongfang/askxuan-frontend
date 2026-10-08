@@ -6,22 +6,24 @@ import { Connection, Check, Refresh, Lock, ArrowRight } from '@element-plus/icon
 import PageHeader from '@/components/PageHeader.vue'
 import { aiSettingsApi, type AIProviderSettings, type AIProviderUpdate, type AIModelOption } from '@/api/aiSettings'
 
+const searchProviders = [{ value: 'bocha', label: '博查 · 中文搜索' }, { value: 'tencent', label: '腾讯云 · 元宝搜索' }, { value: 'tavily', label: 'Tavily' }, { value: 'brave', label: 'Brave Search' }]
+const defaultSearchOptions = () => ({ maxSearches: 4, readPages: false, language: '', country: '', freshness: '', includeDomains: '', excludeDomains: '', maxResults: 5 })
 const saved = ref<AIProviderSettings>()
 const loading = ref(true), saving = ref(false), testing = ref(false)
 const loadError = ref(''), testError = ref(''), tested = ref(false)
 const searchTesting = ref(false), searchResult = ref(''), searchError = ref('')
 const models = ref<AIModelOption[]>([])
-const form = reactive<AIProviderUpdate>({ webSearchProvider:'disabled',webSearchApiKey:'',clearWebSearchKey:false, revision: 0, provider: 'deepseek', baseUrl: 'https://api.deepseek.com', apiKey: '', defaultModel: 'deepseek-flash', visionModel: 'deepseek-flash', enabledModels: [], thinkingEnabled: true, reasoningEffort: 'low', maxOutputTokens: 8192, complexOutputTokens: 16384, contextWindow: 1048576, maxInputChars: 20000, taskTimeoutSeconds: 180 })
+const form = reactive<AIProviderUpdate>({ webSearchFallbackProvider:'disabled',webSearchFallbackApiKey:'',clearWebSearchFallbackKey:false,webSearchOptions:defaultSearchOptions(), webSearchProvider:'disabled',webSearchApiKey:'',clearWebSearchKey:false, revision: 0, provider: 'deepseek', baseUrl: 'https://api.deepseek.com', apiKey: '', defaultModel: 'deepseek-flash', visionModel: 'deepseek-flash', enabledModels: [], thinkingEnabled: true, reasoningEffort: 'low', maxOutputTokens: 8192, complexOutputTokens: 16384, contextWindow: 1048576, maxInputChars: 20000, taskTimeoutSeconds: 180 })
 let baseline = ''
 const dirty = computed(() => JSON.stringify(form) !== baseline)
 const busy = computed(() => loading.value || saving.value || testing.value || searchTesting.value)
 const selectedCapability = computed(() => models.value.find(item => item.id === form.defaultModel))
 const visionOptions = computed(() => models.value.filter(item => item.supportsVision))
-const names: Record<string, string> = { webSearchProvider:'联网搜索服务',webSearchApiKey:'搜索密钥',provider: 'Provider', baseUrl: '接口地址', apiKey: '密钥', defaultModel: '默认模型', visionModel: '图片模型', enabledModels: '开放模型', thinkingEnabled: '思考模式', reasoningEffort: '推理强度', maxOutputTokens: '普通输出上限', complexOutputTokens: '复杂输出上限', contextWindow: '上下文额度', maxInputChars: '单次输入字符', taskTimeoutSeconds: '任务时限' }
+const names: Record<string, string> = { webSearchOptions:'检索偏好',webSearchFallbackProvider:'备用搜索服务',webSearchFallbackApiKey:'备用搜索密钥', webSearchProvider:'联网搜索服务',webSearchApiKey:'搜索密钥',provider: 'Provider', baseUrl: '接口地址', apiKey: '密钥', defaultModel: '默认模型', visionModel: '图片模型', enabledModels: '开放模型', thinkingEnabled: '思考模式', reasoningEffort: '推理强度', maxOutputTokens: '普通输出上限', complexOutputTokens: '复杂输出上限', contextWindow: '上下文额度', maxInputChars: '单次输入字符', taskTimeoutSeconds: '任务时限' }
 
 function useSaved(value: AIProviderSettings) {
   saved.value = value
-  Object.assign(form, { webSearchProvider:value.webSearchProvider || 'disabled',webSearchApiKey:'',clearWebSearchKey:false,revision: value.revision, provider: value.provider, baseUrl: value.baseUrl, defaultModel: value.defaultModel, visionModel: value.visionModel, enabledModels: [...(value.enabledModels || [])], thinkingEnabled: value.thinkingEnabled, reasoningEffort: value.reasoningEffort || 'low', maxOutputTokens: value.maxOutputTokens, complexOutputTokens: value.complexOutputTokens ?? 16384, contextWindow: value.contextWindow ?? 1048576, maxInputChars: value.maxInputChars ?? 20000, taskTimeoutSeconds: value.taskTimeoutSeconds ?? 180, apiKey: '' })
+  Object.assign(form, { webSearchFallbackProvider:value.webSearchFallbackProvider || 'disabled',webSearchFallbackApiKey:'',clearWebSearchFallbackKey:false,webSearchOptions:{...defaultSearchOptions(),...value.webSearchOptions}, webSearchProvider:value.webSearchProvider || 'disabled',webSearchApiKey:'',clearWebSearchKey:false,revision: value.revision, provider: value.provider, baseUrl: value.baseUrl, defaultModel: value.defaultModel, visionModel: value.visionModel, enabledModels: [...(value.enabledModels || [])], thinkingEnabled: value.thinkingEnabled, reasoningEffort: value.reasoningEffort || 'low', maxOutputTokens: value.maxOutputTokens, complexOutputTokens: value.complexOutputTokens ?? 16384, contextWindow: value.contextWindow ?? 1048576, maxInputChars: value.maxInputChars ?? 20000, taskTimeoutSeconds: value.taskTimeoutSeconds ?? 180, apiKey: '' })
   baseline = JSON.stringify(form)
 }
 async function load() {
@@ -58,13 +60,13 @@ onBeforeRouteLeave(async () => {
   if (!dirty.value || loading.value || !saved.value) return true
   try { await ElMessageBox.confirm('当前修改尚未保存，离开后将丢弃。', '离开设置页面', { confirmButtonText: '离开', cancelButtonText: '继续编辑' }); return true } catch { return false }
 })
-async function testSearch() {
+async function testSearch(target: 'primary' | 'fallback' = 'primary') {
  searchTesting.value=true;searchResult.value='';searchError.value=''
- try {const result=await aiSettingsApi.testSearch({...form});searchResult.value=`已连接 · 本次返回 ${result.sources.length} 条来源（不代表已启用）`}
+ try {const result=await aiSettingsApi.testSearch({...form,webSearchTestTarget:target});searchResult.value=`已连接 ${searchProviders.find(p=>p.value===result.provider)?.label || result.provider} · 本次返回 ${result.sources.length} 条来源（不代表已启用）`}
  catch(e){searchError.value=e instanceof Error?e.message:'搜索连接测试失败'}
  finally{searchTesting.value=false}
 }
-onBeforeUnmount(() => { form.apiKey = '';form.webSearchApiKey='' })
+onBeforeUnmount(() => { form.apiKey = '';form.webSearchApiKey='';form.webSearchFallbackApiKey='' })
 onMounted(load)
 </script>
 
@@ -79,11 +81,29 @@ onMounted(load)
           <section class="ai-setting-card">
  <div class="ai-section-heading"><div><h2>联网搜索</h2><p>接入独立搜索服务，供 Harness 按需检索公开网页。仅在智能体已发布允许联网、且用户开启联网时使用。</p></div></div>
  <el-form label-position="top" :disabled="busy || !saved.writable" @submit.prevent>
- <el-form-item label="搜索服务"><el-select v-model="form.webSearchProvider" @change="searchResult='';searchError=''" aria-label="搜索服务"><el-option label="停用" value="disabled"/><el-option label="Tavily" value="tavily"/><el-option label="Brave Search" value="brave"/></el-select></el-form-item>
+ <el-form-item label="主用搜索服务"><el-select v-model="form.webSearchProvider" @change="form.webSearchApiKey='';searchResult='';searchError=''" aria-label="搜索服务"><el-option label="停用" value="disabled"/><el-option v-for="p in searchProviders" :key="p.value" :label="p.label" :value="p.value"/></el-select></el-form-item>
  <el-form-item label="搜索 API Key"><el-input v-model="form.webSearchApiKey" type="password" autocomplete="new-password" show-password :disabled="form.webSearchProvider==='disabled'" :placeholder="saved.hasWebSearchKey?'留空保留；更换服务须填写新密钥':'尚未配置，请填写搜索服务密钥'" @input="searchResult='';searchError=''"/></el-form-item>
  <el-checkbox v-model="form.clearWebSearchKey">清除已保存的搜索密钥</el-checkbox>
  <p class="ai-field-hint">密钥加密保存在服务器。DeepSeek 密钥不能代替搜索密钥。连接测试会向所选搜索服务提交一次固定公共查询，可能消耗搜索额度。</p>
- <el-button :loading="searchTesting" :disabled="form.webSearchProvider==='disabled'||form.clearWebSearchKey" @click="testSearch">测试搜索连接</el-button>
+ <el-button :loading="searchTesting" :disabled="form.webSearchProvider==='disabled'||form.clearWebSearchKey" @click="testSearch('primary')">测试搜索连接</el-button>
+ <el-divider />
+ <el-form-item label="备用搜索服务"><el-select v-model="form.webSearchFallbackProvider" aria-label="备用搜索服务" @change="form.webSearchFallbackApiKey='';searchResult='';searchError=''"><el-option label="不使用备用" value="disabled"/><el-option v-for="p in searchProviders" :key="p.value" :label="p.label" :value="p.value" :disabled="p.value===form.webSearchProvider"/></el-select></el-form-item>
+ <el-form-item label="备用 API Key"><el-input v-model="form.webSearchFallbackApiKey" type="password" autocomplete="new-password" :disabled="form.webSearchFallbackProvider==='disabled'" :placeholder="saved.hasWebSearchFallbackKey?'留空保留；更换服务须填写新密钥':'尚未配置备用密钥'"/></el-form-item>
+ <el-checkbox v-model="form.clearWebSearchFallbackKey">清除已保存的备用密钥</el-checkbox>
+ <p class="ai-field-hint">主服务连接、额度或响应异常时，最多切换备用服务一次；没有搜索结果不会重复消费。停用主服务即关闭整条联网链路。腾讯云请使用 WSA 服务 API Key，不是 SecretId / SecretKey。</p>
+ <el-button :loading="searchTesting" :disabled="form.webSearchFallbackProvider==='disabled'||form.clearWebSearchFallbackKey" @click="testSearch('fallback')">测试备用连接</el-button>
+ <el-divider />
+ <div v-if="form.webSearchOptions" class="ai-form-grid">
+ <el-form-item label="每轮最多搜索次数"><el-input-number v-model="form.webSearchOptions.maxSearches" aria-label="每轮最多搜索次数" :min="1" :max="4"/></el-form-item>
+ <el-form-item label="按需读取来源正文"><el-switch v-model="form.webSearchOptions.readPages" aria-label="按需读取来源正文"/><span class="ai-field-hint">仅可读取本轮搜索已返回的公开网页，每轮最多两页；与搜索共用 Harness 工具预算。</span></el-form-item>
+ <el-form-item label="每次最多来源数"><el-input-number v-model="form.webSearchOptions.maxResults" aria-label="每次最多来源数" :min="1" :max="10"/><span class="ai-field-hint">单次检索最多调用两个引擎；每轮受 Harness 工具次数预算约束。</span></el-form-item>
+ <el-form-item label="时间范围"><el-select v-model="form.webSearchOptions.freshness" placeholder="不限" aria-label="搜索时间范围"><el-option label="不限" value=""/><el-option label="最近一天" value="day"/><el-option label="最近一周" value="week"/><el-option label="最近一月" value="month"/><el-option label="最近一年" value="year"/></el-select></el-form-item>
+ <el-form-item label="语言偏好（Brave）"><el-select v-model="form.webSearchOptions.language" placeholder="自动" aria-label="搜索语言"><el-option label="自动" value=""/><el-option label="简体中文" value="zh-hans"/><el-option label="繁体中文" value="zh-hant"/><el-option label="英语" value="en"/></el-select></el-form-item>
+ <el-form-item label="地区偏好（Brave）"><el-select v-model="form.webSearchOptions.country" placeholder="默认" aria-label="搜索地区"><el-option label="默认" value=""/><el-option label="中国大陆" value="CN"/><el-option label="中国香港" value="HK"/><el-option label="中国台湾" value="TW"/><el-option label="美国" value="US"/></el-select></el-form-item>
+ <el-form-item label="只保留这些站点"><el-input v-model="form.webSearchOptions.includeDomains" type="textarea" placeholder="例：nlc.cn，每行或逗号分隔，最多 10 个域名"/></el-form-item>
+ <el-form-item label="排除这些站点"><el-input v-model="form.webSearchOptions.excludeDomains" type="textarea" placeholder="域名不含 https://、路径或通配符"/></el-form-item>
+ </div>
+ <p class="ai-field-hint">站点规则会校验最终来源；供应商不支持的站点组合在结果返回后过滤，条数可能减少。语言与地区参数仅用于 Brave，其他服务依据问题语言检索。搜索返回摘要，不会自动导入知识库或 Wiki。</p>
  <el-alert v-if="searchResult" :title="searchResult" type="success" :closable="false"/><el-alert v-if="searchError" :title="searchError" type="error" :closable="false"/>
  </el-form></section>
  <section class="ai-setting-card">
@@ -142,7 +162,7 @@ onMounted(load)
             <div class="ai-live-label"><span /> 当前生效</div>
             <h2>{{ saved.provider === 'deepseek' ? 'DeepSeek' : saved.provider === 'mock' ? '本地模拟' : 'OpenAI 兼容接口' }}</h2>
             <p class="ai-current-model">{{ saved.defaultModel || '尚未设置默认模型' }}</p>
-            <dl><div><dt>配置来源</dt><dd>{{ saved.source === 'platform' ? '管理平台' : '服务器初始配置' }}</dd></div><div><dt>密钥状态</dt><dd>{{ saved.hasApiKey ? '已配置' : '未配置' }}</dd></div><div><dt>普通 / 复杂输出</dt><dd>{{ saved.maxOutputTokens }} / {{ saved.complexOutputTokens }} Token</dd></div><div><dt>平台上下文</dt><dd>{{ saved.contextWindow?.toLocaleString() }} Token</dd></div><div><dt>版本</dt><dd>v{{ saved.revision }}</dd></div></dl>
+            <dl><div><dt>主用搜索</dt><dd>{{ searchProviders.find(p=>p.value===saved?.webSearchProvider)?.label || '停用' }} · {{ saved.hasWebSearchKey ? '密钥已配置' : '无密钥' }}</dd></div><div><dt>备用搜索</dt><dd>{{ searchProviders.find(p=>p.value===saved?.webSearchFallbackProvider)?.label || '停用' }} · {{ saved.hasWebSearchFallbackKey ? '密钥已配置' : '无密钥' }}</dd></div><div><dt>配置来源</dt><dd>{{ saved.source === 'platform' ? '管理平台' : '服务器初始配置' }}</dd></div><div><dt>密钥状态</dt><dd>{{ saved.hasApiKey ? '已配置' : '未配置' }}</dd></div><div><dt>普通 / 复杂输出</dt><dd>{{ saved.maxOutputTokens }} / {{ saved.complexOutputTokens }} Token</dd></div><div><dt>平台上下文</dt><dd>{{ saved.contextWindow?.toLocaleString() }} Token</dd></div><div><dt>版本</dt><dd>v{{ saved.revision }}</dd></div></dl>
             <div class="ai-flow"><span>管理平台</span><el-icon><ArrowRight /></el-icon><span>AI 服务</span><el-icon><ArrowRight /></el-icon><span>用户端</span></div>
             <p>保存后立即用于新请求。H5 和 iOS 共用此设置，无需重新发布客户端。</p>
           </section>
