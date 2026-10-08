@@ -1,6 +1,7 @@
 // 统一后台：保留 28 条平台业务路由，迁入 17 条商城业务路由。
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { agentCenterRoutes } from './agentCenter'
 import { commerceRoutes } from '@/commerce/routes'
 import { canAccessRoute, defaultRoute } from './access'
 import { useAuthStore } from '@/stores/auth'
@@ -153,8 +154,9 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '优惠券管理', parent: '营销管理' }
       },
       // 系统设置
-      {path:'ai/operations',name:'AgentOperations',component:()=>import('@/views/ai/AgentOperationsView.vue'),meta:{title:'问事智能体开发中心',parent:'AI 问事',roles:['platform_super']}},
-      {path:'settings/ai',name:'SettingsAi',component:()=>import('@/views/settings/SettingsAiView.vue'),meta:{title:'AI 模型设置',parent:'系统治理',roles:['platform_super']}},
+      {path:'ai',component:()=>import('@/views/ai/AgentCenterLayout.vue'),redirect:'/ai/agent',meta:{title:'问事智能体开发中心',roles:['platform_super']},children:agentCenterRoutes},
+      {path:'ai/operations',name:'AgentOperations',redirect:to=>({path:'/ai/agent',query:to.query,hash:to.hash}),meta:{roles:['platform_super']}},
+      {path:'settings/ai',name:'SettingsAi',redirect:to=>({path:'/ai/connections/models',query:to.query,hash:to.hash}),meta:{roles:['platform_super']}},
       {
         path: 'settings/taxonomy',
         name: 'SettingsTaxonomy',

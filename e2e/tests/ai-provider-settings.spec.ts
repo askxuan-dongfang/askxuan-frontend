@@ -19,7 +19,7 @@ async function setup(page:Page, options:{role?:string;failSave?:boolean;failTest
  return calls;
 }
 test('secret replacement, connection probe and reviewed save',async({page})=>{
- const calls=await setup(page);await page.goto('/settings/ai');await expect(page.getByRole('heading',{name:'AI 模型设置',exact:true})).toBeVisible();
+ const calls=await setup(page);await page.goto('/settings/ai');await expect(page.getByRole('heading',{name:'模型与连接',exact:true})).toBeVisible();
  const key=page.getByLabel('API Key',{exact:true});await expect(key).toHaveValue('');await expect(key).toHaveAttribute('type','password');
  await key.fill('fixture-replacement-key');await page.getByRole('button',{name:'测试连接与获取模型',exact:true}).click();await expect(page.getByRole('status')).toContainText('连接成功');
  expect(calls.filter(c=>c.method==='PUT')).toHaveLength(0);

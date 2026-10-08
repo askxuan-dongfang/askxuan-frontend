@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { agentCenterSections } from '@/views/ai/centerNavigation'
 import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
 import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import { computed } from 'vue'
@@ -14,10 +15,7 @@ const auth = useAuthStore()
 const { collapsed, mobile, drawerOpen, sidebarRef, toggleRef, toggleNavigation, closeNavigation } = useAdminNavigation(() => route.fullPath)
 
 const allMenuGroups = [
-  {title:'AI 问事',icon:'Connection',children:[
-    {path:'/ai/operations',title:'问事智能体开发中心'},
-    {path:'/settings/ai',title:'模型连接设置'}
-  ]},
+  {title:'问事智能体开发中心',icon:'Connection',children:agentCenterSections.map(({path,title})=>({path,title}))},
   {title:'商城与权益',icon:'Shop',children:[
     {path:'/commerce',title:'商城运营总览'},
     {path:'/commerce/dashboard',title:'商城工作台'},
@@ -96,6 +94,7 @@ const homePath = computed(() => defaultRoute(auth.roles))
 
 const activeMenu = computed(() => {
   const path = route.path
+  if (path.startsWith('/ai/connections')) return '/ai/connections'
   if (path.startsWith('/temple/detail/')) return '/temple/list'
   if (path.startsWith('/master/detail/') || path === '/master/create') return '/master/list'
   if (path.startsWith('/user/detail/')) return '/user/list'

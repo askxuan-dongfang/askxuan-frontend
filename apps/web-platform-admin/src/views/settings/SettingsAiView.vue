@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const props = withDefaults(defineProps<{ section?: 'models' | 'search'; embedded?: boolean }>(), { section: 'models', embedded: false })
 import { computed, onMounted, onBeforeUnmount, reactive, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -56,7 +57,8 @@ async function save() {
   finally { saving.value = false }
 }
 function reset() { if (saved.value) useSaved(saved.value); connectionChanged() }
-onBeforeRouteLeave(async () => {
+onBeforeRouteLeave(async to => {
+  if (['/ai/connections/models','/ai/connections/search'].includes(to.path)) return true
   if (!dirty.value || loading.value || !saved.value) return true
   try { await ElMessageBox.confirm('当前修改尚未保存，离开后将丢弃。', '离开设置页面', { confirmButtonText: '离开', cancelButtonText: '继续编辑' }); return true } catch { return false }
 })
@@ -71,14 +73,14 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="dfx-page ai-settings" v-loading="loading">
-    <PageHeader title="AI 模型设置" subtitle="管理 AI 问事与专题报告使用的大模型连接" />
+  <div class="dfx-page ai-settings" :class="{ 'ai-settings-embedded': props.embedded }" v-loading="loading">
+    <PageHeader v-if="!props.embedded" title="AI 模型设置" subtitle="管理 AI 问事与专题报告使用的大模型连接" />
     <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon><el-button text @click="load">重新加载</el-button></el-alert>
     <template v-else-if="saved">
       <el-alert v-if="!saved.writable" title="当前为只读模式，服务器尚未启用配置持久化" type="warning" :closable="false" show-icon class="storage-warning" />
       <div class="ai-settings-layout">
         <div class="ai-settings-main">
-          <section class="ai-setting-card">
+          <section v-show="props.section === 'search'" class="ai-setting-card">
  <div class="ai-section-heading"><div><h2>联网搜索</h2><p>接入独立搜索服务，供 Harness 按需检索公开网页。仅在智能体已发布允许联网、且用户开启联网时使用。</p></div></div>
  <el-form label-position="top" :disabled="busy || !saved.writable" @submit.prevent>
  <el-form-item label="主用搜索服务"><el-select v-model="form.webSearchProvider" @change="form.webSearchApiKey='';searchResult='';searchError=''" aria-label="搜索服务"><el-option label="停用" value="disabled"/><el-option v-for="p in searchProviders" :key="p.value" :label="p.label" :value="p.value"/></el-select></el-form-item>
@@ -106,7 +108,7 @@ onMounted(load)
  <p class="ai-field-hint">站点规则会校验最终来源；供应商不支持的站点组合在结果返回后过滤，条数可能减少。语言与地区参数仅用于 Brave，其他服务依据问题语言检索。搜索返回摘要，不会自动导入知识库或 Wiki。</p>
  <el-alert v-if="searchResult" :title="searchResult" type="success" :closable="false"/><el-alert v-if="searchError" :title="searchError" type="error" :closable="false"/>
  </el-form></section>
- <section class="ai-setting-card">
+ <section v-show="props.section === 'models'" class="ai-setting-card">
             <div class="ai-section-heading"><span class="ai-step">01</span><div><h2>连接大模型</h2><p>密钥由服务器保管，客户端通过平台调用。</p></div><el-icon class="ai-heading-icon"><Connection /></el-icon></div>
             <el-form label-position="top" :disabled="busy || !saved.writable" @submit.prevent>
               <el-form-item label="Provider">
@@ -123,7 +125,7 @@ onMounted(load)
             <el-alert v-if="testError" :title="testError" type="error" :closable="false" class="ai-test-error" show-icon />
           </section>
 
-          <section class="ai-setting-card">
+          <section v-show="props.section === 'models'" class="ai-setting-card">
             <div class="ai-section-heading"><span class="ai-step">02</span><div><h2>模型与生成偏好</h2><p>默认用于新问事；用户也可选择平台开放的模型。</p></div></div>
             <el-form label-position="top" :disabled="busy || !saved.writable" @submit.prevent>
               <div class="ai-form-grid">
@@ -172,13 +174,14 @@ onMounted(load)
           </section>
         </aside>
       </div>
-      <footer class="ai-settings-actions"><span :class="{ 'is-dirty': dirty }">{{ dirty ? '有尚未保存的修改' : '已与当前配置同步' }}</span><div><el-button :disabled="busy || !dirty" :icon="Refresh" @click="reset">撤销修改</el-button><el-button type="primary" :disabled="busy || !dirty || !saved.writable" :loading="saving" @click="save">保存并生效</el-button></div></footer>
+      <footer class="ai-settings-actions"><span :class="{ 'is-dirty': dirty }">{{ dirty ? '大模型与联网搜索有未保存修改，将一并保存' : '已与当前配置同步' }}</span><div><el-button :disabled="busy || !dirty" :icon="Refresh" @click="reset">撤销修改</el-button><el-button type="primary" :disabled="busy || !dirty || !saved.writable" :loading="saving" @click="save">保存并生效</el-button></div></footer>
     </template>
   </div>
 </template>
 
 <style scoped>
 .ai-settings { --ai-border: var(--dfx-border, #e7e2d8); max-width: 1380px; margin-inline:auto; }
+.ai-settings-embedded { padding:0; max-width:none; width:100%; }
 .storage-warning { margin-bottom:20px; }
 .ai-settings-layout { display:grid; grid-template-columns:minmax(0, 1.65fr) minmax(270px, 1fr); gap:24px; align-items:start; }
 .ai-settings-main,.ai-settings-aside { min-width:0; display:grid; gap:24px; }
