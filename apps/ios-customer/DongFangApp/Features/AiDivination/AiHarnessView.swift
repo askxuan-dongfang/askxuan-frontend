@@ -114,7 +114,7 @@ struct AiNativeFields: View {
                     .datePickerStyle(.wheel).labelsHidden().environment(\.locale, Locale(identifier: "zh_CN")).environment(\.timeZone, TimeZone(secondsFromGMT: 28800) ?? .current)
                     .navigationTitle(field.label).navigationBarTitleDisplayMode(.inline)
                     .toolbar { ToolbarItem(placement: .confirmationAction) { Button("确定") { set(field, formatter(field.type).string(from: date)); dateField = nil } }; ToolbarItem(placement: .cancellationAction) { Button("取消") { dateField = nil } } }
-            }.presentationDetents([.height(340)])
+            }.appSheetSurface()
         }
     }
 }

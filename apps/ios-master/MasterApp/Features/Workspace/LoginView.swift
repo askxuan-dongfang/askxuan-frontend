@@ -185,7 +185,7 @@ struct LoginView: View {
             )
           }.padding()
         }.navigationTitle(legal ?? "账户说明").toolbar { Button("完成") { legal = nil } }
-      }
+      }.appSheetSurface()
     }
   }
   private func loadOptions() async {

@@ -38,7 +38,7 @@
       </div>
     </div>
 
-    <el-dialog v-model="dialog.visible" :title="dialog.isEdit ? '编辑角色' : '新建角色'" width="460px">
+    <el-dialog v-model="dialog.visible" :title="dialog.isEdit ? '编辑角色' : '新建角色'" width="460px" append-to-body>
       <el-form :model="dialog.form" label-width="80px">
         <el-form-item label="角色名称">
           <el-input v-model="dialog.form.name" placeholder="请输入角色名称" :disabled="dialog.isEdit" />

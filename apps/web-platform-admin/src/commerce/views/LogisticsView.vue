@@ -391,7 +391,7 @@ onMounted(() => {
     </div>
 
     <!-- 快递公司弹窗 -->
-    <el-dialog v-model="expressDialogVisible" :title="expressDialogTitle" width="480px">
+    <el-dialog v-model="expressDialogVisible" :title="expressDialogTitle" width="480px" append-to-body>
       <el-form ref="expressFormRef" :model="expressForm" :rules="expressRules" label-width="100px">
         <el-form-item label="编码" prop="code">
           <el-input v-model="expressForm.code" placeholder="如 SF / ZTO" :disabled="!!expressForm.id" />
@@ -422,7 +422,7 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 运费模板弹窗 -->
-    <el-dialog v-model="freightDialogVisible" :title="freightDialogTitle" width="560px">
+    <el-dialog v-model="freightDialogVisible" :title="freightDialogTitle" width="560px" append-to-body>
       <el-form ref="freightFormRef" :model="freightForm" :rules="freightRules" label-width="100px">
         <el-form-item label="模板名称" prop="name">
           <el-input v-model="freightForm.name" placeholder="如 默认运费模板" />

@@ -122,7 +122,7 @@ onMounted(load)
       </el-table>
     </section>
 
-    <el-dialog v-model="beliefVisible" :title="editingBelief ? '编辑信仰' : '新增信仰'" width="620px">
+    <el-dialog v-model="beliefVisible" :title="editingBelief ? '编辑信仰' : '新增信仰'" width="620px" append-to-body>
       <el-form :model="beliefForm" label-width="92px">
         <el-form-item label="编码" required><el-input v-model="beliefForm.code" :disabled="editingBelief" placeholder="小写字母、数字、下划线" /></el-form-item>
         <el-form-item label="名称" required><el-input v-model="beliefForm.name" /></el-form-item>
@@ -135,7 +135,7 @@ onMounted(load)
       <template #footer><el-button @click="beliefVisible=false">取消</el-button><el-button type="primary" @click="saveBelief">保存</el-button></template>
     </el-dialog>
 
-    <el-dialog v-model="intentionVisible" :title="editingIntention ? '编辑心愿' : '新增心愿'" width="620px">
+    <el-dialog v-model="intentionVisible" :title="editingIntention ? '编辑心愿' : '新增心愿'" width="620px" append-to-body>
       <el-form :model="intentionForm" label-width="92px">
         <el-form-item label="编码" required><el-input v-model="intentionForm.code" :disabled="editingIntention" placeholder="小写字母、数字、下划线" /></el-form-item>
         <el-form-item label="名称" required><el-input v-model="intentionForm.name" /></el-form-item>

@@ -193,7 +193,9 @@ extension View {
     func appNumericTransition<Value: Equatable>(value: Value) -> some View { modifier(AppNumericTransition(value: value)) }
     /// Retain the system sheet gesture, detents, keyboard avoidance and dismissal behavior.
     func appSheetSurface() -> some View {
-        presentationBackground(Color.bgPrimary)
+        presentationDetents([.medium, .large])
+            .presentationContentInteraction(.scrolls)
+            .presentationBackground(Color.bgPrimary)
             .presentationCornerRadius(28)
             .presentationDragIndicator(.visible)
     }

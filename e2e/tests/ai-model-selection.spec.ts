@@ -31,7 +31,7 @@ async function choose(page:Page,name:string){
  await sheet(page).getByRole('button',{name:new RegExp(name)}).click();
  await expect(sheet(page)).toHaveCount(0);
 }
-for(const width of [375,557,768])test(`model selection persists and request uses chosen model ${width}`,async({page})=>{
+for(const width of [375,557,768,1440])test(`model selection persists and request uses chosen model ${width}`,async({page})=>{
  await page.setViewportSize({width,height:900});const state=await setup(page);await page.goto('/c/ai?view=chat');
  const picker=trigger(page);
  await expect(picker).toContainText('DeepSeek Flash');
@@ -43,6 +43,7 @@ for(const width of [375,557,768])test(`model selection persists and request uses
  await expect(sheet(page).getByRole('button',{name:/DeepSeek Flash/})).toHaveAttribute('aria-pressed','true');
  const bounds=await sheet(page).boundingBox();
  expect(bounds!.x).toBeGreaterThanOrEqual(0);expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(width);
+ if(width>600)await expect.poll(async()=>{const b=await sheet(page).boundingBox();return Math.abs(b!.y+b!.height/2-450)+Math.abs(b!.x+b!.width/2-width/2);}).toBeLessThan(3);
  if(width<=600)await expect.poll(async()=>{const b=await sheet(page).boundingBox();return Math.abs(b!.y+b!.height-900);}).toBeLessThan(2);
  await page.screenshot({path:`artifacts/ai-models/sheet-${width}.png`});
  await sheet(page).getByRole('button',{name:/DeepSeek V4 Pro/}).click();
@@ -157,5 +158,13 @@ test('interrupting modal entrance preserves its current frame and releases scrol
  await expect(sheet(page)).toHaveCount(0);await expect(trigger(page)).toBeFocused();
  expect(await page.evaluate(()=>document.body.style.overflow)).not.toBe('hidden');
  await trigger(page).click();await expect(sheet(page)).toBeVisible();
+ await page.keyboard.press('Escape');await expect(sheet(page)).toHaveCount(0);
+});
+
+for(const height of [320,460])test(`model errors remain reachable in short viewport ${height}`,async({page})=>{
+ await page.setViewportSize({width:390,height});await setup(page,{fail:true});await page.goto('/c/ai?view=chat');
+ await trigger(page).click();await expect(sheet(page)).toBeVisible();
+ await expect(sheet(page).getByRole('button',{name:'关闭选择模型'})).toBeInViewport();
+ const b=(await sheet(page).boundingBox())!;expect(b.x).toBeGreaterThanOrEqual(0);expect(b.y).toBeGreaterThanOrEqual(0);expect(b.y+b.height).toBeLessThanOrEqual(height+1);
  await page.keyboard.press('Escape');await expect(sheet(page)).toHaveCount(0);
 });

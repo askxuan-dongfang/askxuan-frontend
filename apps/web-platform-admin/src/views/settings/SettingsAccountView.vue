@@ -72,7 +72,7 @@
       </MobileTaskList>
     </div>
 
-    <el-dialog v-model="dialog.visible" :title="dialog.isEdit ? '编辑账号' : '新建账号'" width="520px">
+    <el-dialog v-model="dialog.visible" :title="dialog.isEdit ? '编辑账号' : '新建账号'" width="520px" append-to-body>
       <el-form label-width="90px">
         <el-form-item label="登录账号">
           <el-input v-model="dialog.form.account" :disabled="dialog.isEdit" placeholder="请输入唯一登录账号" />

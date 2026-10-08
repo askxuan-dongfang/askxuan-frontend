@@ -210,7 +210,7 @@ onMounted(() => {
       v-model="shipDialogVisible"
       :title="detail?.isExperience ? '模拟订单发货' : '订单发货'"
       width="480px"
-    >
+     append-to-body>
       <el-alert
         :title="
           detail?.isExperience

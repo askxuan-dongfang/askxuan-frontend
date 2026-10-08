@@ -141,7 +141,7 @@ onMounted(load)
       </DataTable>
     </div>
 
-    <el-dialog v-model="replyVisible" title="回复评价" width="520px">
+    <el-dialog v-model="replyVisible" title="回复评价" width="520px" append-to-body>
       <div v-if="currentReview" class="reply-dialog">
         <el-rate :model-value="currentReview.rating" disabled />
         <div class="reply-dialog-content">{{ currentReview.content }}</div>

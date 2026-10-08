@@ -180,7 +180,7 @@ onMounted(() => {
     </div>
 
     <!-- 新建 / 编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="480px">
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="480px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入分类名称" />

@@ -91,7 +91,7 @@ onMounted(loadData)
       <el-empty v-else description="暂无图册图片" />
     </div>
 
-    <el-dialog v-model="dialogVisible" title="上传寺院图片" width="520px">
+    <el-dialog v-model="dialogVisible" title="上传寺院图片" width="520px" append-to-body>
       <el-form label-position="top">
         <el-form-item label="图片">
           <ImageUploader v-model="form.url" hint="建议横图 1200×800，详情图最多 9 张" />

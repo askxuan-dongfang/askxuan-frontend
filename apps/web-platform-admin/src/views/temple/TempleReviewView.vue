@@ -91,7 +91,7 @@
     </div>
 
     <!-- 审核弹窗 -->
-    <el-dialog v-model="dialog.visible" :title="dialogTitle" width="460px">
+    <el-dialog v-model="dialog.visible" :title="dialogTitle" width="460px" append-to-body>
       <div class="dialog-info">
         <p><span>寺院编码：</span>{{ dialog.row?.templeCode }}</p>
         <p><span>申请人：</span>{{ dialog.row?.applicantName }}</p>

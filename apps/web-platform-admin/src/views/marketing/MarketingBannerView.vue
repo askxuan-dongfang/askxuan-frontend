@@ -25,7 +25,7 @@
         </template></el-table-column>
       </DataTable>
     </div>
-    <el-dialog v-model="dialog.visible" :title="dialog.id?'编辑广告':'新增广告'" width="min(620px, calc(100vw - 32px))" :close-on-click-modal="!saving">
+    <el-dialog v-model="dialog.visible" :title="dialog.id?'编辑广告':'新增广告'" width="min(620px, calc(100vw - 32px))" :close-on-click-modal="!saving" append-to-body>
       <el-alert v-if="dialog.wasPublished" title="保存修改后将转为草稿，预览并重新上架后展示。" type="info" :closable="false" style="margin-bottom:18px"/>
       <el-form label-position="top" :disabled="saving">
         <el-form-item label="标题" required><el-input v-model="form.title" maxlength="64" show-word-limit placeholder="本次推荐的内容标题"/></el-form-item>
@@ -43,7 +43,7 @@
       </el-form>
       <template #footer><el-button :disabled="saving" @click="dialog.visible=false">取消</el-button><el-button type="primary" :loading="saving" @click="saveDraft">保存草稿</el-button></template>
     </el-dialog>
-    <el-dialog v-model="previewVisible" title="首页展示预览" width="min(640px, calc(100vw - 32px))">
+    <el-dialog v-model="previewVisible" title="首页展示预览" width="min(640px, calc(100vw - 32px))" append-to-body>
       <template v-if="preview">
         <div class="promotion-preview"><img v-if="preview.imageUrl" :key="preview.imageUrl" :src="preview.imageUrl" alt="广告海报预览" @load="imageReady=true" @error="imageReady=false"/><div><small>精选推荐</small><h2>{{preview.title}}</h2><span>查看详情 ↗</span></div></div>
         <p>{{targetLabel(preview.linkType)}} · {{promotionHref(preview)||'未配置有效跳转'}}</p>

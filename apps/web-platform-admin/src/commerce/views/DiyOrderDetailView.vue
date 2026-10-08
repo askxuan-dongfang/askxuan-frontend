@@ -220,7 +220,7 @@ onMounted(() => {
     </template>
 
     <!-- 发货弹窗 -->
-    <el-dialog v-model="shipDialogVisible" title="DIY 订单发货" width="480px">
+    <el-dialog v-model="shipDialogVisible" title="DIY 订单发货" width="480px" append-to-body>
       <el-alert title="发货后订单进入待收货状态，物流信息会同步给用户且不可在本页面撤回。" type="warning" :closable="false" show-icon />
       <el-form
         ref="shipFormRef"

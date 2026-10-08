@@ -37,7 +37,7 @@
       </DataTable>
     </div>
 
-    <el-dialog v-model="dialog.visible" title="新增词条" width="420px">
+    <el-dialog v-model="dialog.visible" title="新增词条" width="420px" append-to-body>
       <el-form :model="dialog.form" label-width="80px">
         <el-form-item label="词条">
           <el-input v-model="dialog.form.word" placeholder="请输入敏感词" />

@@ -150,7 +150,7 @@ onMounted(() => {
     <el-empty v-else description="未找到退货单" />
 
     <!-- 退款弹窗 -->
-    <el-dialog v-model="refundDialogVisible" title="退款处理" width="420px">
+    <el-dialog v-model="refundDialogVisible" title="退款处理" width="420px" append-to-body>
       <el-alert title="请核对退款金额；确认后会改变售后与退款状态。" type="warning" :closable="false" show-icon />
       <el-form label-width="100px">
         <el-form-item label="退款金额">

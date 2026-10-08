@@ -44,7 +44,7 @@
       </DataTable>
     </div>
 
-    <el-dialog v-model="dialog.visible" :title="dialog.isEdit ? '编辑活动' : '新建活动'" width="520px">
+    <el-dialog v-model="dialog.visible" :title="dialog.isEdit ? '编辑活动' : '新建活动'" width="520px" append-to-body>
       <el-form :model="dialog.form" label-width="90px">
         <el-form-item label="活动名称">
           <el-input v-model="dialog.form.name" placeholder="请输入活动名称" />

@@ -437,7 +437,8 @@ struct AiDivinationView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel = AiDivinationViewModel()
     @ObservedObject private var auth = AuthStore.shared
-    @State private var section = "专题"
+    @State private var section = "探索"
+    @State private var showsModelPicker = false
     @State private var linkedReportID: Int64?
     @State private var clarification: AiClarification?
     @State private var clarificationSession: Int64?
@@ -451,9 +452,9 @@ struct AiDivinationView: View {
         ZStack(alignment: .leading) {
             VStack(spacing: 0) {
                 Picker("AI 问事栏目", selection: $section) {
-                    ForEach(["专题", "问 AI", "我的报告"], id: \.self) { Text($0).tag($0) }
+                    ForEach(["探索", "问 AI", "我的报告"], id: \.self) { Text($0).tag($0) }
                 }.pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 10)
-                if section == "专题" {
+                if section == "探索" {
                     AiDiscoveryView(viewModel: viewModel) { section = "问 AI" }
                 } else if !auth.isLoggedIn {
                     LoginRequiredView(icon: "sparkles", title: "登录后使用 " + section, subtitle: "专题示例可直接阅读，个人报告和会话仅自己可见", isPresented: .constant(false))
@@ -462,7 +463,6 @@ struct AiDivinationView: View {
                 } else {
                     navigationBar
                     if let linkedReportID { NavigationLink("返回这份专题报告", value: AiNativeRoute.report(linkedReportID)).font(.subheadline).padding(10) }
-                    modelPicker
                     Divider().overlay(Color.borderDivider)
                     conversation
                     composer
@@ -470,22 +470,19 @@ struct AiDivinationView: View {
             }
             .background(Color.bgPrimary)
 
-            if isDrawerOpen {
-                Color.black.opacity(0.45)
-                    .ignoresSafeArea()
-                    .onTapGesture { closeDrawer() }
 
-                historyDrawer
-                    .frame(maxWidth: 320)
-                    .transition(reduceMotion ? .opacity : .move(edge: .leading).combined(with: .opacity))
-            }
         }
-        .confirmationDialog("删除这段会话？", isPresented: $confirmDeletion, titleVisibility: .visible) {
-            Button("确认删除", role: .destructive) {
-                if let session = deletionTarget { Task { if await viewModel.deleteSession(session) { deletionTarget = nil } } }
-            }
-            Button("保留会话", role: .cancel) { deletionTarget = nil }
-        } message: { Text("会话将从历史问事移除，无法在此恢复。已购买的专题报告仍可在「我的报告」阅读。") }
+        .sheet(isPresented: $isDrawerOpen) {
+            historyDrawer
+                .appSheetSurface()
+                .confirmationDialog("删除这段会话？", isPresented: $confirmDeletion, titleVisibility: .visible) {
+                    Button("确认删除", role: .destructive) {
+                        if let session = deletionTarget { Task { if await viewModel.deleteSession(session) { deletionTarget = nil } } }
+                    }
+                    Button("保留会话", role: .cancel) { deletionTarget = nil }
+                } message: { Text("会话将从历史问事移除。已购买的专题报告仍可在「我的报告」阅读。") }
+        }
+        .sheet(isPresented: $showsModelPicker) { modelSelectionSheet.appSheetSurface() }
         .navigationBarHidden(true)
         .task { await viewModel.bootstrap() }
         .sheet(item: $clarification) { value in
@@ -517,16 +514,11 @@ struct AiDivinationView: View {
                 isDrawerOpen = true
             }
 
-            VStack(spacing: 2) {
-                Text("AI问事")
-                    .font(AppTypography.reading.weight(.semibold))
-                    .foregroundStyle(Color.textPrimary)
-                Text(viewModel.currentTitle)
-                    .font(AppTypography.micro)
-                    .foregroundStyle(Color.textTertiary)
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity)
+            Text(viewModel.messages.isEmpty ? "" : viewModel.currentTitle)
+                .font(AppTypography.body.weight(.medium))
+                .foregroundStyle(Color.textPrimary)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity)
 
             iconButton("square.and.pencil", label: "新建问事") {
                 focusedInput = nil
@@ -539,39 +531,62 @@ struct AiDivinationView: View {
     }
 
     private var modelPicker: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 10) {
-                Text("模型").font(.system(size: 12)).foregroundStyle(Color.textSecondary)
-                Menu {
+        Button {
+            focusedInput = nil
+            showsModelPicker = true
+        } label: {
+            HStack(spacing: 6) {
+                Text(viewModel.selectedModel?.name ?? "选择模型").lineLimit(1)
+                Image(systemName: "chevron.down").font(.caption2)
+            }
+            .font(.subheadline).padding(.horizontal, 12).frame(minHeight: 44)
+            .background(Color.bgSecondary, in: Capsule())
+        }
+        .accessibilityLabel("选择 AI 模型")
+        .disabled(viewModel.isSending)
+    }
+
+    private var modelSelectionSheet: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("用于接下来的提问，已有回答保持不变。")
+                        .font(.subheadline).foregroundStyle(Color.textSecondary)
+                    if viewModel.modelsLoading { ProgressView("正在加载模型…").frame(maxWidth: .infinity) }
+                    if let error = viewModel.modelsError {
+                        Text(error).font(.subheadline).foregroundStyle(Color.stateError)
+                    }
                     ForEach(viewModel.models) { model in
-                        Button { viewModel.chooseModel(model) } label: {
-                            Label(model.name, systemImage: viewModel.selectedModelID == model.id ? "checkmark" : (model.supportsVision ? "photo" : "text.alignleft"))
+                        Button {
+                            viewModel.chooseModel(model)
+                            showsModelPicker = false
+                        } label: {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(model.name).font(.headline)
+                                    Text(model.description).font(.subheadline).foregroundStyle(Color.textSecondary)
+                                    if viewModel.hasConversationImages && !model.supportsVision {
+                                        Text("当前会话含图片，此模型暂不可选").font(.caption)
+                                    }
+                                }
+                                Spacer(minLength: 0)
+                                if viewModel.selectedModelID == model.id { Image(systemName: "checkmark.circle.fill") }
+                            }
+                            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
                         }
-                        .disabled(viewModel.hasConversationImages && !model.supportsVision)
+                        .buttonStyle(.plain)
+                        .disabled(viewModel.isSending || (viewModel.hasConversationImages && !model.supportsVision))
                     }
-                } label: {
-                    HStack(spacing: 8) {
-                        Text(viewModel.selectedModel?.name ?? (viewModel.modelsLoading ? "正在加载…" : "暂不可用"))
-                        Image(systemName: "chevron.down").font(.system(size: 10, weight: .semibold))
+                    if viewModel.models.isEmpty && !viewModel.modelsLoading {
+                        Button("重新加载模型") { Task { await viewModel.loadModels() } }
+                            .buttonStyle(.bordered).frame(maxWidth: .infinity)
                     }
-                    .font(.system(size: 13, weight: .medium)).foregroundStyle(Color.textPrimary)
-                    .padding(.horizontal, 12).frame(minHeight: 36)
-                    .background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-                .accessibilityLabel("选择 AI 模型")
-                .disabled(viewModel.isSending || viewModel.modelsLoading || viewModel.models.isEmpty)
-                Spacer(minLength: 0)
+                }.padding(20)
             }
-            if let error = viewModel.modelsError {
-                HStack {
-                    Text(error)
-                    Button("重新加载模型") { Task { await viewModel.loadModels() } }.disabled(viewModel.modelsLoading || viewModel.isSending)
-                }.font(.system(size: 11)).foregroundStyle(Color.stateError)
-            } else {
-                Text(!viewModel.modelReady && viewModel.selectedModel != nil ? "会话含图片，请选择支持图片的模型" : "\(viewModel.selectedModel?.description ?? "获取当前可用模型") · 对下一条消息生效")
-                    .font(.system(size: 11)).foregroundStyle(Color.textTertiary)
-            }
-        }.padding(.horizontal, 14).padding(.bottom, 9)
+            .navigationTitle("选择模型").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { showsModelPicker = false } } }
+        }
     }
 
     private var conversation: some View {
@@ -604,11 +619,10 @@ struct AiDivinationView: View {
     private var emptyConversation: some View {
         VStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("聊聊当下 · 直接问事").font(AppTypography.caption).foregroundStyle(Color.accentDefault)
                 Text("今天想问什么？").font(AppTypography.title(24)).foregroundStyle(Color.textPrimary)
                 Text("把困惑写在下方，我们从这件事聊起。").font(AppTypography.body).foregroundStyle(Color.textSecondary)
             }.frame(maxWidth: .infinity, alignment: .leading)
-            Button("也可以先探索一个主题 →") { section = "专题" }.padding(.top, 8)
+            Button("也可以先探索一个主题 →") { section = "探索" }.padding(.top, 8)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 22)
@@ -759,6 +773,8 @@ struct AiDivinationView: View {
                 .accessibilityLabel("发送")
             }
 
+            HStack { modelPicker; Spacer(minLength: 0) }
+
             Text("AI 内容仅供参考，不替代医疗、法律或财务专业意见")
                 .font(AppTypography.micro)
                 .foregroundStyle(Color.textTertiary)
@@ -860,8 +876,7 @@ struct AiDivinationView: View {
         }
         .frame(maxHeight: .infinity)
         .background(Color.bgSecondary)
-        .shadow(color: .black.opacity(0.25), radius: 16, x: 6)
-        .ignoresSafeArea(edges: .bottom)
+
     }
 
     private var canSend: Bool {

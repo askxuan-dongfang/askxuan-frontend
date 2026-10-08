@@ -83,7 +83,7 @@
       </MobileTaskList>
     </div>
 
-    <el-dialog v-model="dialog.visible" title="处理举报" width="460px">
+    <el-dialog v-model="dialog.visible" title="处理举报" width="460px" append-to-body>
       <div class="dialog-info">
         <p><span>对象类型：</span>{{ targetText(dialog.row?.targetType) }}</p>
         <p><span>举报原因：</span>{{ dialog.row?.reason }}</p>

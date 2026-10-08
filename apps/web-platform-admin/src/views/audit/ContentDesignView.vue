@@ -69,7 +69,7 @@
         </template>
       </MobileTaskList>
     </div>
-    <el-dialog :model-value="!!preview" title="内容审核预览" width="min(720px, 94vw)" destroy-on-close @close="preview = null">
+    <el-dialog :model-value="!!preview" title="内容审核预览" width="min(720px, 94vw)" destroy-on-close @close="preview = null" append-to-body>
       <article v-if="preview" class="community-review-preview">
         <h2>{{ preview.title }}</h2><p class="review-meta">{{ preview.type === 'video' ? '视频' : '图文' }} · {{ preview.assets?.length || 0 }} 份素材 · 作者 {{ preview.masterId }}</p>
         <div class="review-media"><template v-for="asset in preview.assets || []" :key="asset.id">

@@ -96,7 +96,7 @@
       </DataTable>
     </div>
 
-    <el-dialog v-model="consultVisible" title="即时咨询配置" width="460px">
+    <el-dialog v-model="consultVisible" title="即时咨询配置" width="460px" append-to-body>
       <el-form label-width="110px">
         <el-form-item label="开放咨询"><el-switch v-model="consultForm.consultEnabled" /></el-form-item>
         <el-form-item label="咨询费"><el-input-number v-model="consultForm.consultFee" :min="1" :max="9999" :precision="2" /></el-form-item>

@@ -260,7 +260,7 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
         <el-empty v-else class="ops-card" description="选择一项能力查看配置" />
       </section>
 
-      <el-drawer v-model="capabilityPicker" title="添加能力" size="min(580px, 100vw)">
+      <el-drawer v-model="capabilityPicker" title="添加能力" size="min(580px, 100vw)" append-to-body>
         <p class="ops-hint">从已接入能力库添加到当前智能体。添加后保存草稿、完成评测并发布。</p>
         <el-input v-model="capabilitySearch" :prefix-icon="Search" clearable placeholder="搜索名称、工具或服务" aria-label="搜索能力" />
         <el-radio-group v-model="capabilityFilter" class="ops-capability-filters" aria-label="能力类型"><el-radio-button value="all">全部</el-radio-button><el-radio-button value="mcp">MCP 工具</el-radio-button><el-radio-button value="builtin">内置工具</el-radio-button><el-radio-button value="skill">业务技能</el-radio-button></el-radio-group>
@@ -332,10 +332,10 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
 
       <footer v-show="tab === 'config' || tab === 'skills' || tab === 'evaluation'" class="ops-save-bar"><span :class="{ 'is-dirty': dirty }">{{ dirty ? '有未保存的修改' : workspace.draftSaved ? '草稿已同步' : '待首次保存' }}</span><div><el-button :disabled="!dirty || busy" @click="reload">撤销修改</el-button><el-button type="primary" :loading="busy" :disabled="(!dirty && workspace.draftSaved) || busy" @click="save">保存草稿</el-button></div></footer>
     </template>
-    <el-dialog v-model="versionDialog" :title="`版本 v${versionNumber} · 已发布配置`" width="min(760px, 94vw)">
+    <el-dialog v-model="versionDialog" :title="`版本 v${versionNumber} · 已发布配置`" width="min(760px, 94vw)" append-to-body>
       <template v-if="versionConfig"><h3>{{ versionConfig.name }}</h3><p class="ops-hint">{{ versionConfig.model }} · 最多 {{ versionConfig.maxOutputTokens }} Token</p><pre class="ops-answer">{{ versionConfig.instruction }}</pre><el-collapse><el-collapse-item v-for="skill in versionConfig.skills" :key="skill.code" :name="skill.code" :title="`${skillName(skill.code)} · ${skill.enabled ? '启用' : '停用'} · ${skill.useTool ? '使用计算工具' : '不使用工具'}`"><pre class="ops-answer">{{ skill.prompt }}</pre></el-collapse-item></el-collapse></template>
     </el-dialog>
-    <el-drawer v-model="drawer" title="工具执行轨迹" size="min(520px, 100vw)"><div v-loading="toolsLoading"><p>{{ detailRun?.runNo }}</p><p class="ops-hint">{{ detailRun?.skillVersion }} · {{ detailRun?.model }}</p><el-alert v-if="toolsError" :title="toolsError" type="error" :closable="false" /><el-empty v-else-if="!toolsLoading && !tools.length" description="本次没有计算工具调用" /><ol v-else class="ops-events"><li v-for="(tool, i) in tools" :key="i"><span class="ops-event-dot" /><div><strong>{{ tool.name }}</strong><p>{{ statusText(tool.status) }} · {{ tool.latencyMs }} ms</p><time>{{ timeText(tool.createdAt) }}</time></div></li></ol></div></el-drawer>
+    <el-drawer v-model="drawer" title="工具执行轨迹" size="min(520px, 100vw)" append-to-body><div v-loading="toolsLoading"><p>{{ detailRun?.runNo }}</p><p class="ops-hint">{{ detailRun?.skillVersion }} · {{ detailRun?.model }}</p><el-alert v-if="toolsError" :title="toolsError" type="error" :closable="false" /><el-empty v-else-if="!toolsLoading && !tools.length" description="本次没有计算工具调用" /><ol v-else class="ops-events"><li v-for="(tool, i) in tools" :key="i"><span class="ops-event-dot" /><div><strong>{{ tool.name }}</strong><p>{{ statusText(tool.status) }} · {{ tool.latencyMs }} ms</p><time>{{ timeText(tool.createdAt) }}</time></div></li></ol></div></el-drawer>
   </div>
 </template>
 

@@ -339,7 +339,7 @@ struct RewardDetailView: View {
         } message: {
             Text("当前可用 \(detail?.pointsBalance ?? 0) 积分，本次消耗 \(detail?.campaign.pointsCost ?? 0) 积分。" + "参与成功后无论中奖与否均不退回；失败不扣分，重复请求不重复扣分。")
         }
-        .sheet(item: $result) { entry in RewardResultSheet(entry: entry, prizeName: detail?.campaign.kind == "wheel" ? detail?.campaign.prizeName : nil).presentationDetents([.height(440)]).presentationDragIndicator(.visible) }
+        .sheet(item: $result) { entry in RewardResultSheet(entry: entry, prizeName: detail?.campaign.kind == "wheel" ? detail?.campaign.prizeName : nil).appSheetSurface() }
     }
     private func hero(_ d: RewardDetail) -> some View {
         VStack(spacing: 16) {
@@ -555,6 +555,7 @@ struct RewardResultSheet: View {
                     }
                 }.allowsHitTesting(false).accessibilityHidden(true)
             }
+            ScrollView {
             VStack(spacing: 18) {
                 Image(systemName: entry.outcome == "won" ? "sparkles" : entry.outcome == "pending" ? "ticket.fill" : "sparkle").font(.system(size: 48)).foregroundStyle(Color.accentDefault).scaleEffect(appear ? 1 : 0.6)
                 Text("A LITTLE JOY").font(.caption2).tracking(2).foregroundStyle(Color.accentDefault)
@@ -563,7 +564,8 @@ struct RewardResultSheet: View {
                 if let prizeName { if entry.outcome == "won" { Text(prizeName).font(.headline).foregroundStyle(Color.accentDefault) } } else { Text(entry.code).font(.system(.subheadline, design: .monospaced)).foregroundStyle(Color.accentDefault) }
                 Text("已扣 \(entry.pointsSpent) 积分").font(AppTypography.caption)
                 Button("收好这份期待") { dismiss() }.buttonStyle(.borderedProminent).controlSize(.large).tint(Color.accentDefault)
-            }.padding(24)
+            }.padding(24).frame(maxWidth: .infinity)
+            }
         }.onAppear { withAnimation(reduceMotion ? nil : .spring(duration: 0.5)) { appear = true } }
     }
 }

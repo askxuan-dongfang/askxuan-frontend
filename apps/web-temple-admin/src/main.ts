@@ -1,3 +1,4 @@
+import { initOverlayViewport } from '../../../packages/admin-ui/overlay-viewport'
 import { initAdminTheme } from '../../../packages/admin-ui/theme'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
@@ -9,6 +10,7 @@ import router from './router'
 import './styles/index.css'
 
 initAdminTheme()
+initOverlayViewport()
 
 const app = createApp(App)
 

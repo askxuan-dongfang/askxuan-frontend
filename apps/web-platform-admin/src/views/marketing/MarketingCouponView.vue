@@ -55,7 +55,7 @@
       </DataTable>
     </div>
 
-    <el-dialog v-model="dialog.visible" :title="dialog.isEdit ? '编辑优惠券' : '新建优惠券'" width="540px">
+    <el-dialog v-model="dialog.visible" :title="dialog.isEdit ? '编辑优惠券' : '新建优惠券'" width="540px" append-to-body>
       <el-form :model="dialog.form" label-width="100px">
         <el-form-item label="券名称">
           <el-input v-model="dialog.form.name" placeholder="请输入券名称" />

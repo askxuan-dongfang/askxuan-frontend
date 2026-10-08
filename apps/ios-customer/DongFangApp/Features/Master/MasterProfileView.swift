@@ -71,8 +71,7 @@ struct MasterProfileView: View {
         }
         .sheet(isPresented: $showConsultCheckout) {
             consultationCheckout
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
+                .appSheetSurface()
         }
         .alert("咨询提示", isPresented: $showConsultMessage) {
             Button("我知道了", role: .cancel) {}
@@ -312,13 +311,13 @@ struct MasterProfileView: View {
         }
         .sheet(isPresented: $showDirectPaySheet) {
             directPaySheet
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
+                .appSheetSurface()
         }
     }
 
     // MARK: - 直约支付确认（模拟支付）
     private var directPaySheet: some View {
+        ScrollView {
         VStack(alignment: .leading, spacing: AppSpacing.lg) {
             HStack {
                 Text("预约确认")
@@ -359,7 +358,8 @@ struct MasterProfileView: View {
 
             Spacer()
         }
-        .padding(.horizontal, AppSpacing.lg)
+        .padding(AppSpacing.lg)
+        }
     }
 
     private func payRow(_ label: String, _ value: String) -> some View {
@@ -593,6 +593,7 @@ struct MasterProfileView: View {
 
     private var consultationCheckout: some View {
         NavigationStack {
+            ScrollView {
             VStack(alignment: .leading, spacing: AppSpacing.lg) {
                 if let quote = consultationQuote {
                     VStack(alignment: .leading, spacing: AppSpacing.sm) {
@@ -645,6 +646,8 @@ struct MasterProfileView: View {
                 Spacer(minLength: 0)
             }
             .padding(AppSpacing.lg)
+            }
+            .scrollDismissesKeyboard(.interactively)
             .background(Color.bgPrimary.ignoresSafeArea())
             .navigationTitle("确认咨询")
             .navigationBarTitleDisplayMode(.inline)
