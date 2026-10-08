@@ -9,7 +9,10 @@ async function setup(page: Page) {
   const req=route.request(),path=new URL(req.url()).pathname;
   if(req.method()!=='GET')writes.push(path);
   let data:any={list:[],total:0};
-  if(path.endsWith('/diy/designs/1'))data=design;
+  if(path.endsWith('/bookings/journeys'))data={list:[],total:0,counts:{active:0,receipt:0,complete:0,confirmed:0,executing:0,revision:0}};
+  else if(path.endsWith('/users/profile'))data={userId:42,nickname:'返回测试用户',mobile:'',avatar:''};
+  else if(path.endsWith('/points'))data={balance:0};
+  else if(path.endsWith('/diy/designs/1'))data=design;
   else if(path.endsWith('/diy/designs')&&req.method()==='POST')data={id:1,revision:2};
   else if(path.endsWith('/diy/designs')||path.endsWith('/diy/my-designs'))data={list:[design],total:1};
   else if(path.endsWith('/diy/materials'))data={list:[{id:1,name:'测试木珠',spec:'10mm',unitPrice:10,category:'wood',stock:100,status:'on_shelf',image:'',diameterMm:10}],total:1};
