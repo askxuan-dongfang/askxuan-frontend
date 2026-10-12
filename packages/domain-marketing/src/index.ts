@@ -11,12 +11,21 @@ export const promotionTargets = [
   { value: 'reward', label: '免费活动详情', placeholder: '免费活动编号' },
   { value: 'ai', label: 'AI 问事', placeholder: '' },
   { value: 'diy', label: 'DIY 手串定制', placeholder: '' },
+  { value: 'web', label: '外部网页（HTTPS）', placeholder: 'https://www.ai-tianji.com/' },
   { value: 'ad_landing', label: '站内功能页', placeholder: '/c/shop、/c/masters、/c/temples 等' },
 ];
 const paths: Record<string, string> = {temple:'/c/temples/',master:'/c/masters/',product:'/c/shop/',service:'/c/services/',activity:'/c/activities/',reward:'/c/rewards/'};
 const landings = new Set(['/c/ai','/c/diy','/c/shop','/c/rewards','/c/temples','/c/masters','/c/services']);
+export function promotionWebURL(value: string): boolean {
+  if (!/^https:\/\/[^/]/.test(value) || /[\x00-\x20\x7f\\]/.test(value) || value.slice(8).split(/[/?#]/)[0].includes('@')) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && !!url.hostname && !url.username && !url.password;
+  } catch { return false; }
+}
 export function promotionHref(b: Pick<HomePromotion,'linkType'|'linkValue'>): string | null {
   if (b.linkType === 'ai' || b.linkType === 'diy') return b.linkValue ? null : `/c/${b.linkType}`;
+  if (b.linkType === 'web') return promotionWebURL(b.linkValue) ? b.linkValue : null;
   if (b.linkType === 'ad_landing') return landings.has(b.linkValue) ? b.linkValue : null;
   return paths[b.linkType] && /^[A-Za-z0-9_-]+$/.test(b.linkValue) ? paths[b.linkType]+b.linkValue : null;
 }
