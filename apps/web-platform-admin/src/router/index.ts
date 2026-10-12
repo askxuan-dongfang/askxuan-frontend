@@ -24,6 +24,8 @@ const routes: RouteRecordRaw[] = [
     children: [
       {path:'onboarding/review',name:'onboarding-review',component:()=>import('@/views/OnboardingReviewView.vue'),meta:{title:'认证与入驻审核',roles:['platform_super']}},
       ...commerceRoutes,
+ {path:'commerce/creator-rewards',name:'CreatorRewards',component:()=>import('@/commerce/views/CreatorRewardsView.vue'),meta:{title:'创作奖励与提现',parent:'商城与权益',roles:['platform_super'],hidden:false}},
+ {path:'settings/service-intentions',name:'ServiceIntentions',component:()=>import('@/views/settings/ServiceIntentionsView.vue'),meta:{title:'心愿与服务关联',parent:'系统设置',roles:['platform_super']}},
       // 概览
       {
         path: 'dashboard',
