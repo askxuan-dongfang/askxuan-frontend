@@ -36,6 +36,7 @@
             <div class="detail-info__row"><span class="label">寺院编码：</span>{{ detail.temple.id }}</div>
             <div class="detail-info__row"><span class="label">所在地区：</span>{{ detail.temple.region }}</div>
             <div class="detail-info__row"><span class="label">详细地址：</span>{{ detail.temple.address || '-' }}</div>
+            <div class="detail-info__row"><ProviderDirectoryTags kind="temple" :id="detail.temple.id" :name="detail.temple.name" @updated="loadData"/></div>
             <div class="detail-info__row"><span class="label">简介：</span>{{ detail.temple.description || '-' }}</div>
           </div>
         </div>
@@ -82,6 +83,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { Back } from '@element-plus/icons-vue'
+import ProviderDirectoryTags from '@/components/ProviderDirectoryTags.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import { getTempleDetail } from '@/api/temple'

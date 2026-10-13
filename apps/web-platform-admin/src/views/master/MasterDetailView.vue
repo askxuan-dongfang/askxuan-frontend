@@ -5,7 +5,9 @@ import { isAdminSessionExpired } from '@/api/client'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { getPublicDirectoryTags, type DirectoryTag } from '@/api/directoryTags'
 import { taxonomyApi } from '@/api/taxonomy'
+import ProviderDirectoryTags from '@/components/ProviderDirectoryTags.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
@@ -52,6 +54,8 @@ const form = ref({
   avatar: ''
 })
 const tagInput = ref('')
+const directoryTags = ref<DirectoryTag[]>([])
+onMounted(async()=>{try{directoryTags.value=(await getPublicDirectoryTags()).list}catch{ElMessage.error('筛选标签加载失败')}})
 
 // 可提供服务编辑态：每个目录项对应一个启用开关 + 定价
 const tagEdits = ref<{ code: string; name: string; enabled: boolean; price: number }[]>([])
@@ -193,6 +197,7 @@ onMounted(() => { void loadBeliefs(); void loadDetail() })
         <el-descriptions-item label="所属寺院">{{ master.templeName || '—' }}</el-descriptions-item>
         <el-descriptions-item label="职位">{{ master.position || '—' }}</el-descriptions-item>
         <el-descriptions-item label="一级流派">{{ beliefName(master.beliefCode) }}</el-descriptions-item>
+        <el-descriptions-item label="信俗标签" :span="2"><ProviderDirectoryTags kind="master" :id="master.id" :name="master.dharmaName" @updated="loadDetail"/></el-descriptions-item>
         <el-descriptions-item label="宗派">{{ master.sect || '—' }}</el-descriptions-item>
         <el-descriptions-item label="类型">{{ master.type || '—' }}</el-descriptions-item>
         <el-descriptions-item label="专长" :span="2">
@@ -226,7 +231,7 @@ onMounted(() => { void loadBeliefs(); void loadDetail() })
           <el-input v-model="form.layName" maxlength="32" />
         </el-form-item>
         <el-form-item label="职位">
-          <el-input v-model="form.position" maxlength="32" />
+          <el-select v-model="form.position" filterable allow-create default-first-option style="width:100%"><el-option v-for="tag in directoryTags.filter(t=>t.group==='position')" :key="tag.code" :value="tag.value" :label="tag.name"/></el-select>
         </el-form-item>
         <el-form-item label="一级流派" required>
           <el-select v-model="form.beliefCode" style="width: 100%" @change="syncType">
@@ -239,12 +244,7 @@ onMounted(() => { void loadBeliefs(); void loadDetail() })
         <el-form-item label="类型">
           <el-input v-model="form.type" maxlength="16" />
         </el-form-item>
-        <el-form-item label="专长">
-          <div style="width: 100%">
-            <el-tag v-for="t in form.specialties" :key="t" closable style="margin: 0 6px 6px 0" @close="removeTag(t)">{{ t }}</el-tag>
-            <el-input v-model="tagInput" size="small" style="width: 140px" placeholder="输入后回车" @keyup.enter="addTag" />
-          </div>
-        </el-form-item>
+        <el-form-item label="专长"><el-select v-model="form.specialties" multiple filterable allow-create default-first-option style="width:100%"><el-option v-for="tag in directoryTags.filter(t=>t.group==='specialty')" :key="tag.code" :value="tag.value" :label="tag.name"/></el-select></el-form-item>
         <el-form-item label="头像">
           <ImageUploader v-model="form.avatar" />
         </el-form-item>

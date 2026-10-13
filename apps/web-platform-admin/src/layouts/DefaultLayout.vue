@@ -77,6 +77,7 @@ const allMenuGroups = [
       { path: '/marketing/coupon', title: '优惠券管理' },
       { path: '/settings/taxonomy', title: '首页分类' },
       { path: '/settings/regions', title: '地区标签' },
+      { path: '/settings/directory-tags', title: '筛选标签' },
       {path:'/settings/service-intentions',title:'心愿与服务关联'}
     ]
   },
