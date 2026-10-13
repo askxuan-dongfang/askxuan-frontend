@@ -156,6 +156,7 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '优惠券管理', parent: '营销管理' }
       },
       // 系统设置
+      {path:'settings/regions',name:'SettingsRegions',component:()=>import('@/views/settings/SettingsRegionsView.vue'),meta:{title:'地区标签',parent:'系统设置',roles:['platform_super']}},
       {path:'ai',component:()=>import('@/views/ai/AgentCenterLayout.vue'),redirect:'/ai/agent',meta:{title:'问事智能体开发中心',roles:['platform_super']},children:agentCenterRoutes},
       {path:'ai/operations',name:'AgentOperations',redirect:to=>({path:'/ai/agent',query:to.query,hash:to.hash}),meta:{roles:['platform_super']}},
       {path:'settings/ai',name:'SettingsAi',redirect:to=>({path:'/ai/connections/models',query:to.query,hash:to.hash}),meta:{roles:['platform_super']}},
