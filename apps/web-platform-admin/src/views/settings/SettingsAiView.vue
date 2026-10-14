@@ -20,6 +20,8 @@ const dirty = computed(() => JSON.stringify(form) !== baseline)
 const busy = computed(() => loading.value || saving.value || testing.value || searchTesting.value)
 const selectedCapability = computed(() => models.value.find(item => item.id === form.defaultModel))
 const visionOptions = computed(() => models.value.filter(item => item.supportsVision))
+const isVolcengine = computed(() => form.provider === 'volcengine')
+const providerName = (value: string) => ({ deepseek: 'DeepSeek', volcengine: '火山引擎 · 火山方舟', mock: '本地模拟' }[value] || 'OpenAI 兼容接口')
 const names: Record<string, string> = { webSearchOptions:'检索偏好',webSearchFallbackProvider:'备用搜索服务',webSearchFallbackApiKey:'备用搜索密钥', webSearchProvider:'联网搜索服务',webSearchApiKey:'搜索密钥',provider: 'Provider', baseUrl: '接口地址', apiKey: '密钥', defaultModel: '默认模型', visionModel: '图片模型', enabledModels: '开放模型', thinkingEnabled: '思考模式', reasoningEffort: '推理强度', maxOutputTokens: '普通输出上限', complexOutputTokens: '复杂输出上限', contextWindow: '上下文额度', maxInputChars: '单次输入字符', taskTimeoutSeconds: '任务时限' }
 
 function useSaved(value: AIProviderSettings) {
@@ -33,12 +35,17 @@ async function load() {
   finally { loading.value = false }
 }
 function connectionChanged() { tested.value = false; models.value = []; testError.value = '' }
+function modelSelectionChanged() { if (isVolcengine.value) { tested.value = false; testError.value = '' } }
 function changeProvider(value: string) {
   connectionChanged()
+  form.apiKey = ''
   if (value === 'deepseek') { form.baseUrl = 'https://api.deepseek.com'; form.defaultModel = 'deepseek-flash'; form.visionModel = 'deepseek-flash' }
+  else { form.baseUrl = value === 'volcengine' ? 'https://ark.cn-beijing.volces.com/api/v3' : ''; form.defaultModel = ''; form.visionModel = '' }
+  if (value === 'volcengine') form.thinkingEnabled = false
   form.enabledModels = []
 }
 async function testConnection() {
+  if (isVolcengine.value && !form.defaultModel.trim()) { testError.value = '请先填写默认模型的 Model ID 或推理接入点 ID（ep-...）'; return }
   testing.value = true; testError.value = ''; tested.value = false
   try {
     const result = await aiSettingsApi.test({ ...form, enabledModels: [...form.enabledModels] })
@@ -50,7 +57,8 @@ async function testConnection() {
   finally { testing.value = false }
 }
 async function save() {
-  try { await ElMessageBox.confirm('保存前会再次验证连接与模型。生效后，新问事和新报告将使用这份配置，正在生成的回答不受影响。', '保存并生效', { confirmButtonText: '确认生效', cancelButtonText: '继续编辑', type: 'info' }) } catch { return }
+  const probeNotice = isVolcengine.value ? '保存前会对每个已填模型发送一次固定测试请求，图片模型附带测试图片，可能消耗少量 Token。' : '保存前会再次验证连接与模型。'
+  try { await ElMessageBox.confirm(probeNotice + '生效后，新问事和新报告将使用这份配置，正在生成的回答不受影响。', '保存并生效', { confirmButtonText: '确认生效', cancelButtonText: '继续编辑', type: 'info' }) } catch { return }
   saving.value = true
   try { useSaved(await aiSettingsApi.save({ ...form, enabledModels: [...form.enabledModels] })); ElMessage.success('配置已生效，新的请求将使用新设置') }
   catch { /* client displays the sanitized server error; keep the draft for correction */ }
@@ -112,16 +120,17 @@ onMounted(load)
             <div class="ai-section-heading"><span class="ai-step">01</span><div><h2>连接大模型</h2><p>密钥由服务器保管，客户端通过平台调用。</p></div><el-icon class="ai-heading-icon"><Connection /></el-icon></div>
             <el-form label-position="top" :disabled="busy || !saved.writable" @submit.prevent>
               <el-form-item label="Provider">
-                <el-select v-model="form.provider" aria-label="Provider" @change="changeProvider"><el-option label="DeepSeek · 官方接口" value="deepseek" /><el-option label="OpenAI 兼容接口" value="openai_compatible" /><el-option v-if="form.provider === 'mock'" label="本地模拟（当前配置）" value="mock" disabled /></el-select>
+                <el-select v-model="form.provider" aria-label="Provider" @change="changeProvider"><el-option label="DeepSeek · 官方接口" value="deepseek" /><el-option label="火山引擎 · 火山方舟" value="volcengine" /><el-option label="OpenAI 兼容接口" value="openai_compatible" /><el-option v-if="form.provider === 'mock'" label="本地模拟（当前配置）" value="mock" disabled /></el-select>
               </el-form-item>
               <el-form-item label="接口地址"><el-input v-model="form.baseUrl" aria-label="接口地址" placeholder="https://api.deepseek.com" :disabled="form.provider === 'deepseek'" @input="connectionChanged" /><span class="ai-field-hint">填写 API 根地址，不包含 /chat/completions。自定义接口支持公网 HTTPS。</span></el-form-item>
+              <el-alert v-if="isVolcengine" title="使用火山方舟模型服务的 API Key，并在下方填写已开通的 Model ID 或推理接入点 ID（ep-...）。接口地址应与接入点所在地域一致。" type="info" :closable="false" show-icon />
               <el-form-item label="API Key">
                 <el-input v-model="form.apiKey" aria-label="API Key" type="password" autocomplete="new-password" :placeholder="saved.hasApiKey ? '已配置 · 留空保留现有密钥' : '填写 Provider API Key'" @input="connectionChanged" />
                 <span class="ai-field-hint"><el-icon><Lock /></el-icon> {{ saved.hasApiKey ? '现有密钥不会回显；变更接口地址时，请同时填写新密钥。' : '密钥加密保存，不会发送给 H5 或 iOS 客户端。' }}</span>
               </el-form-item>
-              <div class="ai-test-row"><el-button :icon="Connection" :loading="testing" @click="testConnection">测试连接与获取模型</el-button><span class="ai-field-hint">仅读取模型列表，不发送问事内容。</span></div>
+              <div class="ai-test-row"><el-button :icon="Connection" :loading="testing" @click="testConnection">{{ isVolcengine ? '测试已填模型连接' : '测试连接与获取模型' }}</el-button><span class="ai-field-hint">{{ isVolcengine ? '对每个已填模型发送固定测试文本；图片模型附带测试图片。可能消耗少量 Token，不发送用户问事内容。' : '仅读取模型列表，不发送问事内容。' }}</span></div>
             </el-form>
-            <div v-if="tested" class="ai-connection-result" role="status"><el-icon><Check /></el-icon><div><strong>连接成功</strong><span>发现 {{ models.length }} 个可用模型，可以继续设置。</span></div></div>
+            <div v-if="tested" class="ai-connection-result" role="status"><el-icon><Check /></el-icon><div><strong>连接成功</strong><span>{{ isVolcengine ? '已验证' : '发现' }} {{ models.length }} 个可用模型，可以继续设置。</span></div></div>
             <el-alert v-if="testError" :title="testError" type="error" :closable="false" class="ai-test-error" show-icon />
           </section>
 
@@ -130,16 +139,18 @@ onMounted(load)
             <el-form label-position="top" :disabled="busy || !saved.writable" @submit.prevent>
               <div class="ai-form-grid">
                 <el-form-item label="默认模型">
-                  <el-select v-model="form.defaultModel" aria-label="默认模型" filterable allow-create default-first-option placeholder="先测试连接，或输入模型 ID"><el-option v-for="m in models" :key="m.id" :label="m.name" :value="m.id" /></el-select>
+                  <el-input v-if="isVolcengine" v-model.trim="form.defaultModel" aria-label="默认模型" placeholder="Model ID 或 ep-..." @input="modelSelectionChanged" />
+                  <el-select v-else v-model="form.defaultModel" aria-label="默认模型" filterable allow-create default-first-option placeholder="先测试连接，或输入模型 ID"><el-option v-for="m in models" :key="m.id" :label="m.name" :value="m.id" /></el-select>
                 </el-form-item>
                 <el-form-item label="图片模型">
-                  <el-select v-model="form.visionModel" aria-label="图片模型" clearable filterable allow-create placeholder="不设置图片路由"><el-option v-for="m in visionOptions" :key="m.id" :label="m.name" :value="m.id" /></el-select>
+                  <el-input v-if="isVolcengine" v-model.trim="form.visionModel" aria-label="图片模型" clearable placeholder="支持图片的 Model ID 或 ep-...（可选）" @input="modelSelectionChanged" />
+                  <el-select v-else v-model="form.visionModel" aria-label="图片模型" clearable filterable allow-create placeholder="不设置图片路由"><el-option v-for="m in visionOptions" :key="m.id" :label="m.name" :value="m.id" /></el-select>
                   <span class="ai-field-hint">旧版本客户端发送图片时使用；请确认供应商支持图片输入。</span>
                 </el-form-item>
               </div>
               <el-form-item label="向用户开放的模型">
-                <el-select v-model="form.enabledModels" aria-label="向用户开放的模型" multiple filterable allow-create :collapse-tags="false" placeholder="留空：开放供应商当前全部可用模型"><el-option v-for="m in models" :key="m.id" :label="m.name" :value="m.id" /></el-select>
-                <span class="ai-field-hint">默认模型与图片模型需包含在选择范围内。留空时，后续新增模型自动进入可选列表。</span>
+                <el-select v-model="form.enabledModels" aria-label="向用户开放的模型" multiple filterable allow-create default-first-option :collapse-tags="false" :placeholder="isVolcengine ? '填写 Model ID 或 ep-...，按回车添加' : '留空：开放供应商当前全部可用模型'" @change="modelSelectionChanged"><el-option v-for="m in models" :key="m.id" :label="m.name" :value="m.id" /></el-select>
+                <span class="ai-field-hint">{{ isVolcengine ? '留空时仅开放上方已填的默认模型和图片模型。添加多个模型时，须包含默认模型与图片模型；每个 ID 都会验证后再保存。' : '默认模型与图片模型需包含在选择范围内。留空时，后续新增模型自动进入可选列表。' }}</span>
               </el-form-item>
               <div class="ai-form-grid">
                 <el-form-item label="思考模式"><div class="ai-switch-row"><el-switch v-model="form.thinkingEnabled" aria-label="思考模式" /><span>{{ form.thinkingEnabled ? '开启' : '关闭' }}</span></div></el-form-item>
@@ -162,7 +173,7 @@ onMounted(load)
         <aside class="ai-settings-aside">
           <section class="ai-setting-card ai-active-card">
             <div class="ai-live-label"><span /> 当前生效</div>
-            <h2>{{ saved.provider === 'deepseek' ? 'DeepSeek' : saved.provider === 'mock' ? '本地模拟' : 'OpenAI 兼容接口' }}</h2>
+            <h2>{{ providerName(saved.provider) }}</h2>
             <p class="ai-current-model">{{ saved.defaultModel || '尚未设置默认模型' }}</p>
             <dl><div><dt>主用搜索</dt><dd>{{ searchProviders.find(p=>p.value===saved?.webSearchProvider)?.label || '停用' }} · {{ saved.hasWebSearchKey ? '密钥已配置' : '无密钥' }}</dd></div><div><dt>备用搜索</dt><dd>{{ searchProviders.find(p=>p.value===saved?.webSearchFallbackProvider)?.label || '停用' }} · {{ saved.hasWebSearchFallbackKey ? '密钥已配置' : '无密钥' }}</dd></div><div><dt>配置来源</dt><dd>{{ saved.source === 'platform' ? '管理平台' : '服务器初始配置' }}</dd></div><div><dt>密钥状态</dt><dd>{{ saved.hasApiKey ? '已配置' : '未配置' }}</dd></div><div><dt>普通 / 复杂输出</dt><dd>{{ saved.maxOutputTokens }} / {{ saved.complexOutputTokens }} Token</dd></div><div><dt>平台上下文</dt><dd>{{ saved.contextWindow?.toLocaleString() }} Token</dd></div><div><dt>版本</dt><dd>v{{ saved.revision }}</dd></div></dl>
             <div class="ai-flow"><span>管理平台</span><el-icon><ArrowRight /></el-icon><span>AI 服务</span><el-icon><ArrowRight /></el-icon><span>用户端</span></div>
