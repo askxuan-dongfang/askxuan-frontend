@@ -6,7 +6,7 @@ async function setup(page:Page, options:{role?:string;failSave?:boolean;failTest
  let saved:any={...initial,writable:options.writable??true};const calls:{method:string;path:string;body:any}[]=[];
  await page.route('**/api/v1/**',async route=>{
   const req=route.request(),path=new URL(req.url()).pathname;const body=req.postData()?req.postDataJSON():null;calls.push({method:req.method(),path,body});let data:any={list:[],total:0};
-  if(path.endsWith('/ai/admin/provider/test')){if(options.failTest)return route.fulfill({json:{code:40001,message:'连接测试失败，请检查地址、密钥和服务状态'}});data={list:[{id:'deepseek-flash',name:'DeepSeek Flash',supportsVision:true,description:'文字与图片'},{id:'deepseek-v4-pro',name:'DeepSeek V4 Pro',supportsVision:false,description:'文字对话'}],defaultModel:'deepseek-flash'};}
+  if(path.endsWith('/ai/admin/provider/test')){if(options.failTest)return route.fulfill({json:{code:40001,message:'连接测试失败，请检查地址、密钥和服务状态'}});data=body.provider==='volcengine'?{list:[{id:body.defaultModel,name:body.defaultModel,supportsVision:false,description:'套餐模型'}],defaultModel:body.defaultModel}:{list:[{id:'deepseek-flash',name:'DeepSeek Flash',supportsVision:true,description:'文字与图片'},{id:'deepseek-v4-pro',name:'DeepSeek V4 Pro',supportsVision:false,description:'文字对话'}],defaultModel:'deepseek-flash'};}
   else if(path.endsWith('/ai/admin/provider')){
    if(req.method()==='PUT'){
     if(options.failSave)return route.fulfill({json:{code:40001,message:'配置已被其他管理员更新，请重新加载后再保存'}});
@@ -41,3 +41,24 @@ test('failed probe and stale save never show applied state',async({page})=>{
 });
 for(const role of ['shop_admin','platform_service'])test(`${role} cannot enter provider settings`,async({page})=>{const calls=await setup(page,{role});await page.goto('/settings/ai');await expect(page).not.toHaveURL(/settings\/ai/);expect(calls.filter(c=>c.path.includes('/ai/admin/'))).toHaveLength(0);await expect(page.getByText('AI 模型设置',{exact:true})).toHaveCount(0);});
 test('storage not enabled is explicitly read-only',async({page})=>{await setup(page,{writable:false});await page.goto('/settings/ai');await expect(page.getByText('当前为只读模式，服务器尚未启用配置持久化')).toBeVisible();await expect(page.getByLabel('API Key',{exact:true})).toBeDisabled();await expect(page.getByRole('button',{name:'保存并生效',exact:true})).toBeDisabled();});
+
+test('Agent Plan selects the subscription root, follows model defaults and persists only after review', async ({page}) => {
+ const calls=await setup(page);await page.goto('/ai/connections/models');
+ await page.getByRole('combobox',{name:'Provider',exact:true}).click();await page.getByRole('option',{name:'火山引擎 · 火山方舟',exact:true}).click();
+ await page.getByRole('combobox',{name:'火山接入方式',exact:true}).click();await page.getByRole('option',{name:'Agent Plan · 套餐额度',exact:true}).click();
+ await expect(page.getByLabel('接口地址',{exact:true})).toHaveValue('https://ark.cn-beijing.volces.com/api/plan/v3');
+ await expect(page.getByLabel('默认模型',{exact:true})).toHaveValue('ark-code-latest');
+ await expect(page.getByLabel('图片模型',{exact:true})).toHaveValue('');
+ await expect(page.getByRole('switch',{name:'思考模式'})).toHaveCount(0);
+ await expect(page.getByText('跟随模型默认设置（部分套餐模型必须思考）',{exact:true})).toBeVisible();
+ const key=page.getByLabel('API Key',{exact:true});await key.fill('plan-fixture-key');
+ await page.getByRole('button',{name:'测试已填模型连接',exact:true}).click();await expect(page.getByRole('status')).toContainText('连接成功');
+ expect(calls.filter(c=>c.method==='PUT')).toHaveLength(0);
+ const probe=calls.find(c=>c.path.endsWith('/provider/test'))!;expect(probe.body.baseUrl).toBe('https://ark.cn-beijing.volces.com/api/plan/v3');expect(probe.body.defaultModel).toBe('ark-code-latest');
+ await page.getByRole('button',{name:'保存并生效',exact:true}).click();await page.getByRole('button',{name:'确认生效',exact:true}).click();
+ await expect(page.locator('.ai-active-card')).toContainText('ark-code-latest');await expect(key).toHaveValue('');
+ await page.reload();await expect(page.locator('.el-select').filter({has:page.getByLabel('火山接入方式',{exact:true})})).toContainText('Agent Plan · 套餐额度');
+ await key.fill('draft-key');await page.getByRole('combobox',{name:'火山接入方式',exact:true}).click();await page.getByRole('option',{name:'模型服务 · 按量计费',exact:true}).click();
+ await expect(key).toHaveValue('');await expect(page.getByLabel('默认模型',{exact:true})).toHaveValue('');await expect(page.getByLabel('接口地址',{exact:true})).toHaveValue('https://ark.cn-beijing.volces.com/api/v3');
+ await page.getByRole('button',{name:'撤销修改',exact:true}).click();await expect(page.getByLabel('接口地址',{exact:true})).toHaveValue('https://ark.cn-beijing.volces.com/api/plan/v3');
+});

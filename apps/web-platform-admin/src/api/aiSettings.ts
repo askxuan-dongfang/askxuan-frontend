@@ -19,7 +19,7 @@ export interface AIProviderUpdate extends AIProviderValues { revision: number; a
 export interface AIModelOption { id: string; name: string; description: string; supportsVision: boolean; contextWindow?: number; maxOutputTokens?: number }
 export const aiSettingsApi = {
   get: () => client.get<AIProviderSettings>('/ai/admin/provider'),
-  test: (data: AIProviderUpdate) => client.post<{ list: AIModelOption[]; defaultModel: string }>('/ai/admin/provider/test', data, { timeout: 20000 }),
+  test: (data: AIProviderUpdate) => client.post<{ list: AIModelOption[]; defaultModel: string }>('/ai/admin/provider/test', data, { timeout: 35000 }),
   testSearch: (data: AIProviderUpdate) => client.post<{provider:string;fallbackFrom?:string;sources:{title:string;url:string}[];retrievedAt:string}>('/ai/admin/provider/web-search/test', data, { timeout: 30000 }),
-  save: (data: AIProviderUpdate) => client.put<AIProviderSettings>('/ai/admin/provider', data, { timeout: 20000 }),
+  save: (data: AIProviderUpdate) => client.put<AIProviderSettings>('/ai/admin/provider', data, { timeout: 35000 }),
 }

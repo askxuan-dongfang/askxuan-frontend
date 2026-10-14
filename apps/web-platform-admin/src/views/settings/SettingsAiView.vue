@@ -21,6 +21,7 @@ const busy = computed(() => loading.value || saving.value || testing.value || se
 const selectedCapability = computed(() => models.value.find(item => item.id === form.defaultModel))
 const visionOptions = computed(() => models.value.filter(item => item.supportsVision))
 const isVolcengine = computed(() => form.provider === 'volcengine')
+const isAgentPlan = computed(() => isVolcengine.value && /\/api\/plan\/v3\/?$/.test(form.baseUrl.trim()))
 const providerName = (value: string) => ({ deepseek: 'DeepSeek', volcengine: '火山引擎 · 火山方舟', mock: '本地模拟' }[value] || 'OpenAI 兼容接口')
 const names: Record<string, string> = { webSearchOptions:'检索偏好',webSearchFallbackProvider:'备用搜索服务',webSearchFallbackApiKey:'备用搜索密钥', webSearchProvider:'联网搜索服务',webSearchApiKey:'搜索密钥',provider: 'Provider', baseUrl: '接口地址', apiKey: '密钥', defaultModel: '默认模型', visionModel: '图片模型', enabledModels: '开放模型', thinkingEnabled: '思考模式', reasoningEffort: '推理强度', maxOutputTokens: '普通输出上限', complexOutputTokens: '复杂输出上限', contextWindow: '上下文额度', maxInputChars: '单次输入字符', taskTimeoutSeconds: '任务时限' }
 
@@ -44,8 +45,17 @@ function changeProvider(value: string) {
   if (value === 'volcengine') form.thinkingEnabled = false
   form.enabledModels = []
 }
+function changeVolcengineService(value: string) {
+  connectionChanged()
+  form.baseUrl = value === 'plan' ? 'https://ark.cn-beijing.volces.com/api/plan/v3' : 'https://ark.cn-beijing.volces.com/api/v3'
+  form.apiKey = ''
+  form.defaultModel = value === 'plan' ? 'ark-code-latest' : ''
+  form.visionModel = ''
+  form.enabledModels = []
+  form.thinkingEnabled = false
+}
 async function testConnection() {
-  if (isVolcengine.value && !form.defaultModel.trim()) { testError.value = '请先填写默认模型的 Model ID 或推理接入点 ID（ep-...）'; return }
+  if (isVolcengine.value && !form.defaultModel.trim()) { testError.value = isAgentPlan.value ? '请先填写套餐支持的 Model Name，例如 ark-code-latest' : '请先填写默认模型的 Model ID 或推理接入点 ID（ep-...）'; return }
   testing.value = true; testError.value = ''; tested.value = false
   try {
     const result = await aiSettingsApi.test({ ...form, enabledModels: [...form.enabledModels] })
@@ -122,8 +132,12 @@ onMounted(load)
               <el-form-item label="Provider">
                 <el-select v-model="form.provider" aria-label="Provider" @change="changeProvider"><el-option label="DeepSeek · 官方接口" value="deepseek" /><el-option label="火山引擎 · 火山方舟" value="volcengine" /><el-option label="OpenAI 兼容接口" value="openai_compatible" /><el-option v-if="form.provider === 'mock'" label="本地模拟（当前配置）" value="mock" disabled /></el-select>
               </el-form-item>
+              <el-form-item v-if="isVolcengine" label="火山接入方式">
+                <el-select :model-value="isAgentPlan ? 'plan' : 'model'" aria-label="火山接入方式" @change="changeVolcengineService"><el-option label="模型服务 · 按量计费" value="model" /><el-option label="Agent Plan · 套餐额度" value="plan" /></el-select>
+                <span class="ai-field-hint">套餐使用 /api/plan/v3；普通 /api/v3 使用模型服务额度，可能产生额外费用。切换接入方式后需重新填写对应密钥。</span>
+              </el-form-item>
               <el-form-item label="接口地址"><el-input v-model="form.baseUrl" aria-label="接口地址" placeholder="https://api.deepseek.com" :disabled="form.provider === 'deepseek'" @input="connectionChanged" /><span class="ai-field-hint">填写 API 根地址，不包含 /chat/completions。自定义接口支持公网 HTTPS。</span></el-form-item>
-              <el-alert v-if="isVolcengine" title="使用火山方舟模型服务的 API Key，并在下方填写已开通的 Model ID 或推理接入点 ID（ep-...）。接口地址应与接入点所在地域一致。" type="info" :closable="false" show-icon />
+              <el-alert v-if="isVolcengine" :title="isAgentPlan ? '使用 Agent Plan 套餐 API Key，填写套餐支持的 Model Name。ark-code-latest 跟随火山控制台所选模型；切换模型后请重新测试，图片能力以实际所选模型为准。' : '使用火山方舟模型服务的 API Key，并在下方填写已开通的 Model ID 或推理接入点 ID（ep-...）。接口地址应与接入点所在地域一致。'" type="info" :closable="false" show-icon />
               <el-form-item label="API Key">
                 <el-input v-model="form.apiKey" aria-label="API Key" type="password" autocomplete="new-password" :placeholder="saved.hasApiKey ? '已配置 · 留空保留现有密钥' : '填写 Provider API Key'" @input="connectionChanged" />
                 <span class="ai-field-hint"><el-icon><Lock /></el-icon> {{ saved.hasApiKey ? '现有密钥不会回显；变更接口地址时，请同时填写新密钥。' : '密钥加密保存，不会发送给 H5 或 iOS 客户端。' }}</span>
@@ -139,22 +153,22 @@ onMounted(load)
             <el-form label-position="top" :disabled="busy || !saved.writable" @submit.prevent>
               <div class="ai-form-grid">
                 <el-form-item label="默认模型">
-                  <el-input v-if="isVolcengine" v-model.trim="form.defaultModel" aria-label="默认模型" placeholder="Model ID 或 ep-..." @input="modelSelectionChanged" />
+                  <el-input v-if="isVolcengine" v-model.trim="form.defaultModel" aria-label="默认模型" :placeholder="isAgentPlan ? '套餐 Model Name，例如 ark-code-latest' : 'Model ID 或 ep-...'" @input="modelSelectionChanged" />
                   <el-select v-else v-model="form.defaultModel" aria-label="默认模型" filterable allow-create default-first-option placeholder="先测试连接，或输入模型 ID"><el-option v-for="m in models" :key="m.id" :label="m.name" :value="m.id" /></el-select>
                 </el-form-item>
                 <el-form-item label="图片模型">
-                  <el-input v-if="isVolcengine" v-model.trim="form.visionModel" aria-label="图片模型" clearable placeholder="支持图片的 Model ID 或 ep-...（可选）" @input="modelSelectionChanged" />
+                  <el-input v-if="isVolcengine" v-model.trim="form.visionModel" aria-label="图片模型" clearable :placeholder="isAgentPlan ? '支持图片的套餐 Model Name（可选）' : '支持图片的 Model ID 或 ep-...（可选）'" @input="modelSelectionChanged" />
                   <el-select v-else v-model="form.visionModel" aria-label="图片模型" clearable filterable allow-create placeholder="不设置图片路由"><el-option v-for="m in visionOptions" :key="m.id" :label="m.name" :value="m.id" /></el-select>
                   <span class="ai-field-hint">旧版本客户端发送图片时使用；请确认供应商支持图片输入。</span>
                 </el-form-item>
               </div>
               <el-form-item label="向用户开放的模型">
-                <el-select v-model="form.enabledModels" aria-label="向用户开放的模型" multiple filterable allow-create default-first-option :collapse-tags="false" :placeholder="isVolcengine ? '填写 Model ID 或 ep-...，按回车添加' : '留空：开放供应商当前全部可用模型'" @change="modelSelectionChanged"><el-option v-for="m in models" :key="m.id" :label="m.name" :value="m.id" /></el-select>
+                <el-select v-model="form.enabledModels" aria-label="向用户开放的模型" multiple filterable allow-create default-first-option :collapse-tags="false" :placeholder="isAgentPlan ? '填写套餐 Model Name，按回车添加' : isVolcengine ? '填写 Model ID 或 ep-...，按回车添加' : '留空：开放供应商当前全部可用模型'" @change="modelSelectionChanged"><el-option v-for="m in models" :key="m.id" :label="m.name" :value="m.id" /></el-select>
                 <span class="ai-field-hint">{{ isVolcengine ? '留空时仅开放上方已填的默认模型和图片模型。添加多个模型时，须包含默认模型与图片模型；每个 ID 都会验证后再保存。' : '默认模型与图片模型需包含在选择范围内。留空时，后续新增模型自动进入可选列表。' }}</span>
               </el-form-item>
               <div class="ai-form-grid">
-                <el-form-item label="思考模式"><div class="ai-switch-row"><el-switch v-model="form.thinkingEnabled" aria-label="思考模式" /><span>{{ form.thinkingEnabled ? '开启' : '关闭' }}</span></div></el-form-item>
-                <el-form-item label="推理强度"><el-select v-model="form.reasoningEffort" aria-label="推理强度" :disabled="!form.thinkingEnabled"><el-option label="低 · 更快回复" value="low" /><el-option label="中 · 均衡" value="medium" /><el-option label="高 · 更多推理" value="high" /></el-select></el-form-item>
+                <el-form-item label="思考模式"><span v-if="isAgentPlan" class="ai-field-hint">跟随模型默认设置（部分套餐模型必须思考）</span><div v-else class="ai-switch-row"><el-switch v-model="form.thinkingEnabled" aria-label="思考模式" /><span>{{ form.thinkingEnabled ? '开启' : '关闭' }}</span></div></el-form-item>
+                <el-form-item v-if="!isAgentPlan" label="推理强度"><el-select v-model="form.reasoningEffort" aria-label="推理强度" :disabled="!form.thinkingEnabled"><el-option label="低 · 更快回复" value="low" /><el-option label="中 · 均衡" value="medium" /><el-option label="高 · 更多推理" value="high" /></el-select></el-form-item>
                 <el-form-item label="最大输出 Token"><el-input-number v-model="form.maxOutputTokens" aria-label="最大输出 Token" :min="64" :max="32768" :step="256" controls-position="right" /><span class="ai-field-hint">普通问事每次模型调用的输出预算，包含供应商计入的思考 Token。</span></el-form-item>
               </div>
               <div class="ai-form-grid">
@@ -165,7 +179,7 @@ onMounted(load)
               </div>
               <el-alert v-if="selectedCapability" type="info" :closable="false" :title="`模型声明：上下文 ${selectedCapability.contextWindow?.toLocaleString() || '未提供（按 32K 保守处理）'} · 最大输出 ${selectedCapability.maxOutputTokens?.toLocaleString() || '未提供'}`" />
               <p class="ai-field-hint">上下文按文本保守估算装配，保留当前问题与工具结果，必要时压缩旧对话。估算占用不等于计费用量；实际用量以供应商返回为准。</p>
-              <p class="ai-field-hint">思考参数由兼容接口传递，实际支持能力取决于所选供应商。</p>
+              <p class="ai-field-hint">{{ isAgentPlan ? 'Agent Plan 的连接测试与实际回答均使用模型默认思考配置，平台不强制开关思考或指定推理强度。' : '思考参数由兼容接口传递，实际支持能力取决于所选供应商。' }}</p>
             </el-form>
           </section>
         </div>
