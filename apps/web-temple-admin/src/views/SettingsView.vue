@@ -120,4 +120,7 @@ function clearCache() {
 .danger-zone {
   grid-column: 1 / -1;
 }
+@media (max-width: 767px) {
+  .settings-grid { grid-template-columns: minmax(0, 1fr); }
+}
 </style>

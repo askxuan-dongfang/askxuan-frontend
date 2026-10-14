@@ -109,4 +109,8 @@ onMounted(load)
 h3 { margin: 0 0 16px; font-size: var(--type-size-reading); color: var(--admin-text); }
 .assignment-row { display: grid; grid-template-columns: minmax(260px, 420px) auto; gap: 12px; justify-content: start; }
 .certificate { width: 120px; height: 120px; margin-right: 12px; border-radius: 6px; }
+@media (max-width: 767px) {
+  .assignment-row { grid-template-columns: minmax(0, 1fr); }
+  .assignment-row .el-button { width: 100%; }
+}
 </style>

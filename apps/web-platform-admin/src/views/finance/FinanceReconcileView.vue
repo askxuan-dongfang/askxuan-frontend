@@ -220,4 +220,7 @@ onMounted(loadWithdrawals)
 }
 .mobile-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .mobile-actions :deep(.el-button + .el-button) { margin-left: 0; }
+@media (max-width: 767px) {
+  .report-cards { grid-template-columns: minmax(0, 1fr); }
+}
 </style>

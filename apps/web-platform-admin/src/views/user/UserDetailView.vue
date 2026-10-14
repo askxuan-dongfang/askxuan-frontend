@@ -160,4 +160,7 @@ onMounted(loadData)
   flex-wrap: wrap;
   gap: 10px;
 }
+@media (max-width: 767px) {
+  .profile-grid { grid-template-columns: minmax(0, 1fr); }
+}
 </style>

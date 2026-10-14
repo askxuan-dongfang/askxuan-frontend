@@ -144,4 +144,7 @@ onMounted(loadData)
   padding-left: 10px;
   border-left: 3px solid var(--color-accent);
 }
+@media (max-width: 767px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+}
 </style>

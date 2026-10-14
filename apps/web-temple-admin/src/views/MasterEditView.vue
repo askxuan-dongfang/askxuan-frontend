@@ -129,34 +129,34 @@ onMounted(async () => {
     <div class="df-card edit-card">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="92px" class="edit-form">
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="法号" prop="dharmaName">
               <el-input v-model="form.dharmaName" placeholder="如 释永信" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="俗名" prop="layName">
               <el-input v-model="form.layName" placeholder="请输入俗名" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="职位" prop="position">
               <el-input v-model="form.position" placeholder="如 方丈、监院" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="一级流派" prop="beliefCode">
               <el-select v-model="form.beliefCode" style="width: 100%">
                 <el-option v-for="item in beliefOptions" :key="item.code" :label="item.name" :value="item.code" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="宗派" prop="sect">
               <el-input v-model="form.sect" placeholder="如 禅宗、全真派、格鲁派" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="类型">
               <el-radio-group v-model="form.type" :disabled="isEdit">
                 <el-radio value="佛教">佛教</el-radio>

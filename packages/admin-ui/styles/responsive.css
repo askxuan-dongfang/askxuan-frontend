@@ -1,0 +1,55 @@
+/* Shared by platform/commerce and temple. Local scroll belongs to data, not the page. */
+html .ax-admin-main { container-type: inline-size; }
+html .ax-admin-main > *,
+html :is(.el-card__body, .el-form-item__content, .el-col, .el-tabs__content) { min-width: 0; }
+html :is(.filter-bar, .filter-row, .filter-form, .toolbar, .table-toolbar, .search-bar) { flex-wrap: wrap; }
+html :is(.el-input, .el-select, .el-date-editor, .el-input-number, .el-cascader) { max-width: 100%; }
+html :is(.el-dialog, .el-drawer) { overflow-wrap: anywhere; }
+html :is(.el-dialog__body, .el-drawer__body) { min-width: 0; }
+html .el-drawer { max-width: 100%; }
+html .el-tabs__header { max-width: 100%; }
+html .el-form-item__label { flex-shrink: 0; }
+
+/* A collapsed sidebar changes the available space without changing screen width. */
+@container (max-width: 820px) {
+  html .ax-admin-main :is(.dashboard__charts, .chart-grid, .detail-grid, .settings-grid, .profile-grid, .report-cards) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  html .ax-admin-main :is(.filter-bar, .filter-row, .filter-form, .toolbar, .table-toolbar, .search-bar) {
+    gap: 10px; align-items: stretch;
+  }
+  html .ax-admin-main :is(.filter-bar, .filter-row, .toolbar, .table-toolbar, .search-bar) > :is(.el-input, .el-select, .el-date-editor, .el-cascader) {
+    width: 100% !important; flex: 1 1 100%; min-width: 0;
+  }
+  html .el-form--inline .el-form-item { display: flex; flex-direction: column; align-items: stretch; }
+  html .el-form--inline .el-form-item__label { justify-content: flex-start; width: auto !important; height: auto; line-height: 1.5; padding-bottom: 6px; }
+  html .el-form--inline .el-form-item__content { margin-left: 0 !important; min-width: 0; }
+  html .el-date-editor--daterange, html .el-date-editor--datetimerange { min-width: 0; }
+  html .el-range-editor .el-range-input { min-width: 0; }
+  html .el-range-editor .el-range-separator { flex-shrink: 0; padding-inline: 3px; }
+  html .el-pagination { flex-wrap: wrap; row-gap: 10px; white-space: normal; }
+  html .el-pagination .el-pagination__sizes { margin-right: 0; }
+  html .el-pagination .el-pagination__jump { margin-left: 0; }
+  html .el-pagination .el-pager { display: flex; flex-wrap: wrap; }
+  /* Wide fixed action columns otherwise cover the entire phone table. */
+  html .el-table :is(.el-table-fixed-column--left, .el-table-fixed-column--right) { position: static !important; }
+  html .el-table :is(.el-table-fixed-column--left, .el-table-fixed-column--right)::before { display: none; }
+  html .el-table__body-wrapper { overscroll-behavior-inline: contain; }
+  html .el-descriptions__table, html .el-descriptions__table tbody, html .el-descriptions__table tr { display: block; width: 100%; }
+  html .el-descriptions__table .el-descriptions__cell { display: block; width: 100% !important; min-width: 0; overflow-wrap: anywhere; }
+  html .el-descriptions__label { white-space: normal; }
+  html .el-drawer.rtl, html .el-drawer.ltr { width: calc(100% - 16px) !important; }
+  html .el-dialog__footer { display: flex; flex-wrap: wrap; gap: 8px; }
+  html .el-dialog__footer > .el-button { flex: 1 1 auto; margin-left: 0; }
+  html .el-dialog__footer > :is(span, div) { max-width: 100%; display: flex; flex-wrap: wrap; gap: 8px; }
+  html .el-dialog__footer > :is(span, div) > .el-button { margin-left: 0; }
+  html :is(.el-dialog__title, .el-drawer__title) { padding-right: 24px; overflow-wrap: anywhere; }
+}
+
+@media (pointer: coarse) {
+  html .ax-admin-main :is(.el-input__inner, .el-textarea__inner, .el-select__input) { font-size: max(16px, 1em); }
+  html :is(.el-dialog, .el-drawer) :is(.el-input__inner, .el-textarea__inner, .el-select__input) { font-size: max(16px, 1em); }
+}

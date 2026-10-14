@@ -312,4 +312,7 @@ onMounted(load)
   font-size: var(--type-size-caption);
   color: var(--admin-text-secondary);
 }
+@media (max-width: 767px) {
+  .detail-grid { grid-template-columns: minmax(0, 1fr); }
+}
 </style>
