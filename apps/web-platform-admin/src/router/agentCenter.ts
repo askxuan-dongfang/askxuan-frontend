@@ -9,8 +9,9 @@ export const agentCenterRoutes: RouteRecordRaw[] = [
   })),
   { path: 'knowledge', component: () => import('@/views/ai/KnowledgeCenterView.vue'), meta: { ...meta, title: '知识中心' } },
   { path: 'connections', component: () => import('@/views/ai/ConnectionsView.vue'), redirect: '/ai/connections/models', meta: { ...meta, title: '模型与连接' }, children: [
-    { path: 'models', component: () => import('@/views/settings/SettingsAiView.vue'), props: { section: 'models', embedded: true }, meta: { ...meta, title: '大模型连接' } },
+    { path: 'models', component: () => import('@/views/ai/ModelLibraryView.vue'), meta: { ...meta, title: '模型库' } },
+    { path: 'legacy', component: () => import('@/views/settings/SettingsAiView.vue'), props: { section: 'models', embedded: true }, meta: { ...meta, title: '原有连接与运行参数' } },
     { path: 'search', component: () => import('@/views/settings/SettingsAiView.vue'), props: { section: 'search', embedded: true }, meta: { ...meta, title: '联网搜索' } },
-    { path: 'knowledge', component: () => import('@/views/ai/KnowledgeModelsView.vue'), meta: { ...meta, title: '知识模型' } },
+    { path: 'knowledge', redirect: '/ai/connections/models', meta: { ...meta, title: '模型库' } },
   ] },
 ]
