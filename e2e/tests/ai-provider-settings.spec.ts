@@ -44,8 +44,8 @@ test('storage not enabled is explicitly read-only',async({page})=>{await setup(p
 
 test('Agent Plan selects the subscription root, follows model defaults and persists only after review', async ({page}) => {
  const calls=await setup(page);await page.goto('/ai/connections/models');
- await page.getByRole('combobox',{name:'Provider',exact:true}).click();await page.getByRole('option',{name:'火山引擎 · 火山方舟',exact:true}).click();
- await page.getByRole('combobox',{name:'火山接入方式',exact:true}).click();await page.getByRole('option',{name:'Agent Plan · 套餐额度',exact:true}).click();
+ await page.locator('.el-select:has(input[aria-label="Provider"]) .el-select__wrapper').click();await page.getByRole('option',{name:'火山引擎 · 火山方舟',exact:true}).click();
+ await page.locator('.el-select:has(input[aria-label="火山接入方式"]) .el-select__wrapper').click();await page.getByRole('option',{name:'Agent Plan · 套餐额度',exact:true}).click();
  await expect(page.getByLabel('接口地址',{exact:true})).toHaveValue('https://ark.cn-beijing.volces.com/api/plan/v3');
  await expect(page.getByLabel('默认模型',{exact:true})).toHaveValue('ark-code-latest');
  await expect(page.getByLabel('图片模型',{exact:true})).toHaveValue('');
@@ -58,7 +58,7 @@ test('Agent Plan selects the subscription root, follows model defaults and persi
  await page.getByRole('button',{name:'保存并生效',exact:true}).click();await page.getByRole('button',{name:'确认生效',exact:true}).click();
  await expect(page.locator('.ai-active-card')).toContainText('ark-code-latest');await expect(key).toHaveValue('');
  await page.reload();await expect(page.locator('.el-select').filter({has:page.getByLabel('火山接入方式',{exact:true})})).toContainText('Agent Plan · 套餐额度');
- await key.fill('draft-key');await page.getByRole('combobox',{name:'火山接入方式',exact:true}).click();await page.getByRole('option',{name:'模型服务 · 按量计费',exact:true}).click();
+ await key.fill('draft-key');await page.locator('.el-select:has(input[aria-label="火山接入方式"]) .el-select__wrapper').click();await page.getByRole('option',{name:'模型服务 · 按量计费',exact:true}).click();
  await expect(key).toHaveValue('');await expect(page.getByLabel('默认模型',{exact:true})).toHaveValue('');await expect(page.getByLabel('接口地址',{exact:true})).toHaveValue('https://ark.cn-beijing.volces.com/api/v3');
  await page.getByRole('button',{name:'撤销修改',exact:true}).click();await expect(page.getByLabel('接口地址',{exact:true})).toHaveValue('https://ark.cn-beijing.volces.com/api/plan/v3');
 });
