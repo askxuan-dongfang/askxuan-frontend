@@ -24,11 +24,11 @@ async function setup(page:Page,options:{fail?:boolean;image?:boolean;guest?:bool
   await route.fulfill({json:{code:0,data}});
  });return state;
 }
-const trigger=(page:Page)=>page.getByRole('button',{name:/^选择 AI 模型：/});
-const sheet=(page:Page)=>page.getByRole('dialog',{name:'选择模型'});
+const trigger=(page:Page)=>page.getByRole('combobox',{name:/^选择 AI 模型：/});
+const sheet=(page:Page)=>page.locator('.ai-model-dropdown');
 async function choose(page:Page,name:string){
  await trigger(page).click();
- await sheet(page).getByRole('button',{name:new RegExp(name)}).click();
+ await sheet(page).getByRole('option',{name:new RegExp(name)}).click();
  await expect(sheet(page)).toHaveCount(0);
 }
 for(const width of [375,557,768,1440])test(`model selection persists and request uses chosen model ${width}`,async({page})=>{
@@ -36,24 +36,18 @@ for(const width of [375,557,768,1440])test(`model selection persists and request
  const picker=trigger(page);
  await expect(picker).toContainText('DeepSeek Flash');
  expect((await picker.boundingBox())!.height).toBeLessThanOrEqual(48);
- await expect(page.getByRole('combobox')).toHaveCount(0);
+ await expect(page.getByRole('dialog',{name:'选择模型'})).toHaveCount(0);
  await expect(page.getByText('对下一条消息生效',{exact:false})).toHaveCount(0);
  await page.screenshot({path:`artifacts/ai-models/home-${width}.png`});
  await picker.click();
- await expect(sheet(page).getByRole('button',{name:/DeepSeek Flash/})).toHaveAttribute('aria-pressed','true');
+ await expect(sheet(page).getByRole('option',{name:/DeepSeek Flash/})).toHaveAttribute('aria-selected','true');
  const bounds=await sheet(page).boundingBox();
  expect(bounds!.x).toBeGreaterThanOrEqual(0);expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(width);
- if(width>600)console.log('dialog geometry',await sheet(page).evaluate(e=>({rect:e.getBoundingClientRect().toJSON(),client:[document.documentElement.clientWidth,document.documentElement.clientHeight],viewport:[visualViewport?.width,visualViewport?.height,visualViewport?.offsetTop],style:{inset:getComputedStyle(e).inset,margin:getComputedStyle(e).margin,transform:getComputedStyle(e).transform},vars:document.documentElement.getAttribute('style')})));
- if(width>600)await expect.poll(async()=>{
-  const b=(await sheet(page).boundingBox())!;
-  // The application reserves a stable desktop scrollbar gutter. Center in the
-  // actual visible viewport, not innerWidth (which also includes that gutter).
-  const v=await page.evaluate(()=>({x:(visualViewport?.offsetLeft??0)+Math.min(visualViewport?.width??innerWidth,document.documentElement.clientWidth)/2,y:(visualViewport?.offsetTop??0)+(visualViewport?.height??innerHeight)/2}));
-  return Math.abs(b.y+b.height/2-v.y)+Math.abs(b.x+b.width/2-v.x);
- }).toBeLessThan(3);
- if(width<=600)await expect.poll(async()=>{const b=await sheet(page).boundingBox();return Math.abs(b!.y+b!.height-900);}).toBeLessThan(2);
+ const anchor=(await picker.boundingBox())!;
+ expect(Math.min(Math.abs(bounds!.y+bounds!.height-anchor.y),Math.abs(bounds!.y-anchor.y-anchor.height))).toBeLessThanOrEqual(9);
+ expect(await page.evaluate(()=>document.body.style.overflow)).not.toBe('hidden');
  await page.screenshot({path:`artifacts/ai-models/sheet-${width}.png`});
- await sheet(page).getByRole('button',{name:/DeepSeek V4 Pro/}).click();
+ await sheet(page).getByRole('option',{name:/DeepSeek V4 Pro/}).click();
  await expect(sheet(page)).toHaveCount(0);await expect(picker).toBeFocused();
  await page.reload();await expect(picker).toContainText('DeepSeek V4 Pro');
  await page.getByRole('textbox',{name:'输入问题'}).fill('隔离问题');await page.getByRole('button',{name:'发送',exact:true}).click();
@@ -68,14 +62,14 @@ for(const width of [375,557,768,1440])test(`model selection persists and request
 test('model list error is retryable and removed preference is replaced',async({page})=>{
  const state=await setup(page,{fail:true});await page.goto('/c/ai?view=chat');await page.getByRole('textbox',{name:'输入问题'}).fill('保留草稿');
  await expect(page.getByRole('button',{name:'发送',exact:true})).toBeDisabled();await expect(trigger(page)).toContainText('模型未加载');await trigger(page).click();await expect(page.getByText('模型暂未加载，请重试')).toBeVisible();
- state.fail=false;await page.getByRole('button',{name:'重新加载模型'}).click();await expect(sheet(page).getByRole('button',{name:/DeepSeek Flash/})).toHaveAttribute('aria-pressed','true');
- await sheet(page).getByRole('button',{name:/DeepSeek V4 Pro/}).click();await expect(page.getByRole('textbox',{name:'输入问题'})).toHaveValue('保留草稿');
+ state.fail=false;await page.getByRole('button',{name:'重新加载模型'}).click();await expect(sheet(page).getByRole('option',{name:/DeepSeek Flash/})).toHaveAttribute('aria-selected','true');
+ await sheet(page).getByRole('option',{name:/DeepSeek V4 Pro/}).click();await expect(page.getByRole('textbox',{name:'输入问题'})).toHaveValue('保留草稿');
  state.models=[models[0]];await page.reload();await expect(trigger(page)).toContainText('DeepSeek Flash');
 });
 test('image history prevents unsupported model selection',async({page})=>{
  await setup(page,{image:true});await page.goto('/c/ai?session=7');await expect(page.getByText('图片问题')).toBeVisible();
  await trigger(page).click();
- await expect(sheet(page).getByRole('button',{name:/DeepSeek V4 Pro/})).toBeDisabled();
+ await expect(sheet(page).getByRole('option',{name:/DeepSeek V4 Pro/})).toBeDisabled();
  await expect(sheet(page).getByText('本次含图片，暂不可选')).toBeVisible();
  await page.keyboard.press('Escape');await expect(sheet(page)).toHaveCount(0);await expect(trigger(page)).toBeFocused();await expect(trigger(page)).toContainText('DeepSeek Flash');
 });
@@ -83,7 +77,7 @@ test('guest never requests protected model catalog',async({page})=>{
  const state=await setup(page,{guest:true});await page.goto('/c/ai');await expect(trigger(page)).toHaveCount(0);expect(state.calls.some(p=>p.endsWith('/ai/models'))).toBeFalsy();
 });
 
-test('dismissal preserves draft and model, backdrop sits above navigation',async({page})=>{
+test('outside click and Escape dismiss dropdown without blocking the page',async({page})=>{
  await setup(page);await page.goto('/c/ai?view=chat');await expect(trigger(page)).toContainText('DeepSeek Flash');
  await page.getByRole('textbox',{name:'输入问题'}).fill('不应丢失的问题');await trigger(page).click();
  await page.keyboard.press('Escape');await expect(trigger(page)).toBeFocused();
@@ -96,7 +90,7 @@ test('short narrow viewport supports a long model list and reduced motion',async
  await page.goto('/c/ai?view=chat');await trigger(page).click();await expect(sheet(page)).toBeVisible();
  expect(await sheet(page).evaluate(el=>getComputedStyle(el).animationName)).toBe('none');
  const bounds=await sheet(page).boundingBox();expect(bounds!.y).toBeGreaterThanOrEqual(0);expect(bounds!.y+bounds!.height).toBeLessThanOrEqual(521);
- await sheet(page).getByRole('button',{name:/兼容模型 11/}).click();await expect(sheet(page)).toHaveCount(0);await expect(trigger(page)).toContainText('兼容模型 11');
+ await sheet(page).getByRole('option',{name:/兼容模型 11/}).click();await expect(sheet(page)).toHaveCount(0);await expect(trigger(page)).toContainText('兼容模型 11');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
 });
 
@@ -140,38 +134,33 @@ test('topic example is a read-only report and does not start a model request',as
  await expect.poll(()=>state.sent.length).toBe(1);expect(state.sent[0].question).toBe('补充我的实际情况');
 });
 
-test('keyboard-opened modal does not replay entrance when switching to pointer',async({page})=>{
+test('keyboard changes the active option without committing until Enter',async({page})=>{
  await setup(page);await page.goto('/c/ai?view=chat');await expect(trigger(page)).toContainText('DeepSeek Flash');
- await trigger(page).focus();await page.keyboard.press('Enter');await expect(sheet(page)).toBeVisible();
- expect(await sheet(page).evaluate(el=>getComputedStyle(el).animationName)).toBe('none');
- await sheet(page).getByRole('heading',{name:'选择模型'}).click();
- expect(await sheet(page).evaluate(el=>getComputedStyle(el).animationName)).toBe('none');
- await page.keyboard.press('Escape');await expect(sheet(page)).toHaveCount(0);await expect(trigger(page)).toBeFocused();
- expect(await page.evaluate(()=>document.body.style.overflow)).not.toBe('hidden');
+ await trigger(page).focus();await page.keyboard.press('ArrowDown');await expect(sheet(page)).toBeVisible();
+ await page.keyboard.press('End');
+ const option=sheet(page).getByRole('option',{name:/DeepSeek V4 Pro/});
+ await expect(trigger(page)).toHaveAttribute('aria-activedescendant',await option.getAttribute('id') as string);
+ await expect(trigger(page)).toContainText('DeepSeek Flash');
+ await page.keyboard.press('Enter');await expect(sheet(page)).toHaveCount(0);await expect(trigger(page)).toBeFocused();
+ await expect(trigger(page)).toContainText('DeepSeek V4 Pro');
 });
 
-test('interrupting modal entrance preserves its current frame and releases scroll lock',async({page})=>{
- await setup(page);await page.goto('/c/ai?view=chat');await trigger(page).click();
- // Freeze partway through entrance to deterministically exercise interruption.
- const initial=await sheet(page).evaluate(el=>{
-  const a=el.getAnimations().find(a=>(a as CSSAnimation).animationName==='modal-surface-enter');
-  if(!a)throw new Error('Expected modal entrance');a.pause();a.currentTime=30;
-  const s=getComputedStyle(el);return {opacity:s.opacity,transform:s.transform};
- });
- expect(Number(initial.opacity)).toBeGreaterThan(0);expect(Number(initial.opacity)).toBeLessThan(1);
- await sheet(page).getByRole('button',{name:'关闭选择模型'}).click({force:true});
- const captured=await sheet(page).evaluate(el=>({opacity:(el as HTMLElement).style.getPropertyValue('--modal-exit-opacity'),transform:(el as HTMLElement).style.getPropertyValue('--modal-exit-transform')}));
- expect(captured).toEqual(initial);
- await expect(sheet(page)).toHaveCount(0);await expect(trigger(page)).toBeFocused();
- expect(await page.evaluate(()=>document.body.style.overflow)).not.toBe('hidden');
+test('dropdown never traps focus or locks scrolling, and its trigger toggles it',async({page})=>{
+ await setup(page);await page.goto('/c/ai?view=chat');await expect(trigger(page)).toContainText('DeepSeek Flash');
  await trigger(page).click();await expect(sheet(page)).toBeVisible();
- await page.keyboard.press('Escape');await expect(sheet(page)).toHaveCount(0);
+ await expect(page.locator('dialog[open]')).toHaveCount(0);
+ expect(await page.evaluate(()=>document.body.style.overflow)).not.toBe('hidden');
+ await trigger(page).click();await expect(sheet(page)).toHaveCount(0);
+ await trigger(page).click();await page.keyboard.press('Tab');await expect(sheet(page)).toHaveCount(0);
+ await expect(trigger(page)).not.toBeFocused();
+ await trigger(page).click();await page.getByRole('textbox',{name:'输入问题'}).click({position:{x:8,y:10}});
+ await expect(sheet(page)).toHaveCount(0);await expect(page.getByRole('textbox',{name:'输入问题'})).toBeFocused();
 });
 
 for(const height of [320,460])test(`model errors remain reachable in short viewport ${height}`,async({page})=>{
  await page.setViewportSize({width:390,height});await setup(page,{fail:true});await page.goto('/c/ai?view=chat');
  await trigger(page).click();await expect(sheet(page)).toBeVisible();
- await expect(sheet(page).getByRole('button',{name:'关闭选择模型'})).toBeInViewport();
+ await expect(sheet(page).getByRole('button',{name:'重新加载模型'})).toBeInViewport();
  await expect.poll(async()=>{const b=(await sheet(page).boundingBox())!;return Math.max(-b.x,-b.y,b.y+b.height-height);}).toBeLessThanOrEqual(1);
  await page.keyboard.press('Escape');await expect(sheet(page)).toHaveCount(0);
 });
