@@ -23,14 +23,14 @@ export function createService(data: {
   price: number
   timeSlots: string[]
 	slots: TempleServiceSlot[]
-  intentTags?: string[]
+  intentMode?: 'inherit' | 'custom'; intentTags?: string[]
 }): Promise<{ id: number }> {
   return client.post<{ id: number }>('/admin/temples/services', data)
 }
 
 export function updateService(
   id: number,
-	data: { price?: number; timeSlots?: string[]; slots?: TempleServiceSlot[]; intentTags?: string[] }
+	data: { price?: number; timeSlots?: string[]; slots?: TempleServiceSlot[]; intentMode?: 'inherit' | 'custom'; intentTags?: string[] }
 ): Promise<TempleService> {
   return client.put<TempleService>(`/admin/temples/services/${id}`, data)
 }

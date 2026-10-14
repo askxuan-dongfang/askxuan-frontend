@@ -23,6 +23,7 @@ const form = reactive({
   price: 0,
   timeSlots: [] as string[],
 	slots: [] as TempleServiceSlot[],
+  intentMode: 'inherit' as 'inherit' | 'custom',
   intentTags: [] as string[]
 })
 
@@ -63,6 +64,7 @@ async function loadService() {
 			return { code: `slot_${String(index + 1).padStart(2, '0')}`, label: range, startTime, endTime, capacity: 10, status: 'enabled', sort: index + 1 }
 		})
     form.intentTags = s.intentTags || []
+    form.intentMode = s.intentMode || 'custom'
   } finally {
     loading.value = false
   }
@@ -81,7 +83,8 @@ async function handleSubmit() {
           price: form.price,
 			timeSlots,
 			slots,
-          intentTags: form.intentTags
+          intentMode: form.intentMode,
+          intentTags: form.intentMode === 'custom' ? form.intentTags : undefined
         })
         ElMessage.success('服务已更新')
       } else {
@@ -90,7 +93,8 @@ async function handleSubmit() {
           price: form.price,
 			timeSlots,
 			slots,
-          intentTags: form.intentTags
+          intentMode: form.intentMode,
+          intentTags: form.intentMode === 'custom' ? form.intentTags : undefined
         })
         ElMessage.success('服务已创建')
       }
@@ -166,8 +170,10 @@ onMounted(async () => {
 			<el-button :icon="Plus" @click="addSlot">添加时段</el-button>
 		  </div>
         </el-form-item>
-        <el-form-item label="诉求标签">
-          <el-select v-model="form.intentTags" multiple placeholder="选择要进入的诉求聚合" style="width: 100%">
+        <el-form-item label="心愿关联">
+          <el-radio-group v-model="form.intentMode"><el-radio value="inherit">跟随标准服务</el-radio><el-radio value="custom">手动设置</el-radio></el-radio-group>
+          <p v-if="form.intentMode==='inherit'" style="width:100%;color:var(--el-text-color-secondary)">按平台标准服务规则自动进入对应心愿；以后新增或调整规则也会生效。</p>
+          <el-select v-if="form.intentMode==='custom'" v-model="form.intentTags" multiple placeholder="空选表示不进入心愿页" style="width: 100%">
             <el-option v-for="item in intentOptions" :key="item.code" :label="item.name" :value="item.code" />
           </el-select>
         </el-form-item>

@@ -72,7 +72,7 @@ export interface TempleService {
   price: number
   timeSlots: string[]
 	slots: TempleServiceSlot[]
-  intentTags: string[]
+  intentMode?: 'inherit' | 'custom'; intentTags: string[]
   status: string // on_shelf/off_shelf
   createTime: string
 }
