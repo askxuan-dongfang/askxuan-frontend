@@ -26,7 +26,7 @@ const feature = computed(() => {
 <template>
   <header class="aui-page-header">
     <div class="aui-page-header__main">
-      <h1 class="aui-page-header__title"><FeatureIcon :name="feature" :size="24" />{{ title }}</h1>
+      <h1 class="aui-page-header__title"><FeatureIcon :name="feature" :size="24" /><span>{{ title }}</span></h1>
       <p v-if="subtitle" class="aui-page-header__subtitle">{{ subtitle }}</p>
     </div>
     <div
@@ -43,10 +43,10 @@ const feature = computed(() => {
 <style scoped>
 .aui-page-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: var(--admin-section-gap);
   padding-bottom: 16px;
   border-bottom: 1px solid var(--color-border-divider, var(--admin-border, var(--border, #e8e0d8)));
 }
@@ -64,8 +64,9 @@ const feature = computed(() => {
   letter-spacing: .02em;
   line-height: var(--type-line-title);
 }
-.aui-page-header__title { display:flex; align-items:center; gap:10px; }
-.aui-page-header__title > svg { color:var(--color-brand, var(--admin-primary)); }
+.aui-page-header__title { align-items: flex-start; gap: 10px; }
+.aui-page-header__title > svg { flex: none; margin-top: 3px; color: var(--color-brand, var(--admin-primary)); }
+.aui-page-header__title > span { min-width: 0; overflow-wrap: anywhere; }
 .aui-page-header__subtitle {
   margin: 6px 0 0 34px;
   color: var(--color-text-tertiary, var(--admin-text-tertiary, var(--text-light, #8a7a6a)));
@@ -76,8 +77,10 @@ const feature = computed(() => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--admin-action-gap);
   flex-wrap: wrap;
+  flex-shrink: 0;
+  max-width: 100%;
 }
 @media (max-width: 767px) {
   .aui-page-header {

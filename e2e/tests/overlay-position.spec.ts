@@ -30,8 +30,47 @@ for (const viewport of [{width:390,height:640},{width:768,height:900},{width:144
   const close=dialog.locator('.el-dialog__headerbtn')
   await expect(close).toBeInViewport()
   await expect(dialog.locator('.el-dialog__footer')).toBeInViewport()
+  const footerButtons = await dialog.locator('.el-dialog__footer .el-button').evaluateAll(buttons =>
+    buttons.map(button => { const r = button.getBoundingClientRect(); return {top:r.top,height:r.height} })
+  )
+  // Adjacent actions must share a baseline; sibling margins once shifted the
+  // second action down by 6px on phones even when both fit on one row.
+  if (footerButtons.length === 2) {
+    expect(Math.abs(footerButtons[0].top - footerButtons[1].top)).toBeLessThan(1)
+    expect(Math.abs(footerButtons[0].height - footerButtons[1].height)).toBeLessThan(1)
+  }
   expect(await dialog.evaluate(e=>e.closest('.el-overlay')?.parentElement===document.body)).toBe(true)
   await close.click()
   await expect(dialog).not.toBeVisible()
+ })
+}
+
+for (const width of [390, 1440]) {
+ test(`admin pages share heading and control geometry at ${width}px`, async ({page}) => {
+  await page.setViewportSize({width,height:900})
+  await page.addInitScript(() => {
+   for (const [key,role] of [['platform','platform_super'],['temple','temple_admin']]) {
+    const token='e30.'+btoa(JSON.stringify({userId:9901,roles:[role],clientId:key+'-admin',exp:Math.floor(Date.now()/1000)+3600}))+'.fixture'
+    localStorage.setItem(`df_${key}_admin_token`,token)
+    localStorage.setItem(`df_${key}_admin_user`,JSON.stringify({userId:9901,templeId:'TEST',templeName:'本地测试寺院'}))
+   }
+   localStorage.setItem('df_temple_admin_temple_id','TEST')
+  })
+  for (const path of ['/admin/settings/service-intentions','/admin/onboarding/review','/admin/commerce/points-mall','/temple/masters/accounts','/temple/services']) {
+   await page.goto(`http://127.0.0.1:5388${path}`)
+   await expect(page.locator('main .aui-page-header')).toBeVisible()
+   const geometry = await page.evaluate(() => {
+    const main=document.querySelector('main')!.getBoundingClientRect()
+    const heading=document.querySelector('main .aui-page-header')!.getBoundingClientRect()
+    const controls=[...document.querySelectorAll('.filter-bar > .el-select,.filter-bar > .el-input,.filter-bar > .el-button,.aui-page-header__actions > .el-button')]
+      .map(e=>e.getBoundingClientRect().height).filter(Boolean)
+    const fixedCells=[...document.querySelectorAll('.el-table-fixed-column--left,.el-table-fixed-column--right')].map(e=>getComputedStyle(e).position)
+    return {left:heading.left-main.left,controls,fixedCells,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}
+   })
+   expect(Math.abs(geometry.left-(width<768?12:24)),path).toBeLessThan(1)
+   expect(geometry.overflow,path).toBeLessThanOrEqual(1)
+   for (const height of geometry.controls) expect(Math.abs(height-(width<768?40:36)),path).toBeLessThan(1)
+   if (width<768) for (const position of geometry.fixedCells) expect(position,path).toBe('static')
+  }
  })
 }

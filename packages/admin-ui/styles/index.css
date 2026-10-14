@@ -1,5 +1,6 @@
 @import '../../design-tokens/fonts/web/faces.css';
 @import './responsive.css';
+@import './layout.css';
 /* 问玄东方三管理台共享作业主题与响应式壳层。 */
 /* Keep the shared theme above component CSS loaded by lazy routes. */
 html:root {
@@ -500,7 +501,7 @@ a:focus-visible,
 .ax-admin-page {
   width: min(100%, var(--admin-content-max));
   margin: 0 auto;
-  padding: clamp(18px, 2.2vw, 32px);
+  padding: var(--admin-page-padding);
 }
 
 .ax-page-feedback {
@@ -661,7 +662,7 @@ a:focus-visible,
   min-width: 0;
   margin-right: auto;
   margin-left: auto;
-  padding: clamp(18px, 2.2vw, 32px) !important;
+  padding: var(--admin-page-padding) !important;
 }
 
 .df-card,
@@ -899,7 +900,7 @@ a:focus-visible,
 }
 
 @media (max-width: 767px) {
-  :root {
+  html:root {
     --admin-header-height: 56px;
   }
 
@@ -929,7 +930,7 @@ a:focus-visible,
   .page-container,
   .page-body,
   .ax-admin-page {
-    padding: 14px 12px 24px !important;
+    padding: var(--admin-page-padding) !important;
   }
 
   .stats-grid,

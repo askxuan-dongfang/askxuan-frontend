@@ -1,8 +1,8 @@
 <template>
- <div class="rewards-admin">
-  <section class="rewards-banner"><div><span>PLATFORM GIFTS</span><h1>积分活动与奖品履约</h1><p>平台预算准备好礼，一人一期积分参与，开奖与履约全程留档。</p></div><el-button type="primary" size="large" @click="edit()">创建积分活动</el-button></section>
+ <div class="dfx-page rewards-admin">
+  <PageHeader title="积分活动与奖品履约" subtitle="平台预算准备好礼，一人一期积分参与，开奖与履约全程留档。"><el-button type="primary" @click="edit()">创建积分活动</el-button></PageHeader>
   <el-alert title="积分商城提供确定权益；转盘与大奖池扣除配置的参与积分，不收现金，不影响功德成长。奖品预算由平台承担，与参与积分分别配置。" type="info" :closable="false" show-icon />
-  <el-tabs v-model="tab" @tab-change="page=1;load()"><el-tab-pane label="活动管理" name="campaigns"/><el-tab-pane label="奖品履约" name="orders"/></el-tabs>
+  <div class="dfx-card"><el-tabs v-model="tab" @tab-change="page=1;load()"><el-tab-pane label="活动管理" name="campaigns"/><el-tab-pane label="奖品履约" name="orders"/></el-tabs>
   <div class="rewards-toolbar"><el-select v-if="tab==='campaigns'" v-model="kind" placeholder="活动类型" clearable @change="page=1;load()"><el-option label="大奖池" value="pool"/><el-option label="幸运转盘" value="wheel"/></el-select><el-select v-else v-model="status" placeholder="全部履约状态" clearable @change="page=1;load()"><el-option v-for="(v,k) in orderStates" :key="k" :value="k" :label="v"/></el-select><el-button :loading="loading" @click="load">刷新</el-button></div>
   <el-alert v-if="error" :title="error" type="error" :closable="false" />
   <el-table v-if="tab==='campaigns'" v-loading="loading" :data="campaigns" stripe>
@@ -19,6 +19,7 @@
    <el-table-column label="收货信息" min-width="230"><template #default="{row}"><template v-if="row.address">{{row.receiver}} · {{row.mobile}}<div>{{row.address}}</div></template><span v-else class="muted">等待中奖用户提交地址</span></template></el-table-column><el-table-column label="物流" min-width="180"><template #default="{row}">{{row.carrier}} {{row.trackingNo}}<div class="muted">{{row.shippedAt?date(row.shippedAt):'尚未发货'}}</div></template></el-table-column><el-table-column label="操作" width="120" fixed="right"><template #default="{row}"><el-button v-if="row.status==='pending'" link type="primary" @click="shipping=row;carrier='';trackingNo=''">登记发货</el-button><span v-else class="muted">{{row.status==='completed'?'已完成履约':'等待下一步'}}</span></template></el-table-column>
   </el-table>
   <div class="rewards-pager"><el-button :disabled="loading||page===1" @click="page--;load()">上一页</el-button><span>第 {{page}} 页</span><el-button :disabled="loading||count<20" @click="page++;load()">下一页</el-button></div>
+  </div>
   <el-dialog class="rewards-dialog" v-model="editing" :title="form.id?'编辑活动草稿':'创建积分活动'" width="760px" append-to-body destroy-on-close :close-on-click-modal="false" :close-on-press-escape="!busy" :show-close="!busy">
    <el-form ref="formRef" :model="form" label-position="top" @submit.prevent="save">
     <div class="rewards-form-grid"><el-form-item label="活动标题" required><el-input v-model="form.title" maxlength="120"/></el-form-item><el-form-item label="玩法" required><el-select v-model="form.kind"><el-option value="pool" label="大奖池 · 截止后等概率开奖"/><el-option value="wheel" label="幸运转盘 · 即转即开"/></el-select></el-form-item><el-form-item label="实物奖品名称" required><el-input v-model="form.prizeName" maxlength="120"/></el-form-item><el-form-item label="奖品图片（HTTPS，可选）"><el-input v-model="form.image" placeholder="https://…"/></el-form-item>
@@ -32,6 +33,7 @@
  </div>
 </template>
 <script setup lang="ts">
+import PageHeader from '@/components/PageHeader.vue'
 import {computed,onMounted,reactive,ref} from 'vue'
 import {ElMessage,ElMessageBox,type FormInstance} from 'element-plus'
 import client from '@/api/client'
@@ -52,7 +54,8 @@ async function ship(){if(!shipping.value)return;if(!carrier.value.trim()||tracki
 onMounted(load)
 </script>
 <style scoped>
-.rewards-banner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:28px;border-radius:18px;background:linear-gradient(120deg,var(--admin-surface-muted),var(--admin-surface));border:1px solid var(--admin-border-strong);margin-bottom:20px}.rewards-banner span{font-size: var(--type-size-micro);letter-spacing:2px;color:var(--admin-accent)}.rewards-banner h1{font:600 25px/1.4 var(--font-serif);margin:10px 0;color:var(--admin-text)}.rewards-banner p{color:var(--admin-text-secondary);font-size: var(--type-size-label);margin:0}.rewards-toolbar{display:flex;gap:12px;margin:18px 0}.rewards-toolbar .el-select{width:210px}.rewards-pager{display:flex;gap:14px;align-items:center;justify-content:center;margin:24px 0}.muted{font-size: var(--type-size-caption);color:var(--admin-text-secondary);line-height:1.8}.rewards-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}.rewards-form-grid :deep(.el-input-number),.rewards-form-grid :deep(.el-date-editor){width:100%}.rewards-codes{display:flex;flex-wrap:wrap;gap:8px}.rewards-digest{overflow-wrap:anywhere;font-size: var(--type-size-caption);color:var(--admin-text-secondary)}@media(max-width:640px){.rewards-banner{align-items:flex-start;flex-direction:column;padding:20px}.rewards-form-grid{grid-template-columns:1fr}}
+.rewards-admin > .el-alert { margin-bottom: var(--admin-section-gap); }
+.rewards-toolbar{display:flex;gap:12px;margin:18px 0}.rewards-toolbar .el-select{width:210px}.rewards-pager{display:flex;gap:14px;align-items:center;justify-content:center;margin:24px 0}.muted{font-size: var(--type-size-caption);color:var(--admin-text-secondary);line-height:1.8}.rewards-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}.rewards-form-grid :deep(.el-input-number),.rewards-form-grid :deep(.el-date-editor){width:100%}.rewards-codes{display:flex;flex-wrap:wrap;gap:8px}.rewards-digest{overflow-wrap:anywhere;font-size: var(--type-size-caption);color:var(--admin-text-secondary)}@media(max-width:640px){.rewards-form-grid{grid-template-columns:1fr}}
 </style>
 
 <style>

@@ -35,8 +35,8 @@ html .el-form-item__label { flex-shrink: 0; }
   html .el-pagination .el-pagination__jump { margin-left: 0; }
   html .el-pagination .el-pager { display: flex; flex-wrap: wrap; }
   /* Wide fixed action columns otherwise cover the entire phone table. */
-  html .el-table :is(.el-table-fixed-column--left, .el-table-fixed-column--right) { position: static !important; }
-  html .el-table :is(.el-table-fixed-column--left, .el-table-fixed-column--right)::before { display: none; }
+  html .el-table .el-table__cell:is(.el-table-fixed-column--left, .el-table-fixed-column--right) { position: static !important; }
+  html .el-table .el-table__cell:is(.el-table-fixed-column--left, .el-table-fixed-column--right)::before { display: none; }
   html .el-table__body-wrapper { overscroll-behavior-inline: contain; }
   html .el-descriptions__table, html .el-descriptions__table tbody, html .el-descriptions__table tr { display: block; width: 100%; }
   html .el-descriptions__table .el-descriptions__cell { display: block; width: 100% !important; min-width: 0; overflow-wrap: anywhere; }

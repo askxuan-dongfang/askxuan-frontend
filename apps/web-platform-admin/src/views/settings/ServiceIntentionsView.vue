@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHeader from '@/components/PageHeader.vue'
 import {computed,onMounted,ref,watch} from 'vue'
 import client from '@/api/client'
 import {ElMessage} from 'element-plus'
@@ -14,10 +15,9 @@ const rowKey = (r: Row) => `${r.kind}:${r.id}:${r.serviceCode}`
 onMounted(load)
 </script>
 <template>
-  <section><h1>心愿与服务关联</h1>
-    <p>七个心愿入口保持固定。新服务自动继承标准规则；提供者可单独调整，手动空选表示不进入心愿页。上下架与资质校验仍然生效。</p>
+  <section class="dfx-page service-intentions"><PageHeader title="心愿与服务关联" subtitle="七个心愿入口保持固定。新服务自动继承标准规则；提供者可单独调整，手动空选表示不进入心愿页。上下架与资质校验仍然生效。" />
     <el-alert v-if="error" :title="error" type="error" :closable="false"/><el-button v-if="error" @click="load">重试</el-button>
-    <el-tabs v-model="tab"><el-tab-pane label="标准服务规则" name="rule"/><el-tab-pane label="提供者服务" name="provider"/></el-tabs>
+    <div class="dfx-card"><el-tabs v-model="tab"><el-tab-pane label="标准服务规则" name="rule"/><el-tab-pane label="提供者服务" name="provider"/></el-tabs>
     <el-input v-model="keyword" clearable placeholder="搜索名称、编码或服务" style="max-width:360px;margin-bottom:16px"/>
     <el-table :data="shown" v-loading="busy" :row-key="rowKey">
       <el-table-column prop="name" label="提供者 / 规则" min-width="180"/>
@@ -28,5 +28,6 @@ onMounted(load)
       <el-table-column label="操作" width="180"><template #default="{row}"><el-button :disabled="busy" @click="save(row)">保存</el-button><el-button v-if="row.kind!=='rule'&&row.mode==='custom'" link :disabled="busy" @click="save(row,'inherit')">恢复默认</el-button></template></el-table-column>
     </el-table>
     <el-pagination v-model:current-page="page" :page-size="20" :total="filtered.length" layout="total, prev, pager, next" style="margin-top:20px"/>
+    </div>
   </section>
 </template>

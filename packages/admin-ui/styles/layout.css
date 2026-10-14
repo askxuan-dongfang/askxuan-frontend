@@ -1,0 +1,108 @@
+/* Shared geometry for both administration applications. Theme colors stay in index.css. */
+html:root {
+  --admin-page-padding: 24px;
+  --admin-card-padding: 20px;
+  --admin-section-gap: 20px;
+  --admin-field-gap: 12px;
+  --admin-action-gap: 8px;
+  --admin-control-height: 36px;
+  --el-component-size: var(--admin-control-height);
+  --el-component-size-small: 28px;
+  --el-component-size-large: 40px;
+}
+
+/* Older Element Plus releases hard-code 32px on buttons/selects, while inputs
+   read --el-component-size. Resolve all three from the same size contract. */
+html :is(.el-button, .el-select, .el-input-number, .el-cascader, .el-range-editor, .el-radio-group) { --aui-control-height: var(--admin-control-height); }
+html :is(.el-button--small, .el-select--small, .el-input-number--small, .el-cascader--small, .el-range-editor--small, .el-radio-group--small) { --aui-control-height: var(--el-component-size-small); }
+html :is(.el-button--large, .el-select--large, .el-input-number--large, .el-cascader--large, .el-range-editor--large, .el-radio-group--large) { --aui-control-height: var(--el-component-size-large); }
+html .el-button:not(.is-link):not(.is-text),
+html .el-input-number, html .el-range-editor { height: var(--aui-control-height); }
+html .el-select__wrapper { min-height: var(--aui-control-height); }
+html .el-input-number, html .el-cascader { line-height: var(--aui-control-height); }
+html .el-radio-button__inner { min-height: var(--aui-control-height); display: inline-flex; align-items: center; justify-content: center; }
+@media (min-width: 768px) {
+  html .el-form:not(.el-form--label-top) .el-form-item:not(.el-form-item--small):not(.el-form-item--large) > .el-form-item__label {
+    height: var(--admin-control-height);
+    line-height: var(--admin-control-height);
+  }
+}
+
+/* Page-local styles must not redefine the spacing of shared surfaces. */
+html .ax-admin-main :is(.df-card, .dfx-card) {
+  padding: var(--admin-card-padding);
+  border-radius: 12px;
+}
+html .ax-admin-main .el-card {
+  --el-card-padding: var(--admin-card-padding);
+  border-radius: 12px;
+}
+html .ax-admin-main .el-card__body { padding: var(--admin-card-padding); }
+html .ax-admin-main .el-card__header { padding: 16px var(--admin-card-padding); }
+
+html .ax-admin-main :is(.filter-bar, .filter-row, .toolbar, .table-toolbar, .search-bar, .rewards-toolbar, .commerce-filter, .aui-actions) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-field-gap);
+}
+html .ax-admin-main :is(.filter-bar, .filter-row, .toolbar, .table-toolbar, .search-bar, .rewards-toolbar) {
+  margin-block: 0 var(--admin-section-gap);
+}
+html .ax-admin-main .el-form--inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--admin-field-gap);
+}
+html .ax-admin-main .el-form--inline > .el-form-item { min-width: 0; margin: 0; }
+html .ax-admin-main .el-form--inline .el-form-item__content { gap: var(--admin-action-gap); }
+
+/* Element Plus adds sibling margins; flex containers already provide the gap. */
+html :is(.aui-page-header__actions, .filter-bar, .filter-row, .toolbar, .table-toolbar, .search-bar, .rewards-toolbar, .commerce-filter, .aui-actions, .form-actions, .el-dialog__footer, .el-drawer__footer) > .el-button + .el-button,
+html .el-form--inline .el-form-item__content > .el-button + .el-button { margin-left: 0; }
+
+html .ax-admin-main .el-table .cell:has(> .el-button) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px var(--admin-action-gap);
+}
+html .ax-admin-main .el-table .cell > .el-button + .el-button { margin-left: 0; }
+html .ax-admin-main .el-table .cell > .el-button.is-link { padding-inline: 0; }
+html .ax-admin-main .el-table th.el-table__cell { height: 44px; }
+html .ax-admin-main .el-table td.el-table__cell { height: 48px; }
+
+html :is(.el-dialog__footer, .el-drawer__footer) {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--admin-action-gap);
+}
+html .ax-admin-main :is(.pagination-wrap, .pagination, .pager, .rewards-pager, .aui-pagination) {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--admin-action-gap);
+  margin-top: var(--admin-section-gap);
+}
+html .ax-admin-main .pager { padding: 0; }
+html .ax-admin-main .el-pagination { justify-content: flex-end; }
+
+.aui-panel-stack { display: grid; gap: var(--admin-section-gap); }
+.aui-section-title { margin: 0 0 16px; font-size: var(--type-size-card); }
+.aui-field-hint { color: var(--admin-text-secondary); font-size: var(--type-size-caption); line-height: 1.6; }
+
+@media (max-width: 767px) {
+  html:root {
+    --admin-page-padding: 16px 12px 24px;
+    --admin-card-padding: 16px;
+    --admin-section-gap: 16px;
+    --admin-control-height: 40px;
+  }
+  html .ax-admin-main .el-form--inline { width: 100%; align-items: stretch; }
+  html .ax-admin-main .el-form--inline > .el-form-item { width: 100%; }
+  html .ax-admin-main :is(.pagination-wrap, .pagination, .pager, .rewards-pager, .aui-pagination, .el-pagination) { justify-content: flex-start; }
+}
