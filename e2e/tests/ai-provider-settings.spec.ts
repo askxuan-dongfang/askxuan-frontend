@@ -19,7 +19,7 @@ async function setup(page:Page, options:{role?:string;failSave?:boolean;failTest
  return calls;
 }
 test('secret replacement, connection probe and reviewed save',async({page})=>{
- const calls=await setup(page);await page.goto('/settings/ai');await expect(page.getByRole('heading',{name:'模型与连接',exact:true})).toBeVisible();
+ const calls=await setup(page);await page.goto('/ai/connections/legacy');await expect(page.getByRole('heading',{name:'模型与连接',exact:true})).toBeVisible();
  const key=page.getByLabel('API Key',{exact:true});await expect(key).toHaveValue('');await expect(key).toHaveAttribute('type','password');
  await key.fill('fixture-replacement-key');await page.getByRole('button',{name:'测试连接与获取模型',exact:true}).click();await expect(page.getByRole('status')).toContainText('连接成功');
  expect(calls.filter(c=>c.method==='PUT')).toHaveLength(0);
@@ -30,20 +30,20 @@ test('secret replacement, connection probe and reviewed save',async({page})=>{
  await page.screenshot({path:'artifacts/ai-settings/desktop.png',fullPage:true});await page.reload();await expect(page.locator('.ai-active-card')).toContainText('v1');await expect(key).toHaveValue('');
 });
 test('mobile form and action bar remain within viewport',async({page})=>{
- await page.setViewportSize({width:390,height:900});await setup(page);await page.goto('/settings/ai');await expect(page.locator('.ai-active-card')).toBeVisible();
+ await page.setViewportSize({width:390,height:900});await setup(page);await page.goto('/ai/connections/legacy');await expect(page.locator('.ai-active-card')).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();await page.getByRole('button',{name:'保存并生效',exact:true}).scrollIntoViewIfNeeded();await expect(page.getByRole('button',{name:'保存并生效',exact:true})).toBeVisible();await page.screenshot({path:'artifacts/ai-settings/mobile.png',fullPage:true});
 });
 test('failed probe and stale save never show applied state',async({page})=>{
- const calls=await setup(page,{failSave:true,failTest:true});await page.goto('/settings/ai');await page.getByLabel('API Key',{exact:true}).fill('fixture-draft-key');
+ const calls=await setup(page,{failSave:true,failTest:true});await page.goto('/ai/connections/legacy');await page.getByLabel('API Key',{exact:true}).fill('fixture-draft-key');
  await page.getByRole('button',{name:'测试连接与获取模型',exact:true}).click();await expect(page.locator('.ai-test-error')).toContainText('连接测试失败');expect(calls.filter(c=>c.method==='PUT')).toHaveLength(0);
  await page.getByRole('button',{name:'保存并生效',exact:true}).click();await page.getByRole('button',{name:'确认生效',exact:true}).click();await expect(page.locator('.el-message').last()).toContainText('其他管理员');await expect(page.locator('.ai-active-card')).toContainText('v0');await expect(page.getByLabel('API Key',{exact:true})).toHaveValue('fixture-draft-key');
  await page.getByRole('button',{name:'撤销修改',exact:true}).click();await expect(page.getByLabel('API Key',{exact:true})).toHaveValue('');
 });
-for(const role of ['shop_admin','platform_service'])test(`${role} cannot enter provider settings`,async({page})=>{const calls=await setup(page,{role});await page.goto('/settings/ai');await expect(page).not.toHaveURL(/settings\/ai/);expect(calls.filter(c=>c.path.includes('/ai/admin/'))).toHaveLength(0);await expect(page.getByText('AI 模型设置',{exact:true})).toHaveCount(0);});
-test('storage not enabled is explicitly read-only',async({page})=>{await setup(page,{writable:false});await page.goto('/settings/ai');await expect(page.getByText('当前为只读模式，服务器尚未启用配置持久化')).toBeVisible();await expect(page.getByLabel('API Key',{exact:true})).toBeDisabled();await expect(page.getByRole('button',{name:'保存并生效',exact:true})).toBeDisabled();});
+for(const role of ['shop_admin','platform_service'])test(`${role} cannot enter provider settings`,async({page})=>{const calls=await setup(page,{role});await page.goto('/ai/connections/legacy');await expect(page).not.toHaveURL(/settings\/ai/);expect(calls.filter(c=>c.path.includes('/ai/admin/'))).toHaveLength(0);await expect(page.getByText('AI 模型设置',{exact:true})).toHaveCount(0);});
+test('storage not enabled is explicitly read-only',async({page})=>{await setup(page,{writable:false});await page.goto('/ai/connections/legacy');await expect(page.getByText('当前为只读模式，服务器尚未启用配置持久化')).toBeVisible();await expect(page.getByLabel('API Key',{exact:true})).toBeDisabled();await expect(page.getByRole('button',{name:'保存并生效',exact:true})).toBeDisabled();});
 
 test('Agent Plan selects the subscription root, follows model defaults and persists only after review', async ({page}) => {
- const calls=await setup(page);await page.goto('/ai/connections/models');
+ const calls=await setup(page);await page.goto('/ai/connections/legacy');
  await page.locator('.el-select:has(input[aria-label="Provider"]) .el-select__wrapper').click();await page.getByRole('option',{name:'火山引擎 · 火山方舟',exact:true}).click();
  await page.locator('.el-select:has(input[aria-label="火山接入方式"]) .el-select__wrapper').click();await page.getByRole('option',{name:'Agent Plan · 套餐额度',exact:true}).click();
  await expect(page.getByLabel('接口地址',{exact:true})).toHaveValue('https://ark.cn-beijing.volces.com/api/plan/v3');

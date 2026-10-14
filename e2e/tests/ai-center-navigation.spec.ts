@@ -9,6 +9,7 @@ async function setup(page: Page, role = 'platform_super') {
     const path = new URL(route.request().url()).pathname; calls.push(path)
     let data: any = { list: [], total: 0 }
     if (path.endsWith('/ai/admin/agent')) data = { runtimeMode: 'harness', revision: 1, draftSaved: true, activeVersion: 1, draft: { name: '问事助手', instruction: '测试职责', model: '', maxOutputTokens: 8192, skills: [{ code: 'general', enabled: true, prompt: '', useTool: false }], evaluation: [] }, catalog: [{ code: 'general', name: '日常问事', description: '测试', version: '1', inputSchema: { fields: [] }, toolName: '', toolAvailable: false }], versions: [], audit: [], tested: true, liveEnabled: true, persistentRecovery: true, rollout: { versionId: 1, stableVersion: 1, percentage: 100, revision: 1 } }
+    if (path.endsWith('/ai/admin/model-library')) data = { list: [], uses: {chat:'',vision:'',embedding:'',rerank:'',document:''}, revision:1, writable:true, defaultChat:'deepseek-flash', warnings:[] }
     if (path.endsWith('/ai/admin/provider')) data = { provider: 'deepseek', baseUrl: 'https://api.deepseek.com', defaultModel: 'deepseek-flash', visionModel: '', enabledModels: [], thinkingEnabled: true, maxOutputTokens: 8192, revision: 1, hasApiKey: true, writable: true, source: 'platform', history: [] }
     await route.fulfill({ json: { code: 0, data } })
   })
@@ -30,19 +31,26 @@ test('development routes retain the shared draft and guard exits', async ({ page
   await page.getByRole('button', { name: '离开', exact: true }).click()
   await expect(page).toHaveURL(/\/ai\/connections\/models$/)
 })
-test('connection tabs preserve the draft and guard leaving connections', async ({ page }) => {
+test('model library redirects bookmarks and supports connection navigation', async ({ page }) => {
   await setup(page); await page.goto('/settings/ai?from=bookmark')
   await expect(page).toHaveURL(/\/ai\/connections\/models\?from=bookmark$/)
-  await page.getByLabel('API Key', { exact: true }).fill('fixture-unsaved')
-  await page.getByRole('link', { name: '联网搜索', exact: true }).click()
-  await expect(page.getByRole('heading', { name: '联网搜索', exact: true })).toBeVisible()
-  await expect(page.getByRole('heading', { name: '连接大模型', exact: true })).toBeHidden()
-  await page.getByRole('link', { name: '大模型', exact: true }).click()
-  await expect(page.getByLabel('API Key', { exact: true })).toHaveValue('fixture-unsaved')
-  await page.getByRole('link', { name: '知识模型', exact: true }).click()
-  await expect(page.getByRole('dialog', { name: '离开设置页面' })).toBeVisible()
-  await page.getByRole('button', { name: '继续编辑', exact: true }).click()
-  await expect(page.getByLabel('API Key', { exact: true })).toHaveValue('fixture-unsaved')
+  await page.getByRole('button', {name:'添加模型',exact:true}).click()
+  await page.getByLabel('模型显示名称', {exact:true}).fill('尚未保存')
+  await page.getByRole('button', {name:'取消',exact:true}).click()
+  await page.getByRole('link', {name:'联网搜索',exact:true}).click()
+  await expect(page.getByRole('heading', {name:'联网搜索',exact:true})).toBeVisible()
+  await page.getByRole('link', {name:'模型库',exact:true}).click()
+  await expect(page.getByRole('heading', {name:'模型库',exact:true})).toBeVisible()
+  await page.goto('/ai/connections/knowledge')
+  await expect(page).toHaveURL(/\/ai\/connections\/models$/)
+})
+test('leaving the original connection for the library guards unsaved keys', async ({page}) => {
+  await setup(page); await page.goto('/ai/connections/legacy')
+  await page.getByLabel('API Key', {exact:true}).fill('fixture-unsaved')
+  await page.getByRole('link', {name:'模型库',exact:true}).click()
+  await expect(page.getByRole('dialog', {name:'离开设置页面'})).toBeVisible()
+  await page.getByRole('button', {name:'继续编辑',exact:true}).click()
+  await expect(page.getByLabel('API Key', {exact:true})).toHaveValue('fixture-unsaved')
 })
 for (const [path, title] of [['agent','智能体编排'],['tools','技能与工具'],['debug','调试工作台'],['evaluations','质量评测'],['releases','版本与发布'],['runs','运行监控'],['knowledge','知识中心']] ) {
   test(`direct entry and reload: ${path}`, async ({ page }) => {
