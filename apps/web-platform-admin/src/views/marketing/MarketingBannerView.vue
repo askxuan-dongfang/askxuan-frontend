@@ -30,11 +30,11 @@
       <el-form label-position="top" :disabled="saving">
         <el-form-item label="标题" required><el-input v-model="form.title" maxlength="64" show-word-limit placeholder="本次推荐的内容标题"/></el-form-item>
         <el-form-item label="展示位置"><el-select v-model="form.placement" style="width:100%"><el-option label="信众首页" value="customer_home"/></el-select></el-form-item>
-        <el-form-item label="海报图片"><ImageUploader v-model="form.imageUrl"/><div class="muted">建议横图，文字集中在主体区域；上架前需要可正常加载的图片。</div></el-form-item>
+        <el-form-item label="海报图片"><ImageUploader v-model="form.imageUrl"/><div class="muted">建议横图，文字集中在主体区域；上架前需要可正常加载的图片，底部留出轮播指示点的位置。</div></el-form-item>
         <el-form-item label="跳转内容"><el-select v-model="form.linkType" style="width:100%" @change="form.linkValue=''">
           <el-option v-for="target in promotionTargets" :key="target.value" :value="target.value" :label="target.label"/>
         </el-select></el-form-item>
-        <el-form-item v-if="!['ai','diy'].includes(form.linkType)" label="跳转目标"><el-input v-model="form.linkValue" :placeholder="promotionTargets.find(t=>t.value===form.linkType)?.placeholder"/></el-form-item>
+        <el-form-item v-if="!['ai','diy'].includes(form.linkType)" label="跳转目标"><el-input v-model="form.linkValue" :placeholder="promotionTargets.find(t=>t.value===form.linkType)?.placeholder" maxlength="255"/><div v-if="form.linkType==='web'" class="muted">填写完整 HTTPS 网址，点击海报将在新窗口打开，并显示外部网页提示。</div></el-form-item>
         <el-form-item label="排序"><el-input-number v-model="form.sort" :min="0" :max="99999" :precision="0"/></el-form-item>
         <div class="time-fields">
           <el-form-item label="开始时间（北京时间，可不填）"><el-date-picker v-model="form.startTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="上架后立即开始" style="width:100%"/></el-form-item>
@@ -45,7 +45,7 @@
     </el-dialog>
     <el-dialog v-model="previewVisible" title="首页展示预览" width="min(640px, calc(100vw - 32px))" append-to-body>
       <template v-if="preview">
-        <div class="promotion-preview"><img v-if="preview.imageUrl" :key="preview.imageUrl" :src="preview.imageUrl" alt="广告海报预览" @load="imageReady=true" @error="imageReady=false"/><div><small>精选推荐</small><h2>{{preview.title}}</h2><span>查看详情 ↗</span></div></div>
+        <div class="promotion-preview"><img v-if="preview.imageUrl" :key="preview.imageUrl" :src="preview.imageUrl" alt="广告海报预览" @load="imageReady=true" @error="imageReady=false"/><div><small>{{preview.linkType==='web'?'友情推荐 · 外部网页':'精选推荐'}}</small><h2>{{preview.title}}</h2><span>{{preview.linkType==='web'?'前往网站':'查看详情'}} ↗</span></div></div>
         <p>{{targetLabel(preview.linkType)}} · {{promotionHref(preview)||'未配置有效跳转'}}</p>
         <p class="muted">{{preview.startTime||'上架后立即开始'}} 至 {{preview.endTime||'长期展示'}}（北京时间）</p>
         <el-alert v-if="publishIssue" :title="publishIssue" type="warning" :closable="false"/>

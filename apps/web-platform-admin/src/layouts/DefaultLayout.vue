@@ -27,7 +27,8 @@ const allMenuGroups = [
   {title:'DIY 与加持服务',icon:'MagicStick',children:[
     {path:'/commerce/materials',title:'DIY 材料'},
     {path:'/commerce/services',title:'加持服务'},
-    {path:'/commerce/diy-orders',title:'DIY 订单'}
+    {path:'/commerce/diy-orders',title:'DIY 订单'},
+    {path:'/commerce/creator-rewards',title:'创作奖励与提现'}
   ]},
   {title:'履约与售后',icon:'Van',children:[
     {path:'/commerce/orders',title:'商城订单'},
@@ -74,7 +75,10 @@ const allMenuGroups = [
       { path: '/marketing/activity', title: '活动管理' },
       { path: '/marketing/rewards', title: '积分活动与奖品' },
       { path: '/marketing/coupon', title: '优惠券管理' },
-      { path: '/settings/taxonomy', title: '首页分类' }
+      { path: '/settings/taxonomy', title: '首页分类' },
+      { path: '/settings/regions', title: '地区标签' },
+      { path: '/settings/directory-tags', title: '筛选标签' },
+      {path:'/settings/service-intentions',title:'心愿与服务关联'}
     ]
   },
   {

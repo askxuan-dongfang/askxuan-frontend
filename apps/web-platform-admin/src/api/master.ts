@@ -3,6 +3,7 @@ import client from './client'
 import type { Master, MasterAudit, PageResult } from '@/types'
 
 export interface MasterListParams {
+  regionCode?: string
   beliefCode?: string
   sect?: string
   type?: string

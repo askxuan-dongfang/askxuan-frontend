@@ -3,6 +3,7 @@ import client from './client'
 import type { Temple, TempleDetail, TempleAudit, BeliefProfile, PageResult } from '@/types'
 
 export interface TempleListParams {
+  regionCode?: string
   beliefCode?: string
   sect?: string
   type?: string

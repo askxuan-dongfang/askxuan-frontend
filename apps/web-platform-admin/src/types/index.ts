@@ -102,6 +102,9 @@ export interface AdminUserDetailResp {
 
 // ========== Temple ==========
 export interface Temple {
+  regionCode?: string
+  regionName?: string
+  regionInherited?: boolean
   id: string
   name: string
   region: string
@@ -167,6 +170,9 @@ export interface TempleAudit {
 
 // ========== Master ==========
 export interface Master {
+  regionCode?: string
+  regionName?: string
+  regionInherited?: boolean
   id: string
   dharmaName: string
   layName: string

@@ -24,6 +24,8 @@ const routes: RouteRecordRaw[] = [
     children: [
       {path:'onboarding/review',name:'onboarding-review',component:()=>import('@/views/OnboardingReviewView.vue'),meta:{title:'认证与入驻审核',roles:['platform_super']}},
       ...commerceRoutes,
+ {path:'commerce/creator-rewards',name:'CreatorRewards',component:()=>import('@/commerce/views/CreatorRewardsView.vue'),meta:{title:'创作奖励与提现',parent:'商城与权益',roles:['platform_super'],hidden:false}},
+ {path:'settings/service-intentions',name:'ServiceIntentions',component:()=>import('@/views/settings/ServiceIntentionsView.vue'),meta:{title:'心愿与服务关联',parent:'系统设置',roles:['platform_super']}},
       // 概览
       {
         path: 'dashboard',
@@ -154,6 +156,8 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '优惠券管理', parent: '营销管理' }
       },
       // 系统设置
+      {path:'settings/directory-tags',name:'SettingsDirectoryTags',component:()=>import('@/views/settings/SettingsDirectoryTagsView.vue'),meta:{title:'筛选标签',parent:'系统设置',roles:['platform_super']}},
+      {path:'settings/regions',name:'SettingsRegions',component:()=>import('@/views/settings/SettingsRegionsView.vue'),meta:{title:'地区标签',parent:'系统设置',roles:['platform_super']}},
       {path:'ai',component:()=>import('@/views/ai/AgentCenterLayout.vue'),redirect:'/ai/agent',meta:{title:'问事智能体开发中心',roles:['platform_super']},children:agentCenterRoutes},
       {path:'ai/operations',name:'AgentOperations',redirect:to=>({path:'/ai/agent',query:to.query,hash:to.hash}),meta:{roles:['platform_super']}},
       {path:'settings/ai',name:'SettingsAi',redirect:to=>({path:'/ai/connections/models',query:to.query,hash:to.hash}),meta:{roles:['platform_super']}},

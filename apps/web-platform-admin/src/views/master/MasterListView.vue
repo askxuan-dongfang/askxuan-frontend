@@ -7,6 +7,7 @@
     </PageHeader>
 
     <div class="dfx-card filter-bar">
+      <el-select v-model="query.regionCode" placeholder="地区标签" clearable style="width:140px"><el-option v-for="r in regions" :key="r.code" :label="r.name" :value="r.code"/></el-select>
       <el-select v-model="query.beliefCode" placeholder="一级流派" clearable style="width: 140px">
         <el-option v-for="item in beliefs" :key="item.code" :label="item.name" :value="item.code" />
       </el-select>
@@ -78,6 +79,7 @@
 		<el-table-column label="平台状态" width="100">
 		  <template #default="{ row }"><StatusTag :status="row.platformStatus" /></template>
 		</el-table-column>
+        <el-table-column label="地区标签" min-width="165"><template #default="{row}"><span>{{row.regionName||'未设置'}}</span><ProviderRegionSelect kind="master" :id="row.id" :name="row.dharmaName" :code="row.regionCode" :inherited="row.regionInherited" :temple-bound="row.manageBy==='temple'" @updated="loadData"/></template></el-table-column>
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="router.push(`/master/detail/${row.id}`)">详情/编辑</el-button>
@@ -118,6 +120,8 @@ const router = useRouter()
 import { ref, reactive, onMounted } from 'vue'
 import { Search, Refresh, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import ProviderRegionSelect from '@/components/ProviderRegionSelect.vue'
+import {getRegions,type RegionTag} from '@/api/regions'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
@@ -131,7 +135,9 @@ const serviceNameMap = ref<Record<string, string>>({})
 const loading = ref(false)
 const list = ref<Master[]>([])
 const total = ref(0)
-const query = reactive({ beliefCode: '', templeId: '', sect: '', type: '', page: 1, size: 20 })
+const regions=ref<RegionTag[]>([])
+onMounted(async()=>{regions.value=(await getRegions()).list||[]})
+const query = reactive({ regionCode:'', beliefCode: '', templeId: '', sect: '', type: '', page: 1, size: 20 })
 const consultVisible = ref(false)
 const consultSaving = ref(false)
 const consultMasterId = ref('')
@@ -158,6 +164,7 @@ function onSearch() {
   loadData()
 }
 function onReset() {
+  query.regionCode=''
   query.beliefCode = ''
   query.templeId = ''
   query.sect = ''

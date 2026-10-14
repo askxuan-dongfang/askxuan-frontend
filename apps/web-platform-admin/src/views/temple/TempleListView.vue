@@ -7,10 +7,11 @@
     </PageHeader>
 
     <div class="dfx-card filter-bar">
+      <el-select v-model="query.regionCode" placeholder="地区标签" clearable style="width:140px"><el-option v-for="r in regions" :key="r.code" :label="r.name" :value="r.code"/></el-select>
       <el-select v-model="query.beliefCode" placeholder="一级流派" clearable style="width: 140px">
         <el-option v-for="item in beliefOptions" :key="item.code" :label="item.name" :value="item.code" />
       </el-select>
-      <el-input v-model="query.region" placeholder="地区" clearable style="width: 140px" />
+      <el-input v-model="query.region" placeholder="城市或省份" clearable style="width: 140px" />
       <el-select v-model="query.sect" placeholder="宗派" clearable style="width: 140px">
         <el-option v-for="s in sects" :key="s" :label="s" :value="s" />
       </el-select>
@@ -36,7 +37,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="地区" prop="region" width="110" />
+        <el-table-column label="城市或省份" prop="region" width="110" />
         <el-table-column label="类型" prop="type" width="100" />
         <el-table-column label="一级流派" width="110">
           <template #default="{ row }">{{ beliefName(row.beliefCode) }}</template>
@@ -55,6 +56,7 @@
             <StatusTag :status="row.status" />
           </template>
         </el-table-column>
+        <el-table-column label="地区标签" min-width="165"><template #default="{row}"><span>{{row.regionName||'未设置'}}</span><ProviderRegionSelect kind="temple" :id="row.id" :name="row.name" :code="row.regionCode" :inherited="row.regionInherited" :temple-bound="row.manageBy==='temple'" @updated="loadData"/></template></el-table-column>
         <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="$router.push(`/temple/detail/${row.id}`)">详情</el-button>
@@ -81,6 +83,8 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search, Refresh, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import ProviderRegionSelect from '@/components/ProviderRegionSelect.vue'
+import {getRegions,type RegionTag} from '@/api/regions'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
@@ -96,7 +100,9 @@ const loading = ref(false)
 const router = useRouter()
 const list = ref<Temple[]>([])
 const total = ref(0)
-const query = reactive({ beliefCode: '', region: '', sect: '', type: '', page: 1, size: 20 })
+const regions=ref<RegionTag[]>([])
+onMounted(async()=>{regions.value=(await getRegions()).list||[]})
+const query = reactive({ regionCode:'', beliefCode: '', region: '', sect: '', type: '', page: 1, size: 20 })
 
 function beliefName(code: string) { return beliefOptions.value.find((item) => item.code === code)?.name || code }
 
@@ -121,6 +127,7 @@ function onSearch() {
   loadData()
 }
 function onReset() {
+  query.regionCode=''
   query.beliefCode = ''
   query.region = ''
   query.sect = ''
