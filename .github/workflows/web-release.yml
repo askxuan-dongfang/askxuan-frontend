@@ -37,6 +37,13 @@ jobs:
           for app in web-platform-admin web-temple-admin; do
             (cd "apps/$app" && npm ci && npm run build)
           done
+      - name: Verify model library and connection workflows on pull requests
+        if: github.event_name == 'pull_request'
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test --config playwright.ai-settings.config.ts
       - name: Build admin web components with exact source provenance
         if: github.event_name != 'pull_request'
         run: python3 .ci-tools/scripts/ci/release.py web --frontend .

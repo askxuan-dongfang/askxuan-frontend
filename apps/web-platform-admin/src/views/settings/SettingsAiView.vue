@@ -76,7 +76,7 @@ async function save() {
 }
 function reset() { if (saved.value) useSaved(saved.value); connectionChanged() }
 onBeforeRouteLeave(async to => {
-  if (['/ai/connections/models','/ai/connections/search'].includes(to.path)) return true
+  if (['/ai/connections/legacy','/ai/connections/search'].includes(to.path)) return true
   if (!dirty.value || loading.value || !saved.value) return true
   try { await ElMessageBox.confirm('当前修改尚未保存，离开后将丢弃。', '离开设置页面', { confirmButtonText: '离开', cancelButtonText: '继续编辑' }); return true } catch { return false }
 })
