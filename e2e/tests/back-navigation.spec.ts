@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import {emptyCreatorWallet} from '../fixtures/creator-wallet';
 const bead = { position:0, materialId:1, materialName:'测试木珠', spec:'10mm', unitPrice:10, subtype:'wood', diameterMm:10 };
 const design = { id:1, userId:'42', name:'返回测试手串', status:'private', revision:1, totalPrice:10, designData:JSON.stringify({version:2,wristSizeMm:160,beads:[bead],items:[{...bead,quantity:1}]}) };
 async function setup(page: Page) {
@@ -12,6 +13,7 @@ async function setup(page: Page) {
   if(path.endsWith('/bookings/journeys'))data={list:[],total:0,counts:{active:0,receipt:0,complete:0,confirmed:0,executing:0,revision:0}};
   else if(path.endsWith('/users/profile'))data={userId:42,nickname:'返回测试用户',mobile:'',avatar:''};
   else if(path.endsWith('/points'))data={balance:0};
+  else if(path.endsWith('/diy/creator-wallet'))data=emptyCreatorWallet();
   else if(path.endsWith('/payments/wallet'))data={summary:{paidCents:0,refundedCents:0,refundingCents:0},list:[],total:0,page:1,pageSize:20,mode:'channel'};
   else if(path.endsWith('/payments/wallet/balance'))data={availableCents:0,heldCents:0,enabled:true,channels:[],entries:[],recharges:[],page:1,hasMore:false};
   else if(path.endsWith('/diy/designs/1'))data=design;
@@ -68,6 +70,6 @@ test('repeated back clicks in a single pending navigation do not skip the galler
 });
 test('global BackLink uses a history pop and direct fallback does not add entries',async({page})=>{
  await setup(page);await page.goto('/c/profile');await page.locator('a[href="/c/wallet"]').first().click();await expect(page).toHaveURL(/\/c\/wallet$/);
- await page.locator('.wallet-top .back-button').click();await expect(page).toHaveURL(/\/c\/profile$/);expect(await index(page)).toBe(0);
- await page.goto('/c/wallet');await page.locator('.wallet-top .back-button').click();await expect(page).toHaveURL(/\/c\/profile$/);expect(await index(page)).toBe(0);
+ await page.getByRole('link',{name:'返回我的',exact:true}).click();await expect(page).toHaveURL(/\/c\/profile$/);expect(await index(page)).toBe(0);
+ await page.goto('/c/wallet');await page.getByRole('link',{name:'返回我的',exact:true}).click();await expect(page).toHaveURL(/\/c\/profile$/);expect(await index(page)).toBe(0);
 });

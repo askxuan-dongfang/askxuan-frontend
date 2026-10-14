@@ -1,10 +1,12 @@
 import {test,expect,type Page} from '@playwright/test';
+import {emptyCreatorWallet} from '../fixtures/creator-wallet';
 async function setup(page:Page,role='customer'){
  await page.addInitScript(role=>{localStorage.setItem('h5_token','wallet-fixture');localStorage.setItem('h5-auth',JSON.stringify({state:{token:'wallet-fixture',role,userId:91001},version:0}));},role);
- const state={fail:false,cashFail:false,cashMalformed:false,calls:0,payCalls:0,paid:false,availableCents:10000};
+ const state={fail:false,cashFail:false,cashMalformed:false,calls:0,payCalls:0,paid:false,availableCents:10000,creatorData:emptyCreatorWallet() as unknown};
  await page.route('**/api/v1/**',async route=>{
   const url=new URL(route.request().url());let data:any={list:[],total:0};
-  if(url.pathname.endsWith('/payments/wallet/balance')){
+  if(url.pathname.endsWith('/diy/creator-wallet'))data=state.creatorData;
+  else if(url.pathname.endsWith('/payments/wallet/balance')){
    if(state.cashFail)return route.fulfill({status:503,json:{code:50001,message:'暂时无法读取余额'}});
    data=state.cashMalformed?{}:{availableCents:state.availableCents,heldCents:0,enabled:true,channels:[{id:'wechat',enabled:false},{id:'alipay',enabled:false}],entries:[],recharges:[],page:1,hasMore:false};
   }else if(url.pathname.endsWith('/payments/wallet')){
@@ -37,6 +39,23 @@ for(const width of [320,390])test(`wallet money disclosure and refund details ${
 });
 test('wallet failed bill load keeps balance separate and supports retry',async({page})=>{
  const state=await setup(page);state.fail=true;await page.goto('/c/wallet');await expect(page.getByRole('alert')).toContainText('暂时无法读取账单');await expect(billTotal(page)).toHaveText('—');await expect(cashTotal(page)).toHaveText('100.00');state.fail=false;await page.getByRole('button',{name:'重新加载',exact:true}).click();await expect(billTotal(page)).toHaveText('¥0.00');
+});
+for(const malformed of ['missing account','missing money','invalid reward'] as const)test(`creator wallet isolates ${malformed} and recovers`,async({page})=>{
+ const state=await setup(page);const valid=emptyCreatorWallet();
+ state.creatorData=malformed==='missing account'?{}:malformed==='missing money'?{...valid,account:{heldCents:0,paidCents:0}}:{...valid,rewards:[null]};
+ await page.goto('/c/wallet');const creator=page.getByRole('region',{name:'创作收益'});
+ await expect(creator.getByRole('alert')).toContainText('创作收益数据格式异常');
+ await expect(cashTotal(page)).toHaveText('100.00');await expect(billTotal(page)).toHaveText('¥0.00');
+ await expect(creator.getByRole('button',{name:'申请提现',exact:true})).toHaveCount(0);
+ state.creatorData=valid;await creator.getByRole('button',{name:'重新读取收益'}).click();
+ await expect(creator.getByRole('alert')).toHaveCount(0);await expect(creator.getByText('可提现',{exact:true})).toBeVisible();
+ await expect(creator.getByRole('button',{name:'申请提现',exact:true})).toBeDisabled();
+});
+test('creator refund debt remains visible and cannot be withdrawn',async({page})=>{
+ const state=await setup(page);state.creatorData={...emptyCreatorWallet(),account:{availableCents:-100,heldCents:0,paidCents:0}};
+ await page.goto('/c/wallet');const creator=page.getByRole('region',{name:'创作收益'});
+ await expect(creator.getByText('¥-1.00',{exact:true})).toBeVisible();await expect(creator.getByRole('alert')).toContainText('退款奖励待抵扣');
+ await expect(creator.getByRole('button',{name:'申请提现',exact:true})).toBeDisabled();await expect(cashTotal(page)).toHaveText('100.00');
 });
 for(const malformed of [false,true])test(`wallet unavailable balance stays unknown and recovers ${malformed}`,async({page})=>{
  const state=await setup(page);state.cashFail=!malformed;state.cashMalformed=malformed;await page.goto('/c/wallet');await expect(page.getByRole('alert')).toContainText(malformed?'钱包数据格式异常':'暂时无法读取余额');await expect(cashTotal(page)).toHaveText('—');state.cashFail=false;state.cashMalformed=false;await page.getByRole('button',{name:'刷新余额'}).click();await expect(cashTotal(page)).toHaveText('100.00');
