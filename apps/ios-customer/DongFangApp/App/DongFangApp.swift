@@ -37,7 +37,9 @@ struct DongFangApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if nativeParityPreview {
+                if nativeDiyPreview {
+                    NavigationStack { DiyDesignView() }
+                } else if nativeParityPreview {
                     NavigationStack { CreatorWalletView() }
                 } else if let id=JourneyHost.smokeBooking {
                     NavigationStack { JourneyDetailView(bookingId:id) }
@@ -61,6 +63,14 @@ struct DongFangApp: App {
                     }
                 }
         }
+    }
+
+    private var nativeDiyPreview: Bool {
+        #if DEBUG
+        return ["localhost", "127.0.0.1"].contains(AppConfig.baseURL.host ?? "") && ProcessInfo.processInfo.arguments.contains("--parity-diy-studio")
+        #else
+        return false
+        #endif
     }
 
     private var nativeParityPreview: Bool {

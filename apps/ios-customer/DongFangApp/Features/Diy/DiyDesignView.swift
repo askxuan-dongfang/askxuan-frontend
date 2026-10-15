@@ -18,11 +18,13 @@ struct DiyDesignView: View {
     @State private var checkoutAfterSave = false
     @State private var showOrderPage = false
     @State private var materialSearch = ""
-    @State private var show3D = false
     @State private var showSavedDetail = false
-    @State private var materialPanelExpanded = true
+    @State private var resetView = 0
+    @State private var darkSurface = false
+    @State private var elementFilter = "all"
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var colorScheme
     @FocusState private var searchFocused: Bool
     @State private var showClearConfirmation = false
     @State private var sizePanelExpanded = false
@@ -41,42 +43,20 @@ struct DiyDesignView: View {
         ZStack {
             VStack(spacing: 0) {
                 topBar
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
-                        VStack(spacing: 0) {
-                            DiyPreviewModePicker(show3D: $show3D)
-                                .padding(12)
-                            if show3D {
-                                DiyNativeStage3D(slots: viewModel.beadSlots, wrist: Double(viewModel.wristSizeMm), allowance: viewModel.fitAllowanceMm)
-                                    .frame(height: 280)
-                            } else {
-                                DiyBraceletStage(
-                                    slots: viewModel.beadSlots,
-                                    selectedId: viewModel.selectedBeadId,
-                                    wristSizeMm: viewModel.wristSizeMm,
-                                    fitAllowanceMm: viewModel.fitAllowanceMm,
-                                    fitState: viewModel.fitState,
-                                    totalPrice: viewModel.totalPrice,
-                                    usedLengthMm: viewModel.usedLengthMm,
-                                    onSelect: viewModel.selectBead,
-                                    onMove: viewModel.moveBead,
-                                    onRemove: viewModel.removeBead
-                                )
-                            }
-                            Label(show3D ? "拖动旋转 · 双指缩放" : "点按选中 · 拖动排序 · 移出圆环删除", systemImage: "hand.draw")
-                                .font(.caption)
-                                .foregroundStyle(Color.textSecondary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                        }
-                        .diySurface()
-                        sizePanel
-                        selectedToolbar
-                        materialPanel
+                GeometryReader { geometry in
+                    if geometry.size.width >= 700 {
+                        HStack(spacing: 12) {
+                            composition
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            materialPanel.frame(width: min(380, geometry.size.width * 0.4))
+                        }.padding(12)
+                    } else {
+                        VStack(spacing: 10) {
+                            composition.frame(height: max(245, min(360, geometry.size.height * 0.49)))
+                            materialPanel.frame(maxHeight: .infinity)
+                        }.padding(.horizontal, 10).padding(.vertical, 8)
                     }
-                    .padding(16)
                 }
-                .scrollDismissesKeyboard(.interactively)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) { bottomActionBar }
             .disabled(viewModel.isSubmitting)
@@ -93,8 +73,17 @@ struct DiyDesignView: View {
         }
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
+        .onAppear { darkSurface = colorScheme == .dark }
         .task {
             if viewModel.materials.isEmpty { await viewModel.loadMaterials() }
+        }
+        .sheet(isPresented: $sizePanelExpanded) {
+            VStack(spacing: 14) {
+                sizePanel
+                Button("清空设计", role: .destructive) { sizePanelExpanded = false; showClearConfirmation = true }
+                    .disabled(viewModel.beadSlots.isEmpty && viewModel.selectedCord == nil)
+                Button("完成") { sizePanelExpanded = false }.buttonStyle(.borderedProminent)
+            }.padding(20).presentationDetents([.medium])
         }
         .confirmationDialog("清空当前搭配？清空后仍可通过撤销恢复。", isPresented: $showClearConfirmation, titleVisibility: .visible) {
             Button("清空搭配", role: .destructive) {
@@ -139,7 +128,7 @@ struct DiyDesignView: View {
             DFBackButton()
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("设计你的手串")
+                Text("东方珠作")
                     .font(AppTypography.reading.weight(.semibold))
                     .foregroundStyle(.textPrimary)
                 Text(viewModel.draftStateText)
@@ -167,6 +156,55 @@ struct DiyDesignView: View {
         .overlay(alignment: .bottom) {
             Rectangle().fill(Color.borderDivider).frame(height: 1)
         }
+    }
+
+    private var composition: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("我的手串").font(.subheadline.weight(.semibold))
+                Text("\(viewModel.beadSlots.count) / 60 颗").font(.caption2).foregroundStyle(Color.textSecondary)
+                Spacer()
+                Button(String(format: "手围 %.1f cm  ›", Double(viewModel.wristSizeMm) / 10)) { sizePanelExpanded = true }
+                    .font(.caption).foregroundStyle(Color.textSecondary).frame(minHeight: 36)
+            }.padding(.horizontal, 12)
+            ZStack(alignment: .topTrailing) {
+                DiyNativeStage3D(slots: viewModel.beadSlots, wrist: Double(viewModel.wristSizeMm), allowance: viewModel.fitAllowanceMm,
+                    selectedId: viewModel.selectedBeadId, onSelect: viewModel.selectBead, onMove: viewModel.moveBead,
+                    resetVersion: resetView, darkSurface: darkSurface)
+                    .accessibilityIdentifier("diy-3d-stage")
+                HStack(spacing: 8) {
+                    Button("复位") { resetView += 1 }.accessibilityLabel("重置 3D 视角")
+                    Button(darkSurface ? "浅色" : "深色") { darkSurface.toggle() }.accessibilityLabel("切换台面颜色")
+                }.font(.caption2).buttonStyle(.bordered).tint(Color.accentDefault).padding(8)
+                if viewModel.beadSlots.isEmpty {
+                    VStack(spacing: 6) {
+                        Text("从一颗珠子开始").font(.headline)
+                        Text("在材料库中点选，直接加入手串").font(.caption2)
+                    }.foregroundStyle(Color(red: 0.35, green: 0.4, blue: 0.33))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity).allowsHitTesting(false)
+                }
+            }.frame(maxHeight: .infinity)
+            selectedToolbar.frame(height: 48)
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 4) {
+                        ForEach(Array(viewModel.beadSlots.enumerated()), id: \.element.id) { index, bead in
+                            Button { viewModel.selectBead(bead.id) } label: {
+                                HStack(spacing: 2) {
+                                    Circle().fill(Color(hex: bead.colorHex ?? "93795B")).frame(width: 22, height: 22)
+                                    Text("\(index + 1)").font(.caption2)
+                                }.padding(5).frame(minWidth: 42, minHeight: 38)
+                                    .background(bead.id == viewModel.selectedBeadId ? Color.accentDefault.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                            }.id(bead.id).accessibilityLabel("第 \(index + 1) 颗 \(bead.materialName)")
+                                .accessibilityAddTraits(bead.id == viewModel.selectedBeadId ? .isSelected : [])
+                        }
+                        if viewModel.beadSlots.isEmpty { Text("已选材料会按顺序显示在这里").font(.caption2).foregroundStyle(Color.textSecondary) }
+                    }.padding(.horizontal, 8)
+                }.frame(height: 44)
+                    .onChange(of: viewModel.selectedBeadId) { _, id in if let id { proxy.scrollTo(id, anchor: .center) } }
+            }
+        }.background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1) }
     }
 
     private var sizePanel: some View {
@@ -214,154 +252,70 @@ struct DiyDesignView: View {
         .diySurface()
     }
 
-    @ViewBuilder
     private var selectedToolbar: some View {
-        if let selected = viewModel.selectedBead {
-            HStack(spacing: 10) {
-                DiyMaterialBead(
-                    name: selected.materialName,
-                    category: selected.subtype,
-                    size: 30,
-                    isSelected: true,
-                    shape: selected.shape ?? "round",
-                    colorHex: selected.colorHex,
-                    textureKey: selected.textureKey,
-                    finish: selected.finish,
-                    translucency: selected.translucency ?? 0, renderAssets: selected.renderAssets
-                )
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("第 \((viewModel.beadSlots.firstIndex { $0.id == selected.id } ?? 0) + 1) 颗 · 当前选中")
-                        .font(.caption)
-                        .foregroundStyle(.textTertiary)
-                    Text(selected.materialName)
-                        .font(AppTypography.caption.weight(.semibold))
-                        .foregroundStyle(.textPrimary)
-                        .lineLimit(1)
+        HStack(spacing: 4) {
+            if let selected = viewModel.selectedBead {
+                let index = viewModel.beadSlots.firstIndex { $0.id == selected.id } ?? 0
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(selected.materialName).font(.caption.weight(.semibold)).lineLimit(1)
+                    Text("第 \(index + 1) 颗 · \(selected.spec)").font(.caption2).foregroundStyle(Color.textSecondary)
                 }
+                Spacer(minLength: 4)
+                Button { viewModel.moveBead(id: selected.id, to: index - 1) } label: { Image(systemName: "arrow.left").frame(width: 32, height: 44) }
+                    .disabled(index == 0).accessibilityLabel("向前移动珠子")
+                Button { viewModel.moveBead(id: selected.id, to: index + 1) } label: { Image(systemName: "arrow.right").frame(width: 32, height: 44) }
+                    .disabled(index == viewModel.beadSlots.count - 1).accessibilityLabel("向后移动珠子")
+                Button("复制") { viewModel.duplicateSelectedBead() }.frame(minWidth: 36, minHeight: 44).disabled(viewModel.beadSlots.count >= 60)
+                Button("删除") { viewModel.removeSelectedBead() }.frame(minWidth: 36, minHeight: 44)
+            } else {
+                Text(viewModel.beadSlots.isEmpty ? "选择材料，开始搭配" : "点选珠子编辑 · 拖动珠子换位")
+                    .font(.caption).foregroundStyle(Color.textSecondary)
                 Spacer()
-                Button { viewModel.duplicateSelectedBead(); UIImpactFeedbackGenerator(style: .light).impactOccurred() } label: {
-                    Image(systemName: "plus.square.on.square")
-                        .frame(width: 44, height: 44)
-                }
-                .accessibilityLabel("复制珠子")
-                Button(role: .destructive) { viewModel.removeSelectedBead() } label: {
-                    Image(systemName: "trash")
-                        .frame(width: 44, height: 44)
-                }
-                .accessibilityLabel("移除珠子")
             }
-            .padding(.horizontal, 16)
-            .frame(minHeight: 70)
-            .foregroundStyle(Color.accentLight)
-            .buttonStyle(DiyPressButtonStyle())
-            .diySurface(highlighted: true)
-            .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
-        }
+        }.font(.caption).foregroundStyle(Color.textPrimary).padding(.horizontal, 10)
+            .overlay(alignment: .top) { Rectangle().fill(Color.borderDivider).frame(height: 1) }
     }
 
     private var materialPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("材料库")
-                        .font(AppTypography.body.weight(.semibold))
-                        .foregroundStyle(.textPrimary)
-                    Text("\(filteredMaterials.count) 种材料 · 点按加入搭配")
-                        .font(AppTypography.micro)
-                        .foregroundStyle(.textTertiary)
-                }
+        VStack(spacing: 6) {
+            HStack {
+                Text("挑选材料").font(.subheadline.weight(.semibold))
+                Text("\(filteredMaterials.count) 款").font(.caption2).foregroundStyle(Color.textSecondary)
                 Spacer()
-                Button {
-                    AppMotion.perform {
-                        materialPanelExpanded.toggle()
-                    }
-                    UISelectionFeedbackGenerator().selectionChanged()
-                } label: {
-                    Image(systemName: materialPanelExpanded ? "chevron.up" : "chevron.down")
-                        .font(AppTypography.caption.weight(.semibold))
-                        .foregroundStyle(.accentDefault)
-                        .frame(width: 44, height: 44)
-                        .background(Color.bgTertiary)
-                        .clipShape(Circle())
-                        .overlay { Circle().stroke(Color.borderDefault, lineWidth: 1) }
-                }
-                .buttonStyle(DiyPressButtonStyle())
-                .accessibilityLabel(materialPanelExpanded ? "收起材料库" : "展开材料库")
-            }
-
+                Picker("五行筛选", selection: $elementFilter) {
+                    Text("全部五行").tag("all")
+                    Text("木").tag("wood"); Text("火").tag("fire"); Text("土").tag("earth"); Text("金").tag("metal"); Text("水").tag("water")
+                }.pickerStyle(.menu).font(.caption).tint(Color.textSecondary)
+            }.padding(.horizontal, 12)
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                TextField("搜索材质或规格", text: $materialSearch)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled().focused($searchFocused)
+                    .submitLabel(.done).onSubmit { searchFocused = false }
+                if !materialSearch.isEmpty { Button { materialSearch = "" } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel("清除搜索") }
+            }.font(.subheadline).foregroundStyle(Color.textSecondary).padding(.horizontal, 10).frame(height: 34)
+                .background(Color.bgPrimary, in: RoundedRectangle(cornerRadius: 8)).padding(.horizontal, 10)
             categoryTabs
-
-            if materialPanelExpanded {
-                HStack(spacing: 7) {
-                    Image(systemName: "magnifyingglass")
-                        .font(AppTypography.micro)
-                    TextField("搜索材质、规格", text: $materialSearch)
-                        .font(AppTypography.micro)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .focused($searchFocused)
-                        .submitLabel(.done)
-                        .onSubmit { searchFocused = false }
-                    if !materialSearch.isEmpty {
-                        Button { materialSearch = "" } label: {
-                            Image(systemName: "xmark.circle.fill").frame(width: 44, height: 44)
-                        }
-                        .accessibilityLabel("清除搜索")
-                    }
-                }
-                .foregroundStyle(.textTertiary)
-                .padding(.horizontal, 10)
-                .frame(height: 48)
-                .background(Color.bgTertiary)
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
-                .overlay {
-                    RoundedRectangle(cornerRadius: AppRadius.md)
-                        .stroke(Color.borderDefault, lineWidth: 1)
-                }
-
+            ScrollView(showsIndicators: false) {
                 if viewModel.isLoading && viewModel.materials.isEmpty {
-                    ProgressView("正在准备材料")
-                        .tint(Color.accentDefault)
-                        .frame(maxWidth: .infinity, minHeight: 160)
+                    ProgressView("正在加载材料").frame(maxWidth: .infinity, minHeight: 120)
                 } else if filteredMaterials.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "magnifyingglass").font(.title2)
-                        Text(materialSearch.isEmpty ? "该分类暂无材料" : "没有找到匹配材料")
-                            .font(.subheadline.weight(.medium))
-                        Button(materialSearch.isEmpty ? "重新加载" : "清除搜索") {
-                            if materialSearch.isEmpty { Task { await viewModel.loadMaterials() } }
-                            else { materialSearch = "" }
-                        }
-                        .font(.subheadline).foregroundStyle(Color.accentLight)
-                        .frame(minHeight: 44)
-                    }
-                    .foregroundStyle(Color.textSecondary)
-                    .frame(maxWidth: .infinity, minHeight: 160)
+                    VStack(spacing: 10) {
+                        Text("没有符合条件的材料")
+                        Button("清除筛选") { materialSearch = ""; elementFilter = "all"; viewModel.selectCategory("all") }
+                        if viewModel.materials.isEmpty { Button("重新加载") { Task { await viewModel.loadMaterials() } } }
+                    }.font(.caption).frame(maxWidth: .infinity, minHeight: 120)
                 } else {
-                    LazyVGrid(
-                        columns: [GridItem(.adaptive(minimum: 94), spacing: 10)],
-                        spacing: 8
-                    ) {
-                        ForEach(filteredMaterials) { material in
-                            materialCard(material)
-                        }
-                    }
-                    .transition(.opacity)
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 8)], spacing: 8) {
+                        ForEach(filteredMaterials) { material in materialCard(material) }
+                    }.padding(.horizontal, 10)
+                    Text("天然材质各有纹理，预览供搭配参考。")
+                        .font(.caption2).foregroundStyle(Color.textSecondary).padding(.vertical, 12)
                 }
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(Array(filteredMaterials.prefix(10))) { material in
-                            quickMaterialButton(material)
-                        }
-                    }
-                    .padding(.vertical, 3)
-                }
-                .transition(.opacity)
-            }
-        }
-        .padding(14)
-        .diySurface()
+            }.scrollDismissesKeyboard(.interactively)
+        }.padding(.top, 6).background(Color.bgSecondary)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1) }
     }
 
     private var categoryTabs: some View {
@@ -391,20 +345,18 @@ struct DiyDesignView: View {
 
     private var filteredMaterials: [Material] {
         let keyword = materialSearch.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !keyword.isEmpty else { return viewModel.filteredMaterials }
-        return viewModel.filteredMaterials.filter {
-            $0.name.localizedCaseInsensitiveContains(keyword)
-                || $0.spec.localizedCaseInsensitiveContains(keyword)
+        return viewModel.filteredMaterials.filter { material in
+            let names = ["wood": "木", "fire": "火", "earth": "土", "metal": "金", "water": "水"]
+            let elementMatches = elementFilter == "all" || material.category == "cord" || material.fiveElements == elementFilter || material.fiveElements == names[elementFilter]
+            return elementMatches && (keyword.isEmpty || material.name.localizedCaseInsensitiveContains(keyword) || material.spec.localizedCaseInsensitiveContains(keyword))
         }
     }
 
     private func materialCard(_ material: Material) -> some View {
         let count = viewModel.count(for: material.id)
-        let isUnavailable = count >= material.stock
+        let isUnavailable = count >= material.stock || (material.category != "cord" && viewModel.beadSlots.count >= 60)
         return Button {
-            withAnimation(reduceMotion ? nil : .spring(response: 0.36, dampingFraction: 0.8)) {
-                viewModel.addToCart(material)
-            }
+            viewModel.addToCart(material)
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         } label: {
             VStack(spacing: 5) {
@@ -444,7 +396,7 @@ struct DiyDesignView: View {
                     .font(AppTypography.caption.weight(.semibold))
                     .foregroundStyle(.accentLight)
             }
-            .frame(maxWidth: .infinity, minHeight: 142)
+            .frame(maxWidth: .infinity, minHeight: 118)
             .padding(.horizontal, 5)
             .background(Color.bgTertiary)
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
@@ -462,7 +414,7 @@ struct DiyDesignView: View {
 
     private func quickMaterialButton(_ material: Material) -> some View {
         let count = viewModel.count(for: material.id)
-        let isUnavailable = count >= material.stock
+        let isUnavailable = count >= material.stock || (material.category != "cord" && viewModel.beadSlots.count >= 60)
         return Button {
             withAnimation(reduceMotion ? nil : .spring(response: 0.34, dampingFraction: 0.8)) {
                 viewModel.addToCart(material)
@@ -494,43 +446,25 @@ struct DiyDesignView: View {
     }
 
     private var bottomActionBar: some View {
-        VStack(spacing: 10) {
-            HStack {
-                Text("\(viewModel.beadSlots.count) 颗 · 搭配预估")
-                    .font(.caption).foregroundStyle(Color.textSecondary)
-                Spacer()
-                Text(viewModel.totalPriceText)
-                    .appNumericFont(22, weight: .semibold)
-                    .foregroundStyle(Color.accentLight)
-                    .contentTransition(.numericText())
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("材料预估").font(.caption2).foregroundStyle(Color.textSecondary)
+                Text(viewModel.totalPriceText).appNumericFont(22, weight: .medium).foregroundStyle(Color.accentLight)
             }
-            HStack(spacing: 10) {
-                Button(role: .destructive) { showClearConfirmation = true } label: {
-                    Image(systemName: "trash").frame(width: 48, height: 48)
-                        .background(Color.bgTertiary, in: RoundedRectangle(cornerRadius: 14))
-                }
-                .disabled(viewModel.totalQuantity == 0)
-                .accessibilityLabel("清空设计")
-                Button { presentSaveDialog(checkout: false) } label: {
-                    Text("保存设计").font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity, minHeight: 48)
-                        .overlay { RoundedRectangle(cornerRadius: 14).stroke(Color.accentDefault.opacity(0.5), lineWidth: 1) }
-                }
+            Spacer(minLength: 4)
+            Button("保存设计") { presentSaveDialog(checkout: false) }
+                .font(.caption.weight(.semibold)).padding(.horizontal, 14).frame(minHeight: 44)
+                .overlay { RoundedRectangle(cornerRadius: 9).stroke(Color.borderStrong, lineWidth: 1) }
                 .disabled(viewModel.beadSlots.isEmpty)
-                Button { presentSaveDialog(checkout: true) } label: {
-                    Label("完成搭配", systemImage: "arrow.right")
-                        .font(.subheadline.weight(.semibold)).foregroundStyle(Color.white)
-                        .frame(maxWidth: .infinity, minHeight: 48)
-                        .background(LinearGradient(colors: [.brandLight, .brandDefault], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 14))
-                }
-                .disabled(viewModel.beadSlots.isEmpty)
-            }
-            .foregroundStyle(Color.accentLight)
-            .buttonStyle(DiyPressButtonStyle())
-        }
-        .padding(.horizontal, 16).padding(.vertical, 12)
-        .background(Color.bgPrimary.opacity(0.97).ignoresSafeArea(edges: .bottom))
-        .overlay(alignment: .top) { Rectangle().fill(Color.borderStrong).frame(height: 1) }
+            Button { presentSaveDialog(checkout: true) } label: {
+                Label("去定制", systemImage: "arrow.right").font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.white).padding(.horizontal, 14).frame(minHeight: 44)
+                    .background(Color.brandDefault, in: RoundedRectangle(cornerRadius: 9))
+            }.disabled(viewModel.beadSlots.isEmpty)
+        }.foregroundStyle(Color.accentLight).buttonStyle(DiyPressButtonStyle())
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .background(Color.bgPrimary.ignoresSafeArea(edges: .bottom))
+            .overlay(alignment: .top) { Rectangle().fill(Color.borderDivider).frame(height: 1) }
     }
 
     private func presentSaveDialog(checkout: Bool) {
@@ -553,246 +487,6 @@ struct DiyDesignView: View {
             } else if saved { showSavedDetail = true }
         }
     }
-}
-
-private struct DiyBraceletStage: View {
-    let slots: [DiyBeadSlot]
-    let selectedId: String?
-    let wristSizeMm: Int
-    let fitAllowanceMm: Double
-    let fitState: DiyFitState
-    let totalPrice: Double
-    let usedLengthMm: Double
-    let onSelect: (String?) -> Void
-    let onMove: (String, Int) -> Void
-    let onRemove: (String) -> Void
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    @State private var rotation = -Double.pi / 2
-    @State private var rotationStart: Double?
-    @State private var draggingId: String?
-    @State private var dragLocation = CGPoint.zero
-    @State private var isOutsideRing = false
-
-    var body: some View {
-        GeometryReader { proxy in
-            let sceneSize = min(proxy.size.width - 28, min(proxy.size.height - 32, 318))
-            ZStack {
-                Color.bgSecondary
-                RadialGradient(
-                    colors: [Color.bgElevated.opacity(0.72), Color.bgTertiary, Color.bgSecondary],
-                    center: UnitPoint(x: 0.5, y: 0.57),
-                    startRadius: 18,
-                    endRadius: proxy.size.width * 0.72
-                )
-
-                Ellipse()
-                    .fill(Color.black.opacity(0.52))
-                    .frame(width: sceneSize * 0.82, height: sceneSize * 0.33)
-                    .blur(radius: 22)
-                    .position(x: proxy.size.width / 2, y: proxy.size.height * 0.69)
-
-                VStack(spacing: 0) {
-                    statusRow
-                    Spacer()
-                }
-                .padding(.horizontal, 14)
-                .padding(.top, 12)
-
-                braceletScene(size: sceneSize)
-                    .frame(width: sceneSize, height: sceneSize)
-                    .position(x: proxy.size.width / 2, y: proxy.size.height * 0.57)
-
-                if draggingId != nil && isOutsideRing {
-                    VStack(spacing: 3) {
-                        Image(systemName: "trash.fill")
-                        Text("松手移除")
-                            .font(AppTypography.caption.weight(.semibold))
-                    }
-                    .foregroundStyle(Color.stateError)
-                    .frame(width: 104, height: 52)
-                    .background(Color.bgElevated.opacity(0.96))
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: AppRadius.md)
-                            .stroke(Color.stateError, style: StrokeStyle(lineWidth: 1, dash: [4]))
-                    }
-                    .position(x: proxy.size.width / 2, y: proxy.size.height - 36)
-                    .transition(.scale.combined(with: .opacity))
-                }
-            }
-        }
-        .frame(height: 280)
-        .clipped()
-    }
-
-    private var statusRow: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: 5) {
-                Circle().fill(fitState.color).frame(width: 6, height: 6)
-                Text(fitState.title)
-                    .font(AppTypography.caption.weight(.medium))
-                    .foregroundStyle(fitState.color)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
-            Spacer(minLength: 4)
-            VStack(alignment: .trailing, spacing: 0) {
-                Text("预估")
-                    .font(AppTypography.micro)
-                    .foregroundStyle(.textTertiary)
-                Text(AppDateFormatter.moneyText(totalPrice))
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.accentLight)
-            }
-        }
-    }
-
-    private func braceletScene(size: CGFloat) -> some View {
-        let physical = DiyPhysicalLayout(slots: slots, wrist: Double(wristSizeMm), allowance: fitAllowanceMm)
-        return ZStack {
-            Circle()
-                .fill(Color.clear)
-                .contentShape(Circle())
-                .gesture(rotationGesture)
-
-            Ellipse()
-                .stroke(Color.black.opacity(0.58), lineWidth: 5)
-                .frame(width: size * 0.70, height: size * 0.63)
-                .offset(y: 3)
-
-            Ellipse()
-                .stroke(
-                    LinearGradient(
-                        colors: [Color(hex: "D8C797"), Color(hex: "8B7952"), Color(hex: "D8C797")],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ),
-                    lineWidth: 2.2
-                )
-                .frame(width: size * 0.70, height: size * 0.63)
-                .opacity(0.78)
-
-            VStack(spacing: 3) {
-                if slots.isEmpty {
-                    Image(systemName: "plus.circle")
-                        .font(.system(size: 26))
-                        .foregroundStyle(.accentDefault)
-                    Text("从下方选择材料")
-                        .font(AppTypography.micro)
-                        .foregroundStyle(.textTertiary)
-                } else {
-                    HStack(alignment: .firstTextBaseline, spacing: 3) {
-                        Text("\(slots.count)")
-                            .font(.system(size: 32, weight: .semibold))
-                            .foregroundStyle(.textPrimary)
-                        Text("颗")
-                            .font(AppTypography.caption)
-                            .foregroundStyle(.textTertiary)
-                    }
-                    Text("已用 \(Int(usedLengthMm)) mm")
-                        .font(AppTypography.caption)
-                        .foregroundStyle(.textTertiary)
-                }
-            }
-            .allowsHitTesting(false)
-
-            ForEach(Array(slots.enumerated()), id: \.element.id) { index, slot in
-                let layout = beadLayout(index: index, size: size, physical: physical)
-                DiyMaterialBead(
-                    name: slot.materialName,
-                    category: slot.subtype,
-                    size: CGFloat(slot.diameterMm / physical.radius) * size * 0.35,
-                    isSelected: selectedId == slot.id,
-                    seed: slot.id,
-                    shape: slot.shape ?? "round",
-                    colorHex: slot.colorHex,
-                    textureKey: slot.textureKey,
-                    finish: slot.finish,
-                    translucency: slot.translucency ?? 0, renderAssets: slot.renderAssets
-                )
-                .rotationEffect(.radians(layout.angle + Double.pi / 2))
-                .scaleEffect(layout.depth)
-                .position(draggingId == slot.id ? dragLocation : layout.point)
-                .zIndex(draggingId == slot.id ? 1_000 : layout.zIndex)
-                .shadow(
-                    color: .black.opacity(draggingId == slot.id ? 0.78 : 0.52),
-                    radius: draggingId == slot.id ? 10 : 4,
-                    y: draggingId == slot.id ? 9 : 4
-                )
-                .gesture(beadDragGesture(slot: slot, size: size))
-                .simultaneousGesture(TapGesture().onEnded { onSelect(slot.id) })
-                .accessibilityLabel("\(slot.materialName)，第 \(index + 1) 位")
-                .accessibilityAddTraits(selectedId == slot.id ? [.isSelected, .isButton] : .isButton)
-                .accessibilityAction(named: "选中珠子") { onSelect(slot.id) }
-                .accessibilityAction(named: "向前移动") { onMove(slot.id, max(0, index - 1)) }
-                .accessibilityAction(named: "向后移动") { onMove(slot.id, min(slots.count - 1, index + 1)) }
-                .accessibilityAction(named: "移除珠子") { onRemove(slot.id) }
-            }
-        }
-        .coordinateSpace(name: "bracelet-space")
-        .animation(reduceMotion ? nil : .spring(response: 0.34, dampingFraction: 0.8), value: slots)
-    }
-
-    private var rotationGesture: some Gesture {
-        DragGesture(minimumDistance: 8)
-            .onChanged { value in
-                if rotationStart == nil { rotationStart = rotation }
-                rotation = (rotationStart ?? rotation) + Double(value.translation.width / 108)
-            }
-            .onEnded { _ in rotationStart = nil }
-    }
-
-    private func beadDragGesture(slot: DiyBeadSlot, size: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 2, coordinateSpace: .named("bracelet-space"))
-            .onChanged { value in
-                if draggingId == nil {
-                    onSelect(slot.id)
-                    UISelectionFeedbackGenerator().selectionChanged()
-                }
-                draggingId = slot.id
-                dragLocation = value.location
-                let center = CGPoint(x: size / 2, y: size / 2)
-                let normalized = sqrt(
-                    pow((value.location.x - center.x) / (size * 0.39), 2)
-                    + pow((value.location.y - center.y) / (size * 0.36), 2)
-                )
-                let outside = normalized > 1.34
-                if outside != isOutsideRing {
-                    UIImpactFeedbackGenerator(style: .rigid).impactOccurred(intensity: 0.65)
-                }
-                isOutsideRing = outside
-            }
-            .onEnded { value in
-                if isOutsideRing {
-                    onRemove(slot.id)
-                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
-                } else if !slots.isEmpty {
-                    onMove(slot.id, targetIndex(for: value.location, size: size))
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                }
-                draggingId = nil
-                isOutsideRing = false
-            }
-    }
-
-    private func beadLayout(index: Int, size: CGFloat, physical: DiyPhysicalLayout) -> (point: CGPoint, depth: CGFloat, zIndex: Double, angle: Double) {
-        let angle = rotation + (physical.angles.indices.contains(index) ? physical.angles[index] + Double.pi / 2 : 0)
-        let x = size / 2 + cos(angle) * size * 0.35
-        let y = size / 2 + sin(angle) * size * 0.315
-        let depth = 0.94 + CGFloat((sin(angle) + 1) / 2) * 0.12
-        return (CGPoint(x: x, y: y), depth, Double(y), angle)
-    }
-
-    private func targetIndex(for location: CGPoint, size: CGFloat) -> Int {
-        let physical = DiyPhysicalLayout(slots: slots, wrist: Double(wristSizeMm), allowance: fitAllowanceMm)
-        return slots.indices.min { a, b in
-            let p = beadLayout(index: a, size: size, physical: physical).point
-            let q = beadLayout(index: b, size: size, physical: physical).point
-            return hypot(location.x - p.x, location.y - p.y) < hypot(location.x - q.x, location.y - q.y)
-        } ?? 0
-    }
-
 }
 
 struct DiyMaterialBead: View {
@@ -1032,52 +726,242 @@ struct DiyNativeStage3D: UIViewRepresentable {
     let slots: [DiyBeadSlot]
     var wrist: Double = 160
     var allowance: Double = 8
+    var selectedId: String?
+    var onSelect: ((String?) -> Void)?
+    var onMove: ((String, Int) -> Void)?
+    var resetVersion = 0
+    var darkSurface = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
     func makeUIView(context: Context) -> SCNView {
-        let view = SCNView(); view.allowsCameraControl = true; view.autoenablesDefaultLighting = false
-        view.backgroundColor = AppPalette.bgSecondary
-        view.antialiasingMode = .multisampling4X; view.preferredFramesPerSecond = 30
-        view.accessibilityLabel = "手串 3D 预览，拖动旋转，双指缩放"
+        let view = SCNView()
+        view.allowsCameraControl = false
+        view.autoenablesDefaultLighting = false
+        view.antialiasingMode = .multisampling4X
+        view.preferredFramesPerSecond = 30
+        view.isPlaying = false
+        view.accessibilityLabel = "手串 3D 工作台，点选珠子编辑，拖动珠子换位，拖动空白处旋转，双指缩放"
+        context.coordinator.configure(view)
         return view
     }
-    func updateUIView(_ view: SCNView, context: Context) {
-        view.defaultCameraController.inertiaEnabled = !reduceMotion
-        let signature = String(slots.hashValue) + "-\(wrist)-\(allowance)"
-        guard view.accessibilityIdentifier != signature else { return }
-        view.accessibilityIdentifier = signature
-        let scene = SCNScene(); let layout = DiyPhysicalLayout(slots: slots, wrist: wrist, allowance: allowance)
-        let scale = 1.65 / layout.radius
-        let camera = SCNNode(); camera.camera = SCNCamera(); camera.position = SCNVector3(0, 4, 5.8); camera.look(at: SCNVector3Zero)
-        scene.rootNode.addChildNode(camera); view.pointOfView = camera
-        for (position, intensity, color) in [(SCNVector3(2, 5, 4), CGFloat(1100), UIColor.white), (SCNVector3(-4, 3, -2), CGFloat(700), UIColor(red: 0.75, green: 0.85, blue: 1, alpha: 1))] {
-            let light = SCNNode(); light.light = SCNLight(); light.light?.type = .omni; light.light?.intensity = intensity; light.light?.color = color; light.position = position; scene.rootNode.addChildNode(light)
+    func updateUIView(_ view: SCNView, context: Context) { context.coordinator.update(self, view: view) }
+    static func dismantleUIView(_ view: SCNView, coordinator: Coordinator) { coordinator.dispose(); view.scene = nil }
+
+    @MainActor final class Coordinator: NSObject {
+        private weak var view: SCNView?
+        private let scene = SCNScene(), camera = SCNNode(), cord = SCNNode()
+        private var nodes: [String: SCNNode] = [:], signatures: [String: Int] = [:]
+        private var owner: DiyNativeStage3D?
+        private var textures = NSCache<NSString, UIImage>()
+        private var requests: [URL: URLSessionDataTask] = [:]
+        private var textureWaiters: [URL: [SCNMaterialProperty]] = [:]
+        private var resetVersion = 0
+        private var yaw = 0.0, pitch = 0.82, distance = 5.3
+        private var gestureYaw = 0.0, gesturePitch = 0.82, gestureDistance = 5.3
+        private var draggedId: String?, targetIndex = 0, startAngles: [Double] = []
+        private lazy var contactShadow: UIImage = UIGraphicsImageRenderer(size: CGSize(width: 128, height: 128)).image { context in
+            let colors = [UIColor.black.withAlphaComponent(0.24).cgColor, UIColor.black.withAlphaComponent(0).cgColor] as CFArray
+            guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 1]) else { return }
+            context.cgContext.drawRadialGradient(gradient, startCenter: CGPoint(x: 64, y: 64), startRadius: 0, endCenter: CGPoint(x: 64, y: 64), endRadius: 64, options: [])
         }
-        let ambient = SCNNode(); ambient.light = SCNLight(); ambient.light?.type = .ambient; ambient.light?.intensity = 350; scene.rootNode.addChildNode(ambient)
-        let cord = SCNNode(geometry: SCNTorus(ringRadius: 1.65, pipeRadius: 0.012)); cord.geometry?.firstMaterial?.diffuse.contents = UIColor(Color.accentDefault); scene.rootNode.addChildNode(cord)
-        for (index, bead) in slots.enumerated() {
-            let r = CGFloat(bead.diameterMm * scale / 2)
-            let geometry: SCNGeometry
-            if bead.shape == "disc" || bead.shape == "barrel" { geometry = SCNCylinder(radius: r, height: r * (bead.shape == "disc" ? 0.9 : 2.3)) }
-            else { let sphere = SCNSphere(radius: r); sphere.segmentCount = bead.shape == "faceted" ? 10 : 40; geometry = sphere }
-            let mat = SCNMaterial(); mat.lightingModel = .physicallyBased
-            mat.diffuse.contents = UIColor(Color(hex: bead.colorHex ?? "93795B")); mat.metalness.contents = bead.materialType == "metal" ? 0.85 : 0.0
-            mat.roughness.contents = bead.finish == "matte" || bead.finish == "natural" ? 0.55 : 0.2
-            mat.clearCoat.contents = 0.8; mat.clearCoatRoughness.contents = 0.12
-            geometry.materials = [mat]
-            let node = SCNNode(geometry: geometry); let angle = layout.angles[index]
-            node.position = SCNVector3(cos(angle) * 1.65, 0, sin(angle) * 1.65)
-            if bead.shape == "disc" || bead.shape == "barrel" { node.eulerAngles = SCNVector3(0, -angle, Double.pi / 2) }
-            if bead.shape == "pendant" { node.scale = SCNVector3(0.8, 1.25, 0.7) }
-            scene.rootNode.addChildNode(node)
-            let assets = DiyRenderAssets.parse(bead.renderAssets)
-            for (urlString, property) in [(assets?.albedoMapUrl, mat.diffuse), (assets?.normalMapUrl, mat.normal), (assets?.roughnessMapUrl, mat.roughness)] {
-                guard let url = DiyRenderAssets.url(urlString) else { continue }
-                URLSession.shared.dataTask(with: url) { data, response, _ in
-                    guard let response = response as? HTTPURLResponse, response.statusCode == 200, response.mimeType?.hasPrefix("image/") == true, let data, let image = UIImage(data: data) else { return }
-                    DispatchQueue.main.async { property.contents = image }
-                }.resume()
+
+        func configure(_ view: SCNView) {
+            self.view = view; view.scene = scene
+            camera.camera = SCNCamera(); camera.camera?.fieldOfView = 44
+            camera.camera?.wantsHDR = false; camera.camera?.wantsExposureAdaptation = false
+            scene.rootNode.addChildNode(camera); view.pointOfView = camera; updateCamera()
+            for (position, intensity, color) in [(SCNVector3(3, 6, 4), CGFloat(450), UIColor(red: 1, green: 0.96, blue: 0.88, alpha: 1)), (SCNVector3(-4, 3, -2), CGFloat(200), UIColor(red: 0.85, green: 0.92, blue: 0.9, alpha: 1))] {
+                let node = SCNNode(); node.light = SCNLight(); node.light?.type = .omni; node.light?.intensity = intensity; node.light?.color = color; node.position = position; scene.rootNode.addChildNode(node)
+            }
+            let key = SCNNode(); key.light = SCNLight(); key.light?.type = .directional
+            key.light?.intensity = 100; key.light?.castsShadow = false; key.light?.shadowRadius = 6
+            key.light?.shadowColor = UIColor.black.withAlphaComponent(0.2)
+            key.position = SCNVector3(2, 5, 3); key.look(at: SCNVector3Zero); scene.rootNode.addChildNode(key)
+            let ambient = SCNNode(); ambient.light = SCNLight(); ambient.light?.type = .ambient; ambient.light?.intensity = 70; scene.rootNode.addChildNode(ambient)
+            let environment = UIGraphicsImageRenderer(size: CGSize(width: 256, height: 128)).image { context in
+                UIColor(white: 0.45, alpha: 1).setFill(); context.fill(CGRect(x: 0, y: 0, width: 256, height: 128))
+                UIColor(white: 1, alpha: 1).setFill(); context.fill(CGRect(x: 20, y: 12, width: 75, height: 35))
+                UIColor(white: 0.8, alpha: 1).setFill(); context.fill(CGRect(x: 180, y: 20, width: 30, height: 65))
+            }
+            scene.lightingEnvironment.contents = environment; scene.lightingEnvironment.intensity = 0.3
+            cord.geometry = SCNTorus(ringRadius: 1.65, pipeRadius: 0.009)
+            cord.geometry?.firstMaterial?.diffuse.contents = UIColor(red: 0.7, green: 0.6, blue: 0.45, alpha: 1)
+            scene.rootNode.addChildNode(cord)
+            let tap = UITapGestureRecognizer(target: self, action: #selector(tap(_:)))
+            let pan = UIPanGestureRecognizer(target: self, action: #selector(pan(_:))); pan.maximumNumberOfTouches = 1
+            let pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinch(_:)))
+            tap.require(toFail: pan)
+            view.addGestureRecognizer(tap); view.addGestureRecognizer(pan); view.addGestureRecognizer(pinch)
+        }
+        func update(_ owner: DiyNativeStage3D, view: SCNView) {
+            self.owner = owner
+            if resetVersion != owner.resetVersion { resetVersion = owner.resetVersion; yaw = 0; pitch = 0.82; distance = 5.3; updateCamera() }
+            let background = owner.darkSurface ? UIColor(red: 0.15, green: 0.23, blue: 0.2, alpha: 1) : UIColor(red: 0.93, green: 0.91, blue: 0.87, alpha: 1)
+            // Match the paper / velvet surface to the surrounding interface.
+            view.backgroundColor = background; scene.background.contents = UIColor.clear
+            if draggedId == nil { render(owner.slots, animated: !owner.reduceMotion) }
+        }
+        private func updateCamera() {
+            camera.position = SCNVector3(sin(yaw) * cos(pitch) * distance, sin(pitch) * distance, cos(yaw) * cos(pitch) * distance)
+            camera.look(at: SCNVector3Zero)
+        }
+        private func render(_ slots: [DiyBeadSlot], animated: Bool) {
+            guard let owner else { return }
+            let layout = DiyPhysicalLayout(slots: slots, wrist: owner.wrist, allowance: owner.allowance)
+            let scale = 1.65 / layout.radius, ids = Set(slots.map(\.id))
+            for id in Array(nodes.keys) where !ids.contains(id) { nodes.removeValue(forKey: id)?.removeFromParentNode(); signatures.removeValue(forKey: id) }
+            for (index, bead) in slots.enumerated() {
+                let node: SCNNode
+                if let existing = nodes[bead.id] { node = existing }
+                else { node = SCNNode(); node.name = bead.id; nodes[bead.id] = node; scene.rootNode.addChildNode(node) }
+                let signature = bead.hashValue ^ layout.radius.hashValue
+                if signatures[bead.id] != signature {
+                    signatures[bead.id] = signature
+                    let radius = CGFloat(bead.diameterMm * scale / 2)
+                    let geometry: SCNGeometry
+                    if bead.shape == "disc" || bead.shape == "barrel" { geometry = SCNCylinder(radius: radius, height: radius * (bead.shape == "disc" ? 0.9 : 2.3)) }
+                    else { let sphere = SCNSphere(radius: radius); sphere.segmentCount = bead.shape == "faceted" ? 10 : 32; geometry = sphere }
+                    let material = SCNMaterial(); material.lightingModel = .physicallyBased
+                    material.diffuse.contents = texture(bead)
+                    material.metalness.contents = bead.materialType == "metal" ? 0.86 : 0
+                    material.roughness.contents = bead.finish == "matte" || bead.finish == "natural" ? 0.6 : 0.26
+                    material.normal.intensity = 0.28; material.clearCoat.contents = 0.45; material.clearCoatRoughness.contents = 0.2
+                    geometry.materials = [material]; node.geometry = nil
+                    node.childNodes.forEach { $0.removeFromParentNode() }
+                    let body = SCNNode(geometry: geometry); body.name = "body"
+                    if bead.shape == "disc" || bead.shape == "barrel" { body.eulerAngles.z = .pi / 2 }
+                    body.scale = bead.shape == "pendant" ? SCNVector3(0.8, 1.25, 0.7) : SCNVector3(1, 1, 1)
+                    node.addChildNode(body)
+                    let shadow = SCNNode(geometry: SCNPlane(width: radius * 3.4, height: radius * 3.4))
+                    shadow.name = "contact-shadow"; shadow.eulerAngles.x = -.pi / 2; shadow.position.y = -Float(radius + 0.025)
+                    shadow.geometry?.firstMaterial?.lightingModel = .constant
+                    shadow.geometry?.firstMaterial?.diffuse.contents = contactShadow
+                    shadow.geometry?.firstMaterial?.writesToDepthBuffer = false
+                    shadow.geometry?.firstMaterial?.isDoubleSided = true
+                    node.addChildNode(shadow)
+                    let assets = DiyRenderAssets.parse(bead.renderAssets)
+                    for (raw, property) in [(assets?.albedoMapUrl, material.diffuse), (assets?.normalMapUrl, material.normal), (assets?.roughnessMapUrl, material.roughness)] {
+                        if let url = DiyRenderAssets.url(raw) { load(url, into: property) }
+                    }
+                    let selection = SCNNode(geometry: SCNTorus(ringRadius: radius * 1.22, pipeRadius: radius * 0.035))
+                    selection.name = "selection"; selection.position.y = -Float(radius * 0.8)
+                    selection.geometry?.firstMaterial?.diffuse.contents = UIColor(red: 0.68, green: 0.51, blue: 0.28, alpha: 1)
+                    selection.geometry?.firstMaterial?.lightingModel = .constant; node.addChildNode(selection)
+                    if bead.shape == "tassel" {
+                        for strand in 0..<9 {
+                            let thread = SCNNode(geometry: SCNCylinder(radius: 0.009, height: radius * 2.8))
+                            thread.position = SCNVector3(Float(strand - 4) * 0.025, -Float(radius * 1.8), 0)
+                            thread.geometry?.firstMaterial?.diffuse.contents = UIColor(Color(hex: bead.colorHex ?? "93795B")); node.addChildNode(thread)
+                        }
+                    }
+                }
+                let angle = layout.angles[index]
+                node.childNode(withName: "selection", recursively: false)?.isHidden = bead.id != owner.selectedId
+                SCNTransaction.begin(); SCNTransaction.animationDuration = animated && !SCNVector3EqualToVector3(node.position, SCNVector3Zero) ? 0.14 : 0
+                node.position = SCNVector3(cos(angle) * 1.65, 0, sin(angle) * 1.65)
+                node.eulerAngles.y = Float(-angle); SCNTransaction.commit()
             }
         }
-        view.scene = scene
+        private func bead(at point: CGPoint) -> String? {
+            guard let view else { return nil }
+            for hit in view.hitTest(point, options: [.searchMode: SCNHitTestSearchMode.all.rawValue]) {
+                var node: SCNNode? = hit.node
+                while let item = node { if let name = item.name, nodes[name] != nil { return name }; node = item.parent }
+            }
+            // A finger targets an area larger than a small bead. Use projected
+            // centers as a bounded fallback; never claim an unrelated floor hit.
+            let nearest = nodes.min { left, right in
+                let a = view.projectPoint(left.value.presentation.worldPosition), b = view.projectPoint(right.value.presentation.worldPosition)
+                return hypot(CGFloat(a.x) - point.x, CGFloat(a.y) - point.y) < hypot(CGFloat(b.x) - point.x, CGFloat(b.y) - point.y)
+            }
+            if let nearest {
+                let center = view.projectPoint(nearest.value.presentation.worldPosition)
+                if hypot(CGFloat(center.x) - point.x, CGFloat(center.y) - point.y) <= 18 { return nearest.key }
+            }
+            return nil
+        }
+        @objc private func tap(_ recognizer: UITapGestureRecognizer) { if let id = bead(at: recognizer.location(in: view)) { owner?.onSelect?(id) } }
+        @objc private func pan(_ recognizer: UIPanGestureRecognizer) {
+            guard let view, let owner else { return }
+            let location = recognizer.location(in: view), translation = recognizer.translation(in: view)
+            switch recognizer.state {
+            case .began:
+                gestureYaw = yaw; gesturePitch = pitch
+                if owner.onMove != nil, let id = bead(at: CGPoint(x: location.x - translation.x, y: location.y - translation.y)), let index = owner.slots.firstIndex(where: { $0.id == id }) {
+                    draggedId = id; targetIndex = index
+                    startAngles = DiyPhysicalLayout(slots: owner.slots, wrist: owner.wrist, allowance: owner.allowance).angles
+                    owner.onSelect?(id)
+                }
+            case .changed:
+                if let id = draggedId, let from = owner.slots.firstIndex(where: { $0.id == id }), let point = planePoint(location) {
+                    let angle = atan2(Double(point.z), Double(point.x))
+                    targetIndex = startAngles.indices.min { angularDistance(angle, startAngles[$0]) < angularDistance(angle, startAngles[$1]) } ?? from
+                    var preview = owner.slots; preview.insert(preview.remove(at: from), at: targetIndex)
+                    render(preview, animated: !owner.reduceMotion)
+                    SCNTransaction.begin(); SCNTransaction.animationDuration = 0
+                    nodes[id]?.position = SCNVector3(cos(angle) * 1.65, 0.13, sin(angle) * 1.65); SCNTransaction.commit()
+                } else {
+                    yaw = gestureYaw - Double(translation.x) * 0.008
+                    pitch = min(1.4, max(0.25, gesturePitch + Double(translation.y) * 0.008)); updateCamera()
+                }
+            case .ended:
+                if let id = draggedId { draggedId = nil; owner.onMove?(id, targetIndex); if let latest = self.owner { render(latest.slots, animated: !latest.reduceMotion) } }
+            case .cancelled, .failed:
+                draggedId = nil; render(owner.slots, animated: !owner.reduceMotion)
+            default: break
+            }
+        }
+        private func angularDistance(_ a: Double, _ b: Double) -> Double { abs(atan2(sin(a - b), cos(a - b))) }
+        private func planePoint(_ point: CGPoint) -> SCNVector3? {
+            guard let view else { return nil }
+            let near = view.unprojectPoint(SCNVector3(Float(point.x), Float(point.y), 0)), far = view.unprojectPoint(SCNVector3(Float(point.x), Float(point.y), 1))
+            let denominator = far.y - near.y
+            guard abs(denominator) > 0.00001 else { return nil }
+            let t = -near.y / denominator
+            return SCNVector3(near.x + t * (far.x - near.x), 0, near.z + t * (far.z - near.z))
+        }
+        @objc private func pinch(_ recognizer: UIPinchGestureRecognizer) {
+            if recognizer.state == .began {
+                if draggedId != nil { draggedId = nil; if let owner { render(owner.slots, animated: false) } }
+                gestureDistance = distance
+            }
+            distance = min(10, max(3.5, gestureDistance / Double(recognizer.scale))); updateCamera()
+        }
+        private func load(_ url: URL, into property: SCNMaterialProperty) {
+            if let image = textures.object(forKey: url.absoluteString as NSString) { property.contents = image; return }
+            textureWaiters[url, default: []].append(property)
+            guard requests[url] == nil else { return }
+            let request = URLSession.shared.dataTask(with: url) { [weak self] data, response, _ in
+                let image = (response as? HTTPURLResponse)?.statusCode == 200 ? data.flatMap(UIImage.init(data:)) : nil
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    self.requests.removeValue(forKey: url)
+                    let waiters = self.textureWaiters.removeValue(forKey: url) ?? []
+                    if let image { self.textures.setObject(image, forKey: url.absoluteString as NSString); waiters.forEach { $0.contents = image } }
+                }
+            }
+            requests[url] = request; request.resume()
+        }
+        private func texture(_ bead: DiyBeadSlot) -> UIImage {
+            let key = "procedural:\(bead.colorHex ?? "93795B"):\(bead.textureKey ?? "plain")" as NSString
+            if let cached = textures.object(forKey: key) { return cached }
+            let base = UIColor(Color(hex: bead.colorHex ?? "93795B"))
+            var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+            base.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+            let image = UIGraphicsImageRenderer(size: CGSize(width: 128, height: 128)).image { context in
+                base.setFill(); context.fill(CGRect(x: 0, y: 0, width: 128, height: 128))
+                for y in stride(from: 0, to: 128, by: 2) {
+                    for x in stride(from: 0, to: 128, by: 2) {
+                        let value = sin(Double(x) * 127.1 + Double(y) * 311.7) * 43758.5453
+                        let grain = value - Foundation.floor(value), level = 0.9 + grain * 0.1
+                        UIColor(red: red * level, green: green * level, blue: blue * level, alpha: 1).setFill()
+                        context.fill(CGRect(x: x, y: y, width: 2, height: 2))
+                    }
+                }
+            }
+            textures.setObject(image, forKey: key); return image
+        }
+        func dispose() { requests.values.forEach { $0.cancel() }; requests.removeAll(); textureWaiters.removeAll(); textures.removeAllObjects(); owner = nil }
     }
 }

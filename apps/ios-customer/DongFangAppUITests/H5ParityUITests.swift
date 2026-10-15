@@ -73,3 +73,43 @@ final class ProfileExperienceUITests: XCTestCase {
         XCTAssertFalse(app.navigationBars["编辑资料"].exists)
     }
 }
+
+final class DiyStudioUITests: XCTestCase {
+    func testSingleSceneEditingAndHistory() {
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
+        app.launchArguments = ["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99022", "--parity-diy-studio", "-askxuan.appearance", "light"]
+        app.launch()
+        let stage = app.otherElements["diy-3d-stage"]
+        XCTAssertTrue(stage.waitForExistence(timeout: 25))
+        if app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 颗 ")).firstMatch.exists {
+            app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "手围 ")).firstMatch.tap()
+            app.buttons["清空设计"].tap()
+            XCTAssertTrue(app.buttons["清空搭配"].waitForExistence(timeout: 5)); app.buttons["清空搭配"].tap()
+        }
+        XCTAssertFalse(app.buttons["2D"].exists)
+        XCTAssertFalse(app.buttons["3D"].exists)
+        let wood = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "小叶紫檀圆珠，")).firstMatch
+        XCTAssertTrue(wood.waitForExistence(timeout: 20)); wood.tap()
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "星月菩提，")).firstMatch.tap()
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "凤眼菩提，")).firstMatch.tap()
+        XCTAssertTrue(app.buttons["第 3 颗 凤眼菩提"].waitForExistence(timeout: 5))
+        app.buttons["向前移动珠子"].tap()
+        XCTAssertTrue(app.buttons["第 2 颗 凤眼菩提"].exists)
+        app.buttons["撤销"].tap()
+        XCTAssertTrue(app.buttons["第 3 颗 凤眼菩提"].exists)
+        app.buttons["重做"].tap()
+        XCTAssertTrue(app.buttons["第 2 颗 凤眼菩提"].exists)
+        app.buttons["第 1 颗 小叶紫檀圆珠"].tap()
+        app.buttons["复制"].tap()
+        XCTAssertTrue(app.buttons["第 2 颗 小叶紫檀圆珠"].exists)
+        app.buttons["删除"].tap()
+        XCTAssertTrue(app.buttons["第 2 颗 凤眼菩提"].exists)
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "ios-single-3d-studio"; shot.lifetime = .keepAlways; add(shot)
+        app.buttons["重置 3D 视角"].tap()
+        stage.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.28)).press(forDuration: 0.15, thenDragTo: stage.coordinate(withNormalizedOffset: CGVector(dx: 0.68, dy: 0.65)))
+        XCTAssertTrue(app.buttons["第 2 颗 小叶紫檀圆珠"].waitForExistence(timeout: 5))
+        app.buttons["撤销"].tap()
+        XCTAssertTrue(app.buttons["第 1 颗 小叶紫檀圆珠"].exists)
+    }
+}

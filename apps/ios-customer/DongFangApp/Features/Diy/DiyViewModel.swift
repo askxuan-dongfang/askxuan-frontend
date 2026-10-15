@@ -294,7 +294,8 @@ final class DiyViewModel: ObservableObject {
         }
         recordMutation()
         let bead = DiyBeadSlot(material: material, position: beadSlots.count)
-        beadSlots.append(bead)
+        let insertion = selectedBeadId.flatMap { id in beadSlots.firstIndex { $0.id == id } }.map { $0 + 1 } ?? beadSlots.count
+        beadSlots.insert(bead, at: insertion)
         selectedBeadId = bead.id
         finishMutation()
     }
@@ -311,8 +312,11 @@ final class DiyViewModel: ObservableObject {
               let index = beadSlots.firstIndex(where: { $0.id == selectedBeadId }),
               beadSlots.count < 60 else { return }
         let source = beadSlots[index]
-        if let material = materials.first(where: { $0.id == source.materialId }),
-           count(for: material.id) >= material.stock {
+        guard let material = materials.first(where: { $0.id == source.materialId && $0.spec == source.spec && $0.status == "on_shelf" }) else {
+            errorMessage = "该材料已不可用，请重新选择"
+            return
+        }
+        guard count(for: material.id) < material.stock else {
             errorMessage = "\(material.name)库存不足"
             return
         }
