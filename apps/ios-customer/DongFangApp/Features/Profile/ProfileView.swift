@@ -19,10 +19,9 @@ struct ProfileView: View {
     /// 统计行：功德值 / 积分 / 优惠券
     /// 注：当前 UserProfile 模型未提供这些字段，故展示 "—" 占位，待后端补齐后接入
     private var stats: [(label: String, value: String)] {
-        let merit = viewModel.profile?.meritValueText ?? "—"
         let points = viewModel.pointsBalance.map { String($0) } ?? "—"
         let coupons = viewModel.couponsLoaded ? "\(viewModel.availableCouponCount)" : "—"
-        return [("功德值", merit), ("积分", points), ("优惠券", coupons)]
+        return [("积分", points), ("优惠券", coupons)]
     }
 
     /// 订单中心入口：角标来自 viewModel.recentBookings 的真实状态计数
@@ -31,8 +30,7 @@ struct ProfileView: View {
         return [
             ("doc.text", "服务订单", pending > 0 ? "\(pending)待确认" : nil),
             ("bag", "商城订单", nil),
-            ("circle.grid.2x1", "DIY手串", nil),
-            ("bell", "消息", nil)
+            ("circle.grid.2x1", "DIY手串", nil)
         ]
     }
 
@@ -142,12 +140,6 @@ struct ProfileView: View {
                     errorHintView(errorMessage)
                 }
                 userInfoSection
-                Text("功德值用于记录个人成长，不用于支付或兑换；成长记录开放后展示。")
-                    .font(AppTypography.caption)
-                    .foregroundStyle(Color.textTertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, AppSpacing.lg)
-                    .padding(.top, 10)
                 NavigationLink { WalletView().id(authStore.sessionID) } label: {
                     HStack(spacing: 14) {
                         Image(systemName: "wallet.bifold").font(.title2).foregroundStyle(Color.accentDefault)
@@ -162,13 +154,19 @@ struct ProfileView: View {
                 orderCenterSection
                 servicesSection
                 systemSection
+                Text("功德值用于记录个人成长，不用于支付或兑换；成长记录开放后展示。")
+                    .font(AppTypography.caption)
+                    .foregroundStyle(Color.textTertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, AppSpacing.lg)
+                    .padding(.top, 10)
                 Color.clear.frame(height: AppSpacing.xl)
             }
             .padding(.bottom, AppSpacing.navBottom)
         }
         .softScrollEdge(.bottom)
         .task {
-            if viewModel.profile == nil { await viewModel.load() }
+            await viewModel.load()
         }
         .refreshable { await viewModel.load() }
     }
@@ -199,8 +197,11 @@ struct ProfileView: View {
     private var userInfoSection: some View {
         VStack(spacing: 0) {
             HStack(spacing: 14) {
-                RemoteAvatar(urlString: viewModel.avatarURL, size: 56)
-                    .overlay(Circle().stroke(Color.accentDefault, lineWidth: 2))
+                NavigationLink { ProfileEditView(editAvatar: true) } label: {
+                    RemoteAvatar(urlString: viewModel.avatarURL, size: 64)
+                        .overlay(Circle().stroke(Color.accentDefault, lineWidth: 2))
+                        .overlay(alignment: .bottomTrailing) { Image(systemName: "camera.fill").font(.system(size: 11)).padding(6).foregroundStyle(Color.bgPrimary).background(Color.accentDefault, in: Circle()) }
+                }.accessibilityLabel("更换头像")
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("我的账户").font(AppTypography.micro).foregroundStyle(Color.textTertiary)

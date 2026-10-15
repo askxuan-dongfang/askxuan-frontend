@@ -11,8 +11,8 @@ import SwiftUI
 @MainActor
 final class ProfileEditViewModel: ObservableObject {
     @Published var bio: String = ""
-    @Published var specialtiesText: String = ""
-    @Published var avatarURL: String = ""
+    @Published var specialties: [String] = []
+    let avatarDraft: AvatarDraftState
     @Published var pricing: String = ""
     @Published var isSaving: Bool = false
     @Published var message: String? = nil
@@ -24,23 +24,21 @@ final class ProfileEditViewModel: ObservableObject {
         self.original = profile
         self.apiClient = apiClient
         self.bio = profile?.bio ?? ""
-        self.specialtiesText = (profile?.specialties ?? []).joined(separator: "、")
-        self.avatarURL = profile?.avatar ?? ""
+        self.specialties = profile?.specialties ?? []
+        self.avatarDraft = AvatarDraftState(url: profile?.avatar ?? "")
         self.pricing = profile?.pricing ?? ""
     }
 
     func save() async {
+        guard !isSaving else { return }
         isSaving = true
         message = nil
         do {
-            let specialties = specialtiesText
-                .components(separatedBy: CharacterSet(charactersIn: "、,，"))
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { !$0.isEmpty }
+            let avatarURL = try await avatarDraft.resolve()
             let req = MasterProfileUpdateRequest(
                 bio: bio,
                 specialties: specialties,
-                avatar: avatarURL.isEmpty ? nil : avatarURL,
+                avatar: avatarURL,
                 pricing: pricing
             )
             let _: MasterProfile = try await apiClient.request(.masterProfileUpdate(req))
@@ -56,44 +54,31 @@ final class ProfileEditViewModel: ObservableObject {
 
 struct ProfileEditView: View {
     let profile: MasterProfile?
+    let editAvatar: Bool
     @StateObject private var viewModel: ProfileEditViewModel
     @Environment(\.dismiss) private var dismiss
     // 特性 3：iOS 26+ 富文本编辑 —— AttributedString 支持加粗/斜体/下划线
     @State private var bioAttributed: AttributedString = AttributedString()
 
-    init(profile: MasterProfile?) {
+    init(profile: MasterProfile?, editAvatar: Bool = false) {
         self.profile = profile
+        self.editAvatar = editAvatar
         _viewModel = StateObject(wrappedValue: ProfileEditViewModel(profile: profile))
     }
 
     var body: some View {
         ScrollView {
             VStack(spacing: AppSpacing.lg) {
-                // 头像
                 MasterCard(padding: AppSpacing.lg) {
-                    VStack(spacing: AppSpacing.md) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.bgTertiary)
-                                .frame(width: 80, height: 80)
-                            if let url = URL(string: viewModel.avatarURL), !viewModel.avatarURL.isEmpty {
-                                AsyncImage(url: url) { image in
-                                    image.resizable().scaledToFill()
-                                } placeholder: {
-                                    Image(systemName: "person.crop.circle.fill")
-                                        .font(.system(size: 44))
-                                        .foregroundStyle(.accentDefault)
-                                }
-                                .frame(width: 80, height: 80)
-                                .clipShape(Circle())
-                            } else {
-                                Image(systemName: "person.crop.circle.fill")
-                                    .font(.system(size: 44))
-                                    .foregroundStyle(.accentDefault)
-                            }
-                        }
-                        DFTextField(title: "头像 URL", text: $viewModel.avatarURL,
-                                    placeholder: "https://...", icon: "photo")
+                    AvatarPhotoField(draft: viewModel.avatarDraft, disabled: viewModel.isSaving, initialOpen: editAvatar)
+                }
+                if let profile {
+                    MasterCard(padding: AppSpacing.md) {
+                        VStack(spacing: 12) {
+                            LabeledContent("法号", value: profile.dharmaName)
+                            LabeledContent("职位", value: profile.position)
+                            Text("身份资料由认证记录维护").font(.caption).foregroundStyle(Color.textSecondary)
+                        }.foregroundStyle(Color.textPrimary)
                     }
                 }
 
@@ -138,29 +123,8 @@ struct ProfileEditView: View {
                     }
                 }
 
-                // 专长
                 MasterCard(padding: AppSpacing.md) {
-                    VStack(alignment: .leading, spacing: AppSpacing.md) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "checkmark.seal")
-                                .font(AppTypography.body)
-                                .foregroundStyle(.accentDefault)
-                            Text("专长（用顿号分隔）")
-                                .font(.cardTitle)
-                                .foregroundStyle(.textPrimary)
-                        }
-                        TextField("如：开光、化太岁、超度", text: $viewModel.specialtiesText, axis: .vertical)
-                            .font(AppTypography.body)
-                            .foregroundStyle(.textPrimary)
-                            .padding(AppSpacing.sm)
-                            .background(Color.bgTertiary)
-                            .cornerRadius(AppRadius.md)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AppRadius.md)
-                                    .stroke(Color.borderDefault, lineWidth: 1)
-                            )
-                            .lineLimit(1...3)
-                    }
+                    ProfileSpecialtyPicker(selection: $viewModel.specialties)
                 }
 
                 // 定价
@@ -204,6 +168,7 @@ struct ProfileEditView: View {
                     Task { await viewModel.save() }
                 }
             }
+            .disabled(viewModel.isSaving)
             .padding(.horizontal, AppSpacing.pageHorizontal)
             .padding(.bottom, AppSpacing.xl)
         }
@@ -211,6 +176,8 @@ struct ProfileEditView: View {
         .navigationTitle("编辑资料")
         .navigationBarTitleDisplayMode(.inline)
 
+        .interactiveDismissDisabled(viewModel.isSaving)
+        .navigationBarBackButtonHidden(viewModel.isSaving)
         .onAppear {
             // 特性 3：初始化 AttributedString
             if #available(iOS 26.0, *) {

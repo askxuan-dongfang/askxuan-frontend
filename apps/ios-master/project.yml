@@ -37,6 +37,7 @@ targets:
     platform: iOS
     sources:
       - path: ../../packages/service-journey-native
+      - path: ../../packages/profile-native
       - path: ../../packages/chat-native
       - path: ../../packages/design-tokens/fonts
         includes: ["AskXuanSerif-Semibold.ttf", "OFL.txt"]

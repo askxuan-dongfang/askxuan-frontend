@@ -19,6 +19,10 @@ final class WorkspaceViewModel: ObservableObject {
     @Published var reviewTotal: Int64 = 0
     @Published var positiveReviewTotal: Int64 = 0
 
+    @Published var todayTotal: Int64?
+    @Published var pendingTotal: Int64?
+    @Published var tasksLoaded = false
+    @Published var reviewsLoaded = false
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
 
@@ -28,20 +32,11 @@ final class WorkspaceViewModel: ObservableObject {
         self.apiClient = apiClient
     }
 
-    /// 待办总数
-    var todoCount: Int { pendingBookings.count + assignedTasks.count }
-    var todayBookings: [Booking] {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        let today = formatter.string(from: Date())
-        return allBookings.filter { $0.bookingDate == today }
+    static var today: String {
+        let formatter = DateFormatter(); formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
     }
-    var monthBookingCount: Int {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM"
-        let month = formatter.string(from: Date())
-        return allBookings.filter { $0.bookingDate.hasPrefix(month) }.count
-    }
+    var todayBookings: [Booking] { allBookings.sorted { $0.timeSlot < $1.timeSlot } }
     var positiveReviewRate: Double {
         guard reviewTotal > 0 else { return 0 }
         return Double(positiveReviewTotal) / Double(reviewTotal) * 100
@@ -59,16 +54,16 @@ final class WorkspaceViewModel: ObservableObject {
         let (b, t, e, r) = await (bookingsResult, tasksResult, earningsResult, reviewsResult)
 
         switch b {
-        case .success(let list):
-            self.allBookings = list
-            self.pendingBookings = list.filter { $0.statusEnum == .pending }
+        case .success(let results):
+            allBookings = results.0.list; todayTotal = results.0.total
+            pendingBookings = results.1.list; pendingTotal = results.1.total
         case .failure:
-            self.allBookings = []
-            self.pendingBookings = []
+            allBookings = []; pendingBookings = []; todayTotal = nil; pendingTotal = nil
+            errorMessage = "预约暂时无法加载，请重试"
         }
         switch t {
-        case .success(let list): self.assignedTasks = list
-        case .failure: self.assignedTasks = []
+        case .success(let list): self.assignedTasks = list; tasksLoaded = true
+        case .failure: self.assignedTasks = []; tasksLoaded = false
         }
         switch e {
         case .success(let summary): self.earnings = summary
@@ -76,9 +71,11 @@ final class WorkspaceViewModel: ObservableObject {
         }
         switch r {
         case .success(let stats):
+            reviewsLoaded = true
             self.reviewTotal = stats.total
             self.positiveReviewTotal = stats.positive
         case .failure:
+            reviewsLoaded = false
             self.reviewTotal = 0
             self.positiveReviewTotal = 0
         }
@@ -86,12 +83,11 @@ final class WorkspaceViewModel: ObservableObject {
         isLoading = false
     }
 
-    private func fetchBookings() async -> Result<[Booking], Error> {
+    private func fetchBookings() async -> Result<(BookingListResponse, BookingListResponse), Error> {
         do {
-            let resp: BookingListResponse = try await apiClient.request(
-                .masterBookings(status: nil, page: 1, size: 100)
-            )
-            return .success(resp.list)
+            async let today: BookingListResponse = apiClient.request(.masterBookings(status: nil, page: 1, size: 100, date: Self.today))
+            async let pending: BookingListResponse = apiClient.request(.masterBookings(status: "pending", page: 1, size: 3))
+            return .success(try await (today, pending))
         } catch { return .failure(error) }
     }
 
@@ -136,11 +132,11 @@ private struct QuickAction {
 struct WorkspaceView: View {
     @StateObject private var viewModel = WorkspaceViewModel()
     @EnvironmentObject private var authStore: AuthStore
-    @State private var manageBy: String = "temple"
+    @State private var manageBy: String = ""
 
     private var quickActions: [QuickAction] {
         var actions: [QuickAction] = []
-        if !isWildMaster {
+        if manageBy == "temple" {
             actions.append(QuickAction(icon: "calendar", label: "设置日程"))
         }
         actions.append(QuickAction(icon: "clock", label: "休息请假"))
@@ -157,15 +153,14 @@ struct WorkspaceView: View {
                     Text("问玄东方 · 师傅工作台").font(AppTypography.navigation).foregroundStyle(Color.accentDefault)
                     Spacer()
                 }.padding(.horizontal, AppSpacing.pageHorizontal).padding(.top, 12)
-                greetingSection.appEntrance()
+                greetingSection
+                pendingBookingsSection
                 JourneyEntryView().padding(16)
-                statsRow.appEntrance(order: 1)
-                quickActionsSection.appEntrance(order: 2)
-                mediaStudioSection.appEntrance(order: 3)
                 todayBookingsSection
-                if !isWildMaster {
-                    blessingTaskSection
-                }
+                if manageBy == "temple" { blessingTaskSection }
+                quickActionsSection
+                mediaStudioSection
+                statsRow
             }
             .padding(.bottom, 70)
         }
@@ -213,10 +208,10 @@ struct WorkspaceView: View {
 
     private var greetingSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("您好，\(authStore.nickname ?? "明觉法师（演示）")")
+            Text("\(authStore.nickname ?? "师傅")，您好")
                 .font(.pageTitle)
                 .foregroundStyle(.textPrimary)
-            Text("今日有 \(viewModel.pendingBookings.count) 个预约待处理，\(viewModel.assignedTasks.count) 个加持任务")
+            Text(Date().formatted(.dateTime.month(.wide).day().weekday(.wide)))
                 .font(AppTypography.caption)
                 .foregroundStyle(.textSecondary)
         }
@@ -230,9 +225,8 @@ struct WorkspaceView: View {
 
     private var statsRow: some View {
         let stats = [
-            WorkspaceStat(value: "\(viewModel.monthBookingCount)", label: "本月预约", highlight: false),
-            WorkspaceStat(value: String(format: "¥%.2f", viewModel.earnings?.monthIncome ?? 0), label: "本月收入", highlight: true),
-            WorkspaceStat(value: String(format: "%.1f%%", viewModel.positiveReviewRate), label: "好评率", highlight: false)
+            WorkspaceStat(value: viewModel.earnings.map { String(format: "¥%.2f", $0.monthIncome) } ?? "—", label: "本月收入", highlight: true),
+            WorkspaceStat(value: viewModel.reviewsLoaded && viewModel.reviewTotal > 0 ? String(format: "%.1f%%", viewModel.positiveReviewRate) : "—", label: "好评率", highlight: false)
         ]
         return HStack(spacing: 10) {
             ForEach(stats.indices, id: \.self) { index in
@@ -299,6 +293,26 @@ struct WorkspaceView: View {
 
     // MARK: - 今日预约
 
+    private func retryRow(_ text: String) -> some View {
+        HStack { Text(text).font(.caption).foregroundStyle(Color.textSecondary); Spacer(); Button("重试") { Task { await viewModel.load() } }.frame(minHeight: 44) }
+            .padding(.horizontal, AppSpacing.pageHorizontal).tint(Color.accentDefault)
+    }
+    private var pendingBookingsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("待处理预约 \(viewModel.pendingTotal.map(String.init) ?? "—")").font(AppTypography.reading.weight(.semibold)).foregroundStyle(Color.textPrimary)
+                Spacer()
+                NavigationLink("查看全部") { BookingsView(status: .pending) }.font(.caption).foregroundStyle(Color.textSecondary).frame(minHeight: 44)
+            }.padding(.horizontal, AppSpacing.pageHorizontal)
+            if viewModel.isLoading { ProgressView().frame(maxWidth: .infinity).padding() }
+            else if viewModel.pendingTotal == nil { retryRow("待处理预约暂时无法加载") }
+            else if viewModel.pendingBookings.isEmpty { Text("暂时没有待确认的预约").font(.caption).foregroundStyle(Color.textSecondary).frame(maxWidth: .infinity).padding() }
+            ForEach(viewModel.pendingBookings) { booking in
+                NavigationLink { BookingDetailView(bookingId: booking.id) } label: { bookingCard(booking) }.buttonStyle(CardPressButtonStyle())
+            }
+        }
+    }
+
     private var todayBookingsSection: some View {
         VStack(spacing: 0) {
             HStack {
@@ -307,7 +321,7 @@ struct WorkspaceView: View {
                     .foregroundStyle(.textPrimary)
                 Spacer()
                 NavigationLink {
-                    BookingsView()
+                    BookingsView(date: WorkspaceViewModel.today)
                 } label: {
                     Text("查看全部")
                         .font(AppTypography.caption)
@@ -318,14 +332,16 @@ struct WorkspaceView: View {
             .padding(.top, AppSpacing.lg)
             .padding(.bottom, AppSpacing.sm)
 
-            if viewModel.todayBookings.isEmpty {
+            if viewModel.isLoading { ProgressView().padding() }
+            else if viewModel.todayTotal == nil { retryRow("今日预约暂时无法加载") }
+            else if viewModel.todayBookings.isEmpty {
                 Text("今日暂无预约")
                     .font(AppTypography.caption)
                     .foregroundStyle(.textTertiary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, AppSpacing.lg)
             }
-            ForEach(viewModel.todayBookings) { booking in
+            ForEach(Array(viewModel.todayBookings.prefix(5))) { booking in
                 NavigationLink {
                     BookingDetailView(bookingId: booking.id)
                 } label: {
@@ -356,7 +372,7 @@ struct WorkspaceView: View {
                 Text(booking.serviceName)
                     .font(AppTypography.body.weight(.medium))
                     .foregroundStyle(.textPrimary)
-                Text("\(booking.userId) · \(booking.templeName)")
+                Text("\(booking.bookingDate) · \(booking.templeName.isEmpty ? "独立服务" : booking.templeName)")
                     .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
             }
@@ -411,7 +427,9 @@ struct WorkspaceView: View {
             .padding(.top, 16)
             .padding(.bottom, 10)
 
-            if let task = viewModel.assignedTasks.first {
+            if viewModel.isLoading { ProgressView().padding() }
+            else if !viewModel.tasksLoaded { retryRow("加持任务暂时无法加载") }
+            else if let task = viewModel.assignedTasks.first {
                 NavigationLink {
                     BlessingTaskDetailView(taskId: task.id)
                 } label: {

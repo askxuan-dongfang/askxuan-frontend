@@ -54,3 +54,19 @@ final class H5ParityUITests: XCTestCase {
         capture(app, "ios-public-services")
     }
 }
+
+final class ProfileExperienceUITests: XCTestCase {
+
+    func testAvatarEntryAndPhotoPicker() {
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:5437/api/v1"
+        app.launchArguments = ["--smoke-token", "local-fixture", "--smoke-user-id", "9001", "-tab", "4", "-askxuan.appearance", "dark"]
+        app.launch()
+        XCTAssertTrue(app.buttons["更换头像"].waitForExistence(timeout: 20)); app.buttons["更换头像"].tap()
+        XCTAssertTrue(app.buttons["从相册选择照片"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.textFields["头像 URL"].exists)
+        app.buttons["从相册选择照片"].tap()
+        XCTAssertTrue(app.buttons["取消"].waitForExistence(timeout: 10) || app.buttons["Cancel"].waitForExistence(timeout: 3))
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "customer-avatar-photo-picker"; shot.lifetime = .keepAlways; add(shot)
+    }
+}

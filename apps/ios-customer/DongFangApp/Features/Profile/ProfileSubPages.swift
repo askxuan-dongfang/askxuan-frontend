@@ -1374,7 +1374,8 @@ struct HelpView: View {
 struct ProfileEditView: View {
     @EnvironmentObject private var authStore: AuthStore
     @State private var nickname = ""
-    @State private var avatar = ""
+    @StateObject private var avatarDraft = AvatarDraftState()
+    var editAvatar = false
     @State private var mobile = ""
     @State private var gender = "unknown"
     @State private var birthday = ""
@@ -1389,7 +1390,7 @@ struct ProfileEditView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: AppSpacing.lg) {
                 avatarSection
-                infoSection
+                infoSection.disabled(isSaving || isLoading)
                 Spacer(minLength: AppSpacing.xl)
             }
             .padding(.horizontal, AppSpacing.lg)
@@ -1403,9 +1404,10 @@ struct ProfileEditView: View {
                 Button(isSaving ? "保存中" : "保存") {
                     Task { await saveProfile() }
                 }
-                .disabled(isSaving || nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(isSaving || isLoading || nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
+        .navigationBarBackButtonHidden(isSaving)
         .task { await loadProfile() }
         .overlay {
             if isLoading { ProgressView().tint(Color.accentDefault) }
@@ -1426,16 +1428,8 @@ struct ProfileEditView: View {
     }
 
     private var avatarSection: some View {
-        HStack {
-            Spacer()
-            ZStack {
-                Circle().fill(Color.bgTertiary).frame(width: 72, height: 72)
-                RemoteAvatar(urlString: avatar, size: 72)
-                Circle().stroke(Color.accentDefault, lineWidth: 2).frame(width: 72, height: 72)
-            }
-            Spacer()
-        }
-        .padding(.vertical, AppSpacing.md)
+        AvatarPhotoField(draft: avatarDraft, disabled: isSaving || isLoading, initialOpen: editAvatar)
+            .padding(.vertical, AppSpacing.md)
     }
 
     private var infoSection: some View {
@@ -1522,7 +1516,7 @@ struct ProfileEditView: View {
         do {
             let profile: UserProfile = try await APIClient.shared.request(.userProfile)
             nickname = profile.nickname
-            avatar = profile.avatar
+            avatarDraft.url = profile.avatar
             mobile = profile.mobile
             gender = profile.gender
             birthday = profile.birthday ?? ""
@@ -1537,6 +1531,8 @@ struct ProfileEditView: View {
     private func saveProfile() async {
         isSaving = true
         defer { isSaving = false }
+        do {
+        let avatar = try await avatarDraft.resolve()
         let request = UpdateProfileRequest(
             nickname: nickname.trimmingCharacters(in: .whitespacesAndNewlines),
             avatar: avatar,
@@ -1545,10 +1541,9 @@ struct ProfileEditView: View {
             region: region,
             bio: bio
         )
-        do {
             let profile: UserProfile = try await APIClient.shared.request(.updateProfile(request))
             nickname = profile.nickname
-            avatar = profile.avatar
+            avatarDraft.url = profile.avatar
             mobile = profile.mobile
             authStore.updateCachedProfile(nickname: profile.nickname, avatar: profile.avatar, mobile: profile.mobile)
             savedMessage = "个人资料已保存"

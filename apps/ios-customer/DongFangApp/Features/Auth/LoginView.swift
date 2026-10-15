@@ -46,9 +46,16 @@ struct LoginView: View {
   @State private var failure = ""
   @State private var retryAt = Date.distantPast
   @State private var legal: String?
+  @State private var completingProfile = false
   private let master = false
   private var proof: [String: String] { ["captchaId": captcha?.id ?? "", "captchaCode": human] }
   var body: some View {
+    Group {
+      if completingProfile { ProfileCompletionView { dismiss() } }
+      else { loginContent }
+    }
+  }
+  private var loginContent: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 20) {
         Image("brand-logo").resizable().scaledToFit().frame(width: 52, height: 52)
@@ -229,10 +236,10 @@ struct LoginView: View {
             path: mode == "register" ? "email/register" : master ? "admin/login" : "login",
             body: body))
         try await accept(result)
-        dismiss()
+        if mode == "register" { completingProfile = true } else { dismiss() }
       }
     } catch { failure = error.localizedDescription }
-    await reloadCaptcha()
+    if !completingProfile { await reloadCaptcha() }
   }
   private func accept(_ result: IdentityLogin) async throws {
     guard let id = result.userInfo?.userId else {

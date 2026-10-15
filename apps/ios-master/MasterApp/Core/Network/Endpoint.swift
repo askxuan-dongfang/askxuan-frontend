@@ -33,7 +33,7 @@ enum Endpoint {
 
     // MARK: - 预约（法师工作台）
     /// GET admin/masters/bookings
-    case masterBookings(status: String?, page: Int, size: Int)
+    case masterBookings(status: String?, page: Int, size: Int, date: String? = nil)
     /// GET admin/masters/bookings/{id}
     case masterBookingDetail(id: String)
     /// PUT admin/masters/bookings/{id}/confirm
@@ -248,7 +248,7 @@ enum Endpoint {
     var queryItems: [URLQueryItem]? {
         switch self {
         case .providerWallet(let page, let mode): return [URLQueryItem(name: "page", value: String(page)),URLQueryItem(name: "mode", value: mode)]
-        case .masterBookings(let status, let page, let size):
+        case .masterBookings(let status, let page, let size, let date):
             var items = [
                 URLQueryItem(name: "page", value: String(page)),
                 URLQueryItem(name: "size", value: String(size))
@@ -256,6 +256,7 @@ enum Endpoint {
             if let status, !status.isEmpty {
                 items.append(URLQueryItem(name: "status", value: status))
             }
+            if let date, !date.isEmpty { items.append(URLQueryItem(name: "date", value: date)) }
             return items
         case .bookingChats(let page, let size), .bookingChatMessages(_, let page, let size),
              .chats(let page, let size), .chatMessages(_, let page, let size):

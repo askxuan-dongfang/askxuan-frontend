@@ -106,6 +106,7 @@ struct ProfileView: View {
     private var profileCard: some View {
         VStack(spacing: 0) {
             // 头像
+            NavigationLink { ProfileEditView(profile: viewModel.profile, editAvatar: true) } label: {
             AsyncImage(url: URL(string: viewModel.profile?.avatar ?? "")) { phase in
                 if case .success(let image) = phase {
                     image.resizable().scaledToFill()
@@ -123,6 +124,8 @@ struct ProfileView: View {
                         .stroke(Color.accentDefault, lineWidth: 3)
                 )
 
+            }.accessibilityLabel("更换头像").disabled(viewModel.profile == nil)
+
             // 名字
             Text(viewModel.profile?.dharmaName ?? "法师资料")
                 .font(.pageTitle)
@@ -131,7 +134,7 @@ struct ProfileView: View {
 
             // 寺院 + 已认证 badge
             HStack(spacing: AppSpacing.sm) {
-                Text(viewModel.profile?.templeId ?? "未关联寺院")
+                Text(viewModel.profile?.manageBy == "platform" ? "独立执业" : viewModel.profile?.templeId.isEmpty == false ? "寺院纳管" : "未关联寺院")
                     .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
                 HStack(spacing: 4) {

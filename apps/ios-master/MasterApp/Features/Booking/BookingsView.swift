@@ -16,6 +16,7 @@ final class BookingsViewModel: ObservableObject {
     @Published var errorMessage: String? = nil
     @Published var total: Int64 = 0
 
+    var date: String?
     private let apiClient: APIClient
     private var page: Int = 1
     private let size: Int = 20
@@ -37,7 +38,7 @@ final class BookingsViewModel: ObservableObject {
         errorMessage = nil
         do {
             let resp: BookingListResponse = try await apiClient.request(
-                .masterBookings(status: statusFilter, page: page, size: size)
+                .masterBookings(status: statusFilter, page: page, size: size, date: date)
             )
             if reset {
                 bookings = resp.list
@@ -86,8 +87,17 @@ struct BookingsView: View {
         TabFilterItem(title: "已完成", status: .completed)
     ]
 
+    init(date: String? = nil, status: BookingStatus? = nil) {
+        let model = BookingsViewModel(); model.date = date; model.selectedStatus = status
+        _viewModel = StateObject(wrappedValue: model)
+        _selectedTabIndex = State(initialValue: status == .pending ? 1 : 0)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
+            if let date = viewModel.date {
+                HStack { Text(date + " 的预约").font(.caption); Spacer(); Button("所有日期") { viewModel.date = nil; Task { await viewModel.load() } } }.padding(.horizontal).frame(minHeight: 44)
+            }
             tabFilters
             bookingList
         }
