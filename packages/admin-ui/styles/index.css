@@ -23,6 +23,7 @@ html:root {
   --admin-text-secondary: var(--color-text-secondary);
   --admin-text-tertiary: var(--color-text-secondary);
   --admin-border: var(--color-border-default);
+  --admin-card-border: color-mix(in srgb, var(--admin-border) 80%, transparent);
   --admin-border-strong: var(--color-border-strong);
   --admin-primary: var(--color-brand);
   --admin-primary-hover: var(--color-brand-light);
@@ -34,8 +35,8 @@ html:root {
   --admin-danger: var(--color-state-error);
   --admin-info: var(--color-state-info);
   --admin-shadow-rgb: 0, 0, 0;
-  --admin-shadow-sm: 0 1px 2px rgba(var(--admin-shadow-rgb),.16);
-  --admin-shadow-md: 0 8px 24px rgba(var(--admin-shadow-rgb),.22);
+  --admin-shadow-sm: 0 2px 6px rgba(var(--admin-shadow-rgb),.1);
+  --admin-shadow-md: 0 6px 20px rgba(var(--admin-shadow-rgb),.16);
   --admin-transition: var(--motion-duration-standard) var(--motion-ease);
 
   /* Legacy commerce aliases share the same theme; generated --color-* remain authoritative. */
@@ -157,8 +158,8 @@ html:root[data-theme=light] {
   --admin-sidebar-muted: #BCCBB7;
   --admin-sidebar-active: rgba(255,249,233,.12);
   --admin-shadow-rgb: 37, 62, 54;
-  --admin-shadow-sm: 0 1px 2px rgba(var(--admin-shadow-rgb),.05);
-  --admin-shadow-md: 0 8px 24px rgba(var(--admin-shadow-rgb),.08);
+  --admin-shadow-sm: 0 2px 6px rgba(var(--admin-shadow-rgb),.025);
+  --admin-shadow-md: 0 6px 20px rgba(var(--admin-shadow-rgb),.06);
 }
 
 *,
@@ -555,7 +556,7 @@ a:focus-visible,
   gap: 12px;
   color: var(--admin-text);
   background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
+  border: 1px solid var(--admin-card-border);
   border-radius: 12px;
   box-shadow: var(--admin-shadow-sm);
   transition: border-color var(--admin-transition), box-shadow var(--admin-transition), transform var(--admin-transition);
@@ -574,7 +575,7 @@ a:focus-visible,
   flex: 0 0 40px;
   place-items: center;
   color: var(--admin-primary);
-  background: rgba(var(--admin-primary-rgb),0.1);
+  background: rgba(var(--admin-primary-rgb),0.06);
   border-radius: 10px;
 }
 
@@ -623,12 +624,12 @@ a:focus-visible,
 }
 
 .df-title-bar {
-  width: 4px;
+  width: 3px;
   height: 18px;
   display: inline-block;
-  flex: 0 0 4px;
+  flex: 0 0 3px;
   border-radius: 999px;
-  background: linear-gradient(180deg, var(--admin-primary), var(--admin-accent));
+  background: var(--admin-accent);
 }
 
 .ax-admin-overlay {
@@ -673,26 +674,26 @@ a:focus-visible,
   min-width: 0;
   max-width: 100%;
   background: var(--admin-surface);
-  border-color: var(--admin-border);
+  border-color: var(--admin-card-border);
   box-shadow: var(--admin-shadow-sm);
 }
 
 .df-card,
 .dfx-card {
-  border: 1px solid var(--admin-border);
+  border: 1px solid var(--admin-card-border);
   border-radius: 12px;
 }
 
 .el-table {
   width: 100% !important;
   max-width: 100%;
-  --el-table-header-bg-color: var(--admin-surface-muted);
+  --el-table-header-bg-color: color-mix(in srgb, var(--admin-surface-muted) 65%, var(--admin-surface));
   --el-table-row-hover-bg-color: var(--admin-surface-hover);
 }
 
 .el-table th.el-table__cell {
   color: var(--admin-text-secondary);
-  background: var(--admin-surface-muted) !important;
+  background: var(--el-table-header-bg-color) !important;
   font-weight: var(--type-weight-semibold);
 }
 
@@ -1248,7 +1249,7 @@ html:root {
 .el-form-item__error { padding-top: 5px; font-size: var(--type-size-caption); line-height: 1.4; }
 .el-button:not(.is-link):not(.is-text) { border-radius: 9px; }
 .el-button--primary:not(.is-link):not(.is-text):not(.is-plain):not(.is-disabled) {
-  box-shadow: 0 2px 5px color-mix(in srgb, var(--admin-primary) 18%, transparent), inset 0 1px 0 rgba(255,255,255,.12);
+  box-shadow: 0 1px 2px rgba(var(--admin-shadow-rgb), .06);
 }
 .el-button.is-loading { cursor: wait; }
 .el-button.is-disabled { box-shadow: none; }
@@ -1286,7 +1287,7 @@ html:root {
 @media (hover: hover) and (pointer: fine) {
   .ax-task-card:hover { border-color: color-mix(in srgb, var(--admin-accent) 45%, var(--admin-border)); }
   .el-button--primary:not(.is-link):not(.is-text):not(.is-disabled):not(.is-loading):hover {
-    box-shadow: 0 4px 10px rgba(var(--admin-primary-rgb), .2), inset 0 1px 0 rgba(255,255,255,.12);
+    box-shadow: 0 3px 8px rgba(var(--admin-shadow-rgb), .08);
   }
 }
 @media (pointer: coarse) {

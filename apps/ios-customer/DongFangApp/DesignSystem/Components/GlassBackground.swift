@@ -170,8 +170,8 @@ private struct AppCardSurface: ViewModifier {
         content
             .background(Color.bgSecondary, in: shape)
             .clipShape(shape)
-            .overlay(shape.strokeBorder(Color.borderDefault, lineWidth: 1))
-            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.12 : 0.035), radius: 10, x: 0, y: 3)
+            .overlay(shape.strokeBorder(Color.borderDefault.opacity(0.8), lineWidth: 1))
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.1 : 0.025), radius: 6, x: 0, y: 2)
     }
 }
 

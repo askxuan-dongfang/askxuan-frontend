@@ -59,17 +59,17 @@ const feature = computed(() => {
   margin: 0;
   color: var(--color-text-primary, var(--text-dark, #2a1e1a));
   font-family: var(--font-serif);
-  font-size: var(--type-size-page);
+  font-size: clamp(var(--type-size-page), 2vw, var(--type-size-hero));
   font-weight: var(--type-weight-semibold);
-  letter-spacing: .02em;
-  line-height: var(--type-line-title);
+  letter-spacing: .01em;
+  line-height: 1.4;
 }
 .aui-page-header__title { align-items: flex-start; gap: 10px; }
-.aui-page-header__title > svg { flex: none; margin-top: 3px; color: var(--color-brand, var(--admin-primary)); }
+.aui-page-header__title > svg { flex: none; margin-top: calc((1.4em - 24px) / 2); color: var(--color-brand, var(--admin-primary)); }
 .aui-page-header__title > span { min-width: 0; overflow-wrap: anywhere; }
 .aui-page-header__subtitle {
   margin: 6px 0 0 34px;
-  color: var(--color-text-tertiary, var(--admin-text-tertiary, var(--text-light, #8a7a6a)));
+  color: var(--color-text-secondary, var(--admin-text-secondary, var(--text-medium, #66736c)));
   font-size: var(--type-size-label);
   line-height: 1.6;
 }

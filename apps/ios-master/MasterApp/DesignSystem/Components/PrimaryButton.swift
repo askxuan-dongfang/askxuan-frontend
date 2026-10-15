@@ -3,13 +3,13 @@
 //  MasterApp
 //
 //  主/次按钮组件：
-//  - PrimaryButton：朱砂渐变(#C45A3C→#D97B4A) + 白色文字 + 圆角 + 至少 48pt 触控高度
+//  - PrimaryButton：主题品牌色 + 白色文字 + 圆角 + 至少 48pt 触控高度
 //  - SecondaryButton：描边琉璃金 + 透明背景 + 金色文字
 //
 
 import SwiftUI
 
-/// 主按钮：朱砂渐变背景 + 白色文字
+/// 主按钮：与 H5 一致的实色品牌背景 + 白色文字
 struct PrimaryButton: View {
     let title: String
     var icon: String? = nil
@@ -43,13 +43,7 @@ struct PrimaryButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .frame(minHeight: 48)
-            .background(
-                LinearGradient(
-                    colors: [Color.brandDefault, Color.brandLight],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
+            .background(Color.brandDefault)
             .cornerRadius(AppRadius.lg)
             .opacity(isEnabled ? 1.0 : 0.5)
         }
@@ -88,7 +82,7 @@ struct SecondaryButton: View {
             .cornerRadius(AppRadius.lg)
             .overlay(
                 RoundedRectangle(cornerRadius: AppRadius.lg)
-                    .stroke(Color.accentDefault, lineWidth: 1.5)
+                    .stroke(Color.accentDefault.opacity(0.25), lineWidth: 1)
             )
             .opacity(isEnabled ? 1.0 : 0.5)
         }

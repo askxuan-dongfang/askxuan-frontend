@@ -85,7 +85,7 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
   display: flex;
   align-items: center;
   min-width: 0;
-  gap: 16px;
+  gap: 12px;
   padding: var(--admin-card-padding);
   overflow: hidden;
   background: var(--color-bg-secondary, var(--card-bg, #fff));
@@ -106,19 +106,18 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  flex: 0 0 48px;
-  border: 1px solid color-mix(in srgb, var(--stat-tone) 16%, transparent);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex: 0 0 40px;
+  border: 1px solid color-mix(in srgb, var(--stat-tone) 10%, transparent);
 }
 .aui-stat-card__body {
   min-width: 0;
   flex: 1;
 }
 .aui-stat-card__label {
-  color: var(--color-text-tertiary, var(--text-light, #8a7a6a));
+  color: var(--color-text-secondary, var(--text-medium, #66736c));
   font-size: var(--type-size-label);
   overflow-wrap: anywhere;
   line-height: 1.6;
@@ -130,7 +129,7 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
   font-family: var(--font-sans);
   font-size: var(--type-size-hero);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--type-weight-semibold);
+  font-weight: var(--type-weight-medium);
   line-height: 1.25;
 }
 .aui-stat-card__trend {
