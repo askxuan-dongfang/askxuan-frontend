@@ -6,7 +6,7 @@ export default defineConfig({
   timeout: 45_000,
   workers: 1,
   reporter: 'list',
-  outputDir: '/private/tmp/askxuan-wallet-playwright',
+  outputDir: './artifacts/wallet-test-results',
   use: { baseURL: 'http://127.0.0.1:5396', headless: true, trace: 'retain-on-failure' },
   webServer: {
     command: 'npm run dev -- --host 127.0.0.1 --port 5396',
