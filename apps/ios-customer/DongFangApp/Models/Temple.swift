@@ -22,6 +22,8 @@ struct ServiceCatalogResponse: Codable {
 
 struct Temple: Codable, Identifiable, Hashable {
     let id: String
+    var regionCode: String? = nil
+    var traditionCodes: [String]? = nil
     let name: String
     let region: String
     let type: String       // 汉传佛教/藏传佛教/道教
@@ -41,6 +43,7 @@ struct Temple: Codable, Identifiable, Hashable {
     var serviceCodes: [String]?
 
     enum CodingKeys: String, CodingKey {
+        case regionCode, traditionCodes
         case id, name, region, type, beliefCode, sect, status, address, rating, description, images
         case coverImage, serviceTags, serviceCount, serviceCodes
     }
@@ -69,6 +72,8 @@ struct Temple: Codable, Identifiable, Hashable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        regionCode = try c.decodeIfPresent(String.self, forKey: .regionCode)
+        traditionCodes = try c.decodeIfPresent([String].self, forKey: .traditionCodes)
         self.id = try c.decode(String.self, forKey: .id)
         self.name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
         self.region = try c.decodeIfPresent(String.self, forKey: .region) ?? ""

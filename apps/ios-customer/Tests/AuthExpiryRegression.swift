@@ -20,12 +20,37 @@ struct AnyEncodable: Encodable {
 }
 enum Endpoint {
     case data, login, authRefresh(refreshToken: String)
-    var path: String { switch self { case .data: return "data"; case .login: return "auth/login"; case .authRefresh: return "auth/refresh" } }
+    case paymentCreate(PaymentReference), createBooking, masterBooking, consultationCreate
+    var path: String {
+        switch self {
+        case .data: return "data"
+        case .login: return "auth/login"
+        case .authRefresh: return "auth/refresh"
+        default: preconditionFailure("Payment endpoints are outside the auth-session regression fixture")
+        }
+    }
     var httpMethod: HTTPMethod { if case .data = self { return .GET }; return .POST }
     var queryItems: [URLQueryItem]? { nil }
     var usesSessionAuthorization: Bool { if case .data = self { return true }; return false }
     var shouldAttemptTokenRefresh: Bool { usesSessionAuthorization }
     var body: AnyEncodable? { if case .authRefresh(let token) = self { return AnyEncodable(value: ["refreshToken": token]) }; return nil }
+}
+// Keep the production APIClient's checkout references available to this CLI harness.
+// These tests exercise auth recovery only; invoking a checkout must fail explicitly.
+struct PaymentReference { let orderType: String; let orderNo: String }
+struct PaymentCreateResult: Decodable {}
+struct CreateBookingResponse: Decodable { let id: String; let paymentStatus: String? }
+typealias DirectBookingResponse = CreateBookingResponse
+typealias ConsultationOrder = CreateBookingResponse
+enum CashCheckout {
+    static func pay(_ kind: String, _ number: String) async throws -> PaymentCreateResult {
+        throw Failure(message: "Unexpected checkout in auth regression")
+    }
+}
+enum CashAPI {
+    static func request<T: Decodable>(_ path: String, body: [String: Any]? = nil) async throws -> T {
+        throw Failure(message: "Unexpected cash API in auth regression")
+    }
 }
 @MainActor final class AuthStore {
     static let shared = AuthStore()

@@ -462,6 +462,7 @@ private final class MediaStudioViewModel: ObservableObject {
     @Published var capabilities: LiveCapabilities?
     @Published var room: LiveRoom?
     @Published var isUploading = false
+    @Published var isWorking = false
     @Published var errorMessage: String?
 
     func loadCapabilities() async {
@@ -519,6 +520,9 @@ private final class MediaStudioViewModel: ObservableObject {
     }
 
     func savePost(id: String?, type: String, title: String, content: String, beliefCode: String, submit: Bool) async -> Bool {
+        guard !isWorking, !isUploading else { return false }
+        isWorking = true; defer { isWorking = false }
+        errorMessage = nil
         let assets: [MasterContentAsset]
         let coverMediaId: Int64?
         if type == "video", let media {
@@ -532,6 +536,7 @@ private final class MediaStudioViewModel: ObservableObject {
             errorMessage = "请填写标题并上传内容素材"
             return false
         }
+        guard title.count <= 120, content.count <= 10000 else { errorMessage = "标题最多 120 字，正文最多 10000 字"; return false }
         let request = MasterContentCreateRequest(
             type: type, title: title, content: content, coverMediaId: coverMediaId,
             beliefCode: beliefCode.isEmpty ? nil : beliefCode, assets: assets, submit: submit
@@ -551,6 +556,9 @@ private final class MediaStudioViewModel: ObservableObject {
     }
 
     func changeStatus(_ post: MasterCommunityPost, status: String) async {
+        guard !isWorking, !isUploading else { return  }
+        isWorking = true; defer { isWorking = false }
+        errorMessage = nil
         do {
             let _: MasterCommunityPost = try await APIClient.shared.request(.masterCommunityPostStatus(id: post.id, status: status))
             await loadPosts()
@@ -560,6 +568,9 @@ private final class MediaStudioViewModel: ObservableObject {
     }
 
     func createAndStartLive(title: String, groupId: String) async {
+        guard !isWorking, !isUploading else { return  }
+        isWorking = true; defer { isWorking = false }
+        errorMessage = nil
         guard capabilities?.canStart == true else { return }
         do {
             var created: LiveRoom = try await APIClient.shared.request(
@@ -573,6 +584,9 @@ private final class MediaStudioViewModel: ObservableObject {
     }
 
     func closeLive() async {
+        guard !isWorking, !isUploading else { return  }
+        isWorking = true; defer { isWorking = false }
+        errorMessage = nil
         guard let room else { return }
         do {
             self.room = try await APIClient.shared.request(.liveRoomClose(id: room.id))
@@ -593,7 +607,7 @@ private final class MediaStudioViewModel: ObservableObject {
     }
 }
 
-private struct MediaStudioView: View {
+struct MediaStudioView: View {
     @StateObject private var viewModel = MediaStudioViewModel()
     @State private var videoItem: PhotosPickerItem?
     @State private var coverItem: PhotosPickerItem?
@@ -672,7 +686,7 @@ private struct MediaStudioView: View {
                 if editingId != nil {
                     Button("取消编辑") { resetEditor() }.foregroundStyle(.secondary)
                 }
-            }
+            }.listRowBackground(Color.bgSecondary)
 
             Section("我的内容") {
                 if viewModel.posts.isEmpty { Text("暂无内容").foregroundStyle(.secondary) }
@@ -700,7 +714,7 @@ private struct MediaStudioView: View {
                     }
                     .padding(.vertical, 4)
                 }
-            }
+            }.listRowBackground(Color.bgSecondary)
 
             Section("直播") {
                 if viewModel.capabilities?.canStart == true {
@@ -724,12 +738,15 @@ private struct MediaStudioView: View {
                         }
                     }
                 }
-            }
+            }.listRowBackground(Color.bgSecondary)
 
             if let message = viewModel.errorMessage {
-                Section { Text(message).foregroundStyle(.red) }
+                Section { Text(message).foregroundStyle(Color.stateError) }.listRowBackground(Color.bgSecondary)
             }
         }
+        .scrollContentBackground(.hidden).background(Color.bgPrimary)
+        .disabled(viewModel.isWorking || viewModel.isUploading)
+        .overlay { if viewModel.isWorking { ProgressView("正在处理…").padding(24).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16)) } }
         .navigationTitle("内容与直播")
         .task {
             await viewModel.loadCapabilities()

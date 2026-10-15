@@ -1,0 +1,430 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0B8A144E34F2EBEC73F1BF4D /* AdminPortalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A2A2BF4A41540BC180FBEB5 /* AdminPortalTests.swift */; };
+		1CF92F051F49651FECB032C3 /* AdminPortal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6803E67471D3BC33289567CC /* AdminPortal.swift */; };
+		3EB1CF45087977CF08323B1E /* AskXuanAdminApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A00890F0E8A245C5B2BA679 /* AskXuanAdminApp.swift */; };
+		A4292057939A61E722D99F5A /* AdminSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C93A92A643C5319C76156E5 /* AdminSession.swift */; };
+		CE6E653BCB842F0315FF22A6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 095CFD1FB6C3A36356FD1F74 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		15EB31E1E9CF4DDD3C55EF09 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 74B784B0B0021F2988CA51C3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AE4227B677E20B12EAEC7C83;
+			remoteInfo = AskXuanAdmin;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		07251EE95B4ECE7D923562AC /* AskXuanAdmin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AskXuanAdmin.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		095CFD1FB6C3A36356FD1F74 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		0D8B3DC58BA54EA134B99163 /* AskXuanAdmin.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AskXuanAdmin.entitlements; sourceTree = "<group>"; };
+		5A2A2BF4A41540BC180FBEB5 /* AdminPortalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminPortalTests.swift; sourceTree = "<group>"; };
+		6803E67471D3BC33289567CC /* AdminPortal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminPortal.swift; sourceTree = "<group>"; };
+		6A00890F0E8A245C5B2BA679 /* AskXuanAdminApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskXuanAdminApp.swift; sourceTree = "<group>"; };
+		6C93A92A643C5319C76156E5 /* AdminSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminSession.swift; sourceTree = "<group>"; };
+		FB99F265BD3D74FF047D5ACB /* AskXuanAdminTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AskXuanAdminTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		013AEBAAD5423B091919DBBA /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				5A2A2BF4A41540BC180FBEB5 /* AdminPortalTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		E8434990F872D2EF449F5FB8 = {
+			isa = PBXGroup;
+			children = (
+				F3537D59E10DA2C31C442EA6 /* AskXuanAdmin */,
+				013AEBAAD5423B091919DBBA /* Tests */,
+				F87EE39A940D35DA3C9269F2 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F3537D59E10DA2C31C442EA6 /* AskXuanAdmin */ = {
+			isa = PBXGroup;
+			children = (
+				6803E67471D3BC33289567CC /* AdminPortal.swift */,
+				6C93A92A643C5319C76156E5 /* AdminSession.swift */,
+				0D8B3DC58BA54EA134B99163 /* AskXuanAdmin.entitlements */,
+				6A00890F0E8A245C5B2BA679 /* AskXuanAdminApp.swift */,
+				095CFD1FB6C3A36356FD1F74 /* Assets.xcassets */,
+			);
+			path = AskXuanAdmin;
+			sourceTree = "<group>";
+		};
+		F87EE39A940D35DA3C9269F2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				07251EE95B4ECE7D923562AC /* AskXuanAdmin.app */,
+				FB99F265BD3D74FF047D5ACB /* AskXuanAdminTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AE4227B677E20B12EAEC7C83 /* AskXuanAdmin */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C520B2606D4594E6DCA18786 /* Build configuration list for PBXNativeTarget "AskXuanAdmin" */;
+			buildPhases = (
+				A6AD04D52E120B8F7BB56300 /* Sources */,
+				BE956AB9685749060ED9D097 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AskXuanAdmin;
+			packageProductDependencies = (
+			);
+			productName = AskXuanAdmin;
+			productReference = 07251EE95B4ECE7D923562AC /* AskXuanAdmin.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D17995FF66042A7138BE567B /* AskXuanAdminTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F7C06D6E0723F8EC153B7149 /* Build configuration list for PBXNativeTarget "AskXuanAdminTests" */;
+			buildPhases = (
+				D31D4A414E3FC414D81973A7 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CDF05AFAE7E4989FD9BF0801 /* PBXTargetDependency */,
+			);
+			name = AskXuanAdminTests;
+			packageProductDependencies = (
+			);
+			productName = AskXuanAdminTests;
+			productReference = FB99F265BD3D74FF047D5ACB /* AskXuanAdminTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		74B784B0B0021F2988CA51C3 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					AE4227B677E20B12EAEC7C83 = {
+						DevelopmentTeam = DQ3YY8MTFW;
+						ProvisioningStyle = Automatic;
+					};
+					D17995FF66042A7138BE567B = {
+						DevelopmentTeam = DQ3YY8MTFW;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = AA0FDADDE2ED48D078035D72 /* Build configuration list for PBXProject "AskXuanAdmin" */;
+			developmentRegion = "zh-Hans";
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = E8434990F872D2EF449F5FB8;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = F87EE39A940D35DA3C9269F2 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AE4227B677E20B12EAEC7C83 /* AskXuanAdmin */,
+				D17995FF66042A7138BE567B /* AskXuanAdminTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		BE956AB9685749060ED9D097 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CE6E653BCB842F0315FF22A6 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A6AD04D52E120B8F7BB56300 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1CF92F051F49651FECB032C3 /* AdminPortal.swift in Sources */,
+				A4292057939A61E722D99F5A /* AdminSession.swift in Sources */,
+				3EB1CF45087977CF08323B1E /* AskXuanAdminApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D31D4A414E3FC414D81973A7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0B8A144E34F2EBEC73F1BF4D /* AdminPortalTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CDF05AFAE7E4989FD9BF0801 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AE4227B677E20B12EAEC7C83 /* AskXuanAdmin */;
+			targetProxy = 15EB31E1E9CF4DDD3C55EF09 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		3FA10ADAFDE58DD59E0E2357 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.askxuan.admin.mac.tests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AskXuanAdmin.app/Contents/MacOS/AskXuanAdmin";
+			};
+			name = Release;
+		};
+		41D2E9D4DE89DFC4FD134BBF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = AskXuanAdmin/AskXuanAdmin.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.askxuan.admin.mac;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		51030FFA33F38F7B0B4F7F6A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 20261015;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = DQ3YY8MTFW;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ASKXUAN_WEB_BASE_URL = "https://101.96.228.71";
+				INFOPLIST_KEY_CFBundleDisplayName = "问玄管理台";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "问玄东方";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.0.1;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		58B54FDDF0BC0DAF75AA95FA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 20261015;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = DQ3YY8MTFW;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ASKXUAN_WEB_BASE_URL = "https://101.96.228.71";
+				INFOPLIST_KEY_CFBundleDisplayName = "问玄管理台";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "问玄东方";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.0.1;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		705BF4594F673BA6E2439698 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = AskXuanAdmin/AskXuanAdmin.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.askxuan.admin.mac;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		781487219BD8A21B128338EE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.askxuan.admin.mac.tests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AskXuanAdmin.app/Contents/MacOS/AskXuanAdmin";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA0FDADDE2ED48D078035D72 /* Build configuration list for PBXProject "AskXuanAdmin" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				51030FFA33F38F7B0B4F7F6A /* Debug */,
+				58B54FDDF0BC0DAF75AA95FA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C520B2606D4594E6DCA18786 /* Build configuration list for PBXNativeTarget "AskXuanAdmin" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				41D2E9D4DE89DFC4FD134BBF /* Debug */,
+				705BF4594F673BA6E2439698 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F7C06D6E0723F8EC153B7149 /* Build configuration list for PBXNativeTarget "AskXuanAdminTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				781487219BD8A21B128338EE /* Debug */,
+				3FA10ADAFDE58DD59E0E2357 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 74B784B0B0021F2988CA51C3 /* Project object */;
+}

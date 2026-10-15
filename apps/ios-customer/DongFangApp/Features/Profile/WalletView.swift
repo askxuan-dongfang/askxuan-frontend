@@ -29,6 +29,7 @@ struct WalletView: View {
     private let refunds = ["pending":"待处理", "processing":"退款处理中", "success":"退款完成", "failed":"退款失败"]
     var body: some View {
         List {
+            Section { NavigationLink { CreatorWalletView().id(auth.sessionID) } label: { Label("创作收益与提现", systemImage: "paintpalette") } }
             Section { NavigationLink { CashBalanceView() } label: { VStack(alignment: .leading, spacing: 8) { Label(cashBalance?.mode == "demo" ? "测试余额（模拟）" : "钱包余额", systemImage: "wallet.bifold"); Text(cashBalance.map { "¥" + CashAPI.money($0.availableCents) } ?? "—").font(.largeTitle.bold()).monospacedDigit(); Text("充值 · 余额流水 · 原路退款").font(.caption).foregroundStyle(.secondary) } } }
             Section {
                 Picker("账单渠道", selection: $mode) { Text("真实消费").tag("channel"); Text("演示账单").tag("mock") }.pickerStyle(.segmented)

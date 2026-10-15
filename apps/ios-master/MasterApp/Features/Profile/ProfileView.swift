@@ -84,6 +84,11 @@ struct ProfileView: View {
         ScrollView {
             VStack(spacing: 0) {
                 profileCard
+                NavigationLink { MediaStudioView() } label: {
+                    Label("内容与直播", systemImage: "video.badge.waveform")
+                        .frame(maxWidth: .infinity, alignment: .leading).padding(20)
+                        .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: AppRadius.lg))
+                }.buttonStyle(CardPressButtonStyle()).padding(.horizontal, AppSpacing.lg).padding(.top, AppSpacing.lg)
                 menuGroup
             }
             .padding(.bottom, 70)

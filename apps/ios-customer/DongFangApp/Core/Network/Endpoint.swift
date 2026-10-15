@@ -179,6 +179,8 @@ struct CommunityCommentCreateRequest: Encodable { let content: String }
 /// API 端点枚举
 enum Endpoint {
     case homePromotions
+    case directoryRegions
+    case directoryTags
     case marketingActivity(String)
  case accountAuth(path:String,body:[String:String]?)
     // MARK: - 寺院
@@ -382,6 +384,8 @@ enum Endpoint {
         case .templesByBelief:          return "temples"
         case .templeById(let id):       return "temples/\(id)"
         case .templeServices(let id):   return "temples/\(id)/services"
+        case .directoryRegions: return "regions"
+        case .directoryTags: return "beliefs/directory-tags"
         case .beliefs:                  return "beliefs"
         case .belief(let code):         return "beliefs/\(code)"
         case .serviceTypes:             return "service-types"
@@ -499,7 +503,7 @@ enum Endpoint {
         case .aiNoteDelete: return .DELETE
         case .aiTrace, .aiTopics, .aiReports, .aiReport: return .GET
         case .aiCancelMessage, .aiReportConversation, .aiReportCreate, .aiReportRetry, .aiReportUnlock: return .POST
-        case .wallet, .shopReturns, .pointsSearch, .pointsAccount, .pointsLedger, .pointsProducts, .pointsOrders, .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief, .serviceTypes,
+        case .directoryRegions, .directoryTags, .wallet, .shopReturns, .pointsSearch, .pointsAccount, .pointsLedger, .pointsProducts, .pointsOrders, .temples, .templesByBelief, .templeById, .templeServices, .beliefs, .belief, .serviceTypes,
              .masters, .mastersByBelief, .masterById,
 			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById, .bookingChats, .bookingChatMessages,
              .chats, .chatMessages, .consultationQuote,
@@ -730,6 +734,7 @@ enum Endpoint {
     /// Authentication forms never send or invalidate a previous login token.
     var usesSessionAuthorization: Bool {
         switch self {
+        case .directoryRegions, .directoryTags: return false
  case .accountAuth: return false
         case .authLogin, .authRegister, .authRefresh: return false
         default: return true

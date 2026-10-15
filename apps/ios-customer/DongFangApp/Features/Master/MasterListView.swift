@@ -24,7 +24,7 @@ struct MasterListView: View {
                 EmptyView()
             } trailing: {
                 Button {
-                    searchVisible.toggle()
+                    AppMotion.perform { searchVisible.toggle() }
                     searchFocused = searchVisible
                 } label: {
                     Image(systemName: "magnifyingglass")
@@ -60,6 +60,8 @@ struct MasterListView: View {
                 .padding(.vertical, 10)
             }
             .background(Color.bgPrimary)
+
+            DirectoryFilterBar(region: $viewModel.selectedRegionCode, tradition: $viewModel.selectedTraditionCode)
 
             HStack(spacing: 0) {
                 ScrollView(showsIndicators: false) {
@@ -301,16 +303,8 @@ struct MasterListView: View {
 
     /// 卡片起价：优先大师服务标签最低价，回退咨询费
     private func masterPriceText(_ master: Master) -> String {
-        if let prices = master.serviceTags?.compactMap({ $0.price > 0 ? $0.price : nil }), let min = prices.min() {
-            return "¥\(Int(min))起"
-        }
-        if let price = master.startPrice, price > 0 {
-            return "¥\(Int(price))起"
-        }
-        if master.consultEnabled, master.consultFee > 0 {
-            return "咨询 ¥\(Int(master.consultFee))"
-        }
-        return "—"
+        guard let value = viewModel.startingPrice(master) else { return "—" }
+        return "¥" + value.formatted(.number.precision(.fractionLength(0...2))) + "起"
     }
 
     private func masterTypeColor(for master: Master) -> Color {

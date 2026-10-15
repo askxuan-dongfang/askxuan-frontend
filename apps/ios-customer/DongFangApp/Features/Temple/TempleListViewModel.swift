@@ -14,6 +14,8 @@ final class TempleListViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
 
+    @Published var selectedRegionCode = ""
+    @Published var selectedTraditionCode = ""
     @Published var searchText = ""
 
     // 所有筛选状态集中管理
@@ -30,9 +32,25 @@ final class TempleListViewModel: ObservableObject {
 
     var filteredTemples: [Temple] {
         temples.filter { t in
+            (selectedRegionCode.isEmpty || t.regionCode == selectedRegionCode) &&
+            (selectedTraditionCode.isEmpty || (t.traditionCodes ?? []).contains(selectedTraditionCode)) &&
             (searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (t.name + " " + t.region).localizedStandardContains(searchText.trimmingCharacters(in: .whitespacesAndNewlines))) &&
             (selectedBeliefCode.isEmpty || t.beliefCode == selectedBeliefCode) &&
             (selectedServiceCode.isEmpty || (t.serviceCodes ?? []).contains(selectedServiceCode))
+        }
+    }
+
+    private func allRecords() async throws -> [Temple] {
+        var records: [Temple] = []
+        var seen = Set<String>()
+        var page = 1
+        while true {
+            try Task.checkCancellation()
+            let response: PageResponse<Temple> = try await apiClient.request(.temples(sect: nil, type: nil, serviceCode: nil, page: page, size: 100))
+            let next = response.list.filter { seen.insert($0.id).inserted }
+            records.append(contentsOf: next)
+            if next.isEmpty || records.count >= response.total { return records }
+            page += 1
         }
     }
 
@@ -46,13 +64,13 @@ final class TempleListViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         do {
-            async let templeRequest: PageResponse<Temple> = apiClient.request(.temples(sect: nil, type: nil, serviceCode: nil, page: 1, size: 100))
+            async let templeRequest: [Temple] = allRecords()
             async let beliefRequest: BeliefListResponse = apiClient.request(.beliefs)
             async let serviceRequest: ServiceCatalogResponse = apiClient.request(.serviceTypes)
             let (templeResponse, beliefResponse, serviceResponse) = try await (templeRequest, beliefRequest, serviceRequest)
             guard !Task.isCancelled else { return }
             hasLoaded = true
-            temples = templeResponse.list
+            temples = templeResponse
             beliefOptions = [BeliefFilterOption(code: "", name: "全部")] + beliefResponse.list.map { BeliefFilterOption(code: $0.code, name: $0.name) }
             serviceOptions = [ServiceFilterOption(code: "", name: "全部")] + serviceResponse.list.map { ServiceFilterOption(code: $0.code, name: $0.name) }
         } catch {

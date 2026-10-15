@@ -86,3 +86,26 @@ targets:
             localhost:
               NSExceptionAllowsInsecureHTTPLoads: true
               NSIncludesSubdomains: true
+
+  MasterAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: MasterAppUITests
+    dependencies:
+      - target: MasterApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.askxuan.master.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: ""
+        TEST_TARGET_NAME: MasterApp
+
+schemes:
+  MasterApp:
+    build:
+      targets:
+        MasterApp: all
+    test:
+      config: Debug
+      targets: [MasterAppUITests]

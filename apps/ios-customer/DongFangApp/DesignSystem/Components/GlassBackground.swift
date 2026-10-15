@@ -108,9 +108,9 @@ extension View {
 // MARK: - Shared motion
 /// Short, non-bouncy feedback. UIKit's live preference is read for action-driven changes.
 enum AppMotion {
-    static let press = Animation.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.12)
-    static let selection = Animation.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.20)
-    static let reveal = Animation.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.28)
+    static let press = SharedMotionTokens.press
+    static let selection = SharedMotionTokens.selection
+    static let reveal = SharedMotionTokens.reveal
 
     static func perform(_ animation: Animation = selection, _ changes: () -> Void) {
         withAnimation(UIAccessibility.isReduceMotionEnabled ? nil : animation, changes)

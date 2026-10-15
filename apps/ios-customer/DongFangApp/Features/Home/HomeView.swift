@@ -29,6 +29,11 @@ struct HomeView: View {
                     if authStore.isLoggedIn { JourneyEntryView(home: true).padding(.horizontal, AppSpacing.lg) }
                     beliefSection
                     intentionSection
+                    NavigationLink { ServicesView() } label: {
+                        Label("查看全部服务", systemImage: "square.grid.2x2")
+                            .font(AppTypography.body).frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
+                    }.buttonStyle(CardPressButtonStyle()).padding(.horizontal, AppSpacing.lg).accessibilityIdentifier("home-services")
                     hotTemplesSection
                     hotMastersSection
                     Color.clear.frame(height: AppSpacing.navBottom + 32)
@@ -636,7 +641,7 @@ private struct IntentionHubView: View {
     @ViewBuilder
     private func destination(for item: IntentionResource) -> some View {
         if item.resourceType == "master" {
-            MasterProfileView(masterId: item.masterCode ?? "")
+            MasterProfileView(masterId: item.masterCode ?? "", initialServiceCode: item.serviceCode)
         } else {
             serviceView(for: item.serviceCode)
         }

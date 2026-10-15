@@ -9,6 +9,8 @@ import Foundation
 
 struct Master: Codable, Identifiable, Hashable {
     let id: String
+    var regionCode: String? = nil
+    var traditionCodes: [String]? = nil
     let dharmaName: String
     let layName: String
     let templeId: String
@@ -35,6 +37,7 @@ struct Master: Codable, Identifiable, Hashable {
     var shelfStatus: String?
 
     enum CodingKeys: String, CodingKey {
+        case regionCode, traditionCodes
         case id, dharmaName, layName, templeId, templeName, position, beliefCode, sect, type
         case authStatus, specialties, avatar, rating, isOnline, startPrice, shelfStatus
         case consultEnabled, consultFee, consultValidHours, consultResponseMinutes
@@ -71,6 +74,8 @@ struct Master: Codable, Identifiable, Hashable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        regionCode = try c.decodeIfPresent(String.self, forKey: .regionCode)
+        traditionCodes = try c.decodeIfPresent([String].self, forKey: .traditionCodes)
         self.id = try c.decode(String.self, forKey: .id)
         self.dharmaName = try c.decodeIfPresent(String.self, forKey: .dharmaName) ?? ""
         self.layName = try c.decodeIfPresent(String.self, forKey: .layName) ?? ""

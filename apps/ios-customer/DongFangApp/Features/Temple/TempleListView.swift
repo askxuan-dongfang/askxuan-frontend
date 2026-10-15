@@ -23,7 +23,7 @@ struct TempleListView: View {
                 EmptyView()
             } trailing: {
                 Button {
-                    searchVisible.toggle()
+                    AppMotion.perform { searchVisible.toggle() }
                     searchFocused = searchVisible
                 } label: {
                     Image(systemName: "magnifyingglass")
@@ -60,6 +60,8 @@ struct TempleListView: View {
             }
             .background(Color.bgPrimary)
 
+            DirectoryFilterBar(region: $viewModel.selectedRegionCode, tradition: $viewModel.selectedTraditionCode)
+
             HStack(spacing: 0) {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
@@ -78,7 +80,7 @@ struct TempleListView: View {
                     DFLoadingView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.filteredTemples.isEmpty {
-                    VStack { DFEmptyState(icon: "building.columns", title: "当前筛选无结果", subtitle: "可清除筛选查看全部寺院"); Button("清除筛选") { viewModel.searchText = ""; viewModel.selectedBeliefCode = ""; viewModel.selectedServiceCode = "" } }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VStack { DFEmptyState(icon: "building.columns", title: "当前筛选无结果", subtitle: "可清除筛选查看全部寺院"); Button("清除筛选") { viewModel.searchText = ""; viewModel.selectedBeliefCode = ""; viewModel.selectedServiceCode = ""; viewModel.selectedRegionCode = ""; viewModel.selectedTraditionCode = "" } }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     templeListContent
                 }

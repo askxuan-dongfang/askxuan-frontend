@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MasterProfileView: View {
     let masterId: String
+    var initialServiceCode: String? = nil
 
     @StateObject private var viewModel = MasterProfileViewModel()
     @EnvironmentObject private var authStore: AuthStore
@@ -51,7 +52,12 @@ struct MasterProfileView: View {
         .secondaryPage()
         .toolbar(.hidden, for: .navigationBar)
         .task {
-            if viewModel.master == nil { await viewModel.load(id: masterId) }
+            if viewModel.master == nil {
+                await viewModel.load(id: masterId)
+                if let code = initialServiceCode, viewModel.master?.serviceTags?.contains(where: { $0.serviceCode == code }) == true {
+                    selectedServiceCode = code; viewModel.selectedTab = 1
+                }
+            }
         }
         .sheet(isPresented: $showBooking) {
             if let master = viewModel.master {

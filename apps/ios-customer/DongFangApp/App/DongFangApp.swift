@@ -37,7 +37,9 @@ struct DongFangApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if let id=JourneyHost.smokeBooking {
+                if nativeParityPreview {
+                    NavigationStack { CreatorWalletView() }
+                } else if let id=JourneyHost.smokeBooking {
                     NavigationStack { JourneyDetailView(bookingId:id) }
                 } else if authStore.requiresLogin {
                     NavigationStack { LoginView() }
@@ -59,6 +61,14 @@ struct DongFangApp: App {
                     }
                 }
         }
+    }
+
+    private var nativeParityPreview: Bool {
+        #if DEBUG
+        return ["localhost", "127.0.0.1"].contains(AppConfig.baseURL.host ?? "") && ProcessInfo.processInfo.arguments.contains("--parity-creator-wallet")
+        #else
+        return false
+        #endif
     }
 
     private func configureSmokeCredentials() {

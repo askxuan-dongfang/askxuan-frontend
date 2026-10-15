@@ -1,0 +1,45 @@
+name: AskXuanAdmin
+options:
+  deploymentTarget:
+    macOS: "14.0"
+  developmentLanguage: zh-Hans
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    MARKETING_VERSION: "0.0.1"
+    CURRENT_PROJECT_VERSION: "20261015"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: DQ3YY8MTFW
+    ENABLE_HARDENED_RUNTIME: YES
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_KEY_CFBundleDisplayName: 问玄管理台
+    INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.business
+    INFOPLIST_KEY_NSHumanReadableCopyright: 问玄东方
+    INFOPLIST_KEY_ASKXUAN_WEB_BASE_URL: https://101.96.228.71
+targets:
+  AskXuanAdmin:
+    type: application
+    platform: macOS
+    sources: [AskXuanAdmin]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.askxuan.admin.mac
+        CODE_SIGN_ENTITLEMENTS: AskXuanAdmin/AskXuanAdmin.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  AskXuanAdminTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [Tests]
+    dependencies:
+      - target: AskXuanAdmin
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.askxuan.admin.mac.tests
+schemes:
+  AskXuanAdmin:
+    build:
+      targets:
+        AskXuanAdmin: all
+    test:
+      targets: [AskXuanAdminTests]
