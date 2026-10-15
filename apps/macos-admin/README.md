@@ -15,6 +15,8 @@ xcodegen generate --spec apps/macos-admin/project.yml
 bash apps/macos-admin/build.sh /absolute/output-directory
 ```
 
+构建时使用临时输出目录；验收后将 App、ZIP、签名记录和必要测试结果归入工作区 `artifacts/native/YYYY-MM/<task>-YYYYMMDD/`，并更新 `artifacts/native/README.md`。不要在 `artifacts/` 顶层新建日期目录。现有交付位于 `artifacts/native/2026-10/native-parity-mac-20261015/`；完整归档规则见文档仓库的 `docs/guides/本地项目目录与维护.md`。
+
 生产地址通过工程 `INFOPLIST_KEY_ASKXUAN_WEB_BASE_URL` 构建设置配置。Debug 构建可使用仅允许 localhost / 127.0.0.1 的 `ASKXUAN_MAC_TEST_ORIGIN` 环境变量做本地测试；Release 不读取该测试地址。
 
 构建脚本默认生成 Universal（Apple Silicon + Intel）本机签名测试包。正式分发需要 Developer ID Application 证书及 Apple 公证；本机 ad-hoc 签名不等于公证，也不等于 App Store 发布。不要以关闭 Gatekeeper 或绕过 TLS 作为安装/连接步骤。

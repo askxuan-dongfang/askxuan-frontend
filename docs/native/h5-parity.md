@@ -51,6 +51,6 @@ python3 apps/ios-customer/scripts/native-parity-fixture.py
 # Mac：Xcode 运行 AskXuanAdminTests。
 ```
 
-运行证据、截图、签名/公证边界和实际验证结果见工作区 `artifacts/native-parity-mac-20261015/ACCEPTANCE.md`。源码对应不替代真机 GPU、相机、支付、推送或真实提现验收。
+运行证据、截图、签名/公证边界和实际验证结果见工作区 `artifacts/native/2026-10/native-parity-mac-20261015/ACCEPTANCE.md`。源码对应不替代真机 GPU、相机、支付、推送或真实提现验收。
 
 2026-10-15 本地验收：两端 iOS 模拟器构建、4 个金额/筛选测试函数（13 组用例）、74 项会话恢复断言、5 条原生 UI 流程、3 个 Mac 规则测试函数（7 组用例）通过。UI 流程包含五主导航切换、目录条件及返回、收益表单、公共服务目录、大师内容入口。Mac Universal Release 包已在本机打开两个线上后台登录页并验证切换，尚未完成已登录后台业务、真机及 Developer ID 公证验收。
