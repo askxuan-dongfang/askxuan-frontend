@@ -77,3 +77,16 @@ final class AiReportContractTests: XCTestCase {
         XCTAssertThrowsError(try AiReportPDF.export(locked))
     }
 }
+
+
+import Testing
+struct ReportListPresentationTests {
+    @Test func usesSummaryAndHidesGeneratedPrompt() {
+        let report = AiReport(id: 1, reportNo: "LOCAL", skillCode: "bazi", title: "八字排盘", version: "1", question: "请围绕八字排盘生成一份完整专题报告，梳理主要依据与可行建议。", chapters: [], priceCents: 0, pointsPrice: 0, status: "ready", summary: "## 摘要\n**实际内容**", content: "", errorMessage: "", unlocked: false, createdAt: "2026-10-15")
+        #expect(report.listPreview == "摘要 实际内容")
+        #expect(report.listStatus == "免费摘要")
+        let empty = AiReport(id: 2, reportNo: "LOCAL", skillCode: "bazi", title: "八字排盘", version: "1", question: report.question, chapters: [], priceCents: 0, pointsPrice: 0, status: "ready", summary: "", content: "", errorMessage: "", unlocked: false, createdAt: "2026-10-15")
+        #expect(empty.listPreview == "打开查看报告内容")
+        #expect(empty.listStatus == "查看报告")
+    }
+}

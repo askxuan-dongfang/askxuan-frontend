@@ -106,25 +106,10 @@ struct ProfileView: View {
     private var profileCard: some View {
         VStack(spacing: 0) {
             // 头像
-            NavigationLink { ProfileEditView(profile: viewModel.profile, editAvatar: true) } label: {
-            AsyncImage(url: URL(string: viewModel.profile?.avatar ?? "")) { phase in
-                if case .success(let image) = phase {
-                    image.resizable().scaledToFill()
-                } else {
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 36))
-                        .foregroundStyle(.accentDefault)
-                }
-            }
-                .frame(width: 80, height: 80)
-                .background(Color.bgTertiary)
-                .clipShape(Circle())
-                .overlay(
-                    Circle()
-                        .stroke(Color.accentDefault, lineWidth: 3)
-                )
-
-            }.accessibilityLabel("更换头像").disabled(viewModel.profile == nil)
+            AvatarPhotoButton(url: viewModel.profile?.avatar ?? "", size: 72) { url in
+                let updated: MasterProfile = try await APIClient.shared.request(.masterProfileUpdate(MasterProfileUpdateRequest(avatar: url)))
+                viewModel.profile = updated
+            }.disabled(viewModel.profile == nil)
 
             // 名字
             Text(viewModel.profile?.dharmaName ?? "法师资料")

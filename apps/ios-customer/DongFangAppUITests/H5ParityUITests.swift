@@ -63,10 +63,13 @@ final class ProfileExperienceUITests: XCTestCase {
         app.launchArguments = ["--smoke-token", "local-fixture", "--smoke-user-id", "9001", "-tab", "4", "-askxuan.appearance", "dark"]
         app.launch()
         XCTAssertTrue(app.buttons["更换头像"].waitForExistence(timeout: 20)); app.buttons["更换头像"].tap()
-        XCTAssertTrue(app.buttons["从相册选择照片"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["从相册选择照片"].exists)
         XCTAssertFalse(app.textFields["头像 URL"].exists)
-        app.buttons["从相册选择照片"].tap()
         XCTAssertTrue(app.buttons["取消"].waitForExistence(timeout: 10) || app.buttons["Cancel"].waitForExistence(timeout: 3))
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "customer-avatar-photo-picker"; shot.lifetime = .keepAlways; add(shot)
+        let cancel = app.buttons["取消"].exists ? app.buttons["取消"] : app.buttons["Cancel"]
+        cancel.tap()
+        XCTAssertTrue(app.buttons["更换头像"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.navigationBars["编辑资料"].exists)
     }
 }

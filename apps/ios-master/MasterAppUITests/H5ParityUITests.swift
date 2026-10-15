@@ -36,12 +36,12 @@ final class ProfileExperienceUITests: XCTestCase {
         app.launchArguments = ["--smoke-token", "eyJhbGciOiJub25lIn0.\(payload).fixture", "-tab", "3", "-askxuan.appearance", "dark"]
         app.launch()
         XCTAssertTrue(app.buttons["更换头像"].waitForExistence(timeout: 20)); app.buttons["更换头像"].tap()
-        XCTAssertTrue(app.buttons["从相册选择照片"].waitForExistence(timeout: 10))
-        app.buttons["从相册选择照片"].tap()
+        XCTAssertFalse(app.buttons["从相册选择照片"].exists)
         XCTAssertTrue(app.buttons["取消"].waitForExistence(timeout: 5) || app.buttons["Cancel"].waitForExistence(timeout: 5))
         let cancel = app.buttons["取消"].exists ? app.buttons["取消"] : app.buttons["Cancel"]
         cancel.tap()
         XCTAssertFalse(app.textFields["头像 URL"].exists)
+        app.buttons["个人资料"].firstMatch.tap()
         let specialty = app.buttons["祈福"]
         for _ in 0..<3 where !specialty.isHittable { app.swipeUp() }
         XCTAssertTrue(specialty.waitForExistence(timeout: 5)); specialty.tap()

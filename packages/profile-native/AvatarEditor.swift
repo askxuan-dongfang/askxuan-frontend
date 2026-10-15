@@ -14,7 +14,7 @@ final class AvatarDraftState: ObservableObject {
     private var bytes: Data?
     private var cached: (data: Data, url: String, session: UUID)?
     init(url: String = "") { self.url = url }
-    func choose(_ image: UIImage, data: Data) { self.image = image; bytes = data; cached = nil }
+    func choose(_ image: UIImage, data: Data) { self.image = image; if bytes != data { cached = nil }; bytes = data }
     func clear() { url = ""; image = nil; bytes = nil; cached = nil }
     func resolve() async throws -> String {
         guard let bytes else { return url }
@@ -66,8 +66,10 @@ struct AvatarPhotoField: View {
     @ObservedObject var draft: AvatarDraftState
     var disabled = false
     var initialOpen = false
+    var compact = false
+    var size: CGFloat = 76
+    var onSave: ((UIImage, Data) async throws -> Void)? = nil
     @State private var picking = false
-    @State private var choices = false
     @State private var selection: PhotosPickerItem?
     @State private var source: AvatarPhoto?
     @State private var reading = false
@@ -75,32 +77,28 @@ struct AvatarPhotoField: View {
 
     var body: some View {
         HStack(spacing: 18) {
-            Button { choices = true } label: {
+            Button { picking = true } label: {
                 ZStack(alignment: .bottomTrailing) {
                     Group {
                         if let image = draft.image { Image(uiImage: image).resizable().scaledToFill() }
                         else if let url = URL(string: draft.url), !draft.url.isEmpty {
                             AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { placeholder }
                         } else { placeholder }
-                    }.frame(width: 76, height: 76).clipShape(Circle())
+                    }.frame(width: size, height: size).clipShape(Circle()).overlay(Circle().stroke(Color.borderDefault, lineWidth: 1))
                     Image(systemName: "camera.fill").font(.system(size: 12)).padding(7)
                         .foregroundStyle(Color.bgPrimary).background(Color.accentDefault, in: Circle())
                 }
             }.accessibilityLabel("更换头像")
-            VStack(alignment: .leading, spacing: 6) {
+            if !compact { VStack(alignment: .leading, spacing: 6) {
                 Text("个人头像").font(.headline).foregroundStyle(Color.textPrimary)
-                Button("选择照片") { choices = true }.frame(minHeight: 44).tint(Color.accentDefault)
+                Button("选择照片") { picking = true }.frame(minHeight: 44).tint(Color.accentDefault)
+                if draft.image != nil || !draft.url.isEmpty { Button("恢复默认") { draft.clear() }.font(.caption).tint(Color.textSecondary) }
                 Text(reading ? "正在读取照片…" : draft.image == nil ? "使用照片，或保留默认头像" : "新头像将在保存资料后生效")
                     .font(.caption).foregroundStyle(Color.textSecondary)
             }
-            Spacer(minLength: 0)
+            Spacer(minLength: 0) }
         }
         .disabled(disabled || reading)
-        .confirmationDialog("更换头像", isPresented: $choices, titleVisibility: .visible) {
-            Button("从相册选择照片") { picking = true }
-            if draft.image != nil || !draft.url.isEmpty { Button("恢复默认头像") { draft.clear() } }
-            Button("取消", role: .cancel) { }
-        }
         .photosPicker(isPresented: $picking, selection: $selection, matching: .images)
         .task(id: selection) {
             guard let selection else { return }
@@ -120,19 +118,41 @@ struct AvatarPhotoField: View {
             } catch is CancellationError { }
             catch { failure = error.localizedDescription }
         }
-        .sheet(item: $source) { photo in AvatarCropView(image: photo.image) { image, data in draft.choose(image, data: data) } }
+        .sheet(item: $source) { photo in AvatarCropView(image: photo.image, savesImmediately: compact) { image, data in
+            try await onSave?(image, data)
+            draft.choose(image, data: data)
+        } }
         .alert("无法使用这张照片", isPresented: .init(get: { failure != nil }, set: { if !$0 { failure = nil } })) { Button("知道了", role: .cancel) { } } message: { Text(failure ?? "") }
-        .task { if initialOpen { choices = true } }
+        .task { if initialOpen { picking = true } }
     }
     private var placeholder: some View {
         ZStack { Color.bgTertiary; Image(systemName: "person.crop.circle").font(.system(size: 44)).foregroundStyle(Color.accentDefault) }
     }
 }
 
+/// The profile avatar opens Photos directly. Pending uploads never replace the visible avatar.
+struct AvatarPhotoButton: View {
+    let url: String
+    var size: CGFloat = 56
+    let onSave: (String) async throws -> Void
+    @StateObject private var displayDraft = AvatarDraftState()
+    @StateObject private var uploadDraft = AvatarDraftState()
+    var body: some View {
+        AvatarPhotoField(draft: displayDraft, compact: true, size: size) { image, data in
+            uploadDraft.choose(image, data: data)
+            let uploaded = try await uploadDraft.resolve()
+            try await onSave(uploaded)
+        }
+        .onChange(of: url, initial: true) { _, value in displayDraft.clear(); displayDraft.url = value }
+    }
+}
+
 private struct AvatarCropView: View {
     let image: UIImage
-    let onUse: (UIImage, Data) -> Void
+    var savesImmediately = false
+    let onUse: (UIImage, Data) async throws -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var saving = false
     @State private var zoom: Double = 1
     @State private var offset = CGSize.zero
     @State private var dragStart: CGSize?
@@ -175,17 +195,18 @@ private struct AvatarCropView: View {
                         Button("复位") { zoom = 1; offset = .zero }.frame(minWidth: 44, minHeight: 44)
                     }.tint(Color.accentDefault)
                     if let failure { Text(failure).foregroundStyle(Color.stateError).font(.callout) }
-                    Button("使用这张照片", action: export).buttonStyle(.borderedProminent).tint(Color.brandDefault).frame(minHeight: 44)
-                }.padding(20)
+                    Button(saving ? "正在保存…" : savesImmediately ? "保存头像" : "使用这张照片", action: export).buttonStyle(.borderedProminent).tint(Color.brandDefault).frame(minHeight: 44)
+                }.padding(20).disabled(saving)
             }
             .background(Color.bgPrimary).navigationTitle("调整头像").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } } }
-        }.presentationDetents([.large])
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() }.disabled(saving) } }
+        }.presentationDetents([.large]).interactiveDismissDisabled(saving)
     }
     private func pan(_ label: String, symbol: String, x: CGFloat, y: CGFloat) -> some View {
         Button { offset = clamped(CGSize(width: offset.width + x, height: offset.height + y), zoom: zoom) } label: { Image(systemName: symbol).frame(minWidth: 44, minHeight: 44) }.accessibilityLabel("向\(label)调整")
     }
     private func export() {
+        guard !saving else { return }
         let format = UIGraphicsImageRendererFormat(); format.scale = 1; format.opaque = true
         let factor = 512 / side
         let cropped = UIGraphicsImageRenderer(size: CGSize(width: 512, height: 512), format: format).image { context in
@@ -194,6 +215,11 @@ private struct AvatarCropView: View {
             image.draw(in: CGRect(x: ((side - size.width) / 2 + offset.width) * factor, y: ((side - size.height) / 2 + offset.height) * factor, width: size.width * factor, height: size.height * factor))
         }
         guard let data = cropped.jpegData(compressionQuality: 0.88) else { failure = "照片处理失败，请重试"; return }
-        onUse(cropped, data); dismiss()
+        saving = true; failure = nil
+        Task {
+            defer { saving = false }
+            do { try await onUse(cropped, data); dismiss() }
+            catch { failure = error.localizedDescription }
+        }
     }
 }

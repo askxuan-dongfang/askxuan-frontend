@@ -197,14 +197,14 @@ struct ProfileView: View {
     private var userInfoSection: some View {
         VStack(spacing: 0) {
             HStack(spacing: 14) {
-                NavigationLink { ProfileEditView(editAvatar: true) } label: {
-                    RemoteAvatar(urlString: viewModel.avatarURL, size: 64)
-                        .overlay(Circle().stroke(Color.accentDefault, lineWidth: 2))
-                        .overlay(alignment: .bottomTrailing) { Image(systemName: "camera.fill").font(.system(size: 11)).padding(6).foregroundStyle(Color.bgPrimary).background(Color.accentDefault, in: Circle()) }
-                }.accessibilityLabel("更换头像")
+                AvatarPhotoButton(url: viewModel.avatarURL) { url in
+                    let request = UpdateProfileRequest(nickname: nil, avatar: url, gender: nil, birthday: nil, region: nil, bio: nil)
+                    let updated: UserProfile = try await APIClient.shared.request(.updateProfile(request))
+                    viewModel.profile = updated
+                    authStore.updateCachedProfile(nickname: updated.nickname, avatar: updated.avatar, mobile: updated.mobile)
+                }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("我的账户").font(AppTypography.micro).foregroundStyle(Color.textTertiary)
                     Text(viewModel.displayName)
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(Color.textPrimary)
@@ -253,9 +253,7 @@ struct ProfileView: View {
             .overlay(alignment: .top) {
                 Rectangle().fill(Color.borderDivider).frame(height: 1)
             }
-            .overlay(alignment: .bottom) {
-                Rectangle().fill(Color.borderDivider).frame(height: 1)
-            }
+
         }
         .padding(.horizontal, 16)
         .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 20))

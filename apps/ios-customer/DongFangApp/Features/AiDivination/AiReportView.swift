@@ -17,6 +17,45 @@ struct AiReport: Decodable, Identifiable {
     var document: AiReportDocument? = nil
     var generationStage: String? = nil
 }
+extension AiReport {
+    var listPreview: String {
+        if status == "generating" { return "正在整理报告，完成后可查看摘要。" }
+        if status == "failed" { return "生成未完成，打开报告可免费重试。" }
+        let text = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !text.isEmpty {
+            return text.replacingOccurrences(of: "(?m)^#{1,6}\\s+", with: "", options: .regularExpression)
+                .replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "__", with: "")
+                .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        }
+        return visibleQuestion.isEmpty ? "打开查看报告内容" : "关注：" + visibleQuestion
+    }
+    var visibleQuestion: String {
+        let prompt = question.trimmingCharacters(in: .whitespacesAndNewlines)
+        let generated = prompt.range(of: "^请围绕.+生成一份完整专题报告，梳理主要依据与可行建议[。.]?$", options: .regularExpression) != nil
+        return generated ? "" : prompt
+    }
+    var listStatus: String {
+        if status == "generating" { return "生成中" }
+        if status == "failed" { return "生成失败" }
+        if unlocked { return "已解锁" }
+        return summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "查看报告" : "免费摘要"
+    }
+    var listDate: String {
+        let iso = ISO8601DateFormatter()
+        let date = iso.date(from: createdAt) ?? {
+            iso.formatOptions.insert(.withFractionalSeconds)
+            return iso.date(from: createdAt)
+        }()
+        if let date {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "zh_CN")
+            formatter.dateFormat = "yyyy/M/d HH:mm"
+            return formatter.string(from: date)
+        }
+        return String(createdAt.replacingOccurrences(of: "T", with: " ").prefix(16))
+    }
+}
+
 struct AiReportCreateRequest: Encodable { let skillCode: String; let question: String; let inputs: [String:String]; let requestKey: String; var attachments: [AiImageAttachment]? = nil }
 struct AiReportUnlockRequest: Encodable { let reportId: Int64; let expectedPoints: Int64 }
 private struct ReportConversationResult: Decodable { let sessionId: Int64 }
@@ -185,7 +224,7 @@ struct AiReportWorkspace: View {
         card { DisclosureGroup("这份解读，将为您梳理哪些线索？") { VStack(alignment: .leading, spacing: 12) { chapters(topic.chapters); Text("传统文化参考，不承诺预测结果。主题图形用于视觉表达，不代表您的排盘或抽牌结果。").font(.footnote).foregroundStyle(.secondary) }.padding(.top, 14) }.font(.subheadline).tint(accent) }
     }
     @ViewBuilder private func reportBody(_ r: AiReport, proxy: ScrollViewProxy) -> some View {
-        hero(r.title, subtitle: r.question)
+        hero(r.title, subtitle: r.visibleQuestion)
         if r.status == "generating" {
             card { AiTopicArtwork(code: r.skillCode).frame(height: 150).frame(maxWidth: .infinity); ProgressView("报告生成中 · 尚未扣除积分").font(.footnote); Text("正在整理您的专题报告").font(.headline); Text(["checking":"正在核对您填写的资料。", "calculating":"正在排盘并整理计算结果。", "writing":"正在组织分章解读、比较表与行动建议。"][r.generationStage ?? ""] ?? "任务已开始，完成后自动展示。").font(.subheadline); Text("您可以离开，稍后在我的报告查看。当前尚未扣款；超过五分钟可恢复生成。").font(.subheadline); primary("检查并恢复生成") { Task { await retry(r) } } }
         } else if r.status == "failed" {
@@ -258,16 +297,43 @@ struct AiReportLibrary: View {
     @State private var error = ""
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Text("每一次探索，都有迹可循。").font(AppTypography.section).padding(.vertical, 20)
-                if !error.isEmpty { Text(error).foregroundStyle(.red); Button("重试") { Task { await load() } } }
-                if reports.isEmpty && !busy { Text("还没有专题报告，从一个关心的问题开始。").foregroundStyle(.secondary).padding(.vertical, 40) }
-                ForEach(reports) { report in NavigationLink(value: AiNativeRoute.report(report.id)) { VStack(alignment: .leading, spacing: 10) { HStack { AiTopicArtwork(code: report.skillCode).frame(width: 62, height: 52); Text(report.title).font(AppTypography.card); Spacer(); Image(systemName: "arrow.up.right") }; Text(report.question).font(.subheadline).lineLimit(2); Text(report.status == "ready" ? "查看报告" : report.status == "failed" ? "生成失败，可重试" : "生成中").font(AppTypography.caption).foregroundStyle(.secondary) }.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 18)) } }
+            VStack(alignment: .leading, spacing: 12) {
+                if !error.isEmpty { Text(error).foregroundStyle(Color.stateError); Button("重试") { Task { await load() } } }
+                if reports.isEmpty && !busy { Text("还没有专题报告，生成的报告会保存在这里。").foregroundStyle(Color.textSecondary).padding(.vertical, 40) }
+                if !reports.isEmpty {
+                    HStack { Text("已保存 \(reports.count)\(more ? "+" : "") 份报告"); Spacer(); Text("最近生成") }
+                        .font(AppTypography.caption).foregroundStyle(Color.textSecondary)
+                    LazyVStack(spacing: 0) {
+                        ForEach(reports) { report in
+                            if report.id != reports.first?.id { Divider().overlay(Color.borderDivider) }
+                            NavigationLink(value: AiNativeRoute.report(report.id)) {
+                                HStack(alignment: .top, spacing: 12) {
+                                    Image(systemName: "doc.text").font(.system(size: 21)).foregroundStyle(Color.accentDefault)
+                                        .frame(width: 36, height: 40).background(Color.accentDefault.opacity(0.07), in: RoundedRectangle(cornerRadius: 8))
+                                    VStack(alignment: .leading, spacing: 7) {
+                                        Text(report.title).font(AppTypography.card).foregroundStyle(Color.textPrimary)
+                                        Text(report.listPreview).font(AppTypography.supporting).foregroundStyle(Color.textSecondary).lineLimit(2)
+                                        ViewThatFits(in: .horizontal) {
+                                            HStack(spacing: 14) { reportMetadata(report) }
+                                            VStack(alignment: .leading, spacing: 4) { reportMetadata(report) }
+                                        }.font(AppTypography.caption)
+                                    }.frame(maxWidth: .infinity, alignment: .leading)
+                                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(Color.textTertiary).padding(.top, 20)
+                                }.padding(16).contentShape(Rectangle())
+                            }.buttonStyle(.plain)
+                        }
+                    }.background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
+                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.borderDefault, lineWidth: 1))
+                }
                 if busy { ProgressView() } else if more && !reports.isEmpty { Button("加载更多") { Task { await load() } } }
-            }.padding(20)
-        }.background(reportPaper).foregroundStyle(reportGreen).navigationTitle("我的报告")
+            }.padding(16).frame(maxWidth: 880)
+        }.background(reportPaper).foregroundStyle(reportGreen).navigationTitle("我的报告").navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .task { if reports.isEmpty { await load() } }
+    }
+    @ViewBuilder private func reportMetadata(_ report: AiReport) -> some View {
+        Text(report.listDate).foregroundStyle(Color.textTertiary)
+        Text(report.listStatus).foregroundStyle(report.status == "failed" ? Color.stateError : Color.accentDefault)
     }
     private func load() async { guard !busy else { return }; busy = true; defer { busy = false }; do { let rows: [AiReport] = try await APIClient.shared.request(.aiReports(page)); reports += rows; page += 1; more = rows.count == 20; error = "" } catch { self.error = error.localizedDescription } }
 }
