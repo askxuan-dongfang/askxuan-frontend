@@ -38,7 +38,8 @@ extension AiReport {
         if status == "generating" { return "生成中" }
         if status == "failed" { return "生成失败" }
         if unlocked { return "已解锁" }
-        return summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "查看报告" : "免费摘要"
+        // The list response may omit access grants; generation status remains authoritative.
+        return summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "查看报告" : "已生成"
     }
     var listDate: String {
         let iso = ISO8601DateFormatter()
