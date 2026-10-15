@@ -67,6 +67,36 @@ test('cashier never charges on opening or cancelling, requires explicit priced c
 test('cashier disables insufficient balance without falling back to a charge',async({page})=>{
  const state=await setup(page);state.availableCents=100;await page.goto('/c/bookings/B1');await page.getByRole('button',{name:'继续支付',exact:true}).click();await expect(page.getByText('可用 ¥1.00 · 余额不足')).toBeVisible();await expect(page.getByRole('button',{name:'支付 ¥19.90',exact:true})).toBeDisabled();expect(state.payCalls).toBe(0);await page.getByRole('button',{name:'关闭收银台'}).click();
 });
+test('cashier keeps its focus and scroll lock through a minified seconds exit',async({page})=>{
+ const state=await setup(page);await page.goto('/c/bookings/B1');
+ const trigger=page.getByRole('button',{name:'继续支付',exact:true});
+ await trigger.click();const dialog=page.getByRole('dialog',{name:'确认支付'});
+ await expect(dialog).toBeVisible();
+ await dialog.evaluate(async el=>{await Promise.all(el.getAnimations().map(animation=>animation.finished));});
+ await page.clock.install({time:new Date('2026-10-15T00:00:00Z')});
+ await page.clock.pauseAt(new Date('2026-10-15T00:00:00Z'));
+ // Exercise the fallback timer without an animationend event or wall-clock races.
+ await page.addStyleTag({content:'.cashier-dialog[data-closing]{animation:none!important}'});
+ await page.evaluate(()=>document.documentElement.style.setProperty('--motion-duration-exit','.4s'));
+ await page.getByRole('button',{name:'关闭收银台'}).click();
+ await expect(dialog).toHaveAttribute('data-closing','true');
+ await expect(page.getByRole('button',{name:'支付 ¥19.90',exact:true})).toBeDisabled();
+ // A mistaken parse of .4s as milliseconds would release the modal after 50ms.
+ await page.clock.runFor(120);await expect(dialog).toHaveCount(1);
+ expect(await page.evaluate(()=>document.body.style.overflow)).toBe('hidden');
+ await page.clock.runFor(400);
+ await expect(dialog).toHaveCount(0);await expect(trigger).toBeFocused();
+ expect(await page.evaluate(()=>document.body.style.overflow)).not.toBe('hidden');
+ expect(state.payCalls).toBe(0);
+});
+test('cashier reduced motion cancels immediately without charging',async({page})=>{
+ await page.emulateMedia({reducedMotion:'reduce'});const state=await setup(page);
+ await page.goto('/c/bookings/B1');const trigger=page.getByRole('button',{name:'继续支付',exact:true});
+ await trigger.click();await expect(page.getByRole('dialog',{name:'确认支付'})).toBeVisible();
+ await page.getByRole('button',{name:'关闭收银台'}).click();
+ await expect(page.getByRole('dialog')).toHaveCount(0);await expect(trigger).toBeFocused();
+ expect(state.payCalls).toBe(0);
+});
 test('master wallet has no real withdrawal action and labels simulated history',async({page})=>{
  await setup(page,'master');await page.goto('/m/earnings');await expect(page.locator('.wallet-total')).toHaveText('¥34.00');await page.getByRole('button',{name:'历史提现'}).click();await expect(page.getByText('模拟完成',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'申请提现'})).toHaveCount(0);await expect(page.getByRole('link',{name:'收入流水与趋势'})).toHaveAttribute('href','/m/earnings/history');
 });

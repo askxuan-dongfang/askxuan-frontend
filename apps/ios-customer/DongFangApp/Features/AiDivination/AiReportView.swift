@@ -30,32 +30,15 @@ struct AiTopicEntrances: View {
     @State private var topics: [AiTopic] = []
     @State private var error = false
     @State private var loading = false
-    @State private var category = "全部"
-    private let categories = ["全部", "命盘与关系", "生活与文化", "问事与选择"]
-    private var filteredTopics: [AiTopic] {
-        let codes = ["命盘与关系": ["bazi", "ziwei", "marriage", "face_palm"], "生活与文化": ["naming", "dream", "fengshui", "date_select", "fortune"], "问事与选择": ["liuyao", "qimen", "tarot"]]
-        return topics.sorted { (AiReportCatalog.order.firstIndex(of: $0.code) ?? 99) < (AiReportCatalog.order.firstIndex(of: $1.code) ?? 99) }
-            .filter { category == "全部" || (codes[category] ?? []).contains($0.code) }
+    private var orderedTopics: [AiTopic] {
+        topics.sorted { (AiReportCatalog.order.firstIndex(of: $0.code) ?? 99) < (AiReportCatalog.order.firstIndex(of: $1.code) ?? 99) }
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("选择你的专题").font(AppTypography.title(23))
-            Text("每个专题都有独立报告；计算、图表与解读会在一处呈现。")
-                .font(.subheadline).foregroundStyle(.secondary)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(categories, id: \.self) { item in
-                        Button { category = item } label: {
-                            Text(item).font(.subheadline).padding(.horizontal, 12).frame(minHeight: 44)
-                                .background(category == item ? Color.accentDefault.opacity(0.15) : Color.bgSecondary, in: Capsule())
-                        }.buttonStyle(AiExperiencePressStyle()).accessibilityAddTraits(category == item ? .isSelected : [])
-                    }
-                }
-            }.accessibilityLabel("按问题筛选专题")
             if loading { ProgressView("正在展开专题…") }
             if error { Button("专题暂未加载 · 重试") { Task { await load() } } }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 12)], spacing: 12) {
-                ForEach(filteredTopics) { topic in
+                ForEach(orderedTopics) { topic in
                     NavigationLink(value: AiNativeRoute.topic(topic.code)) { AiTopicTile(topic: topic) }
                         .buttonStyle(AiExperiencePressStyle()).disabled(topic.ready == false)
                         .accessibilityIdentifier("ai-topic-" + topic.code)

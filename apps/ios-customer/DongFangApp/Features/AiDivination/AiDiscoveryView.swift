@@ -11,7 +11,6 @@ struct AiDiscoveryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("问玄 · 专题探索").font(.caption).foregroundStyle(Color.accentDefault)
                     Text("一份报告，把关心的事看清").font(AppTypography.title(27))
                     Text("选专题，填资料，读解读。还有疑问，再交给 AI 深入分析。")
                         .font(.subheadline).foregroundStyle(Color.textSecondary)
