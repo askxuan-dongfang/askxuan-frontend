@@ -1,6 +1,24 @@
 import SwiftUI
 
 // MARK: - 积分活动：消耗积分参与，奖品由平台预算承担
+struct RewardPrize: Codable, Identifiable {
+    let id: Int64
+    let name, kind, image: String
+    let value: Int64
+    let quantity, awardedCount: Int
+    let platform, instructions: String
+    let expiresAt: Int64
+    let redemptionUrl: String
+    var kindText: String { ["physical":"实物奖品", "code":"兑换码", "link":"兑换券"][kind] ?? kind }
+}
+struct RewardRedemption: Decodable {
+    let code, url, platform, instructions: String
+    let expiresAt: Int64
+    var safeURL: URL? {
+        guard let parsed = URL(string: url), parsed.scheme == "https", let host = parsed.host, !host.isEmpty, parsed.user == nil, parsed.password == nil else { return nil }
+        return parsed
+    }
+}
 struct RewardCampaign: Codable, Identifiable {
     let id: Int64
     let title, kind, prizeName, image, description, rules: String
@@ -8,6 +26,16 @@ struct RewardCampaign: Codable, Identifiable {
     let prizeQuantity, capacity, participantCount, awardedCount: Int
     let startsAt, endsAt, drawnAt: Int64
     let status, phase, poolDigest, announcement, algorithm: String
+    var prizes: [RewardPrize]? = nil
+    var displayPrizes: [RewardPrize] {
+        if let prizes, !prizes.isEmpty { return prizes }
+        return [RewardPrize(id: 0, name: prizeName, kind: "physical", image: image, value: prizeValue, quantity: prizeQuantity, awardedCount: awardedCount, platform: "", instructions: "", expiresAt: 0, redemptionUrl: "")]
+    }
+    func wheelAngle(for entry: RewardEntry?) -> Double {
+        guard let entry else { return 0 }
+        let index = entry.outcome == "won" ? displayPrizes.firstIndex(where: { $0.id == (entry.prizeId ?? 0) }) ?? 0 : displayPrizes.count
+        return (360 - Double(index) * 360 / Double(displayPrizes.count + 1)).truncatingRemainder(dividingBy: 360)
+    }
     var phaseText: String { ["draft":"草稿","scheduled":"即将开始","open":"参与中","exhausted":"奖品已抽完","full":"名额已满 · 等待截止","awaiting_draw":"正在开奖","drawn":"已结束","cancelled":"已取消"][phase] ?? phase }
     var oddsText: String {
         let n = kind == "pool" ? participantCount : capacity - participantCount
@@ -18,12 +46,21 @@ struct RewardCampaign: Codable, Identifiable {
 struct RewardEntry: Codable, Identifiable {
     var id, campaignId, createdAt, pointsSpent: Int64
     var code, outcome, title: String
+    var prizeId: Int64? = nil
+    var prizeName: String? = nil
     var outcomeText: String { ["pending":"等待开奖","won":"恭喜中奖","lost":"本期未中奖"][outcome] ?? outcome }
 }
 struct RewardOrder: Codable, Identifiable {
     var id, campaignId, entryId, createdAt, claimedAt, shippedAt, completedAt: Int64
     var prizeName, code, status, receiver, mobile, address, carrier, trackingNo: String
-    var statusText: String { ["awaiting_address":"待填写地址","pending":"待发货","shipped":"已发货","completed":"已完成"][status] ?? status }
+    var prizeId: Int64? = nil
+    var prizeKind: String? = nil
+    var platform: String? = nil
+    var instructions: String? = nil
+    var expiresAt: Int64? = nil
+    var redemptionUrl: String? = nil
+    var isDigital: Bool { prizeKind == "code" || prizeKind == "link" }
+    var statusText: String { ["awaiting_address":"待填写地址","pending":"待发货","shipped":"已发货","completed":"已完成","delivered":"已发放"][status] ?? status }
 }
 struct RewardDetail: Decodable { let campaign: RewardCampaign; var mine: RewardEntry?; let winners: [RewardEntry]; let pointsBalance: Int64 }
 struct RewardAddressRequest: Encodable { let receiver, mobile, address: String }
@@ -111,10 +148,11 @@ struct RewardCountdown: View {
 }
 private struct RewardWheelSector: Shape {
     let index: Int
+    let count: Int
     func path(in rect: CGRect) -> Path {
         let center = CGPoint(x: rect.midX, y: rect.midY)
         var path = Path(); path.move(to: center)
-        path.addArc(center: center, radius: min(rect.width, rect.height) / 2, startAngle: .degrees(Double(index) * 45 - 112.5), endAngle: .degrees(Double(index) * 45 - 67.5), clockwise: false)
+        path.addArc(center: center, radius: min(rect.width, rect.height) / 2, startAngle: .degrees(Double(index) * 360 / Double(count) - 90 - 180 / Double(count)), endAngle: .degrees(Double(index) * 360 / Double(count) - 90 + 180 / Double(count)), clockwise: false)
         path.closeSubpath(); return path
     }
 }
@@ -122,30 +160,73 @@ struct RewardWheelArt: View {
     let rotation: Double
     let spinning: Bool
     let cost: Int64
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var prizes: [RewardPrize] = []
+    var actionLabel: String? = nil
+    var actionDisabled = false
+    var hasResult = false
+    var onDraw: (() -> Void)? = nil
+    private let jade = Color(hex: "254C40")
+    private let gold = Color(hex: "E4C58F")
+    private var brass: LinearGradient {
+        LinearGradient(colors: [Color(hex: "F5DFAD"), Color(hex: "B58A4E"), Color(hex: "E7C78D"), Color(hex: "8B683D")], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
     var body: some View {
-        GeometryReader { p in
-            let size = min(p.size.width, p.size.height) - 20
+        GeometryReader { proxy in
+            let size = min(proxy.size.width, proxy.size.height)
             ZStack {
                 ZStack {
-                    ForEach(0..<8) { i in
-                        RewardWheelSector(index: i).fill(i.isMultiple(of: 2) ? Color(hex: "C8A96E") : Color.brown.opacity(0.75))
-                        VStack(spacing: 4) {
-                            Text(i.isMultiple(of: 2) ? "幸运好礼" : "下次有缘").font(.system(size: size < 250 ? 10 : 12, weight: .medium))
-                            Image(systemName: i.isMultiple(of: 2) ? "gift.fill" : "sparkle").font(AppTypography.caption)
-                        }.foregroundStyle(i.isMultiple(of: 2) ? Color(hex: "1C1210") : Color.white.opacity(0.85))
-                            .offset(y: -size * 0.34).rotationEffect(.degrees(Double(i) * 45))
+                    Circle().fill(brass).padding(size * 0.025)
+                    Circle().fill(jade).padding(size * 0.045)
+                    ForEach(0..<48) { index in
+                        Circle().fill(gold.opacity(index.isMultiple(of: 6) ? 1 : 0.6))
+                            .frame(width: size * (index.isMultiple(of: 6) ? 0.013 : 0.006))
+                            .offset(y: -size * 0.442).rotationEffect(.degrees(Double(index) * 7.5))
                     }
-                    Circle().stroke(Color(hex: "C8A96E"), lineWidth: 10)
-                }.rotationEffect(.degrees(rotation)).accessibilityIdentifier("reward-wheel-disc")
-                ForEach(0..<20) { i in
-                    Circle().fill(Color(red: 1, green: 0.92, blue: 0.74)).frame(width: 4, height: 4).offset(y: -size / 2).rotationEffect(.degrees(Double(i) * 18))
-                }
-                Circle().fill(Color(hex: "C8A96E")).frame(width: 72, height: 72).overlay(Circle().stroke(.white.opacity(0.4), lineWidth: 4))
-                VStack(spacing: 3) { Text(spinning ? "✦" : "\(cost)").font(.title2.bold()); Text(spinning ? "揭晓中" : "积分 / 次").font(AppTypography.micro) }.foregroundStyle(Color(hex: "1C1210"))
-                Image(systemName: "arrowtriangle.down.fill").font(.title).foregroundStyle(Color(red: 1, green: 0.9, blue: 0.7)).offset(y: -size / 2 - 4)
-            }.frame(width: size, height: size).frame(width: p.size.width, height: p.size.height)
-        }.accessibilityElement(children: .ignore).accessibilityLabel(spinning ? "转盘正在减速揭晓" : "八格积分转盘，扇区面积不代表概率")
+                    ZStack {
+                        ForEach(0..<(prizes.count + 1), id: \.self) { index in
+                            let gift = index < prizes.count
+                            let light = index.isMultiple(of: 2)
+                            RewardWheelSector(index: index, count: prizes.count + 1)
+                                .fill(RadialGradient(colors: light ? [Color(hex: "FFF8E8"), Color(hex: "E8D8B7")] : [Color(hex: "466C5E"), Color(hex: "23483F")], center: .topLeading, startRadius: 0, endRadius: size))
+                            RewardWheelSector(index: index, count: prizes.count + 1).stroke(Color(hex: "B59862"), lineWidth: 0.6)
+                            VStack(spacing: size * 0.028) {
+                                Text(gift ? prizes[index].name : "谢谢参与").font(.system(size: size * 0.034, weight: .medium)).lineLimit(1).frame(width: size * 0.26)
+                                if gift, let url = URL(string: prizes[index].image), !prizes[index].image.isEmpty {
+                                    AsyncImage(url: url) { image in image.resizable().scaledToFit() } placeholder: { Image(systemName: "gift") }.frame(width: size * 0.09, height: size * 0.09)
+                                } else { Image(systemName: gift ? (prizes[index].kind == "physical" ? "gift" : "ticket") : "leaf").font(.system(size: size * 0.064, weight: .light)) }
+                            }
+                            .foregroundStyle(light ? Color(hex: "76562F") : Color(hex: "EDE4C9"))
+                            .offset(y: -size * 0.29).rotationEffect(.degrees(Double(index) * 360 / Double(prizes.count + 1)))
+                        }
+                    }.frame(width: size * 0.839, height: size * 0.839)
+                        .rotationEffect(.degrees(rotation)).accessibilityIdentifier("reward-wheel-disc")
+                    Circle().stroke(Color(hex: "EAD6AC"), lineWidth: 1.5).frame(width: size * 0.839)
+                    Circle().fill(brass).frame(width: size * 0.284)
+                    Image(systemName: "arrowtriangle.down.fill")
+                        .font(.system(size: size * 0.065)).foregroundStyle(brass)
+                        .shadow(color: .black.opacity(0.18), radius: 1, y: 2).offset(y: -size * 0.435)
+                }.accessibilityHidden(true)
+                if let onDraw {
+                    Button(action: onDraw) { center(size: size) }
+                        .buttonStyle(.plain).disabled(actionDisabled).opacity(actionDisabled ? 0.7 : 1)
+                        .accessibilityLabel(actionLabel ?? "\(cost) 积分转一次")
+                        .accessibilityIdentifier("reward-wheel-draw")
+                } else { center(size: size).accessibilityLabel("八格积分转盘，扇区面积不代表概率") }
+            }.frame(width: size, height: size)
+                .shadow(color: jade.opacity(0.1), radius: 9, y: 7)
+                .frame(width: proxy.size.width, height: proxy.size.height)
+        }
+    }
+    private func center(size: CGFloat) -> some View {
+        VStack(spacing: 5) {
+            Text(spinning ? "揭晓中" : hasResult ? "查看结果" : "转一次").font(.system(size: max(14, size * 0.05), weight: .semibold))
+            Text(spinning ? "请稍候" : hasResult ? "本期已参与" : "\(cost) 积分").font(.system(size: max(10, size * 0.031)))
+                .foregroundStyle(Color(hex: "DFD7BE"))
+        }.foregroundStyle(Color(hex: "FFF4DA"))
+            .frame(width: size * 0.257, height: size * 0.257)
+            .background(LinearGradient(colors: [Color(hex: "42685A"), Color(hex: "1D4338")], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
+            .overlay(Circle().stroke(Color(hex: "E7D0A0"), lineWidth: 1))
+            .contentShape(Circle())
     }
 }
 
@@ -187,6 +268,7 @@ struct RewardsView: View {
     @State private var error: String?
     @State private var claim: RewardOrder?
     @State private var completing: RewardOrder?
+    @State private var redemption: RewardOrder?
     @State private var generation = 0
     private var count: Int { tab < 2 ? campaigns.count : tab == 2 ? entries.count : orders.count }
     private var wheel: RewardCampaign? { campaigns.first { $0.id == selectedWheel } ?? campaigns.first { $0.phase == "open" } ?? campaigns.first { $0.phase == "scheduled" } ?? campaigns.first }
@@ -235,6 +317,7 @@ struct RewardsView: View {
         .navigationTitle("积分活动").navigationBarTitleDisplayMode(.inline)
         .task(id: "\(tab)-\(page)-\(auth.userId)") { await load() }
         .onChange(of: tab) { _, _ in page = 1; selectedWheel = nil }
+        .sheet(item: $redemption) { RewardRedemptionSheet(order: $0) }
         .sheet(item: $claim, onDismiss: { Task { await load() } }) { RewardClaimSheet(order: $0) }
         .alert("确认已收到奖品？", isPresented: Binding(get: { completing != nil }, set: { if !$0 { completing = nil } })) {
             Button("取消", role: .cancel) { completing = nil }
@@ -244,7 +327,11 @@ struct RewardsView: View {
     private func orderCard(_ o: RewardOrder) -> some View {
         Section {
             HStack { Text(o.prizeName).font(.headline); Spacer(); Text(o.statusText).font(AppTypography.caption).foregroundStyle(Color.accentDefault) }
-            RewardDeliverySteps(status: o.status)
+            if o.isDigital {
+                Text(o.platform ?? "").font(AppTypography.caption).foregroundStyle(.secondary)
+                if let expires = o.expiresAt, expires > 0 { Text("有效期至 \(rewardDate(expires))").font(AppTypography.caption).foregroundStyle(.secondary) }
+                Button(o.prizeKind == "code" ? "查看兑换码" : "查看兑换券") { redemption = o }.buttonStyle(.borderedProminent)
+            } else { RewardDeliverySteps(status: o.status) }
             if !o.trackingNo.isEmpty { Text("物流：\(o.carrier) · \(o.trackingNo)").font(AppTypography.caption).textSelection(.enabled) }
             DisclosureGroup("领取与订单详情") {
                 NavigationLink("中奖码 \(o.code)") { RewardDetailView(id: o.campaignId) }.font(AppTypography.caption)
@@ -339,7 +426,7 @@ struct RewardDetailView: View {
         } message: {
             Text("当前可用 \(detail?.pointsBalance ?? 0) 积分，本次消耗 \(detail?.campaign.pointsCost ?? 0) 积分。" + "参与成功后无论中奖与否均不退回；失败不扣分，重复请求不重复扣分。")
         }
-        .sheet(item: $result) { entry in RewardResultSheet(entry: entry, prizeName: detail?.campaign.kind == "wheel" ? detail?.campaign.prizeName : nil).appSheetSurface() }
+        .sheet(item: $result) { entry in RewardResultSheet(entry: entry, prizeName: detail?.campaign.kind == "wheel" ? (entry.prizeName?.isEmpty == false ? entry.prizeName : detail?.campaign.prizeName) : nil).appSheetSurface() }
     }
     private func hero(_ d: RewardDetail) -> some View {
         VStack(spacing: 16) {
@@ -347,7 +434,7 @@ struct RewardDetailView: View {
             Text(d.campaign.title).font(AppTypography.title(28)).multilineTextAlignment(.center)
             Text(d.campaign.phaseText).font(AppTypography.caption).padding(.horizontal, 12).padding(.vertical, 6).background(Color.accentDefault.opacity(0.15), in: Capsule())
             if d.campaign.kind == "wheel" {
-                RewardWheelArt(rotation: spinning ? rotation : (d.mine?.outcome == "lost" ? 315 : 0), spinning: spinning, cost: d.campaign.pointsCost).frame(height: 280)
+                RewardWheelArt(rotation: spinning ? rotation : d.campaign.wheelAngle(for: d.mine), spinning: spinning, cost: d.campaign.pointsCost, prizes: d.campaign.displayPrizes).frame(height: 280)
             } else {
                 ZStack {
                     if let url = URL(string: d.campaign.image), !d.campaign.image.isEmpty {
@@ -424,7 +511,7 @@ struct RewardDetailView: View {
             let loaded: RewardDetail = try await APIClient.shared.request(.rewardDetail(id))
             try Task.checkCancellation(); detail = loaded
             error = nil
-            if !spinning { rotation = detail?.mine?.outcome == "lost" ? 315 : 0 }
+            if !spinning { rotation = detail.map { $0.campaign.wheelAngle(for: $0.mine) } ?? 0 }
         } catch is CancellationError {} catch { self.error = error.localizedDescription }
     }
     @MainActor private func participate() async {
@@ -434,8 +521,8 @@ struct RewardDetailView: View {
             let entry: RewardEntry = try await APIClient.shared.request(.rewardJoin(id, c.pointsCost))
             try Task.checkCancellation(); spinning = true; motionID += 1
             if c.kind == "wheel" {
-                let target = entry.outcome == "won" ? 0.0 : 315.0
-                withAnimation(reduceMotion ? nil : .timingCurve(0.12, 0.64, 0.1, 1, duration: 3.7)) { rotation += 2520 + (target - rotation.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360) }
+                let target = c.wheelAngle(for: entry)
+                withAnimation(reduceMotion ? nil : .timingCurve(0.23, 1, 0.32, 1, duration: 3.7)) { rotation += 2520 + (target - rotation.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360) }
                 if !reduceMotion { try await Task.sleep(for: .milliseconds(3700)) }
             } else if !reduceMotion { try await Task.sleep(for: .milliseconds(1400)) }
             try Task.checkCancellation(); await load(); result = entry
@@ -462,24 +549,27 @@ struct RewardWheelExperience: View {
     var body: some View {
         VStack(spacing: 16) {
             VStack(spacing: 10) {
-                Text("LUCKY WHEEL").font(.caption2).tracking(3).foregroundStyle(Color.accentDefault)
+                HStack(spacing: 6) { Circle().fill(Color.brandDefault).frame(width: 5, height: 5); Text(c.phaseText) }.font(AppTypography.caption).foregroundStyle(.secondary)
                 Text(c.title).font(AppTypography.title(25)).multilineTextAlignment(.center)
-                Text("积分抽好礼 · 即转即开").font(.caption2).foregroundStyle(.secondary)
-                RewardWheelArt(rotation: spinning ? rotation : (detail.mine?.outcome == "lost" ? 315 : 0), spinning: spinning, cost: c.pointsCost).frame(height: 280).padding(.vertical, 8)
-                HStack(spacing: 12) {
-                    Group {
-                        if let url = URL(string: c.image), !c.image.isEmpty {
-                            AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { RewardGiftArt(kind: "wheel").frame(width: 100, height: 100).scaleEffect(0.45).frame(width: 52, height: 52) }
-                        } else { RewardGiftArt(kind: "wheel").frame(width: 100, height: 100).scaleEffect(0.45).frame(width: 52, height: 52) }
-                    }.frame(width: 52, height: 52).background(Color.accentDefault.opacity(0.08)).clipShape(RoundedRectangle(cornerRadius: 12))
-                    VStack(alignment: .leading, spacing: 4) { Text("本期好礼").font(.caption2).foregroundStyle(.secondary); Text(c.prizeName).font(.subheadline).foregroundStyle(Color.accentDefault) }
-                }.padding(.bottom, 8)
-                Button(action: detail.mine == nil ? onJoin : onResult) {
-                    Text(actionLabel).font(.headline).frame(maxWidth: .infinity).padding(.vertical, 15)
-                        .foregroundStyle(Color.textOnAccent).background(LinearGradient(colors: [Color.accentLight, Color.accentDefault], startPoint: .leading, endPoint: .trailing), in: Capsule())
-                }.buttonStyle(.plain).disabled(blocked).opacity(blocked ? 0.5 : 1).accessibilityIdentifier("reward-wheel-draw")
-                Text("可用 \(detail.pointsBalance) 积分 · \(detail.mine == nil ? "每期一次" : "本期已抽奖")").font(.caption2).foregroundStyle(.secondary)
-            }.padding(18).frame(maxWidth: .infinity).background(LinearGradient(colors: [Color.brown.opacity(0.35), Color.bgSecondary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 22))
+                RewardWheelArt(rotation: spinning ? rotation : c.wheelAngle(for: detail.mine), spinning: busy, cost: c.pointsCost, prizes: c.displayPrizes, actionLabel: actionLabel, actionDisabled: blocked, hasResult: detail.mine != nil, onDraw: detail.mine == nil ? onJoin : onResult)
+                    .frame(maxWidth: 360).aspectRatio(1, contentMode: .fit).padding(.vertical, 8)
+                ForEach(c.displayPrizes) { p in
+                    HStack(spacing: 12) {
+                        Group {
+                            if let url = URL(string: p.image), !p.image.isEmpty {
+                                AsyncImage(url: url) { image in image.resizable().scaledToFit() } placeholder: { Image(systemName: "gift") }
+                            } else { Image(systemName: p.kind == "physical" ? "gift" : "ticket").font(.title2).foregroundStyle(Color.accentDefault) }
+                        }.frame(width: 44, height: 44).background(Color.accentDefault.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(p.name).font(.subheadline)
+                            Text("\(p.kindText) · \(max(0,p.quantity-p.awardedCount)) 份" + (p.platform.isEmpty ? "" : " · \(p.platform)")).font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 0)
+                    }.padding(12).frame(maxWidth: .infinity, alignment: .leading).background(Color.bgPrimary, in: RoundedRectangle(cornerRadius: 14))
+                }
+                Text("可用 \(detail.pointsBalance) 积分 · \(detail.mine == nil ? "每期一次" : "本期已抽奖")").font(AppTypography.caption).foregroundStyle(.secondary)
+                if blocked && !busy { Text(hasError ? "加载失败，请重试" : actionLabel).font(AppTypography.caption).foregroundStyle(.secondary) }
+            }.padding(18).frame(maxWidth: .infinity).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 22)).overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.accentDefault.opacity(0.16), lineWidth: 1))
             HStack {
                 Button("抽奖记录") { showRecords = true }.frame(maxWidth: .infinity)
                 Divider().frame(height: 14)
@@ -526,6 +616,15 @@ private struct RewardWheelInfoSheet: View {
                         LabeledContent("参与情况", value: "\(c.participantCount) / \(c.capacity) 人 · \(c.phaseText)")
                         LabeledContent("下一位即时概率", value: c.oddsText)
                     }.font(AppTypography.caption)
+                    Section("奖品与概率") {
+                        ForEach(c.displayPrizes) { p in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(p.name)
+                                Text("剩余 \(max(0,p.quantity-p.awardedCount)) 份 · " + (c.capacity > c.participantCount ? String(format: "%.2f%%", Double(max(0,p.quantity-p.awardedCount)) / Double(c.capacity-c.participantCount) * 100) : "—")).font(AppTypography.caption).foregroundStyle(.secondary)
+                                if p.kind != "physical" { Text("\(p.platform) · 有效期至 \(rewardDate(p.expiresAt))\n\(p.instructions)").font(AppTypography.caption).foregroundStyle(.secondary) }
+                            }
+                        }
+                    }
                     Text("每个账号每期一次，参与成功扣除 \(c.pointsCost) 积分，无论中奖与否均不退回；失败不扣分，重复请求不重复扣分。当前概率为剩余奖品除以剩余名额，奖品预算由平台承担。转盘扇区仅作动画展示，不代表中奖概率。").font(AppTypography.caption).foregroundStyle(.secondary)
                 }
             }.navigationTitle(records ? "抽奖记录" : "活动规则").navigationBarTitleDisplayMode(.inline)
@@ -558,12 +657,10 @@ struct RewardResultSheet: View {
             ScrollView {
             VStack(spacing: 18) {
                 Image(systemName: entry.outcome == "won" ? "sparkles" : entry.outcome == "pending" ? "ticket.fill" : "sparkle").font(.system(size: 48)).foregroundStyle(Color.accentDefault).scaleEffect(appear ? 1 : 0.6)
-                Text("A LITTLE JOY").font(.caption2).tracking(2).foregroundStyle(Color.accentDefault)
                 Text(entry.outcomeText).font(AppTypography.section)
-                Text(entry.outcome == "pending" ? "参与码已为你生成，静候这一期的惊喜。" : entry.outcome == "won" ? "这份小欢喜，属于你。" : "谢谢参与，愿下一份好运与你相逢。").font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 if let prizeName { if entry.outcome == "won" { Text(prizeName).font(.headline).foregroundStyle(Color.accentDefault) } } else { Text(entry.code).font(.system(.subheadline, design: .monospaced)).foregroundStyle(Color.accentDefault) }
                 Text("已扣 \(entry.pointsSpent) 积分").font(AppTypography.caption)
-                Button("收好这份期待") { dismiss() }.buttonStyle(.borderedProminent).controlSize(.large).tint(Color.accentDefault)
+                Button("关闭") { dismiss() }.buttonStyle(.borderedProminent).controlSize(.large).tint(Color.accentDefault)
             }.padding(24).frame(maxWidth: .infinity)
             }
         }.onAppear { withAnimation(reduceMotion ? nil : .spring(duration: 0.5)) { appear = true } }
@@ -580,4 +677,43 @@ struct RewardClaimSheet:View {
     @State private var error:String?
     var body:some View { NavigationStack { Form { Section(order.prizeName) { Text("平台包邮，填写地址后进入待发货。").font(.subheadline);Text(order.code).font(AppTypography.caption) };Section("收货信息") { TextField("收货人",text:$receiver).textContentType(.name);TextField("联系电话",text:$mobile).keyboardType(.phonePad).textContentType(.telephoneNumber);TextField("省市区、街道与门牌号",text:$address,axis:.vertical).textContentType(.fullStreetAddress).lineLimit(3...5) }.disabled(busy);if let error {Text(error).foregroundStyle(.red)};Section { Text("提交后请等待平台发货，请先核对地址和联系电话。").font(AppTypography.caption);Button(busy ? "提交中…":"确认地址，等待发货") {Task{await submit()}}.disabled(busy||receiver.trimmingCharacters(in:.whitespaces).isEmpty||mobile.count<6||address.count<5) } }.navigationTitle("领奖地址").navigationBarTitleDisplayMode(.inline).toolbar {ToolbarItem(placement:.cancellationAction){Button("稍后填写"){dismiss()}.disabled(busy)}}.interactiveDismissDisabled(busy) } }
     @MainActor private func submit()async {busy=true;error=nil;defer{busy=false};do{let _:PointsActionResult=try await APIClient.shared.request(.rewardClaim(order.id,RewardAddressRequest(receiver:receiver.trimmingCharacters(in:.whitespacesAndNewlines),mobile:mobile.trimmingCharacters(in:.whitespacesAndNewlines),address:address.trimmingCharacters(in:.whitespacesAndNewlines))));dismiss()}catch{self.error=error.localizedDescription}}
+}
+
+struct RewardRedemptionSheet: View {
+    let order: RewardOrder
+    @Environment(\.dismiss) private var dismiss
+    @State private var value: RewardRedemption?
+    @State private var error: String?
+    @State private var copied = false
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Text(order.prizeName).font(.headline)
+                    if let value {
+                        Text(value.platform).foregroundStyle(.secondary)
+                        Text("有效期至 \(rewardDate(value.expiresAt))").font(AppTypography.caption)
+                        if value.expiresAt < Int64(Date().timeIntervalSince1970) { Text("已过有效期").foregroundStyle(.secondary) }
+                        Text(value.instructions).font(.subheadline)
+                        if !value.code.isEmpty {
+                            Text(value.code).font(.system(.title3, design: .monospaced)).textSelection(.enabled)
+                            Button(copied ? "已复制" : "复制兑换码") {
+                                UIPasteboard.general.setItems([[UIPasteboard.typeAutomatic: value.code]], options: [.localOnly: true, .expirationDate: Date().addingTimeInterval(120)])
+                                copied = true
+                            }
+                        }
+                        if let url = value.safeURL { Link("前往 \(url.host ?? "兑换平台") 兑换 ↗", destination: url) }
+                    } else if let error { Text(error).foregroundStyle(.red); Button("重新读取") { Task { await load() } } }
+                    else { ProgressView("正在读取…") }
+                }
+            }.navigationTitle(order.prizeKind == "code" ? "兑换码" : "兑换券").navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() } } }
+                .task { await load() }
+        }.tint(Color.accentDefault)
+    }
+    @MainActor private func load() async {
+        error = nil
+        do { let loaded: RewardRedemption = try await APIClient.shared.request(.rewardRedemption(order.id)); try Task.checkCancellation(); value = loaded }
+        catch is CancellationError {} catch { self.error = error.localizedDescription }
+    }
 }

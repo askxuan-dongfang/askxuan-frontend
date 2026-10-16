@@ -332,6 +332,7 @@ enum Endpoint {
     case rewardCampaigns(Int, String)
     case rewardDetail(Int64)
     case rewardEntries(Int)
+    case rewardRedemption(Int64)
     case rewardOrders(Int)
     case rewardJoin(Int64, Int64)
     case rewardClaim(Int64, RewardAddressRequest)
@@ -369,6 +370,7 @@ enum Endpoint {
         case .rewardCampaigns: return "marketing/rewards/campaigns"
         case .rewardDetail(let id): return "marketing/rewards/campaigns/\(id)"
         case .rewardEntries: return "marketing/rewards/entries"
+        case .rewardRedemption(let id): return "marketing/rewards/orders/\(id)/redemption"
         case .rewardOrders: return "marketing/rewards/orders"
         case .rewardJoin(let id, _): return "marketing/rewards/campaigns/\(id)/join"
         case .rewardClaim(let id, _): return "marketing/rewards/orders/\(id)/claim"
@@ -494,7 +496,7 @@ enum Endpoint {
         switch self {
         case .homePromotions, .marketingActivity: return .GET
  case .accountAuth(_,let body): return body == nil ? .GET:.POST
-        case .rewardCampaigns, .rewardDetail, .rewardEntries, .rewardOrders: return .GET
+        case .rewardCampaigns, .rewardDetail, .rewardEntries, .rewardOrders, .rewardRedemption: return .GET
         case .diyDesignCopy: return .POST
         case .diyDesignStatus: return .PUT
         case .rewardJoin, .rewardClaim, .rewardComplete: return .POST

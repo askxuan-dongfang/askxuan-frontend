@@ -4,7 +4,32 @@ import XCTest
 func liveRewardFixture(kind: String = "wheel", participants: Int = 0, prizes: Int = 20, awarded: Int = 0, capacity: Int = 200) -> RewardCampaign {
     RewardCampaign(id: 2, title: "秋日好礼 · 积分幸运转盘", kind: kind, prizeName: "平安香囊礼袋", image: "", description: "一份草木香，送给幸运的你。", rules: "每人每期一次", prizeValue: 3900, budget: 100000, pointsCost: 10, prizeQuantity: prizes, capacity: capacity, participantCount: participants, awardedCount: awarded, startsAt: 1788973900, endsAt: 1790183560, drawnAt: 0, status: "published", phase: "open", poolDigest: "", announcement: "", algorithm: "crypto-rand")
 }
+func multiRewardFixture() -> RewardCampaign {
+    var c = liveRewardFixture()
+    c.prizes = [
+        RewardPrize(id: 11, name: "平安香囊", kind: "physical", image: "", value: 3900, quantity: 10, awardedCount: 0, platform: "", instructions: "", expiresAt: 0, redemptionUrl: ""),
+        RewardPrize(id: 12, name: "礼品卡 50 元", kind: "code", image: "", value: 5000, quantity: 5, awardedCount: 0, platform: "测试平台", instructions: "复制后前往兑换", expiresAt: 1893456000, redemptionUrl: "https://example.com/redeem"),
+        RewardPrize(id: 13, name: "商城兑换券", kind: "link", image: "", value: 1000, quantity: 5, awardedCount: 0, platform: "测试商城", instructions: "打开专属兑换入口", expiresAt: 1893456000, redemptionUrl: "")
+    ]
+    return c
+}
 final class RewardExperienceTests: XCTestCase {
+    func testMultiPrizeLandingAndLegacyCompatibility() throws {
+        let c = multiRewardFixture()
+        var entry = RewardEntry(id: 1, campaignId: 2, createdAt: 1, pointsSpent: 10, code: "TEST", outcome: "won", title: "Test", prizeId: 12, prizeName: "礼品卡 50 元")
+        XCTAssertEqual(c.wheelAngle(for: entry), 270)
+        entry.prizeId = 13; XCTAssertEqual(c.wheelAngle(for: entry), 180)
+        entry.outcome = "lost"; XCTAssertEqual(c.wheelAngle(for: entry), 90)
+        XCTAssertEqual(liveRewardFixture().displayPrizes.count, 1)
+        XCTAssertEqual(try JSONDecoder().decode(RewardCampaign.self, from: JSONEncoder().encode(c)).displayPrizes.count, 3)
+    }
+    func testRedemptionOnlyAcceptsHTTPSWithoutCredentials() {
+        XCTAssertNotNil(RewardRedemption(code: "TEST", url: "https://example.com/redeem", platform: "测试平台", instructions: "", expiresAt: 1893456000).safeURL)
+        for url in ["javascript:alert(1)", "http://example.com", "https://user:password@example.com"] {
+            XCTAssertNil(RewardRedemption(code: "", url: url, platform: "", instructions: "", expiresAt: 0).safeURL)
+        }
+    }
+
     func testPoolProbabilityUsesValidParticipants() {
         XCTAssertEqual(liveRewardFixture(kind: "pool", participants: 100, prizes: 1).oddsText, "1.00%")
         XCTAssertEqual(liveRewardFixture(kind: "pool", participants: 2, prizes: 3).oddsText, "100.00%")
@@ -30,7 +55,7 @@ final class RewardExperienceTests: XCTestCase {
 import SwiftUI
 @MainActor final class RewardNativeRenderTests: XCTestCase {
     func testNativeActivityLayouts() async throws {
-        let detail = RewardDetail(campaign: liveRewardFixture(), mine: nil, winners: [], pointsBalance: 15)
+        let detail = RewardDetail(campaign: multiRewardFixture(), mine: nil, winners: [], pointsBalance: 15)
         for width in [320.0, 390.0, 768.0] {
             let wheel = NavigationStack {
                 ScrollView {
@@ -44,7 +69,7 @@ import SwiftUI
                         Text("积分，让期待发生").font(.title2).foregroundStyle(Color.accentDefault)
                         HStack(spacing: 12) { RewardCategoryEntry(kind: "wheel"); RewardCategoryEntry(kind: "pool") }
                         PointsWalletCard(balance: 15, onRules: {})
-                        RewardWheelArt(rotation: 0, spinning: false, cost: 10).frame(height: 280)
+                        RewardWheelArt(rotation: 0, spinning: false, cost: 10, prizes: multiRewardFixture().displayPrizes).frame(height: 280)
                         RewardCountdown(endsAt: Int64(Date().timeIntervalSince1970) + 72 * 3600)
                         RewardDeliverySteps(status: "completed")
                     }.padding(16)
@@ -83,7 +108,7 @@ import SwiftUI
 private struct RewardWheelMotionFixture: View {
     @State private var rotation = 0.0
     var body: some View {
-        RewardWheelArt(rotation: rotation, spinning: true, cost: 10).frame(width: 280, height: 280)
+        RewardWheelArt(rotation: rotation, spinning: true, cost: 10, prizes: multiRewardFixture().displayPrizes).frame(width: 280, height: 280)
             .frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.bgPrimary)
             .onAppear { withAnimation(.timingCurve(0.12, 0.64, 0.1, 1, duration: 3.7)) { rotation = 2835 } }
     }
