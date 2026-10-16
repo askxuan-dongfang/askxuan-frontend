@@ -75,6 +75,65 @@ final class ProfileExperienceUITests: XCTestCase {
 }
 
 final class DiyStudioUITests: XCTestCase {
+    private func requestClear(_ app: XCUIApplication) {
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "手围 ")).firstMatch.tap()
+        let clear = app.buttons["清空设计"]
+        XCTAssertTrue(clear.waitForExistence(timeout: 5)); clear.tap()
+        XCTAssertTrue(app.buttons["清空搭配"].waitForExistence(timeout: 5))
+    }
+
+    private func clearDraft(_ app: XCUIApplication) {
+        requestClear(app)
+        app.buttons["清空搭配"].tap()
+        let firstBead = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 颗 ")).firstMatch
+        XCTAssertTrue(firstBead.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["清空搭配"].waitForNonExistence(timeout: 5))
+    }
+
+    func testClearDialogCancelAndSearchFocus() {
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
+        app.launchArguments = ["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99024", "--parity-diy-studio", "-askxuan.appearance", "light"]
+        app.launch()
+        XCTAssertTrue(app.otherElements["diy-3d-stage"].waitForExistence(timeout: 25))
+        if app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 颗 ")).firstMatch.exists { clearDraft(app) }
+        let wood = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "小叶紫檀圆珠，")).firstMatch
+        XCTAssertTrue(wood.waitForExistence(timeout: 10)); wood.tap()
+        requestClear(app)
+        if app.buttons["取消"].exists {
+            app.buttons["取消"].tap()
+        } else {
+            // Compact confirmation popovers dismiss by tapping outside them.
+            app.staticTexts["东方珠作"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        }
+        XCTAssertTrue(app.buttons["清空搭配"].waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["第 1 颗 小叶紫檀圆珠"].exists)
+        clearDraft(app)
+        let search = app.textFields["搜索材质或规格"]
+        search.tap(); search.typeText("白玉\n")
+        let jade = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "白玉，")).firstMatch
+        XCTAssertTrue(jade.waitForExistence(timeout: 5)); jade.tap()
+        XCTAssertTrue(app.buttons["第 1 颗 白玉"].waitForExistence(timeout: 5))
+    }
+
+    func testOriginalGalleryAndEditorNavigation() {
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
+        app.launchArguments = ["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99025", "-tab", "3", "-askxuan.appearance", "light"]
+        app.launch()
+        let entry = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "DIY 定制")).firstMatch
+        XCTAssertTrue(entry.waitForExistence(timeout: 20)); entry.tap()
+        let start = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "开始我的设计")).firstMatch
+        XCTAssertTrue(start.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["灵感即将相遇"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["重新加载"].exists)
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "ios-original-gallery"; shot.lifetime = .keepAlways; add(shot)
+        start.tap()
+        XCTAssertTrue(app.otherElements["diy-3d-stage"].waitForExistence(timeout: 10))
+        app.buttons["返回"].firstMatch.tap()
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+    }
+
     func testMaterialShowcaseAndFitDialog() {
         let app = XCUIApplication()
         app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
@@ -82,8 +141,7 @@ final class DiyStudioUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.otherElements["diy-3d-stage"].waitForExistence(timeout: 25))
         if app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 颗 ")).firstMatch.exists {
-            app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "手围 ")).firstMatch.tap()
-            app.buttons["清空设计"].tap(); app.buttons["清空搭配"].tap()
+            clearDraft(app)
         }
         for name in ["小叶紫檀圆珠", "星月菩提", "白玉", "青金石", "蜜蜡", "紫水晶", "虎眼石", "绿松石工艺珠"] {
             if app.buttons["清除搜索"].exists { app.buttons["清除搜索"].tap() }
@@ -107,9 +165,7 @@ final class DiyStudioUITests: XCTestCase {
         let stage = app.otherElements["diy-3d-stage"]
         XCTAssertTrue(stage.waitForExistence(timeout: 25))
         if app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 颗 ")).firstMatch.exists {
-            app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "手围 ")).firstMatch.tap()
-            app.buttons["清空设计"].tap()
-            XCTAssertTrue(app.buttons["清空搭配"].waitForExistence(timeout: 5)); app.buttons["清空搭配"].tap()
+            clearDraft(app)
         }
         XCTAssertFalse(app.buttons["2D"].exists)
         XCTAssertFalse(app.buttons["3D"].exists)

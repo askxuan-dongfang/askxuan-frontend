@@ -28,6 +28,7 @@ struct DiyDesignView: View {
     @FocusState private var searchFocused: Bool
     @State private var showClearConfirmation = false
     @State private var sizePanelExpanded = false
+    @State private var confirmClearAfterFitDismissal = false
 
     @MainActor
     init() {
@@ -77,7 +78,11 @@ struct DiyDesignView: View {
         .task {
             if viewModel.materials.isEmpty { await viewModel.loadMaterials() }
         }
-        .sheet(isPresented: $sizePanelExpanded) {
+        .sheet(isPresented: $sizePanelExpanded, onDismiss: {
+            guard confirmClearAfterFitDismissal else { return }
+            confirmClearAfterFitDismissal = false
+            showClearConfirmation = true
+        }) {
             ScrollView {
                 VStack(spacing: 18) {
                     HStack {
@@ -89,7 +94,10 @@ struct DiyDesignView: View {
                     }
                     sizePanel
                     Divider()
-                    Button("清空设计", role: .destructive) { sizePanelExpanded = false; showClearConfirmation = true }
+                    Button("清空设计", role: .destructive) {
+                        confirmClearAfterFitDismissal = true
+                        sizePanelExpanded = false
+                    }
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .disabled(viewModel.beadSlots.isEmpty && viewModel.selectedCord == nil)
                 }.padding(.horizontal, 24).padding(.vertical, 12)
