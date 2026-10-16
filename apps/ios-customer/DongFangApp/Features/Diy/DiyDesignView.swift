@@ -78,12 +78,26 @@ struct DiyDesignView: View {
             if viewModel.materials.isEmpty { await viewModel.loadMaterials() }
         }
         .sheet(isPresented: $sizePanelExpanded) {
-            VStack(spacing: 14) {
-                sizePanel
-                Button("清空设计", role: .destructive) { sizePanelExpanded = false; showClearConfirmation = true }
-                    .disabled(viewModel.beadSlots.isEmpty && viewModel.selectedCord == nil)
-                Button("完成") { sizePanelExpanded = false }.buttonStyle(.borderedProminent)
-            }.padding(20).presentationDetents([.medium])
+            ScrollView {
+                VStack(spacing: 18) {
+                    HStack {
+                        Text("佩戴与搭配").font(.headline)
+                        Spacer()
+                        Button { sizePanelExpanded = false } label: {
+                            Image(systemName: "xmark").frame(width: 44, height: 44)
+                        }.accessibilityLabel("关闭佩戴设置")
+                    }
+                    sizePanel
+                    Divider()
+                    Button("清空设计", role: .destructive) { sizePanelExpanded = false; showClearConfirmation = true }
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .disabled(viewModel.beadSlots.isEmpty && viewModel.selectedCord == nil)
+                }.padding(.horizontal, 24).padding(.vertical, 12)
+            }
+            .foregroundStyle(Color.textPrimary)
+            .presentationDetents([.height(viewModel.selectedCord == nil ? 380 : 430), .large])
+            .presentationBackground(Color.bgSecondary)
+            .presentationDragIndicator(.visible)
         }
         .confirmationDialog("清空当前搭配？清空后仍可通过撤销恢复。", isPresented: $showClearConfirmation, titleVisibility: .visible) {
             Button("清空搭配", role: .destructive) {
@@ -137,14 +151,14 @@ struct DiyDesignView: View {
             }
             Spacer()
             Button { viewModel.undo(); UISelectionFeedbackGenerator().selectionChanged() } label: {
-                Image(systemName: "arrow.uturn.backward")
-                    .frame(width: 44, height: 44)
+                Label("撤销", systemImage: "arrow.uturn.backward").font(.caption)
+                    .frame(minWidth: 48, minHeight: 44)
             }
             .disabled(!viewModel.canUndo)
             .accessibilityLabel("撤销")
             Button { viewModel.redo(); UISelectionFeedbackGenerator().selectionChanged() } label: {
-                Image(systemName: "arrow.uturn.forward")
-                    .frame(width: 44, height: 44)
+                Label("重做", systemImage: "arrow.uturn.forward").font(.caption)
+                    .frame(minWidth: 48, minHeight: 44)
             }
             .disabled(!viewModel.canRedo)
             .accessibilityLabel("重做")
@@ -171,6 +185,7 @@ struct DiyDesignView: View {
                 DiyNativeStage3D(slots: viewModel.beadSlots, wrist: Double(viewModel.wristSizeMm), allowance: viewModel.fitAllowanceMm,
                     selectedId: viewModel.selectedBeadId, onSelect: viewModel.selectBead, onMove: viewModel.moveBead,
                     resetVersion: resetView, darkSurface: darkSurface)
+                    .background(darkSurface ? Color(red: 0.15, green: 0.23, blue: 0.2) : Color(red: 0.93, green: 0.91, blue: 0.87))
                     .accessibilityIdentifier("diy-3d-stage")
                 HStack(spacing: 8) {
                     Button("复位") { resetView += 1 }.accessibilityLabel("重置 3D 视角")
@@ -178,8 +193,7 @@ struct DiyDesignView: View {
                 }.font(.caption2).buttonStyle(.bordered).tint(Color.accentDefault).padding(8)
                 if viewModel.beadSlots.isEmpty {
                     VStack(spacing: 6) {
-                        Text("从一颗珠子开始").font(.headline)
-                        Text("在材料库中点选，直接加入手串").font(.caption2)
+                        Text("点选材料，加入手串").font(.subheadline)
                     }.foregroundStyle(Color(red: 0.35, green: 0.4, blue: 0.33))
                         .frame(maxWidth: .infinity, maxHeight: .infinity).allowsHitTesting(false)
                 }
@@ -191,14 +205,17 @@ struct DiyDesignView: View {
                         ForEach(Array(viewModel.beadSlots.enumerated()), id: \.element.id) { index, bead in
                             Button { viewModel.selectBead(bead.id) } label: {
                                 HStack(spacing: 2) {
-                                    Circle().fill(Color(hex: bead.colorHex ?? "93795B")).frame(width: 22, height: 22)
+                                    DiyMaterialBead(name: bead.materialName, category: bead.subtype, size: 22, isSelected: false,
+                                        shape: bead.shape ?? "round", colorHex: bead.colorHex, textureKey: bead.textureKey,
+                                        finish: bead.finish, translucency: bead.translucency ?? 0, renderAssets: bead.renderAssets,
+                                        materialId: bead.materialId, materialType: bead.materialType)
                                     Text("\(index + 1)").font(.caption2)
                                 }.padding(5).frame(minWidth: 42, minHeight: 38)
                                     .background(bead.id == viewModel.selectedBeadId ? Color.accentDefault.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
                             }.id(bead.id).accessibilityLabel("第 \(index + 1) 颗 \(bead.materialName)")
                                 .accessibilityAddTraits(bead.id == viewModel.selectedBeadId ? .isSelected : [])
                         }
-                        if viewModel.beadSlots.isEmpty { Text("已选材料会按顺序显示在这里").font(.caption2).foregroundStyle(Color.textSecondary) }
+
                     }.padding(.horizontal, 8)
                 }.frame(height: 44)
                     .onChange(of: viewModel.selectedBeadId) { _, id in if let id { proxy.scrollTo(id, anchor: .center) } }
@@ -208,48 +225,59 @@ struct DiyDesignView: View {
     }
 
     private var sizePanel: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Button {
-                AppMotion.perform { sizePanelExpanded.toggle() }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "ruler").foregroundStyle(Color.accentLight)
-                    Text("佩戴尺寸").font(.subheadline.weight(.semibold))
-                    Spacer(minLength: 4)
-                    Text(String(format: "%.1f cm · 松量 %.0f mm", Double(viewModel.wristSizeMm) / 10, viewModel.fitAllowanceMm))
-                        .font(.caption).foregroundStyle(Color.textSecondary)
-                    Image(systemName: sizePanelExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption.weight(.semibold)).foregroundStyle(Color.accentLight)
-                }.frame(minHeight: 44)
-            }
-            .buttonStyle(DiyPressButtonStyle())
-            .accessibilityLabel(sizePanelExpanded ? "收起佩戴尺寸设置" : "展开佩戴尺寸设置")
-            if sizePanelExpanded {
-                HStack {
-                    Text("手围").font(.subheadline)
-                    Spacer()
-                    Stepper(value: Binding(get: { viewModel.wristSizeMm }, set: { viewModel.setWristSize($0) }), in: 140...200, step: 5) {
-                        Text(String(format: "%.1f cm", Double(viewModel.wristSizeMm) / 10))
-                            .font(.subheadline.weight(.semibold)).monospacedDigit()
-                            .foregroundStyle(Color.accentLight)
+        VStack(spacing: 16) {
+            HStack {
+                Text("手围").font(.subheadline)
+                Spacer()
+                Picker("手围", selection: Binding(get: { viewModel.wristSizeMm }, set: { viewModel.setWristSize($0) })) {
+                    ForEach(Array(stride(from: 140, through: 200, by: 5)), id: \.self) { size in
+                        Text(String(format: "%.1f cm", Double(size) / 10)).tag(size)
                     }
-                    .frame(maxWidth: 230)
-                    .accessibilityLabel("手围")
-                }
+                }.pickerStyle(.menu).tint(Color.textPrimary).frame(minHeight: 44)
+            }
+            HStack {
+                Text("佩戴松量").font(.subheadline)
+                Spacer()
                 Picker("佩戴松量", selection: Binding(get: { viewModel.fitAllowanceMm }, set: { viewModel.setFitAllowance($0) })) {
                     Text("贴合").tag(0.0)
                     Text("＋5 mm").tag(5.0)
                     Text("＋8 mm").tag(8.0)
                     Text("＋12 mm").tag(12.0)
+                }.pickerStyle(.menu).tint(Color.textPrimary).frame(minHeight: 44)
+            }
+            Text(fitSummary).font(.subheadline).foregroundStyle(Color.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack {
+                ForEach(0..<5) { index in
+                    let names = ["木", "火", "土", "金", "水"]
+                    let codes = ["wood", "fire", "earth", "metal", "water"]
+                    let colors = ["427A5B", "C44736", "C38B32", "959A98", "345F95"]
+                    let count = viewModel.beadSlots.filter { bead in
+                        let element = viewModel.materials.first { $0.id == bead.materialId }?.fiveElements
+                        return element == names[index] || element == codes[index]
+                    }.count
+                    HStack(spacing: 4) {
+                        Circle().fill(Color(hex: colors[index])).frame(width: 6, height: 6)
+                        Text("\(names[index]) \(count)").font(.caption)
+                    }.frame(maxWidth: .infinity)
                 }
-                .pickerStyle(.segmented)
-                Text("贴腕测量一圈；松量越大，佩戴越宽松。天然材质以实物为准。")
-                    .font(.caption).foregroundStyle(Color.textSecondary)
+            }.accessibilityElement(children: .combine)
+            if let cord = viewModel.selectedCord {
+                HStack {
+                    Text("绳线 · \(cord.name)").font(.subheadline)
+                    Spacer()
+                    Button("移除") { viewModel.removeFromCart(DiyCartItem(material: cord, quantity: 1)) }
+                        .frame(minHeight: 44)
+                }
             }
         }
-        .foregroundStyle(Color.textPrimary)
-        .padding(.horizontal, 16).padding(.vertical, 8)
-        .diySurface()
+    }
+
+    private var fitSummary: String {
+        let inner = DiyPhysicalLayout(slots: viewModel.beadSlots, wrist: Double(viewModel.wristSizeMm), allowance: viewModel.fitAllowanceMm).innerMm
+        let difference = inner - Double(viewModel.wristSizeMm) - viewModel.fitAllowanceMm
+        let status = difference < -12 ? "还差约 \(Int(abs(difference).rounded())) mm" : difference > 8 ? "偏松约 \(Int(difference.rounded())) mm" : "松紧合适"
+        return String(format: "内围预估 %.1f cm · %@", inner / 10, status)
     }
 
     private var selectedToolbar: some View {
@@ -309,7 +337,7 @@ struct DiyDesignView: View {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 8)], spacing: 8) {
                         ForEach(filteredMaterials) { material in materialCard(material) }
                     }.padding(.horizontal, 10)
-                    Text("天然材质各有纹理，预览供搭配参考。")
+                    Link("材质素材来源", destination: URL(string: "/assets/diy/materials-v2/credits.html", relativeTo: AppConfig.baseURL)!.absoluteURL)
                         .font(.caption2).foregroundStyle(Color.textSecondary).padding(.vertical, 12)
                 }
             }.scrollDismissesKeyboard(.interactively)
@@ -329,12 +357,11 @@ struct DiyDesignView: View {
                         }
                     } label: {
                         Text(category.name)
-                            .font(AppTypography.micro.weight(isSelected ? .semibold : .regular))
-                            .foregroundStyle(isSelected ? Color.accentLight : Color.textTertiary)
+                            .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
+                            .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary)
                             .padding(.horizontal, 10)
                             .frame(minHeight: 44)
-                            .background(isSelected ? Color.accentDefault.opacity(0.14) : Color.bgTertiary.opacity(0.45), in: Capsule())
-                            .overlay { Capsule().stroke(isSelected ? Color.accentDefault.opacity(0.6) : Color.clear, lineWidth: 1) }
+                            .overlay(alignment: .bottom) { Rectangle().fill(isSelected ? Color.brandDefault : .clear).frame(height: 2) }
                     }
                     .buttonStyle(DiyPressButtonStyle())
                     .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -370,7 +397,7 @@ struct DiyDesignView: View {
                         colorHex: material.colorHex,
                         textureKey: material.textureKey,
                         finish: material.finish,
-                        translucency: material.translucency ?? 0, renderAssets: material.renderAssets
+                        translucency: material.translucency ?? 0, renderAssets: material.renderAssets, materialId: material.id, materialType: material.materialType
                     )
                     if count > 0 {
                         Text("×\(count)")
@@ -431,7 +458,7 @@ struct DiyDesignView: View {
                     colorHex: material.colorHex,
                     textureKey: material.textureKey,
                     finish: material.finish,
-                    translucency: material.translucency ?? 0, renderAssets: material.renderAssets
+                    translucency: material.translucency ?? 0, renderAssets: material.renderAssets, materialId: material.id, materialType: material.materialType
                 )
                 Text(material.name)
                     .font(AppTypography.micro.weight(.medium))
@@ -501,6 +528,8 @@ struct DiyMaterialBead: View {
     var finish: String?
     var translucency: Double = 0
     var renderAssets: String? = nil
+    var materialId: Int64 = 0
+    var materialType: String? = nil
 
     private var palette: DiyBeadPalette { .resolve(name: name, category: category, colorHex: colorHex) }
     private var isDiscSpacer: Bool {
@@ -556,7 +585,10 @@ struct DiyMaterialBead: View {
                 .allowsHitTesting(false)
         }
         .overlay {
-            if let assets = DiyRenderAssets.parse(renderAssets), let url = DiyRenderAssets.url(assets.beadImageUrl) {
+            if !(DiyRenderAssets.parse(renderAssets)?.beadImageUrl.map { !$0.hasPrefix("/assets/diy/sources/") } ?? false), let reference = DiyMaterialAppearance.image(id: materialId, texture: textureKey, type: materialType, finish: finish, color: colorHex) {
+                Image(uiImage: reference).resizable().scaledToFill().frame(width: isDiscSpacer ? size * 0.52 : size, height: size).clipShape(Ellipse())
+                    .overlay { Circle().fill(RadialGradient(colors: [.white.opacity(0.18), .clear, .black.opacity(0.35)], center: .init(x: 0.3, y: 0.22), startRadius: 0, endRadius: size * 0.8)) }
+            } else if let assets = DiyRenderAssets.parse(renderAssets), let url = DiyRenderAssets.url(assets.beadImageUrl) {
                 AsyncImage(url: url) { phase in
                     if let image = phase.image {
                         if let c = assets.imageCrop, c.width > 0, c.height > 0 {
@@ -769,22 +801,20 @@ struct DiyNativeStage3D: UIViewRepresentable {
         func configure(_ view: SCNView) {
             self.view = view; view.scene = scene
             camera.camera = SCNCamera(); camera.camera?.fieldOfView = 44
-            camera.camera?.wantsHDR = false; camera.camera?.wantsExposureAdaptation = false
+            camera.camera?.wantsHDR = true; camera.camera?.wantsExposureAdaptation = false
+            camera.camera?.exposureOffset = -0.7; camera.camera?.bloomIntensity = 0
             scene.rootNode.addChildNode(camera); view.pointOfView = camera; updateCamera()
-            for (position, intensity, color) in [(SCNVector3(3, 6, 4), CGFloat(450), UIColor(red: 1, green: 0.96, blue: 0.88, alpha: 1)), (SCNVector3(-4, 3, -2), CGFloat(200), UIColor(red: 0.85, green: 0.92, blue: 0.9, alpha: 1))] {
+            for (position, intensity, color) in [(SCNVector3(3, 6, 4), CGFloat(240), UIColor(red: 1, green: 0.96, blue: 0.88, alpha: 1)), (SCNVector3(-4, 3, -2), CGFloat(100), UIColor(red: 0.85, green: 0.92, blue: 0.9, alpha: 1))] {
                 let node = SCNNode(); node.light = SCNLight(); node.light?.type = .omni; node.light?.intensity = intensity; node.light?.color = color; node.position = position; scene.rootNode.addChildNode(node)
             }
             let key = SCNNode(); key.light = SCNLight(); key.light?.type = .directional
-            key.light?.intensity = 100; key.light?.castsShadow = false; key.light?.shadowRadius = 6
+            key.light?.intensity = 65; key.light?.castsShadow = false; key.light?.shadowRadius = 6
             key.light?.shadowColor = UIColor.black.withAlphaComponent(0.2)
             key.position = SCNVector3(2, 5, 3); key.look(at: SCNVector3Zero); scene.rootNode.addChildNode(key)
-            let ambient = SCNNode(); ambient.light = SCNLight(); ambient.light?.type = .ambient; ambient.light?.intensity = 70; scene.rootNode.addChildNode(ambient)
-            let environment = UIGraphicsImageRenderer(size: CGSize(width: 256, height: 128)).image { context in
-                UIColor(white: 0.45, alpha: 1).setFill(); context.fill(CGRect(x: 0, y: 0, width: 256, height: 128))
-                UIColor(white: 1, alpha: 1).setFill(); context.fill(CGRect(x: 20, y: 12, width: 75, height: 35))
-                UIColor(white: 0.8, alpha: 1).setFill(); context.fill(CGRect(x: 180, y: 20, width: 30, height: 65))
+            let ambient = SCNNode(); ambient.light = SCNLight(); ambient.light?.type = .ambient; ambient.light?.intensity = 35; scene.rootNode.addChildNode(ambient)
+            if let environment = DiyMaterialAppearance.root?.appendingPathComponent("studio.hdr") {
+                scene.lightingEnvironment.contents = environment; scene.lightingEnvironment.intensity = 0.4
             }
-            scene.lightingEnvironment.contents = environment; scene.lightingEnvironment.intensity = 0.3
             cord.geometry = SCNTorus(ringRadius: 1.65, pipeRadius: 0.009)
             cord.geometry?.firstMaterial?.diffuse.contents = UIColor(red: 0.7, green: 0.6, blue: 0.45, alpha: 1)
             scene.rootNode.addChildNode(cord)
@@ -797,9 +827,9 @@ struct DiyNativeStage3D: UIViewRepresentable {
         func update(_ owner: DiyNativeStage3D, view: SCNView) {
             self.owner = owner
             if resetVersion != owner.resetVersion { resetVersion = owner.resetVersion; yaw = 0; pitch = 0.82; distance = 5.3; updateCamera() }
-            let background = owner.darkSurface ? UIColor(red: 0.15, green: 0.23, blue: 0.2, alpha: 1) : UIColor(red: 0.93, green: 0.91, blue: 0.87, alpha: 1)
-            // Match the paper / velvet surface to the surrounding interface.
-            view.backgroundColor = background; scene.background.contents = UIColor.clear
+            // Keep the UI surface outside HDR tone mapping so the paper color
+            // matches H5. Only the beads and their lighting pass through HDR.
+            view.isOpaque = false; view.backgroundColor = .clear; scene.background.contents = UIColor.clear
             if draggedId == nil { render(owner.slots, animated: !owner.reduceMotion) }
         }
         private func updateCamera() {
@@ -819,19 +849,17 @@ struct DiyNativeStage3D: UIViewRepresentable {
                 if signatures[bead.id] != signature {
                     signatures[bead.id] = signature
                     let radius = CGFloat(bead.diameterMm * scale / 2)
-                    let geometry: SCNGeometry
-                    if bead.shape == "disc" || bead.shape == "barrel" { geometry = SCNCylinder(radius: radius, height: radius * (bead.shape == "disc" ? 0.9 : 2.3)) }
-                    else { let sphere = SCNSphere(radius: radius); sphere.segmentCount = bead.shape == "faceted" ? 10 : 32; geometry = sphere }
+                    let geometry = DiyMaterialAppearance.geometry(radius: radius, shape: bead.shape ?? "round")
                     let material = SCNMaterial(); material.lightingModel = .physicallyBased
                     material.diffuse.contents = texture(bead)
-                    material.metalness.contents = bead.materialType == "metal" ? 0.86 : 0
-                    material.roughness.contents = bead.finish == "matte" || bead.finish == "natural" ? 0.6 : 0.26
-                    material.normal.intensity = 0.28; material.clearCoat.contents = 0.45; material.clearCoatRoughness.contents = 0.2
+                    DiyMaterialAppearance.apply(bead, to: material)
                     geometry.materials = [material]; node.geometry = nil
                     node.childNodes.forEach { $0.removeFromParentNode() }
                     let body = SCNNode(geometry: geometry); body.name = "body"
-                    if bead.shape == "disc" || bead.shape == "barrel" { body.eulerAngles.z = .pi / 2 }
-                    body.scale = bead.shape == "pendant" ? SCNVector3(0.8, 1.25, 0.7) : SCNVector3(1, 1, 1)
+                    body.eulerAngles.x = .pi / 2
+                    let variation = bead.id.utf8.reduce(UInt32(0)) { ($0 &* 31) &+ UInt32($1) }
+                    body.eulerAngles.y = Float(variation) / Float(UInt32.max) * 2 * .pi
+                    body.scale = bead.shape == "pendant" ? SCNVector3(0.8, 0.7, 1.25) : SCNVector3(1, 1, 1)
                     node.addChildNode(body)
                     let shadow = SCNNode(geometry: SCNPlane(width: radius * 3.4, height: radius * 3.4))
                     shadow.name = "contact-shadow"; shadow.eulerAngles.x = -.pi / 2; shadow.position.y = -Float(radius + 0.025)
@@ -842,7 +870,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
                     node.addChildNode(shadow)
                     let assets = DiyRenderAssets.parse(bead.renderAssets)
                     for (raw, property) in [(assets?.albedoMapUrl, material.diffuse), (assets?.normalMapUrl, material.normal), (assets?.roughnessMapUrl, material.roughness)] {
-                        if let url = DiyRenderAssets.url(raw) { load(url, into: property) }
+                        if let raw, !raw.hasPrefix("/assets/diy/textures/wood/"), let url = DiyRenderAssets.url(raw) { load(url, into: property) }
                     }
                     let selection = SCNNode(geometry: SCNTorus(ringRadius: radius * 1.22, pipeRadius: radius * 0.035))
                     selection.name = "selection"; selection.position.y = -Float(radius * 0.8)
@@ -926,7 +954,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
                 if draggedId != nil { draggedId = nil; if let owner { render(owner.slots, animated: false) } }
                 gestureDistance = distance
             }
-            distance = min(10, max(3.5, gestureDistance / Double(recognizer.scale))); updateCamera()
+            distance = min(10, max(2.8, gestureDistance / Double(recognizer.scale))); updateCamera()
         }
         private func load(_ url: URL, into property: SCNMaterialProperty) {
             if let image = textures.object(forKey: url.absoluteString as NSString) { property.contents = image; return }
@@ -944,23 +972,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
             requests[url] = request; request.resume()
         }
         private func texture(_ bead: DiyBeadSlot) -> UIImage {
-            let key = "procedural:\(bead.colorHex ?? "93795B"):\(bead.textureKey ?? "plain")" as NSString
-            if let cached = textures.object(forKey: key) { return cached }
-            let base = UIColor(Color(hex: bead.colorHex ?? "93795B"))
-            var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
-            base.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-            let image = UIGraphicsImageRenderer(size: CGSize(width: 128, height: 128)).image { context in
-                base.setFill(); context.fill(CGRect(x: 0, y: 0, width: 128, height: 128))
-                for y in stride(from: 0, to: 128, by: 2) {
-                    for x in stride(from: 0, to: 128, by: 2) {
-                        let value = sin(Double(x) * 127.1 + Double(y) * 311.7) * 43758.5453
-                        let grain = value - Foundation.floor(value), level = 0.9 + grain * 0.1
-                        UIColor(red: red * level, green: green * level, blue: blue * level, alpha: 1).setFill()
-                        context.fill(CGRect(x: x, y: y, width: 2, height: 2))
-                    }
-                }
-            }
-            textures.setObject(image, forKey: key); return image
+            DiyMaterialAppearance.fallbackImage(color: bead.colorHex, texture: bead.textureKey, type: bead.materialType) ?? UIImage()
         }
         func dispose() { requests.values.forEach { $0.cancel() }; requests.removeAll(); textureWaiters.removeAll(); textures.removeAllObjects(); owner = nil }
     }

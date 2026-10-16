@@ -131,7 +131,7 @@ struct DiyDetailView: View {
             if let message = viewModel.successMessage { Text(message).font(.caption).foregroundStyle(Color.stateSuccess) }
             if let source = viewModel.currentDesign?.sourceDesignId, source > 0 { Text("源自作品 #\(source) 的灵感再创作").font(.caption).foregroundStyle(Color.textTertiary) }
             Text("复制后保留珠子顺序，自由替换材料；原作品不会改变。").font(.caption).foregroundStyle(Color.textSecondary)
-            if let url = URL(string: "/assets/diy/credits.html", relativeTo: AppConfig.baseURL)?.absoluteURL { Link("实拍参考与材质素材来源", destination: url).font(.caption) }
+            if let url = URL(string: "/assets/diy/materials-v2/credits.html", relativeTo: AppConfig.baseURL)?.absoluteURL { Link("实拍参考与材质素材来源", destination: url).font(.caption) }
         }.padding(16).diySurface().padding(.horizontal, 16)
     }
 
@@ -218,7 +218,7 @@ struct DiyDetailView: View {
             DiyMaterialBead(name: item.material.name, category: item.material.category, size: 38, isSelected: false,
                             shape: item.material.shape ?? "round", colorHex: item.material.colorHex,
                             textureKey: item.material.textureKey, finish: item.material.finish,
-                            translucency: item.material.translucency ?? 0, renderAssets: item.material.renderAssets)
+                            translucency: item.material.translucency ?? 0, renderAssets: item.material.renderAssets, materialId: item.material.id, materialType: item.material.materialType)
                 .frame(width: 44, height: 44).accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {

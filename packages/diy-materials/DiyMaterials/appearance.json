@@ -1,0 +1,447 @@
+{
+  "version": 2,
+  "environment": "studio.hdr",
+  "profiles": {
+    "wood": {
+      "roughness": 0.38,
+      "clearcoat": 0.12,
+      "metalness": 0,
+      "transmission": 0,
+      "ior": 1.5,
+      "normalStrength": 0.09,
+      "contrast": 0.7,
+      "tint": true,
+      "source": "rosewood-Diffuse.jpg",
+      "crop": [
+        0.75,
+        0.1,
+        0.16,
+        0.6
+      ],
+      "brightness": 0.74
+    },
+    "wood-natural": {
+      "roughness": 0.62,
+      "clearcoat": 0.025,
+      "metalness": 0,
+      "transmission": 0,
+      "ior": 1.5,
+      "normalStrength": 0.17,
+      "contrast": 0.68,
+      "tint": true,
+      "source": "rosewood-Diffuse.jpg",
+      "crop": [
+        0.75,
+        0.1,
+        0.16,
+        0.6
+      ],
+      "brightness": 0.88
+    },
+    "bodhi": {
+      "roughness": 0.58,
+      "clearcoat": 0.025,
+      "metalness": 0,
+      "transmission": 0,
+      "ior": 1.5,
+      "normalStrength": 0,
+      "contrast": 0.55,
+      "tint": true,
+      "source": "bodhi.jpg",
+      "crop": [
+        0.327,
+        0.49,
+        0.025,
+        0.04
+      ],
+      "brightness": 0.94
+    },
+    "xingyue": {
+      "roughness": 0.58,
+      "clearcoat": 0.025,
+      "metalness": 0,
+      "transmission": 0,
+      "ior": 1.5,
+      "normalStrength": 0,
+      "contrast": 0.2,
+      "tint": true,
+      "source": "",
+      "crop": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "brightness": 1
+    },
+    "seed": {
+      "roughness": 0.69,
+      "clearcoat": 0,
+      "metalness": 0,
+      "transmission": 0,
+      "ior": 1.5,
+      "normalStrength": 0,
+      "contrast": 0.9,
+      "tint": true,
+      "source": "bodhi.jpg",
+      "crop": [
+        0.327,
+        0.49,
+        0.025,
+        0.04
+      ],
+      "brightness": 1
+    },
+    "jade": {
+      "roughness": 0.28,
+      "clearcoat": 0.06,
+      "metalness": 0,
+      "transmission": 0.2,
+      "ior": 1.61,
+      "normalStrength": 0,
+      "contrast": 0.06,
+      "tint": true,
+      "source": "jade.jpg",
+      "crop": [
+        0.44,
+        0.35,
+        0.35,
+        0.35
+      ],
+      "brightness": 0.96
+    },
+    "agate": {
+      "roughness": 0.23,
+      "clearcoat": 0.06,
+      "metalness": 0,
+      "transmission": 0.18,
+      "ior": 1.54,
+      "normalStrength": 0,
+      "contrast": 0.35,
+      "tint": true,
+      "source": "carnelian.jpg",
+      "crop": [
+        0.27,
+        0.32,
+        0.29,
+        0.29
+      ],
+      "brightness": 0.84
+    },
+    "lapis": {
+      "roughness": 0.3,
+      "clearcoat": 0.06,
+      "metalness": 0,
+      "transmission": 0,
+      "ior": 1.5,
+      "normalStrength": 0,
+      "contrast": 0.2,
+      "tint": false,
+      "source": "lapis.jpg",
+      "crop": [
+        0.34,
+        0.43,
+        0.28,
+        0.28
+      ],
+      "brightness": 1
+    },
+    "amber": {
+      "roughness": 0.22,
+      "clearcoat": 0.06,
+      "metalness": 0,
+      "transmission": 0.4,
+      "ior": 1.54,
+      "normalStrength": 0,
+      "contrast": 0.4,
+      "tint": true,
+      "source": "amber.jpg",
+      "crop": [
+        0.18,
+        0.13,
+        0.16,
+        0.21
+      ],
+      "brightness": 0.94
+    },
+    "crystal": {
+      "roughness": 0.105,
+      "clearcoat": 0.03,
+      "metalness": 0,
+      "transmission": 0.92,
+      "ior": 1.54,
+      "normalStrength": 0,
+      "contrast": 0.12,
+      "tint": true,
+      "source": "rose.jpg",
+      "crop": [
+        0.4,
+        0.28,
+        0.3,
+        0.3
+      ],
+      "brightness": 1
+    },
+    "rose": {
+      "roughness": 0.2,
+      "clearcoat": 0.03,
+      "metalness": 0,
+      "transmission": 0.55,
+      "ior": 1.54,
+      "normalStrength": 0,
+      "contrast": 0.25,
+      "tint": true,
+      "source": "rose.jpg",
+      "crop": [
+        0.4,
+        0.28,
+        0.3,
+        0.3
+      ],
+      "brightness": 1
+    },
+    "glass": {
+      "roughness": 0.12,
+      "clearcoat": 0.06,
+      "metalness": 0,
+      "transmission": 0.78,
+      "ior": 1.5,
+      "normalStrength": 0,
+      "contrast": 0.1,
+      "tint": true,
+      "source": "rose.jpg",
+      "crop": [
+        0.4,
+        0.28,
+        0.3,
+        0.3
+      ],
+      "brightness": 1
+    },
+    "tiger": {
+      "roughness": 0.24,
+      "clearcoat": 0.08,
+      "metalness": 0,
+      "transmission": 0,
+      "ior": 1.54,
+      "normalStrength": 0,
+      "contrast": 0.2,
+      "tint": false,
+      "source": "tiger.jpg",
+      "crop": [
+        0.32,
+        0.5,
+        0.22,
+        0.22
+      ],
+      "brightness": 1
+    },
+    "turquoise": {
+      "roughness": 0.43,
+      "clearcoat": 0.025,
+      "metalness": 0,
+      "transmission": 0,
+      "ior": 1.5,
+      "normalStrength": 0,
+      "contrast": 0.2,
+      "tint": false,
+      "source": "turquoise.jpg",
+      "crop": [
+        0.49,
+        0.44,
+        0.3,
+        0.3
+      ],
+      "brightness": 1
+    },
+    "obsidian": {
+      "roughness": 0.14,
+      "clearcoat": 0.08,
+      "metalness": 0,
+      "transmission": 0,
+      "ior": 1.5,
+      "normalStrength": 0,
+      "contrast": 0.2,
+      "tint": true,
+      "source": "",
+      "crop": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "brightness": 1
+    },
+    "metal": {
+      "roughness": 0.3,
+      "clearcoat": 0.03,
+      "metalness": 0.92,
+      "transmission": 0,
+      "ior": 1.5,
+      "normalStrength": 0,
+      "contrast": 0.2,
+      "tint": true,
+      "source": "",
+      "crop": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "brightness": 1
+    },
+    "ceramic": {
+      "roughness": 0.65,
+      "clearcoat": 0,
+      "metalness": 0,
+      "transmission": 0,
+      "ior": 1.5,
+      "normalStrength": 0,
+      "contrast": 0.2,
+      "tint": true,
+      "source": "",
+      "crop": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "brightness": 1
+    },
+    "porcelain": {
+      "roughness": 0.24,
+      "clearcoat": 0.3,
+      "metalness": 0,
+      "transmission": 0,
+      "ior": 1.5,
+      "normalStrength": 0,
+      "contrast": 0.2,
+      "tint": true,
+      "source": "",
+      "crop": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "brightness": 1
+    },
+    "textile": {
+      "roughness": 0.96,
+      "clearcoat": 0,
+      "metalness": 0,
+      "transmission": 0,
+      "ior": 1.5,
+      "normalStrength": 0,
+      "contrast": 0.2,
+      "tint": true,
+      "source": "",
+      "crop": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "brightness": 1
+    },
+    "fallback": {
+      "roughness": 0.4,
+      "clearcoat": 0.04,
+      "metalness": 0,
+      "transmission": 0,
+      "ior": 1.5,
+      "normalStrength": 0,
+      "contrast": 0.2,
+      "tint": true,
+      "source": "",
+      "crop": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "brightness": 1
+    }
+  },
+  "byMaterialId": {
+    "1": "wood",
+    "2": "xingyue",
+    "3": "bodhi",
+    "4": "jade",
+    "5": "lapis",
+    "6": "agate",
+    "7": "amber",
+    "8": "obsidian",
+    "9": "metal",
+    "10": "amber",
+    "11": "metal",
+    "12": "crystal",
+    "13": "textile",
+    "14": "textile",
+    "16": "jade",
+    "17": "jade",
+    "18": "jade",
+    "19": "crystal",
+    "20": "crystal",
+    "21": "rose",
+    "22": "crystal",
+    "23": "crystal",
+    "24": "tiger",
+    "25": "turquoise",
+    "26": "ceramic",
+    "27": "ceramic",
+    "28": "wood-natural",
+    "29": "wood-natural",
+    "30": "wood",
+    "31": "wood-natural",
+    "32": "seed",
+    "33": "wood",
+    "34": "porcelain",
+    "35": "porcelain",
+    "36": "glass",
+    "37": "metal",
+    "38": "metal",
+    "39": "turquoise",
+    "40": "wood",
+    "41": "ceramic",
+    "42": "jade",
+    "43": "wood",
+    "44": "textile",
+    "45": "textile",
+    "46": "textile"
+  },
+  "byTexture": {
+    "wood_grain": "wood",
+    "bodhi": "bodhi",
+    "seed": "seed",
+    "jade_cloud": "jade",
+    "agate": "agate",
+    "lapis": "lapis",
+    "amber": "amber",
+    "crystal": "crystal",
+    "glass": "glass",
+    "tiger_eye": "tiger",
+    "turquoise": "turquoise",
+    "obsidian": "obsidian",
+    "metal": "metal",
+    "cinnabar": "ceramic",
+    "dzi": "ceramic",
+    "porcelain": "porcelain",
+    "cloisonne": "porcelain",
+    "silk": "textile",
+    "cord": "textile"
+  },
+  "byType": {
+    "wood": "wood",
+    "seed": "seed",
+    "jade": "jade",
+    "gemstone": "fallback",
+    "organic": "amber",
+    "crystal": "crystal",
+    "metal": "metal",
+    "ceramic": "ceramic",
+    "glass": "glass",
+    "textile": "textile",
+    "cord": "textile"
+  }
+}

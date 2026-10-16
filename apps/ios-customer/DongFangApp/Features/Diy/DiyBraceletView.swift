@@ -78,8 +78,6 @@ struct DiyBraceletView: View {
             Text("一颗一念\n串起你的心意")
                 .font(AppTypography.title(30)).foregroundStyle(Color.textPrimary)
                 .lineSpacing(6).fixedSize(horizontal: false, vertical: true)
-            Text("挑选天然材质，在方寸之间，创造属于自己的搭配。")
-                .font(.subheadline).foregroundStyle(Color.textSecondary).lineSpacing(4)
             DiyMiniBracelet(slots: slots(for: viewModel.designs.first), fallbackCount: 14)
                 .frame(height: 222)
                 .accessibilityLabel("手串搭配示意")
@@ -135,13 +133,11 @@ struct DiyBraceletView: View {
                 Spacer()
                 Text("\(viewModel.designs.count) 件作品").font(.caption).foregroundStyle(Color.textSecondary)
             }
-            Text("从喜欢的作品出发，再加入一点自己的想法。")
-                .font(.caption).foregroundStyle(Color.textSecondary)
             if viewModel.isLoading && viewModel.designs.isEmpty {
                 ProgressView("正在寻找灵感").tint(Color.accentDefault)
                     .frame(maxWidth: .infinity, minHeight: 160)
             } else if viewModel.designs.isEmpty && viewModel.errorMessage == nil {
-                DFEmptyState(icon: "sparkles", title: "灵感即将相遇", subtitle: "保存并公开你的作品，让更多人发现你的搭配")
+                DFEmptyState(icon: "sparkles", title: "灵感即将相遇", subtitle: "")
             } else {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach(viewModel.designs) { design in
@@ -196,7 +192,7 @@ struct DiyMiniBracelet: View {
                     let slot = slots.indices.contains(index) ? slots[index] : nil
                     let angle = slots.isEmpty ? -Double.pi / 2 + Double(index) / Double(max(count, 1)) * Double.pi * 2 : physical.angles[index]
                     let size = slots.isEmpty ? CGFloat(20) : CGFloat((slot?.diameterMm ?? 10) / physical.radius) * radiusX
-                    DiyMaterialBead(name: slot?.materialName ?? "", category: slot?.subtype ?? "main_bead", size: size, isSelected: false, shape: slot?.shape ?? "round", colorHex: slot?.colorHex ?? fallbackColors[index % fallbackColors.count], textureKey: slot?.textureKey, finish: slot?.finish, translucency: slot?.translucency ?? 0, renderAssets: slot?.renderAssets)
+                    DiyMaterialBead(name: slot?.materialName ?? "", category: slot?.subtype ?? "main_bead", size: size, isSelected: false, shape: slot?.shape ?? "round", colorHex: slot?.colorHex ?? fallbackColors[index % fallbackColors.count], textureKey: slot?.textureKey, finish: slot?.finish, translucency: slot?.translucency ?? 0, renderAssets: slot?.renderAssets, materialId: slot?.materialId ?? 0, materialType: slot?.materialType)
                         .frame(width: size, height: size)
                         .shadow(color: Color.black.opacity(0.45), radius: 4, y: 3)
                         .position(x: center.x + cos(angle) * radiusX, y: center.y + sin(angle) * radiusY)

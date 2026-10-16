@@ -75,6 +75,30 @@ final class ProfileExperienceUITests: XCTestCase {
 }
 
 final class DiyStudioUITests: XCTestCase {
+    func testMaterialShowcaseAndFitDialog() {
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
+        app.launchArguments = ["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99023", "--parity-diy-studio", "-askxuan.appearance", "light"]
+        app.launch()
+        XCTAssertTrue(app.otherElements["diy-3d-stage"].waitForExistence(timeout: 25))
+        if app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 颗 ")).firstMatch.exists {
+            app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "手围 ")).firstMatch.tap()
+            app.buttons["清空设计"].tap(); app.buttons["清空搭配"].tap()
+        }
+        for name in ["小叶紫檀圆珠", "星月菩提", "白玉", "青金石", "蜜蜡", "紫水晶", "虎眼石", "绿松石工艺珠"] {
+            if app.buttons["清除搜索"].exists { app.buttons["清除搜索"].tap() }
+            let field = app.textFields["搜索材质或规格"]
+            field.tap(); field.typeText(name + "\n")
+            let material = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", name + "，")).firstMatch
+            XCTAssertTrue(material.waitForExistence(timeout: 5)); material.tap()
+        }
+        app.buttons["清除搜索"].tap()
+        XCTAssertTrue(app.buttons["第 8 颗 绿松石工艺珠"].exists)
+        let materials = XCTAttachment(screenshot: app.screenshot()); materials.name = "ios-material-showcase"; materials.lifetime = .keepAlways; add(materials)
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "手围 ")).firstMatch.tap()
+        XCTAssertTrue(app.buttons["清空设计"].waitForExistence(timeout: 5))
+        let fit = XCTAttachment(screenshot: app.screenshot()); fit.name = "ios-fit-settings"; fit.lifetime = .keepAlways; add(fit)
+    }
     func testSingleSceneEditingAndHistory() {
         let app = XCUIApplication()
         app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"

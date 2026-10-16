@@ -1,0 +1,160 @@
+[
+  {
+    "id": "rosewood",
+    "title": "Rosewood veneer",
+    "author": "Jenelle van Heerden",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourceUrl": "https://polyhaven.com/a/rosewood_veneer1",
+    "note": "实物木皮 PBR 扫描参考，不代表小叶紫檀木种鉴定",
+    "files": [
+      {
+        "path": "rosewood-Diffuse.jpg",
+        "sha256": "b4d36340d33b5bc8ff46864992d53ba3fbc92956ad3cc28d6b2acfa107801be0"
+      },
+      {
+        "path": "rosewood-nor_gl.jpg",
+        "sha256": "d5a37dd3cfeb557570368254fef9f68f945789c1931f68de4e5044d83584aae9"
+      },
+      {
+        "path": "rosewood-Rough.jpg",
+        "sha256": "75a0f4a8d3e0334f453b6d358dc4ef15d145a7e2f9f77cecd02b55e5d360a6d5"
+      }
+    ]
+  },
+  {
+    "id": "studio",
+    "title": "Studio Small 09",
+    "author": "Sergej Majboroda",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourceUrl": "https://polyhaven.com/a/studio_small_09",
+    "note": "真实摄影棚 HDRI",
+    "files": [
+      {
+        "path": "studio.hdr",
+        "sha256": "e7cfda5f4e98e623db12b8bfd0184e048488e4855d9c83e2751fb44a32e80c45"
+      }
+    ]
+  },
+  {
+    "id": "tiger",
+    "title": "虎眼石",
+    "author": "Jonathan Zander",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Polished_Tiger%27s_eye_Macro.JPG",
+    "note": "原始实拍参考；运行时裁切、镜像及按材料配置调色。非在售 SKU 实拍。渲染纹理沿用原图授权。",
+    "files": [
+      {
+        "path": "tiger.jpg",
+        "sha256": "73893b3c6171b002cc6925f049cb26f81adfb759172af04454c79641eb99cb08"
+      }
+    ]
+  },
+  {
+    "id": "bodhi",
+    "title": "凤眼菩提种子",
+    "author": "Christopher J. Fynn",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bodhi_seed_mala.jpg",
+    "note": "原始实拍参考；运行时裁切、镜像及按材料配置调色。非在售 SKU 实拍。渲染纹理沿用原图授权。",
+    "files": [
+      {
+        "path": "bodhi.jpg",
+        "sha256": "1803b724b41706588d08edd5326bb51628838e8bec17cf3b1d43e31d26abaa4c"
+      }
+    ]
+  },
+  {
+    "id": "jade",
+    "title": "软玉",
+    "author": "James St. John",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Nephrite_jade_%28Precambrian%29_%28Granite_Mountains%2C_Fremont_County%2C_Wyoming%2C_USA%29_5.jpg",
+    "note": "原始实拍参考；运行时裁切、镜像及按材料配置调色。非在售 SKU 实拍。渲染纹理沿用原图授权。",
+    "files": [
+      {
+        "path": "jade.jpg",
+        "sha256": "fc08d98d51570a57cb15b9c6eb0e636c83aa70b89b6c546e199258dc4781b91a"
+      }
+    ]
+  },
+  {
+    "id": "amber",
+    "title": "波罗的海琥珀",
+    "author": "W.carter",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Tumble-polished_Baltic_amber_2.jpg",
+    "note": "原始实拍参考；运行时裁切、镜像及按材料配置调色。非在售 SKU 实拍。渲染纹理沿用原图授权。",
+    "files": [
+      {
+        "path": "amber.jpg",
+        "sha256": "7c9e4d8fddec2fca86f9cf639b2a724f450d42100cc454dd1562cea90829bccb"
+      }
+    ]
+  },
+  {
+    "id": "carnelian",
+    "title": "红玉髓",
+    "author": "jaja_1985",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Carnelian_-_tumble_polished_stone.jpg",
+    "note": "原始实拍参考；运行时裁切、镜像及按材料配置调色。非在售 SKU 实拍。渲染纹理沿用原图授权。",
+    "files": [
+      {
+        "path": "carnelian.jpg",
+        "sha256": "98ddd483319677267fe16d226474e2f437ce1ecf0cb72e2b34904c3ef3294ef9"
+      }
+    ]
+  },
+  {
+    "id": "turquoise",
+    "title": "绿松石",
+    "author": "Géry PARENT",
+    "license": "Public domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Turquoise_polie_%28USA%29.jpg",
+    "note": "原始实拍参考；运行时裁切、镜像及按材料配置调色。非在售 SKU 实拍。渲染纹理沿用原图授权。",
+    "files": [
+      {
+        "path": "turquoise.jpg",
+        "sha256": "329b01865a3718e20471fe72fae378d1774bc3af3ac4d3cdbed41d5ac8bff6c5"
+      }
+    ]
+  },
+  {
+    "id": "lapis",
+    "title": "青金石",
+    "author": "Adam Ognisty",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:2_lapis_lazuli.jpg",
+    "note": "原始实拍参考；运行时裁切、镜像及按材料配置调色。非在售 SKU 实拍。渲染纹理沿用原图授权。",
+    "files": [
+      {
+        "path": "lapis.jpg",
+        "sha256": "69135e908e30b46fe25ca5540dc4514cbad2d8dc1754a9a384f68e7c2be2bf09"
+      }
+    ]
+  },
+  {
+    "id": "rose",
+    "title": "粉晶",
+    "author": "Ba7rainsun",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rosecuartezar.jpg",
+    "note": "原始实拍参考；运行时裁切、镜像及按材料配置调色。非在售 SKU 实拍。渲染纹理沿用原图授权。",
+    "files": [
+      {
+        "path": "rose.jpg",
+        "sha256": "4e9c5e10162dba80ec49dfaf7bdbe5e23162d13cf546c189049c8916ac44799f"
+      }
+    ]
+  }
+]

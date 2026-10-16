@@ -37,6 +37,9 @@ targets:
     platform: iOS
     sources:
       - path: ../../packages/service-journey-native
+      - path: ../../packages/diy-materials/DiyMaterials
+        type: folder
+        buildPhase: resources
       - path: ../../packages/profile-native
       - path: ../../packages/chat-native
       - path: ../../packages/design-tokens/fonts

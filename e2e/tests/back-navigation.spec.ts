@@ -29,6 +29,17 @@ async function setup(page: Page) {
 }
 const back=(page:Page)=>page.locator('.flow-nav .back-button');
 const index=(page:Page)=>page.evaluate(()=>history.state.idx);
+for (const viewport of [{width:320,height:568},{width:390,height:844},{width:844,height:390},{width:1280,height:800}]) test(`DIY fit settings stay fully on screen ${viewport.width}`, async ({page}) => {
+ await page.setViewportSize(viewport); await setup(page); await page.goto('/c/diy/editor');
+ await page.locator('button[aria-controls="diy-fit-settings"]').click();
+ const dialog=page.getByRole('dialog',{name:'佩戴与搭配'}); await expect(dialog).toBeVisible();
+ const box=await dialog.boundingBox(); expect(box).not.toBeNull();
+ expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.y).toBeGreaterThanOrEqual(0);
+ expect(box!.x+box!.width).toBeLessThanOrEqual(viewport.width+1); expect(box!.y+box!.height).toBeLessThanOrEqual(viewport.height+1);
+ await page.getByRole('button',{name:'关闭佩戴设置'}).click(); await expect(dialog).not.toBeVisible();
+ await expect(page.getByRole('button',{name:'撤销',exact:true})).toHaveText('撤销');
+ await expect(page.getByRole('button',{name:'重做',exact:true})).toHaveText('重做');
+});
 async function gallery(page:Page){await page.goto('/c/diy?tab=mine');await page.getByRole('link',{name:/返回测试手串/}).click();await expect(page).toHaveURL(/\/c\/diy\/1$/);await expect(page.getByRole('link',{name:'继续编辑',exact:true})).toBeVisible();}
 for(const width of [390,1280])test(`DIY actual source, tab restoration and no return loop ${width}`,async({page})=>{
  await page.setViewportSize({width,height:844});await setup(page);await gallery(page);
