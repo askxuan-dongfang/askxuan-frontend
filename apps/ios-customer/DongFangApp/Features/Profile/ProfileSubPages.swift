@@ -1146,15 +1146,11 @@ struct PointsWalletCard: View {
     let onRules: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack { Text("A LITTLE THANK YOU").font(.caption2).tracking(2); Spacer(); Button("积分规则", action: onRules).font(AppTypography.caption) }.foregroundStyle(Color.accentDefault)
-            Text("每一份喜爱，都有回馈").font(AppTypography.title(22, weight: .medium))
-            Text("可用积分").font(AppTypography.caption).foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline) { Text(balance.map { $0.formatted() } ?? "—").font(AppTypography.title(54, weight: .medium)).minimumScaleFactor(0.6).lineLimit(1).contentTransition(.numericText()); Text("积分").font(AppTypography.caption) }.foregroundStyle(Color.accentDefault)
-            Divider().overlay(Color.accentDefault.opacity(0.2))
-            Text("每笔实付满 100 元得 1 积分").font(AppTypography.caption).foregroundStyle(.secondary)
+            HStack { Text("可用积分").font(.subheadline); Spacer(); Button("规则", action: onRules).font(.subheadline) }.foregroundStyle(Color(hex: "D4DECF"))
+            HStack(alignment: .firstTextBaseline) { Text(balance.map { $0.formatted() } ?? "—").font(AppTypography.numeric(42, weight: .medium)).minimumScaleFactor(0.6).lineLimit(1).contentTransition(.numericText()); Text("积分").font(AppTypography.caption) }.foregroundStyle(Color(hex: "F7F0DF"))
             if (balance ?? 0) < 0 { Text("退款扣回后余额不足，后续获得的积分先补足余额。").font(.caption2).foregroundStyle(.secondary) }
         }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
-            .background(LinearGradient(colors: [Color.brown.opacity(0.45), Color.bgSecondary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24))
+            .background(Color(hex: "254C40"), in: RoundedRectangle(cornerRadius: 20))
             .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.accentDefault.opacity(0.35), lineWidth: 1))
     }
 }
@@ -1164,7 +1160,7 @@ struct PointsRulesSheet: View {
         NavigationStack {
             List {
                 Section("01 · 消费积累") { Text("每笔实付满 100 元得 1 积分，不足部分舍去。例如 199 元得 1 积分，200 元得 2 积分。") }
-                Section("02 · 兑换与参与") { Text("积分商城按标价兑换；转盘和大奖池按本期规则扣分，每人每期一次。成功参与后无论中奖与否均不退回，奖品预算由平台承担。") }
+                Section("02 · 兑换与参与") { Text("积分商城按标价兑换；转盘按次扣分，可多次抽奖，中奖后也可继续；奖池每人每期一次。成功参与后无论中奖与否均不退回，奖品预算由平台承担。") }
                 Section("03 · 退款与记录") { Text("退款按净实付重算所得积分，余额不足时可能为负；后续获得的积分先补足。取消待发货兑换会退回积分。所有变动可查积分明细。") }
                 Text("功德值独立记录成长，不用于兑换，也不影响中奖概率。").font(AppTypography.caption).foregroundStyle(.secondary)
             }.navigationTitle("积分规则").navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .confirmationAction) { Button("知道了") { dismiss() } } }
@@ -1172,11 +1168,74 @@ struct PointsRulesSheet: View {
     }
 }
 struct PointsView: View {
+    @EnvironmentObject private var auth: AuthStore
+    @State private var balance: Int64?
+    @State private var mode = 0
+    @State private var showRules = false
+    @State private var history: Int?
+    var body: some View {
+        VStack(spacing: 0) {
+            PointsWalletCard(balance: balance) { showRules = true }.padding(.horizontal, 16).padding(.top, 12)
+            HStack(spacing: 0) {
+                ForEach(Array(["兑换记录", "抽奖记录", "开奖记录", "我的奖品"].enumerated()), id: \.offset) { i, label in
+                    Button(label) { history = i + 1 }.font(.system(size: 12)).frame(maxWidth: .infinity, minHeight: 44)
+                }
+            }.padding(.horizontal, 12).tint(Color.textSecondary)
+            Picker("积分模式", selection: $mode) { Text("积分转盘").tag(0); Text("积分商城").tag(1); Text("奖池").tag(2) }
+                .pickerStyle(.segmented).padding(.horizontal, 16).padding(.bottom, 10).accessibilityIdentifier("points-modes")
+            if mode == 1 { PointsRecordsView(initialTab: 1, embedded: true, onBalanceChange: { balance = $0 }) }
+            else { RewardsView(initialTab: mode == 0 ? 1 : 0, embedded: true, onBalanceChange: { balance = $0 }).id(mode) }
+        }.background(Color.bgPrimary)
+            .navigationTitle("积分中心").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("明细") { history = 0 } } }
+            .task(id: auth.userId) { balance = nil; if auth.isLoggedIn { let account: PointsAccount? = try? await APIClient.shared.request(.pointsAccount); balance = account?.balance } }
+            .sheet(isPresented: $showRules) { PointsRulesSheet() }
+            .navigationDestination(isPresented: Binding(get: { history != nil }, set: { if !$0 { history = nil } })) { PointsHistoryView(initialTab: history ?? 0) }
+    }
+}
+struct PointsHistoryView: View {
+    @State private var tab: Int
+    init(initialTab: Int = 0) { _tab = State(initialValue: initialTab) }
+    var body: some View {
+        VStack(spacing: 0) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 20) {
+                    ForEach(Array(["积分明细", "兑换记录", "抽奖记录", "开奖记录", "我的奖品"].enumerated()), id: \.offset) { i, title in
+                        Button { tab = i } label: { Text(title).font(.subheadline).foregroundStyle(tab == i ? Color.accentDefault : Color.textSecondary).padding(.vertical, 14).overlay(alignment: .bottom) { if tab == i { Rectangle().fill(Color.accentDefault).frame(height: 2) } } }
+                    }
+                }.padding(.horizontal, 16)
+            }
+            if tab < 2 { PointsRecordsView(initialTab: tab == 0 ? 0 : 2, embedded: true).id(tab) }
+            else { RewardsView(initialTab: tab == 2 ? 2 : tab == 3 ? 4 : 3, embedded: true).id(tab) }
+        }.background(Color.bgPrimary).navigationTitle("积分记录").navigationBarTitleDisplayMode(.inline)
+    }
+}
+struct PointsHomeEntry: View {
+    @EnvironmentObject private var auth: AuthStore
+    @State private var balance: Int64?
+    var body: some View {
+        NavigationLink { PointsView() } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "star.circle").font(.system(size: 36, weight: .light)).foregroundStyle(Color(hex: "D9BD83"))
+                VStack(alignment: .leading, spacing: 6) { Text("积分中心").font(.system(size: 17, weight: .semibold)); Text("转盘 · 商城 · 奖池").font(.system(size: 12)).foregroundStyle(Color(hex: "D1DCCE")) }
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 4) { Text(balance.map { $0.formatted() } ?? "去看看").font(.system(size: 20, weight: .medium)).monospacedDigit().foregroundStyle(Color(hex: "F0DDAF")); if balance != nil { Text("可用积分").font(.system(size: 11)).foregroundStyle(Color(hex: "C9D5C6")) } }
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(Color(hex: "D9BD83"))
+            }.foregroundStyle(Color(hex: "F7F0DF")).padding(18).background(Color(hex: "254C40"), in: RoundedRectangle(cornerRadius: 18))
+        }.buttonStyle(CardPressButtonStyle()).accessibilityIdentifier("home-points")
+            .task(id: auth.userId) { balance = nil; if auth.isLoggedIn { let account: PointsAccount? = try? await APIClient.shared.request(.pointsAccount); balance = account?.balance } }
+    }
+}
+
+struct PointsRecordsView: View {
+    var embedded: Bool
+    var onBalanceChange: ((Int64) -> Void)?
+    init(initialTab: Int = 0, embedded: Bool = false, onBalanceChange: ((Int64) -> Void)? = nil) { _tab = State(initialValue: initialTab); self.embedded = embedded; self.onBalanceChange = onBalanceChange }
     @State private var showRules = false
     @State private var generation = 0
     @State private var keyword=""
     @State private var balance: Int64?
-    @State private var tab = 0
+    @State private var tab: Int
     @State private var page = 1
     @State private var entries: [PointsEntry] = []
     @State private var products: [PointsProduct] = []
@@ -1188,15 +1247,8 @@ struct PointsView: View {
     private var count: Int { tab == 0 ? entries.count : tab == 1 ? products.count : orders.count }
     var body: some View {
         List {
-            PointsWalletCard(balance: balance) { showRules = true }.listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
-            Section("积分活动") {
-                HStack(spacing: 12) {
-                    RewardCategoryEntry(kind: "wheel")
-                    RewardCategoryEntry(kind: "pool")
-                }.listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0)).listRowBackground(Color.clear)
-                Text("每期参与积分在活动页明示；奖品预算由平台承担，功德值独立成长。").font(AppTypography.caption).foregroundStyle(.secondary)
-            }
-            Picker("积分", selection: $tab) { Text("明细").tag(0); Text("积分商城").tag(1); Text("兑换记录").tag(2) }.pickerStyle(.segmented).disabled(busy)
+            if !embedded { PointsWalletCard(balance: balance) { showRules = true }.listRowInsets(EdgeInsets()).listRowBackground(Color.clear) }
+            if tab == 1 { HStack { TextField("搜索积分商品", text: $keyword).onSubmit { page = 1; Task { await load() } }; Button("搜索") { page = 1; Task { await load() } } }.listRowBackground(Color.bgSecondary) }
             if let error { Text(error).foregroundStyle(.red); Button("重试") { Task { await load() } } }
             if busy { ProgressView() }
             if tab == 0 {
@@ -1233,12 +1285,11 @@ struct PointsView: View {
                     }
                 }
             }
-            if !busy && error == nil && count == 0 { ContentUnavailableView(tab == 1 ? "积分好礼，正在准备" : tab == 0 ? "每一笔积累，都值得记录" : "还没有兑换礼物", systemImage: tab == 0 ? "sparkles" : "gift", description: Text(tab == 1 ? "上架后即可用积分兑换，记得再来看看。" : "消费、兑换和活动扣分，都会留下记录。")) }
+            if !busy && error == nil && count == 0 { ContentUnavailableView(tab == 1 ? "暂无积分商品" : tab == 0 ? "暂无积分明细" : "暂无兑换记录", systemImage: tab == 0 ? "list.bullet.rectangle" : "gift", description: Text(tab == 1 ? "商品上架后可用积分兑换。" : "消费、兑换和活动扣分会显示在这里。")) }
             if page > 1 || count >= 20 { HStack { Button("上一页") { page -= 1 }.disabled(page == 1 || busy); Spacer(); Text("第 \(page) 页"); Spacer(); Button("下一页") { page += 1 }.disabled(count < 20 || busy) } }
         }
         .scrollContentBackground(.hidden).background(Color.bgPrimary)
-        .searchable(text:$keyword,prompt:"搜索积分商品或分类").onSubmit(of:.search){page=1;tab=1;Task{await load()}}
-        .navigationTitle("我的积分").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(embedded && tab == 1 ? "积分中心" : "积分记录").navigationBarTitleDisplayMode(.inline)
         .task(id: "\(tab)-\(page)") { await load() }.refreshable { await load() }
         .onChange(of: tab) { _, _ in page = 1 }
         .sheet(isPresented: $showRules) { PointsRulesSheet() }
@@ -1253,7 +1304,7 @@ struct PointsView: View {
         busy = true; error = nil
         defer { if version == generation { busy = false } }
         do {
-            let a: PointsAccount = try await APIClient.shared.request(.pointsAccount); try Task.checkCancellation(); guard version == generation else { return }; balance = a.balance
+            let a: PointsAccount = try await APIClient.shared.request(.pointsAccount); try Task.checkCancellation(); guard version == generation else { return }; balance = a.balance; onBalanceChange?(a.balance)
             if tab == 0 { let rows: [PointsEntry] = try await APIClient.shared.request(.pointsLedger(page)); try Task.checkCancellation(); if version == generation { entries = rows } }
             if tab == 1 { let rows: [PointsProduct] = try await APIClient.shared.request(.pointsSearch(page,keyword)); try Task.checkCancellation(); if version == generation { products = rows } }
             if tab == 2 { let rows: [PointsOrder] = try await APIClient.shared.request(.pointsOrders(page)); try Task.checkCancellation(); if version == generation { orders = rows } }

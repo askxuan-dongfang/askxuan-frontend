@@ -1,6 +1,6 @@
 <template>
  <div class="dfx-page rewards-admin">
-  <PageHeader title="积分活动与奖品履约" subtitle="平台预算准备好礼，一人一期积分参与，开奖与履约全程留档。"><el-button type="primary" @click="edit()">创建积分活动</el-button></PageHeader>
+  <PageHeader title="积分活动与奖品履约" subtitle="转盘可多次抽奖，奖池每人每期一次，开奖与履约全程留档。"><el-button type="primary" @click="edit()">创建积分活动</el-button></PageHeader>
   <el-alert title="积分商城提供确定权益；转盘与大奖池扣除配置的参与积分，不收现金，不影响功德成长。奖品预算由平台承担，与参与积分分别配置。" type="info" :closable="false" show-icon />
   <div class="dfx-card"><el-tabs v-model="tab" @tab-change="page=1;load()"><el-tab-pane label="活动管理" name="campaigns"/><el-tab-pane label="奖品履约" name="orders"/></el-tabs>
   <div class="rewards-toolbar"><el-select v-if="tab==='campaigns'" v-model="kind" placeholder="活动类型" clearable @change="page=1;load()"><el-option label="大奖池" value="pool"/><el-option label="幸运转盘" value="wheel"/></el-select><el-select v-else v-model="status" placeholder="全部履约状态" clearable @change="page=1;load()"><el-option v-for="(v,k) in orderStates" :key="k" :value="k" :label="v"/></el-select><el-button :loading="loading" @click="load">刷新</el-button></div>
@@ -9,7 +9,7 @@
    <el-table-column label="活动 / 期号" min-width="220"><template #default="{row}"><strong>{{row.title}}</strong><div class="muted">第 {{row.id}} 期 · {{row.kind==='pool'?'大奖池':'转盘'}} · {{row.prizeName}}</div></template></el-table-column>
    <el-table-column label="平台预算" min-width="125"><template #default="{row}">¥{{money(row.budget)}}<div class="muted">单件参考 ¥{{money(row.prizeValue)}}</div></template></el-table-column>
    <el-table-column label="参与积分" width="110"><template #default="{row}">{{row.pointsCost}} 积分</template></el-table-column>
-   <el-table-column label="参与与奖品" min-width="155"><template #default="{row}">{{row.participantCount}} / {{row.capacity}} 人<div class="muted">奖品 {{row.prizeQuantity}} 份 · 已中 {{row.awardedCount}} 份</div></template></el-table-column>
+   <el-table-column label="参与与奖品" min-width="155"><template #default="{row}">{{row.kind==='wheel'?`${row.participantCount} 次抽奖`:`${row.participantCount} / ${row.capacity} 人`}}<div class="muted">奖品 {{row.prizeQuantity}} 份 · 已中 {{row.awardedCount}} 份</div></template></el-table-column>
    <el-table-column label="截止时间" min-width="165"><template #default="{row}">{{date(row.endsAt)}}<div class="muted">{{row.kind==='pool'?'到期自动开奖':'即转即开'}}</div></template></el-table-column>
    <el-table-column label="状态" width="140"><template #default="{row}"><el-tag :type="row.phase==='open'?'success':'info'">{{phases[row.phase]}}</el-tag></template></el-table-column>
    <el-table-column label="操作" min-width="220" fixed="right"><template #default="{row}"><el-button link type="primary" @click="inspect(row)">详情 / 审计</el-button><el-button v-if="row.status==='draft'" link type="primary" @click="edit(row)">编辑</el-button><el-button v-if="row.status==='draft'" link type="success" :disabled="busy" @click="transition(row,'publish')">发布</el-button><el-button v-if="row.phase==='awaiting_draw'" link type="warning" :disabled="busy" @click="transition(row,'draw')">补偿开奖</el-button><el-button v-if="['draft','published'].includes(row.status)&&row.participantCount===0" link type="danger" :disabled="busy" @click="transition(row,'cancel')">取消</el-button></template></el-table-column>
@@ -29,12 +29,12 @@
       <el-form-item label="实物奖品名称" required><el-input v-model="form.prizeName" maxlength="120"/></el-form-item><el-form-item label="奖品图片（HTTPS，可选）"><el-input v-model="form.image" placeholder="https://…"/></el-form-item>
       <el-form-item label="单件参考价值（元）" required><el-input-number v-model="prizeYuan" :min="0.01" :max="1000000" :precision="2"/></el-form-item><el-form-item label="奖品数量" required><el-input-number v-model="form.prizeQuantity" :min="1" :max="1000" :precision="0"/></el-form-item>
      </template>
-     <el-form-item label="平台活动预算（元）" required><el-input-number v-model="budgetYuan" :min="0.01" :max="1000000000" :precision="2"/></el-form-item><el-form-item label="每人每期参与积分" required><el-input-number v-model="form.pointsCost" :min="1" :max="100000000" :precision="0"/></el-form-item>
-     <el-form-item label="本期参与名额" required><el-input-number v-model="form.capacity" :min="form.kind==='wheel'?1:totalQuantity" :max="100000" :precision="0"/></el-form-item>
+     <el-form-item label="平台活动预算（元）" required><el-input-number v-model="budgetYuan" :min="0.01" :max="1000000000" :precision="2"/></el-form-item><el-form-item :label="form.kind==='wheel'?'每次抽奖积分':'每期参与积分'" required><el-input-number v-model="form.pointsCost" :min="1" :max="100000000" :precision="0"/></el-form-item>
+     <el-form-item v-if="form.kind==='pool'" label="本期参与名额" required><el-input-number v-model="form.capacity" :min="totalQuantity" :max="100000" :precision="0"/></el-form-item>
      <el-form-item label="开始时间" required><el-date-picker v-model="starts" type="datetime" placeholder="选择开始时间"/></el-form-item><el-form-item label="截止时间（必填）" required><el-date-picker v-model="ends" type="datetime" placeholder="到期结束，不等待满额"/></el-form-item>
     </div>
     <section v-if="form.kind==='wheel'" class="reward-prize-editor">
-     <div class="rewards-prize-heading"><h3>转盘奖品 · {{prizes.length}} / 7 种</h3><el-button :disabled="prizes.length>=7" @click="prizes.push(newPrize())">添加奖品</el-button></div>
+     <div class="rewards-prize-heading"><h3>转盘奖品 · {{prizes.length}} / 10 种</h3><el-button :disabled="prizes.length>=10" @click="prizes.push(newPrize())">添加奖品</el-button></div>
      <div v-for="(p,index) in prizes" :key="p.key" class="rewards-prize-form">
       <div class="rewards-prize-heading"><strong>奖品 {{index+1}}</strong><el-button link type="danger" :disabled="prizes.length===1||(p.stockCount||0)>0" @click="prizes.splice(index,1)">移除</el-button></div>
       <div class="rewards-form-grid">
@@ -54,6 +54,9 @@
       <p v-if="p.kind!=='physical'" class="muted">已存 {{p.stockCount||0}} / {{p.quantity}} 份。保存草稿后在活动详情中导入，每份一个兑换码或专属 HTTPS 链接。</p>
      </div>
      <el-alert :title="`总中奖率 ${(totalOddsBps/100).toFixed(2)}% · 谢谢参与 ${Math.max(0,100-totalOddsBps/100).toFixed(2)}%`" :type="totalOddsBps>10000?'error':'info'" :closable="false"/>
+     <div class="rewards-slot-heading"><h3>10 格转盘排布</h3><el-button @click="resetSlots">自动排布</el-button></div>
+     <div class="rewards-slot-grid"><el-form-item v-for="(_,index) in wheelSlots" :key="index" :label="`第 ${index+1} 格`"><el-select v-model="wheelSlots[index]" :aria-label="`第 ${index+1} 格奖品`"><el-option v-for="(p,i) in prizes" :key="p.key" :value="i" :label="p.name||`奖品 ${i+1}`"/><el-option v-if="totalOddsBps<10000" :value="-1" label="谢谢参与"/></el-select></el-form-item></div>
+     <p class="muted">同一奖品可重复展示，概率不会随格数增加；每种奖品至少展示一格。有未中奖概率时，须保留“谢谢参与”。</p>
      <p class="muted">各项概率之和不能超过 100%，余下为谢谢参与。发布后概率固定，并在用户端奖品详情与活动规则中公开。任一奖品发完会暂停本期抽奖，请按活动规模备足库存。</p>
     </section>
     <el-alert :title="`共 ${totalQuantity} 份奖品，参考总值 ¥${totalValue.toFixed(2)}；平台预算须覆盖奖品与履约费用。`" :type="budgetYuan>=totalValue?'info':'error'" :closable="false"/>
@@ -70,39 +73,44 @@
 </template>
 <script setup lang="ts">
 import PageHeader from '@/components/PageHeader.vue'
-import {computed,onMounted,reactive,ref} from 'vue'
+import {watch,computed,onMounted,reactive,ref} from 'vue'
 import {ElMessage,ElMessageBox,type FormInstance} from 'element-plus'
 import client from '@/api/client'
 interface Prize {probabilityBps?:number;id:number;name:string;kind:string;image:string;value:number;quantity:number;awardedCount:number;platform:string;instructions:string;expiresAt:number;redemptionUrl:string;stockCount?:number}
 interface PrizeForm extends Prize {probabilityPercent?:number;key:number;valueYuan:number;expiry:Date|null}
-interface Campaign {prizes?:Prize[];id:number;title:string;kind:string;prizeName:string;image:string;description:string;rules:string;prizeValue:number;budget:number;pointsCost:number;prizeQuantity:number;capacity:number;participantCount:number;awardedCount:number;startsAt:number;endsAt:number;status:string;phase:string;version:number;drawnAt:number;poolDigest:string;announcement:string;algorithm:string}
+interface Campaign {wheelSlots?:number[];prizes?:Prize[];id:number;title:string;kind:string;prizeName:string;image:string;description:string;rules:string;prizeValue:number;budget:number;pointsCost:number;prizeQuantity:number;capacity:number;participantCount:number;awardedCount:number;startsAt:number;endsAt:number;status:string;phase:string;version:number;drawnAt:number;poolDigest:string;announcement:string;algorithm:string}
 interface Order {prizeKind?:string;platform?:string;id:number;campaignId:number;prizeName:string;code:string;status:string;receiver:string;mobile:string;address:string;carrier:string;trackingNo:string;shippedAt:number}
 interface Detail {campaign:Campaign;winners:{id:number;code:string}[]}
 interface Audit {id:number;actor:string;action:string;detail:string;createdAt:number}
 const phases:Record<string,string>={draft:'草稿',scheduled:'未开始',open:'参与中',paused:'库存不足，已暂停',exhausted:'奖品已抽完',full:'满额待截止',awaiting_draw:'等待开奖',drawn:'已结束',cancelled:'已取消'};const orderStates:Record<string,string>={awaiting_address:'待填写地址',pending:'待发货',shipped:'已发货',completed:'已完成',delivered:'已发放'}
 const tab=ref('campaigns'),page=ref(1),kind=ref(''),status=ref(''),loading=ref(false),busy=ref(false),error=ref(''),campaigns=ref<Campaign[]>([]),orders=ref<Order[]>([]),editing=ref(false),formRef=ref<FormInstance>(),detail=ref<Detail|null>(null),audits=ref<Audit[]>([]),auditPage=ref(1),shipping=ref<Order|null>(null),carrier=ref(''),trackingNo=ref('');
-const defaults=()=>({id:0,title:'',kind:'pool',prizeName:'',image:'',description:'',rules:'每人每期消耗页面所示积分参与一次，不收现金。参与成功后无论是否中奖均不退回积分，失败不扣分，重复请求不重复扣分。实物奖品由平台包邮，兑换类奖品在“我的奖品”领取并按使用说明兑换。',prizeValue:10000,budget:15000,pointsCost:10,prizeQuantity:1,capacity:100,version:1});const form=reactive(defaults()),prizeYuan=ref(100),budgetYuan=ref(150),starts=ref<Date|null>(null),ends=ref<Date|null>(null);const count=computed(()=>tab.value==='campaigns'?campaigns.value.length:orders.value.length);const date=(n:number)=>new Date(n*1000).toLocaleString('zh-CN',{hour12:false});const money=(n:number)=>(n/100).toFixed(2);
+const defaults=()=>({id:0,title:'',kind:'pool',prizeName:'',image:'',description:'',rules:'转盘可多次抽奖，每次消耗页面所示积分；奖池每人每期一次。不收现金。参与成功后无论是否中奖均不退回积分，失败不扣分，重复请求不重复扣分。实物奖品由平台包邮，兑换类奖品在“我的奖品”领取并按使用说明兑换。',prizeValue:10000,budget:15000,pointsCost:10,prizeQuantity:1,capacity:100,version:1});const form=reactive(defaults()),prizeYuan=ref(100),budgetYuan=ref(150),starts=ref<Date|null>(null),ends=ref<Date|null>(null);const count=computed(()=>tab.value==='campaigns'?campaigns.value.length:orders.value.length);const date=(n:number)=>new Date(n*1000).toLocaleString('zh-CN',{hour12:false});const money=(n:number)=>(n/100).toFixed(2);
 const prizeKinds:Record<string,string>={physical:'实物奖品',code:'兑换码',link:'兑换券'};
 let prizeKey=0;
 const newPrize=():PrizeForm=>({key:++prizeKey,id:0,name:'',kind:'physical',image:'',value:1000,valueYuan:10,quantity:1,awardedCount:0,platform:'',instructions:'',expiresAt:0,expiry:null,redemptionUrl:'',stockCount:0});
+const wheelSlots=ref<number[]>([]);
 const prizes=ref<PrizeForm[]>([]),stockPrize=ref<Prize|null>(null),stockText=ref(''),stockError=ref('');
 const totalOddsBps=computed(()=>prizes.value.reduce((n,p)=>n+Math.round((p.probabilityPercent||0)*100),0));
 const totalQuantity=computed(()=>form.kind==='wheel'?prizes.value.reduce((n,p)=>n+p.quantity,0):form.prizeQuantity);
 const totalValue=computed(()=>form.kind==='wheel'?prizes.value.reduce((n,p)=>n+p.valueYuan*p.quantity,0):prizeYuan.value*form.prizeQuantity);
 const stockItems=computed(()=>stockText.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean));
+function resetSlots(){const base=[...prizes.value.map((_,i)=>i),...(totalOddsBps.value<10000?[-1]:[])];wheelSlots.value=Array.from({length:10},(_,i)=>base[i%base.length]??-1)}
+function validSlots(){return wheelSlots.value.length===10&&wheelSlots.value.every(i=>i===-1||i>=0&&i<prizes.value.length)&&prizes.value.every((_,i)=>wheelSlots.value.includes(i))&&wheelSlots.value.includes(-1)===(totalOddsBps.value<10000)}
+watch(()=>[prizes.value.length,totalOddsBps.value<10000],()=>{if(!validSlots())resetSlots()});
 function ensurePrizes(){if(form.kind==='wheel'&&!prizes.value.length)prizes.value=[newPrize()]}
 async function importStock(){if(!stockPrize.value||!detail.value||busy.value)return;if(!stockItems.value.length){stockError.value='请填写兑换库存';return}busy.value=true;stockError.value='';try{await client.post(`/admin/marketing/rewards/campaigns/${detail.value.campaign.id}/stock`,{prizeId:stockPrize.value.id,items:stockItems.value});stockText.value='';stockPrize.value=null;await inspect(detail.value.campaign);await load();ElMessage.success('兑换库存已导入')}catch(e){stockError.value=e instanceof Error?e.message:'导入失败'}finally{busy.value=false}}
 async function load(){loading.value=true;error.value='';try{if(tab.value==='campaigns')campaigns.value=await client.get<Campaign[]>(`/admin/marketing/rewards/campaigns`,{params:{page:page.value,kind:kind.value}});else orders.value=await client.get<Order[]>(`/admin/marketing/rewards/orders`,{params:{page:page.value,status:status.value}})}catch(e){error.value=e instanceof Error?e.message:'加载失败'}finally{loading.value=false}}
-function edit(c?:Campaign){Object.keys(form).forEach(k=>delete (form as unknown as Record<string,unknown>)[k]);Object.assign(form,c?{id:c.id,title:c.title,kind:c.kind,prizeName:c.prizeName,image:c.image,description:c.description,rules:c.rules,prizeValue:c.prizeValue,budget:c.budget,pointsCost:c.pointsCost,prizeQuantity:c.prizeQuantity,capacity:c.capacity,version:c.version}:defaults());prizeYuan.value=form.prizeValue/100;budgetYuan.value=form.budget/100;starts.value=new Date(c?c.startsAt*1000:Date.now()+60000);ends.value=new Date(c?c.endsAt*1000:Date.now()+7*86400000);prizes.value=(c?.prizes?.length?c.prizes:c?.kind==='wheel'?[{...newPrize(),name:c.prizeName,image:c.image,value:c.prizeValue,quantity:c.prizeQuantity}]:[]).map(p=>({...p,key:++prizeKey,valueYuan:p.value/100,probabilityPercent:p.probabilityBps==null?undefined:p.probabilityBps/100,expiry:p.expiresAt?new Date(p.expiresAt*1000):null}));ensurePrizes();editing.value=true}
+function edit(c?:Campaign){Object.keys(form).forEach(k=>delete (form as unknown as Record<string,unknown>)[k]);Object.assign(form,c?{id:c.id,title:c.title,kind:c.kind,prizeName:c.prizeName,image:c.image,description:c.description,rules:c.rules,prizeValue:c.prizeValue,budget:c.budget,pointsCost:c.pointsCost,prizeQuantity:c.prizeQuantity,capacity:c.capacity,version:c.version}:defaults());prizeYuan.value=form.prizeValue/100;budgetYuan.value=form.budget/100;starts.value=new Date(c?c.startsAt*1000:Date.now()+60000);ends.value=new Date(c?c.endsAt*1000:Date.now()+7*86400000);prizes.value=(c?.prizes?.length?c.prizes:c?.kind==='wheel'?[{...newPrize(),name:c.prizeName,image:c.image,value:c.prizeValue,quantity:c.prizeQuantity}]:[]).map(p=>({...p,key:++prizeKey,valueYuan:p.value/100,probabilityPercent:p.probabilityBps==null?undefined:p.probabilityBps/100,expiry:p.expiresAt?new Date(p.expiresAt*1000):null}));ensurePrizes();wheelSlots.value=c?.wheelSlots?.length===10?[...c.wheelSlots]:[];if(!validSlots())resetSlots();editing.value=true}
 async function save(){
  const multi=form.kind==='wheel';
+ if(multi&&!validSlots()){ElMessage.error('请完整配置 10 格：每种奖品至少一格，剩余概率须设置谢谢参与');return}
  if(multi&&(prizes.value.some(p=>!Number.isFinite(p.probabilityPercent)||p.probabilityPercent!<0.01||p.probabilityPercent!>100)||totalOddsBps.value>10000)){ElMessage.error('请填写每项中奖概率（0.01%–100%），总和不能超过 100%');return}
  if(!Number.isInteger(form.pointsCost)||form.pointsCost<1||!form.title.trim()||(!multi&&!form.prizeName.trim())||!form.description.trim()||!form.rules.trim()||!starts.value||!ends.value||ends.value.getTime()<=starts.value.getTime()||ends.value.getTime()<=Date.now()||budgetYuan.value<totalValue.value||form.capacity<1||(!multi&&(form.capacity<totalQuantity.value||totalQuantity.value>1000))){ElMessage.error('请填写完整活动信息，预算须覆盖奖品且截止时间有效');return}
  if(multi&&(!prizes.value.length||prizes.value.some(p=>!p.name.trim()||p.quantity<1||p.valueYuan<=0||(p.kind!=='physical'&&(!p.platform.trim()||!p.instructions.trim()||!p.expiry||!Number.isFinite(p.expiry.getTime())||p.expiry.getTime()<=ends.value!.getTime()))))){ElMessage.error('请补全各奖品，兑换有效期须晚于活动截止时间');return}
  busy.value=true;try{
- const payload={...form,prizes:multi?prizes.value.map(p=>({id:p.id,name:p.name.trim(),kind:p.kind,image:p.image.trim(),value:Math.round(p.valueYuan*100),quantity:p.quantity,probabilityBps:Math.round(p.probabilityPercent!*100),platform:p.kind==='physical'?'':p.platform.trim(),instructions:p.kind==='physical'?'':p.instructions.trim(),expiresAt:p.kind==='physical'?0:Math.floor(p.expiry!.getTime()/1000),redemptionUrl:p.kind==='code'?p.redemptionUrl.trim():''})):[],prizeValue:Math.round(prizeYuan.value*100),budget:Math.round(budgetYuan.value*100),startsAt:Math.floor(starts.value.getTime()/1000),endsAt:Math.floor(ends.value.getTime()/1000)};
+ const payload={...form,wheelSlots:multi?[...wheelSlots.value]:[],prizes:multi?prizes.value.map(p=>({id:p.id,name:p.name.trim(),kind:p.kind,image:p.image.trim(),value:Math.round(p.valueYuan*100),quantity:p.quantity,probabilityBps:Math.round(p.probabilityPercent!*100),platform:p.kind==='physical'?'':p.platform.trim(),instructions:p.kind==='physical'?'':p.instructions.trim(),expiresAt:p.kind==='physical'?0:Math.floor(p.expiry!.getTime()/1000),redemptionUrl:p.kind==='code'?p.redemptionUrl.trim():''})):[],prizeValue:Math.round(prizeYuan.value*100),budget:Math.round(budgetYuan.value*100),startsAt:Math.floor(starts.value.getTime()/1000),endsAt:Math.floor(ends.value.getTime()/1000)};
  const saved=await (form.id?client.put<Campaign>(`/admin/marketing/rewards/campaigns/${form.id}`,payload):client.post<Campaign>(`/admin/marketing/rewards/campaigns`,payload));
- if(multi&&(saved.prizes?.length!==payload.prizes.length||saved.prizes.some((p,i)=>p.probabilityBps!==payload.prizes[i].probabilityBps))){form.id=saved.id;form.version=saved.version;ElMessage.error('中奖概率未保存，请联系管理员完成活动服务升级后重试');await load();return}
+ if(multi&&(JSON.stringify(saved.wheelSlots)!==JSON.stringify(payload.wheelSlots)||saved.prizes?.length!==payload.prizes.length||saved.prizes.some((p,i)=>p.probabilityBps!==payload.prizes[i].probabilityBps))){form.id=saved.id;form.version=saved.version;ElMessage.error('概率或转盘排布未保存，请联系管理员完成活动服务升级后重试');await load();return}
  editing.value=false;ElMessage.success('草稿已保存');page.value=1;await load();if(saved.prizes?.some(p=>p.kind!=='physical'))await inspect(saved)
  }catch{}finally{busy.value=false}
 }
@@ -115,7 +123,7 @@ async function ship(){if(!shipping.value)return;if(!carrier.value.trim()||tracki
 onMounted(load)
 </script>
 <style scoped>
-.rewards-prize-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.rewards-prize-form{padding:16px;border:1px solid var(--admin-border);border-radius:12px;margin:12px 0}.reward-prize-editor{margin-bottom:20px}.rewards-admin > .el-alert { margin-bottom: var(--admin-section-gap); }
+.rewards-slot-heading{display:flex;align-items:center;justify-content:space-between;margin-top:22px}.rewards-slot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0 12px}.rewards-prize-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.rewards-prize-form{padding:16px;border:1px solid var(--admin-border);border-radius:12px;margin:12px 0}.reward-prize-editor{margin-bottom:20px}.rewards-admin > .el-alert { margin-bottom: var(--admin-section-gap); }
 .rewards-toolbar{display:flex;gap:12px;margin:18px 0}.rewards-toolbar .el-select{width:210px}.rewards-pager{display:flex;gap:14px;align-items:center;justify-content:center;margin:24px 0}.muted{font-size: var(--type-size-caption);color:var(--admin-text-secondary);line-height:1.8}.rewards-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}.rewards-form-grid :deep(.el-input-number),.rewards-form-grid :deep(.el-date-editor){width:100%}.rewards-codes{display:flex;flex-wrap:wrap;gap:8px}.rewards-digest{overflow-wrap:anywhere;font-size: var(--type-size-caption);color:var(--admin-text-secondary)}@media(max-width:640px){.rewards-form-grid{grid-template-columns:1fr}}
 </style>
 

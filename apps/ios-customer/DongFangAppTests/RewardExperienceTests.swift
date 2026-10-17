@@ -17,9 +17,10 @@ final class RewardExperienceTests: XCTestCase {
     func testMultiPrizeLandingAndLegacyCompatibility() throws {
         let c = multiRewardFixture()
         var entry = RewardEntry(id: 1, campaignId: 2, createdAt: 1, pointsSpent: 10, code: "TEST", outcome: "won", title: "Test", prizeId: 12, prizeName: "礼品卡 50 元")
-        XCTAssertEqual(c.wheelAngle(for: entry), 270)
-        entry.prizeId = 13; XCTAssertEqual(c.wheelAngle(for: entry), 180)
-        entry.outcome = "lost"; XCTAssertEqual(c.wheelAngle(for: entry), 90)
+        XCTAssertEqual(c.displaySlots.count, 10)
+        XCTAssertEqual(c.wheelAngle(for: entry), 180)
+        entry.prizeId = 13; XCTAssertEqual(c.wheelAngle(for: entry), 144)
+        entry.outcome = "lost"; XCTAssertEqual(c.wheelAngle(for: entry), 108)
         XCTAssertEqual(liveRewardFixture().displayPrizes.count, 1)
         XCTAssertEqual(try JSONDecoder().decode(RewardCampaign.self, from: JSONEncoder().encode(c)).displayPrizes.count, 3)
     }

@@ -22,6 +22,7 @@ struct HomeView: View {
                 VStack(spacing: 18) {
                     if !viewModel.banners.isEmpty { bannerSection }
                     entryCardsSection
+                    PointsHomeEntry().padding(.horizontal, AppSpacing.lg)
                     if viewModel.isLoading && viewModel.beliefEntries.isEmpty { ProgressView("正在加载首页") }
                     if let error = viewModel.errorMessage {
                         HStack { Text("部分内容加载失败：" + error).font(AppTypography.caption); Spacer(); Button("重试") { Task { await viewModel.load() } } }.padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)).padding(.horizontal, 20)

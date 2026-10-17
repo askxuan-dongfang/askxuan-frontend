@@ -334,7 +334,7 @@ enum Endpoint {
     case rewardEntries(Int)
     case rewardRedemption(Int64)
     case rewardOrders(Int)
-    case rewardJoin(Int64, Int64)
+    case rewardJoin(Int64, Int64, String)
     case rewardClaim(Int64, RewardAddressRequest)
     case rewardComplete(Int64)
     case wallet(mode: String, filter: String, page: Int)
@@ -372,7 +372,7 @@ enum Endpoint {
         case .rewardEntries: return "marketing/rewards/entries"
         case .rewardRedemption(let id): return "marketing/rewards/orders/\(id)/redemption"
         case .rewardOrders: return "marketing/rewards/orders"
-        case .rewardJoin(let id, _): return "marketing/rewards/campaigns/\(id)/join"
+        case .rewardJoin(let id, _, _): return "marketing/rewards/campaigns/\(id)/join"
         case .rewardClaim(let id, _): return "marketing/rewards/orders/\(id)/claim"
         case .rewardComplete(let id): return "marketing/rewards/orders/\(id)/complete"
         case .wallet: return "payments/wallet"
@@ -688,7 +688,7 @@ enum Endpoint {
         case .shopReturnCreate(_, let reason): return AnyEncodable(["type":"return","reason":reason])
         case .shopReturnShip(_, let carrier, let tracking): return AnyEncodable(["carrier":carrier,"trackingNo":tracking])
         case .rewardClaim(_, let req): return req
-        case .rewardJoin(_, let points): return AnyEncodable(["expectedPoints": points])
+        case .rewardJoin(_, let points, let key): return AnyEncodable(RewardJoinRequest(expectedPoints: points, requestKey: key))
         case .rewardComplete: return AnyEncodable([String:String]())
         case .pointsRedeem(let req): return req
         case .createBooking(let req):          return AnyEncodable(req)

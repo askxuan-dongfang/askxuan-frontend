@@ -12,6 +12,13 @@ struct RewardPrize: Codable, Identifiable {
     var probabilityBps: Int? = nil
     var kindText: String { ["physical":"实物奖品", "code":"兑换码", "link":"兑换券"][kind] ?? kind }
 }
+func rewardWheelSlots(prizes: [RewardPrize], configured: [Int]? = nil) -> [Int] {
+    if let configured, configured.count == 10, configured.allSatisfy({ $0 == -1 || prizes.indices.contains($0) }) { return configured }
+    let hasLoss = !prizes.allSatisfy { $0.probabilityBps != nil } || prizes.reduce(0, { $0 + ($1.probabilityBps ?? 0) }) < 10000
+    let base = Array(prizes.indices) + (hasLoss ? [-1] : [])
+    return (0..<10).map { base.isEmpty ? -1 : base[$0 % base.count] }
+}
+struct RewardJoinRequest: Encodable { let expectedPoints: Int64; let requestKey: String }
 struct RewardRedemption: Decodable {
     let code, url, platform, instructions: String
     let expiresAt: Int64
@@ -28,14 +35,21 @@ struct RewardCampaign: Codable, Identifiable {
     let startsAt, endsAt, drawnAt: Int64
     let status, phase, poolDigest, announcement, algorithm: String
     var prizes: [RewardPrize]? = nil
+    var wheelSlots: [Int]? = nil
     var displayPrizes: [RewardPrize] {
         if let prizes, !prizes.isEmpty { return prizes }
         return [RewardPrize(id: 0, name: prizeName, kind: "physical", image: image, value: prizeValue, quantity: prizeQuantity, awardedCount: awardedCount, platform: "", instructions: "", expiresAt: 0, redemptionUrl: "")]
     }
+    var displaySlots: [Int] { rewardWheelSlots(prizes: displayPrizes, configured: wheelSlots) }
     func wheelAngle(for entry: RewardEntry?) -> Double {
         guard let entry else { return 0 }
-        let index = entry.outcome == "won" ? displayPrizes.firstIndex(where: { $0.id == (entry.prizeId ?? 0) }) ?? 0 : displayPrizes.count
-        return (360 - Double(index) * 360 / Double(displayPrizes.count + 1)).truncatingRemainder(dividingBy: 360)
+        let matches = displaySlots.indices.filter { index in
+            let slot = displaySlots[index]
+            return entry.outcome == "won" ? slot >= 0 && displayPrizes[slot].id == (entry.prizeId ?? 0) : slot == -1
+        }
+        guard !matches.isEmpty else { return 0 }
+        let index = matches[Int(entry.id % Int64(matches.count))]
+        return (360 - Double(index) * 36).truncatingRemainder(dividingBy: 360)
     }
     var phaseText: String { ["draft":"草稿","scheduled":"即将开始","open":"参与中","exhausted":"本期已结束","paused":"本期暂不可参与","full":"名额已满 · 等待截止","awaiting_draw":"正在开奖","drawn":"已结束","cancelled":"已取消"][phase] ?? phase }
     var hasFixedOdds: Bool { !displayPrizes.isEmpty && displayPrizes.allSatisfy { $0.probabilityBps != nil } }
@@ -180,6 +194,8 @@ struct RewardWheelArt: View {
     let spinning: Bool
     let cost: Int64
     var prizes: [RewardPrize] = []
+    var slots: [Int]? = nil
+    private var layout: [Int] { rewardWheelSlots(prizes: prizes, configured: slots) }
     var actionLabel: String? = nil
     var actionDisabled = false
     var hasResult = false
@@ -203,20 +219,21 @@ struct RewardWheelArt: View {
                             .offset(y: -size * 0.442).rotationEffect(.degrees(Double(index) * 7.5))
                     }
                     ZStack {
-                        ForEach(0..<(prizes.count + 1), id: \.self) { index in
-                            let gift = index < prizes.count
+                        ForEach(0..<10, id: \.self) { index in
+                            let prizeIndex = layout[index]
+                            let gift = prizeIndex >= 0
                             let light = index.isMultiple(of: 2)
-                            RewardWheelSector(index: index, count: prizes.count + 1)
+                            RewardWheelSector(index: index, count: 10)
                                 .fill(RadialGradient(colors: light ? [Color(hex: "FFF8E8"), Color(hex: "E8D8B7")] : [Color(hex: "466C5E"), Color(hex: "23483F")], center: .topLeading, startRadius: 0, endRadius: size))
-                            RewardWheelSector(index: index, count: prizes.count + 1).stroke(Color(hex: "B59862"), lineWidth: 0.6)
+                            RewardWheelSector(index: index, count: 10).stroke(Color(hex: "B59862"), lineWidth: 0.6)
                             VStack(spacing: size * 0.028) {
-                                Text(gift ? prizes[index].name : "谢谢参与").font(.system(size: size * 0.034, weight: .medium)).lineLimit(1).frame(width: size * 0.26)
-                                if gift, let url = URL(string: prizes[index].image), !prizes[index].image.isEmpty {
+                                Text(gift ? prizes[prizeIndex].name : "谢谢参与").font(.system(size: size * 0.031, weight: .medium)).lineLimit(2).multilineTextAlignment(.center).frame(width: size * 0.18, height: size * 0.08)
+                                if gift, let url = URL(string: prizes[prizeIndex].image), !prizes[prizeIndex].image.isEmpty {
                                     AsyncImage(url: url) { image in image.resizable().scaledToFit() } placeholder: { Image(systemName: "gift") }.frame(width: size * 0.09, height: size * 0.09)
-                                } else { Image(systemName: gift ? (prizes[index].kind == "physical" ? "gift" : "ticket") : "leaf").font(.system(size: size * 0.064, weight: .light)) }
+                                } else { Image(systemName: gift ? (prizes[prizeIndex].kind == "physical" ? "gift" : "ticket") : "leaf").font(.system(size: size * 0.064, weight: .light)) }
                             }
                             .foregroundStyle(light ? Color(hex: "76562F") : Color(hex: "EDE4C9"))
-                            .offset(y: -size * 0.29).rotationEffect(.degrees(Double(index) * 360 / Double(prizes.count + 1)))
+                            .offset(y: -size * 0.29).rotationEffect(.degrees(Double(index) * 360 / 10))
                         }
                     }.frame(width: size * 0.839, height: size * 0.839)
                         .rotationEffect(.degrees(rotation)).accessibilityIdentifier("reward-wheel-disc")
@@ -228,12 +245,15 @@ struct RewardWheelArt: View {
                 }.accessibilityHidden(true)
                 if let onPrize {
                     ZStack {
-                        ForEach(Array(prizes.enumerated()), id: \.element.id) { index, prize in
+                        ForEach(0..<10, id: \.self) { index in
+                            if layout[index] >= 0 {
+                            let prize = prizes[layout[index]]
                             Button { onPrize(prize) } label: {
-                                Color.clear.contentShape(RewardWheelSector(index: index, count: prizes.count + 1))
+                                Color.clear.contentShape(RewardWheelSector(index: index, count: 10))
                             }.buttonStyle(.plain).disabled(spinning)
                                 .accessibilityLabel("查看\(prize.name)详情")
-                                .accessibilityIdentifier("reward-wheel-prize-\(prize.id)")
+                                .accessibilityIdentifier("reward-wheel-prize-\(prize.id)-\(index)")
+                            }
                         }
                     }.frame(width: size * 0.839, height: size * 0.839).rotationEffect(.degrees(rotation))
                 }
@@ -242,7 +262,7 @@ struct RewardWheelArt: View {
                         .buttonStyle(.plain).disabled(actionDisabled).opacity(actionDisabled ? 0.7 : 1)
                         .accessibilityLabel(actionLabel ?? "\(cost) 积分转一次")
                         .accessibilityIdentifier("reward-wheel-draw")
-                } else { center(size: size).accessibilityLabel("八格积分转盘，扇区面积不代表概率") }
+                } else { center(size: size).accessibilityLabel("十格积分转盘，扇区面积不代表概率") }
             }.frame(width: size, height: size)
                 .shadow(color: jade.opacity(0.1), radius: 9, y: 7)
                 .frame(width: proxy.size.width, height: proxy.size.height)
@@ -287,7 +307,9 @@ struct RewardCampaignCard: View {
     }
 }
 struct RewardsView: View {
-    init(initialTab: Int = 1) { _tab = State(initialValue: initialTab) }
+    var embedded: Bool
+    var onBalanceChange: ((Int64) -> Void)?
+    init(initialTab: Int = 1, embedded: Bool = false, onBalanceChange: ((Int64) -> Void)? = nil) { _tab = State(initialValue: initialTab); self.embedded = embedded; self.onBalanceChange = onBalanceChange }
     @EnvironmentObject private var auth: AuthStore
     @State private var tab: Int
     @State private var page = 1
@@ -301,13 +323,13 @@ struct RewardsView: View {
     @State private var completing: RewardOrder?
     @State private var redemption: RewardOrder?
     @State private var generation = 0
-    private var count: Int { tab < 2 ? campaigns.count : tab == 2 ? entries.count : orders.count }
+    private var count: Int { (tab < 2 || tab == 4) ? campaigns.count : tab == 2 ? entries.count : orders.count }
     private var wheel: RewardCampaign? { campaigns.first { $0.id == selectedWheel } ?? campaigns.first { $0.phase == "open" } ?? campaigns.first { $0.phase == "scheduled" } ?? campaigns.first }
     var body: some View {
         VStack(spacing: 0) {
-            Picker("活动分类", selection: $tab) {
+            if !embedded { Picker("活动分类", selection: $tab) {
                 Text("转盘").tag(1); Text("大奖池").tag(0); Text("参与记录").tag(2); Text("我的奖品").tag(3)
-            }.pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 10)
+            }.pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 10) }
             if let error { VStack { Text(error).font(AppTypography.caption).foregroundStyle(.red); Button("重新加载") { Task { await load() } } }.padding() }
             if loading { ProgressView("正在准备活动…").padding() }
             if tab == 1, let wheel {
@@ -316,7 +338,7 @@ struct RewardsView: View {
                         ForEach(campaigns) { Text($0.title).tag($0.id) }
                     }.tint(Color.accentDefault).padding(.horizontal)
                 }
-                RewardDetailView(id: wheel.id, embedded: true).id(wheel.id)
+                RewardDetailView(id: wheel.id, embedded: true, onBalanceChange: onBalanceChange).id(wheel.id)
             } else {
                 List {
                     if tab == 0 { ForEach(campaigns) { RewardCampaignCard(campaign: $0) } }
@@ -334,9 +356,14 @@ struct RewardsView: View {
                             }
                         }
                     }
+                    if tab == 4 { ForEach(campaigns) { c in
+                        NavigationLink { RewardDetailView(id: c.id) } label: {
+                            VStack(alignment: .leading, spacing: 8) { Text(c.title).font(.headline); Text("\(c.kind == "wheel" ? "积分转盘" : "奖池") · \(rewardDate(c.drawnAt))").font(.caption).foregroundStyle(.secondary); Text("\(c.awardedCount) 次中奖 · 查看开奖 →").font(.subheadline).foregroundStyle(Color.accentDefault) }.padding(.vertical, 8)
+                        }
+                    } }
                     if tab == 3 { ForEach(orders) { orderCard($0) } }
                     if !loading && error == nil && count == 0 {
-                        ContentUnavailableView(tab == 2 ? "还没有参与记录" : tab == 3 ? "还没有中奖礼物" : "下一份惊喜，正在准备", systemImage: "gift", description: Text("活动上线后即可使用积分参与，结果与领奖进度在这里查看。"))
+                        ContentUnavailableView(tab == 2 ? "暂无抽奖记录" : tab == 3 ? "暂无中奖奖品" : tab == 4 ? "暂无开奖记录" : "暂无活动", systemImage: "gift", description: Text(tab == 4 ? "活动开奖后可查看结果。" : "活动和领奖进度会显示在这里。"))
                     }
                     if page > 1 || count >= 20 {
                         HStack { Button("上一页") { page -= 1 }.disabled(page == 1 || loading); Spacer(); Text("第 \(page) 页"); Spacer(); Button("下一页") { page += 1 }.disabled(count < 20 || loading) }.font(AppTypography.caption)
@@ -345,7 +372,7 @@ struct RewardsView: View {
                 }.scrollContentBackground(.hidden).refreshable { await load() }
             }
         }.background(Color.bgPrimary)
-        .navigationTitle("积分活动").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(embedded ? (tab < 2 ? "积分中心" : "积分记录") : "积分活动").navigationBarTitleDisplayMode(.inline)
         .task(id: "\(tab)-\(page)-\(auth.userId)") { await load() }
         .onChange(of: tab) { _, _ in page = 1; selectedWheel = nil }
         .sheet(item: $redemption) { RewardRedemptionSheet(order: $0) }
@@ -381,7 +408,7 @@ struct RewardsView: View {
         defer { if version == generation { loading = false } }
         guard auth.isLoggedIn else { error = "请先登录后参与积分活动"; return }
         do {
-            if tab < 2 { let rows: [RewardCampaign] = try await APIClient.shared.request(.rewardCampaigns(page, tab == 0 ? "pool" : "wheel")); try Task.checkCancellation(); guard version == generation else { return }; campaigns = rows }
+            if tab < 2 || tab == 4 { let rows: [RewardCampaign] = try await APIClient.shared.request(.rewardCampaigns(page, tab == 4 ? "draws" : tab == 0 ? "pool" : "wheel")); try Task.checkCancellation(); guard version == generation else { return }; campaigns = rows }
             else if tab == 2 { let rows: [RewardEntry] = try await APIClient.shared.request(.rewardEntries(page)); try Task.checkCancellation(); guard version == generation else { return }; entries = rows }
             else { let rows: [RewardOrder] = try await APIClient.shared.request(.rewardOrders(page)); try Task.checkCancellation(); guard version == generation else { return }; orders = rows }
         } catch is CancellationError {} catch { if version == generation { self.error = error.localizedDescription } }
@@ -410,6 +437,7 @@ struct RewardDeliverySteps: View {
 struct RewardDetailView: View {
     let id: Int64
     var embedded = false
+    var onBalanceChange: ((Int64) -> Void)? = nil
     @EnvironmentObject private var auth: AuthStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var detail: RewardDetail?
@@ -420,6 +448,7 @@ struct RewardDetailView: View {
     @State private var rotation = 0.0
     @State private var motionID = 0
     @State private var result: RewardEntry?
+    @State private var repeatAfterDismiss = false
     @State private var actionTask: Task<Void, Never>?
     var body: some View {
         ScrollViewReader { proxy in
@@ -444,7 +473,7 @@ struct RewardDetailView: View {
         }
         .background(Color.bgPrimary)
         .safeAreaInset(edge: .bottom) { if let d = detail, d.campaign.kind != "wheel" { actionBar(d) } }
-        .navigationTitle(embedded ? "积分活动" : detail?.campaign.kind == "wheel" ? "幸运转盘" : "活动详情").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(embedded ? "积分中心" : detail?.campaign.kind == "wheel" ? "幸运转盘" : "活动详情").navigationBarTitleDisplayMode(.inline)
         .task(id: "\(id)-\(auth.userId)") {
             await load()
             while !Task.isCancelled { do { try await Task.sleep(for: .seconds(15)) } catch { return }; if !busy { await load() } }
@@ -457,7 +486,7 @@ struct RewardDetailView: View {
         } message: {
             Text("当前可用 \(detail?.pointsBalance ?? 0) 积分，本次消耗 \(detail?.campaign.pointsCost ?? 0) 积分。" + "参与成功后无论中奖与否均不退回；失败不扣分，重复请求不重复扣分。")
         }
-        .sheet(item: $result) { entry in RewardResultSheet(entry: entry, prizeName: detail?.campaign.kind == "wheel" ? (entry.prizeName?.isEmpty == false ? entry.prizeName : detail?.campaign.prizeName) : nil).appSheetSurface() }
+        .sheet(item: $result, onDismiss: { if repeatAfterDismiss { repeatAfterDismiss = false; confirming = true } }) { entry in RewardResultSheet(entry: entry, prizeName: detail?.campaign.kind == "wheel" ? (entry.prizeName?.isEmpty == false ? entry.prizeName : detail?.campaign.prizeName) : nil, onAgain: detail?.campaign.kind == "wheel" && detail?.campaign.phase == "open" && (detail?.pointsBalance ?? 0) >= (detail?.campaign.pointsCost ?? 1) ? { repeatAfterDismiss = true } : nil).appSheetSurface() }
     }
     private func hero(_ d: RewardDetail) -> some View {
         VStack(spacing: 16) {
@@ -507,7 +536,7 @@ struct RewardDetailView: View {
             Text(e.code).font(.system(.title3, design: .monospaced)).foregroundStyle(Color.accentDefault).textSelection(.enabled)
             Text(spinning ? "正在揭晓…" : e.outcomeText).font(.headline)
             Text("消耗 \(e.pointsSpent) 积分 · \(rewardDate(e.createdAt))").font(AppTypography.caption).foregroundStyle(.secondary)
-            if e.outcome == "won" && !spinning { NavigationLink("查看我的奖品并领奖") { RewardsView(initialTab: 3) }.buttonStyle(.borderedProminent) }
+            if e.outcome == "won" && !spinning { NavigationLink("查看我的奖品并领奖") { PointsHistoryView(initialTab: 4) }.buttonStyle(.borderedProminent) }
         }.frame(maxWidth: .infinity).tint(Color.accentDefault)
     }
     private func rules(_ d: RewardDetail) -> some View {
@@ -540,16 +569,20 @@ struct RewardDetailView: View {
         do {
             guard id > 0 else { error = "此活动已停用，请返回积分活动选择本期好礼"; return }
             let loaded: RewardDetail = try await APIClient.shared.request(.rewardDetail(id))
-            try Task.checkCancellation(); detail = loaded
+            try Task.checkCancellation(); detail = loaded; onBalanceChange?(loaded.pointsBalance)
             error = nil
             if !spinning { rotation = detail.map { $0.campaign.wheelAngle(for: $0.mine) } ?? 0 }
         } catch is CancellationError {} catch { self.error = error.localizedDescription }
     }
     @MainActor private func participate() async {
-        guard !busy, detail?.mine == nil, let c = detail?.campaign else { return }
+        guard !busy, let c = detail?.campaign, c.kind == "wheel" || detail?.mine == nil else { return }
         busy = true; error = nil; defer { busy = false; spinning = false }
         do {
-            let entry: RewardEntry = try await APIClient.shared.request(.rewardJoin(id, c.pointsCost))
+            let keyName = "reward-attempt:\(auth.userId):\(id)"
+            let requestKey = UserDefaults.standard.string(forKey: keyName) ?? UUID().uuidString
+            UserDefaults.standard.set(requestKey, forKey: keyName)
+            let entry: RewardEntry = try await APIClient.shared.request(.rewardJoin(id, c.pointsCost, requestKey))
+            UserDefaults.standard.removeObject(forKey: keyName)
             try Task.checkCancellation(); spinning = true; motionID += 1
             if c.kind == "wheel" {
                 let target = c.wheelAngle(for: entry)
@@ -571,10 +604,9 @@ struct RewardWheelExperience: View {
     @State private var selectedPrize: RewardPrize?
     @State private var showRecords = false
     private var c: RewardCampaign { detail.campaign }
-    private var blocked: Bool { busy || hasError || (detail.mine == nil && (c.phase != "open" || detail.pointsBalance < c.pointsCost || c.pointsCost < 1)) }
+    private var blocked: Bool { busy || hasError || (c.phase != "open" || detail.pointsBalance < c.pointsCost || c.pointsCost < 1) }
     private var actionLabel: String {
         if busy { return "正在揭晓…" }
-        if detail.mine != nil { return "查看本次结果" }
         if c.phase != "open" { return c.phaseText }
         return detail.pointsBalance < c.pointsCost ? "积分不足" : "\(c.pointsCost) 积分转一次"
     }
@@ -583,15 +615,16 @@ struct RewardWheelExperience: View {
             VStack(spacing: 10) {
                 HStack(spacing: 6) { Circle().fill(Color.brandDefault).frame(width: 5, height: 5); Text(c.phaseText) }.font(AppTypography.caption).foregroundStyle(.secondary)
                 Text(c.title).font(AppTypography.title(25)).multilineTextAlignment(.center)
-                RewardWheelArt(rotation: spinning ? rotation : c.wheelAngle(for: detail.mine), spinning: busy, cost: c.pointsCost, prizes: c.displayPrizes, actionLabel: actionLabel, actionDisabled: blocked, hasResult: detail.mine != nil, onDraw: detail.mine == nil ? onJoin : onResult, onPrize: { selectedPrize = $0 })
+                RewardWheelArt(rotation: spinning ? rotation : c.wheelAngle(for: detail.mine), spinning: busy, cost: c.pointsCost, prizes: c.displayPrizes, slots: c.wheelSlots, actionLabel: actionLabel, actionDisabled: blocked, onDraw: onJoin, onPrize: { selectedPrize = $0 })
                     .frame(maxWidth: 360).aspectRatio(1, contentMode: .fit).padding(.vertical, 8)
-                Text("可用 \(detail.pointsBalance) 积分 · \(detail.mine == nil ? "每期一次" : "本期已抽奖")").font(AppTypography.caption).foregroundStyle(.secondary)
+                Text("可用 \(detail.pointsBalance) 积分").font(AppTypography.caption).foregroundStyle(.secondary)
                 if blocked && !busy { Text(hasError ? "加载失败，请重试" : actionLabel).font(AppTypography.caption).foregroundStyle(.secondary) }
             }.padding(18).frame(maxWidth: .infinity).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 22)).overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.accentDefault.opacity(0.16), lineWidth: 1))
+            if let mine = detail.mine { Button("上次：\(mine.outcomeText) · 查看结果", action: onResult).font(.caption).tint(Color.accentDefault) }
             HStack {
                 Button("抽奖记录") { showRecords = true }.frame(maxWidth: .infinity)
                 Divider().frame(height: 14)
-                NavigationLink("我的奖品") { RewardsView(initialTab: 3) }.frame(maxWidth: .infinity)
+                NavigationLink("我的奖品") { PointsHistoryView(initialTab: 4) }.frame(maxWidth: .infinity)
                 Divider().frame(height: 14)
                 Button("活动规则") { showRules = true }.frame(maxWidth: .infinity)
             }.font(AppTypography.caption).tint(Color.accentDefault).disabled(busy).padding(.vertical, 8)
@@ -645,7 +678,7 @@ private struct RewardWheelInfoSheet: View {
                             Text(e.outcomeText).font(AppTypography.card).foregroundStyle(Color.accentDefault)
                             Text("\(rewardDate(e.createdAt)) · 消耗 \(e.pointsSpent) 积分").font(AppTypography.caption)
                             Text(e.code).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
-                            if e.outcome == "won" { NavigationLink("查看奖品与领奖") { RewardsView(initialTab: 3) } }
+                            if e.outcome == "won" { NavigationLink("查看奖品与领奖") { PointsHistoryView(initialTab: 4) } }
                         }
                     } else { Text("本期还没有抽奖记录，转一次试试手气。").font(.subheadline).foregroundStyle(.secondary) }
                     if !c.announcement.isEmpty || !detail.winners.isEmpty {
@@ -656,12 +689,12 @@ private struct RewardWheelInfoSheet: View {
                             if !c.poolDigest.isEmpty { Text(c.algorithm); Text(c.poolDigest).textSelection(.enabled) }
                         }.font(AppTypography.caption)
                     }
-                    NavigationLink("查看全部参与记录") { RewardsView(initialTab: 2) }
+                    NavigationLink("查看全部参与记录") { PointsHistoryView(initialTab: 2) }
                 } else {
                     Section { Text(c.description); Text(c.rules) }.font(.subheadline)
                     Section {
                         LabeledContent("活动时间", value: "\(rewardDate(c.startsAt)) 至 \(rewardDate(c.endsAt))")
-                        LabeledContent("每次消耗", value: "\(c.pointsCost) 积分 · 每期一次")
+                        LabeledContent("每次消耗", value: "\(c.pointsCost) 积分")
                     }.font(AppTypography.caption)
                     Section("奖品与概率") {
                         ForEach(c.displayPrizes) { p in
@@ -669,7 +702,7 @@ private struct RewardWheelInfoSheet: View {
                         }
                         LabeledContent("谢谢参与", value: rewardProbabilityText(c.noPrizeProbability))
                     }
-                    Text("每个账号每期一次，成功参与扣除 \(c.pointsCost) 积分，无论是否中奖均不退回；失败不扣分，重复请求不重复扣分。" + (c.hasFixedOdds ? "活动期间按公示的固定概率抽取。" : "本期沿用原有规则，以上为下一次抽奖的即时概率。") + "扇区大小不代表中奖概率。").font(AppTypography.caption).foregroundStyle(.secondary)
+                    Text("可多次抽奖，每次成功参与扣除 \(c.pointsCost) 积分，无论是否中奖均不退回；失败不扣分，重复请求不重复扣分。" + (c.hasFixedOdds ? "活动期间按公示的固定概率抽取。" : "本期沿用原有规则，以上为下一次抽奖的即时概率。") + "扇区大小不代表中奖概率。").font(AppTypography.caption).foregroundStyle(.secondary)
                 }
             }.navigationTitle(records ? "抽奖记录" : "活动规则").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() } } }
@@ -682,6 +715,7 @@ private extension View {
 struct RewardResultSheet: View {
     let entry: RewardEntry
     var prizeName: String? = nil
+    var onAgain: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var appear = false
@@ -704,7 +738,8 @@ struct RewardResultSheet: View {
                 Text(entry.outcomeText).font(AppTypography.section)
                 if let prizeName { if entry.outcome == "won" { Text(prizeName).font(.headline).foregroundStyle(Color.accentDefault) } } else { Text(entry.code).font(.system(.subheadline, design: .monospaced)).foregroundStyle(Color.accentDefault) }
                 Text("已扣 \(entry.pointsSpent) 积分").font(AppTypography.caption)
-                Button("关闭") { dismiss() }.buttonStyle(.borderedProminent).controlSize(.large).tint(Color.accentDefault)
+                if let onAgain { Button("再转一次 · \(entry.pointsSpent) 积分") { dismiss(); onAgain() }.buttonStyle(.borderedProminent).tint(Color.accentDefault) }
+                Button("关闭") { dismiss() }.buttonStyle(.bordered).controlSize(.large).tint(Color.accentDefault)
             }.padding(24).frame(maxWidth: .infinity)
             }
         }.onAppear { withAnimation(reduceMotion ? nil : .spring(duration: 0.5)) { appear = true } }

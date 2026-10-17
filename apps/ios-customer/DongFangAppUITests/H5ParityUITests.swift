@@ -1,5 +1,58 @@
 import XCTest
 
+@MainActor final class PointsHubUITests: XCTestCase {
+    func testHomeEntryThreeModesAndRepeatWins() async throws {
+        var reset = URLRequest(url: URL(string: "http://127.0.0.1:8914/fixture/reset")!)
+        reset.httpMethod = "POST"
+        reset.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        reset.httpBody = Data(#"{"balance":25,"outcome":"won","prizeId":12}"#.utf8)
+        let (_, response) = try await URLSession.shared.data(for: reset)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8914/api/v1"
+        app.launchArguments = ["--smoke-token", "local-points-fixture", "--smoke-user-id", "99026", "-tab", "0", "-askxuan.appearance", "light"]
+        app.launch()
+        let entry = app.buttons["home-points"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 20))
+        for _ in 0..<3 where !entry.isHittable { app.swipeUp() }
+        capture(app, "ios-home-points-entry")
+        entry.tap()
+        XCTAssertTrue(app.navigationBars["积分中心"].waitForExistence(timeout: 10))
+        let modes = app.segmentedControls["points-modes"]
+        for name in ["积分转盘", "积分商城", "奖池"] { XCTAssertTrue(modes.buttons[name].exists) }
+        modes.buttons["积分商城"].tap()
+        XCTAssertTrue(app.textFields["搜索积分商品"].waitForExistence(timeout: 10))
+        modes.buttons["奖池"].tap()
+        XCTAssertTrue(app.staticTexts["本期大奖池"].waitForExistence(timeout: 10))
+        modes.buttons["积分转盘"].tap()
+        let spin = app.buttons["10 积分转一次"]
+        XCTAssertTrue(spin.waitForExistence(timeout: 10))
+        capture(app, "ios-points-hub")
+        spin.tap()
+        let confirm = app.alerts.buttons["确认扣除 10 积分"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()
+        let again = app.buttons["再转一次 · 10 积分"]
+        XCTAssertTrue(again.waitForExistence(timeout: 15)); again.tap()
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()
+        let close = app.buttons["关闭"].firstMatch
+        XCTAssertTrue(close.waitForExistence(timeout: 15)); close.tap()
+        let insufficient = app.buttons["积分不足"]
+        XCTAssertTrue(insufficient.waitForExistence(timeout: 10)); XCTAssertFalse(insufficient.isEnabled)
+        app.buttons["抽奖记录"].firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["积分记录"].waitForExistence(timeout: 10))
+        for code in ["LOCAL-REWARD-1", "LOCAL-REWARD-2"] { XCTAssertTrue(app.staticTexts[code].waitForExistence(timeout: 10)) }
+        capture(app, "ios-repeat-spin-records")
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(modes.waitForExistence(timeout: 5))
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(entry.waitForExistence(timeout: 5))
+    }
+    private func capture(_ app: XCUIApplication, _ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
+    }
+}
+
 final class H5ParityUITests: XCTestCase {
     private func app(_ arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
