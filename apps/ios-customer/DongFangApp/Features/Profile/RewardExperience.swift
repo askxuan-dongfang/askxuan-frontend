@@ -87,8 +87,9 @@ func rewardDate(_ n: Int64) -> String {
 
 struct RewardCategoryEntry: View {
     let kind: String
+    @State private var showActivity = false
     var body: some View {
-        NavigationLink { RewardsView(initialTab: kind == "wheel" ? 1 : 0) } label: {
+        Button { showActivity = true } label: {
             VStack(alignment: .leading, spacing: 8) {
                 RewardGiftArt(kind: kind).frame(height: 100)
                 Text(kind == "wheel" ? "积分转盘" : "大奖池").font(.headline)
@@ -96,6 +97,7 @@ struct RewardCategoryEntry: View {
             }.foregroundStyle(Color.accentDefault).padding(14).frame(maxWidth: .infinity, alignment: .leading)
                 .background(LinearGradient(colors: [.brown.opacity(0.4), Color.bgSecondary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 18))
         }.buttonStyle(.plain).accessibilityIdentifier("reward-category-\(kind)")
+            .navigationDestination(isPresented: $showActivity) { RewardsView(initialTab: kind == "wheel" ? 1 : 0) }
     }
 }
 

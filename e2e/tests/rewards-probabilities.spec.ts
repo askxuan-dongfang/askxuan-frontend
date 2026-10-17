@@ -38,5 +38,24 @@ test('admin rejects excess probability and saves precise published odds',async({
  await page.goto('http://127.0.0.1:5387/marketing/rewards');await page.getByRole('button',{name:'编辑',exact:true}).click();
  const dialog=page.getByRole('dialog',{name:'编辑活动草稿'});const probability=dialog.locator('input[placeholder="填写概率"]').first();
  await probability.fill('99');await dialog.getByRole('button',{name:'保存草稿'}).click();await expect(page.getByText('请填写每项中奖概率（0.01%–100%），总和不能超过 100%')).toBeVisible();expect(saved).toBeUndefined();
- await probability.fill('12.34');await dialog.getByRole('button',{name:'保存草稿'}).click();await expect(dialog).not.toBeVisible();expect(saved.prizes.map((p:any)=>p.probabilityBps)).toEqual([1234,250,500]);
+ const capacity=dialog.locator('.el-form-item').filter({hasText:'本期参与名额'}).getByRole('spinbutton');await capacity.fill('1000');await capacity.blur();await expect(capacity).toHaveValue('1000');
+ await probability.fill('12.34');await dialog.getByRole('button',{name:'保存草稿'}).click();await expect(dialog).not.toBeVisible();expect(saved.prizes.map((p:any)=>p.probabilityBps)).toEqual([1234,250,500]);expect(saved.capacity).toBe(1000);
+});
+
+test('admin refuses to publish or confirm probability ignored by an old service',async({page})=>{
+ const token='e30.'+Buffer.from(JSON.stringify({roles:['platform_super'],clientId:'platform-admin'})).toString('base64url')+'.test';
+ await page.addInitScript(t=>localStorage.setItem('df_platform_admin_token',t),token);
+ const legacy={...campaign,prizes:undefined,status:'draft',phase:'draft',participantCount:0,awardedCount:0};let writes=0,publishes=0;
+ await page.route('**/api/v1/**',async r=>{const req=r.request(),p=new URL(req.url()).pathname;let data:any=[];
+  if(p.endsWith('/publish'))publishes++;
+  if(req.method()==='PUT'){writes++;data=legacy;}
+  else if(p.endsWith('/campaigns'))data=[legacy];
+  await r.fulfill({json:{code:0,data}});
+ });
+ await page.goto('http://127.0.0.1:5387/marketing/rewards');await page.getByRole('button',{name:'发布',exact:true}).click();
+ await expect(page.getByText('请先编辑并成功保存每项中奖概率，再发布活动')).toBeVisible();expect(publishes).toBe(0);
+ await page.getByRole('button',{name:'编辑',exact:true}).click();const dialog=page.getByRole('dialog',{name:'编辑活动草稿'});
+ await dialog.locator('input[placeholder="填写概率"]').fill('12.34');await dialog.getByRole('button',{name:'保存草稿'}).click();
+ await expect(page.getByText('中奖概率未保存，请联系管理员完成活动服务升级后重试')).toBeVisible();await expect(dialog).toBeVisible();expect(writes).toBe(1);
+ await expect(page.getByText('草稿已保存',{exact:true})).toHaveCount(0);
 });
