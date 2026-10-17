@@ -7,9 +7,9 @@ func liveRewardFixture(kind: String = "wheel", participants: Int = 0, prizes: In
 func multiRewardFixture() -> RewardCampaign {
     var c = liveRewardFixture()
     c.prizes = [
-        RewardPrize(id: 11, name: "平安香囊", kind: "physical", image: "", value: 3900, quantity: 10, awardedCount: 0, platform: "", instructions: "", expiresAt: 0, redemptionUrl: ""),
-        RewardPrize(id: 12, name: "礼品卡 50 元", kind: "code", image: "", value: 5000, quantity: 5, awardedCount: 0, platform: "测试平台", instructions: "复制后前往兑换", expiresAt: 1893456000, redemptionUrl: "https://example.com/redeem"),
-        RewardPrize(id: 13, name: "商城兑换券", kind: "link", image: "", value: 1000, quantity: 5, awardedCount: 0, platform: "测试商城", instructions: "打开专属兑换入口", expiresAt: 1893456000, redemptionUrl: "")
+        RewardPrize(id: 11, name: "平安香囊", kind: "physical", image: "", value: 3900, quantity: 10, awardedCount: 0, platform: "", instructions: "", expiresAt: 0, redemptionUrl: "", probabilityBps: 1250),
+        RewardPrize(id: 12, name: "礼品卡 50 元", kind: "code", image: "", value: 5000, quantity: 5, awardedCount: 0, platform: "测试平台", instructions: "复制后前往兑换", expiresAt: 1893456000, redemptionUrl: "https://example.com/redeem", probabilityBps: 250),
+        RewardPrize(id: 13, name: "商城兑换券", kind: "link", image: "", value: 1000, quantity: 5, awardedCount: 0, platform: "测试商城", instructions: "打开专属兑换入口", expiresAt: 1893456000, redemptionUrl: "", probabilityBps: 1)
     ]
     return c
 }
@@ -22,6 +22,15 @@ final class RewardExperienceTests: XCTestCase {
         entry.outcome = "lost"; XCTAssertEqual(c.wheelAngle(for: entry), 90)
         XCTAssertEqual(liveRewardFixture().displayPrizes.count, 1)
         XCTAssertEqual(try JSONDecoder().decode(RewardCampaign.self, from: JSONEncoder().encode(c)).displayPrizes.count, 3)
+    }
+    func testFixedOddsAndLegacyDecoding() throws {
+        let c = multiRewardFixture()
+        XCTAssertTrue(c.hasFixedOdds)
+        XCTAssertEqual(rewardProbabilityText(c.probability(for: c.displayPrizes[0])), "12.5%")
+        XCTAssertEqual(rewardProbabilityText(c.probability(for: c.displayPrizes[2])), "0.01%")
+        XCTAssertEqual(rewardProbabilityText(c.noPrizeProbability), "84.99%")
+        XCTAssertFalse(liveRewardFixture().hasFixedOdds)
+        XCTAssertEqual(try JSONDecoder().decode(RewardCampaign.self, from: JSONEncoder().encode(c)).displayPrizes[0].probabilityBps, 1250)
     }
     func testRedemptionOnlyAcceptsHTTPSWithoutCredentials() {
         XCTAssertNotNil(RewardRedemption(code: "TEST", url: "https://example.com/redeem", platform: "测试平台", instructions: "", expiresAt: 1893456000).safeURL)
@@ -77,6 +86,7 @@ import SwiftUI
             }
             try await render(view, name: "ios-reward-components-\(Int(width))", width: width)
         }
+        try await render(RewardPrizeSheet(prize: multiRewardFixture().displayPrizes[1], campaign: multiRewardFixture()), name: "ios-prize-details", width: 390)
         try await render(RewardWheelMotionFixture(), name: "ios-reward-wheel-motion", width: 390, height: 420, expectsMotion: true)
         let entry = RewardEntry(id: 8, campaignId: 2, createdAt: 1000, pointsSpent: 20, code: "WX-2-8", outcome: "won", title: "天然香珠 · 一期一礼")
         try await render(RewardResultSheet(entry: entry), name: "ios-reward-result", width: 390, height: 460)

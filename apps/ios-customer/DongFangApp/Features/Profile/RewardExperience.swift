@@ -9,6 +9,7 @@ struct RewardPrize: Codable, Identifiable {
     let platform, instructions: String
     let expiresAt: Int64
     let redemptionUrl: String
+    var probabilityBps: Int? = nil
     var kindText: String { ["physical":"实物奖品", "code":"兑换码", "link":"兑换券"][kind] ?? kind }
 }
 struct RewardRedemption: Decodable {
@@ -36,8 +37,20 @@ struct RewardCampaign: Codable, Identifiable {
         let index = entry.outcome == "won" ? displayPrizes.firstIndex(where: { $0.id == (entry.prizeId ?? 0) }) ?? 0 : displayPrizes.count
         return (360 - Double(index) * 360 / Double(displayPrizes.count + 1)).truncatingRemainder(dividingBy: 360)
     }
-    var phaseText: String { ["draft":"草稿","scheduled":"即将开始","open":"参与中","exhausted":"奖品已抽完","full":"名额已满 · 等待截止","awaiting_draw":"正在开奖","drawn":"已结束","cancelled":"已取消"][phase] ?? phase }
+    var phaseText: String { ["draft":"草稿","scheduled":"即将开始","open":"参与中","exhausted":"本期已结束","paused":"本期暂不可参与","full":"名额已满 · 等待截止","awaiting_draw":"正在开奖","drawn":"已结束","cancelled":"已取消"][phase] ?? phase }
+    var hasFixedOdds: Bool { !displayPrizes.isEmpty && displayPrizes.allSatisfy { $0.probabilityBps != nil } }
+    func probability(for prize: RewardPrize) -> Double? {
+        if hasFixedOdds, let bps = prize.probabilityBps { return Double(bps) / 100 }
+        guard capacity > participantCount else { return nil }
+        return Double(max(0, prize.quantity - prize.awardedCount)) / Double(capacity - participantCount) * 100
+    }
+    var noPrizeProbability: Double? {
+        if hasFixedOdds { return Double(10000 - displayPrizes.reduce(0) { $0 + ($1.probabilityBps ?? 0) }) / 100 }
+        guard capacity > participantCount else { return nil }
+        return max(0, 100 - Double(prizeQuantity - awardedCount) / Double(capacity - participantCount) * 100)
+    }
     var oddsText: String {
+        if hasFixedOdds { return rewardProbabilityText(100 - (noPrizeProbability ?? 100)) }
         let n = kind == "pool" ? participantCount : capacity - participantCount
         let k = kind == "pool" ? min(prizeQuantity, n) : prizeQuantity - awardedCount
         return n > 0 ? String(format: "%.2f%%", Double(k) / Double(n) * 100) : "—"
@@ -64,6 +77,10 @@ struct RewardOrder: Codable, Identifiable {
 }
 struct RewardDetail: Decodable { let campaign: RewardCampaign; var mine: RewardEntry?; let winners: [RewardEntry]; let pointsBalance: Int64 }
 struct RewardAddressRequest: Encodable { let receiver, mobile, address: String }
+func rewardProbabilityText(_ value: Double?) -> String {
+    guard let value else { return "—" }
+    return value.formatted(.number.precision(.fractionLength(0...2)).locale(Locale(identifier: "en_US_POSIX"))) + "%"
+}
 func rewardDate(_ n: Int64) -> String {
     Date(timeIntervalSince1970: Double(n)).formatted(.dateTime.month().day().hour().minute())
 }
@@ -165,6 +182,7 @@ struct RewardWheelArt: View {
     var actionDisabled = false
     var hasResult = false
     var onDraw: (() -> Void)? = nil
+    var onPrize: ((RewardPrize) -> Void)? = nil
     private let jade = Color(hex: "254C40")
     private let gold = Color(hex: "E4C58F")
     private var brass: LinearGradient {
@@ -206,6 +224,17 @@ struct RewardWheelArt: View {
                         .font(.system(size: size * 0.065)).foregroundStyle(brass)
                         .shadow(color: .black.opacity(0.18), radius: 1, y: 2).offset(y: -size * 0.435)
                 }.accessibilityHidden(true)
+                if let onPrize {
+                    ZStack {
+                        ForEach(Array(prizes.enumerated()), id: \.element.id) { index, prize in
+                            Button { onPrize(prize) } label: {
+                                Color.clear.contentShape(RewardWheelSector(index: index, count: prizes.count + 1))
+                            }.buttonStyle(.plain).disabled(spinning)
+                                .accessibilityLabel("查看\(prize.name)详情")
+                                .accessibilityIdentifier("reward-wheel-prize-\(prize.id)")
+                        }
+                    }.frame(width: size * 0.839, height: size * 0.839).rotationEffect(.degrees(rotation))
+                }
                 if let onDraw {
                     Button(action: onDraw) { center(size: size) }
                         .buttonStyle(.plain).disabled(actionDisabled).opacity(actionDisabled ? 0.7 : 1)
@@ -537,6 +566,7 @@ struct RewardWheelExperience: View {
     let hasError: Bool
     let onJoin, onResult: () -> Void
     @State private var showRules = false
+    @State private var selectedPrize: RewardPrize?
     @State private var showRecords = false
     private var c: RewardCampaign { detail.campaign }
     private var blocked: Bool { busy || hasError || (detail.mine == nil && (c.phase != "open" || detail.pointsBalance < c.pointsCost || c.pointsCost < 1)) }
@@ -551,22 +581,8 @@ struct RewardWheelExperience: View {
             VStack(spacing: 10) {
                 HStack(spacing: 6) { Circle().fill(Color.brandDefault).frame(width: 5, height: 5); Text(c.phaseText) }.font(AppTypography.caption).foregroundStyle(.secondary)
                 Text(c.title).font(AppTypography.title(25)).multilineTextAlignment(.center)
-                RewardWheelArt(rotation: spinning ? rotation : c.wheelAngle(for: detail.mine), spinning: busy, cost: c.pointsCost, prizes: c.displayPrizes, actionLabel: actionLabel, actionDisabled: blocked, hasResult: detail.mine != nil, onDraw: detail.mine == nil ? onJoin : onResult)
+                RewardWheelArt(rotation: spinning ? rotation : c.wheelAngle(for: detail.mine), spinning: busy, cost: c.pointsCost, prizes: c.displayPrizes, actionLabel: actionLabel, actionDisabled: blocked, hasResult: detail.mine != nil, onDraw: detail.mine == nil ? onJoin : onResult, onPrize: { selectedPrize = $0 })
                     .frame(maxWidth: 360).aspectRatio(1, contentMode: .fit).padding(.vertical, 8)
-                ForEach(c.displayPrizes) { p in
-                    HStack(spacing: 12) {
-                        Group {
-                            if let url = URL(string: p.image), !p.image.isEmpty {
-                                AsyncImage(url: url) { image in image.resizable().scaledToFit() } placeholder: { Image(systemName: "gift") }
-                            } else { Image(systemName: p.kind == "physical" ? "gift" : "ticket").font(.title2).foregroundStyle(Color.accentDefault) }
-                        }.frame(width: 44, height: 44).background(Color.accentDefault.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(p.name).font(.subheadline)
-                            Text("\(p.kindText) · \(max(0,p.quantity-p.awardedCount)) 份" + (p.platform.isEmpty ? "" : " · \(p.platform)")).font(.caption).foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: 0)
-                    }.padding(12).frame(maxWidth: .infinity, alignment: .leading).background(Color.bgPrimary, in: RoundedRectangle(cornerRadius: 14))
-                }
                 Text("可用 \(detail.pointsBalance) 积分 · \(detail.mine == nil ? "每期一次" : "本期已抽奖")").font(AppTypography.caption).foregroundStyle(.secondary)
                 if blocked && !busy { Text(hasError ? "加载失败，请重试" : actionLabel).font(AppTypography.caption).foregroundStyle(.secondary) }
             }.padding(18).frame(maxWidth: .infinity).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 22)).overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.accentDefault.opacity(0.16), lineWidth: 1))
@@ -578,8 +594,39 @@ struct RewardWheelExperience: View {
                 Button("活动规则") { showRules = true }.frame(maxWidth: .infinity)
             }.font(AppTypography.caption).tint(Color.accentDefault).disabled(busy).padding(.vertical, 8)
         }
+        .sheet(item: $selectedPrize) { RewardPrizeSheet(prize: $0, campaign: c) }
         .sheet(isPresented: $showRules) { RewardWheelInfoSheet(detail: detail, records: false) }
         .sheet(isPresented: $showRecords) { RewardWheelInfoSheet(detail: detail, records: true) }
+    }
+}
+struct RewardPrizeSheet: View {
+    let prize: RewardPrize
+    let campaign: RewardCampaign
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    VStack(spacing: 14) {
+                        Group {
+                            if let url = URL(string: prize.image), !prize.image.isEmpty {
+                                AsyncImage(url: url) { image in image.resizable().scaledToFit() } placeholder: { Image(systemName: "gift") }
+                            } else { Image(systemName: prize.kind == "physical" ? "gift" : "ticket").font(.largeTitle) }
+                        }.frame(width: 120, height: 120).foregroundStyle(Color.accentDefault)
+                        Text(prize.kindText).font(.caption).foregroundStyle(.secondary)
+                        Text(prize.name).font(AppTypography.title(24)).multilineTextAlignment(.center)
+                    }.frame(maxWidth: .infinity).padding(.vertical, 12)
+                    LabeledContent("中奖概率", value: rewardProbabilityText(campaign.probability(for: prize)))
+                    LabeledContent(prize.kind == "code" ? "面值" : "参考价值", value: String(format: "¥%.2f", Double(prize.value) / 100))
+                    if !prize.platform.isEmpty { LabeledContent("使用平台", value: prize.platform) }
+                    if prize.expiresAt > 0 { LabeledContent("有效期至", value: rewardDate(prize.expiresAt)) }
+                }
+                Section {
+                    Text(prize.instructions.isEmpty ? (prize.kind == "physical" ? "中奖后在“我的奖品”填写收货地址。" : "中奖后在“我的奖品”查看兑换凭证。") : prize.instructions).font(.subheadline)
+                }
+            }.scrollContentBackground(.hidden).background(Color.bgPrimary).navigationTitle("奖品详情").navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() } } }
+        }.tint(Color.accentDefault)
     }
 }
 private struct RewardWheelInfoSheet: View {
@@ -612,20 +659,15 @@ private struct RewardWheelInfoSheet: View {
                     Section { Text(c.description); Text(c.rules) }.font(.subheadline)
                     Section {
                         LabeledContent("活动时间", value: "\(rewardDate(c.startsAt)) 至 \(rewardDate(c.endsAt))")
-                        LabeledContent("奖品数量", value: "\(c.prizeQuantity) 份")
-                        LabeledContent("参与情况", value: "\(c.participantCount) / \(c.capacity) 人 · \(c.phaseText)")
-                        LabeledContent("下一位即时概率", value: c.oddsText)
+                        LabeledContent("每次消耗", value: "\(c.pointsCost) 积分 · 每期一次")
                     }.font(AppTypography.caption)
                     Section("奖品与概率") {
                         ForEach(c.displayPrizes) { p in
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(p.name)
-                                Text("剩余 \(max(0,p.quantity-p.awardedCount)) 份 · " + (c.capacity > c.participantCount ? String(format: "%.2f%%", Double(max(0,p.quantity-p.awardedCount)) / Double(c.capacity-c.participantCount) * 100) : "—")).font(AppTypography.caption).foregroundStyle(.secondary)
-                                if p.kind != "physical" { Text("\(p.platform) · 有效期至 \(rewardDate(p.expiresAt))\n\(p.instructions)").font(AppTypography.caption).foregroundStyle(.secondary) }
-                            }
+                            LabeledContent(p.name, value: rewardProbabilityText(c.probability(for: p)))
                         }
+                        LabeledContent("谢谢参与", value: rewardProbabilityText(c.noPrizeProbability))
                     }
-                    Text("每个账号每期一次，参与成功扣除 \(c.pointsCost) 积分，无论中奖与否均不退回；失败不扣分，重复请求不重复扣分。当前概率为剩余奖品除以剩余名额，奖品预算由平台承担。转盘扇区仅作动画展示，不代表中奖概率。").font(AppTypography.caption).foregroundStyle(.secondary)
+                    Text("每个账号每期一次，成功参与扣除 \(c.pointsCost) 积分，无论是否中奖均不退回；失败不扣分，重复请求不重复扣分。" + (c.hasFixedOdds ? "活动期间按公示的固定概率抽取。" : "本期沿用原有规则，以上为下一次抽奖的即时概率。") + "扇区大小不代表中奖概率。").font(AppTypography.caption).foregroundStyle(.secondary)
                 }
             }.navigationTitle(records ? "抽奖记录" : "活动规则").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() } } }
