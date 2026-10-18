@@ -340,9 +340,9 @@ struct DiyOrderView: View {
     private var feeSection: some View {
         VStack(spacing: 0) {
             feeRow(label: "材料费",
-                   value: "¥\(Int(viewModel.currentDesign?.totalPrice ?? viewModel.totalPrice))")
+                   value: String(format: "¥%.2f", checkoutMaterialFee))
             feeRow(label: "开光服务",
-                   value: selectedBlessingService?.priceText ?? "¥0")
+                   value: String(format: "¥%.2f", checkoutBlessFee))
             feeRow(label: "运费", value: "包邮")
             feeRow(label: "合计",
                    value: totalFeeText,
@@ -374,10 +374,17 @@ struct DiyOrderView: View {
         }
     }
 
+    private var checkoutMaterialFee: Double {
+        pendingOrder?.materialFee ?? viewModel.orderAvailability?.materialFee
+            ?? viewModel.currentDesign?.totalPrice ?? viewModel.totalPrice
+    }
+
+    private var checkoutBlessFee: Double {
+        pendingOrder?.blessFee ?? selectedBlessingService?.price ?? 0
+    }
+
     private var totalFeeText: String {
-        let material = viewModel.currentDesign?.totalPrice ?? viewModel.totalPrice
-        let bless = selectedBlessingService?.price ?? 0
-        return "¥\(Int(material + bless))"
+        String(format: "¥%.2f", pendingOrder?.totalFee ?? (checkoutMaterialFee + checkoutBlessFee))
     }
 
     private var checkoutSlots: [DiyBeadSlot] {
@@ -423,7 +430,7 @@ struct DiyOrderView: View {
             Spacer()
 
             DFPrimaryButton(title: pendingOrder != nil ? "继续支付" : viewModel.isCurrentDesignOrderable ? "提交订单" : "材料需替换", icon: "checkmark.circle.fill",
-                            isEnabled: selectedAddress != nil && viewModel.isCurrentDesignOrderable,
+                            isEnabled: pendingOrder != nil || (selectedAddress != nil && viewModel.isCurrentDesignOrderable),
                             isLoading: viewModel.isSubmitting) {
                 Task {
                     let order = await submitOrder()
