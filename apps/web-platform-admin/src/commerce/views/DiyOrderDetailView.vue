@@ -67,7 +67,7 @@ async function handleReview(action: 'approve' | 'reject') {
 
 async function handleMakeComplete() {
   try {
-    await ElMessageBox.confirm('确认该 DIY 订单制作完成？确认后订单进入待发货，材料与制作状态将被更新。', '制作完成确认', {
+    await ElMessageBox.confirm('确认该 DIY 订单制作完成？选购了开光服务的订单将交给所选寺院或法师；未选购的订单进入待发货。', '制作完成确认', {
       confirmButtonText: '确认完成',
       cancelButtonText: '返回核对',
       type: 'warning'

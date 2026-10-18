@@ -213,6 +213,18 @@ final class NativeBrandTests: XCTestCase {
 
 @MainActor
 struct ConsecrationContractTests {
+    @Test func emptyDesignPlazaAcceptsNullList() throws {
+        let page = try JSONDecoder().decode(PageResponse<DiyDesign>.self, from: Data(#"{"total":0,"list":null,"page":1,"size":20}"#.utf8))
+        #expect(page.list.isEmpty)
+        #expect(page.total == 0)
+    }
+    @Test func orderRetainsCentsAndCompletedCertificate() throws {
+        let raw = #"{"id":2,"orderNo":"DIY-test","designId":1,"status":"blessing_in_progress","materialFee":56,"blessFee":39.5,"totalFee":95.5,"blessingTask":{"id":2,"taskNo":"BT-test","diyOrderNo":"DIY-test","templeCode":"T001","masterCode":"M001","status":"completed","certificateUrls":["https://example.test/cert.png"],"assignTime":"2026-10-19","completeTime":"2026-10-19"}}"#
+        let order = try JSONDecoder().decode(DiyOrder.self, from: Data(raw.utf8))
+        #expect(order.totalFeeText == "¥95.50")
+        #expect(order.statusDisplayText == "开光中")
+        #expect(order.blessingTask?.certificateUrls?.count == 1)
+    }
     @Test func existingOfferingRetainsProviderAndExactPrice() throws {
         let data = Data(#"{"id":7,"serviceCode":"consecration:temple:7","sourceServiceCode":"S006","providerType":"temple","serviceName":"开光","templeName":"测试寺院","price":39.50,"status":"on_shelf"}"#.utf8)
         let service = try JSONDecoder().decode(BlessingService.self, from: data)

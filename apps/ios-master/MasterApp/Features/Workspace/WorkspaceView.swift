@@ -157,7 +157,7 @@ struct WorkspaceView: View {
                 pendingBookingsSection
                 JourneyEntryView().padding(16)
                 todayBookingsSection
-                if manageBy == "temple" { blessingTaskSection }
+                blessingTaskSection
                 quickActionsSection
                 mediaStudioSection
                 statsRow

@@ -191,6 +191,7 @@ final class DiyViewModel: ObservableObject {
             if let data = design.designData {
                 restoreDesignData(data)
             }
+            _ = await refreshOrderAvailability(designId: id, items: nil)
         } catch {
             currentDesign = nil
             orderAvailability = nil

@@ -49,7 +49,7 @@ async function loadAll() {
       }
     ),
     listMasters({ templeId, page: 1, size: 1 }).then((r) => (masterCount.value = r.total || 0)),
-    listBlessingTasks({ status: 'pending', page: 1, size: 5 }).then(
+    listBlessingTasks({ status: 'dispatched', page: 1, size: 5 }).then(
       (r) => {
         pendingBlessings.value = r.list || []
         pendingBlessingCount.value = r.total || 0
@@ -103,7 +103,7 @@ function goBooking(id: string) {
         <span class="ax-task-card__copy"><span class="ax-task-card__label">待确认预约</span><span class="ax-task-card__meta">进入已筛选任务列表</span></span>
         <strong class="ax-task-card__value">{{ pendingCount }}</strong>
       </router-link>
-      <router-link class="ax-task-card" to="/blessing-tasks?status=pending">
+      <router-link class="ax-task-card" to="/blessing-tasks?status=dispatched">
         <span class="ax-task-card__icon"><el-icon><Calendar /></el-icon></span>
         <span class="ax-task-card__copy"><span class="ax-task-card__label">待分配加持</span><span class="ax-task-card__meta">优先分配执行法师</span></span>
         <strong class="ax-task-card__value">{{ pendingBlessingCount }}</strong>

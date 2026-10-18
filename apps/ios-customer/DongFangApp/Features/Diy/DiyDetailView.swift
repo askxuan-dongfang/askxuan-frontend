@@ -66,6 +66,8 @@ struct DiyDetailView: View {
         .task {
             if viewModel.currentDesign?.id != designId {
                 await viewModel.loadDesign(id: designId)
+            } else {
+                _ = await viewModel.refreshOrderAvailability(designId: designId, items: nil)
             }
         }
         .sheet(isPresented: $showLogin, onDismiss: {

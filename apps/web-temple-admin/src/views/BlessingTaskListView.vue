@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Refresh, Search, View } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
@@ -10,11 +10,13 @@ import { formatDate } from '@/utils/format'
 import type { BlessingTask } from '@/types'
 
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
 const loadError = ref('')
 const list = ref<BlessingTask[]>([])
 const total = ref(0)
-const query = reactive({ status: '', page: 1, size: 20 })
+const initialStatus = typeof route.query.status === 'string' ? route.query.status : ''
+const query = reactive({ status: ['dispatched', 'assigned', 'accepted', 'in_progress', 'completed', 'rejected'].includes(initialStatus) ? initialStatus : '', page: 1, size: 20 })
 const statusOptions = [
   { value: 'dispatched', label: '待分配' },
   { value: 'assigned', label: '已分配' },

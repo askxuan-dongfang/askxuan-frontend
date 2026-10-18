@@ -2,7 +2,7 @@
 //  BlessingTaskDetailView.swift
 //  MasterApp
 //
-//  加持任务详情（页面 6）：接单/开始/完成/拒绝。
+//  开光任务详情（页面 6）：接单/开始/完成/拒绝。
 //  GET  admin/masters/blessing-tasks/:id
 //  PUT  admin/masters/blessing-tasks/:id/accept
 //  PUT  admin/masters/blessing-tasks/:id/start
@@ -11,6 +11,8 @@
 //
 
 import SwiftUI
+import PhotosUI
+import UIKit
 
 @MainActor
 final class BlessingTaskDetailViewModel: ObservableObject {
@@ -19,8 +21,8 @@ final class BlessingTaskDetailViewModel: ObservableObject {
     @Published var isActionLoading: Bool = false
     @Published var errorMessage: String? = nil
     @Published var successMessage: String? = nil
-    /// 完成时填写的证书图片 URL（逗号分隔）
-    @Published var certificateInput: String = ""
+    @Published var certificateURLs: [String] = []
+    @Published var isUploading = false
 
     let taskId: Int64
     private let apiClient: APIClient
@@ -38,7 +40,7 @@ final class BlessingTaskDetailViewModel: ObservableObject {
             self.task = task
             // 预填已有证书 URL
             if !task.certificateUrls.isEmpty {
-                certificateInput = task.certificateUrls.joined(separator: ",")
+                certificateURLs = task.certificateUrls
             }
         } catch let error as APIError {
             errorMessage = error.errorDescription
@@ -53,22 +55,49 @@ final class BlessingTaskDetailViewModel: ObservableObject {
     }
 
     func start() async {
-        await runAction(.blessingTaskStart(id: taskId), successText: "已开始加持")
+        await runAction(.blessingTaskStart(id: taskId), successText: "已开始开光")
     }
 
     func reject() async {
         await runAction(.blessingTaskReject(id: taskId), successText: "已拒绝任务")
     }
 
+    func upload(_ items: [PhotosPickerItem]) async {
+        guard !isUploading, !isActionLoading else { return }
+        isUploading = true
+        errorMessage = nil
+        defer { isUploading = false }
+        do {
+            for item in items.prefix(max(0, 9 - certificateURLs.count)) {
+                guard let raw = try await item.loadTransferable(type: Data.self),
+                      let image = UIImage(data: raw),
+                      let data = image.jpegData(compressionQuality: 0.85) else { throw APIError.serverError(400, "无法读取凭证图片") }
+                guard data.count <= 10 * 1024 * 1024 else {
+                    errorMessage = "图片不能超过 10 MB"
+                    return
+                }
+                let credential: MediaUploadCredential = try await apiClient.request(.mediaUploadCredential(
+                    MediaUploadCredentialRequest(fileName: "consecration.jpg", mediaType: "image", contentType: "image/jpeg", fileSize: Int64(data.count))))
+                guard let uploadURL = URL(string: credential.uploadUrl) else { throw APIError.invalidURL }
+                try await apiClient.upload(data, to: uploadURL, headers: credential.uploadHeaders)
+                let asset: MediaAsset = try await apiClient.request(.mediaComplete(id: credential.mediaId, coverMediaId: nil))
+                let url = asset.playbackUrl.isEmpty ? asset.coverUrl : asset.playbackUrl
+                guard !url.isEmpty else { throw APIError.serverError(400, "无法读取凭证图片") }
+                certificateURLs.append(url)
+            }
+        } catch { errorMessage = "凭证上传失败：\(error.localizedDescription)" }
+    }
+
     func complete() async {
-        let urls = certificateInput
-            .split(whereSeparator: { $0 == "," || $0 == "，" })
-            .map { String($0).trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-        await runAction(.blessingTaskComplete(id: taskId, certificateUrls: urls), successText: "加持已完成")
+        guard !isUploading, !certificateURLs.isEmpty else {
+            errorMessage = "请先上传开光照片"
+            return
+        }
+        await runAction(.blessingTaskComplete(id: taskId, certificateUrls: certificateURLs), successText: "开光已完成")
     }
 
     private func runAction(_ endpoint: Endpoint, successText: String) async {
+        guard !isActionLoading, !isUploading else { return }
         isActionLoading = true
         errorMessage = nil
         successMessage = nil
@@ -88,6 +117,7 @@ final class BlessingTaskDetailViewModel: ObservableObject {
 struct BlessingTaskDetailView: View {
     let taskId: Int64
     @StateObject private var viewModel: BlessingTaskDetailViewModel
+    @State private var selectedPhotos: [PhotosPickerItem] = []
 
     init(taskId: Int64) {
         self.taskId = taskId
@@ -112,14 +142,14 @@ struct BlessingTaskDetailView: View {
                     }
 
                     if !task.certificateUrls.isEmpty {
-                        infoCard(title: "加持证书", icon: "doc.richtext") {
+                        infoCard(title: "开光证书", icon: "doc.richtext") {
                             VStack(alignment: .leading, spacing: AppSpacing.sm) {
                                 ForEach(Array(task.certificateUrls.enumerated()), id: \.offset) { _, url in
                                     Link(destination: URL(string: url) ?? URL(string: "about:blank")!) {
                                         HStack {
                                             Image(systemName: "link.circle")
                                                 .foregroundStyle(.accentDefault)
-                                            Text(url)
+                                            Text("查看开光凭证")
                                                 .font(AppTypography.caption)
                                                 .foregroundStyle(.accentDefault)
                                                 .lineLimit(1)
@@ -147,6 +177,10 @@ struct BlessingTaskDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
 
         .task { await viewModel.load() }
+        .onChange(of: selectedPhotos) { _, items in
+            guard !items.isEmpty else { return }
+            Task { await viewModel.upload(items); selectedPhotos = [] }
+        }
         .alert("提示", isPresented: Binding(
             get: { viewModel.successMessage != nil },
             set: { if !$0 { viewModel.successMessage = nil } }
@@ -161,7 +195,7 @@ struct BlessingTaskDetailView: View {
         MasterCard(padding: AppSpacing.lg) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("加持任务")
+                    Text("开光任务")
                         .font(.pageTitle)
                         .foregroundStyle(.textPrimary)
                     Text("编号：\(task.taskNo)")
@@ -222,23 +256,25 @@ struct BlessingTaskDetailView: View {
                 .padding(.vertical, AppSpacing.md)
         } else {
             VStack(spacing: AppSpacing.md) {
-                // 完成前需要填写证书 URL
                 if status == .inProgress {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("加持证书 URL（多个用逗号分隔）")
-                            .font(AppTypography.caption)
-                            .foregroundStyle(.textSecondary)
-                        TextField("https://..., https://...", text: $viewModel.certificateInput, axis: .vertical)
-                            .font(AppTypography.body)
-                            .foregroundStyle(.textPrimary)
-                            .padding(AppSpacing.md)
-                            .background(Color.bgTertiary)
-                            .cornerRadius(AppRadius.md)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AppRadius.md)
-                                    .stroke(Color.borderDefault, lineWidth: 1)
-                            )
-                            .lineLimit(2...4)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("开光凭证").font(.cardTitle)
+                        PhotosPicker(selection: $selectedPhotos, maxSelectionCount: max(1, 9 - viewModel.certificateURLs.count), matching: .images) {
+                            Label(viewModel.isUploading ? "正在上传…" : "从相册选择照片", systemImage: "photo.on.rectangle")
+                                .frame(maxWidth: .infinity).padding()
+                                .background(Color.bgTertiary).clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
+                        }
+                        .disabled(viewModel.isUploading || viewModel.isActionLoading || viewModel.certificateURLs.count >= 9)
+                        ForEach(Array(viewModel.certificateURLs.enumerated()), id: \.offset) { index, raw in
+                            HStack {
+                                AsyncImage(url: URL(string: raw)) { image in image.resizable().scaledToFill() } placeholder: { Image(systemName: "photo") }
+                                    .frame(width: 96, height: 72).clipped().clipShape(RoundedRectangle(cornerRadius: 8))
+                                Text("凭证 \(index + 1)")
+                                Spacer()
+                                Button("移除") { viewModel.certificateURLs.remove(at: index) }
+                                    .disabled(viewModel.isUploading || viewModel.isActionLoading)
+                            }
+                        }
                     }
                 }
 
@@ -252,14 +288,14 @@ struct BlessingTaskDetailView: View {
                     }
                 }
                 if status.canStart {
-                    PrimaryButton(title: "开始加持", icon: "play.circle.fill",
+                    PrimaryButton(title: "开始开光", icon: "play.circle.fill",
                                   isLoading: viewModel.isActionLoading) {
                         Task { await viewModel.start() }
                     }
                 }
                 if status.canComplete {
-                    PrimaryButton(title: "完成加持", icon: "checkmark.seal.fill",
-                                  isEnabled: !viewModel.certificateInput.trimmingCharacters(in: .whitespaces).isEmpty,
+                    PrimaryButton(title: "完成开光", icon: "checkmark.seal.fill",
+                                  isEnabled: !viewModel.certificateURLs.isEmpty && !viewModel.isUploading,
                                   isLoading: viewModel.isActionLoading) {
                         Task { await viewModel.complete() }
                     }

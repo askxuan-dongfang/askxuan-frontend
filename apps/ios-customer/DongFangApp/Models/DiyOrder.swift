@@ -184,7 +184,7 @@ struct DiyOrder: Codable, Identifiable, Hashable {
         return service
     }
 
-    var totalFeeText: String { "¥\(Int(totalFee))" }
+    var totalFeeText: String { String(format: "¥%.2f", totalFee) }
     var statusDisplayText: String {
         if status == "pending_review" {
             return paymentStatus == "success" ? "待审核" : "待付款"
@@ -193,9 +193,10 @@ struct DiyOrder: Codable, Identifiable, Hashable {
         case "pending": return "待付款"
         case "paid":           return "已付款"
         case "making", "in_making": return "制作中"
-        case "blessing", "awaiting_blessing", "blessing_in_progress": return "加持中"
+        case "awaiting_blessing": return "待开光"
+        case "blessing", "blessing_in_progress": return "开光中"
         case "awaiting_shipment": return "待发货"
-        case "blessing_completed": return "加持完成"
+        case "blessing_completed": return "开光完成"
         case "shipped":        return "已发货"
         case "completed":      return "已完成"
         case "cancelled":      return "已取消"

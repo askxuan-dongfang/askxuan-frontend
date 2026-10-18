@@ -27,6 +27,15 @@ struct PageResponse<T: Decodable>: Decodable {
     let list: [T]
     let page: Int
     let size: Int
+    enum CodingKeys: String, CodingKey { case total, list, page, size }
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        total = try values.decode(Int.self, forKey: .total)
+        list = try values.decodeIfPresent([T].self, forKey: .list) ?? []
+        page = try values.decode(Int.self, forKey: .page)
+        size = try values.decode(Int.self, forKey: .size)
+    }
+
 }
 
 /// 仅含 list 字段的简单响应（如地址列表）

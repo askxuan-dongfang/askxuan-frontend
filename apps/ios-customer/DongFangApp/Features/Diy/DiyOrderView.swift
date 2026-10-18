@@ -20,6 +20,7 @@ struct DiyOrderView: View {
     @State private var selectedAddress: UserAddress?
     @State private var selectedBlessingService: BlessingService?
     @State private var checkoutOrder: DiyOrder?
+    @State private var pendingOrder: DiyOrder?
     @State private var materialsExpanded = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -38,8 +39,8 @@ struct DiyOrderView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: AppSpacing.lg) {
                     designSummary
-                    addressSection
-                    blessingSection
+                    addressSection.disabled(pendingOrder != nil || viewModel.isSubmitting)
+                    blessingSection.disabled(pendingOrder != nil || viewModel.isSubmitting)
                     materialSection
                     if let message = viewModel.availabilityMessage {
                         availabilityWarning(message)
@@ -421,7 +422,7 @@ struct DiyOrderView: View {
             }
             Spacer()
 
-            DFPrimaryButton(title: viewModel.isCurrentDesignOrderable ? "提交订单" : "材料需替换", icon: "checkmark.circle.fill",
+            DFPrimaryButton(title: pendingOrder != nil ? "继续支付" : viewModel.isCurrentDesignOrderable ? "提交订单" : "材料需替换", icon: "checkmark.circle.fill",
                             isEnabled: selectedAddress != nil && viewModel.isCurrentDesignOrderable,
                             isLoading: viewModel.isSubmitting) {
                 Task {
@@ -461,6 +462,8 @@ struct DiyOrderView: View {
     }
 
     private func submitOrder() async -> DiyOrder? {
+        if let pendingOrder { return pendingOrder }
+        guard !viewModel.isSubmitting else { return nil }
         guard let addressId = selectedAddress?.id else {
             viewModel.errorMessage = "请选择收货地址"
             return nil
@@ -486,6 +489,7 @@ struct DiyOrderView: View {
         if order == nil, let selected = selectedBlessingService, !viewModel.blessingServices.contains(selected) {
             selectedBlessingService = nil
         }
+        if let order { pendingOrder = order }
         return order
     }
 }
@@ -711,6 +715,7 @@ private struct DiyOrderResultDetailView: View {
                 if let service = order.consecrationService { detailRow("开光提供方", service.providerName) }
                 detailRow("合计", "¥\(String(format: "%.2f", order.totalFee))")
             }
+            DiyConsecrationSection(order: order)
             if let items = order.items, !items.isEmpty {
                 Section("材料明细") {
                     ForEach(items) { item in
@@ -748,4 +753,43 @@ private struct DiyOrderResultDetailView: View {
         DiyOrderView(designId: 1, viewModel: DiyViewModel())
     }
     .preferredColorScheme(.dark)
+}
+
+
+/// Shared by checkout and the persistent order history.
+struct DiyConsecrationSection: View {
+    let order: DiyOrder
+
+    var body: some View {
+        if let task = order.blessingTask, task.id > 0 {
+            Section("开光进度") {
+                LabeledContent("任务状态", value: statusText(task.status))
+                if let no = task.taskNo, !no.isEmpty { LabeledContent("任务编号", value: no) }
+                if let time = task.completeTime, !time.isEmpty { LabeledContent("完成时间", value: time) }
+                ForEach(Array((task.certificateUrls ?? []).enumerated()), id: \.offset) { index, raw in
+                    if let url = URL(string: raw), ["https", "http"].contains(url.scheme ?? "") {
+                        Link(destination: url) {
+                            HStack {
+                                AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { Image(systemName: "photo") }
+                                    .frame(width: 96, height: 72).clipped().clipShape(RoundedRectangle(cornerRadius: 8))
+                                Text("查看开光凭证 \(index + 1)")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func statusText(_ status: String) -> String {
+        switch status {
+        case "dispatched": return "等待寺院分配"
+        case "assigned": return "等待法师接单"
+        case "accepted": return "法师已接单"
+        case "in_progress": return "开光中"
+        case "completed": return "开光完成"
+        case "rejected": return "待重新安排"
+        default: return "待确认"
+        }
+    }
 }

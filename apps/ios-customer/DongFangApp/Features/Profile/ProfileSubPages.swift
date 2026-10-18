@@ -341,7 +341,7 @@ private struct CustomerDiyOrderDetailView: View {
                 List {
                     Section("制作与交付") {
                         if let logistics=order.logistics {Text("\(logistics.expressCompany) · \(logistics.trackingNo)").textSelection(.enabled)}
-                        Text("选材 → 审核 → 制作 → 加持（选购）→ 发货 → 收货").font(AppTypography.caption).foregroundStyle(Color.accentDefault)
+                        Text("选材 → 审核 → 制作 → 开光（选购）→ 发货 → 收货").font(AppTypography.caption).foregroundStyle(Color.accentDefault)
                         if let errorMessage {Text(errorMessage).foregroundStyle(.red)}
                         if order.status=="shipped" {Button("确认收到作品"){confirmReceipt=true}.disabled(busy)}
                         if order.status=="pending_review" && order.paymentStatus != "success" {Button("继续支付"){Task{await act(false)}}.disabled(busy)}
@@ -352,9 +352,11 @@ private struct CustomerDiyOrderDetailView: View {
                         detailRow("状态", order.statusDisplayText)
                         detailRow("支付 / 退款", ["success":"已支付","pending":"待支付","refunding":"退款中","refunded":"已退款"][order.paymentStatus ?? "pending"] ?? "待确认")
                         detailRow("材料费", String(format: "¥%.2f", order.materialFee))
-                        detailRow("加持费", String(format: "¥%.2f", order.blessFee))
+                        detailRow(order.consecrationService == nil ? "加持费" : "开光服务", String(format: "¥%.2f", order.blessFee))
+                        if let service = order.consecrationService { detailRow("开光提供方", service.providerName) }
                         detailRow("合计", String(format: "¥%.2f", order.totalFee))
                     }
+                    DiyConsecrationSection(order: order)
                     if let items = order.items, !items.isEmpty {
                         Section("材料明细") {
                             ForEach(items) { item in
