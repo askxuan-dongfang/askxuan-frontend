@@ -209,3 +209,27 @@ final class NativeBrandTests: XCTestCase {
         }
     }
 }
+
+
+@MainActor
+struct ConsecrationContractTests {
+    @Test func existingOfferingRetainsProviderAndExactPrice() throws {
+        let data = Data(#"{"id":7,"serviceCode":"consecration:temple:7","sourceServiceCode":"S006","providerType":"temple","serviceName":"开光","templeName":"测试寺院","price":39.50,"status":"on_shelf"}"#.utf8)
+        let service = try JSONDecoder().decode(BlessingService.self, from: data)
+        #expect(service.isConsecration)
+        #expect(service.providerName == "测试寺院")
+        #expect(service.priceText == "¥39.50")
+        let request = DiyDesignOrderCreateRequest(userId: "test", blessServiceCode: service.serviceCode, addressId: 1, expectedBlessFee: service.price)
+        let body = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(request)) as? [String: Any])
+        #expect(body["expectedBlessFee"] as? Double == 39.50)
+        #expect(body["blessServiceCode"] as? String == "consecration:temple:7")
+    }
+    @Test func legacyMarkupIsNotSelectableAndZeroPriceIsPreserved() throws {
+        let legacy = try JSONDecoder().decode(BlessingService.self, from: Data(#"{"id":1,"serviceName":"加持","price":168,"status":"on_shelf"}"#.utf8))
+        #expect(!legacy.isConsecration)
+        let request = DiyOrderCreateRequest(userId: "test", designId: 1, items: [], blessServiceCode: nil, addressId: 1, expectedBlessFee: 0)
+        let body = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(request)) as? [String: Any])
+        #expect(body["expectedBlessFee"] as? Double == 0)
+        #expect(body["blessServiceCode"] == nil)
+    }
+}

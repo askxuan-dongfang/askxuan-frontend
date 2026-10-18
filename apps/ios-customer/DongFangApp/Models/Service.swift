@@ -173,9 +173,11 @@ struct BlessingService: Codable, Identifiable, Hashable {
     let price: Double
     let description: String
     let status: String?
+    var sourceServiceCode: String? = nil
+    var providerType: String? = nil
 
     enum CodingKeys: String, CodingKey {
-        case id, serviceName, price, description, status
+        case id, serviceName, price, description, status, sourceServiceCode, providerType
         case serviceCode, templeCode, templeName, masterCode, masterName
     }
 
@@ -206,7 +208,11 @@ struct BlessingService: Codable, Identifiable, Hashable {
         self.price = try c.decodeIfPresent(Double.self, forKey: .price) ?? 0
         self.description = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
         self.status = try c.decodeIfPresent(String.self, forKey: .status)
+        self.sourceServiceCode = try c.decodeIfPresent(String.self, forKey: .sourceServiceCode)
+        self.providerType = try c.decodeIfPresent(String.self, forKey: .providerType)
     }
 
-    var priceText: String { "¥\(Int(price))" }
+    var priceText: String { String(format: "¥%.2f", price) }
+    var providerName: String { [templeName, masterName].filter { !$0.isEmpty }.joined(separator: " · ") }
+    var isConsecration: Bool { sourceServiceCode == "S006" && status == "on_shelf" && price.isFinite && price >= 0 }
 }

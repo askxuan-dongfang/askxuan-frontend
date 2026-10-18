@@ -53,14 +53,14 @@
     "path": "/commerce/services",
     "name": "ShopServiceList",
     "view": "ServiceListView.vue",
-    "title": "祈福服务列表"
+    "title": "DIY 开光服务"
   },
   {
     "legacy": "/shop/services/edit/:id?",
     "path": "/commerce/services/edit/:id?",
     "name": "ShopServiceEdit",
     "view": "ServiceEditView.vue",
-    "title": "祈福服务编辑"
+    "title": "历史附加服务"
   },
   {
     "legacy": "/shop/orders",

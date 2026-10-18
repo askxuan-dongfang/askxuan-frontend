@@ -268,7 +268,7 @@ struct DiyOrderView: View {
                 Image(systemName: "sparkles")
                     .font(AppTypography.body)
                     .foregroundStyle(Color.accentDefault)
-                Text("法师加持")
+                Text("开光服务")
                     .font(.cardTitle)
                     .foregroundStyle(Color.textPrimary)
             }
@@ -279,10 +279,10 @@ struct DiyOrderView: View {
                     .font(.system(size: 20))
                     .foregroundStyle(selectedBlessingService == nil ? Color.brandDefault : Color.textTertiary)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("不需要加持")
+                    Text("不需要开光")
                         .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
-                    Text("订单只包含材料和制作费用")
+                    Text("只制作手串")
                         .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
@@ -310,16 +310,16 @@ struct DiyOrderView: View {
                         .font(.system(size: 20))
                         .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(service.serviceName)
+                        Text(service.providerName.isEmpty ? "开光服务" : service.providerName)
                             .font(AppTypography.body.weight(.semibold))
                             .foregroundStyle(Color.textPrimary)
-                        Text(service.description)
+                        Text(service.providerType == "temple" ? "寺院开光" : "法师开光")
                             .font(AppTypography.caption)
                             .foregroundStyle(Color.textTertiary)
                             .lineLimit(2)
                     }
                     Spacer()
-                    Text("+\(service.priceText)")
+                    Text(service.priceText)
                         .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.brandDefault)
                 }
@@ -340,7 +340,7 @@ struct DiyOrderView: View {
         VStack(spacing: 0) {
             feeRow(label: "材料费",
                    value: "¥\(Int(viewModel.currentDesign?.totalPrice ?? viewModel.totalPrice))")
-            feeRow(label: "加持费",
+            feeRow(label: "开光服务",
                    value: selectedBlessingService?.priceText ?? "¥0")
             feeRow(label: "运费", value: "包邮")
             feeRow(label: "合计",
@@ -466,20 +466,27 @@ struct DiyOrderView: View {
             return nil
         }
         let blessServiceCode = selectedBlessingService?.serviceCode
+        let order: DiyOrder?
         switch orderSource {
         case .cart:
-            return await viewModel.createOrder(
+            order = await viewModel.createOrder(
                 designId: designId,
                 addressId: addressId,
-                blessServiceCode: blessServiceCode
+                blessServiceCode: blessServiceCode,
+                expectedBlessFee: selectedBlessingService?.price ?? 0
             )
         case .design:
-            return await viewModel.createOrderFromDesign(
+            order = await viewModel.createOrderFromDesign(
                 designId: designId,
                 addressId: addressId,
-                blessServiceCode: blessServiceCode
+                blessServiceCode: blessServiceCode,
+                expectedBlessFee: selectedBlessingService?.price ?? 0
             )
         }
+        if order == nil, let selected = selectedBlessingService, !viewModel.blessingServices.contains(selected) {
+            selectedBlessingService = nil
+        }
+        return order
     }
 }
 
@@ -700,7 +707,8 @@ private struct DiyOrderResultDetailView: View {
                 detailRow("订单号", order.orderNo)
                 detailRow("状态", order.statusDisplayText)
                 detailRow("材料费", "¥\(String(format: "%.2f", order.materialFee))")
-                detailRow("加持费", "¥\(String(format: "%.2f", order.blessFee))")
+                detailRow(order.consecrationService == nil ? "加持费" : "开光服务", "¥\(String(format: "%.2f", order.blessFee))")
+                if let service = order.consecrationService { detailRow("开光提供方", service.providerName) }
                 detailRow("合计", "¥\(String(format: "%.2f", order.totalFee))")
             }
             if let items = order.items, !items.isEmpty {

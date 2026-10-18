@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 祈福服务列表
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
@@ -13,6 +13,8 @@ const router = useRouter()
 const loading = ref(false)
 const list = ref<BlessingService[]>([])
 const total = ref(0)
+const legacy = ref(false)
+watch(legacy, () => { query.page = 1; loadList() })
 
 const query = reactive<BlessingServiceListParams>({
   page: 1,
@@ -22,7 +24,7 @@ const query = reactive<BlessingServiceListParams>({
 async function loadList() {
   loading.value = true
   try {
-    const res = await serviceApi.list(query)
+    const res = await (legacy.value ? serviceApi.list(query) : serviceApi.consecrations(query))
     list.value = res.list || []
     total.value = res.total || 0
   } finally {
@@ -63,17 +65,16 @@ onMounted(() => {
 
 <template>
   <div class="page-wrap">
-    <PageHeader title="祈福服务列表" subtitle="管理 DIY 加持服务项（寺院/法师/价格）">
-      <template #extra>
-        <el-button type="primary" @click="router.push('/commerce/services/edit')">
-          <el-icon><Plus /></el-icon>
-          新建服务
-        </el-button>
-      </template>
-    </PageHeader>
+    <PageHeader title="DIY 开光服务" subtitle="新订单直接选用寺院或独立法师已上架的开光服务，价格与原服务一致。" />
+    <el-alert type="info" :closable="false" style="margin-bottom: 16px" title="开光价格请在对应寺院或法师的服务设置中维护。寺院订单由该寺院分配法师，独立法师订单直接派给本人。" />
+    <el-radio-group v-model="legacy" style="margin-bottom: 16px">
+      <el-radio-button :value="false">当前开光服务</el-radio-button>
+      <el-radio-button :value="true">历史附加服务</el-radio-button>
+    </el-radio-group>
+    <el-alert v-if="legacy" type="warning" :closable="false" style="margin-bottom: 16px" title="以下配置仅保留给历史订单，新定制不再使用独立加价项。" />
 
     <div class="df-card">
-      <el-table v-loading="loading" :data="list" style="width: 100%" empty-text="暂无祈福服务">
+      <el-table v-loading="loading" :data="list" style="width: 100%" empty-text="暂无可用服务">
         <el-table-column label="服务编码" prop="serviceCode" width="180" />
         <el-table-column label="服务名称" prop="serviceName" min-width="200" />
         <el-table-column label="寺院" width="180">
@@ -96,7 +97,7 @@ onMounted(() => {
             <StatusTag :status="row.status" domain="enabled" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column v-if="legacy" label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button text type="primary" size="small" @click="router.push(`/commerce/services/edit/${row.id}`)">编辑</el-button>
             <el-button text type="danger" size="small" @click="handleDelete(row)">删除</el-button>

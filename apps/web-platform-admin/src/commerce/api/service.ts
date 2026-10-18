@@ -19,6 +19,10 @@ export interface BlessingServiceSaveParams {
 }
 
 export const serviceApi = {
+  /** Existing temple/master S006 offerings used by new DIY orders. */
+  consecrations(params: BlessingServiceListParams = {}): Promise<Page<BlessingService>> {
+    return client.get<Page<BlessingService>>('/diy/blessing-services', { params })
+  },
   /** 祈福服务列表 */
   list(params: BlessingServiceListParams = {}): Promise<Page<BlessingService>> {
     return client.get<Page<BlessingService>>('/admin/diy/blessing-services', { params })

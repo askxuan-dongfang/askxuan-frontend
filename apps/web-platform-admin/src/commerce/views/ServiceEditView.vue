@@ -75,13 +75,14 @@ function handleCancel() {
 }
 
 onMounted(() => {
+  if (!isEdit.value) { router.replace('/commerce/services'); return }
   loadDetail()
 })
 </script>
 
 <template>
   <div class="page-wrap" v-loading="loading">
-    <PageHeader :title="isEdit ? '编辑祈福服务' : '新建祈福服务'" subtitle="配置加持服务关联的寺院、法师与价格" />
+    <PageHeader title="维护历史附加服务" subtitle="仅用于历史订单。新定制的开光服务沿用寺院或法师的原服务价格。" />
 
     <div class="df-card form-card">
       <el-form

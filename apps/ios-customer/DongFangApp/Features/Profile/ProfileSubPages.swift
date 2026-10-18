@@ -1142,16 +1142,18 @@ struct PointsRedeemRequest: Encodable {
 }
 struct PointsActionResult: Decodable { let success: Bool }
 struct PointsWalletCard: View {
+    @Environment(\.colorScheme) private var colorScheme
+    private var palette: PointsPalette { PointsPalette(scheme: colorScheme) }
     let balance: Int64?
     let onRules: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack { Text("可用积分").font(.subheadline); Spacer(); Button("规则", action: onRules).font(.subheadline) }.foregroundStyle(Color(hex: "D4DECF"))
-            HStack(alignment: .firstTextBaseline) { Text(balance.map { $0.formatted() } ?? "—").font(AppTypography.numeric(42, weight: .medium)).minimumScaleFactor(0.6).lineLimit(1).contentTransition(.numericText()); Text("积分").font(AppTypography.caption) }.foregroundStyle(Color(hex: "F7F0DF"))
-            if (balance ?? 0) < 0 { Text("退款扣回后余额不足，后续获得的积分先补足余额。").font(.caption2).foregroundStyle(.secondary) }
+            HStack { Text("可用积分").font(.subheadline); Spacer(); Button("规则", action: onRules).font(.subheadline) }.foregroundStyle(palette.muted)
+            HStack(alignment: .firstTextBaseline) { Text(balance.map { $0.formatted() } ?? "—").font(AppTypography.numeric(42, weight: .medium)).minimumScaleFactor(0.6).lineLimit(1).contentTransition(.numericText()); Text("积分").font(AppTypography.caption) }.foregroundStyle(palette.text)
+            if (balance ?? 0) < 0 { Text("退款扣回后余额不足，后续获得的积分先补足余额。").font(.caption2).foregroundStyle(palette.muted) }
         }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(hex: "254C40"), in: RoundedRectangle(cornerRadius: 20))
-            .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.accentDefault.opacity(0.35), lineWidth: 1))
+            .background(palette.card, in: RoundedRectangle(cornerRadius: 20))
+            .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.accentDefault.opacity(0.35), lineWidth: 1))
     }
 }
 struct PointsRulesSheet: View {
@@ -1211,17 +1213,19 @@ struct PointsHistoryView: View {
     }
 }
 struct PointsHomeEntry: View {
+    @Environment(\.colorScheme) private var colorScheme
+    private var palette: PointsPalette { PointsPalette(scheme: colorScheme) }
     @EnvironmentObject private var auth: AuthStore
     @State private var balance: Int64?
     var body: some View {
         NavigationLink { PointsView() } label: {
             HStack(spacing: 14) {
-                Image(systemName: "star.circle").font(.system(size: 36, weight: .light)).foregroundStyle(Color(hex: "D9BD83"))
-                VStack(alignment: .leading, spacing: 6) { Text("积分中心").font(.system(size: 17, weight: .semibold)); Text("转盘 · 商城 · 奖池").font(.system(size: 12)).foregroundStyle(Color(hex: "D1DCCE")) }
+                Image(systemName: "star.circle").font(.system(size: 36, weight: .light)).foregroundStyle(palette.accent)
+                VStack(alignment: .leading, spacing: 6) { Text("积分中心").font(.system(size: 17, weight: .semibold)); Text("转盘 · 商城 · 奖池").font(.system(size: 12)).foregroundStyle(palette.muted) }
                 Spacer(minLength: 8)
-                VStack(alignment: .trailing, spacing: 4) { Text(balance.map { $0.formatted() } ?? "去看看").font(.system(size: 20, weight: .medium)).monospacedDigit().foregroundStyle(Color(hex: "F0DDAF")); if balance != nil { Text("可用积分").font(.system(size: 11)).foregroundStyle(Color(hex: "C9D5C6")) } }
-                Image(systemName: "chevron.right").font(.caption).foregroundStyle(Color(hex: "D9BD83"))
-            }.foregroundStyle(Color(hex: "F7F0DF")).padding(18).background(Color(hex: "254C40"), in: RoundedRectangle(cornerRadius: 18))
+                VStack(alignment: .trailing, spacing: 4) { Text(balance.map { $0.formatted() } ?? "去看看").font(.system(size: 20, weight: .medium)).monospacedDigit().foregroundStyle(palette.accent); if balance != nil { Text("可用积分").font(.system(size: 11)).foregroundStyle(palette.muted) } }
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(palette.accent)
+            }.foregroundStyle(palette.text).padding(18).background(palette.card, in: RoundedRectangle(cornerRadius: 18))
         }.buttonStyle(CardPressButtonStyle()).accessibilityIdentifier("home-points")
             .task(id: auth.userId) { balance = nil; if auth.isLoggedIn { let account: PointsAccount? = try? await APIClient.shared.request(.pointsAccount); balance = account?.balance } }
     }

@@ -201,7 +201,9 @@ struct RewardWheelArt: View {
     var hasResult = false
     var onDraw: (() -> Void)? = nil
     var onPrize: ((RewardPrize) -> Void)? = nil
-    private let jade = Color(hex: "254C40")
+    @Environment(\.colorScheme) private var colorScheme
+    private var palette: PointsPalette { PointsPalette(scheme: colorScheme) }
+    private var jade: Color { palette.ring }
     private let gold = Color(hex: "E4C58F")
     private var brass: LinearGradient {
         LinearGradient(colors: [Color(hex: "F5DFAD"), Color(hex: "B58A4E"), Color(hex: "E7C78D"), Color(hex: "8B683D")], startPoint: .topLeading, endPoint: .bottomTrailing)
@@ -224,7 +226,7 @@ struct RewardWheelArt: View {
                             let gift = prizeIndex >= 0
                             let light = index.isMultiple(of: 2)
                             RewardWheelSector(index: index, count: 10)
-                                .fill(RadialGradient(colors: light ? [Color(hex: "FFF8E8"), Color(hex: "E8D8B7")] : [Color(hex: "466C5E"), Color(hex: "23483F")], center: .topLeading, startRadius: 0, endRadius: size))
+                                .fill(RadialGradient(colors: light ? palette.soft : palette.strong, center: .topLeading, startRadius: 0, endRadius: size))
                             RewardWheelSector(index: index, count: 10).stroke(Color(hex: "B59862"), lineWidth: 0.6)
                             VStack(spacing: size * 0.028) {
                                 Text(gift ? prizes[prizeIndex].name : "谢谢参与").font(.system(size: size * 0.031, weight: .medium)).lineLimit(2).multilineTextAlignment(.center).frame(width: size * 0.18, height: size * 0.08)
@@ -232,7 +234,7 @@ struct RewardWheelArt: View {
                                     AsyncImage(url: url) { image in image.resizable().scaledToFit() } placeholder: { Image(systemName: "gift") }.frame(width: size * 0.09, height: size * 0.09)
                                 } else { Image(systemName: gift ? (prizes[prizeIndex].kind == "physical" ? "gift" : "ticket") : "leaf").font(.system(size: size * 0.064, weight: .light)) }
                             }
-                            .foregroundStyle(light ? Color(hex: "76562F") : Color(hex: "EDE4C9"))
+                            .foregroundStyle(light ? palette.softText : palette.strongText)
                             .offset(y: -size * 0.29).rotationEffect(.degrees(Double(index) * 360 / 10))
                         }
                     }.frame(width: size * 0.839, height: size * 0.839)
@@ -272,10 +274,10 @@ struct RewardWheelArt: View {
         VStack(spacing: 5) {
             Text(spinning ? "揭晓中" : hasResult ? "查看结果" : "转一次").font(.system(size: max(14, size * 0.05), weight: .semibold))
             Text(spinning ? "请稍候" : hasResult ? "本期已参与" : "\(cost) 积分").font(.system(size: max(10, size * 0.031)))
-                .foregroundStyle(Color(hex: "DFD7BE"))
-        }.foregroundStyle(Color(hex: "FFF4DA"))
+                .foregroundStyle(palette.strongText.opacity(0.8))
+        }.foregroundStyle(palette.strongText)
             .frame(width: size * 0.257, height: size * 0.257)
-            .background(LinearGradient(colors: [Color(hex: "42685A"), Color(hex: "1D4338")], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
+            .background(LinearGradient(colors: palette.strong, startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
             .overlay(Circle().stroke(Color(hex: "E7D0A0"), lineWidth: 1))
             .contentShape(Circle())
     }
@@ -795,4 +797,19 @@ struct RewardRedemptionSheet: View {
         do { let loaded: RewardRedemption = try await APIClient.shared.request(.rewardRedemption(order.id)); try Task.checkCancellation(); value = loaded }
         catch is CancellationError {} catch { self.error = error.localizedDescription }
     }
+}
+
+// Shared by the wallet, home entry and wheel; matches the H5 points theme.
+struct PointsPalette {
+    let scheme: ColorScheme
+    private var dark: Bool { scheme == .dark }
+    var card: Color { dark ? .bgTertiary : .brandDefault }
+    var text: Color { dark ? .textPrimary : .textOnBrand }
+    var muted: Color { dark ? .textSecondary : Color(hex: "D8E2DD") }
+    var accent: Color { dark ? .accentDefault : Color(hex: "F0DDAF") }
+    var ring: Color { dark ? .bgTertiary : .brandDefault }
+    var strong: [Color] { dark ? [Color(hex: "9E4A37"), Color(hex: "632F27")] : [Color(hex: "426A59"), Color(hex: "284D43")] }
+    var soft: [Color] { dark ? [Color(hex: "49372D"), Color(hex: "2A1E1A")] : [Color(hex: "FFF8E8"), Color(hex: "E8D8B7")] }
+    var strongText: Color { Color(hex: dark ? "FFF1DA" : "F5EDDB") }
+    var softText: Color { Color(hex: dark ? "E6CC9D" : "76562F") }
 }

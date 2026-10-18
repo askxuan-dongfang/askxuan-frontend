@@ -26,7 +26,7 @@ const allMenuGroups = [
   ]},
   {title:'DIY 与加持服务',icon:'MagicStick',children:[
     {path:'/commerce/materials',title:'DIY 材料'},
-    {path:'/commerce/services',title:'加持服务'},
+    {path:'/commerce/services',title:'开光服务'},
     {path:'/commerce/diy-orders',title:'DIY 订单'},
     {path:'/commerce/creator-rewards',title:'创作奖励与提现'}
   ]},

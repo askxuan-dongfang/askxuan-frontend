@@ -176,6 +176,14 @@ struct DiyOrder: Codable, Identifiable, Hashable {
         case items, blessingTask, createTime, logistics
     }
 
+    var consecrationService: BlessingService? {
+        struct Snapshot: Decodable { let consecration: BlessingService? }
+        guard let data = pricingSnapshot?.data(using: .utf8),
+              let service = try? JSONDecoder().decode(Snapshot.self, from: data).consecration,
+              service.sourceServiceCode == "S006" else { return nil }
+        return service
+    }
+
     var totalFeeText: String { "¥\(Int(totalFee))" }
     var statusDisplayText: String {
         if status == "pending_review" {
@@ -364,6 +372,7 @@ struct DiyOrderCreateRequest: Codable {
     let items: [DiyOrderItem]
     let blessServiceCode: String?
     let addressId: Int64
+    var expectedBlessFee: Double? = nil
 }
 
 struct DiyOrderAvailabilityRequest: Codable {

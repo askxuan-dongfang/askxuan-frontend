@@ -800,6 +800,7 @@ struct DiyDesignOrderCreateRequest: Codable {
     let userId: String
     let blessServiceCode: String?
     let addressId: Int64
+    var expectedBlessFee: Double? = nil
 }
 
 /// APNs mock 设备 token 注册请求

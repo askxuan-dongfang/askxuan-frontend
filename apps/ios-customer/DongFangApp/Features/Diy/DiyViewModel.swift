@@ -254,15 +254,32 @@ final class DiyViewModel: ObservableObject {
         defer { isLoading = false }
         do {
             async let addressResponse: ListResponse<UserAddress> = apiClient.request(.addressList)
-            async let serviceResponse: PageResponse<BlessingService> = apiClient.request(
-                .diyBlessingServices(page: 1, size: 50))
+            async let serviceResponse = loadConsecrationServices()
             let (addressResult, serviceResult) = try await (addressResponse, serviceResponse)
             addresses = addressResult.list
-            blessingServices = serviceResult.list.filter { $0.status == nil || $0.status == "on_shelf" }
+            blessingServices = serviceResult
         } catch {
             addresses = []
             blessingServices = []
             errorMessage = error.localizedDescription
+        }
+    }
+
+    private func loadConsecrationServices() async throws -> [BlessingService] {
+        var services: [BlessingService] = []
+        var page = 1
+        while true {
+            let response: PageResponse<BlessingService> = try await apiClient.request(.diyBlessingServices(page: page, size: 100))
+            services.append(contentsOf: response.list)
+            if response.list.isEmpty || services.count >= response.total { break }
+            page += 1
+        }
+        return services.filter(\.isConsecration)
+    }
+
+    private func refreshConsecrations(after error: Error) async {
+        if case APIError.serverError(let code, _) = error, code == 40908 || code == 40909 {
+            blessingServices = (try? await loadConsecrationServices()) ?? []
         }
     }
 
@@ -516,7 +533,7 @@ final class DiyViewModel: ObservableObject {
     }
 
     func createOrder(designId: Int64, addressId: Int64,
-                     blessServiceCode: String?) async -> DiyOrder? {
+                     blessServiceCode: String?, expectedBlessFee: Double) async -> DiyOrder? {
         let items = cartItems.map(makeOrderItem)
         guard await refreshOrderAvailability(designId: designId, items: items) else { return nil }
         isSubmitting = true
@@ -526,7 +543,8 @@ final class DiyViewModel: ObservableObject {
             designId: designId,
             items: items,
             blessServiceCode: blessServiceCode,
-            addressId: addressId
+            addressId: addressId,
+            expectedBlessFee: expectedBlessFee
         )
 
         do {
@@ -536,6 +554,7 @@ final class DiyViewModel: ObservableObject {
             isSubmitting = false
             return order
         } catch {
+            await refreshConsecrations(after: error)
             errorMessage = error.localizedDescription
             isSubmitting = false
             return nil
@@ -543,14 +562,15 @@ final class DiyViewModel: ObservableObject {
     }
 
     func createOrderFromDesign(designId: Int64, addressId: Int64,
-                               blessServiceCode: String?) async -> DiyOrder? {
+                               blessServiceCode: String?, expectedBlessFee: Double) async -> DiyOrder? {
         guard await refreshOrderAvailability(designId: designId, items: nil) else { return nil }
         isSubmitting = true
         errorMessage = nil
         let request = DiyDesignOrderCreateRequest(
             userId: authStore.userId,
             blessServiceCode: blessServiceCode,
-            addressId: addressId
+            addressId: addressId,
+            expectedBlessFee: expectedBlessFee
         )
 
         do {
@@ -560,6 +580,7 @@ final class DiyViewModel: ObservableObject {
             isSubmitting = false
             return order
         } catch {
+            await refreshConsecrations(after: error)
             errorMessage = error.localizedDescription
             isSubmitting = false
             return nil
