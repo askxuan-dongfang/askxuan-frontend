@@ -28,7 +28,8 @@ for(const width of [390,1440]) {
  for(const m of migration) test(`shop page ${m.path} at ${width}`,async({page})=>{
   await session(page,'shop_admin');await fixture(page);await page.setViewportSize({width,height:900})
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message))
-  await page.goto(origin+'/admin'+m.path.replace('/:id?','').replace('/:id','/1'));await expect(page.locator('.ax-admin-header__title')).toHaveText(m.title)
+  const path=m.path==='/commerce/services/edit/:id?'?'/commerce/services/edit/1':m.path.replace('/:id?','').replace('/:id','/1')
+  await page.goto(origin+'/admin'+path);await expect(page.locator('.ax-admin-header__title')).toHaveText(m.title)
   await expect(page.locator('.ax-admin-main')).not.toBeEmpty();await page.waitForTimeout(150)
   expect(errors).toEqual([]);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBeTruthy()
  })
@@ -190,7 +191,29 @@ test('write: logistics company and freight template persist through unified clie
  expect(writes[0].body).toMatchObject({code:'TEST',name:'测试物流'});expect(writes[1].body).toMatchObject({name:'测试运费',type:'by_piece'})
  await page.screenshot({path:testInfo.outputPath('logistics.png'),fullPage:true})
 })
-for(const kind of ['categories','materials','services'])test(`write: ${kind} creation preserves form`,async({page})=>{
+test('legacy service creation bookmark opens current consecration catalog',async({page})=>{
+ await session(page,'shop_admin');await fixture(page)
+ await page.goto(origin+'/admin/commerce/services/edit')
+ await expect(page).toHaveURL(origin+'/admin/commerce/services')
+ await expect(page.locator('.ax-admin-header__title')).toHaveText('DIY 开光服务')
+ await expect(page.getByText('当前开光服务',{exact:true})).toBeVisible()
+ await expect(page.getByRole('button',{name:/新增|新建|保存/})).toHaveCount(0)
+})
+test('legacy service editing preserves historical order configuration',async({page})=>{
+ await session(page,'shop_admin');await fixture(page);let saved:any
+ const legacy={id:1,serviceName:'历史开光配置',templeCode:'T-TEST',masterCode:'M-TEST',price:88,description:'历史订单',status:'on_shelf'}
+ await page.route('**/api/v1/admin/diy/blessing-services/1',async route=>{
+  if(route.request().method()==='PUT')saved=route.request().postDataJSON()
+  await route.fulfill({json:{code:0,data:legacy}})
+ })
+ await page.goto(origin+'/admin/commerce/services/edit/1')
+ await expect(page.getByRole('textbox',{name:/服务名称/})).toHaveValue(legacy.serviceName)
+ await page.getByRole('textbox',{name:/服务名称/}).fill('历史开光配置更新')
+ await page.getByRole('button',{name:'保存',exact:true}).click()
+ await expect(page).toHaveURL(origin+'/admin/commerce/services')
+ expect(saved).toMatchObject({serviceName:'历史开光配置更新',templeCode:'T-TEST',masterCode:'M-TEST',price:88,description:'历史订单',status:'on_shelf'})
+})
+for(const kind of ['categories','materials'])test(`write: ${kind} creation preserves form`,async({page})=>{
  await session(page,'shop_admin');await fixture(page);let saved:any
  await page.route('**/api/v1/**',async route=>{
   if(route.request().method()==='POST'){saved=route.request().postDataJSON();await route.fulfill({json:{code:0,data:{id:1}}})}
@@ -204,13 +227,8 @@ for(const kind of ['categories','materials','services'])test(`write: ${kind} cre
   await expect(page.locator('.el-dialog:visible')).toHaveCount(0)
   expect(saved).toMatchObject({name:'迁移分类',parentId:0})
  }else {
-  if(kind==='materials') await page.getByRole('textbox',{name:/材料名称/}).fill('迁移材料')
-  else {
-   await page.getByRole('textbox',{name:/服务名称/}).fill('迁移服务')
-   await page.getByRole('textbox',{name:/寺院编码/}).fill('T-TEST')
-   await page.getByRole('textbox',{name:/法师编码/}).fill('M-TEST')
-  }
+  await page.getByRole('textbox',{name:/材料名称/}).fill('迁移材料')
   await page.getByRole('button',{name:'保存',exact:true}).click();await expect(page).toHaveURL(origin+'/admin/commerce/'+kind)
-  expect(saved).toMatchObject(kind==='materials'?{name:'迁移材料',unit:'颗',category:'main_bead'}:{serviceName:'迁移服务',templeCode:'T-TEST',masterCode:'M-TEST'})
+  expect(saved).toMatchObject({name:'迁移材料',unit:'颗',category:'main_bead'})
  }
 })
