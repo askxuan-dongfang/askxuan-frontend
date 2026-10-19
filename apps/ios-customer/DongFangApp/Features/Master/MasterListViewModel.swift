@@ -17,7 +17,6 @@ final class MasterListViewModel: ObservableObject {
     @Published var selectedRegionCode = ""
     @Published var selectedTraditionCode = ""
     @Published var searchText = ""
-    @Published var selectedSect = "全部"
     @Published var selectedPrice = "全部"
 
     // 所有筛选状态集中管理
@@ -31,7 +30,6 @@ final class MasterListViewModel: ObservableObject {
 
     var filterGroups: [(title: String, options: [String])] {
         [
-            ("宗派", ["全部"] + unique(masters.map(\.sect))),
             ("价格区间", ["全部", "200元以下", "200–500元", "500–1000元", "1000元以上"]),
             ("所属寺院", ["全部"] + unique(masters.map(\.templeName))),
             ("职位", ["全部"] + unique(masters.map(\.position))),
@@ -43,7 +41,7 @@ final class MasterListViewModel: ObservableObject {
     private let apiClient: APIClient
     init(initialBeliefCode: String? = nil, apiClient: APIClient = .shared) {
         self.apiClient = apiClient
-        self.selectedBeliefCode = initialBeliefCode ?? ""
+        self.selectedBeliefCode = initialBeliefCode == "taoism" ? "daoism" : initialBeliefCode ?? ""
     }
 
     var filteredMasters: [Master] {
@@ -52,7 +50,6 @@ final class MasterListViewModel: ObservableObject {
             (selectedTraditionCode.isEmpty || (m.traditionCodes ?? []).contains(selectedTraditionCode)) &&
             (searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || ([m.dharmaName, m.templeName, m.sect] + m.specialties).joined(separator: " ").localizedStandardContains(searchText.trimmingCharacters(in: .whitespacesAndNewlines))) &&
             (selectedBeliefCode.isEmpty || m.beliefCode == selectedBeliefCode) &&
-            (selectedSect == "全部" || m.sect == selectedSect) &&
             matchPrice(m) &&
             matchTemple(m, selectedTemple) &&
             matchLevel(m, selectedLevel) &&
@@ -62,7 +59,7 @@ final class MasterListViewModel: ObservableObject {
     }
 
     func clearFilters() {
-        selectedRegionCode = ""; selectedTraditionCode = ""; searchText = ""; selectedBeliefCode = ""; selectedTemple = "全部"; selectedLevel = "全部"; selectedSpecialty = "全部"; selectedService = "全部"; selectedSect = "全部"; selectedPrice = "全部"
+        selectedRegionCode = ""; selectedTraditionCode = ""; searchText = ""; selectedBeliefCode = ""; selectedTemple = "全部"; selectedLevel = "全部"; selectedSpecialty = "全部"; selectedService = "全部"; selectedPrice = "全部"
     }
     private func matchPrice(_ master: Master) -> Bool {
         guard selectedPrice != "全部" else { return true }

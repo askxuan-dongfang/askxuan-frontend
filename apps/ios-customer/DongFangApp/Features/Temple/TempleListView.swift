@@ -46,21 +46,7 @@ struct TempleListView: View {
                 HStack { Text(L10n.lookup(error)).font(AppTypography.caption); Spacer(); Button(L10n.text("重试")) { Task { await viewModel.load() } } }.padding(12)
             }
 
-            // 2. 教派标签横滑
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: AppSpacing.sm) {
-                    ForEach(viewModel.beliefOptions) { option in
-                        tagPill(title: option.name, isSelected: viewModel.selectedBeliefCode == option.code) {
-                            viewModel.selectedBeliefCode = option.code
-                        }
-                    }
-                }
-                .padding(.horizontal, AppSpacing.md)
-                .padding(.vertical, 10)
-            }
-            .background(Color.bgPrimary)
-
-            DirectoryFilterBar(region: $viewModel.selectedRegionCode, tradition: $viewModel.selectedTraditionCode)
+            DirectoryFilterBar(beliefs: viewModel.beliefOptions, belief: $viewModel.selectedBeliefCode, region: $viewModel.selectedRegionCode, tradition: $viewModel.selectedTraditionCode)
 
             HStack(spacing: 0) {
                 ScrollView(showsIndicators: false) {

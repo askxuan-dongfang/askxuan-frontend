@@ -27,7 +27,7 @@ final class TempleListViewModel: ObservableObject {
     private let apiClient: APIClient
     init(initialSect: String? = nil, initialBeliefCode: String? = nil, apiClient: APIClient = .shared) {
         self.apiClient = apiClient
-        self.selectedBeliefCode = initialBeliefCode ?? ""
+        self.selectedBeliefCode = initialBeliefCode == "taoism" ? "daoism" : initialBeliefCode ?? ""
     }
 
     var filteredTemples: [Temple] {
