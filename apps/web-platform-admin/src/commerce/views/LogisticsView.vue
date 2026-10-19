@@ -419,7 +419,7 @@ onMounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="expressDialogVisible = false">{{ $t("取消") }}</el-button>
+        <el-button @click="expressDialogVisible = false" data-quiet-action="cancel">{{ $t("取消") }}</el-button>
         <el-button type="primary" :loading="expressSaving" @click="handleExpressSubmit">{{ $t("保存") }}</el-button>
       </template>
     </el-dialog>
@@ -455,7 +455,7 @@ onMounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="freightDialogVisible = false">{{ $t("取消") }}</el-button>
+        <el-button @click="freightDialogVisible = false" data-quiet-action="cancel">{{ $t("取消") }}</el-button>
         <el-button type="primary" :loading="freightSaving" @click="handleFreightSubmit">{{ $t("保存") }}</el-button>
       </template>
     </el-dialog>

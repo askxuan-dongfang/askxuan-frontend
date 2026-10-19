@@ -106,7 +106,7 @@
         <el-form-item :label='$t("承诺首响")'><el-input-number v-model="consultForm.consultResponseMinutes" :min="1" :max="1440" /><span class="unit">{{ $t("分钟") }}</span></el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="consultVisible = false">{{ $t("取消") }}</el-button>
+        <el-button @click="consultVisible = false" data-quiet-action="cancel">{{ $t("取消") }}</el-button>
         <el-button type="primary" :loading="consultSaving" @click="saveConsult">{{ $t("保存") }}</el-button>
       </template>
     </el-dialog>

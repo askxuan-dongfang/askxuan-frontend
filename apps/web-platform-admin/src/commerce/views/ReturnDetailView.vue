@@ -162,7 +162,7 @@ onMounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="refundDialogVisible = false">{{ $t("取消") }}</el-button>
+        <el-button @click="refundDialogVisible = false" data-quiet-action="cancel">{{ $t("取消") }}</el-button>
         <el-button type="primary" :loading="refundSaving" @click="handleRefund">{{ $t("确认退款") }}</el-button>
       </template>
     </el-dialog>

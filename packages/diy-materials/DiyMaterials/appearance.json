@@ -1,15 +1,15 @@
 {
-  "version": 2,
+  "version": 3,
   "environment": "studio.hdr",
   "profiles": {
     "wood": {
-      "roughness": 0.38,
-      "clearcoat": 0.12,
+      "roughness": 0.5,
+      "clearcoat": 0.035,
       "metalness": 0,
       "transmission": 0,
       "ior": 1.5,
-      "normalStrength": 0.09,
-      "contrast": 0.7,
+      "normalStrength": 0.14,
+      "contrast": 0.9,
       "tint": true,
       "source": "rosewood-Diffuse.jpg",
       "crop": [
@@ -18,16 +18,16 @@
         0.16,
         0.6
       ],
-      "brightness": 0.74
+      "brightness": 0.82
     },
     "wood-natural": {
-      "roughness": 0.62,
-      "clearcoat": 0.025,
+      "roughness": 0.72,
+      "clearcoat": 0,
       "metalness": 0,
       "transmission": 0,
       "ior": 1.5,
-      "normalStrength": 0.17,
-      "contrast": 0.68,
+      "normalStrength": 0.19,
+      "contrast": 0.85,
       "tint": true,
       "source": "rosewood-Diffuse.jpg",
       "crop": [
@@ -93,8 +93,8 @@
       "brightness": 1
     },
     "jade": {
-      "roughness": 0.28,
-      "clearcoat": 0.06,
+      "roughness": 0.32,
+      "clearcoat": 0.04,
       "metalness": 0,
       "transmission": 0.2,
       "ior": 1.61,
@@ -273,9 +273,9 @@
       "brightness": 1
     },
     "metal": {
-      "roughness": 0.3,
-      "clearcoat": 0.03,
-      "metalness": 0.92,
+      "roughness": 0.32,
+      "clearcoat": 0.015,
+      "metalness": 0.95,
       "transmission": 0,
       "ior": 1.5,
       "normalStrength": 0,

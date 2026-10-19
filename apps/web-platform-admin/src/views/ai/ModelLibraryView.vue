@@ -74,7 +74,7 @@ onMounted(() => run(load))
         <template v-if="form.kind === 'language'"><el-form-item :label='$t("图片输入")'><el-switch v-model="form.supportsVision" active-text="支持图片理解" /></el-form-item><div class="capacity"><el-form-item :label='$t("上下文容量（0 为自动）")'><el-input-number v-model="form.contextWindow" :min="0" :max="1048576" :step="32768" /></el-form-item><el-form-item :label='$t("输出上限（0 为自动）")'><el-input-number v-model="form.maxOutputTokens" :min="0" :max="32768" :step="1024" /></el-form-item></div></template>
         <el-form-item v-if="form.kind === 'Embedding'" :label='$t("向量维度")'><el-input-number v-model="form.dimension" :min="1" :max="8192" /></el-form-item>
       </el-form><el-alert v-if="error" :title="$t(error)" type="error" :closable="false" />
-      <template #footer><el-button @click="dialog = false">{{ $t("取消") }}</el-button><el-button v-if="form.kind === 'language'" :disabled="busy || !form.model || !form.baseUrl" @click="probe">{{ $t("测试连接") }}</el-button><el-button type="primary" :loading="busy" :disabled="!form.model || !form.baseUrl" @click="saveModel">{{ $t("添加模型") }}</el-button></template>
+      <template #footer><el-button @click="dialog = false" data-quiet-action="cancel">{{ $t("取消") }}</el-button><el-button v-if="form.kind === 'language'" :disabled="busy || !form.model || !form.baseUrl" @click="probe">{{ $t("测试连接") }}</el-button><el-button type="primary" :loading="busy" :disabled="!form.model || !form.baseUrl" @click="saveModel">{{ $t("添加模型") }}</el-button></template>
     </el-dialog>
   </section>
 </template>

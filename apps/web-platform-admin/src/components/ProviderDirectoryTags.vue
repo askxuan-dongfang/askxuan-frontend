@@ -6,7 +6,7 @@
    <el-option v-for="tag in tags" :key="tag.code" :value="tag.code" :label="$t((tag.name + ((tag.status==='disabled' ? $t('（已停用，请移除）') : ''))))" :disabled="tag.status==='disabled'" />
   </el-select>
   <p v-if="error" role="alert">{{$t(error)}}</p><el-button v-if="!ready&&!loading" link @click="open">{{ $t("重新加载") }}</el-button>
-  <template #footer><el-button @click="visible=false">{{ $t("取消") }}</el-button><el-button type="primary" :loading="saving" :disabled="!ready||loading" @click="save">{{ $t("保存") }}</el-button></template>
+  <template #footer><el-button @click="visible=false" data-quiet-action="cancel">{{ $t("取消") }}</el-button><el-button type="primary" :loading="saving" :disabled="!ready||loading" @click="save">{{ $t("保存") }}</el-button></template>
  </el-dialog>
 </template>
 <script setup lang="ts">

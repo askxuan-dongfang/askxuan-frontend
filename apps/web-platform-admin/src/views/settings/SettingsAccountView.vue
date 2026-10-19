@@ -109,7 +109,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialog.visible = false">{{ $t("取消") }}</el-button>
+        <el-button @click="dialog.visible = false" data-quiet-action="cancel">{{ $t("取消") }}</el-button>
         <el-button type="primary" :loading="dialog.loading" @click="submit">{{ $t("保存") }}</el-button>
       </template>
     </el-dialog>

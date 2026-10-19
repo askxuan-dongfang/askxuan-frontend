@@ -1,0 +1,240 @@
+{
+  "version": 1,
+  "units": "nominal-diameter",
+  "axes": {
+    "cord": "x",
+    "up": "y",
+    "outward": "z"
+  },
+  "byMaterialId": {
+    "11": "pendant_lotus",
+    "41": "pendant_gourd",
+    "42": "pendant_peace",
+    "43": "pendant_woodfish"
+  },
+  "nameVariants": [
+    {
+      "matches": [
+        "莲花",
+        "蓮花"
+      ],
+      "kind": "pendant_lotus"
+    },
+    {
+      "matches": [
+        "葫芦",
+        "葫蘆"
+      ],
+      "kind": "pendant_gourd"
+    },
+    {
+      "matches": [
+        "平安扣"
+      ],
+      "kind": "pendant_peace"
+    },
+    {
+      "matches": [
+        "木鱼",
+        "木魚"
+      ],
+      "kind": "pendant_woodfish"
+    }
+  ],
+  "models": {
+    "three_way": {
+      "pitchRatio": 1,
+      "radialRatio": 0.86,
+      "minY": -0.39,
+      "maxY": 0.39,
+      "minZ": -0.43,
+      "maxZ": 0.65,
+      "spacingRatio": 1,
+      "file": "geometry-three_way.json",
+      "thumbnail": "geometry-three_way.png",
+      "anchors": {
+        "left": [
+          -0.5,
+          0,
+          0
+        ],
+        "right": [
+          0.5,
+          0,
+          0
+        ],
+        "outward": [
+          0,
+          0,
+          0.65
+        ]
+      }
+    },
+    "buddha_head": {
+      "pitchRatio": 1,
+      "radialRatio": 0.94,
+      "minY": -0.43,
+      "maxY": 0.43,
+      "minZ": -0.47,
+      "maxZ": 0.87,
+      "spacingRatio": 1,
+      "file": "geometry-buddha_head.json",
+      "thumbnail": "geometry-buddha_head.png",
+      "anchors": {
+        "left": [
+          -0.5,
+          0,
+          0
+        ],
+        "right": [
+          0.5,
+          0,
+          0
+        ],
+        "outward": [
+          0,
+          0,
+          0.87
+        ]
+      }
+    },
+    "pendant_lotus": {
+      "pitchRatio": 0.1,
+      "radialRatio": 0.12,
+      "minY": -0.145,
+      "maxY": 0.145,
+      "minZ": -0.145,
+      "maxZ": 0.98,
+      "spacingRatio": 0.9,
+      "file": "geometry-pendant_lotus.json",
+      "thumbnail": "geometry-pendant_lotus.png",
+      "anchors": {
+        "left": [
+          -0.05,
+          0,
+          0
+        ],
+        "right": [
+          0.05,
+          0,
+          0
+        ]
+      }
+    },
+    "pendant_gourd": {
+      "pitchRatio": 0.1,
+      "radialRatio": 0.12,
+      "minY": -0.205,
+      "maxY": 0.175,
+      "minZ": -0.145,
+      "maxZ": 1,
+      "spacingRatio": 0.9,
+      "file": "geometry-pendant_gourd.json",
+      "thumbnail": "geometry-pendant_gourd.png",
+      "anchors": {
+        "left": [
+          -0.05,
+          0,
+          0
+        ],
+        "right": [
+          0.05,
+          0,
+          0
+        ]
+      }
+    },
+    "pendant_peace": {
+      "pitchRatio": 0.1,
+      "radialRatio": 0.12,
+      "minY": -0.155,
+      "maxY": 0.145,
+      "minZ": -0.145,
+      "maxZ": 1.035,
+      "spacingRatio": 0.9,
+      "file": "geometry-pendant_peace.json",
+      "thumbnail": "geometry-pendant_peace.png",
+      "anchors": {
+        "left": [
+          -0.05,
+          0,
+          0
+        ],
+        "right": [
+          0.05,
+          0,
+          0
+        ]
+      }
+    },
+    "pendant_woodfish": {
+      "pitchRatio": 0.1,
+      "radialRatio": 0.12,
+      "minY": -0.2,
+      "maxY": 0.224,
+      "minZ": -0.145,
+      "maxZ": 0.96,
+      "spacingRatio": 0.9,
+      "file": "geometry-pendant_woodfish.json",
+      "thumbnail": "geometry-pendant_woodfish.png",
+      "anchors": {
+        "left": [
+          -0.05,
+          0,
+          0
+        ],
+        "right": [
+          0.05,
+          0,
+          0
+        ]
+      }
+    },
+    "pendant_generic": {
+      "pitchRatio": 0.1,
+      "radialRatio": 0.12,
+      "minY": -0.145,
+      "maxY": 0.145,
+      "minZ": -0.145,
+      "maxZ": 1,
+      "spacingRatio": 0.9,
+      "file": "geometry-pendant_generic.json",
+      "thumbnail": "geometry-pendant_generic.png",
+      "anchors": {
+        "left": [
+          -0.05,
+          0,
+          0
+        ],
+        "right": [
+          0.05,
+          0,
+          0
+        ]
+      }
+    },
+    "tassel": {
+      "pitchRatio": 0.1,
+      "radialRatio": 0.12,
+      "minY": -0.145,
+      "maxY": 0.145,
+      "minZ": -0.145,
+      "maxZ": 1.05,
+      "spacingRatio": 0.56,
+      "file": "geometry-tassel.json",
+      "thumbnail": "geometry-tassel.png",
+      "anchors": {
+        "left": [
+          -0.05,
+          0,
+          0
+        ],
+        "right": [
+          0.05,
+          0,
+          0
+        ]
+      }
+    }
+  }
+}

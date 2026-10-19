@@ -275,7 +275,7 @@ onMounted(() => {
 
         <el-form-item>
           <el-button type="primary" :loading="saving" @click="handleSubmit">{{ $t("保存") }}</el-button>
-          <el-button @click="handleCancel">{{ $t("取消") }}</el-button>
+          <el-button @click="handleCancel" data-quiet-action="cancel">{{ $t("取消") }}</el-button>
         </el-form-item>
       </el-form>
     </div>

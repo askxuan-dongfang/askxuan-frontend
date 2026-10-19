@@ -274,7 +274,7 @@ onMounted(() => { void loadBeliefs(); void loadDetail() })
 
         <el-form-item>
           <el-button type="primary" :loading="saving" @click="save">{{ $t("保存") }}</el-button>
-          <el-button @click="cancelEdit">{{ $t("取消") }}</el-button>
+          <el-button @click="cancelEdit" data-quiet-action="cancel">{{ $t("取消") }}</el-button>
         </el-form-item>
       </el-form>
     </div>

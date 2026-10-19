@@ -163,6 +163,60 @@ final class DiyEditorTests: XCTestCase {
 
 import Testing
 
+@MainActor
+struct DiyCanvasEditorTests {
+    private func material(id: Int64, stock: Int = 100, category: String = "main_bead") -> Material {
+        Material(id: id, name: "测试材料", spec: "10mm", unitPrice: Double(id) * 10, unit: "颗", category: category,
+                 fiveElements: "木", image: "", stock: stock, status: "on_shelf")
+    }
+
+    @Test func fitToleranceMatchesBothEndpointsAndEmptyState() {
+        let fixtures: [(Double, Bool, DiyFitFeedback.State)] = [(0, false, .empty), (159.9, true, .short), (160, true, .good), (176, true, .good), (176.1, true, .long)]
+        for (inner, hasBeads, expected) in fixtures {
+            #expect(DiyFitFeedback(innerMm: inner, wristMm: 160, allowanceMm: 8, hasBeads: hasBeads).state == expected)
+        }
+        #expect(DiyFitFeedback(innerMm: 159.9, wristMm: 160, allowanceMm: 8, hasBeads: true).detail == "还差约 9 mm")
+    }
+
+    @Test func replacementPreservesFullBraceletIdentityAndSupportsUndoAndDraftRestore() throws {
+        let suite = "DiyCanvasEditorTests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        let model = DiyViewModel(draftStore: store)
+        let wood = material(id: 1), jade = material(id: 2, stock: 1)
+        for _ in 0..<60 { model.addBead(wood) }
+        let identities = model.beadSlots.map(\.id)
+        #expect(model.replaceBead(id: identities[26], with: jade))
+        #expect(model.beadSlots.map(\.id) == identities)
+        #expect(model.beadSlots[26].materialId == jade.id)
+        #expect(model.totalPrice == 610)
+        #expect(!model.replaceBead(id: identities[27], with: jade))
+        #expect(model.replaceBead(id: identities[26], with: jade))
+        #expect(!model.replaceBead(id: identities[26], with: material(id: 3, category: "cord")))
+        model.undo(); model.undo()
+        #expect(model.beadSlots[26].materialId == wood.id)
+        model.redo()
+        let restored = DiyViewModel(draftStore: store)
+        #expect(restored.beadSlots.map(\.id) == identities)
+        #expect(restored.beadSlots[26].materialId == jade.id)
+    }
+
+    @Test func usedCategoryFollowsUndoAndIncludesCord() throws {
+        let suite = "DiyCanvasUsedTests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        let model = DiyViewModel(draftStore: store)
+        let wood = material(id: 1), jade = material(id: 2), cord = material(id: 3, category: "cord")
+        model.materials = [wood, jade, cord]
+        model.selectCategory("used")
+        #expect(model.filteredMaterials.isEmpty)
+        model.addBead(wood); model.setCord(cord)
+        #expect(model.filteredMaterials.map(\.id) == [1, 3])
+        model.undo()
+        #expect(model.filteredMaterials.map(\.id) == [1])
+    }
+}
+
 @Suite("H5 discovery and native routing parity")
 struct DiscoveryParityTests {
     private func promotion(type: String = "ad_landing", value: String = "/c/masters", image: String = "/media/banner.jpg", status: String = "enabled", start: String = "2000-01-01", end: String = "2099-12-31") throws -> HomePromotion {

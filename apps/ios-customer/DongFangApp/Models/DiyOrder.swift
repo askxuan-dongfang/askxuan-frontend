@@ -449,8 +449,10 @@ struct DiyPhysicalLayout {
     let angles: [Double]
     let innerMm: Double
     init(slots: [DiyBeadSlot], wrist: Double = 160, allowance: Double = 8) {
-        let widths = slots.map { $0.diameterMm * ($0.shape == "disc" ? 0.45 : $0.shape == "barrel" ? 1.15 : 1) }
-        let mean = slots.isEmpty ? 10 : slots.reduce(0) { $0 + $1.diameterMm } / Double(slots.count)
+        let physical = slots.map(DiyGeometry.dimensions)
+        let widths = physical.map { max($0.pitchMm, $0.spacingMm) }
+        let totalPitch = physical.reduce(0) { $0 + $1.pitchMm }
+        let mean = totalPitch > 0 ? physical.reduce(0) { $0 + $1.radialMm * $1.pitchMm } / totalPitch : 10
         var r = (wrist + allowance) / (Double.pi * 2) + mean / 2
         let chords = widths.indices.map { (widths[$0] + widths[($0 + 1) % widths.count]) / 2 }
         if slots.count > 2 {
@@ -468,6 +470,6 @@ struct DiyPhysicalLayout {
         var angle = -Double.pi / 2
         var result: [Double] = []
         for step in steps { result.append(angle); angle += step + gap }
-        radius = r; angles = result; innerMm = max(0, widths.reduce(0, +) - Double.pi * mean)
+        radius = r; angles = result; innerMm = max(0, totalPitch - Double.pi * mean)
     }
 }

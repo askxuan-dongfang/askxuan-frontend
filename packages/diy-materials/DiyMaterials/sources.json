@@ -156,5 +156,84 @@
         "sha256": "4e9c5e10162dba80ec49dfaf7bdbe5e23162d13cf546c189049c8916ac44799f"
       }
     ]
+  },
+  {
+    "id": "askxuan-accessory-models-v1",
+    "title": "AskXuan procedural accessory geometry and mesh-derived thumbnails",
+    "author": "AskXuan",
+    "license": "Project-owned original assets",
+    "licenseUrl": "",
+    "sourceUrl": "../generate-geometry.mjs",
+    "note": "原创程序模型，毫米尺寸与连接参数共用；佛头为母珠及塔形连接件。非在售 SKU 扫描或实物测量，不表示雕刻细节已经复刻。缩略图由相同网格生成。",
+    "files": [
+      {
+        "path": "geometry-buddha_head.json",
+        "sha256": "9b2c91120448831a5df3dbc361846f0988f67fc49db3ab251e10a1ec3219b2bf"
+      },
+      {
+        "path": "geometry-buddha_head.png",
+        "sha256": "8fc7aaeb960f76ac67b18bf8cbd4b7cf50eb6c1b0b5f558f71fbbe534a6bb201"
+      },
+      {
+        "path": "geometry-catalog.json",
+        "sha256": "290d5a5cb16674fd1e3382a3bfbe4b8707c6ddff5a1976653f83b6581b5eb8af"
+      },
+      {
+        "path": "geometry-pendant_generic.json",
+        "sha256": "3cbcd1f9fb3579529d33de7a9a1d781ab5ca1eb8ed95d6116e73f718f26d3a9f"
+      },
+      {
+        "path": "geometry-pendant_generic.png",
+        "sha256": "5ba846b28d5d0a4c4aa4d71a7ba36f188c800a295bb9e7055b4c3f8bdc24e302"
+      },
+      {
+        "path": "geometry-pendant_gourd.json",
+        "sha256": "04c5d8e7c89cd5641bec35be78de63603d34f675704c1d2046dfcfb6fca50b74"
+      },
+      {
+        "path": "geometry-pendant_gourd.png",
+        "sha256": "6d9ae724d802a7d2570c53f0120684ae3555d189e7b9db9cb36969d5c48f10d7"
+      },
+      {
+        "path": "geometry-pendant_lotus.json",
+        "sha256": "77f8577dd6149229ed7488d6cc043dc9efe6dce29c82bb42ff8f0dba11a26326"
+      },
+      {
+        "path": "geometry-pendant_lotus.png",
+        "sha256": "bbe26ff5f3b05c32590e2909eb852c3694ca89c6d86a1bd32e780f04f73c7519"
+      },
+      {
+        "path": "geometry-pendant_peace.json",
+        "sha256": "92a842ef14d77ec8fe9cda88ed53a0e047f11c4cfe194c39c0c525548fef6ef9"
+      },
+      {
+        "path": "geometry-pendant_peace.png",
+        "sha256": "ea4082c4c7f9a64ee125db7dd9a518349890844dba496f3e81b9e6d2d3661d74"
+      },
+      {
+        "path": "geometry-pendant_woodfish.json",
+        "sha256": "f674ba7e7e5c7268d1bd02205ae0f1c4dec5c3b22f35069679aeaf77b5c20322"
+      },
+      {
+        "path": "geometry-pendant_woodfish.png",
+        "sha256": "1d818d65bb667aed709486e73e83b645aac6411800de1a7bfc4da4d73ee5470f"
+      },
+      {
+        "path": "geometry-tassel.json",
+        "sha256": "21ad5edc3bacbebff0b372703cc35d31309280e4ef4f992f20718995de457eed"
+      },
+      {
+        "path": "geometry-tassel.png",
+        "sha256": "00f4491aa7452458d2812c000125b9339de422c6c3173c6560e28932a449c3ee"
+      },
+      {
+        "path": "geometry-three_way.json",
+        "sha256": "18766d30e272e35f5b8d3b783c6b1f86c7fb562408fcc59eec2308266eee26fd"
+      },
+      {
+        "path": "geometry-three_way.png",
+        "sha256": "709e10d9684f5f61f047beeee91af2cb401fd564bec040062680d33c464fef22"
+      }
+    ]
   }
 ]

@@ -7,7 +7,7 @@
    <el-option v-for="r in regions" :key="r.code" :value="r.code" :label="$t((r.name + ((r.status==='disabled' ? $t('（已停用）') : ''))))" :disabled="r.status==='disabled'" />
   </el-select>
   <p v-if="error" role="alert">{{ $t(error) }} <el-button link @click="open">{{ $t("重试") }}</el-button></p>
-  <template #footer><el-button @click="visible=false">{{ $t("取消") }}</el-button><el-button type="primary" :loading="saving" :disabled="loading||!!error" @click="save">{{ $t("保存") }}</el-button></template>
+  <template #footer><el-button @click="visible=false" data-quiet-action="cancel">{{ $t("取消") }}</el-button><el-button type="primary" :loading="saving" :disabled="loading||!!error" @click="save">{{ $t("保存") }}</el-button></template>
  </el-dialog>
 </template>
 <script setup lang="ts">

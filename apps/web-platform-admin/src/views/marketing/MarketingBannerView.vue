@@ -41,7 +41,7 @@
           <el-form-item :label='$t("结束时间（北京时间，可不填）")'><el-date-picker v-model="form.endTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" :placeholder='$t("长期展示")' style="width:100%"/></el-form-item>
         </div>
       </el-form>
-      <template #footer><el-button :disabled="saving" @click="dialog.visible=false">{{ $t("取消") }}</el-button><el-button type="primary" :loading="saving" @click="saveDraft">{{ $t("保存草稿") }}</el-button></template>
+      <template #footer><el-button :disabled="saving" @click="dialog.visible=false" data-quiet-action="cancel">{{ $t("取消") }}</el-button><el-button type="primary" :loading="saving" @click="saveDraft">{{ $t("保存草稿") }}</el-button></template>
     </el-dialog>
     <el-dialog v-model="previewVisible" :title='$t("首页展示预览")' width="min(640px, calc(100vw - 32px))" append-to-body>
       <template v-if="preview">

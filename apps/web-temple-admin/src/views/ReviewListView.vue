@@ -151,7 +151,7 @@ onMounted(load)
         <el-input v-model="replyContent" type="textarea" :rows="4" :placeholder='$t("请输入回复内容")' maxlength="500" show-word-limit />
       </div>
       <template #footer>
-        <el-button @click="replyVisible = false">{{ $t("取消") }}</el-button>
+        <el-button @click="replyVisible = false" data-quiet-action="cancel">{{ $t("取消") }}</el-button>
         <el-button type="primary" :loading="replying" @click="submitReply">{{ $t("发送回复") }}</el-button>
       </template>
     </el-dialog>

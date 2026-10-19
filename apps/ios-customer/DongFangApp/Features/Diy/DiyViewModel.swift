@@ -5,6 +5,38 @@
 
 import SwiftUI
 
+struct DiyFitFeedback {
+    enum State: String { case empty, short, good, long }
+    static let toleranceMm: Double = 8
+    let innerMm: Double
+    let differenceMm: Double
+    let state: State
+
+    init(innerMm: Double, wristMm: Double, allowanceMm: Double, hasBeads: Bool) {
+        self.innerMm = innerMm
+        self.differenceMm = innerMm - wristMm - allowanceMm
+        self.state = !hasBeads ? .empty : differenceMm < -Self.toleranceMm ? .short : differenceMm > Self.toleranceMm ? .long : .good
+    }
+
+    var label: String {
+        switch state {
+        case .empty: "未开始"
+        case .short: "偏短"
+        case .good: "接近合适"
+        case .long: "偏长"
+        }
+    }
+
+    var detail: String {
+        switch state {
+        case .empty: "先选喜欢的珠子"
+        case .short: "还差约 \(Int(ceil(-differenceMm))) mm"
+        case .good: "尺寸接近合适"
+        case .long: "偏松约 \(Int(ceil(differenceMm))) mm"
+        }
+    }
+}
+
 enum DiyFitState: Equatable {
     case loose(remainingBeads: Int)
     case good
@@ -75,6 +107,7 @@ final class DiyViewModel: ObservableObject {
     @Published var successMessage: String?
 
     let categories: [(code: String, name: String, icon: String)] = [
+        ("used",        "正在使用", "checkmark.circle"),
         ("all",         "全部",   "circle.grid.3x3"),
         ("main_bead",   "主珠",   "circle.grid.2x2"),
         ("spacer",      "隔珠",   "circle.grid.cross"),
@@ -103,8 +136,8 @@ final class DiyViewModel: ObservableObject {
     // MARK: - Derived state
     var filteredMaterials: [Material] {
         materials.filter { material in
-            (selectedCategory == "all" || material.category == selectedCategory)
-                && material.status == "on_shelf"
+            if selectedCategory == "used" { return count(for: material.id) > 0 }
+            return (selectedCategory == "all" || material.category == selectedCategory) && material.status == "on_shelf"
         }
     }
 
@@ -126,14 +159,19 @@ final class DiyViewModel: ObservableObject {
     var usedLengthMm: Double { beadSlots.reduce(0) { $0 + $1.diameterMm } }
 
     var fitState: DiyFitState {
-        let difference = DiyPhysicalLayout(slots: beadSlots, wrist: Double(wristSizeMm), allowance: fitAllowanceMm).innerMm - Double(wristSizeMm) - fitAllowanceMm
-        if difference < -12 {
+        let difference = fitFeedback.differenceMm
+        if difference < -DiyFitFeedback.toleranceMm {
             return .loose(remainingBeads: max(1, Int(ceil(abs(difference) / 10))))
         }
-        if difference > 8 {
+        if difference > DiyFitFeedback.toleranceMm {
             return .tight(excessMm: difference)
         }
         return .good
+    }
+
+    var fitFeedback: DiyFitFeedback {
+        DiyFitFeedback(innerMm: DiyPhysicalLayout(slots: beadSlots, wrist: Double(wristSizeMm), allowance: fitAllowanceMm).innerMm,
+                       wristMm: Double(wristSizeMm), allowanceMm: fitAllowanceMm, hasBeads: !beadSlots.isEmpty)
     }
 
     func count(for materialId: Int64) -> Int {
@@ -323,6 +361,19 @@ final class DiyViewModel: ObservableObject {
         recordMutation()
         selectedCord = material
         finishMutation()
+    }
+
+    @discardableResult
+    func replaceBead(id: String, with material: Material) -> Bool {
+        guard let index = beadSlots.firstIndex(where: { $0.id == id }), material.category != "cord" else { return false }
+        guard material.status == "on_shelf" else { errorMessage = "该材料已不可用，请重新选择"; return false }
+        let otherCount = count(for: material.id) - (beadSlots[index].materialId == material.id ? 1 : 0)
+        guard otherCount < material.stock else { errorMessage = "\(material.name)库存不足"; return false }
+        recordMutation()
+        beadSlots[index] = DiyBeadSlot(material: material, position: index, slotId: id)
+        selectedBeadId = id
+        finishMutation()
+        return true
     }
 
     func duplicateSelectedBead() {

@@ -355,7 +355,7 @@ watch(() => route.params.id, loadDetail, { immediate: true });
           <span>{{
             $t((isEdit ? $t("保存后更新商品展示") : $t("新建商品先保存为草稿")))
           }}</span
-          ><el-button @click="handleCancel">{{ $t("取消") }}</el-button
+          ><el-button @click="handleCancel" data-quiet-action="cancel">{{ $t("取消") }}</el-button
           ><el-button
             type="primary"
             :loading="saving"
