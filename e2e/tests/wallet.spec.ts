@@ -2,7 +2,7 @@ import {test,expect,type Page} from '@playwright/test';
 import {emptyCreatorWallet} from '../fixtures/creator-wallet';
 async function setup(page:Page,role='customer'){
  await page.addInitScript(role=>{localStorage.setItem('h5_token','wallet-fixture');localStorage.setItem('h5-auth',JSON.stringify({state:{token:'wallet-fixture',role,userId:91001},version:0}));},role);
- const state={fail:false,cashFail:false,cashMalformed:false,calls:0,payCalls:0,paid:false,availableCents:10000,creatorData:emptyCreatorWallet() as unknown};
+ const state={fail:false,cashFail:false,cashMalformed:false,quoteMalformed:false,calls:0,payCalls:0,paid:false,availableCents:10000,creatorData:emptyCreatorWallet() as unknown};
  await page.route('**/api/v1/**',async route=>{
   const url=new URL(route.request().url());let data:any={list:[],total:0};
   if(url.pathname.endsWith('/diy/creator-wallet'))data=state.creatorData;
@@ -12,6 +12,9 @@ async function setup(page:Page,role='customer'){
   }else if(url.pathname.endsWith('/payments/wallet')){
    state.calls++;if(state.fail)return route.fulfill({status:503,json:{code:50001,message:'暂时无法读取账单'}});
    const mock=url.searchParams.get('mode')==='mock';data={summary:{paidCents:mock?10001:0,refundedCents:mock?3003:0,refundingCents:mock?303:0},list:mock?[{id:1,paymentNo:'PAY1',orderType:'booking',orderNo:'B1',amountCents:10001,channel:'mock',status:'success',createdAt:'2026-09-26 10:00:00',refunds:[{id:1,refundNo:'RF1',amountCents:3003,status:'success',reason:'部分退款',createdAt:'2026-09-26 10:02:00'}]}]:[],total:mock?1:0,page:1,pageSize:20,mode:mock?'mock':'channel'};
+  }else if(url.pathname.endsWith('/payments/checkout/quote')){
+   expect(route.request().method()).toBe('POST');expect(route.request().postDataJSON()).toEqual({orderType:'booking',orderNo:'B1'});
+   data={amountCents:1990,availableCents:state.availableCents,balanceEnabled:true,mockEnabled:false,experience:false,...(state.quoteMalformed?{pricing:{}}:{})};
   }else if(url.pathname.endsWith('/payments/checkout')){
    if(route.request().method()==='POST'){
     expect(route.request().postDataJSON()).toEqual({orderType:'booking',orderNo:'B1',expectedCents:1990,channel:'balance'});
@@ -28,6 +31,15 @@ async function setup(page:Page,role='customer'){
 }
 const cashTotal=(page:Page)=>page.locator('[aria-label="钱包余额"] .wallet-total');
 const billTotal=(page:Page)=>page.locator('[aria-label="账单汇总"] .wallet-total');
+test('cashier rejects a malformed pricing snapshot without opening or charging',async({page})=>{
+ const state=await setup(page);state.quoteMalformed=true;await page.goto('/c/bookings/B1');
+ await page.getByRole('button',{name:'继续支付',exact:true}).click();
+ await expect(page.getByText('支付报价暂时无法读取，请重试',{exact:true})).toBeVisible();
+ await expect(page.getByRole('dialog',{name:'确认支付'})).toHaveCount(0);expect(state.payCalls).toBe(0);
+ state.quoteMalformed=false;await page.getByRole('button',{name:'继续支付',exact:true}).click();
+ await expect(page.getByRole('button',{name:'支付 ¥19.90',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'关闭收银台'}).click();expect(state.payCalls).toBe(0);
+});
 for(const width of [320,390])test(`wallet money disclosure and refund details ${width}`,async({page})=>{
  await page.setViewportSize({width,height:844});await setup(page);await page.goto('/c/wallet');
  await expect(cashTotal(page)).toHaveText('100.00');await expect(page.getByText('暂无这类账单')).toBeVisible();

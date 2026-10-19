@@ -84,7 +84,7 @@ test('repeated back clicks in a single pending navigation do not skip the galler
  await back(page).evaluate((button:HTMLButtonElement)=>{button.click();button.click();button.click();});
  await expect(page).toHaveURL(/\/c\/diy\?tab=mine$/);expect(await index(page)).toBe(0);
 });
-test('global BackLink uses a history pop and direct fallback does not add entries',async({page})=>{
+test('profile survives an unavailable growth snapshot and BackLink preserves history',async({page})=>{
  await setup(page);await page.goto('/c/profile');await page.locator('a[href="/c/wallet"]').first().click();await expect(page).toHaveURL(/\/c\/wallet$/);
  await page.getByRole('link',{name:'返回我的',exact:true}).click();await expect(page).toHaveURL(/\/c\/profile$/);expect(await index(page)).toBe(0);
  await page.goto('/c/wallet');await page.getByRole('link',{name:'返回我的',exact:true}).click();await expect(page).toHaveURL(/\/c\/profile$/);expect(await index(page)).toBe(0);
