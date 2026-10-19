@@ -66,7 +66,8 @@ test('detail checkout uses one reversible history step and never submits an orde
  await back(page).click();await expect(page.getByRole('heading',{name:'作品详情',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'按此设计定制',exact:true}).click();await expect(page.getByRole('heading',{name:'确认定制',exact:true})).toBeVisible();
  await page.reload();await expect(page.getByRole('heading',{name:'作品详情',exact:true})).toBeVisible();
- expect(writes.filter(p=>p.endsWith('/order')||p.endsWith('/orders')||p.includes('/payments'))).toEqual([]);
+ // Catalog preview is a read-only POST; all order creation and financial mutations stay forbidden.
+ expect(writes.filter(p=>p!=='/api/v1/payments/growth/catalog/preview'&&(p.endsWith('/order')||p.endsWith('/orders')||p.includes('/payments')))).toEqual([]);
 });
 test('editor checkout browser Back keeps the saved design and editable beads',async({page})=>{
  await setup(page);await gallery(page);await page.getByRole('link',{name:'继续编辑',exact:true}).click();
