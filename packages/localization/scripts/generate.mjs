@@ -16,7 +16,7 @@ function walk(dir){for(const f of fs.readdirSync(dir,{withFileTypes:true})){if([
  parse(script,p);
  }}}
 function parse(s,p='file.ts'){const source=ts.createSourceFile(p,s,ts.ScriptTarget.Latest,true,p.endsWith('tsx')?ts.ScriptKind.TSX:ts.ScriptKind.TS);function visit(n){if(ts.isStringLiteral(n)||ts.isNoSubstitutionTemplateLiteral(n)||n.kind===ts.SyntaxKind.TemplateHead||n.kind===ts.SyntaxKind.TemplateMiddle||n.kind===ts.SyntaxKind.TemplateTail)add(n.text);if(ts.isJsxText(n))add(n.text.replace(/\s+/g,' '));ts.forEachChild(n,visit)}visit(source)}
-for(const dir of ['apps/web-h5/src','apps/web-platform-admin/src','apps/web-temple-admin/src','packages/admin-ui','packages/domain-status'])walk(root+'/'+dir);
+for(const dir of ['apps/web-h5/src','apps/web-platform-admin/src','apps/web-temple-admin/src','packages/admin-ui','packages/domain-status','packages/growth'])walk(root+'/'+dir);
 for(const s of ['语言','跟随系统','跟随系统时自动选择简体或繁体中文，其他系统语言使用简体中文。'])add(s);
 const dictionary=Object.fromEntries([...phrases].sort().map(s=>[s,convert(s)]).filter(([a,b])=>a!==b));
 // Product terms are reviewed explicitly; preserve established meaning across scripts.

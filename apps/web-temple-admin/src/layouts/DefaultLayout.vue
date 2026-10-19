@@ -123,6 +123,7 @@ async function handleLogout() {
           <el-icon><ChatDotRound /></el-icon>
           <template #title>{{ $t("评价互动") }}</template>
         </el-menu-item>
+        <el-menu-item index="/growth"><el-icon><OfficeBuilding /></el-icon><template #title>{{ $t("成长优惠参与") }}</template></el-menu-item>
         <el-menu-item index="/wallet"><el-icon><OfficeBuilding /></el-icon><template #title>{{ $t("寺院钱包") }}</template></el-menu-item>
         <el-menu-item index="/report">
           <el-icon><TrendCharts /></el-icon>

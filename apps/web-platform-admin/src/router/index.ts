@@ -26,6 +26,7 @@ const routes: RouteRecordRaw[] = [
     // 统一入口按每个子路由授权，商城角色不继承平台权限。
     meta: { roles: ['platform_super', 'platform_service', 'shop_admin'] },
     children: [
+      {path:'marketing/growth',name:'Growth',component:()=>import('@/views/GrowthView.vue'),meta:{title:'成长体系',parent:'运营管理',roles:['platform_super']}},
       {path:'onboarding/review',name:'onboarding-review',component:()=>import('@/views/OnboardingReviewView.vue'),meta:{title:'认证与入驻审核',roles:['platform_super']}},
       ...commerceRoutes,
  {path:'commerce/creator-rewards',name:'CreatorRewards',component:()=>import('@/commerce/views/CreatorRewardsView.vue'),meta:{title:'创作奖励与提现',parent:'商城与权益',roles:['platform_super'],hidden:false}},

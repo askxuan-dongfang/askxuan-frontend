@@ -150,16 +150,13 @@ struct ProfileView: View {
                         Spacer(); Image(systemName: "chevron.right").foregroundStyle(Color.textTertiary)
                     }.padding(18).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
                 }.padding(.horizontal, AppSpacing.lg).padding(.top, 16)
+                NavigationLink { GrowthView().id(authStore.sessionID) } label: {
+                    Label(L10n.text("我的成长"),systemImage:"leaf").frame(maxWidth:.infinity,alignment:.leading).padding(18).background(Color.bgSecondary,in:RoundedRectangle(cornerRadius:16))
+                }.padding(.horizontal,AppSpacing.lg).padding(.top,16)
                 JourneyEntryView().padding(.horizontal, AppSpacing.lg).padding(.top, 16)
                 orderCenterSection
                 servicesSection
                 systemSection
-                Text(L10n.text("功德值用于记录个人成长，不用于支付或兑换；成长记录开放后展示。"))
-                    .font(AppTypography.caption)
-                    .foregroundStyle(Color.textTertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, AppSpacing.lg)
-                    .padding(.top, 10)
                 Color.clear.frame(height: AppSpacing.xl)
             }
             .padding(.bottom, AppSpacing.navBottom)

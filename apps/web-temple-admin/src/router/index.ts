@@ -21,6 +21,7 @@ const routes: RouteRecordRaw[] = [
     // RBAC：仅寺庙管理员（及平台超管）可进入本管理台
     meta: { roles: ['temple_admin', 'platform_super'] },
     children: [
+      {path:'growth',name:'growth',component:()=>import('@/views/GrowthView.vue'),meta:{title:'成长优惠参与',roles:['temple_admin']}},
       {path:'wallet',name:'wallet',component:()=>import('@/views/WalletView.vue'),meta:{title:'寺院钱包'}},
       {path:'fulfillment',name:'fulfillment',component:()=>import('@/views/JourneyWorkView.vue'),meta:{title:'履约工作台'}},
       {path:'masters/accounts',name:'master-accounts',component:()=>import('@/views/ManagedAccountsView.vue'),meta:{title:'大师账号分配'}},

@@ -151,11 +151,6 @@ struct ChatView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
                 ChatNotificationPrompt()
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(L10n.text("每一次对话，皆有回应")).font(AppTypography.title(26)).foregroundStyle(Color.textPrimary)
-                    HStack { Text(L10n.text("你的即时咨询与预约沟通")); Spacer(); Text(L10n.text("\(viewModel.conversations.count) 个会话")) }
-                        .font(AppTypography.caption).foregroundStyle(Color.textSecondary)
-                }.frame(maxWidth: .infinity, alignment: .leading).padding(20)
                 // 搜索栏
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
@@ -199,6 +194,14 @@ struct ChatView: View {
                         description: Text(L10n.lookup(viewModel.errorMessage ?? L10n.text("预约并完成支付后，可在这里与对应法师沟通")))
                     )
                     .padding(.top, 48)
+                }
+                if !viewModel.isLoading && viewModel.errorMessage == nil {
+                    VStack(spacing: 6) {
+                        Text(L10n.text("每一次对话，都有回应")).font(AppTypography.caption)
+                        Text(L10n.text("\(viewModel.conversationTotal) 个会话")).font(AppTypography.micro)
+                    }
+                    .foregroundStyle(Color.textSecondary)
+                    .padding(.top, 24)
                 }
                 Color.clear.frame(height: AppSpacing.navBottom)
             }
@@ -426,10 +429,10 @@ private struct CommunityPlazaView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 6) { Text(L10n.text("日常有悟 · 相遇有缘")).font(.caption).foregroundStyle(Color.accentDefault); Text(L10n.text("在这里，看见另一种生活")).font(AppTypography.section).foregroundStyle(Color.textPrimary) }.padding(.top, 12)
+                VStack(alignment: .leading, spacing: 6) { Text(L10n.text("在这里，看见另一种生活")).font(AppTypography.section).foregroundStyle(Color.textPrimary) }.padding(.top, 12)
                 Picker(L10n.text("内容分类"), selection: $filter) { Text(L10n.text("发现")).tag("all"); Text(L10n.text("关注")).tag("following"); Text(L10n.text("图文")).tag("article"); Text(L10n.text("视频")).tag("video") }.pickerStyle(.segmented)
                 HStack { TextField(L10n.text("搜索广场内容"), text: $keyword).onSubmit { refresh() }; Button(L10n.text("搜索")) { refresh() } }.padding(12).background(Color.bgSecondary).clipShape(Capsule())
-                HStack { Text(L10n.text("慢下来，发现身边的美好")).font(.caption).foregroundStyle(Color.textTertiary); Spacer(); Button(L10n.lookup(popular ? L10n.text("热门 ↓") : L10n.text("最新 ↓"))) { popular.toggle(); refresh() }.font(.caption) }
+                HStack { Spacer(); Button(L10n.lookup(popular ? L10n.text("热门 ↓") : L10n.text("最新 ↓"))) { popular.toggle(); refresh() }.font(.caption) }
                 ForEach(liveRooms.filter { $0.status == "live" }) { room in NavigationLink { LiveViewerView(room: room) } label: { Label(L10n.lookup(room.title + L10n.text(" · 直播中")), systemImage: "dot.radiowaves.left.and.right").font(.subheadline).foregroundStyle(Color.stateError) } }
                 if viewModel.posts.contains(where: { $0.type == "video" }) { NavigationLink { CommunityVideoFeedView(posts: viewModel.posts.filter { $0.type == "video" }) } label: { Label(L10n.text("沉浸浏览视频"), systemImage: "play.rectangle.fill").font(.subheadline) } }
                 LazyVGrid(columns: columns, spacing: 12) { ForEach(viewModel.posts) { post in NavigationLink { CommunityPostDetailView(postId: post.id) } label: { CommunityPostCard(post: post) }.buttonStyle(.plain) } }

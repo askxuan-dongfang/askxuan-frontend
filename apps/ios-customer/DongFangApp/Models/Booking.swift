@@ -54,6 +54,8 @@ struct Booking: Codable, Identifiable, Hashable {
     let timeSlot: String
     let meritMoney: Double
     var meritMoneyTier: String?
+    var serviceFee: Double?
+    var totalFee: Double?
     let status: String
     let note: String
     let createdAt: String
@@ -69,7 +71,7 @@ struct Booking: Codable, Identifiable, Hashable {
     enum CodingKeys: String, CodingKey {
         case id, userId, templeId, templeName, masterId, masterName
         case serviceId, serviceName, bookingDate, timeSlot, meritMoney
-        case meritMoneyTier, status, note, createdAt
+        case meritMoneyTier, serviceFee, totalFee, status, note, createdAt
     }
 
     init(id: String, userId: String, templeId: String, templeName: String?,
@@ -107,10 +109,14 @@ struct Booking: Codable, Identifiable, Hashable {
         self.timeSlot = try c.decodeIfPresent(String.self, forKey: .timeSlot) ?? ""
         self.meritMoney = try c.decodeIfPresent(Double.self, forKey: .meritMoney) ?? 0
         self.meritMoneyTier = try c.decodeIfPresent(String.self, forKey: .meritMoneyTier)
+        self.serviceFee = try c.decodeIfPresent(Double.self, forKey: .serviceFee)
+        self.totalFee = try c.decodeIfPresent(Double.self, forKey: .totalFee)
         self.status = try c.decodeIfPresent(String.self, forKey: .status) ?? "pending"
         self.note = try c.decodeIfPresent(String.self, forKey: .note) ?? ""
         self.createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt) ?? ""
     }
+
+    var orderAmountText: String { String(format: "¥%.2f", totalFee ?? (serviceFee ?? 0) + meritMoney) }
 
     var meritMoneyText: String {
         meritMoney > 0 ? "¥\(Int(meritMoney))" : "随喜"

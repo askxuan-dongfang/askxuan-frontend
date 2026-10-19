@@ -89,6 +89,9 @@ struct ProfileView: View {
                         .frame(maxWidth: .infinity, alignment: .leading).padding(20)
                         .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: AppRadius.lg))
                 }.buttonStyle(CardPressButtonStyle()).padding(.horizontal, AppSpacing.lg).padding(.top, AppSpacing.lg)
+                NavigationLink { GrowthProviderView().id(AuthStore.shared.sessionID) } label: {
+                    Label(L10n.text("成长优惠参与"),systemImage:"leaf").frame(maxWidth:.infinity,alignment:.leading).padding(20).background(Color.bgSecondary,in:RoundedRectangle(cornerRadius:AppRadius.lg))
+                }.padding(.horizontal,AppSpacing.lg).padding(.top,AppSpacing.lg)
                 menuGroup
             }
             .padding(.bottom, 70)
