@@ -137,10 +137,10 @@ async function handleLogout() {
       <div class="ax-admin-sidebar__footer">
         <div class="ax-admin-user">
           <el-avatar :size="36" :src="auth.userInfo?.avatar">
-            {{ auth.userInfo?.nickname?.charAt(0) || '寺' }}
+            {{ auth.userInfo?.nickname?.charAt(0) || $t('寺') }}
           </el-avatar>
           <div class="ax-admin-user__copy">
-            <div class="ax-admin-user__name">{{ auth.userInfo?.nickname || '寺院管理员' }}</div>
+            <div class="ax-admin-user__name">{{ auth.userInfo?.nickname || $t('寺院管理员') }}</div>
             <div class="ax-admin-user__role">{{ auth.templeName }}</div>
           </div>
         </div>
@@ -177,7 +177,7 @@ async function handleLogout() {
           <el-dropdown trigger="click">
             <button class="ax-admin-user header-user" type="button">
               <el-avatar :size="32" :src="auth.userInfo?.avatar">
-                {{ auth.userInfo?.nickname?.charAt(0) || '寺' }}
+                {{ auth.userInfo?.nickname?.charAt(0) || $t('寺') }}
               </el-avatar>
               <span class="ax-admin-user-name">{{ auth.userInfo?.nickname || $t('管理员') }}</span>
               <el-icon><ArrowDown /></el-icon>

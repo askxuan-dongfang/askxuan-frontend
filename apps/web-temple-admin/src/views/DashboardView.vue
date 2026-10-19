@@ -165,7 +165,7 @@ function goBooking(id: string) {
           <div v-else-if="loading" class="mobile-task-empty" role="status">{{ $t("正在加载最近预约…") }}</div>
           <article v-for="booking in recentBookings" v-else-if="recentBookings.length" :key="booking.id" class="mobile-task-card" @click="goBooking(booking.id)">
             <div class="mobile-task-card__head"><strong>{{ $t((booking.serviceName || booking.id)) }}</strong><StatusTag :status="booking.status" kind="booking" /></div>
-            <div class="mobile-task-card__meta">{{ booking.masterName || '暂未分配法师' }} · {{ $t(booking.bookingDate) }} {{ $t(booking.timeSlot) }}</div>
+            <div class="mobile-task-card__meta">{{ booking.masterName || $t('暂未分配法师') }} · {{ $t(booking.bookingDate) }} {{ $t(booking.timeSlot) }}</div>
             <div class="mobile-task-card__foot"><span>{{ $t("预约号 ") }}{{ $t(booking.id) }}</span><b>{{ $t("查看详情") }}</b></div>
           </article>
           <div v-else class="mobile-task-empty">{{ $t("暂无最近预约") }}</div>

@@ -133,7 +133,7 @@ onMounted(load)
               <StatusTag :status="booking.status" kind="booking" />
             </el-descriptions-item>
             <el-descriptions-item :label='$t("服务项目")'>{{ $t(booking.serviceName) }}</el-descriptions-item>
-            <el-descriptions-item :label='$t("法师")'>{{ booking.masterName || '全院执行' }}</el-descriptions-item>
+            <el-descriptions-item :label='$t("法师")'>{{ booking.masterName || $t('全院执行') }}</el-descriptions-item>
             <el-descriptions-item :label='$t("预约日期")'>{{ $t(booking.bookingDate) }}</el-descriptions-item>
             <el-descriptions-item :label='$t("时段")'>{{ $t(booking.timeSlot) }}</el-descriptions-item>
             <el-descriptions-item :label='$t("功德金")'>

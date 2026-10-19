@@ -33,7 +33,7 @@ onUnmounted(()=>{generation++;clearInterval(timer)})
     <p v-if="!data.list.length" class="journey-empty">{{ $t("当前没有符合条件的服务。新的已付款预约会出现在这里。") }}</p>
     <article v-for="row in data.list" :key="row.id" class="journey-row">
      <div class="journey-row-title"><h3>{{$t(row.serviceName)}}</h3><el-tag :type="row.needsRevision?'warning':'info'">{{$t((row.needsRevision ? $t('需补充回执') : (labels[row.status] || row.status)))}}</el-tag></div>
-     <p>{{$t(row.bookingDate)}} · {{$t(row.timeSlot)}} · {{row.masterName||'寺院全院执行'}}</p>
+     <p>{{$t(row.bookingDate)}} · {{$t(row.timeSlot)}} · {{row.masterName||$t('寺院全院执行')}}</p>
      <p v-if="row.latest" class="journey-latest">{{$t(row.latest)}}</p>
      <div class="journey-row-foot"><small>{{$t((row.receiptCount ? ($t("") + String(row.receiptCount) + $t(" 份回执已留存")) : $t('尚未提交最终回执')))}}</small><router-link :to="`/bookings/${row.id}`">{{$t((row.needsRevision ? $t('补充回执') : (row.status==='in_progress' ? $t('记录执行进展') : $t('查看服务记录'))))}} ↗</router-link></div>
     </article>

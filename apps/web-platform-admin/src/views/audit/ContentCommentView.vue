@@ -45,7 +45,7 @@
       <MobileTaskList v-model:page="query.page" :items="list" :loading="loading" :total="total" :size="query.size" @change="loadData">
         <template #item="{ item: row }">
           <article class="mobile-task-card">
-            <div class="mobile-task-card__head"><strong>{{ row.content || '无评论正文' }}</strong><StatusTag :status="row.status" /></div>
+            <div class="mobile-task-card__head"><strong>{{ row.content || $t('无评论正文') }}</strong><StatusTag :status="row.status" /></div>
             <div class="mobile-task-card__meta">{{ $t("用户 ") }}{{ $t(row.userId) }}{{ $t(" · 帖子 ") }}{{ $t(row.postId) }}</div>
             <div class="mobile-task-card__meta">{{ $t("提交于 ") }}{{ $t(formatDate(row.createTime)) }}</div>
             <div class="mobile-task-card__foot">

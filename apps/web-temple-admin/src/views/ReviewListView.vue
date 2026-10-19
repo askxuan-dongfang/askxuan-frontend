@@ -112,7 +112,7 @@ onMounted(load)
         <el-table-column prop="reviewNo" :label='$t("评价编号")' width="160" />
         <el-table-column :label='$t("评价内容")' min-width="240">
           <template #default="{ row }">
-            <strong>{{ $t((row.serviceName || $t('预约服务'))) }} · {{ row.masterName || '全院执行' }}</strong><div class="review-content-cell">{{ row.content }}</div><p v-if="row.masterReply" class="muted">{{ $t("服务方回复：") }}{{ row.masterReply }}</p>
+            <strong>{{ $t((row.serviceName || $t('预约服务'))) }} · {{ row.masterName || $t('全院执行') }}</strong><div class="review-content-cell">{{ row.content }}</div><p v-if="row.masterReply" class="muted">{{ $t("服务方回复：") }}{{ row.masterReply }}</p>
             <div class="review-imgs" v-if="parseImages(row.images).length">
               <el-image
                 v-for="(img, i) in parseImages(row.images).slice(0, 4)"

@@ -126,7 +126,7 @@ onMounted(load)
             <strong>{{ $t((item.serviceName || $t('预约服务'))) }}</strong>
             <StatusTag :status="item.status" kind="booking" />
           </span>
-          <span class="mobile-task-card__meta">{{ item.masterName || '待分配法师' }} · {{ $t(item.bookingDate) }} {{ $t(item.timeSlot) }}</span>
+          <span class="mobile-task-card__meta">{{ item.masterName || $t('待分配法师') }} · {{ $t(item.bookingDate) }} {{ $t(item.timeSlot) }}</span>
           <span class="mobile-task-card__foot"><span>{{ $t(item.id) }}</span><b>{{ $t(formatMoney(item.meritMoney)) }}</b></span>
         </button>
         <div v-if="!loading && !list.length && !loadError" class="mobile-task-empty">{{ $t("当前筛选下暂无预约") }}</div>

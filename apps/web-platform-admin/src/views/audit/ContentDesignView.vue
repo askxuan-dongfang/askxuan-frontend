@@ -58,7 +58,7 @@
           <article class="mobile-task-card">
             <div class="mobile-task-card__head"><strong>{{ $t((row.title || $t('未命名帖子'))) }}</strong><StatusTag :status="row.status" /></div>
             <div class="mobile-task-card__meta">{{ $t((row.type === 'video' ? $t('视频') : $t('图文'))) }}{{ $t(" · 法师 ") }}{{ $t(row.masterId) }} · {{ $t((row.likeCount || 0)) }}{{ $t(" 赞 / ") }}{{ $t((row.commentCount || 0)) }}{{ $t(" 评") }}</div>
-            <div class="mobile-task-card__meta">{{ row.content || '暂无内容摘要' }}</div>
+            <div class="mobile-task-card__meta">{{ row.content || $t('暂无内容摘要') }}</div>
             <div class="mobile-task-card__foot">
               <span>{{ $t(formatDate(row.createTime)) }}</span>
               <el-button link type="primary" @click="preview = row">{{ $t("查看内容") }}</el-button>

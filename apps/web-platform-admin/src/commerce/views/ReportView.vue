@@ -277,7 +277,7 @@ function refreshChartAppearance() {
         <div><span>{{ $t("区间销售额") }}</span><b>{{ $t(formatMoney(report.totalSales)) }}</b></div>
         <div><span>{{ $t("区间订单数") }}</span><b>{{ $t(report.totalOrders) }}{{ $t(" 单") }}</b></div>
         <div><span>{{ $t("趋势数据点") }}</span><b>{{ $t(report.salesTrend.length) }}{{ $t(" 个") }}</b></div>
-        <div><span>{{ $t("Top 商品") }}</span><b>{{ report.topProducts[0]?.productName || '暂无' }}</b></div>
+        <div><span>{{ $t("Top 商品") }}</span><b>{{ report.topProducts[0]?.productName || $t('暂无') }}</b></div>
       </div>
     </div>
 
