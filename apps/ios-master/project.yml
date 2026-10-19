@@ -39,6 +39,7 @@ targets:
       - path: ../../packages/localization/native
       - path: ../../packages/localization/zh-Hant.json
         buildPhase: resources
+      - path: ../../packages/growth-native
       - path: ../../packages/service-journey-native
       - path: ../../packages/profile-native
       - path: ../../packages/chat-native

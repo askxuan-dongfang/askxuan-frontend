@@ -16,6 +16,7 @@ import Combine
 final class ChatViewModel: ObservableObject {
     // MARK: - 对话列表
     @Published var conversations: [ChatConversation] = []
+    @Published var conversationTotal: Int64 = 0
     @Published var hasMoreConversations=false
     @Published var loadingMoreConversations=false
     private var conversationPage=1
@@ -88,6 +89,7 @@ final class ChatViewModel: ObservableObject {
             }
             guard epoch==conversationEpoch else{return}
             var seen=Set<String>();conversations=list.filter{seen.insert($0.id).inserted}
+            conversationTotal = total
             hasMoreConversations=conversations.count<total
             applyOnlineStatus(OpenIMManager.shared.onlineUserIDs)
             OpenIMManager.shared.watchUsers(list.map(\.peerOpenIMId))

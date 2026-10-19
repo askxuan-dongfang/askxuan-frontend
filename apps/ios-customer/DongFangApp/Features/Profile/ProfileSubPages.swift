@@ -29,8 +29,8 @@ struct OrderListView: View {
     }
 
     private let tabs: [(key: String, title: String)] = [
-        ("all", "全部"), ("booking", "服务/预约"), ("shop", "商城订单"),
-        ("diy", "DIY手串")
+        ("all", "全部"), ("booking", "服务订单"), ("shop", "商城订单"),
+        ("diy", "手串订单")
     ]
 
     private var isEmpty: Bool {
@@ -62,7 +62,7 @@ struct OrderListView: View {
             .padding(.top, AppSpacing.md)
         }
         .background(Color.bgPrimary)
-        .navigationTitle(L10n.text("我的订单"))
+        .navigationTitle(L10n.text("订单中心"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadOrders() }
         .refreshable { await loadOrders() }
@@ -86,7 +86,7 @@ struct OrderListView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: AppSpacing.sm) {
                 ForEach(tabs, id: \.key) { tab in
-                    Text(L10n.lookup(tab.title))
+                    Button { selectedTab = tab.key } label: { Text(L10n.lookup(tab.title))
                         .font(AppTypography.supporting.weight(selectedTab == tab.key ? .semibold : .regular))
                         .foregroundStyle(selectedTab == tab.key ? Color.accentDefault : Color.textTertiary)
                         .padding(.horizontal, AppSpacing.md)
@@ -97,7 +97,8 @@ struct OrderListView: View {
                         )
                         .clipShape(Capsule())
                         .contentShape(Capsule())
-                        .onTapGesture { selectedTab = tab.key }
+                        .frame(minHeight: 44)
+                    }.buttonStyle(.plain).accessibilityAddTraits(selectedTab == tab.key ? .isSelected : [])
                 }
             }
         }
@@ -116,8 +117,8 @@ struct OrderListView: View {
                             icon: "calendar",
                             title: booking.serviceName.isEmpty ? L10n.text("预约服务") : booking.serviceName,
                             desc: [booking.templeName, booking.masterName, booking.bookingDate].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "),
-                            amount: booking.meritMoneyText,
-                            status: booking.statusDisplayText
+                            amount: booking.orderAmountText,
+                            number: booking.id, kind: "booking", statusCode: booking.status, status: booking.statusDisplayText
                         )
                     }
                     .buttonStyle(.plain)
@@ -147,7 +148,7 @@ struct OrderListView: View {
                         title: order.items?.first?.productName ?? L10n.text("商城订单 \(order.orderNo)"),
                         desc: order.orderNo,
                         amount: String(format: "¥%.2f", order.payAmount),
-                        status: order.statusText
+                        number: order.orderNo, kind: "shop_order", statusCode: order.status, status: order.statusText
                     )
                 }
                 .buttonStyle(.plain)
@@ -161,10 +162,10 @@ struct OrderListView: View {
                 } label: {
                     orderCard(
                         icon: "circle.grid.2x2",
-                        title: L10n.text("DIY 手串 · \(order.orderNo)"),
+                        title: L10n.text("专属定制手串"),
                         desc: order.source == "design_square" ? "设计广场下单" : "自定义设计",
                         amount: order.totalFeeText,
-                        status: order.statusDisplayText
+                        number: order.orderNo, kind: "diy_order", statusCode: order.status, status: order.statusDisplayText
                     )
                 }
                 .buttonStyle(.plain)
@@ -185,42 +186,50 @@ struct OrderListView: View {
         .padding(.top, AppSpacing.sm)
     }
 
-    private func orderCard(icon: String, title: String, desc: String, amount: String, status: String) -> some View {
-        HStack(spacing: AppSpacing.md) {
-            ZStack {
-                Circle().fill(Color.bgTertiary).frame(width: 44, height: 44)
-                Image(systemName: icon)
-                    .font(.system(size: 18))
-                    .foregroundStyle(Color.textTertiary)
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L10n.lookup(title))
-                    .font(AppTypography.body.weight(.medium))
-                    .foregroundStyle(Color.textPrimary)
-                    .lineLimit(1)
-                Text(L10n.lookup(desc.isEmpty ? L10n.text("暂无补充信息") : desc))
-                    .font(AppTypography.caption)
-                    .foregroundStyle(Color.textTertiary)
-                    .lineLimit(1)
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(L10n.lookup(amount))
-                    .font(AppTypography.body.weight(.semibold))
-                    .foregroundStyle(Color.accentDefault)
-                    .monospacedDigit()
-                Text(L10n.lookup(status))
-                    .font(AppTypography.micro)
-                    .foregroundStyle(Color.stateWarning)
-            }
-            Image(systemName: "chevron.right")
-                .font(AppTypography.micro.weight(.semibold))
-                .foregroundStyle(Color.textTertiary)
+    private func orderCard(icon: String, title: String, desc: String, amount: String, number: String, kind: String, statusCode: String, status: String) -> some View {
+        let statusColor: Color = switch statusCode {
+        case "completed", "reviewed": .stateSuccess
+        case "cancelled", "refunded": .textSecondary
+        default: .accentDefault
         }
-        .padding(AppSpacing.md)
-        .background(Color.bgSecondary)
-        .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
+        return VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 12) {
+                Text(L10n.text("订单 \(number)"))
+                    .font(AppTypography.micro).foregroundStyle(Color.textSecondary)
+                    .monospacedDigit().lineLimit(1)
+                Spacer(minLength: 4)
+                Text(L10n.lookup(status)).font(AppTypography.micro)
+                    .foregroundStyle(statusColor).padding(.horizontal, 9).padding(.vertical, 5)
+                    .background(statusColor.opacity(0.08), in: Capsule())
+            }
+            HStack(spacing: 14) {
+                Image(systemName: icon).font(.system(size: 24))
+                    .foregroundStyle(Color.accentDefault)
+                    .frame(width: 64, height: 64)
+                    .background(Color.bgTertiary, in: RoundedRectangle(cornerRadius: 12))
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(L10n.lookup(title)).font(AppTypography.body.weight(.semibold))
+                        .foregroundStyle(Color.textPrimary).lineLimit(2)
+                    if !desc.isEmpty {
+                        Text(L10n.lookup(desc)).font(AppTypography.caption)
+                            .foregroundStyle(Color.textSecondary).lineLimit(2)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            GrowthOrderPriceView(kind: kind, number: number)
+            Rectangle().fill(Color.borderDivider).frame(height: 1)
+            HStack(alignment: .firstTextBaseline) {
+                Text(L10n.text("订单金额")).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
+                Text(amount).font(AppTypography.title(22)).foregroundStyle(Color.accentDefault).monospacedDigit()
+                Spacer(minLength: 6)
+                Label(L10n.text("订单详情"), systemImage: "chevron.right")
+                    .labelStyle(.titleAndIcon).font(AppTypography.caption).foregroundStyle(Color.textPrimary)
+            }
+        }
+        .padding(18)
+        .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.borderDefault, lineWidth: 1))
     }
 
     @MainActor
@@ -289,7 +298,9 @@ struct CustomerBookingDetailView: View {
                     if booking.status == "pending_payment" { Section { Button(L10n.text("继续支付")) { Task { do { _ = try await CashCheckout.pay("booking", bookingId); await load() } catch { errorMessage = error.localizedDescription } } } } }
                     Section(L10n.text("服务进度与回执")) { JourneyRecordPanel(bookingId: bookingId) { _ in Task { await load() } } }
                     Section(L10n.text("费用与备注")) {
+                        detailRow("订单金额", booking.orderAmountText)
                         detailRow("功德金", booking.meritMoneyText)
+                        GrowthOrderPriceView(kind: "booking", number: booking.id)
                         if !booking.note.isEmpty {
                             Text(booking.note).foregroundStyle(Color.textSecondary)
                         }
@@ -355,6 +366,7 @@ private struct CustomerDiyOrderDetailView: View {
                         detailRow(order.consecrationService == nil ? "加持费" : "开光服务", String(format: "¥%.2f", order.blessFee))
                         if let service = order.consecrationService { detailRow("开光提供方", service.providerName) }
                         detailRow("合计", String(format: "¥%.2f", order.totalFee))
+                        GrowthOrderPriceView(kind: "diy_order", number: order.orderNo)
                     }
                     DiyConsecrationSection(order: order)
                     if let items = order.items, !items.isEmpty {

@@ -736,7 +736,8 @@ struct ShopOrderDetailView: View {
                 Section(L10n.text("订单进度")) {
                     Text(L10n.lookup(order.statusText)).font(AppTypography.section).foregroundStyle(Color.accentDefault)
                     Text(L10n.lookup(order.orderNo)).font(AppTypography.caption).textSelection(.enabled)
-                    HStack{Text(L10n.text("订单实付"));Spacer();Text(L10n.lookup(String(format:"¥%.2f",order.payAmount))).bold()}
+                    HStack{Text(L10n.text("订单金额"));Spacer();Text(L10n.lookup(String(format:"¥%.2f",order.payAmount))).bold()}
+                    GrowthOrderPriceView(kind: "shop_order", number: order.orderNo)
                     if let logistics=order.logistics,!logistics.trackingNo.isEmpty {Label("\(logistics.expressCompany) · \(logistics.trackingNo)",systemImage:"shippingbox").textSelection(.enabled)}
                 }
                 Section(L10n.text("商品清单")) {ForEach(order.items ?? []) {item in HStack{Text(item.productName);Spacer();Text("×\(item.quantity)");Text(L10n.lookup(String(format:"¥%.2f",item.price*Double(item.quantity))))}}}

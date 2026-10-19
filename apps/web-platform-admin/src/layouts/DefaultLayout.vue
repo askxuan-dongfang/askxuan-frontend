@@ -76,6 +76,7 @@ const allMenuGroups = [
     children: [
       { path: '/marketing/banner', title: '首页活动与广告' },
       { path: '/marketing/activity', title: '活动管理' },
+      { path: '/marketing/growth', title: '成长体系', roles: ['platform_super'] },
       { path: '/marketing/rewards', title: '积分活动与奖品' },
       { path: '/marketing/coupon', title: '优惠券管理' },
       { path: '/settings/taxonomy', title: '首页分类' },
