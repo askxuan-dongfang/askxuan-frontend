@@ -215,6 +215,7 @@ struct ShopProductDetailView: View {
                             .foregroundStyle(availableStock > 0 ? Color.textTertiary : Color.stateError)
                     }
 
+                    GrowthCatalogPriceView(items: [.init(itemType: selectedSku == nil ? "shop_product" : "shop_sku", itemId: String(selectedSku?.id ?? viewModel.product.id), quantity: quantity)], experience: viewModel.product.isExperience == true)
                     Button { purchaseMode = "select"; showSpecs = true } label: {
                         HStack(spacing: 12) {
                             Text(L10n.text("选择")).foregroundStyle(Color.textTertiary)

@@ -33,6 +33,7 @@ struct BookingView: View {
                         remarkSection
                         meritSection
                         priceSummary
+                        if let service = viewModel.selectedService { GrowthCatalogPriceView(items: [.init(itemType: "temple_service", itemId: viewModel.templeId + ":" + service.serviceCode)] + (viewModel.masterTagFee != nil && viewModel.master != nil ? [.init(itemType: "master_service", itemId: viewModel.master!.id + ":" + service.serviceCode)] : [])) }
                         Spacer().frame(height: 24)
                     }
                     .padding(.top, AppSpacing.lg)

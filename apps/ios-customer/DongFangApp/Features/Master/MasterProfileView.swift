@@ -633,6 +633,7 @@ struct MasterProfileView: View {
                             .foregroundStyle(Color.brandDefault)
                     }
 
+                    GrowthCatalogPriceView(items: [.init(itemType: "consultation", itemId: masterId)])
                     Button {
                         Task { await purchaseConsultation() }
                     } label: {

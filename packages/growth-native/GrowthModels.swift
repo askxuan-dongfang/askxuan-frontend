@@ -6,7 +6,7 @@ struct GrowthLevel: Decodable, Identifiable {
 }
 struct GrowthCoupon: Decodable, Identifiable { let id: Int64; let level: Int; let minimumCents: Int64; let valueCents: Int64; let status: String; let expiresAt: Int64 }
 struct GrowthTask: Decodable, Identifiable { let kind: String; var id: String { kind }; let award: Int; let used: Int; let limit: Int; let available: Bool; let period: String }
-struct GrowthOverview: Decodable { let total: Int64; let level: GrowthLevel; let levels: [GrowthLevel]; let nextThreshold: Int64; let remaining: Int64; let pending: Int64; let monthlyEarned: Int64; let monthlyLimit: Int64; let badgeVisible: Bool; let discountsEnabled: Bool; let coupons: [GrowthCoupon]; let tasks: [GrowthTask] }
+struct GrowthOverview: Decodable { let total: Int64; let level: GrowthLevel; let levels: [GrowthLevel]; let nextThreshold: Int64; let remaining: Int64; let pending: Int64; let monthlyEarned: Int64; let monthlyLimit: Int64; let badgeVisible: Bool; let discountsEnabled: Bool; let coupons: [GrowthCoupon]; let tasks: [GrowthTask]; let ruleVersion: String?; let rule: GrowthRuleRelease?; let revision: Int64? }
 struct GrowthContent: Decodable, Identifiable { let id: Int64; let title: String; let kind: String; let body: String; let mediaUrl: String; let durationSeconds: Int64 }
 struct GrowthLearning: Decodable { let sessionId: String; let elapsedSeconds: Int64; let completed: Bool }
 struct GrowthNote: Decodable, Identifiable { let day: String; var id: String { day }; let action: String; let body: String }
@@ -46,4 +46,25 @@ struct GrowthAck: Decodable {}
     static func money(_ cents: Int64) -> String { String(format: "%.2f", Double(cents)/100) }
     static func rate(_ basisPoints: Int64) -> String { basisPoints == 10000 ? L10n.text("原价") : String(format:"%.1f",Double(basisPoints)/1000)+L10n.text("折") }
     static func date(_ seconds: Int64) -> String { Date(timeIntervalSince1970: Double(seconds)).formatted(date: .abbreviated, time: .omitted) }
+}
+
+struct GrowthRuleConfig: Decodable { let levels: [GrowthLevel]; let tasks: [GrowthTask]; let monthlyGrowthLimit: Int64; let monthlyDiscountLimitCents: Int64; let goodsDiscountCapCents: Int64; let serviceDiscountCapCents: Int64; let observationDays: Int64; let couponDays: Int64 }
+struct GrowthRuleRelease: Decodable, Identifiable { let version: String; var id: String { version }; let summary: String; let effectiveAt: Int64; let createdAt: Int64; let status: String; let config: GrowthRuleConfig }
+struct GrowthRuleHistory: Decodable { let items: [GrowthRuleRelease]; let hasMore: Bool; let currentVersion: String }
+struct GrowthLevelNotice: Decodable { let level: GrowthLevel; let previousLevel: Int; let revision: Int64 }
+struct GrowthNoticeResponse: Decodable { let notice: GrowthLevelNotice? }
+struct GrowthCatalogItem: Encodable, Equatable { let itemType: String; let itemId: String; var quantity: Int = 1; var spec: String? = nil }
+struct GrowthCatalogPreview: Decodable { struct Snapshot: Decodable { let ruleVersion: String; let level: GrowthLevel; let offers: [GrowthOffer]; let selected: GrowthOffer }; let grossCents: Int64; let levelPrice: GrowthOffer?; let reason: String; let expiresAt: Int64; let serverTime: Int64; let snapshot: Snapshot
+ var valid: Bool {
+  guard (0...100_000_000).contains(grossCents), serverTime > 0, expiresAt > serverTime, expiresAt - serverTime <= 30, (1...5).contains(snapshot.level.code), !snapshot.ruleVersion.isEmpty, !snapshot.offers.isEmpty else { return false }
+  func validOffer(_ offer: GrowthOffer) -> Bool {
+   guard ["normal", "level", "coupon", "activity_price"].contains(offer.kind), (0...grossCents).contains(offer.payableCents), offer.discountCents == grossCents - offer.payableCents, (0...100_000_000).contains(offer.estimatedGrowth), !offer.lines.isEmpty, offer.lines.count <= 100 else { return false }
+   guard offer.lines.allSatisfy({ (0...grossCents).contains($0.amountCents) && (0...$0.amountCents).contains($0.netCents) && $0.discountCents == $0.amountCents - $0.netCents }) else { return false }
+   return offer.lines.reduce(0) { $0 + $1.netCents } == offer.payableCents && offer.lines.reduce(0) { $0 + $1.amountCents } == grossCents
+  }
+  func included(_ offer: GrowthOffer) -> Bool { snapshot.offers.contains { $0.id == offer.id && $0.payableCents == offer.payableCents && $0.discountCents == offer.discountCents } }
+  guard snapshot.offers.allSatisfy(validOffer), validOffer(snapshot.selected), included(snapshot.selected) else { return false }
+  if let levelPrice { return levelPrice.kind == "level" && validOffer(levelPrice) && included(levelPrice) }
+  return true
+ }
 }

@@ -2,6 +2,8 @@ import SwiftUI
 import AVKit
 
 struct GrowthView: View {
+ @Environment(\.scenePhase) private var phase
+ @ObservedObject private var sync = GrowthSync.shared
     @EnvironmentObject private var auth: AuthStore
     @State private var tab = "overview"
     @State private var overview: GrowthOverview?
@@ -29,6 +31,8 @@ struct GrowthView: View {
         List {
             Section { Picker(L10n.text("成长中心"), selection: $tab) { Text(L10n.text("档案")).tag("overview"); Text(L10n.text("任务")).tag("tasks"); Text(L10n.text("明细")).tag("records"); Text(L10n.text("权益")).tag("benefits") }.pickerStyle(.segmented) }
             if let error { Section { Text(L10n.lookup(error)).foregroundStyle(.red); Button(L10n.text("重试")) { Task { await load() } }.disabled(busy) } }
+            Section { NavigationLink(L10n.text("成长规则与历史版本")) { GrowthRulesView() } }
+            if sync.error != nil { Text(L10n.text("成长数据同步暂不可用，当前显示上次读取的记录。")) }
             if let notice { Text(L10n.lookup(notice)).accessibilityAddTraits(.updatesFrequently) }
             if busy { ProgressView() }
             if let v = overview {
@@ -42,7 +46,9 @@ struct GrowthView: View {
         }.scrollContentBackground(.hidden).background(Color.bgPrimary)
             .navigationTitle(L10n.text("我的成长"))
             .task(id: "\(auth.sessionID)-\(tab)") { await load() }
-            .refreshable { await load() }
+            .refreshable { await sync.refresh(); await load() }
+            .onChange(of: sync.revision) { _, _ in if sync.identity == "\(auth.sessionID)", let current = sync.overview { overview = current } }
+            .task(id: "sync-\(auth.sessionID)-\(tab)-\(phase)") { guard phase == .active else { return }; while !Task.isCancelled { do { try await Task.sleep(for: .seconds(15)) } catch { return }; await refreshVisibleData() } }
             .sheet(item: $reader, onDismiss: { Task { await load() } }) { GrowthLearningView(content: $0) }
             .confirmationDialog(L10n.text("删除这条私人记录？成长值不受影响。"), isPresented: Binding(get: { deletion != nil }, set: { if !$0 { deletion = nil } })) { Button(L10n.text("删除"), role: .destructive) { if let n = deletion { Task { await mutate("notes/delete", ["day":n.day]); deletion = nil } } } }
     }
@@ -76,7 +82,7 @@ struct GrowthView: View {
                 }.padding(.vertical, 4)
             }
             NavigationLink(L10n.text("查看订单与评价")) { OrderListView() }
-            Text(L10n.text("周期任务每月最多 200 成长值，完善资料的一次性奖励单独计算。"))
+            Text(L10n.text("周期任务月上限") + " \(v.monthlyLimit)")
         }
         Section(L10n.text("记录今日行动")) {
             TextField(L10n.text("今天做了什么"), text: $action).onChange(of: action) { _, value in action = String(value.prefix(120)) }
@@ -116,7 +122,8 @@ struct GrowthView: View {
                 Text(L10n.lookup(l.benefit));if l.couponValueCents > 0 {Text(L10n.text("首次升级礼券")+" ¥"+GrowthAPI.money(l.couponMinimumCents)+"−"+GrowthAPI.money(l.couponValueCents)).font(.caption)}
             }.padding(.vertical, 5) }
             Text(L10n.text("权益逐级累积。折扣仅适用于已加入的商品和固定价服务，平台承担补贴；等级优惠、活动价和一张礼券择优使用，不叠加。"))
-            Text(L10n.text("手工制作费、自愿随喜、运费、充值、押金、积分与模拟订单不参与折扣。单单商品优惠最高 100 元、服务最高 50 元，每月等级优惠最高 300 元，以收银台报价为准。"))
+            Text(L10n.text("手工制作费、自愿随喜、运费、充值、押金、积分与模拟订单不参与折扣。"))
+            if let rules = v.rule?.config { Text(L10n.text("单单商品优惠上限") + " ¥" + GrowthAPI.money(rules.goodsDiscountCapCents)); Text(L10n.text("单单服务优惠上限") + " ¥" + GrowthAPI.money(rules.serviceDiscountCapCents)); Text(L10n.text("月优惠上限") + " ¥" + GrowthAPI.money(rules.monthlyDiscountLimitCents)) }
             if !v.discountsEnabled { Text(L10n.text("等级折扣尚未启用，当前按商品原定价格结算。")) }
         }
         Section(L10n.text("升级礼券")) {
@@ -141,6 +148,10 @@ struct GrowthView: View {
             if let s=summary {Text(s.period).font(.headline);Text(L10n.text("新增")+" +\(s.added) · "+L10n.text("回退")+" \(s.reversed)");ForEach(s.bySource){r in Text(GrowthAPI.label(r.kind)+" · \(r.count) "+L10n.text("次")+" · \(r.amount)")} }
         }
     }
+    @MainActor private func refreshVisibleData() async {
+ guard !busy else { return }
+ do { if tab == "records", page == 1 { let value: GrowthRecords = try await GrowthAPI.request("records?page=1"); if !Task.isCancelled { records = value } }; if tab == "benefits" { let value: [GrowthSupport] = try await GrowthAPI.request("support"); if !Task.isCancelled { support = value } } } catch { if !Task.isCancelled { self.error = error.localizedDescription } }
+ }
     @MainActor private func load() async {
         busy=true;error=nil;defer{busy=false}
         do {
@@ -155,7 +166,7 @@ struct GrowthView: View {
     }
     @MainActor private func mutate(_ path:String,_ body:[String:Any]) async {
         guard !busy else{return};busy=true;error=nil;notice=nil
-        do {let _:GrowthAck=try await GrowthAPI.request(path,body:body);notice=L10n.text("已保存");await load()}catch{self.error=error.localizedDescription};busy=false
+        do {let _:GrowthAck=try await GrowthAPI.request(path,body:body);notice=L10n.text("已保存");await sync.refresh();await load()}catch{self.error=error.localizedDescription};busy=false
     }
     @MainActor private func moreRecords() async {
         guard !busy,let old=records else{return};busy=true;defer{busy=false}

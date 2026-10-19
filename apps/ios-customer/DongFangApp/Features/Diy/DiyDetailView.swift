@@ -51,6 +51,7 @@ struct DiyDetailView: View {
                         previewSection
                         publicationSection
                         infoSection
+                        GrowthCatalogPriceView(items: viewModel.cartItems.map { .init(itemType: "material", itemId: String($0.material.id), quantity: $0.quantity, spec: $0.material.spec) }).padding(.horizontal, AppSpacing.lg)
                         materialsSection
                         if let message = viewModel.availabilityMessage { availabilityWarning(message) }
                         blessingSection
