@@ -65,7 +65,7 @@ struct WalletView: View {
                                 ForEach(entry.refunds) { refund in
                                     VStack(alignment: .leading, spacing: 6) {
                                         Text("\(refunds[refund.status] ?? refund.status) · \(money(refund.amountCents))").fontWeight(.medium)
-                                        Text(L10n.lookup(refund.reason))
+                                        Text(refund.reason)
                                         Text("\(refund.createdAt) · \(refund.refundNo)").foregroundStyle(.secondary)
                                     }.padding(.vertical, 8)
                                 }

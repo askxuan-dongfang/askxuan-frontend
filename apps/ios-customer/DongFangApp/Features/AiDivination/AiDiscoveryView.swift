@@ -126,7 +126,7 @@ struct AiSavedNoteView: View {
                     Text(L10n.lookup(note.title)).font(AppTypography.title(27))
                     Text(L10n.lookup(note.createdAt)).font(.caption).foregroundStyle(.secondary)
                     AiExperienceResultView(input: note.data.input, result: note.data.result, favorites: .constant(Set(note.data.favorites)), editable: false)
-                    if !note.data.note.isEmpty { Text(L10n.text("当时的想法")).font(.headline); Text(L10n.lookup(note.data.note)).textSelection(.enabled) }
+                    if !note.data.note.isEmpty { Text(L10n.text("当时的想法")).font(.headline); Text(note.data.note).textSelection(.enabled) }
                 } else if !error.isEmpty {
                     Text(L10n.lookup(error)).foregroundStyle(.red); Button(L10n.text("重试")) { Task { await load() } }
                 } else { ProgressView(L10n.text("正在打开手记…")) }

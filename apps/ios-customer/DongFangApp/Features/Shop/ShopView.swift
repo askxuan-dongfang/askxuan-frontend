@@ -744,7 +744,7 @@ struct ShopOrderDetailView: View {
                 if order.status=="shipped" {Button(L10n.text("确认收货")){confirmReceipt=true}.disabled(busy)}
                 if ["paid","shipped","completed"].contains(order.status) && !returns.contains(where:{$0.status != "rejected"}) {Section(L10n.text("申请售后")) {TextField(L10n.text("填写退货或退款原因"),text:$reason,axis:.vertical).lineLimit(3...5);Button(L10n.text("提交售后申请")){Task{await act("return")}}.disabled(busy||reason.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)}}
                 ForEach(returns){r in Section(L10n.text("售后进度")) {
-                    Text(L10n.lookup(r.statusText)).font(.headline);Text(L10n.lookup(r.returnNo)).font(AppTypography.caption);Text(L10n.lookup(r.reason))
+                    Text(L10n.lookup(r.statusText)).font(.headline);Text(L10n.lookup(r.returnNo)).font(AppTypography.caption);Text(r.reason)
                     if !r.reviewNote.isEmpty{Text(L10n.text("审核说明：\(r.reviewNote)"))}
                     if !r.trackingNo.isEmpty{Text("\(r.carrier) · \(r.trackingNo)").textSelection(.enabled)}
                     if r.status=="approved"{Text(L10n.text("请先与商家核对退货地址，寄出后填写运单。")).font(.footnote);TextField(L10n.text("物流公司"),text:$carrier);TextField(L10n.text("运单号"),text:$tracking);Button(L10n.text("提交寄回物流")){Task{await act("ship",returnId:r.id)}}.disabled(busy||carrier.isEmpty||tracking.isEmpty)}

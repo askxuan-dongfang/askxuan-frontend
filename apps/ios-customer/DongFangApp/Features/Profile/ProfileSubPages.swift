@@ -291,7 +291,7 @@ struct CustomerBookingDetailView: View {
                     Section(L10n.text("费用与备注")) {
                         detailRow("功德金", booking.meritMoneyText)
                         if !booking.note.isEmpty {
-                            Text(L10n.lookup(booking.note)).foregroundStyle(Color.textSecondary)
+                            Text(booking.note).foregroundStyle(Color.textSecondary)
                         }
                     }
                 }

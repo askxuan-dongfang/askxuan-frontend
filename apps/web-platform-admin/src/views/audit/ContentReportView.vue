@@ -86,7 +86,7 @@
     <el-dialog v-model="dialog.visible" :title='$t("处理举报")' width="460px" append-to-body>
       <div class="dialog-info">
         <p><span>{{ $t("对象类型：") }}</span>{{ $t(targetText(dialog.row?.targetType)) }}</p>
-        <p><span>{{ $t("举报原因：") }}</span>{{ $t(dialog.row?.reason) }}</p>
+        <p><span>{{ $t("举报原因：") }}</span>{{ dialog.row?.reason }}</p>
       </div>
       <el-alert
         :title="$t((dialog.handleResult === 'handled' ? $t('确认处理会执行对应内容下架或账号封禁，并改变前台可见性或账号状态。') : $t('驳回举报后对象保持当前状态，本次举报将关闭并保留处理记录。')))"

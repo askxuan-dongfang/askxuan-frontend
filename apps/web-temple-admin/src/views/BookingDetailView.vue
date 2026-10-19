@@ -177,7 +177,7 @@ onMounted(load)
 
             <div class="reply-block" v-if="review.masterReply">
               <div class="reply-label">{{ $t("法师回复：") }}</div>
-              <div class="reply-text">{{ $t(review.masterReply) }}</div>
+              <div class="reply-text">{{ review.masterReply }}</div>
             </div>
             <div class="reply-block" v-else>
               <div class="reply-label">{{ $t("回复评价：") }}</div>
