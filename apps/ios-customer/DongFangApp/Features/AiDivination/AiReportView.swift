@@ -190,6 +190,7 @@ struct AiReportWorkspace: View {
     }
     @ViewBuilder private func topicBody(_ topic: AiTopic) -> some View {
         hero(topic.title, subtitle: topic.subtitle)
+        GrowthCatalogPriceView(items: [.init(itemType: "ai_report", itemId: topic.code)])
         if let sample = AiReportCatalog.examples.first(where: { $0.code == topic.code }) {
             NavigationLink("先看示例 · 图表与完整阅读结构", value: AiNativeRoute.example(sample.code))
         }
@@ -247,7 +248,7 @@ struct AiReportWorkspace: View {
                     if let pdfURL { ShareLink(item: pdfURL) { Label(L10n.text("保存或分享 PDF"), systemImage: "square.and.arrow.up") } }
  ShareLink(item: r.title + "\n\n" + r.content) { Label(L10n.text("保存或分享报告"), systemImage: "square.and.arrow.up") }; primary("围绕这份报告继续问事 →") { Task { await followup(r) } }; Text(L10n.text("自动带入报告内容，聊天按账户正常额度使用。")).font(.footnote).foregroundStyle(.secondary) }
             } else {
-                card { Button(L10n.text("钱包余额支付 ¥\(CashAPI.money(r.priceCents))")) { Task { await unlockCash(r) } }.disabled(busy); Text(L10n.text("把线索，展开成完整答案")).font(AppTypography.section); chapters(r.chapters); HStack(alignment: .firstTextBaseline) { Text("\(r.pointsPrice)").font(AppTypography.title(36)); Text(L10n.text("积分")); Spacer(); Text(L10n.text("一次购买 · 随时回看")).font(AppTypography.caption) }; Text(L10n.lookup(L10n.text("可用积分：") + (balance.map(String.init) ?? L10n.text("暂未获取")) + L10n.text("。也可使用钱包余额购买。"))).font(.footnote).foregroundStyle(.secondary); if let balance {
+                card { GrowthCatalogPriceView(items: [.init(itemType: "ai_report_order", itemId: r.reportNo)]); Button(L10n.text("钱包余额支付 ¥\(CashAPI.money(r.priceCents))")) { Task { await unlockCash(r) } }.disabled(busy); Text(L10n.text("把线索，展开成完整答案")).font(AppTypography.section); chapters(r.chapters); HStack(alignment: .firstTextBaseline) { Text("\(r.pointsPrice)").font(AppTypography.title(36)); Text(L10n.text("积分")); Spacer(); Text(L10n.text("一次购买 · 随时回看")).font(AppTypography.caption) }; Text(L10n.lookup(L10n.text("可用积分：") + (balance.map(String.init) ?? L10n.text("暂未获取")) + L10n.text("。也可使用钱包余额购买。"))).font(.footnote).foregroundStyle(.secondary); if let balance {
                     if balance >= r.pointsPrice { primary("解锁完整报告") { confirm = true } }
                     else { Text(L10n.text("还差 \(r.pointsPrice - balance) 积分，摘要已为您保留。")).font(.footnote).padding(14).frame(maxWidth: .infinity).background(accent.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 10)) }
                 } else { Button(L10n.text("重新获取积分余额")) { Task { await refreshBalance() } } } }

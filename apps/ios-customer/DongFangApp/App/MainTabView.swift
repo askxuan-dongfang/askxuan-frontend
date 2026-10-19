@@ -100,6 +100,8 @@ struct MainTabView: View {
             .tabItem { Label(L10n.text("我的"), systemImage: "person.crop.circle") }
             .tag(4)
         }
+        .background(GrowthSyncHost(identity: authStore.isLoggedIn ? "\(authStore.sessionID)" : ""))
+        .safeAreaInset(edge: .top) { GrowthUpgradeBanner(identity: authStore.isLoggedIn ? "\(authStore.sessionID)" : "") }
         .tint(.brandDefault)
         .sensoryFeedback(.selection, trigger: selectedTab)
         // 特性 7：iOS 26+ 滚动时液态玻璃 TabBar 自动最小化为浮动 dock

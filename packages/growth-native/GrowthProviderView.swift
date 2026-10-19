@@ -1,11 +1,13 @@
 import SwiftUI
 struct GrowthProviderView: View {
+ @Environment(\.scenePhase) private var phase
     @State private var policies: [GrowthPolicy] = []
     @State private var bills: [GrowthBill] = []
     @State private var error: String?
     @State private var busy = false
     var body: some View {
         List {
+ Section { NavigationLink(L10n.text("成长规则与历史版本")) { GrowthRulesView(provider: true) } }
             Section { Text(L10n.text("平台补贴不改变已确认的服务结算规则。个人成长账户与工作身份分开。")) }
             if let error { Section { Text(L10n.lookup(error)); Button(L10n.text("重试")) { Task { await load() } }.disabled(busy) } }
             if busy { ProgressView() }
@@ -32,7 +34,7 @@ struct GrowthProviderView: View {
                     }.padding(.vertical, 5)
                 }
             }
-        }.scrollContentBackground(.hidden).background(Color.bgPrimary).navigationTitle(L10n.text("成长优惠参与")).task { await load() }.refreshable { await load() }
+        }.scrollContentBackground(.hidden).background(Color.bgPrimary).navigationTitle(L10n.text("成长优惠参与")).task(id: phase) { guard phase == .active else { return }; while !Task.isCancelled { await load(); do { try await Task.sleep(for: .seconds(15)) } catch { return } } }.refreshable { await load() }
     }
     @MainActor private func load() async {
         busy = true; error = nil; defer { busy = false }

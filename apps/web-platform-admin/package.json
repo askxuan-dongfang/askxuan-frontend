@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts",
-    "prebuild": "node ../../scripts/sync-admin-ui-components.mjs --check && node ../../scripts/sync-typography.mjs --check && node ../../scripts/sync-motion.mjs --check && node --test ../../packages/admin-ui/session-expiry.test.mjs && npm run test:interaction && npm run test:architecture && npm run test:compat && npm run test:capabilities && node --test ../../packages/localization/language.test.mjs ../../packages/admin-ui/localized-feedback.test.mjs && node ../../packages/localization/scripts/check.mjs",
+    "prebuild": "node ../../scripts/sync-admin-ui-components.mjs --check && node ../../scripts/sync-typography.mjs --check && node ../../scripts/sync-motion.mjs --check && node --test ../../packages/growth/foreground.test.mjs ../../packages/admin-ui/session-expiry.test.mjs && npm run test:interaction && npm run test:architecture && npm run test:compat && npm run test:capabilities && node --test ../../packages/localization/language.test.mjs ../../packages/admin-ui/localized-feedback.test.mjs && node ../../packages/localization/scripts/check.mjs",
     "build": "vue-tsc -b && vite build --config vite.config.ts",
     "preview": "vite preview --config vite.config.ts",
     "test:capabilities": "node --test src/views/ai/agentCapabilities.test.mjs",

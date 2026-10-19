@@ -244,6 +244,7 @@ private struct NativeCashier: View {
             }
             let p: CashPayment = try await CashAPI.request("payments/checkout", body: body)
             guard p.status == "success" else { throw APIError.serverError(409, "支付结果待确认，请刷新订单") }
+            await GrowthSync.shared.refresh()
             finish(.success(PaymentCreateResult(id: p.id, paymentNo: p.paymentNo, payUrl: nil)))
         } catch { if case APIError.serverError(40941, _) = error {stale=true}; self.error = error.localizedDescription }
     }

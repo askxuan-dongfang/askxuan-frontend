@@ -24,6 +24,7 @@
 		39F86E6173BE596A51082751 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 962C28CB4001BEF27D348848 /* Assets.xcassets */; };
 		3E4B65597259542E69BD61CB /* AskXuanSerif-Semibold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F90CCC74025B1545F85AB1A7 /* AskXuanSerif-Semibold.ttf */; };
 		43050B753C728C12BC823809 /* Endpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0CC2D117C0F4925E9A00D3 /* Endpoint.swift */; };
+		4516A81359628A4C198729BB /* GrowthSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CB1FE3FEB6E1C3350A6F28F /* GrowthSync.swift */; };
 		460AEFD086603A6A406D8F79 /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67CE46785FAD34C06035563D /* Configuration.swift */; };
 		4648DC1823386DCE7700C90D /* EarningsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F45D5DD053D3976CA498408 /* EarningsView.swift */; };
 		480E47768FDD6309ED5E8C36 /* BlessingTaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35DE123DF85875EAF7D83E8 /* BlessingTaskDetailView.swift */; };
@@ -128,6 +129,7 @@
 		7F45D5DD053D3976CA498408 /* EarningsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EarningsView.swift; sourceTree = "<group>"; };
 		829AE82CD7FDAB4E3FD82B10 /* MasterApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MasterApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		84B26EEB977A1D87D0F27C56 /* ProfileEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileEditView.swift; sourceTree = "<group>"; };
+		8CB1FE3FEB6E1C3350A6F28F /* GrowthSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowthSync.swift; sourceTree = "<group>"; };
 		962C28CB4001BEF27D348848 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C5831F8CA301D517AC0775 /* JSONHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONHelper.swift; sourceTree = "<group>"; };
 		989CCF92D975A7BDE5A6B6FB /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
@@ -391,6 +393,7 @@
 			isa = PBXGroup;
 			children = (
 				5720A522848F0FC091E69721 /* GrowthModels.swift */,
+				8CB1FE3FEB6E1C3350A6F28F /* GrowthSync.swift */,
 				23AD5153B42C96D15E70136F /* GrowthProviderView.swift */,
 			);
 			path = "growth-native";
@@ -673,6 +676,7 @@
 				2374ED86D0861BEA4F2AE557 /* GlassBackground.swift in Sources */,
 				2D586FE192EA0FF273633150 /* GrowthModels.swift in Sources */,
 				4E35CD93FF584E917F6719E2 /* GrowthProviderView.swift in Sources */,
+				4516A81359628A4C198729BB /* GrowthSync.swift in Sources */,
 				DEB81846F4CF10F6C34B535F /* JSONHelper.swift in Sources */,
 				EA84F4073A4C7FEAA4599782 /* JourneyCenterView.swift in Sources */,
 				9619B9B9DAFDEB978E3DEA3B /* JourneyDetailView.swift in Sources */,

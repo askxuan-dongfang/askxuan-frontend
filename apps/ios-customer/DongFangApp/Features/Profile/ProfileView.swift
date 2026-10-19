@@ -11,6 +11,7 @@
 import SwiftUI
 
 struct ProfileView: View {
+ @ObservedObject private var growthSync = GrowthSync.shared
     @StateObject private var viewModel = ProfileViewModel()
     @EnvironmentObject private var authStore: AuthStore
 
@@ -151,7 +152,7 @@ struct ProfileView: View {
                     }.padding(18).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
                 }.padding(.horizontal, AppSpacing.lg).padding(.top, 16)
                 NavigationLink { GrowthView().id(authStore.sessionID) } label: {
-                    Label(L10n.text("我的成长"),systemImage:"leaf").frame(maxWidth:.infinity,alignment:.leading).padding(18).background(Color.bgSecondary,in:RoundedRectangle(cornerRadius:16))
+                    VStack(alignment: .leading, spacing: 6) { Label(L10n.text("我的成长"),systemImage:"leaf"); if growthSync.identity == "\(authStore.sessionID)", let v = growthSync.overview { Text("L\(v.level.code) " + L10n.lookup(v.level.name) + " · \(v.total) " + L10n.text("成长值")).font(.caption).foregroundStyle(.secondary) } }.frame(maxWidth:.infinity,alignment:.leading).padding(18).background(Color.bgSecondary,in:RoundedRectangle(cornerRadius:16))
                 }.padding(.horizontal,AppSpacing.lg).padding(.top,16)
                 JourneyEntryView().padding(.horizontal, AppSpacing.lg).padding(.top, 16)
                 orderCenterSection
