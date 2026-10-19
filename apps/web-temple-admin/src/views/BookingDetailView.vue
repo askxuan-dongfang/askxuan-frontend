@@ -9,6 +9,7 @@ import { ArrowLeft, Check, Close, ChatLineSquare } from '@element-plus/icons-vue
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import BookingFulfillment from '@/components/BookingFulfillment.vue'
+import BookingChat from '@/components/BookingChat.vue'
 import client from '@/api/client'
 import { getBooking, getBookingStatusLog, getBookingReview, confirmBooking, cancelBooking, replyBookingReview } from '@/api/booking'
 import { formatMoney, formatDate, bookingStatusText, parseImages, isBookingTerminal } from '@/utils/format'
@@ -152,6 +153,7 @@ onMounted(load)
           </el-descriptions>
         </div>
 
+        <BookingChat v-if="!booking.masterId && ['success', 'refunding', 'refunded'].includes(booking.paymentStatus)" :key="booking.id" :id="booking.id" />
         <BookingFulfillment :id="booking.id" :status="booking.status" @changed="load" />
         <!-- 评价 -->
         <div class="df-card section" v-if="booking.status === 'reviewed'">
