@@ -39,7 +39,8 @@ struct GrowthView: View {
                 default: archive(v)
                 }
             }
-        }.navigationTitle(L10n.text("我的成长"))
+        }.scrollContentBackground(.hidden).background(Color.bgPrimary)
+            .navigationTitle(L10n.text("我的成长"))
             .task(id: "\(auth.sessionID)-\(tab)") { await load() }
             .refreshable { await load() }
             .sheet(item: $reader, onDismiss: { Task { await load() } }) { GrowthLearningView(content: $0) }

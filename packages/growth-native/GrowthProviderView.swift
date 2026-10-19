@@ -32,7 +32,7 @@ struct GrowthProviderView: View {
                     }.padding(.vertical, 5)
                 }
             }
-        }.navigationTitle(L10n.text("成长优惠参与")).task { await load() }.refreshable { await load() }
+        }.scrollContentBackground(.hidden).background(Color.bgPrimary).navigationTitle(L10n.text("成长优惠参与")).task { await load() }.refreshable { await load() }
     }
     @MainActor private func load() async {
         busy = true; error = nil; defer { busy = false }
