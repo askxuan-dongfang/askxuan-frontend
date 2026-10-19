@@ -56,7 +56,7 @@ import XCTest
 final class H5ParityUITests: XCTestCase {
     private func app(_ arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:5399/api/v1"
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = ProcessInfo.processInfo.environment["ASKXUAN_DIRECTORY_TEST_API_URL"] ?? "http://127.0.0.1:5399/api/v1"
         app.launchArguments = ["-askxuan.appearance", "light"] + arguments
         app.launch()
         return app
@@ -72,15 +72,23 @@ final class H5ParityUITests: XCTestCase {
         XCTAssertTrue(app.buttons["全部地区"].waitForExistence(timeout: 15))
         XCTAssertTrue(app.buttons["大陆"].waitForExistence(timeout: 10)); app.buttons["大陆"].tap()
         XCTAssertTrue(app.buttons["清除"].waitForExistence(timeout: 5)); app.buttons["清除"].tap()
-        XCTAssertTrue(app.buttons["宗派与信俗筛选"].waitForExistence(timeout: 10))
-        app.buttons["宗派与信俗筛选"].tap()
-        XCTAssertTrue(app.buttons["全部宗派 / 信俗"].waitForExistence(timeout: 5)); app.buttons["全部宗派 / 信俗"].tap()
+        XCTAssertFalse(app.buttons["宗派与信俗筛选"].exists)
+        app.buttons["directory-belief-han_buddhism"].tap()
+        let chan = app.buttons["directory-tradition-chan"]
+        XCTAssertTrue(chan.waitForExistence(timeout: 10)); chan.tap()
+        app.buttons["directory-belief-daoism"].tap()
+        XCTAssertFalse(chan.exists)
+        XCTAssertTrue(app.buttons["directory-tradition-quanzhen"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["全部道教"].isSelected)
         capture(app, "ios-temple-directory-parity")
         app.buttons["返回"].firstMatch.tap()
         XCTAssertTrue(app.buttons["home-masters"].waitForExistence(timeout: 5)); app.buttons["home-masters"].tap()
         XCTAssertTrue(app.buttons["全部地区"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["大陆"].waitForExistence(timeout: 10)); app.buttons["大陆"].tap()
         XCTAssertTrue(app.buttons["清除"].waitForExistence(timeout: 5)); app.buttons["清除"].tap()
+        app.buttons["directory-belief-han_buddhism"].tap()
+        XCTAssertTrue(app.buttons["directory-tradition-chan"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["宗派与信俗筛选"].exists)
         capture(app, "ios-master-directory-parity")
     }
     func testCreatorWalletPresentationAndInvalidAmount() {
@@ -217,16 +225,18 @@ final class DiyStudioUITests: XCTestCase {
         app.launch()
         let stage = app.otherElements["diy-3d-stage"]
         XCTAssertTrue(stage.waitForExistence(timeout: 25))
+        let wood = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "小叶紫檀圆珠，")).firstMatch
+        XCTAssertTrue(wood.waitForExistence(timeout: 20))
         if app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 颗 ")).firstMatch.exists {
             clearDraft(app)
         }
         XCTAssertFalse(app.buttons["2D"].exists)
         XCTAssertFalse(app.buttons["3D"].exists)
-        let wood = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "小叶紫檀圆珠，")).firstMatch
-        XCTAssertTrue(wood.waitForExistence(timeout: 20)); wood.tap()
+        wood.tap()
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "星月菩提，")).firstMatch.tap()
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "凤眼菩提，")).firstMatch.tap()
         XCTAssertTrue(app.buttons["第 3 颗 凤眼菩提"].waitForExistence(timeout: 5))
+        app.buttons["编辑选中珠子"].tap()
         app.buttons["向前移动珠子"].tap()
         XCTAssertTrue(app.buttons["第 2 颗 凤眼菩提"].exists)
         app.buttons["撤销"].tap()
@@ -234,8 +244,10 @@ final class DiyStudioUITests: XCTestCase {
         app.buttons["重做"].tap()
         XCTAssertTrue(app.buttons["第 2 颗 凤眼菩提"].exists)
         app.buttons["第 1 颗 小叶紫檀圆珠"].tap()
+        app.buttons["编辑选中珠子"].tap()
         app.buttons["复制"].tap()
         XCTAssertTrue(app.buttons["第 2 颗 小叶紫檀圆珠"].exists)
+        app.buttons["编辑选中珠子"].tap()
         app.buttons["删除"].tap()
         XCTAssertTrue(app.buttons["第 2 颗 凤眼菩提"].exists)
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "ios-single-3d-studio"; shot.lifetime = .keepAlways; add(shot)

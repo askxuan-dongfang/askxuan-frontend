@@ -47,21 +47,7 @@ struct MasterListView: View {
                 HStack { Text(L10n.lookup(error)).font(AppTypography.caption); Spacer(); Button(L10n.text("重试")) { Task { await viewModel.load() } } }.padding(12)
             }
 
-            // 2. 分类标签横滑
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: AppSpacing.sm) {
-                    ForEach(viewModel.beliefOptions) { option in
-                        tagPill(title: option.name, isSelected: viewModel.selectedBeliefCode == option.code) {
-                            viewModel.selectedBeliefCode = option.code
-                        }
-                    }
-                }
-                .padding(.horizontal, AppSpacing.md)
-                .padding(.vertical, 10)
-            }
-            .background(Color.bgPrimary)
-
-            DirectoryFilterBar(region: $viewModel.selectedRegionCode, tradition: $viewModel.selectedTraditionCode)
+            DirectoryFilterBar(beliefs: viewModel.beliefOptions, belief: $viewModel.selectedBeliefCode, region: $viewModel.selectedRegionCode, tradition: $viewModel.selectedTraditionCode)
 
             HStack(spacing: 0) {
                 ScrollView(showsIndicators: false) {
@@ -320,7 +306,6 @@ struct MasterListView: View {
     // MARK: - 筛选值管理（绑定到 ViewModel）
     private func selectedValue(for group: String) -> String {
         switch group {
-        case "宗派": return viewModel.selectedSect
         case "价格区间": return viewModel.selectedPrice
         case "所属寺院": return viewModel.selectedTemple
         case "职位": return viewModel.selectedLevel
@@ -332,7 +317,6 @@ struct MasterListView: View {
 
     private func setSelectedValue(_ value: String, for group: String) {
         switch group {
-        case "宗派": viewModel.selectedSect = value
         case "价格区间": viewModel.selectedPrice = value
         case "所属寺院":   viewModel.selectedTemple = value
         case "职位":       viewModel.selectedLevel = value

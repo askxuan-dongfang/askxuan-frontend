@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct DirectoryRegion: Decodable, Identifiable { let code: String; let name: String; var id: String { code } }
-struct DirectoryTag: Decodable, Identifiable { let code: String; let group: String; let name: String; let value: String; var id: String { code } }
+struct DirectoryTag: Decodable, Identifiable { let code: String; let group: String; let name: String; let value: String; let beliefCode: String?; var id: String { code } }
 private struct DirectoryItems<T: Decodable>: Decodable { let list: [T] }
 
 @MainActor
@@ -25,11 +25,35 @@ private final class DirectoryCatalog: ObservableObject {
 
 /// The same server-owned regions and tradition codes used by both H5 directories.
 struct DirectoryFilterBar: View {
+    let beliefs: [BeliefFilterOption]
+    @Binding var belief: String
     @Binding var region: String
     @Binding var tradition: String
     @StateObject private var catalog = DirectoryCatalog()
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(beliefs) { item in
+                        option(item.name, code: item.code, selected: belief) {
+                            if belief != item.code { tradition = "" }
+                            belief = item.code
+                        }.accessibilityIdentifier("directory-belief-" + item.code)
+                    }
+                }.padding(.horizontal, 16)
+            }.accessibilityElement(children: .contain).accessibilityLabel(L10n.text("信仰分类"))
+            if let selected = beliefs.first(where: { !$0.code.isEmpty && $0.code == belief }) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        option(L10n.text("全部") + L10n.lookup(selected.name), code: "", selected: tradition) { tradition = "" }
+                        ForEach(catalog.traditions.filter { $0.beliefCode == belief }) { item in
+                            option(item.name, code: item.code, selected: tradition) { tradition = item.code }
+                                .accessibilityIdentifier("directory-tradition-" + item.code)
+                        }
+                    }.padding(.horizontal, 16)
+                }.padding(.vertical, 8).background(Color.bgSecondary)
+                    .accessibilityElement(children: .contain).accessibilityLabel(L10n.text("宗派与信俗筛选"))
+            }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     option("全部地区", code: "", selected: region) { region = "" }
@@ -39,16 +63,9 @@ struct DirectoryFilterBar: View {
                 }.padding(.horizontal, 16)
             }.accessibilityElement(children: .contain).accessibilityLabel(L10n.text("地区筛选"))
             HStack {
-                Menu {
-                    Button(L10n.text("全部宗派 / 信俗")) { tradition = "" }
-                    ForEach(catalog.traditions) { item in Button(L10n.lookup(item.name)) { tradition = item.code } }
-                } label: {
-                    Label(L10n.lookup(catalog.traditions.first { $0.code == tradition }?.name ?? L10n.text("宗派 / 信俗")), systemImage: "line.3.horizontal.decrease")
-                        .font(.subheadline).frame(minHeight: 40)
-                }.accessibilityLabel(L10n.text("宗派与信俗筛选"))
                 Spacer()
-                if !region.isEmpty || !tradition.isEmpty {
-                    Button(L10n.text("清除")) { AppMotion.perform { region = ""; tradition = "" } }.font(.subheadline).frame(minHeight: 40)
+                if !region.isEmpty {
+                    Button(L10n.text("清除")) { AppMotion.perform { region = "" } }.font(.subheadline).frame(minHeight: 44)
                 }
                 if let error = catalog.error { Button(L10n.lookup(error + L10n.text("，重试"))) { Task { await catalog.load() } }.font(.caption) }
             }.padding(.horizontal, 16)
@@ -57,7 +74,7 @@ struct DirectoryFilterBar: View {
     }
     private func option(_ title: String, code: String, selected: String, action: @escaping () -> Void) -> some View {
         Button { AppMotion.perform { action() } } label: {
-            Text(L10n.lookup(title)).font(.subheadline).padding(.horizontal, 14).frame(minHeight: 40)
+            Text(L10n.lookup(title)).font(.subheadline).padding(.horizontal, 14).frame(minHeight: 44)
                 .background(code == selected ? Color.brandDefault : Color.bgSecondary, in: Capsule())
                 .foregroundStyle(code == selected ? .white : Color.textSecondary)
         }.buttonStyle(CardPressButtonStyle())

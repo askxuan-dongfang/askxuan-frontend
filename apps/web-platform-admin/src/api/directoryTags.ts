@@ -1,5 +1,5 @@
 import client from './client'
-export interface DirectoryTag { code:string; group:'tradition'|'position'|'specialty'; name:string; value:string; sort:number; status:'enabled'|'disabled' }
+export interface DirectoryTag { beliefCode?:string; code:string; group:'tradition'|'position'|'specialty'; name:string; value:string; sort:number; status:'enabled'|'disabled' }
 const base='/admin/platform/beliefs/directory-tags'
 export const getDirectoryTags=()=>client.get<{list:DirectoryTag[]}>(base)
 export const getPublicDirectoryTags=()=>client.get<{list:DirectoryTag[]}>('/beliefs/directory-tags')

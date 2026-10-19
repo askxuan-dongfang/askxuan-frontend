@@ -146,18 +146,19 @@ struct DiyDesignView: View {
     }
 
     private var topBar: some View {
-        HStack(spacing: 8) {
+        HStack {
             DFBackButton()
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(L10n.text("东方珠作"))
-                    .font(AppTypography.reading.weight(.semibold))
-                    .foregroundStyle(.textPrimary)
-                Text(L10n.lookup(viewModel.draftStateText))
-                    .font(.caption)
-                    .foregroundStyle(.textSecondary)
-            }
             Spacer()
+            Text(L10n.text("东方珠作")).font(AppTypography.reading.weight(.semibold)).foregroundStyle(.textPrimary)
+            Spacer()
+            Color.clear.frame(width: 44, height: 44)
+        }.foregroundStyle(.accentDefault).padding(.horizontal, 12).frame(minHeight: 60)
+            .background(Color.bgPrimary.opacity(0.96))
+            .overlay(alignment: .bottom) { Rectangle().fill(Color.borderDivider).frame(height: 1) }
+    }
+
+    private var historyButtons: some View {
+        HStack(spacing: 4) {
             Button { viewModel.undo(); UISelectionFeedbackGenerator().selectionChanged() } label: {
                 Label(L10n.text("撤销"), systemImage: "arrow.uturn.backward").font(.caption)
                     .frame(minWidth: 48, minHeight: 44)
@@ -170,14 +171,9 @@ struct DiyDesignView: View {
             }
             .disabled(!viewModel.canRedo)
             .accessibilityLabel(L10n.text("重做"))
-        }
-        .foregroundStyle(.accentDefault)
-        .padding(.horizontal, 12)
-        .frame(minHeight: 60)
-        .background(Color.bgPrimary.opacity(0.96))
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(Color.borderDivider).frame(height: 1)
-        }
+        }.padding(3).foregroundStyle(Color.textPrimary)
+            .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 10))
+            .overlay { RoundedRectangle(cornerRadius: 10).stroke(Color.borderDefault, lineWidth: 1) }
     }
 
     private var composition: some View {
@@ -195,6 +191,12 @@ struct DiyDesignView: View {
                     resetVersion: resetView, darkSurface: darkSurface)
                     .background(darkSurface ? Color(red: 0.15, green: 0.23, blue: 0.2) : Color(red: 0.93, green: 0.91, blue: 0.87))
                     .accessibilityIdentifier("diy-3d-stage")
+                    .accessibilityChildren {
+                        ForEach(Array(viewModel.beadSlots.enumerated()), id: \.element.id) { index, bead in
+                            Button(L10n.text("第 \(index + 1) 颗 \(bead.materialName)")) { viewModel.selectBead(bead.id) }
+                                .accessibilityAddTraits(bead.id == viewModel.selectedBeadId ? .isSelected : [])
+                        }
+                    }
                 HStack(spacing: 8) {
                     Button(L10n.text("复位")) { resetView += 1 }.accessibilityLabel(L10n.text("重置 3D 视角"))
                     Button(L10n.lookup(darkSurface ? L10n.text("浅色") : L10n.text("深色"))) { darkSurface.toggle() }.accessibilityLabel(L10n.text("切换台面颜色"))
@@ -206,28 +208,8 @@ struct DiyDesignView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity).allowsHitTesting(false)
                 }
             }.frame(maxHeight: .infinity)
-            selectedToolbar.frame(height: 48)
-            ScrollViewReader { proxy in
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 4) {
-                        ForEach(Array(viewModel.beadSlots.enumerated()), id: \.element.id) { index, bead in
-                            Button { viewModel.selectBead(bead.id) } label: {
-                                HStack(spacing: 2) {
-                                    DiyMaterialBead(name: bead.materialName, category: bead.subtype, size: 22, isSelected: false,
-                                        shape: bead.shape ?? "round", colorHex: bead.colorHex, textureKey: bead.textureKey,
-                                        finish: bead.finish, translucency: bead.translucency ?? 0, renderAssets: bead.renderAssets,
-                                        materialId: bead.materialId, materialType: bead.materialType)
-                                    Text("\(index + 1)").font(.caption2)
-                                }.padding(5).frame(minWidth: 42, minHeight: 38)
-                                    .background(bead.id == viewModel.selectedBeadId ? Color.accentDefault.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
-                            }.id(bead.id).accessibilityLabel(L10n.text("第 \(index + 1) 颗 \(bead.materialName)"))
-                                .accessibilityAddTraits(bead.id == viewModel.selectedBeadId ? .isSelected : [])
-                        }
-
-                    }.padding(.horizontal, 8)
-                }.frame(height: 44)
-                    .onChange(of: viewModel.selectedBeadId) { _, id in if let id { proxy.scrollTo(id, anchor: .center) } }
-            }
+                .overlay(alignment: .bottomTrailing) { historyButtons.padding(8) }
+                .overlay(alignment: .topLeading) { selectedBeadMenu.padding(8) }
         }.background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1) }
     }
@@ -288,28 +270,22 @@ struct DiyDesignView: View {
         return String(format: "内围预估 %.1f cm · %@", inner / 10, status)
     }
 
-    private var selectedToolbar: some View {
-        HStack(spacing: 4) {
+    private var selectedBeadMenu: some View {
+        Group {
             if let selected = viewModel.selectedBead {
                 let index = viewModel.beadSlots.firstIndex { $0.id == selected.id } ?? 0
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(L10n.lookup(selected.materialName)).font(.caption.weight(.semibold)).lineLimit(1)
-                    Text(L10n.text("第 \(index + 1) 颗 · \(selected.spec)")).font(.caption2).foregroundStyle(Color.textSecondary)
-                }
-                Spacer(minLength: 4)
-                Button { viewModel.moveBead(id: selected.id, to: index - 1) } label: { Image(systemName: "arrow.left").frame(width: 32, height: 44) }
-                    .disabled(index == 0).accessibilityLabel(L10n.text("向前移动珠子"))
-                Button { viewModel.moveBead(id: selected.id, to: index + 1) } label: { Image(systemName: "arrow.right").frame(width: 32, height: 44) }
-                    .disabled(index == viewModel.beadSlots.count - 1).accessibilityLabel(L10n.text("向后移动珠子"))
-                Button(L10n.text("复制")) { viewModel.duplicateSelectedBead() }.frame(minWidth: 36, minHeight: 44).disabled(viewModel.beadSlots.count >= 60)
-                Button(L10n.text("删除")) { viewModel.removeSelectedBead() }.frame(minWidth: 36, minHeight: 44)
-            } else {
-                Text(L10n.lookup(viewModel.beadSlots.isEmpty ? L10n.text("选择材料，开始搭配") : L10n.text("点选珠子编辑 · 拖动珠子换位")))
-                    .font(.caption).foregroundStyle(Color.textSecondary)
-                Spacer()
+                Menu {
+                    Text(L10n.lookup(selected.materialName))
+                    Button(L10n.text("向前移动珠子")) { viewModel.moveBead(id: selected.id, to: index - 1) }.disabled(index == 0)
+                    Button(L10n.text("向后移动珠子")) { viewModel.moveBead(id: selected.id, to: index + 1) }.disabled(index == viewModel.beadSlots.count - 1)
+                    Button(L10n.text("复制")) { viewModel.duplicateSelectedBead() }.disabled(viewModel.beadSlots.count >= 60)
+                    Button(L10n.text("删除"), role: .destructive) { viewModel.removeSelectedBead() }
+                } label: {
+                    Image(systemName: "ellipsis").frame(width: 44, height: 44)
+                        .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 8))
+                }.foregroundStyle(Color.textPrimary).accessibilityLabel(L10n.text("编辑选中珠子"))
             }
-        }.font(.caption).foregroundStyle(Color.textPrimary).padding(.horizontal, 10)
-            .overlay(alignment: .top) { Rectangle().fill(Color.borderDivider).frame(height: 1) }
+        }
     }
 
     private var materialPanel: some View {
@@ -331,8 +307,9 @@ struct DiyDesignView: View {
                 if !materialSearch.isEmpty { Button { materialSearch = "" } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel(L10n.text("清除搜索")) }
             }.font(.subheadline).foregroundStyle(Color.textSecondary).padding(.horizontal, 10).frame(height: 34)
                 .background(Color.bgPrimary, in: RoundedRectangle(cornerRadius: 8)).padding(.horizontal, 10)
-            categoryTabs
-            ScrollView(showsIndicators: false) {
+            HStack(spacing: 0) {
+                categoryTabs.frame(width: 62)
+                ScrollView(showsIndicators: false) {
                 if viewModel.isLoading && viewModel.materials.isEmpty {
                     ProgressView(L10n.text("正在加载材料")).frame(maxWidth: .infinity, minHeight: 120)
                 } else if filteredMaterials.isEmpty {
@@ -348,15 +325,16 @@ struct DiyDesignView: View {
                     Link(L10n.text("材质素材来源"), destination: URL(string: "/assets/diy/materials-v2/credits.html", relativeTo: AppConfig.baseURL)!.absoluteURL)
                         .font(.caption2).foregroundStyle(Color.textSecondary).padding(.vertical, 12)
                 }
-            }.scrollDismissesKeyboard(.interactively)
+                }.scrollDismissesKeyboard(.interactively)
+            }
         }.padding(.top, 6).background(Color.bgSecondary)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1) }
     }
 
     private var categoryTabs: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 4) {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 0) {
                 ForEach(viewModel.categories, id: \.code) { category in
                     let isSelected = viewModel.selectedCategory == category.code
                     Button {
@@ -367,9 +345,10 @@ struct DiyDesignView: View {
                         Text(L10n.lookup(category.name))
                             .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
                             .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary)
-                            .padding(.horizontal, 10)
-                            .frame(minHeight: 44)
-                            .overlay(alignment: .bottom) { Rectangle().fill(isSelected ? Color.brandDefault : .clear).frame(height: 2) }
+                            .padding(.horizontal, 4)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .background(isSelected ? Color.brandDefault.opacity(0.08) : .clear)
+                            .overlay(alignment: .leading) { Rectangle().fill(isSelected ? Color.brandDefault : .clear).frame(width: 2) }
                     }
                     .buttonStyle(DiyPressButtonStyle())
                     .accessibilityAddTraits(isSelected ? .isSelected : [])
