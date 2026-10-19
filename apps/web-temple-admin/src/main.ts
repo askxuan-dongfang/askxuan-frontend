@@ -1,9 +1,11 @@
-import { installLanguage } from './i18n'
+import { appLanguage, installLanguage } from './i18n'
 import { initOverlayViewport } from '../../../packages/admin-ui/overlay-viewport'
 import { initAdminTheme } from '../../../packages/admin-ui/theme'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import zhTw from 'element-plus/es/locale/lang/zh-tw'
 import 'element-plus/dist/index.css'
 
 import App from './App.vue'
@@ -18,7 +20,7 @@ installLanguage(app)
 
 app.use(createPinia())
 app.use(router)
-app.use(ElementPlus)
+app.use(ElementPlus, { get locale() { return appLanguage.value === 'zh-Hant' ? zhTw : zhCn } })
 
 // 图标组件在各个 .vue 中按需显式 import（便于 vue-tsc 类型检查）
 
