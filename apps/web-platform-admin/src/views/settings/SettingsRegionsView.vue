@@ -19,7 +19,7 @@
     <el-form-item :label='$t("状态")'><el-radio-group v-model="form.status"><el-radio value="enabled">{{ $t("启用") }}</el-radio><el-radio value="disabled">{{ $t("停用") }}</el-radio></el-radio-group></el-form-item>
     <p v-if="saveError" role="alert">{{$t(saveError)}}</p>
    </el-form>
-   <template #footer><el-button @click="visible=false">{{ $t("取消") }}</el-button><el-button type="primary" :loading="saving" @click="save">{{ $t("保存") }}</el-button></template>
+   <template #footer><el-button @click="visible=false" data-quiet-action="cancel">{{ $t("取消") }}</el-button><el-button type="primary" :loading="saving" @click="save">{{ $t("保存") }}</el-button></template>
   </el-dialog>
  </div>
 </template>

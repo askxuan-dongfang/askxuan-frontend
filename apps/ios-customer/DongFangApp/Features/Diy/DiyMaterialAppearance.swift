@@ -1,5 +1,6 @@
 import SwiftUI
 import SceneKit
+import simd
 
 // The JSON and source images are shared byte-for-byte with H5. UIKit thumbnails
 // and SceneKit consume the same cropped, color-calibrated reference surface.
@@ -94,7 +95,7 @@ struct DiyAppearanceProfile: Decodable {
     static func apply(_ bead: DiyBeadSlot, to material: SCNMaterial) {
         guard let (_, profile) = profile(bead) else { return }
         material.metalness.contents = profile.metalness
-        material.roughness.contents = profile.roughness
+        material.roughness.contents = profile.metalness > 0.5 && bead.finish == "brushed" ? max(0.4, profile.roughness) : profile.roughness
         material.clearCoat.contents = profile.clearcoat
         material.clearCoatRoughness.contents = max(0.18, profile.roughness)
         material.normal.intensity = profile.normalStrength
@@ -108,10 +109,11 @@ struct DiyAppearanceProfile: Decodable {
         // SceneKit has no volume-transmission property. Keep reflected lighting
         // and use two transparent surfaces with angle-dependent optical density;
         // this is a native approximation, not a claim of volumetric refraction.
-        if profile.transmission > 0.1 {
+        let transmission = profile.transmission > 0 ? max(0, min(1, bead.translucency ?? profile.transmission)) : 0
+        if transmission > 0.1 {
             material.transparencyMode = .dualLayer
             material.fresnelExponent = 5
-            material.setValue(NSNumber(value: profile.transmission), forKey: "diyTransmission")
+            material.setValue(NSNumber(value: transmission), forKey: "diyTransmission")
             material.shaderModifiers = [.surface: """
                 uniform float diyTransmission;
                 #pragma transparent
@@ -123,11 +125,54 @@ struct DiyAppearanceProfile: Decodable {
                 """]
         }
     }
-    static func geometry(radius: CGFloat, shape: String) -> SCNGeometry {
+    private struct Mesh: Decodable {
+        let positions, normals, uv: [Float]
+        let indices: [Int32]
+    }
+    private static var accessoryMeshes: [String: SCNGeometry] = [:]
+    static func accessoryGeometry(_ kind: String) -> SCNGeometry? {
+        if let cached = accessoryMeshes[kind] { return cached.copy() as? SCNGeometry }
+        guard let profile = DiyGeometry.profile(kind), let url = root?.appendingPathComponent(profile.file),
+              let data = try? Data(contentsOf: url), let mesh = try? JSONDecoder().decode(Mesh.self, from: data),
+              mesh.positions.count % 3 == 0, mesh.normals.count == mesh.positions.count, mesh.uv.count == mesh.positions.count / 3 * 2 else { return nil }
+        let vertices = stride(from: 0, to: mesh.positions.count, by: 3).map { SCNVector3(mesh.positions[$0], mesh.positions[$0+1], mesh.positions[$0+2]) }
+        let normals = stride(from: 0, to: mesh.normals.count, by: 3).map { SCNVector3(mesh.normals[$0], mesh.normals[$0+1], mesh.normals[$0+2]) }
+        let uv = stride(from: 0, to: mesh.uv.count, by: 2).map { CGPoint(x: CGFloat(mesh.uv[$0]), y: CGFloat(mesh.uv[$0+1])) }
+        let geometry = SCNGeometry(sources: [.init(vertices: vertices), .init(normals: normals), .init(textureCoordinates: uv)], elements: [.init(indices: mesh.indices, primitiveType: .triangles)])
+        accessoryMeshes[kind] = geometry; return geometry.copy() as? SCNGeometry
+    }
+    static func accessoryThumbnail(_ kind: String) -> UIImage? {
+        guard let profile = DiyGeometry.profile(kind), let url = root?.appendingPathComponent(profile.thumbnail) else { return nil }
+        let key = "geometry:\(kind)" as NSString
+        if let cached = images.object(forKey: key) { return cached }
+        guard let image = UIImage(contentsOfFile: url.path) else { return nil }
+        images.setObject(image, forKey: key, cost: 160 * 160 * 4); return image
+    }
+    static func cordGeometry(points: [SIMD3<Double>], scale: Double) -> SCNGeometry {
+        var vertices: [SCNVector3] = [], normals: [SCNVector3] = [], indices: [Int32] = []
+        let sides = 6
+        for index in points.indices {
+            let before = points[max(0, index-1)], after = points[min(points.count-1, index+1)]
+            let direction = after - before, tangent = simd_normalize(SIMD3<Float>(Float(direction.x), Float(direction.y), Float(direction.z)))
+            let normal = simd_normalize(simd_cross(tangent, SIMD3<Float>(0,1,0))), binormal = simd_cross(tangent, normal)
+            for side in 0..<sides {
+                let angle = Float(side) / Float(sides) * 2 * .pi, n = cos(angle) * normal + sin(angle) * binormal
+                let p = points[index] * scale
+                let radius = Float(0.4 * scale)
+                vertices.append(SCNVector3(Float(p.x) + n.x * radius, Float(p.y) + n.y * radius, Float(p.z) + n.z * radius)); normals.append(SCNVector3(n))
+                if index < points.count-1 {
+                    let a = Int32(index*sides+side), b = Int32(index*sides+(side+1)%sides), c = a + Int32(sides), d = b + Int32(sides)
+                    indices.append(contentsOf: [a,b,c,b,d,c])
+                }
+            }
+        }
+        return SCNGeometry(sources: [.init(vertices: vertices), .init(normals: normals)], elements: [.init(indices: indices, primitiveType: .triangles)])
+    }
+    static func geometry(radius: CGFloat, shape: String, axialLength: CGFloat? = nil) -> SCNGeometry {
         let r = Float(radius), hole = r * (shape == "pendant" ? 0.3 : 0.13)
         var profile: [(Float, Float)] = []
         if shape == "disc" || shape == "barrel" {
-            let half = r * (shape == "disc" ? 0.45 : 1.15), width = r * (shape == "barrel" ? 0.85 : 1)
+            let half = axialLength.map { Float($0 / 2) } ?? r * (shape == "disc" ? 0.45 : 1.15), width = r * (shape == "barrel" ? 0.85 : 1)
             profile = [(hole,-half),(width*0.92,-half),(width,-half*0.8),(width,half*0.8),(width*0.92,half),(hole,half),(hole,-half)]
         } else {
             let limit = acos(hole / r)

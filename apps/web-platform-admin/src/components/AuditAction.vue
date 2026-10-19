@@ -16,7 +16,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="visible = false">{{ $t("取消") }}</el-button>
+        <el-button @click="visible = false" data-quiet-action="cancel">{{ $t("取消") }}</el-button>
         <el-button :type="action === 'approve' ? 'success' : 'danger'" :loading="submitting" @click="confirm">{{ $t("确认") }}</el-button>
       </template>
     </el-dialog>

@@ -135,7 +135,7 @@ onMounted(load)
         <el-form-item :label='$t("封面地址")'><el-input v-model="beliefForm.coverImage" /></el-form-item>
         <el-form-item :label='$t("排序")'><el-input-number v-model="beliefForm.sort" :min="0" /></el-form-item>
       </el-form>
-      <template #footer><el-button @click="beliefVisible=false">{{ $t("取消") }}</el-button><el-button type="primary" @click="saveBelief">{{ $t("保存") }}</el-button></template>
+      <template #footer><el-button @click="beliefVisible=false" data-quiet-action="cancel">{{ $t("取消") }}</el-button><el-button type="primary" @click="saveBelief">{{ $t("保存") }}</el-button></template>
     </el-dialog>
 
     <el-dialog v-model="intentionVisible" :title="$t((editingIntention ? $t('编辑心愿') : $t('新增心愿')))" width="620px" append-to-body>
@@ -153,7 +153,7 @@ onMounted(load)
         <el-form-item :label='$t("按钮文案")'><el-input v-model="intentionForm.actionTitle" :placeholder='$t("如 立即办理")' /></el-form-item>
         <el-form-item :label='$t("排序")'><el-input-number v-model="intentionForm.sort" :min="0" /></el-form-item>
       </el-form>
-      <template #footer><el-button @click="intentionVisible=false">{{ $t("取消") }}</el-button><el-button type="primary" @click="saveIntention">{{ $t("保存") }}</el-button></template>
+      <template #footer><el-button @click="intentionVisible=false" data-quiet-action="cancel">{{ $t("取消") }}</el-button><el-button type="primary" @click="saveIntention">{{ $t("保存") }}</el-button></template>
     </el-dialog>
   </div>
 </template>

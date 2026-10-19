@@ -15,15 +15,22 @@ struct ShopView: View {
         ScrollViewReader { _ in
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 22) {
-                    HStack(alignment: .bottom) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(L10n.text("发现日常好物")).font(AppTypography.caption).foregroundStyle(Color.textTertiary)
-                            Text(L10n.text("商城")).font(AppTypography.title(27))
+                    HStack(spacing: 8) {
+                        searchBar
+                        NavigationLink { ShopCartView() } label: {
+                            Image(systemName: "cart").font(.system(size: 22)).frame(width: 44, height: 44)
+                                .overlay(alignment: .topTrailing) {
+                                    if cart.itemCount > 0 {
+                                        Text(cart.itemCount > 99 ? "99+" : "\(cart.itemCount)")
+                                            .font(.system(size: 10, weight: .semibold)).monospacedDigit()
+                                            .padding(.horizontal, 5).padding(.vertical, 2)
+                                            .background(Color.brandDefault, in: Capsule()).foregroundStyle(.white)
+                                    }
+                                }
                         }
-                        Spacer()
-                        NavigationLink { ShopCartView() } label: { Label(L10n.lookup(cart.itemCount > 0 ? "\(cart.itemCount)" : L10n.text("购物车")), systemImage: "cart") }
-                    }.font(AppTypography.supporting).foregroundStyle(Color.accentDefault)
-                    searchBar
+                        .accessibilityLabel(L10n.text("购物车，\(cart.itemCount)件商品"))
+                        .accessibilityIdentifier("shop-cart")
+                    }.foregroundStyle(Color.accentDefault)
                     HStack(spacing: 8) {
                         NavigationLink { PointsView() } label: { pathway("积分商城", icon: "gift") }
                         NavigationLink { DiyBraceletView() } label: { pathway("DIY 定制", icon: "sparkles") }
@@ -102,12 +109,12 @@ struct ShopView: View {
         }.frame(maxWidth: .infinity).padding(.vertical, 6)
     }
     private var searchBar: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 6) {
             Image(systemName: "magnifyingglass").foregroundStyle(Color.textTertiary)
-            TextField(L10n.text("搜索商品名称"), text: $viewModel.keyword).submitLabel(.search).onSubmit { viewModel.search() }
+            TextField(L10n.text("搜索商品名称"), text: $viewModel.keyword).frame(minWidth: 0).submitLabel(.search).onSubmit { viewModel.search() }.accessibilityIdentifier("shop-search")
             if !viewModel.keyword.isEmpty { Button { viewModel.keyword = ""; viewModel.search() } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel(L10n.text("清除搜索")) }
-            Button(L10n.text("搜索")) { viewModel.search() }.tint(Color.accentDefault)
-        }.font(AppTypography.body).padding(14).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 15)).overlay(RoundedRectangle(cornerRadius: 15).stroke(Color.borderDefault))
+            Button(L10n.text("搜索")) { viewModel.search() }.tint(Color.accentDefault).fixedSize().frame(minWidth: 40, minHeight: 44)
+        }.font(AppTypography.body).padding(.horizontal, 12).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 15))
     }
     private func productCard(_ product: ShopProduct) -> some View {
         NavigationLink { ShopProductDetailView(product: product) } label: {

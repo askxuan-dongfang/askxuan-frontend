@@ -11,18 +11,18 @@
 import SwiftUI
 
 struct ProfileView: View {
- @ObservedObject private var growthSync = GrowthSync.shared
+    @ObservedObject private var growthSync = GrowthSync.shared
     @StateObject private var viewModel = ProfileViewModel()
     @EnvironmentObject private var authStore: AuthStore
 
     // MARK: - 从 ViewModel 派生的真实数据（无假数据；字段缺失时显示 "—" 占位）
 
-    /// 统计行：功德值 / 积分 / 优惠券
-    /// 注：当前 UserProfile 模型未提供这些字段，故展示 "—" 占位，待后端补齐后接入
+    /// 成长与资产使用同一统计行；数据仅来自当前账号，未加载时显示占位。
     private var stats: [(label: String, value: String)] {
+        let growth = growthSync.identity == "\(authStore.sessionID)" ? growthSync.overview.map { String($0.total) } ?? "—" : "—"
         let points = viewModel.pointsBalance.map { String($0) } ?? "—"
         let coupons = viewModel.couponsLoaded ? "\(viewModel.availableCouponCount)" : "—"
-        return [("积分", points), ("优惠券", coupons)]
+        return [("成长值", growth), ("积分", points), ("优惠券", coupons)]
     }
 
     /// 订单中心入口：角标来自 viewModel.recentBookings 的真实状态计数
@@ -151,9 +151,6 @@ struct ProfileView: View {
                         Spacer(); Image(systemName: "chevron.right").foregroundStyle(Color.textTertiary)
                     }.padding(18).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
                 }.padding(.horizontal, AppSpacing.lg).padding(.top, 16)
-                NavigationLink { GrowthView().id(authStore.sessionID) } label: {
-                    VStack(alignment: .leading, spacing: 6) { Label(L10n.text("我的成长"),systemImage:"leaf"); if growthSync.identity == "\(authStore.sessionID)", let v = growthSync.overview { Text("L\(v.level.code) " + L10n.lookup(v.level.name) + " · \(v.total) " + L10n.text("成长值")).font(.caption).foregroundStyle(.secondary) } }.frame(maxWidth:.infinity,alignment:.leading).padding(18).background(Color.bgSecondary,in:RoundedRectangle(cornerRadius:16))
-                }.padding(.horizontal,AppSpacing.lg).padding(.top,16)
                 JourneyEntryView().padding(.horizontal, AppSpacing.lg).padding(.top, 16)
                 orderCenterSection
                 servicesSection
@@ -225,20 +222,23 @@ struct ProfileView: View {
             HStack(spacing: 0) {
                 ForEach(Array(stats.enumerated()), id: \.offset) { index, item in
                     NavigationLink {
-                        if item.label == "优惠券" { CouponView() } else { PointsView() }
+                        if item.label == "成长值" { GrowthView().id(authStore.sessionID) }
+                        else if item.label == "优惠券" { CouponView() }
+                        else { PointsView() }
                     } label: {
                     VStack(spacing: 2) {
                         Text(L10n.lookup(item.value))
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundStyle(Color.accentDefault)
                             .monospacedDigit()
+                            .lineLimit(1).minimumScaleFactor(0.7)
                         Text(L10n.lookup(item.label)).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
-                        Text(L10n.lookup(item.label == "功德值" ? L10n.text("成长记录待开放") : item.label == "积分" ? L10n.text("查看积分明细") : L10n.text("查看可用优惠")))
+                        Text(L10n.lookup(item.label == "成长值" ? (growthSync.error == nil ? L10n.text("查看成长详情") : L10n.text("暂未获取")) : item.label == "积分" ? L10n.text("查看积分明细") : L10n.text("查看可用优惠")))
                             .font(.system(size: 10)).foregroundStyle(Color.textTertiary)
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, minHeight: 58)
                     }
-                    .disabled(item.label == "功德值")
+                    .accessibilityIdentifier(item.label == "成长值" ? "profile-growth" : item.label == "积分" ? "profile-points" : "profile-coupons")
 
                     if index < stats.count - 1 {
                         Rectangle()

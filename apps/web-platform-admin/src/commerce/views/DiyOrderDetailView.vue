@@ -244,7 +244,7 @@ onMounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="shipDialogVisible = false">{{ $t("取消") }}</el-button>
+        <el-button @click="shipDialogVisible = false" data-quiet-action="cancel">{{ $t("取消") }}</el-button>
         <el-button type="primary" :loading="shipSaving" @click="handleShip">{{ $t("确认发货") }}</el-button>
       </template>
     </el-dialog>

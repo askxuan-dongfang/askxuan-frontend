@@ -9,6 +9,7 @@ import SwiftUI
 
 struct TempleListView: View {
     @State private var searchVisible = false
+    @State private var isTraditionPresented = false
     @FocusState private var searchFocused: Bool
     @StateObject private var viewModel: TempleListViewModel
 
@@ -18,6 +19,7 @@ struct TempleListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            Group {
             // 1. 顶部导航栏
             DFTopNavBar("找寺院") {
                 EmptyView()
@@ -45,8 +47,10 @@ struct TempleListView: View {
             if let error = viewModel.errorMessage {
                 HStack { Text(L10n.lookup(error)).font(AppTypography.caption); Spacer(); Button(L10n.text("重试")) { Task { await viewModel.load() } } }.padding(12)
             }
+            }.directoryFilterDismissArea(isPresented: $isTraditionPresented)
 
-            DirectoryFilterBar(beliefs: viewModel.beliefOptions, belief: $viewModel.selectedBeliefCode, region: $viewModel.selectedRegionCode, tradition: $viewModel.selectedTraditionCode)
+            DirectoryFilterBar(beliefs: viewModel.beliefOptions, belief: $viewModel.selectedBeliefCode, region: $viewModel.selectedRegionCode, tradition: $viewModel.selectedTraditionCode, isTraditionPresented: $isTraditionPresented)
+                .zIndex(1)
 
             HStack(spacing: 0) {
                 ScrollView(showsIndicators: false) {
@@ -70,7 +74,7 @@ struct TempleListView: View {
                 } else {
                     templeListContent
                 }
-            }
+            }.directoryFilterDismissArea(isPresented: $isTraditionPresented)
         }
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)

@@ -6,6 +6,7 @@
 import SwiftUI
 import UIKit
 import SceneKit
+import simd
 
 struct DiyDesignView: View {
     @StateObject private var viewModel: DiyViewModel
@@ -22,6 +23,8 @@ struct DiyDesignView: View {
     @State private var resetView = 0
     @State private var darkSurface = false
     @State private var elementFilter = "all"
+    @State private var previewExpanded = false
+    @State private var replacingBeadId: String?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
@@ -49,12 +52,12 @@ struct DiyDesignView: View {
                         HStack(spacing: 12) {
                             composition
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            materialPanel.frame(width: min(380, geometry.size.width * 0.4))
+                            if !previewExpanded { materialPanel.frame(width: min(380, geometry.size.width * 0.4)) }
                         }.padding(12)
                     } else {
                         VStack(spacing: 10) {
-                            composition.frame(height: max(245, min(360, geometry.size.height * 0.49)))
-                            materialPanel.frame(maxHeight: .infinity)
+                            composition.frame(height: previewExpanded ? nil : max(260, min(400, max(geometry.size.height * 0.52, min(295, geometry.size.height - 155)))))
+                            if !previewExpanded { materialPanel.frame(maxHeight: .infinity) }
                         }.padding(.horizontal, 10).padding(.vertical, 8)
                     }
                 }
@@ -75,6 +78,10 @@ struct DiyDesignView: View {
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
         .onAppear { darkSurface = colorScheme == .dark }
+        .onChange(of: colorScheme) { _, scheme in darkSurface = scheme == .dark }
+        .onChange(of: viewModel.beadSlots.map(\.id)) { _, ids in
+            if let replacingBeadId, !ids.contains(replacingBeadId) { self.replacingBeadId = nil }
+        }
         .task {
             if viewModel.materials.isEmpty { await viewModel.loadMaterials() }
         }
@@ -171,9 +178,7 @@ struct DiyDesignView: View {
             }
             .disabled(!viewModel.canRedo)
             .accessibilityLabel(L10n.text("重做"))
-        }.padding(3).foregroundStyle(Color.textPrimary)
-            .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 10))
-            .overlay { RoundedRectangle(cornerRadius: 10).stroke(Color.borderDefault, lineWidth: 1) }
+        }.foregroundStyle(Color.textPrimary).buttonStyle(.plain)
     }
 
     private var composition: some View {
@@ -184,12 +189,20 @@ struct DiyDesignView: View {
                 Spacer()
                 Button(L10n.lookup(String(format: "手围 %.1f cm  ›", Double(viewModel.wristSizeMm) / 10))) { sizePanelExpanded = true }
                     .font(.caption).foregroundStyle(Color.textSecondary).frame(minHeight: 36)
-            }.padding(.horizontal, 12)
+            }.padding(.horizontal, 4)
+            HStack(spacing: 8) {
+                Text(L10n.lookup(String(format: "内围预估 %.1f cm", viewModel.fitFeedback.innerMm / 10)))
+                Text(L10n.lookup(viewModel.fitFeedback.label))
+                    .foregroundStyle(viewModel.fitFeedback.state == .good ? Color.stateSuccess : viewModel.fitFeedback.state == .empty ? Color.textSecondary : Color.stateWarning)
+                Spacer()
+            }.font(.caption).foregroundStyle(Color.textSecondary).monospacedDigit()
+                .padding(.horizontal, 4).frame(minHeight: 24)
+                .accessibilityElement(children: .combine).accessibilityIdentifier("diy-fit-feedback")
             ZStack(alignment: .topTrailing) {
                 DiyNativeStage3D(slots: viewModel.beadSlots, wrist: Double(viewModel.wristSizeMm), allowance: viewModel.fitAllowanceMm,
                     selectedId: viewModel.selectedBeadId, onSelect: viewModel.selectBead, onMove: viewModel.moveBead,
-                    resetVersion: resetView, darkSurface: darkSurface)
-                    .background(darkSurface ? Color(red: 0.15, green: 0.23, blue: 0.2) : Color(red: 0.93, green: 0.91, blue: 0.87))
+                    resetVersion: resetView, darkSurface: darkSurface, cordColor: viewModel.selectedCord?.colorHex)
+                    .padding(.top, 44).padding(.bottom, 52)
                     .accessibilityIdentifier("diy-3d-stage")
                     .accessibilityChildren {
                         ForEach(Array(viewModel.beadSlots.enumerated()), id: \.element.id) { index, bead in
@@ -197,21 +210,26 @@ struct DiyDesignView: View {
                                 .accessibilityAddTraits(bead.id == viewModel.selectedBeadId ? .isSelected : [])
                         }
                     }
-                HStack(spacing: 8) {
-                    Button(L10n.text("复位")) { resetView += 1 }.accessibilityLabel(L10n.text("重置 3D 视角"))
-                    Button(L10n.lookup(darkSurface ? L10n.text("浅色") : L10n.text("深色"))) { darkSurface.toggle() }.accessibilityLabel(L10n.text("切换台面颜色"))
-                }.font(.caption2).buttonStyle(.bordered).tint(Color.accentDefault).padding(8)
+                HStack(spacing: 6) {
+                    Button(L10n.text("复位")) { resetView += 1 }.frame(minWidth: 44, minHeight: 44).accessibilityLabel(L10n.text("重置 3D 视角"))
+                    Button(L10n.lookup(darkSurface ? L10n.text("浅色") : L10n.text("深色"))) { darkSurface.toggle() }.frame(minWidth: 44, minHeight: 44).accessibilityLabel(L10n.text("切换台面颜色"))
+                }.font(.caption).buttonStyle(.plain).foregroundStyle(Color.textSecondary).padding(.trailing, 4)
                 if viewModel.beadSlots.isEmpty {
                     VStack(spacing: 6) {
                         Text(L10n.text("点选材料，加入手串")).font(.subheadline)
-                    }.foregroundStyle(Color(red: 0.35, green: 0.4, blue: 0.33))
+                    }.foregroundStyle(Color.textSecondary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity).allowsHitTesting(false)
                 }
             }.frame(maxHeight: .infinity)
-                .overlay(alignment: .bottomTrailing) { historyButtons.padding(8) }
-                .overlay(alignment: .topLeading) { selectedBeadMenu.padding(8) }
-        }.background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1) }
+                .background(darkSurface == (colorScheme == .dark) ? Color.bgPrimary : (darkSurface ? Color(red: 0.15, green: 0.23, blue: 0.2) : Color(red: 0.96, green: 0.95, blue: 0.92)))
+                .overlay(alignment: .bottomTrailing) { historyButtons.padding(.trailing, 4).padding(.bottom, 2) }
+                .overlay(alignment: .bottomLeading) { selectedBeadMenu.padding(.leading, 4).padding(.bottom, 2) }
+                .overlay(alignment: .topLeading) {
+                    Button(L10n.lookup(previewExpanded ? "收起预览" : "扩大预览")) { previewExpanded.toggle() }
+                        .font(.caption).foregroundStyle(Color.textSecondary).buttonStyle(.plain)
+                        .frame(minHeight: 44).padding(.leading, 8).accessibilityIdentifier("diy-expand-preview")
+                }
+        }
     }
 
     private var sizePanel: some View {
@@ -236,6 +254,8 @@ struct DiyDesignView: View {
                 }.pickerStyle(.menu).tint(Color.textPrimary).frame(minHeight: 44)
             }
             Text(L10n.lookup(fitSummary)).font(.subheadline).foregroundStyle(Color.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(L10n.text("天然材质、配件和穿绳方式会影响实物尺寸。")).font(.caption).foregroundStyle(Color.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             HStack {
                 ForEach(0..<5) { index in
@@ -264,10 +284,7 @@ struct DiyDesignView: View {
     }
 
     private var fitSummary: String {
-        let inner = DiyPhysicalLayout(slots: viewModel.beadSlots, wrist: Double(viewModel.wristSizeMm), allowance: viewModel.fitAllowanceMm).innerMm
-        let difference = inner - Double(viewModel.wristSizeMm) - viewModel.fitAllowanceMm
-        let status = difference < -12 ? "还差约 \(Int(abs(difference).rounded())) mm" : difference > 8 ? "偏松约 \(Int(difference.rounded())) mm" : "松紧合适"
-        return String(format: "内围预估 %.1f cm · %@", inner / 10, status)
+        String(format: "内围预估 %.1f cm · %@", viewModel.fitFeedback.innerMm / 10, viewModel.fitFeedback.detail)
     }
 
     private var selectedBeadMenu: some View {
@@ -276,12 +293,19 @@ struct DiyDesignView: View {
                 let index = viewModel.beadSlots.firstIndex { $0.id == selected.id } ?? 0
                 Menu {
                     Text(L10n.lookup(selected.materialName))
+                    Button(L10n.text("替换材料")) {
+                        replacingBeadId = selected.id
+                        materialSearch = ""; elementFilter = "all"; viewModel.selectCategory("all"); previewExpanded = false
+                    }
                     Button(L10n.text("向前移动珠子")) { viewModel.moveBead(id: selected.id, to: index - 1) }.disabled(index == 0)
                     Button(L10n.text("向后移动珠子")) { viewModel.moveBead(id: selected.id, to: index + 1) }.disabled(index == viewModel.beadSlots.count - 1)
                     Button(L10n.text("复制")) { viewModel.duplicateSelectedBead() }.disabled(viewModel.beadSlots.count >= 60)
                     Button(L10n.text("删除"), role: .destructive) { viewModel.removeSelectedBead() }
                 } label: {
-                    Image(systemName: "ellipsis").frame(width: 44, height: 44)
+                    HStack(spacing: 4) {
+                        Text(L10n.text("编辑珠子"))
+                        Image(systemName: "chevron.down").font(.caption2)
+                    }.font(.caption).padding(.horizontal, 10).frame(minHeight: 44)
                         .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 8))
                 }.foregroundStyle(Color.textPrimary).accessibilityLabel(L10n.text("编辑选中珠子"))
             }
@@ -307,8 +331,15 @@ struct DiyDesignView: View {
                 if !materialSearch.isEmpty { Button { materialSearch = "" } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel(L10n.text("清除搜索")) }
             }.font(.subheadline).foregroundStyle(Color.textSecondary).padding(.horizontal, 10).frame(height: 34)
                 .background(Color.bgPrimary, in: RoundedRectangle(cornerRadius: 8)).padding(.horizontal, 10)
+            if let replacing = viewModel.beadSlots.first(where: { $0.id == replacingBeadId }) {
+                HStack(spacing: 8) {
+                    Text(L10n.text("选择材料替换：\(replacing.materialName)")).lineLimit(1)
+                    Spacer(minLength: 0)
+                    Button(L10n.text("取消")) { replacingBeadId = nil }.frame(minHeight: 44).foregroundStyle(Color.textSecondary)
+                }.font(.caption).padding(.horizontal, 12).background(Color.brandDefault.opacity(0.06))
+            }
             HStack(spacing: 0) {
-                categoryTabs.frame(width: 62)
+                categoryTabs.frame(width: 68)
                 ScrollView(showsIndicators: false) {
                 if viewModel.isLoading && viewModel.materials.isEmpty {
                     ProgressView(L10n.text("正在加载材料")).frame(maxWidth: .infinity, minHeight: 120)
@@ -328,8 +359,7 @@ struct DiyDesignView: View {
                 }.scrollDismissesKeyboard(.interactively)
             }
         }.padding(.top, 6).background(Color.bgSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1) }
+            .overlay(alignment: .top) { Rectangle().fill(Color.borderDivider).frame(height: 1) }
     }
 
     private var categoryTabs: some View {
@@ -362,15 +392,19 @@ struct DiyDesignView: View {
         return viewModel.filteredMaterials.filter { material in
             let names = ["wood": "木", "fire": "火", "earth": "土", "metal": "金", "water": "水"]
             let elementMatches = elementFilter == "all" || material.category == "cord" || material.fiveElements == elementFilter || material.fiveElements == names[elementFilter]
-            return elementMatches && (keyword.isEmpty || material.name.localizedCaseInsensitiveContains(keyword) || material.spec.localizedCaseInsensitiveContains(keyword))
+            return (replacingBeadId == nil || material.category != "cord") && elementMatches && (keyword.isEmpty || material.name.localizedCaseInsensitiveContains(keyword) || material.spec.localizedCaseInsensitiveContains(keyword))
         }
     }
 
     private func materialCard(_ material: Material) -> some View {
         let count = viewModel.count(for: material.id)
-        let isUnavailable = count >= material.stock || (material.category != "cord" && viewModel.beadSlots.count >= 60)
+        let replacing = viewModel.beadSlots.first { $0.id == replacingBeadId }
+        let otherCount = count - (replacing?.materialId == material.id ? 1 : 0)
+        let isUnavailable = material.status != "on_shelf" || otherCount >= material.stock || (replacing == nil && material.category != "cord" && viewModel.beadSlots.count >= 60)
         return Button {
-            viewModel.addToCart(material)
+            if let replacing {
+                if viewModel.replaceBead(id: replacing.id, with: material) { replacingBeadId = nil }
+            } else { viewModel.addToCart(material) }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         } label: {
             VStack(spacing: 5) {
@@ -400,17 +434,18 @@ struct DiyDesignView: View {
                 Text(L10n.lookup(material.name))
                     .font(AppTypography.caption.weight(.semibold))
                     .foregroundStyle(.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.82)
+                    .lineLimit(2, reservesSpace: true)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 Text(L10n.lookup(material.spec))
                     .font(AppTypography.micro)
                     .foregroundStyle(.textTertiary)
                     .lineLimit(1)
-                Text(L10n.lookup(isUnavailable ? (material.stock == 0 ? L10n.text("暂时售罄") : L10n.text("已达库存上限")) : material.priceText))
+                Text(L10n.lookup(material.status != "on_shelf" ? "已下架" : isUnavailable ? (material.stock == 0 ? L10n.text("暂时售罄") : L10n.text("已达库存上限")) : material.priceText))
                     .font(AppTypography.caption.weight(.semibold))
                     .foregroundStyle(.accentLight)
             }
-            .frame(maxWidth: .infinity, minHeight: 118)
+            .frame(maxWidth: .infinity, minHeight: 134)
             .padding(.horizontal, 5)
             .background(Color.bgTertiary)
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
@@ -423,7 +458,7 @@ struct DiyDesignView: View {
         .disabled(isUnavailable)
         .accessibilityLabel("\(material.name)，\(material.spec)，\(material.priceText)")
         .accessibilityValue(isUnavailable ? L10n.text("库存不足，无法继续添加") : (count > 0 ? L10n.text("已选 \(count) 件") : L10n.text("未选择")))
-        .accessibilityHint(L10n.text("点按加入搭配"))
+        .accessibilityHint(L10n.lookup(replacing == nil ? "点按加入搭配" : "替换材料"))
     }
 
     private func quickMaterialButton(_ material: Material) -> some View {
@@ -522,10 +557,22 @@ struct DiyMaterialBead: View {
     private var isDiscSpacer: Bool {
         shape == "disc" || (category == "spacer" && name.contains("隔片"))
     }
+    private var accessory: String? { DiyGeometry.kind(shape: shape, category: category, materialId: materialId, name: name) }
 
     var body: some View {
         Group {
-            if isDiscSpacer {
+            if let accessory, let mask = DiyMaterialAppearance.accessoryThumbnail(accessory) {
+                ZStack {
+                    palette.base
+                    if let reference = DiyMaterialAppearance.image(id: materialId, texture: textureKey, type: materialType, finish: finish, color: colorHex) {
+                        Image(uiImage: reference).resizable().scaledToFill()
+                    }
+                    Image(uiImage: mask).resizable().scaledToFit().blendMode(.multiply)
+                }
+                .frame(width: size, height: size)
+                .mask(Image(uiImage: mask).resizable().scaledToFit())
+                .compositingGroup()
+            } else if isDiscSpacer {
                 Capsule()
                     .fill(baseGradient)
                     .frame(width: size * 0.52, height: size)
@@ -564,25 +611,26 @@ struct DiyMaterialBead: View {
         .opacity(max(0.62, 1 - translucency * 0.18))
         .saturation(finish == "matte" || finish == "natural" ? 0.78 : 1)
         .overlay {
-            Ellipse()
+            if accessory == nil { Ellipse()
                 .fill(Color.white.opacity(0.38))
                 .frame(width: size * 0.24, height: size * 0.1)
                 .blur(radius: 1.1)
                 .offset(x: -size * 0.16, y: -size * 0.2)
-                .allowsHitTesting(false)
+                .allowsHitTesting(false) }
         }
         .overlay {
-            if !(DiyRenderAssets.parse(renderAssets)?.beadImageUrl.map { !$0.hasPrefix("/assets/diy/sources/") } ?? false), let reference = DiyMaterialAppearance.image(id: materialId, texture: textureKey, type: materialType, finish: finish, color: colorHex) {
+            if accessory == nil, !(DiyRenderAssets.parse(renderAssets)?.beadImageUrl.map { !$0.hasPrefix("/assets/diy/sources/") } ?? false), let reference = DiyMaterialAppearance.image(id: materialId, texture: textureKey, type: materialType, finish: finish, color: colorHex) {
                 Image(uiImage: reference).resizable().scaledToFill().frame(width: isDiscSpacer ? size * 0.52 : size, height: size).clipShape(Ellipse())
                     .overlay { Circle().fill(RadialGradient(colors: [.white.opacity(0.18), .clear, .black.opacity(0.35)], center: .init(x: 0.3, y: 0.22), startRadius: 0, endRadius: size * 0.8)) }
-            } else if let assets = DiyRenderAssets.parse(renderAssets), let url = DiyRenderAssets.url(assets.beadImageUrl) {
+            } else if let assets = DiyRenderAssets.parse(renderAssets), let raw = assets.beadImageUrl, !raw.hasPrefix("/assets/diy/sources/"), let url = DiyRenderAssets.url(raw) {
                 AsyncImage(url: url) { phase in
                     if let image = phase.image {
                         if let c = assets.imageCrop, c.width > 0, c.height > 0 {
                             image.resizable().frame(width: size * c.imageWidth / c.width, height: size * c.imageHeight / c.height)
                                 .offset(x: size * (c.imageWidth / 2 - c.x - c.width / 2) / c.width, y: size * (c.imageHeight / 2 - c.y - c.height / 2) / c.height)
                                 .frame(width: size, height: size).clipShape(Circle())
-                        } else { image.resizable().scaledToFill().frame(width: size, height: size).clipShape(Circle()) }
+                        } else if accessory != nil { image.resizable().scaledToFit().frame(width: size, height: size) }
+                        else { image.resizable().scaledToFill().frame(width: size, height: size).clipShape(Circle()) }
                     }
                 }
             }
@@ -750,11 +798,14 @@ struct DiyNativeStage3D: UIViewRepresentable {
     var onMove: ((String, Int) -> Void)?
     var resetVersion = 0
     var darkSurface = false
+    var cordColor: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func makeCoordinator() -> Coordinator { Coordinator() }
     func makeUIView(context: Context) -> SCNView {
-        let view = SCNView()
+        let view = DiyStageSceneView()
+        let coordinator = context.coordinator
+        view.onLayout = { [weak coordinator] in coordinator?.fitCamera() }
         view.allowsCameraControl = false
         view.autoenablesDefaultLighting = false
         view.antialiasingMode = .multisampling4X
@@ -778,7 +829,12 @@ struct DiyNativeStage3D: UIViewRepresentable {
         private var resetVersion = 0
         private var yaw = 0.0, pitch = 0.82, distance = 5.3
         private var gestureYaw = 0.0, gesturePitch = 0.82, gestureDistance = 5.3
+        private var cordSignature: Int?
+        private var lastExtent = 0.0
+        private var viewportSize = CGSize.zero
         private var draggedId: String?, targetIndex = 0, startAngles: [Double] = []
+        private var dragPlaneY: Float = 0
+        private var dragAngleOffset = 0.0
         private lazy var contactShadow: UIImage = UIGraphicsImageRenderer(size: CGSize(width: 128, height: 128)).image { context in
             let colors = [UIColor.black.withAlphaComponent(0.24).cgColor, UIColor.black.withAlphaComponent(0).cgColor] as CFArray
             guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 1]) else { return }
@@ -787,7 +843,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
 
         func configure(_ view: SCNView) {
             self.view = view; view.scene = scene
-            camera.camera = SCNCamera(); camera.camera?.fieldOfView = 44
+            camera.camera = SCNCamera(); camera.camera?.fieldOfView = 44; camera.camera?.projectionDirection = .vertical
             camera.camera?.wantsHDR = true; camera.camera?.wantsExposureAdaptation = false
             camera.camera?.exposureOffset = -0.7; camera.camera?.bloomIntensity = 0
             scene.rootNode.addChildNode(camera); view.pointOfView = camera; updateCamera()
@@ -802,8 +858,6 @@ struct DiyNativeStage3D: UIViewRepresentable {
             if let environment = DiyMaterialAppearance.root?.appendingPathComponent("studio.hdr") {
                 scene.lightingEnvironment.contents = environment; scene.lightingEnvironment.intensity = 0.4
             }
-            cord.geometry = SCNTorus(ringRadius: 1.65, pipeRadius: 0.009)
-            cord.geometry?.firstMaterial?.diffuse.contents = UIColor(red: 0.7, green: 0.6, blue: 0.45, alpha: 1)
             scene.rootNode.addChildNode(cord)
             let tap = UITapGestureRecognizer(target: self, action: #selector(tap(_:)))
             let pan = UIPanGestureRecognizer(target: self, action: #selector(pan(_:))); pan.maximumNumberOfTouches = 1
@@ -813,11 +867,21 @@ struct DiyNativeStage3D: UIViewRepresentable {
         }
         func update(_ owner: DiyNativeStage3D, view: SCNView) {
             self.owner = owner
-            if resetVersion != owner.resetVersion { resetVersion = owner.resetVersion; yaw = 0; pitch = 0.82; distance = 5.3; updateCamera() }
+            if resetVersion != owner.resetVersion { resetVersion = owner.resetVersion; yaw = 0; pitch = 0.82; lastExtent = 0; distance = 5.3; updateCamera() }
             // Keep the UI surface outside HDR tone mapping so the paper color
             // matches H5. Only the beads and their lighting pass through HDR.
             view.isOpaque = false; view.backgroundColor = .clear; scene.background.contents = UIColor.clear
             if draggedId == nil { render(owner.slots, animated: !owner.reduceMotion) }
+            fitCamera()
+        }
+        func fitCamera() {
+            guard let view, let owner, view.bounds.width > 0, view.bounds.height > 0 else { return }
+            let layout = DiyPhysicalLayout(slots: owner.slots, wrist: owner.wrist, allowance: owner.allowance)
+            let extent = 1.65 + max(5, owner.slots.map { DiyGeometry.dimensions($0).maxZ }.max() ?? 5) / layout.radius * 1.65
+            guard view.bounds.size != viewportSize || abs(extent - lastExtent) > 0.0001 else { return }
+            viewportSize = view.bounds.size; lastExtent = extent
+            distance = max(5.3, extent / sin(22 * .pi / 180) / min(1, Double(view.bounds.width / view.bounds.height)) * 1.04)
+            updateCamera()
         }
         private func updateCamera() {
             camera.position = SCNVector3(sin(yaw) * cos(pitch) * distance, sin(pitch) * distance, cos(yaw) * cos(pitch) * distance)
@@ -827,6 +891,14 @@ struct DiyNativeStage3D: UIViewRepresentable {
             guard let owner else { return }
             let layout = DiyPhysicalLayout(slots: slots, wrist: owner.wrist, allowance: owner.allowance)
             let scale = 1.65 / layout.radius, ids = Set(slots.map(\.id))
+            let newCordSignature = slots.hashValue ^ layout.radius.hashValue
+            if cordSignature != newCordSignature {
+                cordSignature = newCordSignature
+                cord.geometry = DiyMaterialAppearance.cordGeometry(points: DiyGeometry.cordPoints(slots: slots, layout: layout), scale: scale)
+                let material = SCNMaterial(); material.roughness.contents = 0.9; material.lightingModel = .physicallyBased
+                cord.geometry?.materials = [material]
+            }
+            cord.geometry?.firstMaterial?.diffuse.contents = UIColor(Color(hex: owner.cordColor ?? "B49A73"))
             for id in Array(nodes.keys) where !ids.contains(id) { nodes.removeValue(forKey: id)?.removeFromParentNode(); signatures.removeValue(forKey: id) }
             for (index, bead) in slots.enumerated() {
                 let node: SCNNode
@@ -835,21 +907,24 @@ struct DiyNativeStage3D: UIViewRepresentable {
                 let signature = bead.hashValue ^ layout.radius.hashValue
                 if signatures[bead.id] != signature {
                     signatures[bead.id] = signature
-                    let radius = CGFloat(bead.diameterMm * scale / 2)
-                    let geometry = DiyMaterialAppearance.geometry(radius: radius, shape: bead.shape ?? "round")
+                    let physical = DiyGeometry.dimensions(bead), radius = CGFloat(physical.diameterMm * scale / 2)
+                    let accessory = physical.kind.flatMap { DiyMaterialAppearance.accessoryGeometry($0) }
+                    let geometry = accessory ?? DiyMaterialAppearance.geometry(radius: radius, shape: bead.shape ?? "round", axialLength: CGFloat(physical.pitchMm * scale))
                     let material = SCNMaterial(); material.lightingModel = .physicallyBased
                     material.diffuse.contents = texture(bead)
                     DiyMaterialAppearance.apply(bead, to: material)
                     geometry.materials = [material]; node.geometry = nil
                     node.childNodes.forEach { $0.removeFromParentNode() }
                     let body = SCNNode(geometry: geometry); body.name = "body"
-                    body.eulerAngles.x = .pi / 2
-                    let variation = bead.id.utf8.reduce(UInt32(0)) { ($0 &* 31) &+ UInt32($1) }
-                    body.eulerAngles.y = Float(variation) / Float(UInt32.max) * 2 * .pi
-                    body.scale = bead.shape == "pendant" ? SCNVector3(0.8, 0.7, 1.25) : SCNVector3(1, 1, 1)
+                    if accessory != nil {
+                        let diameter = Float(physical.diameterMm * scale); body.scale = SCNVector3(diameter,diameter,diameter)
+                    } else {
+                        body.simdOrientation = simd_quatf(angle: DiyGeometry.textureTurn(bead.id), axis: SIMD3(1,0,0)) * simd_quatf(angle: -.pi / 2, axis: SIMD3(0,0,1))
+                    }
                     node.addChildNode(body)
-                    let shadow = SCNNode(geometry: SCNPlane(width: radius * 3.4, height: radius * 3.4))
-                    shadow.name = "contact-shadow"; shadow.eulerAngles.x = -.pi / 2; shadow.position.y = -Float(radius + 0.025)
+                    let shadow = SCNNode(geometry: SCNPlane(width: radius * 3, height: CGFloat((physical.maxZ-physical.minZ) * scale * 1.4)))
+                    shadow.name = "contact-shadow"; shadow.eulerAngles.x = -.pi / 2
+                    shadow.position = SCNVector3(0, Float(-physical.centerHeightMm * scale + 0.003), Float((physical.maxZ+physical.minZ) / 2 * scale))
                     shadow.geometry?.firstMaterial?.lightingModel = .constant
                     shadow.geometry?.firstMaterial?.diffuse.contents = contactShadow
                     shadow.geometry?.firstMaterial?.writesToDepthBuffer = false
@@ -860,22 +935,15 @@ struct DiyNativeStage3D: UIViewRepresentable {
                         if let raw, !raw.hasPrefix("/assets/diy/textures/wood/"), let url = DiyRenderAssets.url(raw) { load(url, into: property) }
                     }
                     let selection = SCNNode(geometry: SCNTorus(ringRadius: radius * 1.22, pipeRadius: radius * 0.035))
-                    selection.name = "selection"; selection.position.y = -Float(radius * 0.8)
+                    selection.name = "selection"; selection.position = SCNVector3(0, Float(-physical.centerHeightMm * scale + 0.006), physical.kind?.hasPrefix("pendant") == true || physical.kind == "tassel" ? Float(radius) : 0)
                     selection.geometry?.firstMaterial?.diffuse.contents = UIColor(red: 0.68, green: 0.51, blue: 0.28, alpha: 1)
                     selection.geometry?.firstMaterial?.lightingModel = .constant; node.addChildNode(selection)
-                    if bead.shape == "tassel" {
-                        for strand in 0..<9 {
-                            let thread = SCNNode(geometry: SCNCylinder(radius: 0.009, height: radius * 2.8))
-                            thread.position = SCNVector3(Float(strand - 4) * 0.025, -Float(radius * 1.8), 0)
-                            thread.geometry?.firstMaterial?.diffuse.contents = UIColor(Color(hex: bead.colorHex ?? "93795B")); node.addChildNode(thread)
-                        }
-                    }
                 }
                 let angle = layout.angles[index]
                 node.childNode(withName: "selection", recursively: false)?.isHidden = bead.id != owner.selectedId
                 SCNTransaction.begin(); SCNTransaction.animationDuration = animated && !SCNVector3EqualToVector3(node.position, SCNVector3Zero) ? 0.14 : 0
-                node.position = SCNVector3(cos(angle) * 1.65, 0, sin(angle) * 1.65)
-                node.eulerAngles.y = Float(-angle); SCNTransaction.commit()
+                node.position = SCNVector3(cos(angle) * 1.65, DiyGeometry.dimensions(bead).centerHeightMm * scale, sin(angle) * 1.65)
+                node.eulerAngles.y = Float(.pi / 2 - angle); SCNTransaction.commit()
             }
         }
         private func bead(at point: CGPoint) -> String? {
@@ -906,16 +974,21 @@ struct DiyNativeStage3D: UIViewRepresentable {
                 if owner.onMove != nil, let id = bead(at: CGPoint(x: location.x - translation.x, y: location.y - translation.y)), let index = owner.slots.firstIndex(where: { $0.id == id }) {
                     draggedId = id; targetIndex = index
                     startAngles = DiyPhysicalLayout(slots: owner.slots, wrist: owner.wrist, allowance: owner.allowance).angles
+                    dragPlaneY = nodes[id]?.presentation.worldPosition.y ?? 0
+                    if let point = planePoint(CGPoint(x: location.x - translation.x, y: location.y - translation.y)) {
+                        dragAngleOffset = startAngles[index] - atan2(Double(point.z), Double(point.x))
+                    } else { dragAngleOffset = 0 }
                     owner.onSelect?(id)
                 }
             case .changed:
                 if let id = draggedId, let from = owner.slots.firstIndex(where: { $0.id == id }), let point = planePoint(location) {
-                    let angle = atan2(Double(point.z), Double(point.x))
+                    let angle = atan2(Double(point.z), Double(point.x)) + dragAngleOffset
                     targetIndex = startAngles.indices.min { angularDistance(angle, startAngles[$0]) < angularDistance(angle, startAngles[$1]) } ?? from
                     var preview = owner.slots; preview.insert(preview.remove(at: from), at: targetIndex)
                     render(preview, animated: !owner.reduceMotion)
                     SCNTransaction.begin(); SCNTransaction.animationDuration = 0
-                    nodes[id]?.position = SCNVector3(cos(angle) * 1.65, 0.13, sin(angle) * 1.65); SCNTransaction.commit()
+                    let layout = DiyPhysicalLayout(slots: owner.slots, wrist: owner.wrist, allowance: owner.allowance)
+                    nodes[id]?.position = SCNVector3(cos(angle) * 1.65, DiyGeometry.dimensions(owner.slots[from]).centerHeightMm * 1.65 / layout.radius + 0.13, sin(angle) * 1.65); SCNTransaction.commit()
                 } else {
                     yaw = gestureYaw - Double(translation.x) * 0.008
                     pitch = min(1.4, max(0.25, gesturePitch + Double(translation.y) * 0.008)); updateCamera()
@@ -933,8 +1006,8 @@ struct DiyNativeStage3D: UIViewRepresentable {
             let near = view.unprojectPoint(SCNVector3(Float(point.x), Float(point.y), 0)), far = view.unprojectPoint(SCNVector3(Float(point.x), Float(point.y), 1))
             let denominator = far.y - near.y
             guard abs(denominator) > 0.00001 else { return nil }
-            let t = -near.y / denominator
-            return SCNVector3(near.x + t * (far.x - near.x), 0, near.z + t * (far.z - near.z))
+            let t = (dragPlaneY - near.y) / denominator
+            return SCNVector3(near.x + t * (far.x - near.x), dragPlaneY, near.z + t * (far.z - near.z))
         }
         @objc private func pinch(_ recognizer: UIPinchGestureRecognizer) {
             if recognizer.state == .began {
@@ -963,4 +1036,9 @@ struct DiyNativeStage3D: UIViewRepresentable {
         }
         func dispose() { requests.values.forEach { $0.cancel() }; requests.removeAll(); textureWaiters.removeAll(); textures.removeAllObjects(); owner = nil }
     }
+}
+
+private final class DiyStageSceneView: SCNView {
+    var onLayout: (() -> Void)?
+    override func layoutSubviews() { super.layoutSubviews(); onLayout?() }
 }

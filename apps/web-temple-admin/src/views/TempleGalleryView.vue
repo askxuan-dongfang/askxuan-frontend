@@ -113,7 +113,7 @@ onMounted(loadData)
         </div>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">{{ $t("取消") }}</el-button>
+        <el-button @click="dialogVisible = false" data-quiet-action="cancel">{{ $t("取消") }}</el-button>
         <el-button type="primary" :loading="saving" @click="submit">{{ $t("加入图册") }}</el-button>
       </template>
     </el-dialog>

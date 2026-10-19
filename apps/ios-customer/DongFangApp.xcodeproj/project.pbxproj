@@ -23,6 +23,7 @@
 		14DBE29E5A1AB4B2EFB75A1D /* GrowthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63C17BDFCE18D83888587525 /* GrowthView.swift */; };
 		16F67C85E519384FCCAE3C6C /* JourneyCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95719C98FCA773E834A630D8 /* JourneyCenterView.swift */; };
 		17F3236A93A522F132A5503A /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA68B8CE6DA0E3B274EBA07 /* ProfileViewModel.swift */; };
+		1E5DED01CB2625C594BEBBA1 /* DiyGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0475B54098397031D54440A /* DiyGeometryTests.swift */; };
 		2017AB08F83D2EA753BAAB75 /* AiExperienceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88E7A06DAD9CF7C1155C3DC9 /* AiExperienceModels.swift */; };
 		27BD74C27BA1A4BEA38E4C2D /* DiscoveryNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558AF8CB81F3159044DD5E8A /* DiscoveryNavigationTests.swift */; };
 		27E98D4531895A4CF2246E1A /* ShopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D047F538ABC13EAC55361D /* ShopView.swift */; };
@@ -50,6 +51,7 @@
 		5B41F1B3CF13E972F0500F6C /* DirectoryFilterBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2874DA4ED573EF9DEB4EF91 /* DirectoryFilterBar.swift */; };
 		615FDBF75C19A78428C9CBE2 /* AiResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0138C84F23ED0F852535C5D /* AiResult.swift */; };
 		61D940E548D42E09DFB9AB44 /* DateFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C2E2CB76CD043E38E68EDD /* DateFormatter.swift */; };
+		62495BA53EBD3773E7D225AB /* DiyGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F4B0DEA19C7A588DB8BF83 /* DiyGeometry.swift */; };
 		62859EDD2DD7DCC2EC29D1B7 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD74EC54937E0812B49D310C /* ChatMessage.swift */; };
 		629579B8F5E55110EEAF199F /* H5ParityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2D70DCE7819001D0A1734F /* H5ParityUITests.swift */; };
 		6576A18C267456C5DD62A269 /* TempleDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25FDFC04252F879AB3493443 /* TempleDetailView.swift */; };
@@ -238,6 +240,7 @@
 		A0D047F538ABC13EAC55361D /* ShopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopView.swift; sourceTree = "<group>"; };
 		A179D70DB954E73A48CC7A17 /* Pods-DongFangApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DongFangApp.release.xcconfig"; path = "Target Support Files/Pods-DongFangApp/Pods-DongFangApp.release.xcconfig"; sourceTree = "<group>"; };
 		A1CAF6EB22243DA0583289CD /* DiyEditorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyEditorTests.swift; sourceTree = "<group>"; };
+		A3F4B0DEA19C7A588DB8BF83 /* DiyGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyGeometry.swift; sourceTree = "<group>"; };
 		A59BC31C26F9D68FAD67AF1E /* Pods-DongFangAppTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DongFangAppTests.debug.xcconfig"; path = "Target Support Files/Pods-DongFangAppTests/Pods-DongFangAppTests.debug.xcconfig"; sourceTree = "<group>"; };
 		A99546E19EF4027BB49DBB2B /* ServiceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceViewModel.swift; sourceTree = "<group>"; };
 		AB1A4F5DC44274685E3D28B6 /* JSONHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONHelper.swift; sourceTree = "<group>"; };
@@ -245,6 +248,7 @@
 		ACA5ED25CC2624A871C172DA /* DiyMaterialAppearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyMaterialAppearance.swift; sourceTree = "<group>"; };
 		AD74EC54937E0812B49D310C /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
 		B0138C84F23ED0F852535C5D /* AiResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AiResult.swift; sourceTree = "<group>"; };
+		B0475B54098397031D54440A /* DiyGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiyGeometryTests.swift; sourceTree = "<group>"; };
 		B7804FE1D75B3F57F9B58FB2 /* ChatExperienceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatExperienceView.swift; sourceTree = "<group>"; };
 		C010CD5681C8EF44E54E513F /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		C321AEBD19A23F58E9FE7483 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
@@ -361,6 +365,7 @@
 				74027B490BEC48BCB2396CE2 /* AiExperienceTests.swift */,
 				13EC808621986B172C0EF82F /* AiReportParityTests.swift */,
 				A1CAF6EB22243DA0583289CD /* DiyEditorTests.swift */,
+				B0475B54098397031D54440A /* DiyGeometryTests.swift */,
 				1375DAABECE33F06082825BE /* DiyMaterialAppearanceTests.swift */,
 				08C1B0D2BA5811C5A87984CE /* H5ParityTests.swift */,
 				C8E79392210D2549AB6AB931 /* RewardExperienceTests.swift */,
@@ -700,6 +705,7 @@
 				F14481BA1F32CB1D766AFB69 /* DiyBraceletView.swift */,
 				7526F74BD52B1A039609D8DF /* DiyDesignView.swift */,
 				D959B591467788C8881269EE /* DiyDetailView.swift */,
+				A3F4B0DEA19C7A588DB8BF83 /* DiyGeometry.swift */,
 				ACA5ED25CC2624A871C172DA /* DiyMaterialAppearance.swift */,
 				514B112951A86A967142B960 /* DiyMyDesignsView.swift */,
 				8C90FB5FC146C32B7F608F0A /* DiyOrderView.swift */,
@@ -953,6 +959,7 @@
 				E10148E171165C5D902CC446 /* DiyBraceletView.swift in Sources */,
 				B16A7A941FCCAF092DE3C73C /* DiyDesignView.swift in Sources */,
 				5152DE8AB826062170958CB4 /* DiyDetailView.swift in Sources */,
+				62495BA53EBD3773E7D225AB /* DiyGeometry.swift in Sources */,
 				529350E311FCA3FCE9B398B0 /* DiyMaterialAppearance.swift in Sources */,
 				D27088E254166FCD28B795F2 /* DiyMyDesignsView.swift in Sources */,
 				D977E1C40A7290458864DCEA /* DiyOrder.swift in Sources */,
@@ -1029,6 +1036,7 @@
 				5B04D5B6E4463051394EA779 /* AiExperienceTests.swift in Sources */,
 				0B747781578743C583789812 /* AiReportParityTests.swift in Sources */,
 				8C2BD7EBA97EE7FB4FEE6EFD /* DiyEditorTests.swift in Sources */,
+				1E5DED01CB2625C594BEBBA1 /* DiyGeometryTests.swift in Sources */,
 				9FCF68983259091DA143EA89 /* DiyMaterialAppearanceTests.swift in Sources */,
 				56FD053B66F06C0235E930A8 /* H5ParityTests.swift in Sources */,
 				9280A54DFE6CE6B1F312E279 /* RewardExperienceTests.swift in Sources */,
