@@ -73,11 +73,14 @@ test('editor checkout browser Back keeps the saved design and editable beads',as
  await setup(page);await gallery(page);await page.getByRole('link',{name:'继续编辑',exact:true}).click();
  await page.getByRole('button',{name:/^去定制/}).click();await page.getByRole('button',{name:'保存并继续',exact:true}).click();await expect(page.getByRole('heading',{name:'确认订单',exact:true})).toBeVisible();
  await page.goBack();await expect(page.getByRole('button',{name:'保存设计',exact:true})).toBeEnabled();
- const sequence=page.getByRole('group',{name:/^珠子顺序/});
- await expect(sequence.getByRole('button')).toHaveCount(1);
- await sequence.getByRole('button',{name:'第 1 颗 测试木珠',exact:true}).click();
- await page.getByRole('button',{name:'复制',exact:true}).click();await expect(sequence.getByRole('button')).toHaveCount(2);
- await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(sequence.getByRole('button')).toHaveCount(1);
+ const count=page.locator('.studio-stage-top small');
+ const preview=page.getByRole('group',{name:/^手串预览/});
+ await expect(count).toHaveText('1 / 60 颗');
+ await preview.focus();await preview.press('ArrowRight');
+ await expect(page.locator('.studio-accessible-selection')).toHaveText('第 1 颗 测试木珠');
+ await page.getByLabel('编辑选中珠子',{exact:true}).click();
+ await page.getByRole('button',{name:'复制',exact:true}).click();await expect(count).toHaveText('2 / 60 颗');
+ await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(count).toHaveText('1 / 60 颗');
  await back(page).click();await expect(page).toHaveURL(/\/c\/diy\/1$/);
 });
 test('repeated back clicks in a single pending navigation do not skip the gallery',async({page})=>{
