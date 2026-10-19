@@ -210,7 +210,7 @@ struct ShopProductDetailView: View {
                                 .strikethrough()
                         }
                         Spacer()
-                        Text(L10n.lookup(availableStock > 0 ? L10n.text("\(viewModel.product.isExperience == true ? "模拟库存" : "库存") \(availableStock)") : L10n.text("暂时缺货")))
+                        Text(L10n.lookup(availableStock > 0 ? L10n.text("\(viewModel.product.isExperience == true ? L10n.text("模拟库存") : L10n.text("库存")) \(availableStock)") : L10n.text("暂时缺货")))
                             .font(AppTypography.caption)
                             .foregroundStyle(availableStock > 0 ? Color.textTertiary : Color.stateError)
                     }
@@ -218,7 +218,7 @@ struct ShopProductDetailView: View {
                     Button { purchaseMode = "select"; showSpecs = true } label: {
                         HStack(spacing: 12) {
                             Text(L10n.text("选择")).foregroundStyle(Color.textTertiary)
-                            Text(L10n.text("\(selectedSku?.specValue ?? "默认规格")，\(quantity) 件")).foregroundStyle(Color.textPrimary)
+                            Text(L10n.text("\(selectedSku?.specValue ?? L10n.text("默认规格"))，\(quantity) 件")).foregroundStyle(Color.textPrimary)
                             Spacer(); Image(systemName: "chevron.right").foregroundStyle(Color.textTertiary)
                         }.font(AppTypography.body).padding(.vertical, 14)
                     }.buttonStyle(.plain).disabled(!viewModel.verified)

@@ -75,7 +75,7 @@ struct CreatorWalletView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             NavigationLink("设计 #\(reward.designId)") { DiyDetailView(designId: reward.designId) }
                             Text(L10n.lookup(reward.orderNo)).font(.caption).textSelection(.enabled)
-                            Text(L10n.text("\(reward.kind == "cash" ? "现金收益" : reward.kind == "balance" ? "消费余额" : "优惠券") · \(reward.kind == "coupon" ? "1 张" : money(reward.amountCents)) · \(statuses[reward.status] ?? reward.status)"))
+                            Text(L10n.text("\(reward.kind == "cash" ? L10n.text("现金收益") : reward.kind == "balance" ? L10n.text("消费余额") : L10n.text("优惠券")) · \(reward.kind == "coupon" ? L10n.text("1 张") : money(reward.amountCents)) · \(statuses[reward.status] ?? reward.status)"))
                             if !reward.reason.isEmpty { Text(L10n.lookup(reward.reason)).font(.footnote) }
                             Text(L10n.lookup(reward.createdAt)).font(.caption).foregroundStyle(.secondary)
                         }
@@ -85,7 +85,7 @@ struct CreatorWalletView: View {
                     if data.withdrawals.isEmpty { Text(L10n.text("暂无提现申请")).foregroundStyle(.secondary) }
                     ForEach(data.withdrawals) { item in
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(L10n.text("\(money(item.amountCents)) · \(item.status == "pending" ? "待审核" : statuses[item.status] ?? item.status)")).monospacedDigit()
+                            Text(L10n.text("\(money(item.amountCents)) · \(item.status == "pending" ? L10n.text("待审核") : statuses[item.status] ?? item.status)")).monospacedDigit()
                             Text("\(item.bankName) \(item.accountNumber)").font(.footnote)
                             if !item.note.isEmpty { Text(L10n.lookup(item.note)).font(.footnote) }
                             if !item.transferReference.isEmpty { Text(L10n.text("打款流水：\(item.transferReference)")).font(.caption).textSelection(.enabled) }

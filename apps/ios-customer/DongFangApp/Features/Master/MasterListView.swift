@@ -221,7 +221,7 @@ struct MasterListView: View {
                 }
 
                 // 归属：独立执业大师无寺院
-                Text(master.templeName.isEmpty ? L10n.text("平台直管 · 独立执业大师") : L10n.text("\(master.templeName) · \(master.position.isEmpty ? "寺院法师" : master.position)"))
+                Text(master.templeName.isEmpty ? L10n.text("平台直管 · 独立执业大师") : L10n.text("\(master.templeName) · \(master.position.isEmpty ? L10n.text("寺院法师") : master.position)"))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)

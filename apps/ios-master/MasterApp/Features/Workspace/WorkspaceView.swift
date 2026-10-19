@@ -208,7 +208,7 @@ struct WorkspaceView: View {
 
     private var greetingSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(L10n.text("\(authStore.nickname ?? "师傅")，您好"))
+            Text(L10n.text("\(authStore.nickname ?? L10n.text("师傅"))，您好"))
                 .font(.pageTitle)
                 .foregroundStyle(.textPrimary)
             Text(L10n.lookup(Date().formatted(.dateTime.month(.wide).day().weekday(.wide))))
@@ -372,7 +372,7 @@ struct WorkspaceView: View {
                 Text(L10n.lookup(booking.serviceName))
                     .font(AppTypography.body.weight(.medium))
                     .foregroundStyle(.textPrimary)
-                Text(L10n.text("\(booking.bookingDate) · \(booking.templeName.isEmpty ? "独立服务" : booking.templeName)"))
+                Text(L10n.text("\(booking.bookingDate) · \(booking.templeName.isEmpty ? L10n.text("独立服务") : booking.templeName)"))
                     .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
             }

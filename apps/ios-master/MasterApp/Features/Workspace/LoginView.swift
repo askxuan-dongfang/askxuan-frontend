@@ -84,7 +84,7 @@ struct LoginView: View {
         HStack { Spacer(); NavigationLink { LanguageSettingsView() } label: { Label(L10n.text("语言"), systemImage: "character.bubble") } }
         Image("brand-logo").resizable().scaledToFit().frame(width: 52, height: 52)
           .accessibilityHidden(true)
-        Text(L10n.lookup(L10n.text("问玄东方 · ") + (master ? "师傅工作台" : L10n.text("与美好相遇")))).font(.subheadline).foregroundStyle(
+        Text(L10n.lookup(L10n.text("问玄东方 · ") + (master ? L10n.text("师傅工作台") : L10n.text("与美好相遇")))).font(.subheadline).foregroundStyle(
           .secondary)
         Text(L10n.lookup(mode == "login" ? L10n.text("欢迎回来") : mode == "register" ? L10n.text("注册独立大师账号") : mode == "activate" ? L10n.text("激活寺院分配账号") : L10n.text("找回密码"))).font(
           .largeTitle.bold())

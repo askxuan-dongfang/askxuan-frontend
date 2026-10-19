@@ -50,7 +50,7 @@ struct EarningsView: View {
                                     Text(L10n.text("本人分配金额：\(money(row.grossCents))"))
                                     Text(L10n.text("平台费用：\(money(row.commissionCents))"))
                                     Text(L10n.text("应结金额：\(money(row.netCents))"))
-                                    Text(L10n.text("来源单号：\(row.sourceNo.isEmpty ? "历史汇总结算" : row.sourceNo)"))
+                                    Text(L10n.text("来源单号：\(row.sourceNo.isEmpty ? L10n.text("历史汇总结算") : row.sourceNo)"))
                                     if row.sourceType == "booking", !row.sourceNo.isEmpty {
                                         NavigationLink("查看预约") { BookingDetailView(bookingId: row.sourceNo) }
                                     }

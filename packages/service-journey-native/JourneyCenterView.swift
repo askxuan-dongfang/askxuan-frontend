@@ -30,7 +30,7 @@ struct JourneySteps: View {
               index == current ? Color.textPrimary : Color.textSecondary)
           }.frame(maxWidth: .infinity).accessibilityElement(children: .combine)
             .accessibilityLabel(
-              L10n.text("\(title)，\(index < current ? "已完成" : index == current ? "当前阶段" : "待进行")"))
+              L10n.text("\(title)，\(index < current ? L10n.text("已完成") : index == current ? L10n.text("当前阶段") : L10n.text("待进行"))"))
         }
       }.padding(.vertical, 8)
     }
@@ -60,7 +60,7 @@ struct JourneyEntryView: View {
               Image(systemName: "leaf.circle").font(.title).foregroundStyle(Color.accentDefault)
               VStack(alignment: .leading, spacing: 5) {
                 Text(
-                  L10n.lookup(home ? L10n.text("\(current?.providerName ?? "") · \(current?.serviceName ?? "服务进度")") : JourneyHost.provider ? L10n.text("履约工作台") : L10n.text("服务进度"))
+                  L10n.lookup(home ? L10n.text("\(current?.providerName ?? "") · \(current?.serviceName ?? L10n.text("服务进度"))") : JourneyHost.provider ? L10n.text("履约工作台") : L10n.text("服务进度"))
                 ).font(.headline)
                 if let error {
                   Text(L10n.lookup(error)).font(.caption)

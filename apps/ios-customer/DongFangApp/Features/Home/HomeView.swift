@@ -900,7 +900,7 @@ struct NativeMarketingActivityView: View {
                     VStack(alignment: .leading, spacing: 18) {
                         if let image = details?.imageUrl { RemoteImage(urlString: image, placeholderIcon: "photo").frame(height: 200).clipShape(RoundedRectangle(cornerRadius: 16)) }
                         Text(L10n.lookup(activity.name)).font(AppTypography.title(28))
-                        Text(L10n.text("活动时间（北京时间）\n\(activity.startTime.isEmpty ? "即日起" : activity.startTime) — \(activity.endTime.isEmpty ? "长期有效" : activity.endTime)")).font(AppTypography.supporting).foregroundStyle(Color.textSecondary)
+                        Text(L10n.text("活动时间（北京时间）\n\(activity.startTime.isEmpty ? L10n.text("即日起") : activity.startTime) — \(activity.endTime.isEmpty ? L10n.text("长期有效") : activity.endTime)")).font(AppTypography.supporting).foregroundStyle(Color.textSecondary)
                         if let location = details?.location { Text(L10n.lookup(L10n.text("活动地点：") + location)) }
                         Text(L10n.lookup(details?.description ?? L10n.text("活动具体安排请以主办方公布的信息为准。"))).lineSpacing(6)
                     }.frame(maxWidth: .infinity, alignment: .leading).padding(20)

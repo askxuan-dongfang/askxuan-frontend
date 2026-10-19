@@ -169,7 +169,7 @@ struct JourneyRecordPanel: View {
       }
       ForEach(Array(progress.receipts.enumerated()), id: \.element.id) { index, receipt in
         VStack(alignment: .leading, spacing: 12) {
-          Text(L10n.text("回执 \(index+1)")).font(.headline)
+          Text(L10n.text("回执 \(index + 1)")).font(.headline)
           Text("\(receipt.createdAt) · \(JourneyText.actor(receipt.operatorType))").font(
             .caption
           ).foregroundStyle(Color.textSecondary)
@@ -457,7 +457,7 @@ struct JourneyMediaView: View {
           task = Task { await load() }
         } label: {
           Label(
-            L10n.lookup(loading ? L10n.text("正在读取…") : L10n.text("查看\(file.contentType.hasPrefix("video/") ? "视频":"图片") · \(file.name)")),
+            L10n.lookup(loading ? L10n.text("正在读取…") : L10n.text("查看\(file.contentType.hasPrefix("video/") ? L10n.text("视频") : L10n.text("图片")) · \(file.name)")),
             systemImage: file.contentType.hasPrefix("video/") ? "play.rectangle" : "photo")
         }.font(.subheadline).disabled(loading)
       }

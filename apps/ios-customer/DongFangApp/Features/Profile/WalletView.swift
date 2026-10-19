@@ -61,7 +61,7 @@ struct WalletView: View {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text(L10n.text("支付单号：\(entry.paymentNo)"))
                                 Text(L10n.text("订单编号：\(entry.orderNo)"))
-                                Text(L10n.text("支付渠道：\(entry.channel == "demo_balance" ? "模拟余额支付" : entry.channel == "mock" ? "演示支付" : entry.channel == "wechat" ? "微信支付" : entry.channel == "alipay" ? "支付宝" : entry.channel)"))
+                                Text(L10n.text("支付渠道：\(entry.channel == "demo_balance" ? L10n.text("模拟余额支付") : entry.channel == "mock" ? L10n.text("演示支付") : entry.channel == "wechat" ? L10n.text("微信支付") : entry.channel == "alipay" ? L10n.text("支付宝") : entry.channel)"))
                                 ForEach(entry.refunds) { refund in
                                     VStack(alignment: .leading, spacing: 6) {
                                         Text("\(refunds[refund.status] ?? refund.status) · \(money(refund.amountCents))").fontWeight(.medium)
@@ -193,12 +193,12 @@ private struct NativeCashier: View {
                 Section { Text("¥\(CashAPI.money(quote.amountCents))").font(.largeTitle.bold()).monospacedDigit(); Text(L10n.text("订单 \(no)")).font(.caption).foregroundStyle(.secondary) }
                 Section(L10n.text("支付方式")) {
                     Button { channel = balanceChannel } label: { HStack { Label(L10n.lookup(demo ? L10n.text("模拟余额支付") : L10n.text("钱包余额")), systemImage: "wallet.bifold"); Spacer(); if channel == balanceChannel { Image(systemName: "checkmark.circle.fill") } } }.disabled(busy || !canBalance)
-                    Text(L10n.lookup(quote.experience && !demo ? L10n.text("体验订单不能使用真实余额") : L10n.text("可用 ¥\(CashAPI.money(quote.availableCents))\(quote.balanceEnabled ? (canBalance ? "" : " · 余额不足") : " · 暂未开通")"))).font(.caption).foregroundStyle(.secondary)
+                    Text(L10n.lookup(quote.experience && !demo ? L10n.text("体验订单不能使用真实余额") : L10n.text("可用 ¥\(CashAPI.money(quote.availableCents))\(quote.balanceEnabled ? (canBalance ? "" : L10n.text(" · 余额不足")) : L10n.text(" · 暂未开通"))"))).font(.caption).foregroundStyle(.secondary)
                     if quote.mockEnabled { Button { channel = "mock" } label: { HStack { Text(L10n.text("演示支付，不扣真实资金")); Spacer(); if channel == "mock" { Image(systemName: "checkmark.circle.fill") } } }.disabled(busy) }
                 }
                 if let error { Section { Text(L10n.lookup(error)).foregroundStyle(.red) } }
                 Section {
-                    Button(L10n.lookup(busy ? L10n.text("正在确认…") : channel == "mock" ? L10n.text("确认演示支付") : L10n.text("\(demo ? "模拟支付" : "确认支付") ¥\(CashAPI.money(quote.amountCents))"))) { Task { await pay() } }.disabled(busy || (channel == balanceChannel && !canBalance))
+                    Button(L10n.lookup(busy ? L10n.text("正在确认…") : channel == "mock" ? L10n.text("确认演示支付") : L10n.text("\(demo ? L10n.text("模拟支付") : L10n.text("确认支付")) ¥\(CashAPI.money(quote.amountCents))"))) { Task { await pay() } }.disabled(busy || (channel == balanceChannel && !canBalance))
                     NavigationLink("查看钱包与充值") { CashBalanceView().onDisappear { Task { await refreshQuote() } } }.disabled(busy)
                 } footer: { Text(L10n.lookup(demo ? L10n.text("扣减测试余额，不收取真实费用。退款退回测试余额。") : L10n.text("余额支付的退款退回钱包，充值款可申请原路退回。"))) }
             }.navigationTitle(L10n.text("确认支付")).navigationBarTitleDisplayMode(.inline)
@@ -259,7 +259,7 @@ struct CashBalanceView: View {
             }
             Section(L10n.lookup(demo ? L10n.text("模拟充值记录") : L10n.text("充值与原路退款"))) {
                 ForEach(data?.recharges ?? []) { r in VStack(alignment: .leading, spacing: 8) {
-                    Text(L10n.text("\(r.channel == "demo" ? "模拟" : r.channel == "wechat" ? "微信" : "支付宝")充值 ¥\(CashAPI.money(r.amountCents))"))
+                    Text(L10n.text("\(r.channel == "demo" ? L10n.text("模拟") : r.channel == "wechat" ? L10n.text("微信") : L10n.text("支付宝"))充值 ¥\(CashAPI.money(r.amountCents))"))
                     Text(L10n.lookup(["pending":"等待支付确认","success":"充值成功","refund_pending":"原路退款处理中","refunded":"充值退款完成","closed":"充值已关闭"][r.status] ?? r.status)).font(.caption).foregroundStyle(.secondary)
                     Text(L10n.lookup(r.createdAt)).font(.caption2)
                     if r.status == "success", (data?.availableCents ?? 0) > 0 { Button(L10n.text("申请原路退回")) { refund = r }.disabled(busy) }

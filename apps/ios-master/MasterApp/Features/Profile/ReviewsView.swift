@@ -205,7 +205,7 @@ struct ReviewsView: View {
                 }
 
                 HStack {
-                    Text(L10n.text("信众：\(review.userId.isEmpty ? "匿名" : review.userId)"))
+                    Text(L10n.text("信众：\(review.userId.isEmpty ? L10n.text("匿名") : review.userId)"))
                         .font(.micro)
                         .foregroundStyle(.textTertiary)
                     Spacer()

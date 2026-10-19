@@ -127,7 +127,7 @@ struct AiExperienceResultView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text(L10n.lookup(result.summary)).font(.headline).textSelection(.enabled)
             if let naming = input.naming {
-                Text(L10n.text("当时选择：\(naming.purpose == "pen" ? "笔名" : "姓名") · \(styleName(naming.style))"))
+                Text(L10n.text("当时选择：\(naming.purpose == "pen" ? L10n.text("笔名") : L10n.text("姓名")) · \(styleName(naming.style))"))
                     .font(.caption).foregroundStyle(.secondary)
                 if !naming.surname.isEmpty { Text(L10n.lookup(L10n.text("姓氏：") + naming.surname)).font(.caption) }
                 if !naming.avoid.isEmpty { Text(L10n.lookup(L10n.text("避用字：") + naming.avoid)).font(.caption) }

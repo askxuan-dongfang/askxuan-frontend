@@ -360,7 +360,7 @@ struct RewardsView: View {
                     }
                     if tab == 4 { ForEach(campaigns) { c in
                         NavigationLink { RewardDetailView(id: c.id) } label: {
-                            VStack(alignment: .leading, spacing: 8) { Text(L10n.lookup(c.title)).font(.headline); Text(L10n.text("\(c.kind == "wheel" ? "积分转盘" : "奖池") · \(rewardDate(c.drawnAt))")).font(.caption).foregroundStyle(.secondary); Text(L10n.text("\(c.awardedCount) 次中奖 · 查看开奖 →")).font(.subheadline).foregroundStyle(Color.accentDefault) }.padding(.vertical, 8)
+                            VStack(alignment: .leading, spacing: 8) { Text(L10n.lookup(c.title)).font(.headline); Text(L10n.text("\(c.kind == "wheel" ? L10n.text("积分转盘") : L10n.text("奖池")) · \(rewardDate(c.drawnAt))")).font(.caption).foregroundStyle(.secondary); Text(L10n.text("\(c.awardedCount) 次中奖 · 查看开奖 →")).font(.subheadline).foregroundStyle(Color.accentDefault) }.padding(.vertical, 8)
                         }
                     } }
                     if tab == 3 { ForEach(orders) { orderCard($0) } }
@@ -562,7 +562,7 @@ struct RewardDetailView: View {
     private func actionBar(_ d: RewardDetail) -> some View {
         VStack(spacing: 8) {
             Text(L10n.lookup(d.mine != nil ? L10n.text("本期已参与，记录保留") : L10n.text("可用 \(d.pointsBalance) 积分 · 每期一次"))).font(AppTypography.caption).foregroundStyle(.secondary)
-            Button(L10n.lookup(busy ? L10n.text("正在揭晓…") : d.mine != nil ? L10n.text("本期已参与") : d.campaign.phase != "open" ? d.campaign.phaseText : d.pointsBalance < d.campaign.pointsCost ? L10n.text("积分不足") : L10n.text("\(d.campaign.pointsCost) 积分\(d.campaign.kind == "wheel" ? "转一次" : "参与奖池")"))) { confirming = true }
+            Button(L10n.lookup(busy ? L10n.text("正在揭晓…") : d.mine != nil ? L10n.text("本期已参与") : d.campaign.phase != "open" ? d.campaign.phaseText : d.pointsBalance < d.campaign.pointsCost ? L10n.text("积分不足") : L10n.text("\(d.campaign.pointsCost) 积分\(d.campaign.kind == "wheel" ? L10n.text("转一次") : L10n.text("参与奖池"))"))) { confirming = true }
                 .buttonStyle(.borderedProminent).controlSize(.large).frame(maxWidth: .infinity).tint(Color.accentDefault)
                 .disabled(busy || d.mine != nil || d.campaign.phase != "open" || error != nil || d.pointsBalance < d.campaign.pointsCost || d.campaign.pointsCost < 1)
         }.padding(.horizontal, 16).padding(.vertical, 10).frame(maxWidth: .infinity).background(Color.bgPrimary).overlay(alignment: .top) { Rectangle().fill(Color.accentDefault.opacity(0.2)).frame(height: 1) }
@@ -704,7 +704,7 @@ private struct RewardWheelInfoSheet: View {
                         }
                         LabeledContent(L10n.text("谢谢参与"), value: rewardProbabilityText(c.noPrizeProbability))
                     }
-                    Text(L10n.lookup(L10n.text("可多次抽奖，每次成功参与扣除 \(c.pointsCost) 积分，无论是否中奖均不退回；失败不扣分，重复请求不重复扣分。") + (c.hasFixedOdds ? "活动期间按公示的固定概率抽取。" : L10n.text("本期沿用原有规则，以上为下一次抽奖的即时概率。")) + L10n.text("扇区大小不代表中奖概率。"))).font(AppTypography.caption).foregroundStyle(.secondary)
+                    Text(L10n.lookup(L10n.text("可多次抽奖，每次成功参与扣除 \(c.pointsCost) 积分，无论是否中奖均不退回；失败不扣分，重复请求不重复扣分。") + (c.hasFixedOdds ? L10n.text("活动期间按公示的固定概率抽取。") : L10n.text("本期沿用原有规则，以上为下一次抽奖的即时概率。")) + L10n.text("扇区大小不代表中奖概率。"))).font(AppTypography.caption).foregroundStyle(.secondary)
                 }
             }.navigationTitle(L10n.lookup(records ? L10n.text("抽奖记录") : L10n.text("活动规则"))).navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L10n.text("关闭")) { dismiss() } } }
@@ -783,7 +783,7 @@ struct RewardRedemptionSheet: View {
                                 copied = true
                             }
                         }
-                        if let url = value.safeURL { Link(L10n.text("前往 \(url.host ?? "兑换平台") 兑换 ↗"), destination: url) }
+                        if let url = value.safeURL { Link(L10n.text("前往 \(url.host ?? L10n.text("兑换平台")) 兑换 ↗"), destination: url) }
                     } else if let error { Text(L10n.lookup(error)).foregroundStyle(.red); Button(L10n.text("重新读取")) { Task { await load() } } }
                     else { ProgressView(L10n.text("正在读取…")) }
                 }

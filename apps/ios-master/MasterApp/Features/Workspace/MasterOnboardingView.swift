@@ -53,7 +53,7 @@ struct MasterOnboardingView: View {
      Section(L10n.text("身份证明及从业资质")) {
       ForEach(Array((application?.profile.evidenceIds ?? []).enumerated()),id:\.element) { index,id in
        HStack {
-        Button(L10n.text("查看材料 \(index+1)")) { Task { await download(id) } }
+        Button(L10n.text("查看材料 \(index + 1)")) { Task { await download(id) } }
         Spacer()
         if editable { Button(L10n.text("移除"),role:.destructive) { application?.profile.evidenceIds?.removeAll{$0==id} }.disabled(busy) }
        }
