@@ -3,7 +3,7 @@ import WebKit
 import Combine
 
 @MainActor
-final class AdminSession: NSObject, ObservableObject, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
+final class AdminSession: NSObject, ObservableObject, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate, WKScriptMessageHandler {
     let portal: AdminPortal
     let webView: WKWebView
     @Published private(set) var loading = false
@@ -13,6 +13,7 @@ final class AdminSession: NSObject, ObservableObject, WKNavigationDelegate, WKUI
     @Published private(set) var failure: String?
     @Published var downloadMessage: String?
     var switchPortal: ((AdminPortal, URL) -> Void)?
+    var languageChanged: (() -> Void)?
     private var observations: [NSKeyValueObservation] = []
     private var started = false
     private var activeDownloads: [ObjectIdentifier: WKDownload] = [:]
@@ -25,6 +26,8 @@ final class AdminSession: NSObject, ObservableObject, WKNavigationDelegate, WKUI
         configuration.applicationNameForUserAgent = "AskXuanAdmin/0.0.1"
         webView = WKWebView(frame: .zero, configuration: configuration)
         super.init()
+        configuration.userContentController.add(WeakLanguageHandler(self), name: "askxuanLanguage")
+        configureLanguageScript()
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
@@ -34,6 +37,33 @@ final class AdminSession: NSObject, ObservableObject, WKNavigationDelegate, WKUI
             webView.observe(\.canGoBack, options: [.new]) { [weak self] view, _ in Task { @MainActor in self?.canGoBack = view.canGoBack } },
             webView.observe(\.canGoForward, options: [.new]) { [weak self] view, _ in Task { @MainActor in self?.canGoForward = view.canGoForward } }
         ]
+    }
+    private func configureLanguageScript() {
+        let preference = L10n.store.preference.rawValue
+        let source = """
+        if (location.origin === \(String(data: try! JSONEncoder().encode(AdminEnvironment.origin.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))), encoding: .utf8)!)) {
+          try { localStorage.setItem('askxuan-language', '\(preference)'); } catch (_) {}
+          window.addEventListener('askxuan:language-change', event => {
+            window.webkit.messageHandlers.askxuanLanguage.postMessage(event.detail.preference);
+          });
+        }
+        """
+        webView.configuration.userContentController.removeAllUserScripts()
+        webView.configuration.userContentController.addUserScript(WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+    }
+    func updateLanguage() {
+        configureLanguageScript()
+        guard let url = webView.url, AdminPortal.sameOrigin(url, AdminEnvironment.origin) else { return }
+        let preference = L10n.store.preference.rawValue
+        webView.evaluateJavaScript("if (localStorage.getItem('askxuan-language') !== '\(preference)') { localStorage.setItem('askxuan-language', '\(preference)'); window.dispatchEvent(new StorageEvent('storage', { key: 'askxuan-language' })); }")
+    }
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.frameInfo.isMainFrame, let url = message.frameInfo.request.url,
+              AdminPortal.sameOrigin(url, AdminEnvironment.origin),
+              let raw = message.body as? String, let preference = LanguagePreference(rawValue: raw),
+              preference != L10n.store.preference else { return }
+        L10n.store.preference = preference
+        languageChanged?()
     }
     func startIfNeeded() { if !started { started = true; home() } }
     func load(_ url: URL) {
@@ -101,19 +131,19 @@ final class AdminSession: NSObject, ObservableObject, WKNavigationDelegate, WKUI
         else { panel.begin(completionHandler: completion) }
     }
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
-        alert(message, buttons: ["好"]) { _ in completionHandler() }
+        alert(L10n.lookup(message), buttons: ["好"]) { _ in completionHandler() }
     }
     func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
-        alert(message, buttons: ["确定", "取消"]) { completionHandler($0 == .alertFirstButtonReturn) }
+        alert(L10n.lookup(message), buttons: ["确定", "取消"]) { completionHandler($0 == .alertFirstButtonReturn) }
     }
     func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
         let field = NSTextField(string: defaultText ?? "")
         field.frame = NSRect(x: 0, y: 0, width: 320, height: 24)
-        alert(prompt, buttons: ["确定", "取消"], accessory: field) { completionHandler($0 == .alertFirstButtonReturn ? field.stringValue : nil) }
+        alert(L10n.lookup(prompt), buttons: ["确定", "取消"], accessory: field) { completionHandler($0 == .alertFirstButtonReturn ? field.stringValue : nil) }
     }
     private func alert(_ message: String, buttons: [String], accessory: NSView? = nil, completion: @escaping (NSApplication.ModalResponse) -> Void) {
-        let alert = NSAlert(); alert.messageText = portal.title; alert.informativeText = message
-        buttons.forEach { alert.addButton(withTitle: $0) }; alert.accessoryView = accessory
+        let alert = NSAlert(); alert.messageText = L10n.lookup(portal.title); alert.informativeText = L10n.lookup(message)
+        buttons.forEach { alert.addButton(withTitle: L10n.lookup($0)) }; alert.accessoryView = accessory
         if let window = webView.window { alert.beginSheetModal(for: window, completionHandler: completion) }
         else { completion(.alertSecondButtonReturn) }
     }
@@ -136,5 +166,14 @@ final class AdminSession: NSObject, ObservableObject, WKNavigationDelegate, WKUI
     func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
         let key = ObjectIdentifier(download); destinations.removeValue(forKey: key); activeDownloads.removeValue(forKey: key)
         if (error as NSError).code != NSURLErrorCancelled { downloadMessage = "下载失败：\(error.localizedDescription)" }
+    }
+}
+
+@MainActor
+private final class WeakLanguageHandler: NSObject, WKScriptMessageHandler {
+    weak var session: AdminSession?
+    init(_ session: AdminSession) { self.session = session }
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        session?.userContentController(userContentController, didReceive: message)
     }
 }

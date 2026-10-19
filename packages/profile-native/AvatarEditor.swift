@@ -45,13 +45,13 @@ extension APIClient {
         let uploaded: Uploaded
         if let envelope = try? decoder.decode(Envelope.self, from: data) {
             guard envelope.code == 0 || envelope.code == 200, let value = envelope.data else {
-                throw AvatarFailure(message: envelope.message ?? "照片上传失败，请重试")
+                throw AvatarFailure(message: envelope.message ?? L10n.text("照片上传失败，请重试"))
             }
             uploaded = value
         } else { uploaded = try decoder.decode(Uploaded.self, from: data) }
         guard let resolved = URL(string: uploaded.url, relativeTo: baseURL)?.absoluteURL,
               ["https", "http"].contains(resolved.scheme ?? "") else {
-            throw AvatarFailure(message: "照片地址无效，请重试")
+            throw AvatarFailure(message: L10n.text("照片地址无效，请重试"))
         }
         return resolved.absoluteString
     }
@@ -88,12 +88,12 @@ struct AvatarPhotoField: View {
                     Image(systemName: "camera.fill").font(.system(size: 12)).padding(7)
                         .foregroundStyle(Color.bgPrimary).background(Color.accentDefault, in: Circle())
                 }
-            }.accessibilityLabel("更换头像")
+            }.accessibilityLabel(L10n.text("更换头像"))
             if !compact { VStack(alignment: .leading, spacing: 6) {
-                Text("个人头像").font(.headline).foregroundStyle(Color.textPrimary)
-                Button("选择照片") { picking = true }.frame(minHeight: 44).tint(Color.accentDefault)
-                if draft.image != nil || !draft.url.isEmpty { Button("恢复默认") { draft.clear() }.font(.caption).tint(Color.textSecondary) }
-                Text(reading ? "正在读取照片…" : draft.image == nil ? "使用照片，或保留默认头像" : "新头像将在保存资料后生效")
+                Text(L10n.text("个人头像")).font(.headline).foregroundStyle(Color.textPrimary)
+                Button(L10n.text("选择照片")) { picking = true }.frame(minHeight: 44).tint(Color.accentDefault)
+                if draft.image != nil || !draft.url.isEmpty { Button(L10n.text("恢复默认")) { draft.clear() }.font(.caption).tint(Color.textSecondary) }
+                Text(L10n.lookup(reading ? L10n.text("正在读取照片…") : draft.image == nil ? L10n.text("使用照片，或保留默认头像") : L10n.text("新头像将在保存资料后生效")))
                     .font(.caption).foregroundStyle(Color.textSecondary)
             }
             Spacer(minLength: 0) }
@@ -105,15 +105,15 @@ struct AvatarPhotoField: View {
             reading = true
             defer { reading = false; self.selection = nil }
             do {
-                guard let data = try await selection.loadTransferable(type: Data.self), !data.isEmpty else { throw AvatarFailure(message: "无法读取照片，请重新选择") }
+                guard let data = try await selection.loadTransferable(type: Data.self), !data.isEmpty else { throw AvatarFailure(message: L10n.text("无法读取照片，请重新选择")) }
                 try Task.checkCancellation()
-                guard data.count <= 10 * 1024 * 1024 else { throw AvatarFailure(message: "照片超过 10MB，请选择较小的照片") }
+                guard data.count <= 10 * 1024 * 1024 else { throw AvatarFailure(message: L10n.text("照片超过 10MB，请选择较小的照片")) }
                 guard let source = CGImageSourceCreateWithData(data as CFData, nil),
                       let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
                       let width = props[kCGImagePropertyPixelWidth] as? Double,
                       let height = props[kCGImagePropertyPixelHeight] as? Double, width * height <= 40_000_000,
                       let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true, kCGImageSourceThumbnailMaxPixelSize: 4096] as CFDictionary)
-                else { throw AvatarFailure(message: "照片无法读取或像素过大，请重新选择") }
+                else { throw AvatarFailure(message: L10n.text("照片无法读取或像素过大，请重新选择")) }
                 self.source = AvatarPhoto(image: UIImage(cgImage: cg))
             } catch is CancellationError { }
             catch { failure = error.localizedDescription }
@@ -122,7 +122,7 @@ struct AvatarPhotoField: View {
             try await onSave?(image, data)
             draft.choose(image, data: data)
         } }
-        .alert("无法使用这张照片", isPresented: .init(get: { failure != nil }, set: { if !$0 { failure = nil } })) { Button("知道了", role: .cancel) { } } message: { Text(failure ?? "") }
+        .alert(L10n.text("无法使用这张照片"), isPresented: .init(get: { failure != nil }, set: { if !$0 { failure = nil } })) { Button(L10n.text("知道了"), role: .cancel) { } } message: { Text(L10n.lookup(failure ?? "")) }
         .task { if initialOpen { picking = true } }
     }
     private var placeholder: some View {
@@ -169,7 +169,7 @@ private struct AvatarCropView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    Text("拖动或双指缩放，调整圆形区域内的画面").font(.callout).foregroundStyle(Color.textSecondary)
+                    Text(L10n.text("拖动或双指缩放，调整圆形区域内的画面")).font(.callout).foregroundStyle(Color.textSecondary)
                     ZStack {
                         Color.bgTertiary
                         Image(uiImage: image).resizable().frame(width: image.size.width * base, height: image.size.height * base).scaleEffect(zoom).offset(offset)
@@ -184,26 +184,26 @@ private struct AvatarCropView: View {
                         if zoomStart == nil { zoomStart = zoom }
                         zoom = min(3, max(1, (zoomStart ?? 1) * value.magnification)); offset = clamped(offset, zoom: zoom)
                     }.onEnded { _ in zoomStart = nil })
-                    .accessibilityLabel("头像裁剪预览")
-                    Slider(value: $zoom, in: 1...3).accessibilityLabel("缩放头像").tint(Color.accentDefault)
+                    .accessibilityLabel(L10n.text("头像裁剪预览"))
+                    Slider(value: $zoom, in: 1...3).accessibilityLabel(L10n.text("缩放头像")).tint(Color.accentDefault)
                         .onChange(of: zoom) { _, value in offset = clamped(offset, zoom: value) }
                     HStack {
                         pan("左", symbol: "arrow.left", x: -14, y: 0)
                         pan("上", symbol: "arrow.up", x: 0, y: -14)
                         pan("下", symbol: "arrow.down", x: 0, y: 14)
                         pan("右", symbol: "arrow.right", x: 14, y: 0)
-                        Button("复位") { zoom = 1; offset = .zero }.frame(minWidth: 44, minHeight: 44)
+                        Button(L10n.text("复位")) { zoom = 1; offset = .zero }.frame(minWidth: 44, minHeight: 44)
                     }.tint(Color.accentDefault)
-                    if let failure { Text(failure).foregroundStyle(Color.stateError).font(.callout) }
-                    Button(saving ? "正在保存…" : savesImmediately ? "保存头像" : "使用这张照片", action: export).buttonStyle(.borderedProminent).tint(Color.brandDefault).frame(minHeight: 44)
+                    if let failure { Text(L10n.lookup(failure)).foregroundStyle(Color.stateError).font(.callout) }
+                    Button(L10n.lookup(saving ? L10n.text("正在保存…") : savesImmediately ? L10n.text("保存头像") : L10n.text("使用这张照片")), action: export).buttonStyle(.borderedProminent).tint(Color.brandDefault).frame(minHeight: 44)
                 }.padding(20).disabled(saving)
             }
-            .background(Color.bgPrimary).navigationTitle("调整头像").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() }.disabled(saving) } }
+            .background(Color.bgPrimary).navigationTitle(L10n.text("调整头像")).navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(L10n.text("取消")) { dismiss() }.disabled(saving) } }
         }.presentationDetents([.large]).interactiveDismissDisabled(saving)
     }
     private func pan(_ label: String, symbol: String, x: CGFloat, y: CGFloat) -> some View {
-        Button { offset = clamped(CGSize(width: offset.width + x, height: offset.height + y), zoom: zoom) } label: { Image(systemName: symbol).frame(minWidth: 44, minHeight: 44) }.accessibilityLabel("向\(label)调整")
+        Button { offset = clamped(CGSize(width: offset.width + x, height: offset.height + y), zoom: zoom) } label: { Image(systemName: symbol).frame(minWidth: 44, minHeight: 44) }.accessibilityLabel(L10n.text("向\(label)调整"))
     }
     private func export() {
         guard !saving else { return }

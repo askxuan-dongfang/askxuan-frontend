@@ -332,7 +332,7 @@ struct AppearanceSettingsView: View {
                                 Image(systemName: theme.symbol)
                                     .frame(width: 24)
                                     .foregroundStyle(Color.accentDefault)
-                                Text(theme.title).foregroundStyle(Color.textPrimary)
+                                Text(L10n.lookup(theme.title)).foregroundStyle(Color.textPrimary)
                                 Spacer()
                                 Image(systemName: "checkmark")
                                     .foregroundStyle(Color.brandDefault)
@@ -352,14 +352,19 @@ struct AppearanceSettingsView: View {
                 }
                 .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: AppRadius.lg))
                 .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
-                Text("选择跟随系统后，外观将随设备设置自动切换。")
+                NavigationLink { LanguageSettingsView() } label: {
+                    HStack { Label(L10n.text("语言"), systemImage: "character.bubble"); Spacer(); Text(verbatim: L10n.store.preference.title); Image(systemName: "chevron.right") }
+                        .font(AppTypography.body).padding(16)
+                }
+                .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: AppRadius.lg))
+                Text(L10n.text("选择跟随系统后，外观将随设备设置自动切换。"))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textSecondary)
             }
             .padding(16)
         }
         .background(Color.bgPrimary)
-        .navigationTitle("外观")
+        .navigationTitle(L10n.text("外观与语言"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
     }

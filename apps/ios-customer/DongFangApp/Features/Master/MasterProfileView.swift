@@ -79,10 +79,10 @@ struct MasterProfileView: View {
             consultationCheckout
                 .appSheetSurface()
         }
-        .alert("咨询提示", isPresented: $showConsultMessage) {
-            Button("我知道了", role: .cancel) {}
+        .alert(L10n.text("咨询提示"), isPresented: $showConsultMessage) {
+            Button(L10n.text("我知道了"), role: .cancel) {}
         } message: {
-            Text(consultMessage)
+            Text(L10n.lookup(consultMessage))
         }
     }
 
@@ -106,13 +106,13 @@ struct MasterProfileView: View {
                 RemoteAvatar(urlString: viewModel.master?.avatar, size: 80)
                     .padding(.top, 140)
 
-                Text(viewModel.master?.dharmaName ?? "法师")
+                Text(L10n.lookup(viewModel.master?.dharmaName ?? L10n.text("法师")))
                     .font(AppTypography.title(20))
                     .foregroundStyle(Color.accentDefault)
 
                 if let master = viewModel.master {
                     HStack(spacing: 6) {
-                        Text(master.position)
+                        Text(L10n.lookup(master.position))
                             .font(AppTypography.micro.weight(.medium))
                             .foregroundStyle(Color.brandDefault)
                             .padding(.horizontal, 8).padding(.vertical, 2)
@@ -134,25 +134,25 @@ struct MasterProfileView: View {
             HStack(spacing: AppSpacing.xl) {
                 statItem(icon: "star.fill",
                          value: viewModel.master?.ratingText ?? "5.0",
-                         label: "评分", color: .accentDefault)
+                         label: L10n.text("评分"), color: .accentDefault)
                 statItem(icon: "person.badge.clock",
                          value: (viewModel.master?.isOnlineDisplay ?? true) ? "在线" : "离线",
-                         label: "状态",
+                         label: L10n.text("状态"),
                          color: (viewModel.master?.isOnlineDisplay ?? true) ? .stateSuccess : .textTertiary)
                 statItem(icon: "yensign.circle.fill",
                          value: viewModel.master?.consultFeeText ?? "—",
-                         label: "咨询费", color: .brandDefault)
+                         label: L10n.text("咨询费"), color: .brandDefault)
             }
             .padding(.vertical, AppSpacing.md)
 
             if let master = viewModel.master, !master.specialties.isEmpty {
                 VStack(alignment: .leading, spacing: AppSpacing.sm) {
-                    Text("擅长领域")
+                    Text(L10n.text("擅长领域"))
                         .font(AppTypography.supporting.weight(.semibold))
                         .foregroundStyle(Color.textTertiary)
                     FlowLayout(spacing: 8) {
                         ForEach(master.specialties, id: \.self) { specialty in
-                            Text(specialty)
+                            Text(L10n.lookup(specialty))
                                 .font(AppTypography.caption)
                                 .foregroundStyle(Color.accentDefault)
                                 .padding(.horizontal, 10).padding(.vertical, 4)
@@ -171,10 +171,10 @@ struct MasterProfileView: View {
         VStack(spacing: 4) {
             HStack(spacing: 4) {
                 Image(systemName: icon).font(AppTypography.caption)
-                Text(value).font(AppTypography.body.weight(.semibold))
+                Text(L10n.lookup(value)).font(AppTypography.body.weight(.semibold))
             }
             .foregroundStyle(color)
-            Text(label)
+            Text(L10n.lookup(label))
                 .font(AppTypography.micro)
                 .foregroundStyle(Color.textTertiary)
         }
@@ -191,7 +191,7 @@ struct MasterProfileView: View {
                         AppMotion.perform { viewModel.selectedTab = index }
                     } label: {
                         VStack(spacing: 6) {
-                            Text(title)
+                            Text(L10n.lookup(title))
                                 .font(AppTypography.body.weight(isSelected ? .semibold : .regular))
                                 .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                             Capsule()
@@ -225,10 +225,10 @@ struct MasterProfileView: View {
     private var qualificationPanel: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("法师简介")
+                Text(L10n.text("法师简介"))
                     .font(.cardTitle)
                     .foregroundStyle(Color.textPrimary)
-                Text("法师修行多年，深谙佛理，致力于弘法利生，广结善缘。擅长为信众提供禅修指导、祈福法事、开光加持等服务，深受信众敬仰。")
+                Text(L10n.text("法师修行多年，深谙佛理，致力于弘法利生，广结善缘。擅长为信众提供禅修指导、祈福法事、开光加持等服务，深受信众敬仰。"))
                     .font(AppTypography.body)
                     .foregroundStyle(Color.textSecondary)
                     .lineSpacing(4)
@@ -242,13 +242,13 @@ struct MasterProfileView: View {
             .padding(.top, AppSpacing.md)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("认证信息")
+                Text(L10n.text("认证信息"))
                     .font(.cardTitle)
                     .foregroundStyle(Color.textPrimary)
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.seal.fill")
                         .foregroundStyle(Color.stateSuccess)
-                    Text(viewModel.master?.authStatus ?? "已认证")
+                    Text(L10n.lookup(viewModel.master?.authStatus ?? L10n.text("已认证")))
                         .font(AppTypography.body)
                         .foregroundStyle(Color.textPrimary)
                 }
@@ -281,7 +281,7 @@ struct MasterProfileView: View {
     /// 独立执业大师直约面板：大师服务标签 → 先付费咨询 → 预约服务
     private var directBookingPanel: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Text("大师服务标签")
+            Text(L10n.text("大师服务标签"))
                 .font(.cardTitle)
                 .foregroundStyle(Color.textPrimary)
                 .padding(.horizontal, AppSpacing.lg)
@@ -292,28 +292,28 @@ struct MasterProfileView: View {
                     serviceTagRow(tag)
                 }
 
-                DatePicker("预约日期", selection: $directBookingDate, in: Date()..., displayedComponents: .date)
+                DatePicker(L10n.text("预约日期"), selection: $directBookingDate, in: Date()..., displayedComponents: .date)
                     .padding(.horizontal, AppSpacing.lg)
 
-                Text("先完成付费咨询，再预约服务（咨询入口见底部按钮）")
+                Text(L10n.text("先完成付费咨询，再预约服务（咨询入口见底部按钮）"))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .padding(.horizontal, AppSpacing.lg)
 
-                DFPrimaryButton(title: isSubmittingDirectBooking ? "提交中…" : "预约服务", icon: "calendar.badge.plus") {
+                DFPrimaryButton(title: isSubmittingDirectBooking ? L10n.text("提交中…") : L10n.text("预约服务"), icon: "calendar.badge.plus") {
                     showDirectPaySheet = true
                 }
                 .disabled(isSubmittingDirectBooking || selectedServiceCode == nil)
                 .padding(.horizontal, AppSpacing.lg)
                 .padding(.bottom, AppSpacing.lg)
             } else {
-                DFEmptyState(icon: "tag", title: "暂无服务标签", subtitle: "该大师暂未配置可预约服务")
+                DFEmptyState(icon: "tag", title: L10n.text("暂无服务标签"), subtitle: L10n.text("该大师暂未配置可预约服务"))
             }
         }
-        .alert("预约提示", isPresented: $showDirectBookingMessage) {
-            Button("知道了", role: .cancel) {}
+        .alert(L10n.text("预约提示"), isPresented: $showDirectBookingMessage) {
+            Button(L10n.text("知道了"), role: .cancel) {}
         } message: {
-            Text(directBookingMessage)
+            Text(L10n.lookup(directBookingMessage))
         }
         .sheet(isPresented: $showDirectPaySheet) {
             directPaySheet
@@ -326,7 +326,7 @@ struct MasterProfileView: View {
         ScrollView {
         VStack(alignment: .leading, spacing: AppSpacing.lg) {
             HStack {
-                Text("预约确认")
+                Text(L10n.text("预约确认"))
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
@@ -352,11 +352,11 @@ struct MasterProfileView: View {
             .background(Color.bgSecondary)
             .cornerRadius(AppRadius.lg)
 
-            Text("演示环境：点击确认后自动完成模拟支付，预约将进入待大师确认状态。")
+            Text(L10n.text("演示环境：点击确认后自动完成模拟支付，预约将进入待大师确认状态。"))
                 .font(AppTypography.caption)
                 .foregroundStyle(Color.textTertiary)
 
-            DFPrimaryButton(title: isSubmittingDirectBooking ? "提交中…" : "确认预约并支付 ¥\(Int(selectedDirectTagPrice))", icon: "creditcard") {
+            DFPrimaryButton(title: isSubmittingDirectBooking ? L10n.text("提交中…") : L10n.text("确认预约并支付 ¥\(Int(selectedDirectTagPrice))"), icon: "creditcard") {
                 submitDirectBooking()
                 showDirectPaySheet = false
             }
@@ -370,11 +370,11 @@ struct MasterProfileView: View {
 
     private func payRow(_ label: String, _ value: String) -> some View {
         HStack {
-            Text(label)
+            Text(L10n.lookup(label))
                 .font(AppTypography.body)
                 .foregroundStyle(Color.textTertiary)
             Spacer()
-            Text(value)
+            Text(L10n.lookup(value))
                 .font(AppTypography.body.weight(.medium))
                 .foregroundStyle(Color.textPrimary)
         }
@@ -413,10 +413,10 @@ struct MasterProfileView: View {
                 }
                 .frame(width: 40, height: 40)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
+                    Text(L10n.lookup(title))
                         .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
-                    Text(String(format: "¥%.2f", tag.price))
+                    Text(L10n.lookup(String(format: "¥%.2f", tag.price)))
                         .font(AppTypography.caption)
                         .foregroundStyle(Color.brandDefault)
                 }
@@ -436,7 +436,7 @@ struct MasterProfileView: View {
 
     private var templeServicePanel: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Text("可预约服务")
+            Text(L10n.text("可预约服务"))
                 .font(.cardTitle)
                 .foregroundStyle(Color.textPrimary)
                 .padding(.horizontal, AppSpacing.lg)
@@ -461,10 +461,10 @@ struct MasterProfileView: View {
                             .frame(width: 40, height: 40)
 
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(service.serviceName)
+                                Text(L10n.lookup(service.serviceName))
                                     .font(AppTypography.body.weight(.semibold))
                                     .foregroundStyle(Color.textPrimary)
-                                Text(type.subtitle)
+                                Text(L10n.lookup(type.subtitle))
                                     .font(AppTypography.caption)
                                     .foregroundStyle(Color.textTertiary)
                             }
@@ -486,23 +486,23 @@ struct MasterProfileView: View {
     }
 
     private var wenchuangPanel: some View {
-        DFEmptyState(icon: "shippingbox", title: "文创商品", subtitle: "敬请期待")
+        DFEmptyState(icon: "shippingbox", title: L10n.text("文创商品"), subtitle: L10n.text("敬请期待"))
     }
     private var videoPanel: some View {
-        DFEmptyState(icon: "play.rectangle", title: "法师视频", subtitle: "敬请期待")
+        DFEmptyState(icon: "play.rectangle", title: L10n.text("法师视频"), subtitle: L10n.text("敬请期待"))
     }
     private var consultPanel: some View {
         VStack(spacing: AppSpacing.md) {
-            Text("在线咨询")
+            Text(L10n.text("在线咨询"))
                 .font(.cardTitle)
                 .foregroundStyle(Color.textPrimary)
                 .padding(.top, AppSpacing.md)
-            Text("法师将为您解答佛学疑问、指引修行方向。")
+            Text(L10n.text("法师将为您解答佛学疑问、指引修行方向。"))
                 .font(AppTypography.body)
                 .foregroundStyle(Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, AppSpacing.xl)
-            Text("即时咨询单独付费，不要求先预约服务；预约法事、祈福等服务需另行下单。")
+            Text(L10n.text("即时咨询单独付费，不要求先预约服务；预约法事、祈福等服务需另行下单。"))
                 .font(AppTypography.caption)
                 .foregroundStyle(Color.textTertiary)
                 .multilineTextAlignment(.center)
@@ -548,7 +548,7 @@ struct MasterProfileView: View {
             // 双轨制：独立执业大师的预约入口在「预约」Tab 直约面板内（避免底部重复按钮）；
             // 寺庙绑定大师保留底部按钮进入寺院服务预约下单页。
             if viewModel.master?.manageBy != "platform" {
-                DFPrimaryButton(title: "预约服务") {
+                DFPrimaryButton(title: L10n.text("预约服务")) {
                     if authStore.isLoggedIn {
                         showBooking = true
                     } else {
@@ -603,16 +603,16 @@ struct MasterProfileView: View {
             VStack(alignment: .leading, spacing: AppSpacing.lg) {
                 if let quote = consultationQuote {
                     VStack(alignment: .leading, spacing: AppSpacing.sm) {
-                        Text("向\(quote.masterName)发起即时咨询")
+                        Text(L10n.text("向\(quote.masterName)发起即时咨询"))
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundStyle(Color.textPrimary)
-                        Text("文字咨询有效 \(quote.validHours) 小时，法师承诺尽量在 \(quote.responseMinutes) 分钟内响应。预约服务不包含在本订单中。")
+                        Text(L10n.text("文字咨询有效 \(quote.validHours) 小时，法师承诺尽量在 \(quote.responseMinutes) 分钟内响应。预约服务不包含在本订单中。"))
                             .font(AppTypography.supporting)
                             .foregroundStyle(Color.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
-                    TextField("简要描述想咨询的问题（可选）", text: $consultationQuestion, axis: .vertical)
+                    TextField(L10n.text("简要描述想咨询的问题（可选）"), text: $consultationQuestion, axis: .vertical)
                         .lineLimit(2...4)
                         .padding(AppSpacing.md)
                         .background(Color.bgSecondary)
@@ -620,10 +620,10 @@ struct MasterProfileView: View {
 
                     HStack {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("即时咨询费")
+                            Text(L10n.text("即时咨询费"))
                                 .font(AppTypography.caption)
                                 .foregroundStyle(Color.textTertiary)
-                            Text("款项先进入平台总账，再按规则结算")
+                            Text(L10n.text("款项先进入平台总账，再按规则结算"))
                                 .font(AppTypography.micro)
                                 .foregroundStyle(Color.textTertiary)
                         }
@@ -638,7 +638,7 @@ struct MasterProfileView: View {
                     } label: {
                         HStack {
                             if isPurchasingConsultation { ProgressView().tint(.white) }
-                            Text(isPurchasingConsultation ? "支付中..." : "模拟支付并开始咨询")
+                            Text(L10n.lookup(isPurchasingConsultation ? L10n.text("支付中...") : L10n.text("模拟支付并开始咨询")))
                                 .font(AppTypography.body.weight(.semibold))
                         }
                         .foregroundStyle(.white)
@@ -655,11 +655,11 @@ struct MasterProfileView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .background(Color.bgPrimary.ignoresSafeArea())
-            .navigationTitle("确认咨询")
+            .navigationTitle(L10n.text("确认咨询"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { showConsultCheckout = false }
+                    Button(L10n.text("取消")) { showConsultCheckout = false }
                 }
             }
         }

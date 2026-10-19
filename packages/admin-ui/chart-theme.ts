@@ -1,5 +1,6 @@
 import tokens from '../design-tokens/tokens.json'
 import { ADMIN_THEME_EVENT } from './theme'
+import { LANGUAGE_EVENT, t } from './language'
 
 const colorVariables: Record<string, string> = {
   '#6a5a4a': '--admin-text-secondary', '#9a8a7a': '--admin-text-secondary',
@@ -71,11 +72,13 @@ export function withAdminChartTheme(option: Record<string, any>): Record<string,
   result.animationEasing = result.animationEasingUpdate = 'cubicOut'
   result.textStyle = { ...result.textStyle, color: primaryText, fontFamily }
   if (result.tooltip) result.tooltip = each(result.tooltip, item => ({ ...item, backgroundColor: surface, borderColor: border, textStyle: { ...item.textStyle, color: primaryText, fontFamily } }))
-  if (result.legend) result.legend = each(result.legend, item => ({ ...item, textStyle: { ...item.textStyle, color: text, fontFamily }, pageTextStyle: { ...item.pageTextStyle, color: text, fontFamily } }))
+  if (result.legend) result.legend = each(result.legend, item => ({ ...item, formatter: (name: string) => t(name), textStyle: { ...item.textStyle, color: text, fontFamily }, pageTextStyle: { ...item.pageTextStyle, color: text, fontFamily } }))
   for (const name of ['xAxis', 'yAxis']) {
     if (!result[name]) continue
-    result[name] = each(result[name], item => ({ ...item, axisLabel: { ...item.axisLabel, color: text, fontFamily }, nameTextStyle: { ...item.nameTextStyle, color: text, fontFamily }, axisLine: { ...item.axisLine, lineStyle: { ...item.axisLine?.lineStyle, color: border } }, splitLine: { ...item.splitLine, lineStyle: { ...item.splitLine?.lineStyle, color: border } } }))
+    result[name] = each(result[name], item => ({ ...item, axisLabel: { ...item.axisLabel, formatter: item.axisLabel?.formatter || ((value: string) => t(value)), color: text, fontFamily }, nameTextStyle: { ...item.nameTextStyle, color: text, fontFamily }, axisLine: { ...item.axisLine, lineStyle: { ...item.axisLine?.lineStyle, color: border } }, splitLine: { ...item.splitLine, lineStyle: { ...item.splitLine?.lineStyle, color: border } } }))
   }
+  // Format labels without changing chart names/IDs used by graph links and legend selection.
+  if (result.series) result.series = each(result.series, item => ({ ...item, label: { ...item.label, formatter: item.label?.formatter || ((value: { name: string }) => t(value.name)) } }))
   return result
 }
 
@@ -83,9 +86,11 @@ export function withAdminChartTheme(option: Record<string, any>): Record<string,
 export function watchAdminChartAppearance(refresh: () => void): () => void {
   const query = window.matchMedia('(prefers-reduced-motion: reduce)')
   window.addEventListener(ADMIN_THEME_EVENT, refresh)
+  window.addEventListener(LANGUAGE_EVENT, refresh)
   query.addEventListener('change', refresh)
   return () => {
     window.removeEventListener(ADMIN_THEME_EVENT, refresh)
+    window.removeEventListener(LANGUAGE_EVENT, refresh)
     query.removeEventListener('change', refresh)
   }
 }

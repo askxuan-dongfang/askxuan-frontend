@@ -20,7 +20,7 @@ struct LoadingView: View {
                 ProgressView().controlSize(.large).tint(.accentDefault)
                     .frame(width: 64, height: 64).offset(y: 44).accessibilityHidden(true)
             }.padding(.bottom, 38)
-            Text(message)
+            Text(L10n.lookup(message))
                 .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)
         }

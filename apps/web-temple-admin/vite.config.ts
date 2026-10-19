@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     dedupe: ['vue'],
     alias: {
+      '@askxuan/localization': path.resolve(__dirname, '../../packages/localization/language.ts'),
       '@': path.resolve(__dirname, 'src'),
       '@askxuan/domain-status': path.resolve(__dirname, '../../packages/domain-status/src/index.ts')
     }

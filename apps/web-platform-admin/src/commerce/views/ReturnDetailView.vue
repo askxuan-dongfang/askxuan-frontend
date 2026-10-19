@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 import { isAdminSessionExpired } from '@/api/client'
 // 退货详情（含审核 / 退款操作）
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+
 import PageHeader from '@/components/PageHeader.vue'
 import client from '@/api/client'
 import { orderApi } from '@/commerce/api/order'
@@ -39,18 +42,18 @@ async function handleReview(action: 'approve' | 'reject') {
   try {
     let reason = ''
     if (action === 'reject') {
-      const res = await ElMessageBox.prompt('拒绝后用户将看到该原因，申请保持关闭且需用户重新发起。请输入拒绝原因。', '拒绝退货', {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
+      const res = await ElMessageBox.prompt(uiText('拒绝后用户将看到该原因，申请保持关闭且需用户重新发起。请输入拒绝原因。'), uiText('拒绝退货'), {
+        confirmButtonText: uiText('确认'),
+        cancelButtonText: uiText('取消'),
         inputType: 'textarea'
       })
       reason = res.value || ''
     } else {
-      const res = await ElMessageBox.prompt('已发货商品请填写退货收件人、电话和地址；未发货退款请填写无需寄回。用户将在售后详情看到这些说明。', '通过售后审核', {confirmButtonText:'确认通过',cancelButtonText:'返回核对',inputType:'textarea',inputValidator:v=>!!v?.trim()||'请填写处理说明'})
+      const res = await ElMessageBox.prompt(uiText('已发货商品请填写退货收件人、电话和地址；未发货退款请填写无需寄回。用户将在售后详情看到这些说明。'), uiText('通过售后审核'), {confirmButtonText:uiText('确认通过'),cancelButtonText:uiText('返回核对'),inputType:'textarea',inputValidator:v=>!!v?.trim()||'请填写处理说明'})
       reason=res.value
     }
     await orderApi.returnReview(returnId.value, action, reason)
-    ElMessage.success(`审核已${tip}`)
+    ElMessage.success((uiText("审核已") + String(tip) + uiText("")))
     loadDetail()
   } catch {
     // 取消
@@ -64,14 +67,14 @@ function openRefundDialog() {
 
 async function handleRefund() {
   if (refundAmount.value <= 0) {
-    ElMessage.warning('退款金额需大于 0')
+    ElMessage.warning(uiText('退款金额需大于 0'))
     return
   }
   try {
     await ElMessageBox.confirm(
-      `确认退款 ${formatMoney(refundAmount.value)}？提交后将进入支付退款流程，不能在本页面撤回。`,
-      '退款确认',
-      { type: 'warning', confirmButtonText: '确认退款', cancelButtonText: '返回核对' }
+      (uiText("确认退款 ") + String(formatMoney(refundAmount.value)) + uiText("？提交后将进入支付退款流程，不能在本页面撤回。")),
+      uiText('退款确认'),
+      { type: 'warning', confirmButtonText: uiText('确认退款'), cancelButtonText: uiText('返回核对') }
     )
   } catch {
     return
@@ -79,7 +82,7 @@ async function handleRefund() {
   refundSaving.value = true
   try {
     await orderApi.returnRefund(returnId.value, refundAmount.value)
-    ElMessage.success('退款请求已提交，到账结果以最新状态为准')
+    ElMessage.success(uiText('退款请求已提交，到账结果以最新状态为准'))
     refundDialogVisible.value = false
     loadDetail()
   } finally {
@@ -87,7 +90,7 @@ async function handleRefund() {
   }
 }
 
-async function receiveReturn(){try{await ElMessageBox.confirm('确认已收到退回商品并完成核验？','确认收货');await client.put(`/admin/orders/returns/${returnId.value}/receive`);ElMessage.success('已确认收货，可发起退款');await loadDetail()}catch(e){ if (isAdminSessionExpired(e)) return;if(e instanceof Error)ElMessage.error(e.message)}}
+async function receiveReturn(){try{await ElMessageBox.confirm(uiText('确认已收到退回商品并完成核验？'),uiText('确认收货'));await client.put(`/admin/orders/returns/${returnId.value}/receive`);ElMessage.success(uiText('已确认收货，可发起退款'));await loadDetail()}catch(e){ if (isAdminSessionExpired(e)) return;if(e instanceof Error)ElMessage.error(uiText(e.message))}}
 onMounted(() => {
   loadDetail()
 })
@@ -95,72 +98,72 @@ onMounted(() => {
 
 <template>
   <div class="page-wrap" v-loading="loading">
-    <PageHeader title="退货详情" subtitle="查看退货申请、执行审核与退款">
+    <PageHeader :title='$t("退货详情")' :subtitle='$t("查看退货申请、执行审核与退款")'>
       <template #extra>
-        <el-button @click="router.push('/commerce/returns')">返回列表</el-button>
-        <template v-if="detail"><el-button v-if="detail.status==='return_shipping'" type="primary" @click="receiveReturn">确认收到退货</el-button>
+        <el-button @click="router.push('/commerce/returns')">{{ $t("返回列表") }}</el-button>
+        <template v-if="detail"><el-button v-if="detail.status==='return_shipping'" type="primary" @click="receiveReturn">{{ $t("确认收到退货") }}</el-button>
           <el-button
             v-if="detail.status === 'pending_review'"
             type="success"
             @click="handleReview('approve')"
-          >通过审核</el-button>
+          >{{ $t("通过审核") }}</el-button>
           <el-button
             v-if="detail.status === 'pending_review'"
             type="danger"
             @click="handleReview('reject')"
-          >拒绝</el-button>
+          >{{ $t("拒绝") }}</el-button>
           <el-button
             v-if="detail.status === 'return_received'"
             type="primary"
             @click="openRefundDialog"
-          >退款</el-button>
+          >{{ $t("退款") }}</el-button>
         </template>
       </template>
     </PageHeader>
 
     <template v-if="detail">
       <div class="df-card section-card">
-        <div class="section-title">退货信息</div>
+        <div class="section-title">{{ $t("退货信息") }}</div>
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="退货单号">{{ detail.returnNo }}</el-descriptions-item>
-          <el-descriptions-item label="退货 ID">{{ detail.id }}</el-descriptions-item>
-          <el-descriptions-item label="原订单 ID">{{ detail.orderId }}</el-descriptions-item>
-          <el-descriptions-item label="类型">
+          <el-descriptions-item :label='$t("退货单号")'>{{ $t(detail.returnNo) }}</el-descriptions-item>
+          <el-descriptions-item :label='$t("退货 ID")'>{{ $t(detail.id) }}</el-descriptions-item>
+          <el-descriptions-item :label='$t("原订单 ID")'>{{ $t(detail.orderId) }}</el-descriptions-item>
+          <el-descriptions-item :label='$t("类型")'>
             <el-tag size="small" :type="detail.type === 'exchange' ? 'warning' : 'info'">
-              {{ detail.type === 'exchange' ? '换货' : '退货' }}
+              {{ $t((detail.type === 'exchange' ? $t('换货') : $t('退货'))) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="状态">
+          <el-descriptions-item :label='$t("状态")'>
             <el-tag :type="returnStatusType(detail.status)" effect="light" round size="small">
-              {{ returnStatusLabel(detail.status) }}
+              {{ $t(returnStatusLabel(detail.status)) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="退款金额">
-            <span class="price">{{ formatMoney(detail.refundAmount) }}</span>
+          <el-descriptions-item :label='$t("退款金额")'>
+            <span class="price">{{ $t(formatMoney(detail.refundAmount)) }}</span>
           </el-descriptions-item>
-          <el-descriptions-item label="申请时间">{{ formatDateTime(detail.createTime) }}</el-descriptions-item>
+          <el-descriptions-item :label='$t("申请时间")'>{{ $t(formatDateTime(detail.createTime)) }}</el-descriptions-item>
         </el-descriptions>
       </div>
 
       <div class="df-card section-card">
-        <div class="section-title">退货原因与物流</div><p v-if="detail.carrier">{{detail.carrier}} · {{detail.trackingNo}}</p><p v-if="detail.reviewNote">审核说明：{{detail.reviewNote}}</p>
-        <div class="reason-box">{{ detail.reason || '未填写' }}</div>
+        <div class="section-title">{{ $t("退货原因与物流") }}</div><p v-if="detail.carrier">{{$t(detail.carrier)}} · {{$t(detail.trackingNo)}}</p><p v-if="detail.reviewNote">{{ $t("审核说明：") }}{{$t(detail.reviewNote)}}</p>
+        <div class="reason-box">{{ $t((detail.reason || $t('未填写'))) }}</div>
       </div>
     </template>
-    <el-empty v-else description="未找到退货单" />
+    <el-empty v-else :description='$t("未找到退货单")' />
 
     <!-- 退款弹窗 -->
-    <el-dialog v-model="refundDialogVisible" title="退款处理" width="420px" append-to-body>
-      <el-alert title="请核对退款金额；确认后会改变售后与退款状态。" type="warning" :closable="false" show-icon />
+    <el-dialog v-model="refundDialogVisible" :title='$t("退款处理")' width="420px" append-to-body>
+      <el-alert :title='$t("请核对退款金额；确认后会改变售后与退款状态。")' type="warning" :closable="false" show-icon />
       <el-form label-width="100px">
-        <el-form-item label="退款金额">
+        <el-form-item :label='$t("退款金额")'>
           <el-input-number v-model="refundAmount" :min="0" :precision="2" :step="1" controls-position="right" />
-          <span class="form-tip">元</span>
+          <span class="form-tip">{{ $t("元") }}</span>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="refundDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="refundSaving" @click="handleRefund">确认退款</el-button>
+        <el-button @click="refundDialogVisible = false">{{ $t("取消") }}</el-button>
+        <el-button type="primary" :loading="refundSaving" @click="handleRefund">{{ $t("确认退款") }}</el-button>
       </template>
     </el-dialog>
   </div>

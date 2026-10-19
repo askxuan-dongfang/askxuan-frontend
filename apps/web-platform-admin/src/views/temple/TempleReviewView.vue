@@ -1,36 +1,36 @@
 <template>
   <div class="dfx-page">
-    <PageHeader title="寺院审核" subtitle="寺院入驻申请两阶段审核（初审 / 终审）">
+    <PageHeader :title='$t("寺院审核")' :subtitle='$t("寺院入驻申请两阶段审核（初审 / 终审）")'>
       <template #actions>
-        <el-button :icon="Refresh" @click="loadData">刷新</el-button>
+        <el-button :icon="Refresh" @click="loadData">{{ $t("刷新") }}</el-button>
       </template>
     </PageHeader>
 
     <div class="dfx-card filter-bar">
-      <el-input v-model="query.templeCode" placeholder="寺院编码" clearable style="width: 160px" @keyup.enter="onSearch" />
-      <el-select v-model="query.status" placeholder="审核状态" clearable style="width: 160px" @change="onSearch">
-        <el-option label="待初审" value="pending" />
-        <el-option label="初审通过" value="first_pass" />
-        <el-option label="终审通过" value="final_pass" />
-        <el-option label="已驳回" value="rejected" />
+      <el-input v-model="query.templeCode" :placeholder='$t("寺院编码")' clearable style="width: 160px" @keyup.enter="onSearch" />
+      <el-select v-model="query.status" :placeholder='$t("审核状态")' clearable style="width: 160px" @change="onSearch">
+        <el-option :label='$t("待初审")' value="pending" />
+        <el-option :label='$t("初审通过")' value="first_pass" />
+        <el-option :label='$t("终审通过")' value="final_pass" />
+        <el-option :label='$t("已驳回")' value="rejected" />
       </el-select>
     </div>
 
     <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
       <div class="ax-page-feedback__copy">
-        <div class="ax-page-feedback__title">寺院入驻申请加载失败</div>
-        <div class="ax-page-feedback__description">两阶段审核队列状态未知，请重试后再处理。</div>
+        <div class="ax-page-feedback__title">{{ $t("寺院入驻申请加载失败") }}</div>
+        <div class="ax-page-feedback__description">{{ $t("两阶段审核队列状态未知，请重试后再处理。") }}</div>
       </div>
-      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+      <el-button :loading="loading" @click="loadData">{{ $t("重新加载") }}</el-button>
     </div>
 
     <div class="dfx-card table-wrap">
       <DataTable class="desktop-table" :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
-        <el-table-column label="申请编号" prop="id" width="90" />
-        <el-table-column label="寺院编码" prop="templeCode" width="120" />
-        <el-table-column label="申请人" prop="applicantName" width="120" />
-        <el-table-column label="联系电话" prop="contactPhone" width="140" />
-        <el-table-column label="资质材料" min-width="160">
+        <el-table-column :label='$t("申请编号")' prop="id" width="90" />
+        <el-table-column :label='$t("寺院编码")' prop="templeCode" width="120" />
+        <el-table-column :label='$t("申请人")' prop="applicantName" width="120" />
+        <el-table-column :label='$t("联系电话")' prop="contactPhone" width="140" />
+        <el-table-column :label='$t("资质材料")' min-width="160">
           <template #default="{ row }">
             <el-image
               v-for="(url, i) in row.certUrls"
@@ -42,48 +42,48 @@
               :initial-index="i"
               preview-teleported
             >
-              <template #error><div class="cert-img cert-img--fallback">证</div></template>
+              <template #error><div class="cert-img cert-img--fallback">{{ $t("证") }}</div></template>
             </el-image>
             <span v-if="!row.certUrls?.length">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="120">
+        <el-table-column :label='$t("状态")' width="120">
           <template #default="{ row }"><StatusTag :status="row.status" /></template>
         </el-table-column>
-        <el-table-column label="申请时间" width="170">
-          <template #default="{ row }">{{ formatDate(row.createTime) }}</template>
+        <el-table-column :label='$t("申请时间")' width="170">
+          <template #default="{ row }">{{ $t(formatDate(row.createTime)) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column :label='$t("操作")' width="240" fixed="right">
           <template #default="{ row }">
             <template v-if="row.status === 'pending'">
-              <el-button link type="success" @click="open(row, 'first-pass')">初审通过</el-button>
-              <el-button link type="danger" @click="open(row, 'reject')">驳回</el-button>
+              <el-button link type="success" @click="open(row, 'first-pass')">{{ $t("初审通过") }}</el-button>
+              <el-button link type="danger" @click="open(row, 'reject')">{{ $t("驳回") }}</el-button>
             </template>
             <template v-else-if="row.status === 'first_pass'">
-              <el-button link type="success" @click="open(row, 'final-pass')">终审通过</el-button>
-              <el-button link type="danger" @click="open(row, 'reject')">驳回</el-button>
+              <el-button link type="success" @click="open(row, 'final-pass')">{{ $t("终审通过") }}</el-button>
+              <el-button link type="danger" @click="open(row, 'reject')">{{ $t("驳回") }}</el-button>
             </template>
-            <span v-else class="muted">已处理</span>
+            <span v-else class="muted">{{ $t("已处理") }}</span>
           </template>
         </el-table-column>
       </DataTable>
       <MobileTaskList v-model:page="query.page" :items="list" :loading="loading" :total="total" :size="query.size" @change="loadData">
         <template #item="{ item: row }">
           <article class="mobile-task-card">
-            <div class="mobile-task-card__head"><strong>{{ row.applicantName || row.templeCode }}</strong><StatusTag :status="row.status" /></div>
-            <div class="mobile-task-card__meta">寺院 {{ row.templeCode }} · 申请 #{{ row.id }}</div>
-            <div class="mobile-task-card__meta">联系电话 {{ row.contactPhone || '未填写' }} · 材料 {{ row.certUrls?.length || 0 }} 项</div>
+            <div class="mobile-task-card__head"><strong>{{ $t((row.applicantName || row.templeCode)) }}</strong><StatusTag :status="row.status" /></div>
+            <div class="mobile-task-card__meta">{{ $t("寺院 ") }}{{ $t(row.templeCode) }}{{ $t(" · 申请 #") }}{{ $t(row.id) }}</div>
+            <div class="mobile-task-card__meta">{{ $t("联系电话 ") }}{{ $t((row.contactPhone || $t('未填写'))) }}{{ $t(" · 材料 ") }}{{ $t((row.certUrls?.length || 0)) }}{{ $t(" 项") }}</div>
             <div class="mobile-task-card__foot">
-              <span>{{ formatDate(row.createTime) }}</span>
+              <span>{{ $t(formatDate(row.createTime)) }}</span>
               <span class="mobile-actions" v-if="row.status === 'pending'">
-                <el-button type="success" @click="open(row, 'first-pass')">初审通过</el-button>
-                <el-button type="danger" plain @click="open(row, 'reject')">驳回</el-button>
+                <el-button type="success" @click="open(row, 'first-pass')">{{ $t("初审通过") }}</el-button>
+                <el-button type="danger" plain @click="open(row, 'reject')">{{ $t("驳回") }}</el-button>
               </span>
               <span class="mobile-actions" v-else-if="row.status === 'first_pass'">
-                <el-button type="success" @click="open(row, 'final-pass')">终审通过</el-button>
-                <el-button type="danger" plain @click="open(row, 'reject')">驳回</el-button>
+                <el-button type="success" @click="open(row, 'final-pass')">{{ $t("终审通过") }}</el-button>
+                <el-button type="danger" plain @click="open(row, 'reject')">{{ $t("驳回") }}</el-button>
               </span>
-              <b v-else>已处理</b>
+              <b v-else>{{ $t("已处理") }}</b>
             </div>
           </article>
         </template>
@@ -91,30 +91,33 @@
     </div>
 
     <!-- 审核弹窗 -->
-    <el-dialog v-model="dialog.visible" :title="dialogTitle" width="460px" append-to-body>
+    <el-dialog v-model="dialog.visible" :title="$t(dialogTitle)" width="460px" append-to-body>
       <div class="dialog-info">
-        <p><span>寺院编码：</span>{{ dialog.row?.templeCode }}</p>
-        <p><span>申请人：</span>{{ dialog.row?.applicantName }}</p>
+        <p><span>{{ $t("寺院编码：") }}</span>{{ $t(dialog.row?.templeCode) }}</p>
+        <p><span>{{ $t("申请人：") }}</span>{{ $t(dialog.row?.applicantName) }}</p>
       </div>
-      <el-alert :title="dialogImpact" type="warning" :closable="false" show-icon />
+      <el-alert :title="$t(dialogImpact)" type="warning" :closable="false" show-icon />
       <el-form label-position="top">
-        <el-form-item :label="dialog.action === 'reject' ? '驳回原因（必填）' : '审核备注（选填）'">
-          <el-input v-model="dialog.remark" type="textarea" :rows="4" placeholder="请输入" />
+        <el-form-item :label="$t((dialog.action === 'reject' ? $t('驳回原因（必填）') : $t('审核备注（选填）')))">
+          <el-input v-model="dialog.remark" type="textarea" :rows="4" :placeholder='$t("请输入")' />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialog.visible = false">取消</el-button>
-        <el-button :type="dialog.action === 'reject' ? 'danger' : 'success'" :loading="dialog.loading" @click="confirm">确认</el-button>
+        <el-button @click="dialog.visible = false">{{ $t("取消") }}</el-button>
+        <el-button :type="dialog.action === 'reject' ? 'danger' : 'success'" :loading="dialog.loading" @click="confirm">{{ $t("确认") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { Refresh } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import MobileTaskList from '@/components/MobileTaskList.vue'
@@ -178,7 +181,7 @@ function open(row: TempleAudit, action: 'first-pass' | 'final-pass' | 'reject') 
 
 async function confirm() {
   if (dialog.action === 'reject' && !dialog.remark.trim()) {
-    ElMessage.warning('请输入驳回原因')
+    ElMessage.warning(uiText('请输入驳回原因'))
     return
   }
   if (!dialog.row) return
@@ -188,7 +191,7 @@ async function confirm() {
     if (dialog.action === 'first-pass') await templeAuditFirstPass(id, dialog.remark)
     else if (dialog.action === 'final-pass') await templeAuditFinalPass(id, dialog.remark)
     else await templeAuditReject(id, dialog.remark)
-    ElMessage.success('操作成功')
+    ElMessage.success(uiText('操作成功'))
     dialog.visible = false
     loadData()
   } finally {

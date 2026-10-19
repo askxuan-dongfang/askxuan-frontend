@@ -1,3 +1,4 @@
+import { getLanguage } from '../../../../packages/localization/language';
 // 问玄东方 P05 平台总管理台 - 格式化工具
 import dayjs from 'dayjs'
 
@@ -5,14 +6,14 @@ import dayjs from 'dayjs'
 export function formatMoney(value: number | string | undefined | null, prefix = '¥'): string {
   const num = Number(value ?? 0)
   if (isNaN(num)) return `${prefix}0.00`
-  return `${prefix}${num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  return `${prefix}${num.toLocaleString(getLanguage(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 /** 数字千分位 */
 export function formatNumber(value: number | string | undefined | null): string {
   const num = Number(value ?? 0)
   if (isNaN(num)) return '0'
-  return num.toLocaleString('zh-CN')
+  return num.toLocaleString(getLanguage())
 }
 
 /** 百分比 */

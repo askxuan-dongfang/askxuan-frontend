@@ -51,7 +51,8 @@ struct DongFangApp: App {
             }
             .id(authStore.navigationID)
             .environmentObject(authStore)
-            .preferredColorScheme(AppTheme(rawValue: themeValue)?.colorScheme)
+            .appLanguage()
+                .preferredColorScheme(AppTheme(rawValue: themeValue)?.colorScheme)
                 .appVisualDefaults()
                 .tint(Color.brandDefault)
                 .task { await chatNotifications.refresh(); await chatNotifications.monitor() }

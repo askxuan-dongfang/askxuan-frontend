@@ -75,9 +75,9 @@ struct ProfileEditView: View {
                 if let profile {
                     MasterCard(padding: AppSpacing.md) {
                         VStack(spacing: 12) {
-                            LabeledContent("法号", value: profile.dharmaName)
-                            LabeledContent("职位", value: profile.position)
-                            Text("身份资料由认证记录维护").font(.caption).foregroundStyle(Color.textSecondary)
+                            LabeledContent(L10n.text("法号"), value: profile.dharmaName)
+                            LabeledContent(L10n.text("职位"), value: profile.position)
+                            Text(L10n.text("身份资料由认证记录维护")).font(.caption).foregroundStyle(Color.textSecondary)
                         }.foregroundStyle(Color.textPrimary)
                     }
                 }
@@ -89,7 +89,7 @@ struct ProfileEditView: View {
                             Image(systemName: "text.alignleft")
                                 .font(AppTypography.body)
                                 .foregroundStyle(.accentDefault)
-                            Text("个人简介")
+                            Text(L10n.text("个人简介"))
                                 .font(.cardTitle)
                                 .foregroundStyle(.textPrimary)
                         }
@@ -134,7 +134,7 @@ struct ProfileEditView: View {
                             Image(systemName: "tag")
                                 .font(AppTypography.body)
                                 .foregroundStyle(.accentDefault)
-                            Text("定价说明")
+                            Text(L10n.text("定价说明"))
                                 .font(.cardTitle)
                                 .foregroundStyle(.textPrimary)
                         }
@@ -153,13 +153,13 @@ struct ProfileEditView: View {
                 }
 
                 if let msg = viewModel.message {
-                    Text(msg)
+                    Text(L10n.lookup(msg))
                         .font(AppTypography.caption)
                         .foregroundStyle(msg.contains("已保存") ? .stateSuccess : .stateError)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                PrimaryButton(title: "保存资料", icon: "checkmark.circle.fill",
+                PrimaryButton(title: L10n.text("保存资料"), icon: "checkmark.circle.fill",
                               isLoading: viewModel.isSaving) {
                     // 特性 3：保存前将 AttributedString 转回 String
                     if #available(iOS 26.0, *) {
@@ -173,7 +173,7 @@ struct ProfileEditView: View {
             .padding(.bottom, AppSpacing.xl)
         }
         .background(Color.bgPrimary)
-        .navigationTitle("编辑资料")
+        .navigationTitle(L10n.text("编辑资料"))
         .navigationBarTitleDisplayMode(.inline)
 
         .interactiveDismissDisabled(viewModel.isSaving)
@@ -195,23 +195,23 @@ struct RichTextToolbar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            formatButton(icon: "bold", label: "加粗") {
+            formatButton(icon: "bold", label: L10n.text("加粗")) {
                 var container = AttributeContainer()
                 container.font = .body.bold()
                 attributedText.mergeAttributes(container)
             }
-            formatButton(icon: "italic", label: "斜体") {
+            formatButton(icon: "italic", label: L10n.text("斜体")) {
                 var container = AttributeContainer()
                 container.font = .body.italic()
                 attributedText.mergeAttributes(container)
             }
-            formatButton(icon: "underline", label: "下划线") {
+            formatButton(icon: "underline", label: L10n.text("下划线")) {
                 var container = AttributeContainer()
                 container.underlineStyle = .single
                 attributedText.mergeAttributes(container)
             }
             Spacer()
-            formatButton(icon: "xmark.circle", label: "清除") {
+            formatButton(icon: "xmark.circle", label: L10n.text("清除")) {
                 attributedText = AttributedString(String(attributedText.characters))
             }
         }
@@ -226,7 +226,7 @@ struct RichTextToolbar: View {
             HStack(spacing: 3) {
                 Image(systemName: icon)
                     .font(AppTypography.caption.weight(.semibold))
-                Text(label)
+                Text(L10n.lookup(label))
                     .font(AppTypography.micro)
             }
             .foregroundStyle(Color.accentDefault)

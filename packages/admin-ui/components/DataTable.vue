@@ -56,11 +56,11 @@ function changeSort(value: { prop?: string | null; order?: string | null }) {
 
 <template>
   <div class="aui-data-table" :class="{ 'is-loading': loading }">
-    <span class="aui-data-table__status" role="status" aria-live="polite" aria-atomic="true">{{ loading ? (data.length ? '正在更新列表' : '正在加载列表') : '' }}</span>
+    <span class="aui-data-table__status" role="status" aria-live="polite" aria-atomic="true">{{ $t((loading ? ((data.length ? $t('正在更新列表') : $t('正在加载列表'))) : '')) }}</span>
     <div class="aui-data-table__scroller" :aria-busy="loading">
       <el-table
         v-loading="loading && data.length > 0"
-        element-loading-text="正在更新列表"
+        :element-loading-text='$t("正在更新列表")'
         :data="data"
         :row-key="rowKey"
         :height="height"
@@ -85,8 +85,8 @@ function changeSort(value: { prop?: string | null; order?: string | null }) {
               <div class="aui-table-empty__mark" aria-hidden="true">
                 <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="7" y="5" width="18" height="23" rx="4"/><path d="M12 12h8M12 17h8M12 22h4"/></svg>
               </div>
-              <p class="aui-table-empty__title">{{ emptyDescription }}</p>
-              <p v-if="emptyHint" class="aui-table-empty__hint">{{ emptyHint }}</p>
+              <p class="aui-table-empty__title">{{ $t(emptyDescription) }}</p>
+              <p v-if="emptyHint" class="aui-table-empty__hint">{{ $t(emptyHint) }}</p>
             </div>
           </slot>
         </template>

@@ -104,10 +104,10 @@ struct ServiceContainerView: View {
                 .frame(width: 80, height: 80)
                 .padding(.top, 80)
 
-                Text(serviceType.rawValue)
+                Text(L10n.lookup(serviceType.rawValue))
                     .font(AppTypography.title(22))
                     .foregroundStyle(Color.accentDefault)
-                Text(serviceType.subtitle)
+                Text(L10n.lookup(serviceType.subtitle))
                     .font(AppTypography.supporting)
                     .foregroundStyle(Color.textSecondary)
             }
@@ -122,12 +122,12 @@ struct ServiceContainerView: View {
                 Image(systemName: "text.book.closed")
                     .font(AppTypography.body)
                     .foregroundStyle(Color.accentDefault)
-                Text("服务介绍")
+                Text(L10n.text("服务介绍"))
                     .font(.cardTitle)
                     .foregroundStyle(Color.textPrimary)
             }
 
-            Text(serviceType.detail)
+            Text(L10n.lookup(serviceType.detail))
                 .font(AppTypography.body)
                 .foregroundStyle(Color.textSecondary)
                 .lineSpacing(5)
@@ -145,11 +145,11 @@ struct ServiceContainerView: View {
     private var packagesSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             HStack {
-                Text("服务套餐")
+                Text(L10n.text("服务套餐"))
                     .font(.cardTitle)
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
-                Text(viewModel.priceRangeText)
+                Text(L10n.lookup(viewModel.priceRangeText))
                     .font(AppTypography.caption.weight(.medium))
                     .foregroundStyle(Color.brandDefault)
             }
@@ -157,7 +157,7 @@ struct ServiceContainerView: View {
             .padding(.top, AppSpacing.lg)
 
             if viewModel.blessingServices.isEmpty {
-                Text("暂无可选套餐，请稍后再试")
+                Text(L10n.text("暂无可选套餐，请稍后再试"))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .frame(maxWidth: .infinity)
@@ -182,11 +182,11 @@ struct ServiceContainerView: View {
             .frame(width: 44, height: 44)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(service.serviceName)
+                Text(L10n.lookup(service.serviceName))
                     .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                 if !service.description.isEmpty {
-                    Text(service.description)
+                    Text(L10n.lookup(service.description))
                         .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                         .lineLimit(2)
@@ -207,7 +207,7 @@ struct ServiceContainerView: View {
 
             Spacer()
 
-            Text(service.priceText)
+            Text(L10n.lookup(service.priceText))
                 .font(AppTypography.reading.weight(.semibold))
                 .foregroundStyle(Color.brandDefault)
         }
@@ -224,11 +224,11 @@ struct ServiceContainerView: View {
     private var designatedMasterSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             HStack {
-                Text("指定法师（可选）")
+                Text(L10n.text("指定法师（可选）"))
                     .font(.cardTitle)
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
-                Text("不指定则为全寺执行")
+                Text(L10n.text("不指定则为全寺执行"))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }
@@ -236,7 +236,7 @@ struct ServiceContainerView: View {
             .padding(.top, AppSpacing.lg)
 
             if viewModel.masters.isEmpty {
-                Text(viewModel.templeId == nil ? "暂无可指定法师" : "本寺暂无可执行该服务的法师，默认全寺执行")
+                Text(L10n.lookup(viewModel.templeId == nil ? L10n.text("暂无可指定法师") : L10n.text("本寺暂无可执行该服务的法师，默认全寺执行")))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .padding(.horizontal, AppSpacing.lg)
@@ -271,11 +271,11 @@ struct ServiceContainerView: View {
                                 .offset(x: 19, y: 19)
                         }
                     }
-                    Text(master.dharmaName)
+                    Text(L10n.lookup(master.dharmaName))
                         .font(AppTypography.caption.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
-                    Text("可指定执行")
+                    Text(L10n.text("可指定执行"))
                         .font(.system(size: 9))
                         .foregroundStyle(Color.textTertiary)
                 } else {
@@ -287,10 +287,10 @@ struct ServiceContainerView: View {
                             .font(.system(size: 20))
                             .foregroundStyle(Color.textSecondary)
                     }
-                    Text("全寺执行")
+                    Text(L10n.text("全寺执行"))
                         .font(AppTypography.caption.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
-                    Text("不指定法师")
+                    Text(L10n.text("不指定法师"))
                         .font(.system(size: 9))
                         .foregroundStyle(Color.textTertiary)
                 }
@@ -311,7 +311,7 @@ struct ServiceContainerView: View {
                 Image(systemName: "exclamationmark.circle")
                     .font(AppTypography.body)
                     .foregroundStyle(Color.stateWarning)
-                Text("服务须知")
+                Text(L10n.text("服务须知"))
                     .font(.cardTitle)
                     .foregroundStyle(Color.textPrimary)
             }
@@ -336,7 +336,7 @@ struct ServiceContainerView: View {
             Text("·")
                 .font(AppTypography.caption)
                 .foregroundStyle(Color.accentDefault)
-            Text(text)
+            Text(L10n.lookup(text))
                 .font(AppTypography.caption)
                 .foregroundStyle(Color.textSecondary)
                 .lineSpacing(3)
@@ -347,7 +347,7 @@ struct ServiceContainerView: View {
     /// 立即预约：直接进入预约下单（可指定法师或不指定=全寺执行）
     private var bottomActionBar: some View {
         HStack(spacing: AppSpacing.md) {
-            DFPrimaryButton(title: "立即预约", icon: "calendar.badge.plus") {
+            DFPrimaryButton(title: L10n.text("立即预约"), icon: "calendar.badge.plus") {
                 showBooking = true
             }
         }

@@ -22,10 +22,10 @@ struct MasterTabItem: Identifiable {
 }
 
 private let masterTabItems: [MasterTabItem] = [
-    MasterTabItem(id: 0, title: "工作台", icon: "square.grid.2x2", selectedIcon: "square.grid.2x2.fill", badge: nil),
-    MasterTabItem(id: 1, title: "预约", icon: "calendar", selectedIcon: "calendar.badge.plus.fill", badge: 3),
-    MasterTabItem(id: 2, title: "消息", icon: "bubble.left.and.bubble.right", selectedIcon: "bubble.left.and.bubble.right.fill", badge: 5),
-    MasterTabItem(id: 3, title: "我的", icon: "person.crop.circle", selectedIcon: "person.crop.circle.fill", badge: nil)
+    MasterTabItem(id: 0, title: L10n.text("工作台"), icon: "square.grid.2x2", selectedIcon: "square.grid.2x2.fill", badge: nil),
+    MasterTabItem(id: 1, title: L10n.text("预约"), icon: "calendar", selectedIcon: "calendar.badge.plus.fill", badge: 3),
+    MasterTabItem(id: 2, title: L10n.text("消息"), icon: "bubble.left.and.bubble.right", selectedIcon: "bubble.left.and.bubble.right.fill", badge: 5),
+    MasterTabItem(id: 3, title: L10n.text("我的"), icon: "person.crop.circle", selectedIcon: "person.crop.circle.fill", badge: nil)
 ]
 
 struct MasterBottomTabBar: View {
@@ -66,7 +66,7 @@ struct MasterBottomTabBar: View {
                         .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                         .frame(height: 24)
 
-                    Text(item.title)
+                    Text(L10n.lookup(item.title))
                         .font(AppTypography.micro.weight(isSelected ? .semibold : .regular))
                         .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                 }

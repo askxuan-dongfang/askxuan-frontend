@@ -52,7 +52,7 @@ struct ProfileView: View {
     private let systemItems: [(icon: String, title: String)] = [
         ("person", "个人资料"),
         ("bell", "消息通知"),
-        ("circle.lefthalf.filled", "外观"),
+        ("circle.lefthalf.filled", "外观与语言"),
         ("lock.shield", "账号安全"),
         ("info.circle", "关于问玄东方")
     ]
@@ -87,18 +87,18 @@ struct ProfileView: View {
                     .frame(width: 104, height: 104)
                     .accessibilityHidden(true)
 
-                Text("问玄东方")
+                Text(L10n.text("问玄东方"))
                     .font(AppTypography.title(24))
                     .foregroundStyle(Color.accentDefault)
 
-                Text("登录后即可管理您的预约、订单和地址")
+                Text(L10n.text("登录后即可管理您的预约、订单和地址"))
                     .font(AppTypography.body)
                     .foregroundStyle(Color.textTertiary)
             }
 
             VStack(spacing: 12) {
                 NavigationLink(value: AuthRoute.login) {
-                    Text("立即登录 / 注册")
+                    Text(L10n.text("立即登录 / 注册"))
                         .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -114,13 +114,13 @@ struct ProfileView: View {
                 }
 
                 NavigationLink { AppearanceSettingsView() } label: {
-                    Label("外观", systemImage: "circle.lefthalf.filled")
+                    Label(L10n.text("外观与语言"), systemImage: "circle.lefthalf.filled")
                         .font(AppTypography.body)
                         .foregroundStyle(Color.accentDefault)
                         .padding(.vertical, 8)
                 }
 
-                Text("新用户可通过邮箱验证创建账户")
+                Text(L10n.text("新用户可通过邮箱验证创建账户"))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }
@@ -144,8 +144,8 @@ struct ProfileView: View {
                     HStack(spacing: 14) {
                         Image(systemName: "wallet.bifold").font(.title2).foregroundStyle(Color.accentDefault)
                         VStack(alignment: .leading, spacing: 5) {
-                            Text("我的钱包").font(AppTypography.body).foregroundStyle(Color.textPrimary)
-                            Text("创作收益 · 消费账单 · 退款进度").font(AppTypography.caption).foregroundStyle(Color.textSecondary)
+                            Text(L10n.text("我的钱包")).font(AppTypography.body).foregroundStyle(Color.textPrimary)
+                            Text(L10n.text("创作收益 · 消费账单 · 退款进度")).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
                         }
                         Spacer(); Image(systemName: "chevron.right").foregroundStyle(Color.textTertiary)
                     }.padding(18).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
@@ -154,7 +154,7 @@ struct ProfileView: View {
                 orderCenterSection
                 servicesSection
                 systemSection
-                Text("功德值用于记录个人成长，不用于支付或兑换；成长记录开放后展示。")
+                Text(L10n.text("功德值用于记录个人成长，不用于支付或兑换；成长记录开放后展示。"))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -176,14 +176,14 @@ struct ProfileView: View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(Color.brandDefault)
-            Text(message)
+            Text(L10n.lookup(message))
                 .font(AppTypography.supporting)
                 .foregroundStyle(Color.textSecondary)
             Spacer()
             Button {
                 Task { await viewModel.load() }
             } label: {
-                Text("重试")
+                Text(L10n.text("重试"))
                     .font(AppTypography.supporting.weight(.medium))
                     .foregroundStyle(Color.brandDefault)
             }
@@ -208,7 +208,7 @@ struct ProfileView: View {
                     Text(viewModel.displayName)
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(Color.textPrimary)
-                    Text(viewModel.maskedMobile == "—" ? "用户 ID: " + authStore.userId : viewModel.maskedMobile)
+                    Text(L10n.lookup(viewModel.maskedMobile == "—" ? L10n.text("用户 ID: ") + authStore.userId : viewModel.maskedMobile))
                         .font(AppTypography.supporting)
                         .foregroundStyle(Color.textTertiary)
                 }
@@ -216,7 +216,7 @@ struct ProfileView: View {
                 Spacer()
 
                 NavigationLink { ProfileEditView() } label: {
-                    HStack(spacing: 3) { Text("编辑资料"); Image(systemName: "chevron.right") }
+                    HStack(spacing: 3) { Text(L10n.text("编辑资料")); Image(systemName: "chevron.right") }
                         .font(AppTypography.caption).foregroundStyle(Color.accentDefault).frame(minHeight: 44)
                 }.buttonStyle(CardPressButtonStyle())
             }
@@ -230,12 +230,12 @@ struct ProfileView: View {
                         if item.label == "优惠券" { CouponView() } else { PointsView() }
                     } label: {
                     VStack(spacing: 2) {
-                        Text(item.value)
+                        Text(L10n.lookup(item.value))
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundStyle(Color.accentDefault)
                             .monospacedDigit()
-                        Text(item.label).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
-                        Text(item.label == "功德值" ? "成长记录待开放" : item.label == "积分" ? "查看积分明细" : "查看可用优惠")
+                        Text(L10n.lookup(item.label)).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
+                        Text(L10n.lookup(item.label == "功德值" ? L10n.text("成长记录待开放") : item.label == "积分" ? L10n.text("查看积分明细") : L10n.text("查看可用优惠")))
                             .font(.system(size: 10)).foregroundStyle(Color.textTertiary)
                     }
                     .frame(maxWidth: .infinity)
@@ -268,7 +268,7 @@ struct ProfileView: View {
                 NavigationLink {
                     OrderListView()
                 } label: {
-                    Text("订单中心")
+                    Text(L10n.text("订单中心"))
                         .font(.cardTitle)
                         .foregroundStyle(Color.textPrimary)
                 }
@@ -277,7 +277,7 @@ struct ProfileView: View {
                     OrderListView()
                 } label: {
                     HStack(spacing: 2) {
-                        Text("查看全部")
+                        Text(L10n.text("查看全部"))
                             .font(AppTypography.supporting)
                             .foregroundStyle(Color.textTertiary)
                         Image(systemName: "chevron.right")
@@ -303,7 +303,7 @@ struct ProfileView: View {
                             }
                             .overlay(alignment: .topTrailing) {
                                 if let badge = entry.badge {
-                                    Text(badge)
+                                    Text(L10n.lookup(badge))
                                         .font(AppTypography.micro.weight(.medium))
                                         .foregroundStyle(Color.white)
                                         .padding(.horizontal, 5)
@@ -313,7 +313,7 @@ struct ProfileView: View {
                                         .offset(x: 8, y: -4)
                                 }
                             }
-                            Text(entry.title)
+                            Text(L10n.lookup(entry.title))
                                 .font(AppTypography.caption)
                                 .foregroundStyle(Color.textSecondary)
                         }
@@ -345,12 +345,12 @@ struct ProfileView: View {
                             .font(.system(size: 18))
                             .foregroundStyle(Color.textTertiary)
                             .frame(width: 24)
-                        Text(item.title)
+                        Text(L10n.lookup(item.title))
                             .font(AppTypography.body)
                             .foregroundStyle(Color.textPrimary)
                         Spacer()
                         if let trailing = item.trailing {
-                            Text(trailing)
+                            Text(L10n.lookup(trailing))
                                 .font(AppTypography.supporting)
                                 .foregroundStyle(Color.textTertiary)
                         }
@@ -385,7 +385,7 @@ struct ProfileView: View {
                             .font(.system(size: 18))
                             .foregroundStyle(Color.textTertiary)
                             .frame(width: 24)
-                        Text(item.title)
+                        Text(L10n.lookup(item.title))
                             .font(AppTypography.body)
                             .foregroundStyle(Color.textPrimary)
                         Spacer()
@@ -411,7 +411,7 @@ struct ProfileView: View {
                         .font(.system(size: 18))
                         .foregroundStyle(Color.brandDefault)
                         .frame(width: 24)
-                    Text("退出登录")
+                    Text(L10n.text("退出登录"))
                         .font(AppTypography.body)
                         .foregroundStyle(Color.brandDefault)
                     Spacer()
@@ -461,7 +461,7 @@ struct ProfileView: View {
         switch title {
         case "个人资料": ProfileEditView()
         case "消息通知": NotificationSettingsView()
-        case "外观": AppearanceSettingsView()
+        case "外观与语言": AppearanceSettingsView()
         case "账号安全": SecurityView()
         default: AboutView()
         }

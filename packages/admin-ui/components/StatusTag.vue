@@ -40,7 +40,7 @@ function resolvedTone(): StatusTone {
 
 <template>
   <el-tag :type="resolvedTone()" :effect="effect" size="small" class="aui-status-tag" round>
-    {{ resolvedLabel() }}
+    {{ $t(resolvedLabel()) }}
   </el-tag>
 </template>
 

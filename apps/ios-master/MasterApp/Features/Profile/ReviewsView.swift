@@ -86,7 +86,7 @@ struct ReviewsView: View {
                 HStack(spacing: AppSpacing.sm) {
                     ForEach(filters, id: \.0) { item in
                         let isActive = viewModel.ratingFilter == item.0
-                        Text(item.1)
+                        Text(L10n.lookup(item.1))
                             .font(AppTypography.supporting.weight(isActive ? .semibold : .regular))
                             .foregroundStyle(isActive ? .white : .textSecondary)
                             .padding(.horizontal, AppSpacing.md)
@@ -103,7 +103,7 @@ struct ReviewsView: View {
             reviewList
         }
         .background(Color.bgPrimary)
-        .navigationTitle("评价管理")
+        .navigationTitle(L10n.text("评价管理"))
         .navigationBarTitleDisplayMode(.large)
 
         .task { await viewModel.load() }
@@ -113,20 +113,20 @@ struct ReviewsView: View {
     private var summaryHeader: some View {
         HStack(spacing: AppSpacing.lg) {
             VStack(spacing: 2) {
-                Text(String(format: "%.1f", viewModel.averageRating))
+                Text(L10n.lookup(String(format: "%.1f", viewModel.averageRating)))
                     .appNumericFont(32)
                     .foregroundStyle(.accentDefault)
-                Text("平均评分")
+                Text(L10n.text("平均评分"))
                     .font(.micro)
                     .foregroundStyle(.textTertiary)
             }
             .frame(width: 100)
             Divider().background(Color.borderDivider).frame(height: 44)
             VStack(alignment: .leading, spacing: 2) {
-                Text("共 \(viewModel.total) 条评价")
+                Text(L10n.text("共 \(viewModel.total) 条评价"))
                     .font(.cardTitle)
                     .foregroundStyle(.textPrimary)
-                Text("星级筛选可查看具体评分")
+                Text(L10n.text("星级筛选可查看具体评分"))
                     .font(.micro)
                     .foregroundStyle(.textTertiary)
             }
@@ -143,7 +143,7 @@ struct ReviewsView: View {
             LoadingView(fullScreen: true)
         } else if viewModel.reviews.isEmpty {
             EmptyState(icon: "star.slash",
-                       title: "暂无评价",
+                       title: L10n.text("暂无评价"),
                        message: viewModel.errorMessage) {
                 Task { await viewModel.load() }
             }
@@ -159,7 +159,7 @@ struct ReviewsView: View {
                             }
                     }
                     if viewModel.isLoading {
-                        LoadingView(message: "加载更多...")
+                        LoadingView(message: L10n.text("加载更多..."))
                     }
                 }
                 .padding(.horizontal, AppSpacing.pageHorizontal)
@@ -173,11 +173,11 @@ struct ReviewsView: View {
         MasterCard(padding: AppSpacing.md) {
             VStack(alignment: .leading, spacing: AppSpacing.sm) {
                 HStack {
-                    Text(review.ratingText)
+                    Text(L10n.lookup(review.ratingText))
                         .font(AppTypography.body)
                         .foregroundStyle(.stateWarning)
                     Spacer()
-                    Text(review.targetTypeText)
+                    Text(L10n.lookup(review.targetTypeText))
                         .font(.micro)
                         .foregroundStyle(.textTertiary)
                         .padding(.horizontal, 6)
@@ -185,7 +185,7 @@ struct ReviewsView: View {
                         .background(Color.bgTertiary)
                         .cornerRadius(AppRadius.sm)
                 }
-                Text(review.content.isEmpty ? "（用户未填写评价内容）" : review.content)
+                Text(review.content.isEmpty ? L10n.text("（用户未填写评价内容）") : review.content)
                     .font(AppTypography.body)
                     .foregroundStyle(.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -205,11 +205,11 @@ struct ReviewsView: View {
                 }
 
                 HStack {
-                    Text("信众：\(review.userId.isEmpty ? "匿名" : review.userId)")
+                    Text(L10n.text("信众：\(review.userId.isEmpty ? "匿名" : review.userId)"))
                         .font(.micro)
                         .foregroundStyle(.textTertiary)
                     Spacer()
-                    Text(DFDateFormatter.friendly(review.createTime))
+                    Text(L10n.lookup(DFDateFormatter.friendly(review.createTime)))
                         .font(.micro)
                         .foregroundStyle(.textTertiary)
                 }

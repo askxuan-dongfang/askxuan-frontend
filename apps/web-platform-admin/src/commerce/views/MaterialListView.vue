@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 // DIY 材料列表
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+
 import DiyDesignManager from '@/commerce/components/DiyDesignManager.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
@@ -76,7 +79,7 @@ function handleSizeChange(s: number) {
 async function handleStatusChange(row: any, status: string) {
   try {
     await materialApi.updateStatus(row.id, status as 'on_shelf' | 'off_shelf')
-    ElMessage.success('状态已更新')
+    ElMessage.success(uiText('状态已更新'))
     loadList()
   } catch {
     // 忽略
@@ -85,13 +88,13 @@ async function handleStatusChange(row: any, status: string) {
 
 async function handleDelete(row: any) {
   try {
-    await ElMessageBox.confirm(`确认删除材料「${row.name}」吗？`, '提示', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm((uiText("确认删除材料「") + String(row.name) + uiText("」吗？")), uiText('提示'), {
+      confirmButtonText: uiText('删除'),
+      cancelButtonText: uiText('取消'),
       type: 'warning'
     })
     // DIY 材料无独立删除接口，使用下架替代提示
-    ElMessage.info('材料暂不支持物理删除，请使用下架')
+    ElMessage.info(uiText('材料暂不支持物理删除，请使用下架'))
   } catch {
     // 取消
   }
@@ -104,103 +107,101 @@ onMounted(() => {
 
 <template>
   <div class="page-wrap">
-    <PageHeader title="DIY 材料列表" subtitle="这里是 H5 与 iOS 的权威材料、样式、价格和库存来源">
+    <PageHeader :title='$t("DIY 材料列表")' :subtitle='$t("这里是 H5 与 iOS 的权威材料、样式、价格和库存来源")'>
       <template #extra>
         <el-button type="primary" @click="router.push('/commerce/materials/edit')">
-          <el-icon><Plus /></el-icon>
-          新建材料
-        </el-button>
+          <el-icon><Plus /></el-icon>{{ $t(" 新建材料 ") }}</el-button>
       </template>
     </PageHeader>
-    <el-radio-group v-model="showDesigns" style="margin:0 0 20px"><el-radio-button :value="false">材料与素材</el-radio-button><el-radio-button :value="true">设计广场管理</el-radio-button></el-radio-group>
+    <el-radio-group v-model="showDesigns" style="margin:0 0 20px"><el-radio-button :value="false">{{ $t("材料与素材") }}</el-radio-button><el-radio-button :value="true">{{ $t("设计广场管理") }}</el-radio-button></el-radio-group>
     <DiyDesignManager v-if="showDesigns"/>
     <template v-else>
 
     <div class="df-card filter-bar">
       <el-form inline @submit.prevent="handleSearch">
-        <el-form-item label="关键词">
+        <el-form-item :label='$t("关键词")'>
           <el-input
             v-model="query.keyword"
-            placeholder="材料名称"
+            :placeholder='$t("材料名称")'
             clearable
             style="width: 200px"
             @keyup.enter="handleSearch"
           />
         </el-form-item>
-        <el-form-item label="分类">
-          <el-select v-model="query.category" placeholder="全部分类" clearable style="width: 160px">
+        <el-form-item :label='$t("分类")'>
+          <el-select v-model="query.category" :placeholder='$t("全部分类")' clearable style="width: 160px">
             <el-option
               v-for="c in categoryOptions"
               :key="c.value"
-              :label="c.label"
+              :label="$t(c.label)"
               :value="c.value"
             />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button type="primary" @click="handleSearch">{{ $t("查询") }}</el-button>
+          <el-button @click="handleReset">{{ $t("重置") }}</el-button>
         </el-form-item>
       </el-form>
     </div>
 
     <div class="df-card">
-      <el-table v-loading="loading" :data="list" style="width: 100%" empty-text="暂无材料">
-        <el-table-column label="材料" min-width="220">
+      <el-table v-loading="loading" :data="list" style="width: 100%" :empty-text='$t("暂无材料")'>
+        <el-table-column :label='$t("材料")' min-width="220">
           <template #default="{ row }">
             <div class="material-cell">
               <el-image :src="row.image" fit="cover" class="material-thumb">
                 <template #error>
-                  <div class="material-thumb-placeholder">无图</div>
+                  <div class="material-thumb-placeholder">{{ $t("无图") }}</div>
                 </template>
               </el-image>
               <div>
-                <div class="material-name">{{ row.name }}</div>
-                <div class="material-spec">{{ row.spec }} · {{ materialTypeLabel[row.materialType] || row.materialType }}</div>
+                <div class="material-name">{{ $t(row.name) }}</div>
+                <div class="material-spec">{{ $t(row.spec) }} · {{ $t((materialTypeLabel[row.materialType] || row.materialType)) }}</div>
               </div>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="分类" width="100">
-          <template #default="{ row }">{{ materialCategoryLabel(row.category) }}</template>
+        <el-table-column :label='$t("分类")' width="100">
+          <template #default="{ row }">{{ $t(materialCategoryLabel(row.category)) }}</template>
         </el-table-column>
-        <el-table-column label="五行" width="70">
-          <template #default="{ row }">{{ elementLabel[row.fiveElements] || row.fiveElements || '—' }}</template>
+        <el-table-column :label='$t("五行")' width="70">
+          <template #default="{ row }">{{ $t(((elementLabel[row.fiveElements] || row.fiveElements) || '—')) }}</template>
         </el-table-column>
-        <el-table-column label="渲染" width="130">
+        <el-table-column :label='$t("渲染")' width="130">
           <template #default="{ row }">
-            <div class="render-cell"><span class="color-swatch" :style="{ background: row.colorHex }" />{{ row.shape }} · {{ row.diameterMm }}mm</div>
+            <div class="render-cell"><span class="color-swatch" :style="{ background: row.colorHex }" />{{ $t(row.shape) }} · {{ $t(row.diameterMm) }}mm</div>
           </template>
         </el-table-column>
-        <el-table-column label="单价" width="120">
+        <el-table-column :label='$t("单价")' width="120">
           <template #default="{ row }">
-            <span class="price">{{ formatMoney(row.unitPrice) }} / {{ row.unit }}</span>
+            <span class="price">{{ $t(formatMoney(row.unitPrice)) }} / {{ $t(row.unit) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="库存" prop="stock" width="100" />
-        <el-table-column label="状态" width="110">
+        <el-table-column :label='$t("库存")' prop="stock" width="100" />
+        <el-table-column :label='$t("状态")' width="110">
           <template #default="{ row }">
             <StatusTag :status="row.status" domain="enabled" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column :label='$t("操作")' width="220" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" size="small" @click="router.push(`/commerce/materials/edit/${row.id}`)">编辑</el-button>
+            <el-button text type="primary" size="small" @click="router.push(`/commerce/materials/edit/${row.id}`)">{{ $t("编辑") }}</el-button>
             <el-button
               v-if="row.status !== 'on_shelf'"
               text
               type="success"
               size="small"
               @click="handleStatusChange(row, 'on_shelf')"
-            >上架</el-button>
+            >{{ $t("上架") }}</el-button>
             <el-button
               v-else
               text
               type="warning"
               size="small"
               @click="handleStatusChange(row, 'off_shelf')"
-            >下架</el-button>
-            <el-button text type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            >{{ $t("下架") }}</el-button>
+            <el-button text type="danger" size="small" @click="handleDelete(row)">{{ $t("删除") }}</el-button>
           </template>
         </el-table-column>
       </el-table>

@@ -60,24 +60,24 @@ onMounted(load)
 
 <template>
   <div class="df-page">
-    <PageHeader title="加持任务" subtitle="接收商城委托并分配本寺院法师">
-      <el-button :icon="Refresh" @click="load">刷新</el-button>
+    <PageHeader :title='$t("加持任务")' :subtitle='$t("接收商城委托并分配本寺院法师")'>
+      <el-button :icon="Refresh" @click="load">{{ $t("刷新") }}</el-button>
     </PageHeader>
 
     <div class="df-card list-card">
       <div class="filter-bar">
-        <el-select v-model="query.status" placeholder="状态筛选" clearable style="width: 160px" @change="search">
-          <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
+        <el-select v-model="query.status" :placeholder='$t("状态筛选")' clearable style="width: 160px" @change="search">
+          <el-option v-for="item in statusOptions" :key="item.value" :label="$t(item.label)" :value="item.value" />
         </el-select>
-        <el-button :icon="Search" type="primary" plain @click="search">查询</el-button>
+        <el-button :icon="Search" type="primary" plain @click="search">{{ $t("查询") }}</el-button>
       </div>
 
       <div v-if="loadError" class="ax-page-feedback is-error" role="status">
         <div class="ax-page-feedback__copy">
-          <div class="ax-page-feedback__title">加持任务加载失败</div>
-          <div class="ax-page-feedback__description">{{ loadError }}</div>
+          <div class="ax-page-feedback__title">{{ $t("加持任务加载失败") }}</div>
+          <div class="ax-page-feedback__description">{{ $t(loadError) }}</div>
         </div>
-        <el-button :loading="loading" @click="load">重试</el-button>
+        <el-button :loading="loading" @click="load">{{ $t("重试") }}</el-button>
       </div>
 
       <div class="desktop-table"><DataTable
@@ -89,40 +89,38 @@ onMounted(load)
         row-key="id"
         @change="pageChange"
       >
-        <el-table-column prop="taskNo" label="任务编号" min-width="170" />
-        <el-table-column prop="diyOrderNo" label="DIY 订单" min-width="170" />
-        <el-table-column prop="masterCode" label="执行法师" width="130">
-          <template #default="{ row }">{{ row.masterCode || '待分配' }}</template>
+        <el-table-column prop="taskNo" :label='$t("任务编号")' min-width="170" />
+        <el-table-column prop="diyOrderNo" :label='$t("DIY 订单")' min-width="170" />
+        <el-table-column prop="masterCode" :label='$t("执行法师")' width="130">
+          <template #default="{ row }">{{ $t((row.masterCode || $t('待分配'))) }}</template>
         </el-table-column>
-        <el-table-column label="状态" width="110">
+        <el-table-column :label='$t("状态")' width="110">
           <template #default="{ row }"><StatusTag :status="row.status" kind="blessing" /></template>
         </el-table-column>
-        <el-table-column label="创建时间" width="170">
-          <template #default="{ row }">{{ formatDate(row.createTime) }}</template>
+        <el-table-column :label='$t("创建时间")' width="170">
+          <template #default="{ row }">{{ $t(formatDate(row.createTime)) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="90" fixed="right">
+        <el-table-column :label='$t("操作")' width="90" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" :icon="View" @click="router.push(`/blessing-tasks/${row.id}`)">
-              详情
-            </el-button>
+            <el-button link type="primary" size="small" :icon="View" @click="router.push(`/blessing-tasks/${row.id}`)">{{ $t(" 详情 ") }}</el-button>
           </template>
         </el-table-column>
       </DataTable></div>
 
-      <div class="mobile-task-list" aria-label="加持任务列表">
+      <div class="mobile-task-list" :aria-label='$t("加持任务列表")'>
         <button v-for="item in list" :key="item.id" class="mobile-task-card" type="button" @click="router.push(`/blessing-tasks/${item.id}`)">
           <span class="mobile-task-card__head">
-            <strong>{{ item.taskNo }}</strong>
+            <strong>{{ $t(item.taskNo) }}</strong>
             <StatusTag :status="item.status" kind="blessing" />
           </span>
-          <span class="mobile-task-card__meta">DIY 订单：{{ item.diyOrderNo }}</span>
-          <span class="mobile-task-card__foot"><span>{{ item.masterCode || '待分配法师' }}</span><b>{{ formatDate(item.createTime) }}</b></span>
+          <span class="mobile-task-card__meta">{{ $t("DIY 订单：") }}{{ $t(item.diyOrderNo) }}</span>
+          <span class="mobile-task-card__foot"><span>{{ $t((item.masterCode || $t('待分配法师'))) }}</span><b>{{ $t(formatDate(item.createTime)) }}</b></span>
         </button>
-        <div v-if="!loading && !list.length && !loadError" class="mobile-task-empty">当前筛选下暂无加持任务</div>
+        <div v-if="!loading && !list.length && !loadError" class="mobile-task-empty">{{ $t("当前筛选下暂无加持任务") }}</div>
         <div v-if="total > query.size" class="mobile-task-pager">
-          <el-button :disabled="query.page <= 1" @click="pageChange({ page: query.page - 1, size: query.size })">上一页</el-button>
-          <span>第 {{ query.page }} 页</span>
-          <el-button :disabled="query.page * query.size >= total" @click="pageChange({ page: query.page + 1, size: query.size })">下一页</el-button>
+          <el-button :disabled="query.page <= 1" @click="pageChange({ page: query.page - 1, size: query.size })">{{ $t("上一页") }}</el-button>
+          <span>{{ $t("第 ") }}{{ $t(query.page) }}{{ $t(" 页") }}</span>
+          <el-button :disabled="query.page * query.size >= total" @click="pageChange({ page: query.page + 1, size: query.size })">{{ $t("下一页") }}</el-button>
         </div>
       </div>
     </div>

@@ -25,12 +25,12 @@ struct EmptyState: View {
                 .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(Color.accentDefault.opacity(0.12)))
                 .accessibilityHidden(true)
 
-            Text(title)
+            Text(L10n.lookup(title))
                 .font(.cardTitle)
                 .foregroundStyle(.textSecondary)
 
             if let message {
-                Text(message)
+                Text(L10n.lookup(message))
                     .font(AppTypography.caption)
                     .foregroundStyle(.textTertiary)
                     .multilineTextAlignment(.center)
@@ -49,8 +49,8 @@ struct EmptyState: View {
 
 #Preview {
     EmptyState(icon: "calendar.badge.exclamationmark",
-               title: "暂无预约",
-               message: "当前没有待处理的预约单")
+               title: L10n.text("暂无预约"),
+               message: L10n.text("当前没有待处理的预约单"))
         .background(Color.bgPrimary)
         .preferredColorScheme(.dark)
 }

@@ -1,28 +1,28 @@
 <template>
   <div class="dfx-page">
-    <PageHeader title="平台总览" subtitle="先处理风险与待办，再查看经营数据；所有指标均来自实时接口">
+    <PageHeader :title='$t("平台总览")' :subtitle='$t("先处理风险与待办，再查看经营数据；所有指标均来自实时接口")'>
       <template #actions>
-        <el-button :loading="loading" @click="loadDashboard">刷新数据</el-button>
+        <el-button :loading="loading" @click="loadDashboard">{{ $t("刷新数据") }}</el-button>
       </template>
     </PageHeader>
 
     <div v-if="loadIssueCount" class="ax-page-feedback" :class="{ 'is-error': loadIssueCount === 5 }" role="status">
       <div class="ax-page-feedback__copy">
-        <div class="ax-page-feedback__title">{{ loadIssueCount === 5 ? '平台数据暂时无法加载' : '部分指标加载失败' }}</div>
-        <div class="ax-page-feedback__description">失败模块：{{ failedModules.join('、') }}。失败数据不会以 0 冒充真实结果，请稍后重试。</div>
+        <div class="ax-page-feedback__title">{{ $t((loadIssueCount === 5 ? $t('平台数据暂时无法加载') : $t('部分指标加载失败'))) }}</div>
+        <div class="ax-page-feedback__description">{{ $t("失败模块：") }}{{ failedModules.map(name => $t(name)).join('、') }}{{ $t("。失败数据不会以 0 冒充真实结果，请稍后重试。") }}</div>
       </div>
-      <el-button :loading="loading" @click="loadDashboard">重新加载</el-button>
+      <el-button :loading="loading" @click="loadDashboard">{{ $t("重新加载") }}</el-button>
     </div>
 
     <!-- 先任务、后数据 -->
     <div class="dfx-card dashboard__todo">
-      <div class="chart-card__title">运营待办</div>
+      <div class="chart-card__title">{{ $t("运营待办") }}</div>
       <div class="dashboard__todo-grid">
         <router-link v-for="todo in todos" :key="todo.path" :to="todo.path" class="todo-item">
           <el-icon :size="22" :color="todo.color"><component :is="todo.icon" /></el-icon>
           <div class="todo-item__info">
-            <div class="todo-item__label">{{ todo.label }}</div>
-            <div class="todo-item__count">{{ todo.count }}</div>
+            <div class="todo-item__label">{{ $t(todo.label) }}</div>
+            <div class="todo-item__count">{{ $t(todo.count) }}</div>
           </div>
         </router-link>
       </div>
@@ -30,34 +30,34 @@
 
     <!-- 统计卡片 -->
     <div class="dashboard__cards">
-      <StatCard label="平台总收入（元）" :value="stats.totalIncome" icon="Money" icon-color="#C8A96E" prefix="¥" />
-      <StatCard label="平台抽成（元）" :value="stats.commissionIncome" icon="Coin" icon-color="#D4A843" prefix="¥" />
-      <StatCard label="入驻寺院" :value="stats.templeCount" icon="OfficeBuilding" icon-color="#C45A3C" suffix=" 家" />
-      <StatCard label="认证法师" :value="stats.masterCount" icon="Avatar" icon-color="#B5453A" suffix=" 位" />
-      <StatCard label="注册用户" :value="stats.userCount" icon="User" icon-color="#5B8C5A" suffix=" 人" />
-      <StatCard label="待审核数" :value="stats.pendingCount" icon="Bell" icon-color="#D4735A" suffix=" 项" />
+      <StatCard :label='$t("平台总收入（元）")' :value="stats.totalIncome" icon="Money" icon-color="#C8A96E" prefix="¥" />
+      <StatCard :label='$t("平台抽成（元）")' :value="stats.commissionIncome" icon="Coin" icon-color="#D4A843" prefix="¥" />
+      <StatCard :label='$t("入驻寺院")' :value="stats.templeCount" icon="OfficeBuilding" icon-color="#C45A3C" :suffix='$t(" 家")' />
+      <StatCard :label='$t("认证法师")' :value="stats.masterCount" icon="Avatar" icon-color="#B5453A" :suffix='$t(" 位")' />
+      <StatCard :label='$t("注册用户")' :value="stats.userCount" icon="User" icon-color="#5B8C5A" :suffix='$t(" 人")' />
+      <StatCard :label='$t("待审核数")' :value="stats.pendingCount" icon="Bell" icon-color="#D4735A" :suffix='$t(" 项")' />
     </div>
 
     <!-- 图表区 -->
     <div class="dashboard__charts">
       <div class="dfx-card chart-card">
-        <div class="chart-card__title">收入构成分布</div>
+        <div class="chart-card__title">{{ $t("收入构成分布") }}</div>
         <div v-if="overview" ref="pieRef" class="chart-card__body"></div>
-        <div v-else class="chart-card__state">收入数据未加载</div>
+        <div v-else class="chart-card__state">{{ $t("收入数据未加载") }}</div>
         <div v-if="overview" class="chart-card__mobile-summary">
-          <span>平台总收入</span>
-          <strong>{{ stats.totalIncome === '—' ? '—' : `¥${stats.totalIncome}` }}</strong>
-          <router-link to="/finance/overview">查看完整财务报表</router-link>
+          <span>{{ $t("平台总收入") }}</span>
+          <strong>{{ $t((stats.totalIncome === '—' ? '—' : ($t("¥") + String(stats.totalIncome) + $t("")))) }}</strong>
+          <router-link to="/finance/overview">{{ $t("查看完整财务报表") }}</router-link>
         </div>
       </div>
       <div class="dfx-card chart-card">
-        <div class="chart-card__title">审核队列状态</div>
+        <div class="chart-card__title">{{ $t("审核队列状态") }}</div>
         <div v-if="audit" ref="barRef" class="chart-card__body"></div>
-        <div v-else class="chart-card__state">审核数据未加载</div>
+        <div v-else class="chart-card__state">{{ $t("审核数据未加载") }}</div>
         <div v-if="audit" class="chart-card__mobile-summary">
-          <span>当前待审核</span>
-          <strong>{{ stats.pendingCount }}</strong>
-          <router-link to="/audit/comment">进入审核中心</router-link>
+          <span>{{ $t("当前待审核") }}</span>
+          <strong>{{ $t(stats.pendingCount) }}</strong>
+          <router-link to="/audit/comment">{{ $t("进入审核中心") }}</router-link>
         </div>
       </div>
     </div>

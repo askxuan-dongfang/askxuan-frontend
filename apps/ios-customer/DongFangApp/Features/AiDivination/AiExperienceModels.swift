@@ -18,9 +18,9 @@ struct AiDecisionInput: Codable, Equatable {
     var b = "方案 B"
     var constraintA = ""
     var constraintB = ""
-    var factors = [AiDecisionFactor(label: "长期价值", weight: 3, a: 3, b: 3),
-                   AiDecisionFactor(label: "时间精力", weight: 3, a: 3, b: 3),
-                   AiDecisionFactor(label: "当前感受", weight: 3, a: 3, b: 3)]
+    var factors = [AiDecisionFactor(label: L10n.text("长期价值"), weight: 3, a: 3, b: 3),
+                   AiDecisionFactor(label: L10n.text("时间精力"), weight: 3, a: 3, b: 3),
+                   AiDecisionFactor(label: L10n.text("当前感受"), weight: 3, a: 3, b: 3)]
 }
 struct AiExperienceInput: Codable, Equatable {
     var skill: String

@@ -13,25 +13,25 @@ async function download(id:string){try{const r=await fetch('/api/v1/auth/onboard
 onMounted(load)
 </script>
 <template><section class="work-application">
-<header><p>问玄东方 · {{kind==='temple'?'寺院入驻':'独立大师认证'}}</p><h1>{{app?labels[app.status]:'正在加载申请'}}</h1><p>{{kind==='temple'?'请由获得寺院授权的经办人填写机构资料。':'请填写本人资料，审核通过后开通独立大师工作台。'}}</p></header>
-<p v-if="error" role="alert">{{error}}</p><p v-if="notice" role="status">{{notice}}</p>
-<template v-if="app"><p v-if="app.reviewNote" class="review-note">审核意见：{{app.reviewNote}}</p>
-<p v-if="app.status==='approved'">审核已通过，请重新登录以进入工作台。</p>
+<header><p>{{ $t("问玄东方 · ") }}{{$t((kind==='temple' ? $t('寺院入驻') : $t('独立大师认证')))}}</p><h1>{{$t((app ? labels[app.status] : $t('正在加载申请')))}}</h1><p>{{$t((kind==='temple' ? $t('请由获得寺院授权的经办人填写机构资料。') : $t('请填写本人资料，审核通过后开通独立大师工作台。')))}}</p></header>
+<p v-if="error" role="alert">{{$t(error)}}</p><p v-if="notice" role="status">{{$t(notice)}}</p>
+<template v-if="app"><p v-if="app.reviewNote" class="review-note">{{ $t("审核意见：") }}{{$t(app.reviewNote)}}</p>
+<p v-if="app.status==='approved'">{{ $t("审核已通过，请重新登录以进入工作台。") }}</p>
 <form v-else @submit.prevent="save(true)"><fieldset :disabled="busy||!editable">
-<label>{{kind==='temple'?'寺院名称':'对外称呼／法名'}}<input v-model="app.profile.name" required maxlength="64"/></label>
-<label>{{kind==='temple'?'经办人姓名':'本人姓名'}}<input v-model="app.profile.legalName" required maxlength="64" autocomplete="name"/></label>
-<label>联系电话<input v-model="app.profile.contact" required maxlength="64" type="tel"/></label>
-<label>所在地区<input v-model="app.profile.region" required maxlength="64"/></label>
-<label>信仰流派<select v-model="app.profile.belief" required><option value="" disabled>请选择信仰流派</option><option value="han_buddhism">汉传佛教</option><option value="tibetan_buddhism">藏传佛教</option><option value="taoism">道教</option><option value="folk">民间信仰</option></select></label>
-<label>宗派<input v-model="app.profile.sect" required maxlength="32"/></label>
-<template v-if="kind==='temple'"><label>详细地址<input v-model="app.profile.address" required maxlength="255"/></label><label>机构登记证号<input v-model="app.profile.registrationNumber" required maxlength="100"/></label></template>
-<label v-else>身份／职务<input v-model="app.profile.position" required maxlength="32"/></label>
-<label>{{kind==='temple'?'寺院简介':'个人介绍与服务专长'}}<textarea v-model="app.profile.description" maxlength="512" rows="4"/></label>
-<label>证明材料<input type="file" accept="image/png,image/jpeg,application/pdf" :disabled="busy||app.profile.evidenceIds.length>=8" @change="upload"/><small>{{kind==='temple'?'请提供机构登记证明、经办人身份证明及管理授权。':'请提供本人身份证明及从业资质证明。'}}支持 PDF、PNG、JPEG，每份不超过 5MB，最多 8 份；仅本人及平台审核人员可访问。</small></label>
+<label>{{$t((kind==='temple' ? $t('寺院名称') : $t('对外称呼／法名')))}}<input v-model="app.profile.name" required maxlength="64"/></label>
+<label>{{$t((kind==='temple' ? $t('经办人姓名') : $t('本人姓名')))}}<input v-model="app.profile.legalName" required maxlength="64" autocomplete="name"/></label>
+<label>{{ $t("联系电话") }}<input v-model="app.profile.contact" required maxlength="64" type="tel"/></label>
+<label>{{ $t("所在地区") }}<input v-model="app.profile.region" required maxlength="64"/></label>
+<label>{{ $t("信仰流派") }}<select v-model="app.profile.belief" required><option value="" disabled>{{ $t("请选择信仰流派") }}</option><option value="han_buddhism">{{ $t("汉传佛教") }}</option><option value="tibetan_buddhism">{{ $t("藏传佛教") }}</option><option value="taoism">{{ $t("道教") }}</option><option value="folk">{{ $t("民间信仰") }}</option></select></label>
+<label>{{ $t("宗派") }}<input v-model="app.profile.sect" required maxlength="32"/></label>
+<template v-if="kind==='temple'"><label>{{ $t("详细地址") }}<input v-model="app.profile.address" required maxlength="255"/></label><label>{{ $t("机构登记证号") }}<input v-model="app.profile.registrationNumber" required maxlength="100"/></label></template>
+<label v-else>{{ $t("身份／职务") }}<input v-model="app.profile.position" required maxlength="32"/></label>
+<label>{{$t((kind==='temple' ? $t('寺院简介') : $t('个人介绍与服务专长')))}}<textarea v-model="app.profile.description" maxlength="512" rows="4"/></label>
+<label>{{ $t("证明材料") }}<input type="file" accept="image/png,image/jpeg,application/pdf" :disabled="busy||app.profile.evidenceIds.length>=8" @change="upload"/><small>{{$t((kind==='temple' ? $t('请提供机构登记证明、经办人身份证明及管理授权。') : $t('请提供本人身份证明及从业资质证明。')))}}{{ $t("支持 PDF、PNG、JPEG，每份不超过 5MB，最多 8 份；仅本人及平台审核人员可访问。") }}</small></label>
 </fieldset>
-<div v-for="(id,i) in app.profile.evidenceIds" :key="id" class="work-actions"><button type="button" @click="download(id)">查看材料 {{Number(i)+1}}</button><button v-if="editable" type="button" :disabled="busy" @click="app.profile.evidenceIds.splice(i,1)">移除</button></div>
-<div v-if="editable" class="work-actions"><button type="button" :disabled="busy" @click="save(false)">保存草稿</button><button type="submit" :disabled="busy">{{busy?'正在处理…':'提交审核'}}</button></div>
-</form><details v-if="history.length"><summary>申请记录</summary><p v-for="(event,i) in history" :key="i">{{event.at}} · {{({save:'保存草稿',submit:'提交审核',approved:'审核通过',rejected:'退回补充'} as Record<string,string>)[event.action]}} {{event.note}}</p></details></template>
-<div class="work-actions"><button type="button" :disabled="busy" @click="load">刷新进度</button><button type="button" :disabled="busy" @click="emit('exit')">退出并返回登录</button></div>
+<div v-for="(id,i) in app.profile.evidenceIds" :key="id" class="work-actions"><button type="button" @click="download(id)">{{ $t("查看材料 ") }}{{$t((Number(i) + 1))}}</button><button v-if="editable" type="button" :disabled="busy" @click="app.profile.evidenceIds.splice(i,1)">{{ $t("移除") }}</button></div>
+<div v-if="editable" class="work-actions"><button type="button" :disabled="busy" @click="save(false)">{{ $t("保存草稿") }}</button><button type="submit" :disabled="busy">{{$t((busy ? $t('正在处理…') : $t('提交审核')))}}</button></div>
+</form><details v-if="history.length"><summary>{{ $t("申请记录") }}</summary><p v-for="(event,i) in history" :key="i">{{$t(event.at)}} · {{$t(({save:'保存草稿',submit:'提交审核',approved:'审核通过',rejected:'退回补充'} as Record<string,string>)[event.action])}} {{$t(event.note)}}</p></details></template>
+<div class="work-actions"><button type="button" :disabled="busy" @click="load">{{ $t("刷新进度") }}</button><button type="button" :disabled="busy" @click="emit('exit')">{{ $t("退出并返回登录") }}</button></div>
 </section></template>
 <style scoped>.work-application{max-width:720px;margin:24px auto;padding:24px;color:var(--admin-text,#24443d);background:var(--admin-surface,#fffdf8);border:1px solid var(--admin-border,#deded6);border-radius:16px}.work-application header p,.work-application small{color:var(--admin-text-secondary,#66736d);line-height:1.7}.work-application h1{font-size:24px}.work-application fieldset{border:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.work-application label{display:grid;gap:8px;font-size:14px}.work-application input,.work-application select,.work-application textarea{width:100%;min-width:0;box-sizing:border-box;padding:11px;font:inherit;color:inherit;background:var(--admin-bg,#f8f7f2);border:1px solid var(--admin-border,#ccc);border-radius:8px}.work-application label:has(textarea),.work-application label:has([type=file]){grid-column:1/-1}.work-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}.work-application button{min-height:44px;padding:8px 16px;border:1px solid var(--admin-border,#ccc);border-radius:8px;color:inherit;background:var(--admin-bg,#f8f7f2);cursor:pointer}.work-application button[type=submit]{background:var(--admin-primary,#28574c);color:#fff}.work-application :disabled{opacity:.6;cursor:default}.work-application :focus-visible{outline:2px solid var(--admin-primary,#28574c);outline-offset:3px}.work-application [role=alert]{color:#b53d32}.review-note{padding:14px;border-left:3px solid #a87a3b;background:var(--admin-bg,#f8f7f2)}@media(max-width:540px){.work-application{margin:12px;padding:20px}.work-application fieldset{grid-template-columns:1fr}}</style>

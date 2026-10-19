@@ -1,14 +1,17 @@
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../packages/localization/language'
+
 import AccountLogin from '../../../../packages/admin-ui/components/AccountLogin.vue'
 import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
 import {onMounted} from 'vue'
-import {ElMessage} from 'element-plus'
+
 import {useRouter,useRoute} from 'vue-router'
 import {useAuthStore} from '@/stores/auth'
 import {defaultRoute} from '@/router/access'
 const router=useRouter();const route=useRoute();const auth=useAuthStore()
-onMounted(()=>{if(route.query.denied==='1')ElMessage.warning('该账号没有本管理台权限，请使用对应角色账号登录')})
+onMounted(()=>{if(route.query.denied==='1')ElMessage.warning(uiText('该账号没有本管理台权限，请使用对应角色账号登录'))})
 async function login(account:string,password:string,proof:{captchaId:string;captchaCode:string}){await auth.login({account,password,...proof})}
 function complete(){const next=typeof route.query.redirect==='string'?route.query.redirect:'';router.replace(next.startsWith('/')&&!next.startsWith('//')&&!next.includes(String.fromCharCode(92))&&!next.startsWith('/login')?next:defaultRoute(auth.roles))}
 </script>
@@ -23,9 +26,9 @@ function complete(){const next=typeof route.query.redirect==='string'?route.quer
 
     <div class="login__panel dfx-card">
       <div class="login__brand">
-        <BrandLogo class="login__seal" identity="platform" label="问玄东方统一运营管理台" />
-        <h1 class="login__title dfx-serif">问玄东方</h1>
-        <p class="login__subtitle">统一运营管理台 · 平台与商城</p>
+        <BrandLogo class="login__seal" identity="platform" :label='$t("问玄东方统一运营管理台")' />
+        <h1 class="login__title dfx-serif">{{ $t("问玄东方") }}</h1>
+        <p class="login__subtitle">{{ $t("统一运营管理台 · 平台与商城") }}</p>
       </div>
 
       <AccountLogin :login="login" @success="complete" />

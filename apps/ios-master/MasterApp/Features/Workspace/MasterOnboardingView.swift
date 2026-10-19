@@ -33,51 +33,51 @@ struct MasterOnboardingView: View {
   NavigationStack {
    Form {
     Section {
-     Text(labels[application?.status ?? ""] ?? "正在加载").font(.title2.bold())
-     Text("提交本人资料，由平台审核。认证通过后开通独立大师工作台。").foregroundStyle(.secondary)
-     if let note=application?.reviewNote,!note.isEmpty { Text("审核意见："+note) }
-    } header: {Text("独立大师认证")}
+     Text(L10n.lookup(labels[application?.status ?? ""] ?? L10n.text("正在加载"))).font(.title2.bold())
+     Text(L10n.text("提交本人资料，由平台审核。认证通过后开通独立大师工作台。")).foregroundStyle(.secondary)
+     if let note=application?.reviewNote,!note.isEmpty { Text(L10n.lookup(L10n.text("审核意见：") + note)) }
+    } header: {Text(L10n.text("独立大师认证"))}
     if application != nil && application?.status != "approved" {
-     Section("认证资料") {
-      TextField("对外称呼／法名",text:field(\.name))
-      TextField("本人姓名",text:field(\.legalName))
-      TextField("联系电话",text:field(\.contact)).keyboardType(.phonePad)
-      TextField("所在地区",text:field(\.region))
-      Picker("信仰流派",selection:field(\.belief)) {
-       Text("请选择").tag("");Text("汉传佛教").tag("han_buddhism");Text("藏传佛教").tag("tibetan_buddhism");Text("道教").tag("taoism");Text("民间信仰").tag("folk")
+     Section(L10n.text("认证资料")) {
+      TextField(L10n.text("对外称呼／法名"),text:field(\.name))
+      TextField(L10n.text("本人姓名"),text:field(\.legalName))
+      TextField(L10n.text("联系电话"),text:field(\.contact)).keyboardType(.phonePad)
+      TextField(L10n.text("所在地区"),text:field(\.region))
+      Picker(L10n.text("信仰流派"),selection:field(\.belief)) {
+       Text(L10n.text("请选择")).tag("");Text(L10n.text("汉传佛教")).tag("han_buddhism");Text(L10n.text("藏传佛教")).tag("tibetan_buddhism");Text(L10n.text("道教")).tag("taoism");Text(L10n.text("民间信仰")).tag("folk")
       }
-      TextField("宗派",text:field(\.sect))
-      TextField("身份／职务",text:field(\.position))
-      TextField("个人介绍与服务专长",text:field(\.description),axis:.vertical).lineLimit(3...6)
+      TextField(L10n.text("宗派"),text:field(\.sect))
+      TextField(L10n.text("身份／职务"),text:field(\.position))
+      TextField(L10n.text("个人介绍与服务专长"),text:field(\.description),axis:.vertical).lineLimit(3...6)
      }.disabled(busy || !editable)
-     Section("身份证明及从业资质") {
+     Section(L10n.text("身份证明及从业资质")) {
       ForEach(Array((application?.profile.evidenceIds ?? []).enumerated()),id:\.element) { index,id in
        HStack {
-        Button("查看材料 \(index+1)") { Task { await download(id) } }
+        Button(L10n.text("查看材料 \(index+1)")) { Task { await download(id) } }
         Spacer()
-        if editable { Button("移除",role:.destructive) { application?.profile.evidenceIds?.removeAll{$0==id} }.disabled(busy) }
+        if editable { Button(L10n.text("移除"),role:.destructive) { application?.profile.evidenceIds?.removeAll{$0==id} }.disabled(busy) }
        }
       }
-      if editable { Button("上传证明材料") {importing=true}.disabled(busy || (application?.profile.evidenceIds?.count ?? 0)>=8) }
-      Text("提供本人身份证明及从业资质。支持 PDF、PNG、JPEG，每份不超过 5MB，最多 8 份。仅本人和平台审核人员可访问。").font(.caption).foregroundStyle(.secondary)
+      if editable { Button(L10n.text("上传证明材料")) {importing=true}.disabled(busy || (application?.profile.evidenceIds?.count ?? 0)>=8) }
+      Text(L10n.text("提供本人身份证明及从业资质。支持 PDF、PNG、JPEG，每份不超过 5MB，最多 8 份。仅本人和平台审核人员可访问。")).font(.caption).foregroundStyle(.secondary)
      }
      if editable {
-      Section { Button("保存草稿") {Task{await save(false)}};Button("提交审核") {Task{await save(true)}} }.disabled(busy)
+      Section { Button(L10n.text("保存草稿")) {Task{await save(false)}};Button(L10n.text("提交审核")) {Task{await save(true)}} }.disabled(busy)
      }
     }
-    if !error.isEmpty { Section {Text(error).foregroundStyle(.red)} }
-    if !message.isEmpty { Section {Text(message)} }
-    if !history.isEmpty {Section("申请记录"){ForEach(Array(history.enumerated()),id:\.offset){_,e in Text(e.at+" · "+(["save":"保存草稿","submit":"提交审核","rejected":"退回补充","approved":"审核通过"][e.action] ?? e.action)+" "+e.note).font(.caption)}}}
+    if !error.isEmpty { Section {Text(L10n.lookup(error)).foregroundStyle(.red)} }
+    if !message.isEmpty { Section {Text(L10n.lookup(message))} }
+    if !history.isEmpty {Section(L10n.text("申请记录")){ForEach(Array(history.enumerated()),id:\.offset){_,e in Text(L10n.lookup(e.at + " · " + (["save":"保存草稿","submit":"提交审核","rejected":"退回补充","approved":"审核通过"][e.action] ?? e.action) + " " + e.note)).font(.caption)}}}
     Section {
-     Button("刷新进度") {Task{await load()}}.disabled(busy)
-     Button("退出并返回登录") {auth.logout()}.disabled(busy)
+     Button(L10n.text("刷新进度")) {Task{await load()}}.disabled(busy)
+     Button(L10n.text("退出并返回登录")) {auth.logout()}.disabled(busy)
     }
-   }.navigationTitle("大师认证").task{await load()}
+   }.navigationTitle(L10n.text("大师认证")).task{await load()}
     .fileImporter(isPresented:$importing,allowedContentTypes:[.pdf,.png,.jpeg]) { result in
      switch result {case .success(let url):Task{await upload(url)};case .failure(let e):error=e.localizedDescription}
     }
     .sheet(isPresented:Binding(get:{previewURL != nil},set:{if !$0{if let url=previewURL{try? FileManager.default.removeItem(at:url)};previewURL=nil}})){
-     if let url=previewURL {NavigationStack{VStack(spacing:20){Text("材料已安全下载到本机临时目录");ShareLink("查看或保存材料",item:url)}.padding().toolbar{Button("完成"){try? FileManager.default.removeItem(at:url);previewURL=nil}}}}
+     if let url=previewURL {NavigationStack{VStack(spacing:20){Text(L10n.text("材料已安全下载到本机临时目录"));ShareLink("查看或保存材料",item:url)}.padding().toolbar{Button(L10n.text("完成")){try? FileManager.default.removeItem(at:url);previewURL=nil}}}}
     }
   }
  }

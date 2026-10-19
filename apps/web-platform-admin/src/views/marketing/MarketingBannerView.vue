@@ -1,64 +1,67 @@
 <template>
   <div class="dfx-page">
-    <PageHeader title="首页活动与广告" subtitle="先保存草稿，预览确认后上架；按北京时间投放，首页自动隐藏过期内容。">
-      <template #actions><el-button type="primary" :icon="Plus" @click="openCreate">新增广告</el-button><el-button :icon="Refresh" @click="loadData">刷新</el-button></template>
+    <PageHeader :title='$t("首页活动与广告")' :subtitle='$t("先保存草稿，预览确认后上架；按北京时间投放，首页自动隐藏过期内容。")'>
+      <template #actions><el-button type="primary" :icon="Plus" @click="openCreate">{{ $t("新增广告") }}</el-button><el-button :icon="Refresh" @click="loadData">{{ $t("刷新") }}</el-button></template>
     </PageHeader>
     <div class="dfx-card filter-bar">
-      <el-select v-model="query.status" placeholder="全部发布状态" clearable style="width:160px" @change="search">
-        <el-option label="草稿" value="draft"/><el-option label="已上架" value="enabled"/><el-option label="已下架" value="disabled"/>
+      <el-select v-model="query.status" :placeholder='$t("全部发布状态")' clearable style="width:160px" @change="search">
+        <el-option :label='$t("草稿")' value="draft"/><el-option :label='$t("已上架")' value="enabled"/><el-option :label='$t("已下架")' value="disabled"/>
       </el-select>
-      <span class="muted">展示位置：信众首页 · 数字越小越靠前</span>
+      <span class="muted">{{ $t("展示位置：信众首页 · 数字越小越靠前") }}</span>
     </div>
     <div class="dfx-card table-wrap">
       <DataTable :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
-        <el-table-column label="内容" min-width="260"><template #default="{row}"><div class="banner-cell">
-          <el-image :src="row.imageUrl" fit="cover" class="banner-cell__img"><template #error><span class="muted">图片待完善</span></template></el-image>
-          <div><strong>{{row.title}}</strong><div class="muted">信众首页 · 排序 {{row.sort}}</div></div>
+        <el-table-column :label='$t("内容")' min-width="260"><template #default="{row}"><div class="banner-cell">
+          <el-image :src="row.imageUrl" fit="cover" class="banner-cell__img"><template #error><span class="muted">{{ $t("图片待完善") }}</span></template></el-image>
+          <div><strong>{{$t(row.title)}}</strong><div class="muted">{{ $t("信众首页 · 排序 ") }}{{$t(row.sort)}}</div></div>
         </div></template></el-table-column>
-        <el-table-column label="跳转目标" min-width="170"><template #default="{row}">{{targetLabel(row.linkType)}}<div class="muted">{{promotionHref(row)||'待配置有效目标'}}</div></template></el-table-column>
-        <el-table-column label="投放时间（北京）" min-width="215"><template #default="{row}"><div>{{row.startTime||'上架后立即开始'}}</div><div class="muted">至 {{row.endTime||'长期展示'}}</div></template></el-table-column>
-        <el-table-column label="状态" width="110"><template #default="{row}"><el-tag :type="row.status==='enabled'?'success':row.status==='draft'?'info':'warning'">{{promotionPhase(row)}}</el-tag></template></el-table-column>
-        <el-table-column label="操作" min-width="220" fixed="right"><template #default="{row}">
-          <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-button link type="primary" @click="openPreview(row)">{{row.status==='enabled'?'预览':'预览并上架'}}</el-button>
-          <el-button v-if="row.status==='enabled'" link type="warning" :loading="busyId===row.id" @click="takeOffline(row)">下架</el-button>
+        <el-table-column :label='$t("跳转目标")' min-width="170"><template #default="{row}">{{$t(targetLabel(row.linkType))}}<div class="muted">{{$t((promotionHref(row) || $t('待配置有效目标')))}}</div></template></el-table-column>
+        <el-table-column :label='$t("投放时间（北京）")' min-width="215"><template #default="{row}"><div>{{$t((row.startTime || $t('上架后立即开始')))}}</div><div class="muted">{{ $t("至 ") }}{{$t((row.endTime || $t('长期展示')))}}</div></template></el-table-column>
+        <el-table-column :label='$t("状态")' width="110"><template #default="{row}"><el-tag :type="row.status==='enabled'?'success':row.status==='draft'?'info':'warning'">{{$t(promotionPhase(row))}}</el-tag></template></el-table-column>
+        <el-table-column :label='$t("操作")' min-width="220" fixed="right"><template #default="{row}">
+          <el-button link type="primary" @click="openEdit(row)">{{ $t("编辑") }}</el-button>
+          <el-button link type="primary" @click="openPreview(row)">{{$t((row.status==='enabled' ? $t('预览') : $t('预览并上架')))}}</el-button>
+          <el-button v-if="row.status==='enabled'" link type="warning" :loading="busyId===row.id" @click="takeOffline(row)">{{ $t("下架") }}</el-button>
         </template></el-table-column>
       </DataTable>
     </div>
-    <el-dialog v-model="dialog.visible" :title="dialog.id?'编辑广告':'新增广告'" width="min(620px, calc(100vw - 32px))" :close-on-click-modal="!saving" append-to-body>
-      <el-alert v-if="dialog.wasPublished" title="保存修改后将转为草稿，预览并重新上架后展示。" type="info" :closable="false" style="margin-bottom:18px"/>
+    <el-dialog v-model="dialog.visible" :title="$t((dialog.id ? $t('编辑广告') : $t('新增广告')))" width="min(620px, calc(100vw - 32px))" :close-on-click-modal="!saving" append-to-body>
+      <el-alert v-if="dialog.wasPublished" :title='$t("保存修改后将转为草稿，预览并重新上架后展示。")' type="info" :closable="false" style="margin-bottom:18px"/>
       <el-form label-position="top" :disabled="saving">
-        <el-form-item label="标题" required><el-input v-model="form.title" maxlength="64" show-word-limit placeholder="本次推荐的内容标题"/></el-form-item>
-        <el-form-item label="展示位置"><el-select v-model="form.placement" style="width:100%"><el-option label="信众首页" value="customer_home"/></el-select></el-form-item>
-        <el-form-item label="海报图片"><ImageUploader v-model="form.imageUrl"/><div class="muted">建议横图，文字集中在主体区域；上架前需要可正常加载的图片，底部留出轮播指示点的位置。</div></el-form-item>
-        <el-form-item label="跳转内容"><el-select v-model="form.linkType" style="width:100%" @change="form.linkValue=''">
-          <el-option v-for="target in promotionTargets" :key="target.value" :value="target.value" :label="target.label"/>
+        <el-form-item :label='$t("标题")' required><el-input v-model="form.title" maxlength="64" show-word-limit :placeholder='$t("本次推荐的内容标题")'/></el-form-item>
+        <el-form-item :label='$t("展示位置")'><el-select v-model="form.placement" style="width:100%"><el-option :label='$t("信众首页")' value="customer_home"/></el-select></el-form-item>
+        <el-form-item :label='$t("海报图片")'><ImageUploader v-model="form.imageUrl"/><div class="muted">{{ $t("建议横图，文字集中在主体区域；上架前需要可正常加载的图片，底部留出轮播指示点的位置。") }}</div></el-form-item>
+        <el-form-item :label='$t("跳转内容")'><el-select v-model="form.linkType" style="width:100%" @change="form.linkValue=''">
+          <el-option v-for="target in promotionTargets" :key="target.value" :value="target.value" :label="$t(target.label)"/>
         </el-select></el-form-item>
-        <el-form-item v-if="!['ai','diy'].includes(form.linkType)" label="跳转目标"><el-input v-model="form.linkValue" :placeholder="promotionTargets.find(t=>t.value===form.linkType)?.placeholder" maxlength="255"/><div v-if="form.linkType==='web'" class="muted">填写完整 HTTPS 网址，点击海报将在新窗口打开，并显示外部网页提示。</div></el-form-item>
-        <el-form-item label="排序"><el-input-number v-model="form.sort" :min="0" :max="99999" :precision="0"/></el-form-item>
+        <el-form-item v-if="!['ai','diy'].includes(form.linkType)" :label='$t("跳转目标")'><el-input v-model="form.linkValue" :placeholder="$t(promotionTargets.find(t=>t.value===form.linkType)?.placeholder)" maxlength="255"/><div v-if="form.linkType==='web'" class="muted">{{ $t("填写完整 HTTPS 网址，点击海报将在新窗口打开，并显示外部网页提示。") }}</div></el-form-item>
+        <el-form-item :label='$t("排序")'><el-input-number v-model="form.sort" :min="0" :max="99999" :precision="0"/></el-form-item>
         <div class="time-fields">
-          <el-form-item label="开始时间（北京时间，可不填）"><el-date-picker v-model="form.startTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="上架后立即开始" style="width:100%"/></el-form-item>
-          <el-form-item label="结束时间（北京时间，可不填）"><el-date-picker v-model="form.endTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="长期展示" style="width:100%"/></el-form-item>
+          <el-form-item :label='$t("开始时间（北京时间，可不填）")'><el-date-picker v-model="form.startTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" :placeholder='$t("上架后立即开始")' style="width:100%"/></el-form-item>
+          <el-form-item :label='$t("结束时间（北京时间，可不填）")'><el-date-picker v-model="form.endTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" :placeholder='$t("长期展示")' style="width:100%"/></el-form-item>
         </div>
       </el-form>
-      <template #footer><el-button :disabled="saving" @click="dialog.visible=false">取消</el-button><el-button type="primary" :loading="saving" @click="saveDraft">保存草稿</el-button></template>
+      <template #footer><el-button :disabled="saving" @click="dialog.visible=false">{{ $t("取消") }}</el-button><el-button type="primary" :loading="saving" @click="saveDraft">{{ $t("保存草稿") }}</el-button></template>
     </el-dialog>
-    <el-dialog v-model="previewVisible" title="首页展示预览" width="min(640px, calc(100vw - 32px))" append-to-body>
+    <el-dialog v-model="previewVisible" :title='$t("首页展示预览")' width="min(640px, calc(100vw - 32px))" append-to-body>
       <template v-if="preview">
-        <div class="promotion-preview"><img v-if="preview.imageUrl" :key="preview.imageUrl" :src="preview.imageUrl" alt="广告海报预览" @load="imageReady=true" @error="imageReady=false"/><div><small>{{preview.linkType==='web'?'友情推荐 · 外部网页':'精选推荐'}}</small><h2>{{preview.title}}</h2><span>{{preview.linkType==='web'?'前往网站':'查看详情'}} ↗</span></div></div>
-        <p>{{targetLabel(preview.linkType)}} · {{promotionHref(preview)||'未配置有效跳转'}}</p>
-        <p class="muted">{{preview.startTime||'上架后立即开始'}} 至 {{preview.endTime||'长期展示'}}（北京时间）</p>
-        <el-alert v-if="publishIssue" :title="publishIssue" type="warning" :closable="false"/>
-        <p v-else class="muted">请确认海报内容、跳转目标和投放时间，再上架。</p>
+        <div class="promotion-preview"><img v-if="preview.imageUrl" :key="preview.imageUrl" :src="preview.imageUrl" :alt='$t("广告海报预览")' @load="imageReady=true" @error="imageReady=false"/><div><small>{{$t((preview.linkType==='web' ? $t('友情推荐 · 外部网页') : $t('精选推荐')))}}</small><h2>{{$t(preview.title)}}</h2><span>{{$t((preview.linkType==='web' ? $t('前往网站') : $t('查看详情')))}} ↗</span></div></div>
+        <p>{{$t(targetLabel(preview.linkType))}} · {{$t((promotionHref(preview) || $t('未配置有效跳转')))}}</p>
+        <p class="muted">{{$t((preview.startTime || $t('上架后立即开始')))}}{{ $t(" 至 ") }}{{$t((preview.endTime || $t('长期展示')))}}{{ $t("（北京时间）") }}</p>
+        <el-alert v-if="publishIssue" :title="$t(publishIssue)" type="warning" :closable="false"/>
+        <p v-else class="muted">{{ $t("请确认海报内容、跳转目标和投放时间，再上架。") }}</p>
       </template>
-      <template #footer><el-button @click="previewVisible=false">关闭</el-button><el-button v-if="preview?.status!=='enabled'" type="primary" :disabled="!!publishIssue" :loading="saving" @click="publish">确认上架</el-button></template>
+      <template #footer><el-button @click="previewVisible=false">{{ $t("关闭") }}</el-button><el-button v-if="preview?.status!=='enabled'" type="primary" :disabled="!!publishIssue" :loading="saving" @click="publish">{{ $t("确认上架") }}</el-button></template>
     </el-dialog>
   </div>
 </template>
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 import {computed,onMounted,reactive,ref} from 'vue'
 import {Plus,Refresh} from '@element-plus/icons-vue'
-import {ElMessage} from 'element-plus'
+
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
@@ -85,14 +88,14 @@ const publishIssue=computed(()=>{
  if(end<Date.now())return '投放已结束，请调整结束时间。';return '';
 })
 async function saveDraft(){
- if(!form.title.trim()){ElMessage.warning('请填写标题');return}
+ if(!form.title.trim()){ElMessage.warning(uiText('请填写标题'));return}
  const start=form.startTime||'',end=form.endTime||'';
- if(start&&end&&promotionTime(end,true)<=promotionTime(start)){ElMessage.warning('结束时间应晚于开始时间');return}
+ if(start&&end&&promotionTime(end,true)<=promotionTime(start)){ElMessage.warning(uiText('结束时间应晚于开始时间'));return}
  saving.value=true;
- try{const payload={...form,title:form.title.trim(),startTime:start,endTime:end};if(dialog.id)await updateBanner(dialog.id,{...payload,status:'draft'});else await createBanner(payload);dialog.visible=false;ElMessage.success('已保存草稿，预览后可上架');await loadData()}finally{saving.value=false}
+ try{const payload={...form,title:form.title.trim(),startTime:start,endTime:end};if(dialog.id)await updateBanner(dialog.id,{...payload,status:'draft'});else await createBanner(payload);dialog.visible=false;ElMessage.success(uiText('已保存草稿，预览后可上架'));await loadData()}finally{saving.value=false}
 }
-async function publish(){if(!preview.value||publishIssue.value||saving.value)return;saving.value=true;try{await updateBanner(preview.value.id,{status:'enabled'});previewVisible.value=false;ElMessage.success('已上架，首页按投放时间展示');await loadData()}finally{saving.value=false}}
-async function takeOffline(row:Banner){if(busyId.value)return;busyId.value=row.id;try{await updateBanner(row.id,{status:'disabled'});ElMessage.success('已下架');await loadData()}finally{busyId.value=0}}
+async function publish(){if(!preview.value||publishIssue.value||saving.value)return;saving.value=true;try{await updateBanner(preview.value.id,{status:'enabled'});previewVisible.value=false;ElMessage.success(uiText('已上架，首页按投放时间展示'));await loadData()}finally{saving.value=false}}
+async function takeOffline(row:Banner){if(busyId.value)return;busyId.value=row.id;try{await updateBanner(row.id,{status:'disabled'});ElMessage.success(uiText('已下架'));await loadData()}finally{busyId.value=0}}
 onMounted(loadData)
 </script>
 <style scoped>

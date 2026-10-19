@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../packages/localization/language'
+
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { type FormInstance, type FormRules } from 'element-plus'
 import { ArrowLeft, Check, Plus, Delete } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { listServiceTypes, listServices, getServiceDetail, createService, updateService } from '@/api/service'
@@ -86,7 +89,7 @@ async function handleSubmit() {
           intentMode: form.intentMode,
           intentTags: form.intentMode === 'custom' ? form.intentTags : undefined
         })
-        ElMessage.success('服务已更新')
+        ElMessage.success(uiText('服务已更新'))
       } else {
         await createService({
           serviceCode: form.serviceCode,
@@ -96,7 +99,7 @@ async function handleSubmit() {
           intentMode: form.intentMode,
           intentTags: form.intentMode === 'custom' ? form.intentTags : undefined
         })
-        ElMessage.success('服务已创建')
+        ElMessage.success(uiText('服务已创建'))
       }
       router.push('/services')
     } finally {
@@ -125,14 +128,14 @@ onMounted(async () => {
 
 <template>
   <div class="df-page" v-loading="loading">
-    <PageHeader :title="isEdit ? '编辑服务' : '新增服务'" :subtitle="isEdit ? '修改法事服务信息' : '新增法事服务项目'">
-      <el-button :icon="ArrowLeft" @click="router.back()">返回</el-button>
-      <el-button type="primary" :icon="Check" :loading="saving" @click="handleSubmit">保存</el-button>
+    <PageHeader :title="$t((isEdit ? $t('编辑服务') : $t('新增服务')))" :subtitle="$t((isEdit ? $t('修改法事服务信息') : $t('新增法事服务项目')))">
+      <el-button :icon="ArrowLeft" @click="router.back()">{{ $t("返回") }}</el-button>
+      <el-button type="primary" :icon="Check" :loading="saving" @click="handleSubmit">{{ $t("保存") }}</el-button>
     </PageHeader>
 
     <div class="df-card edit-card">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="92px" class="edit-form">
-        <el-form-item label="服务类型" prop="serviceCode">
+        <el-form-item :label='$t("服务类型")' prop="serviceCode">
           <div class="service-type-picker">
             <button
               v-for="item in serviceTypeOptions"
@@ -146,35 +149,33 @@ onMounted(async () => {
               :disabled="isEdit || enabledServiceCodes.has(item.code)"
               @click="selectServiceType(item)"
             >
-              <span>{{ item.name }}</span>
-              <small>{{ item.category }} · {{ item.priceRange }}</small>
+              <span>{{ $t(item.name) }}</span>
+              <small>{{ $t(item.category) }} · {{ $t(item.priceRange) }}</small>
             </button>
           </div>
-          <div v-if="selectedServiceType" class="selected-type-hint">
-            已选择 {{ selectedServiceType.name }}（{{ selectedServiceType.code }}）；服务类型由平台统一维护
-          </div>
+          <div v-if="selectedServiceType" class="selected-type-hint">{{ $t(" 已选择 ") }}{{ $t(selectedServiceType.name) }}（{{ $t(selectedServiceType.code) }}{{ $t("）；服务类型由平台统一维护 ") }}</div>
         </el-form-item>
-        <el-form-item label="价格（元）" prop="price">
+        <el-form-item :label='$t("价格（元）")' prop="price">
           <el-input-number v-model="form.price" :min="0" :precision="2" controls-position="right" />
         </el-form-item>
-        <el-form-item label="开放时段">
+        <el-form-item :label='$t("开放时段")'>
 		  <div class="slot-editor">
 			<div v-for="(slot, index) in form.slots" :key="slot.code" class="slot-row">
-			  <el-input v-model="slot.label" placeholder="名称" />
-			  <el-time-select v-model="slot.startTime" start="05:00" step="00:30" end="22:00" placeholder="开始" />
-			  <el-time-select v-model="slot.endTime" start="05:30" step="00:30" end="23:00" placeholder="结束" />
+			  <el-input v-model="slot.label" :placeholder='$t("名称")' />
+			  <el-time-select v-model="slot.startTime" start="05:00" step="00:30" end="22:00" :placeholder='$t("开始")' />
+			  <el-time-select v-model="slot.endTime" start="05:30" step="00:30" end="23:00" :placeholder='$t("结束")' />
 			  <el-input-number v-model="slot.capacity" :min="1" :max="999" controls-position="right" />
 			  <el-switch v-model="slot.status" active-value="enabled" inactive-value="disabled" />
-			  <el-button :icon="Delete" circle aria-label="删除时段" @click="removeSlot(index)" />
+			  <el-button :icon="Delete" circle :aria-label='$t("删除时段")' @click="removeSlot(index)" />
 			</div>
-			<el-button :icon="Plus" @click="addSlot">添加时段</el-button>
+			<el-button :icon="Plus" @click="addSlot">{{ $t("添加时段") }}</el-button>
 		  </div>
         </el-form-item>
-        <el-form-item label="心愿关联">
-          <el-radio-group v-model="form.intentMode"><el-radio value="inherit">跟随标准服务</el-radio><el-radio value="custom">手动设置</el-radio></el-radio-group>
-          <p v-if="form.intentMode==='inherit'" style="width:100%;color:var(--el-text-color-secondary)">按平台标准服务规则自动进入对应心愿；以后新增或调整规则也会生效。</p>
-          <el-select v-if="form.intentMode==='custom'" v-model="form.intentTags" multiple placeholder="空选表示不进入心愿页" style="width: 100%">
-            <el-option v-for="item in intentOptions" :key="item.code" :label="item.name" :value="item.code" />
+        <el-form-item :label='$t("心愿关联")'>
+          <el-radio-group v-model="form.intentMode"><el-radio value="inherit">{{ $t("跟随标准服务") }}</el-radio><el-radio value="custom">{{ $t("手动设置") }}</el-radio></el-radio-group>
+          <p v-if="form.intentMode==='inherit'" style="width:100%;color:var(--el-text-color-secondary)">{{ $t("按平台标准服务规则自动进入对应心愿；以后新增或调整规则也会生效。") }}</p>
+          <el-select v-if="form.intentMode==='custom'" v-model="form.intentTags" multiple :placeholder='$t("空选表示不进入心愿页")' style="width: 100%">
+            <el-option v-for="item in intentOptions" :key="item.code" :label="$t(item.name)" :value="item.code" />
           </el-select>
         </el-form-item>
       </el-form>

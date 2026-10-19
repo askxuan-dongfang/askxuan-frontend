@@ -17,25 +17,25 @@ onUnmounted(()=>{generation++;clearInterval(timer)})
 </script>
 <template>
  <div class="df-page journey-work">
-  <PageHeader title="履约工作台" subtitle="把每一次托付，落实为可查看的服务记录。"><router-link to="/bookings">预约订单 ↗</router-link></PageHeader>
+  <PageHeader :title='$t("履约工作台")' :subtitle='$t("把每一次托付，落实为可查看的服务记录。")'><router-link to="/bookings">{{ $t("预约订单 ↗") }}</router-link></PageHeader>
   <div v-if="data" class="journey-stats">
-   <button @click="filter('pending')"><strong>{{data.counts.pending}}</strong>待接单</button>
-   <button @click="filter('confirmed')"><strong>{{data.counts.confirmed}}</strong>待执行</button>
-   <button @click="filter('in_progress')"><strong>{{data.counts.executing}}</strong>执行中</button>
-   <button @click="filter('revision')"><strong>{{data.counts.revision}}</strong>待补充回执</button>
+   <button @click="filter('pending')"><strong>{{$t(data.counts.pending)}}</strong>{{ $t("待接单") }}</button>
+   <button @click="filter('confirmed')"><strong>{{$t(data.counts.confirmed)}}</strong>{{ $t("待执行") }}</button>
+   <button @click="filter('in_progress')"><strong>{{$t(data.counts.executing)}}</strong>{{ $t("执行中") }}</button>
+   <button @click="filter('revision')"><strong>{{$t(data.counts.revision)}}</strong>{{ $t("待补充回执") }}</button>
   </div>
   <div class="df-card journey-panel">
-   <nav class="journey-filters" aria-label="履约筛选"><button v-for="f in filters" :key="f[0]" :aria-pressed="String(route.query.filter||'all')===f[0]" @click="filter(f[0])">{{f[1]}}</button></nav>
-   <form class="journey-search" @submit.prevent="router.replace({query:{...route.query,q:search,page:'1'}})"><el-input v-model="search" maxlength="60" aria-label="搜索服务或大师" placeholder="搜索服务或大师" clearable/><el-button native-type="submit">搜索</el-button></form>
-   <el-alert v-if="error" :title="error" type="error" :closable="false"/><el-button v-if="error" @click="load">重新加载</el-button>
-   <p v-if="loading&&!data" role="status">正在读取服务记录…</p>
+   <nav class="journey-filters" :aria-label='$t("履约筛选")'><button v-for="f in filters" :key="f[0]" :aria-pressed="String(route.query.filter||'all')===f[0]" @click="filter(f[0])">{{$t(f[1])}}</button></nav>
+   <form class="journey-search" @submit.prevent="router.replace({query:{...route.query,q:search,page:'1'}})"><el-input v-model="search" maxlength="60" :aria-label='$t("搜索服务或大师")' :placeholder='$t("搜索服务或大师")' clearable/><el-button native-type="submit">{{ $t("搜索") }}</el-button></form>
+   <el-alert v-if="error" :title="$t(error)" type="error" :closable="false"/><el-button v-if="error" @click="load">{{ $t("重新加载") }}</el-button>
+   <p v-if="loading&&!data" role="status">{{ $t("正在读取服务记录…") }}</p>
    <div v-if="data&&!error" :aria-busy="loading">
-    <p v-if="!data.list.length" class="journey-empty">当前没有符合条件的服务。新的已付款预约会出现在这里。</p>
+    <p v-if="!data.list.length" class="journey-empty">{{ $t("当前没有符合条件的服务。新的已付款预约会出现在这里。") }}</p>
     <article v-for="row in data.list" :key="row.id" class="journey-row">
-     <div class="journey-row-title"><h3>{{row.serviceName}}</h3><el-tag :type="row.needsRevision?'warning':'info'">{{row.needsRevision?'需补充回执':labels[row.status]||row.status}}</el-tag></div>
-     <p>{{row.bookingDate}} · {{row.timeSlot}} · {{row.masterName||'寺院全院执行'}}</p>
-     <p v-if="row.latest" class="journey-latest">{{row.latest}}</p>
-     <div class="journey-row-foot"><small>{{row.receiptCount?`${row.receiptCount} 份回执已留存`:'尚未提交最终回执'}}</small><router-link :to="`/bookings/${row.id}`">{{row.needsRevision?'补充回执':row.status==='in_progress'?'记录执行进展':'查看服务记录'}} ↗</router-link></div>
+     <div class="journey-row-title"><h3>{{$t(row.serviceName)}}</h3><el-tag :type="row.needsRevision?'warning':'info'">{{$t((row.needsRevision ? $t('需补充回执') : (labels[row.status] || row.status)))}}</el-tag></div>
+     <p>{{$t(row.bookingDate)}} · {{$t(row.timeSlot)}} · {{row.masterName||'寺院全院执行'}}</p>
+     <p v-if="row.latest" class="journey-latest">{{$t(row.latest)}}</p>
+     <div class="journey-row-foot"><small>{{$t((row.receiptCount ? ($t("") + String(row.receiptCount) + $t(" 份回执已留存")) : $t('尚未提交最终回执')))}}</small><router-link :to="`/bookings/${row.id}`">{{$t((row.needsRevision ? $t('补充回执') : (row.status==='in_progress' ? $t('记录执行进展') : $t('查看服务记录'))))}} ↗</router-link></div>
     </article>
     <el-pagination v-if="data.total>20" :current-page="Number(route.query.page||1)" :page-size="20" :total="data.total" layout="prev, pager, next" @current-change="page=>router.replace({query:{...route.query,page:String(page)}})"/>
    </div>

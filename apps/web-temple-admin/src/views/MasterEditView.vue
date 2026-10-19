@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../packages/localization/language'
+
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { type FormInstance, type FormRules } from 'element-plus'
 import { ArrowLeft, Check, Close } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
@@ -89,7 +92,7 @@ async function handleSubmit() {
           specialties: form.specialties,
           avatar: form.avatar
         })
-        ElMessage.success('法师信息已更新')
+        ElMessage.success(uiText('法师信息已更新'))
       } else {
         await createMaster({
           dharmaName: form.dharmaName,
@@ -103,7 +106,7 @@ async function handleSubmit() {
           specialties: form.specialties,
           avatar: form.avatar
         })
-        ElMessage.success('法师已创建')
+        ElMessage.success(uiText('法师已创建'))
       }
       router.push('/masters')
     } finally {
@@ -121,51 +124,51 @@ onMounted(async () => {
 
 <template>
   <div class="df-page" v-loading="loading">
-    <PageHeader :title="pageTitle" :subtitle="pageSubtitle">
-      <el-button :icon="ArrowLeft" @click="router.back()">返回</el-button>
-      <el-button type="primary" :icon="Check" :loading="saving" @click="handleSubmit">保存</el-button>
+    <PageHeader :title="$t(pageTitle)" :subtitle="$t(pageSubtitle)">
+      <el-button :icon="ArrowLeft" @click="router.back()">{{ $t("返回") }}</el-button>
+      <el-button type="primary" :icon="Check" :loading="saving" @click="handleSubmit">{{ $t("保存") }}</el-button>
     </PageHeader>
 
     <div class="df-card edit-card">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="92px" class="edit-form">
         <el-row :gutter="20">
           <el-col :xs="24" :sm="12">
-            <el-form-item label="法号" prop="dharmaName">
-              <el-input v-model="form.dharmaName" placeholder="如 释永信" />
+            <el-form-item :label='$t("法号")' prop="dharmaName">
+              <el-input v-model="form.dharmaName" :placeholder='$t("如 释永信")' />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="俗名" prop="layName">
-              <el-input v-model="form.layName" placeholder="请输入俗名" />
+            <el-form-item :label='$t("俗名")' prop="layName">
+              <el-input v-model="form.layName" :placeholder='$t("请输入俗名")' />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="职位" prop="position">
-              <el-input v-model="form.position" placeholder="如 方丈、监院" />
+            <el-form-item :label='$t("职位")' prop="position">
+              <el-input v-model="form.position" :placeholder='$t("如 方丈、监院")' />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="一级流派" prop="beliefCode">
+            <el-form-item :label='$t("一级流派")' prop="beliefCode">
               <el-select v-model="form.beliefCode" style="width: 100%">
-                <el-option v-for="item in beliefOptions" :key="item.code" :label="item.name" :value="item.code" />
+                <el-option v-for="item in beliefOptions" :key="item.code" :label="$t(item.name)" :value="item.code" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="宗派" prop="sect">
-              <el-input v-model="form.sect" placeholder="如 禅宗、全真派、格鲁派" />
+            <el-form-item :label='$t("宗派")' prop="sect">
+              <el-input v-model="form.sect" :placeholder='$t("如 禅宗、全真派、格鲁派")' />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="类型">
+            <el-form-item :label='$t("类型")'>
               <el-radio-group v-model="form.type" :disabled="isEdit">
-                <el-radio value="佛教">佛教</el-radio>
-                <el-radio value="道教">道教</el-radio>
+                <el-radio value="佛教">{{ $t("佛教") }}</el-radio>
+                <el-radio value="道教">{{ $t("道教") }}</el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="专长">
+            <el-form-item :label='$t("专长")'>
               <div class="tag-input">
                 <el-tag
                   v-for="t in form.specialties"
@@ -174,14 +177,14 @@ onMounted(async () => {
                   effect="light"
                   class="spec-tag"
                   @close="removeTag(t)"
-                  >{{ t }}</el-tag
+                  >{{ $t(t) }}</el-tag
                 >
                 <el-input
                   v-if="form.specialties.length < 8"
                   v-model="tagInput"
                   size="small"
                   class="tag-field"
-                  placeholder="输入专长后回车"
+                  :placeholder='$t("输入专长后回车")'
                   @keyup.enter="addTag"
                 />
                 <el-button v-if="tagInput" link size="small" :icon="Close" @click="tagInput = ''" />
@@ -189,7 +192,7 @@ onMounted(async () => {
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="头像">
+            <el-form-item :label='$t("头像")'>
               <ImageUploader v-model="form.avatar" hint="建议正方形头像，不超过 1MB" />
             </el-form-item>
           </el-col>

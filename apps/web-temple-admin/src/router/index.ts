@@ -1,5 +1,9 @@
+import { ElMessage } from '@/i18n'
+import { t as localizeTitle, subscribeLanguage } from '../../../../packages/localization/language'
+
+import { t as uiText } from '../../../../packages/localization/language'
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import { ElMessage } from 'element-plus'
+
 import { useAuthStore } from '@/stores/auth'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 
@@ -119,7 +123,7 @@ const router = createRouter({
 router.beforeEach((to) => {
   const auth = useAuthStore()
   // 设置标题
-  if (to.meta.title) document.title = `${to.meta.title} · 寺院管理台`
+  if (to.meta.title) document.title = `${localizeTitle(to.meta.title)} · ${localizeTitle('寺院管理台')}`
   if(auth.isLogin&&auth.roles.includes('temple_applicant')&&to.name!=='onboarding')return {path:'/onboarding'}
   // 公开路由放行
   if (to.meta.public) {
@@ -134,10 +138,12 @@ router.beforeEach((to) => {
   const required = to.matched.flatMap((r) => (r.meta.roles as string[] | undefined) || [])
   if (required.length && !required.some((role) => auth.roles.includes(role))) {
     auth.logout()
-    ElMessage.error('当前账号无寺院管理台权限，请使用寺院管理员账号登录')
+    ElMessage.error(uiText('当前账号无寺院管理台权限，请使用寺院管理员账号登录'))
     return { path: '/login', query: { redirect: to.fullPath, denied: '1' } }
   }
   return true
 })
 
 export default router
+
+subscribeLanguage(() => { document.title = `${localizeTitle(router.currentRoute.value.meta.title || '')} · ${localizeTitle('寺院管理台')}` })

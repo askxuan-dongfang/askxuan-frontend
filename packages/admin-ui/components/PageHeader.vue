@@ -26,8 +26,8 @@ const feature = computed(() => {
 <template>
   <header class="aui-page-header">
     <div class="aui-page-header__main">
-      <h1 class="aui-page-header__title"><FeatureIcon :name="feature" :size="24" /><span>{{ title }}</span></h1>
-      <p v-if="subtitle" class="aui-page-header__subtitle">{{ subtitle }}</p>
+      <h1 class="aui-page-header__title"><FeatureIcon :name="feature" :size="24" /><span>{{ $t(title) }}</span></h1>
+      <p v-if="subtitle" class="aui-page-header__subtitle">{{ $t(subtitle) }}</p>
     </div>
     <div
       v-if="$slots.actions || $slots.extra || $slots.default"

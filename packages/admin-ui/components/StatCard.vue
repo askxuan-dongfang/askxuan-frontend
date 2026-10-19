@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getLanguage, t } from '@askxuan/localization';
+
 type Tone = 'brand' | 'primary' | 'accent' | 'success' | 'warning' | 'info' | 'danger'
 
 const props = withDefaults(
@@ -41,8 +43,8 @@ function resolvedColor(): string {
 }
 
 function displayValue(): string {
-  const value = typeof props.value === 'number' ? props.value.toLocaleString('zh-CN') : props.value
-  return `${props.prefix}${value}${props.suffix}`
+  const value = typeof props.value === 'number' ? props.value.toLocaleString(getLanguage()) : props.value
+  return `${t(props.prefix)}${value}${t(props.suffix)}`
 }
 
 function trendText(): string {
@@ -68,11 +70,11 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
       <el-icon :size="22"><component :is="icon" /></el-icon>
     </div>
     <div class="aui-stat-card__body">
-      <div class="aui-stat-card__label">{{ resolvedLabel() }}</div>
-      <div class="aui-stat-card__value">{{ displayValue() }}</div>
+      <div class="aui-stat-card__label">{{ $t(resolvedLabel()) }}</div>
+      <div class="aui-stat-card__value">{{ $t(displayValue()) }}</div>
       <div v-if="trendText()" class="aui-stat-card__trend" :class="`is-${trendDirection()}`">
-        <span v-if="trendDirection() !== 'neutral'" aria-hidden="true">{{ trendDirection() === 'up' ? '↑' : '↓' }}</span>
-        {{ trendText() }}
+        <span v-if="trendDirection() !== 'neutral'" aria-hidden="true">{{ $t((trendDirection() === 'up' ? '↑' : '↓')) }}</span>
+        {{ $t(trendText()) }}
       </div>
     </div>
   </section>

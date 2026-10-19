@@ -1,6 +1,9 @@
+import { ElMessage } from '@/i18n'
+
+import { t as uiText } from '../../../../packages/localization/language'
 // 问玄东方 · temple 管理台 - 统一请求与失效会话处理
 import axios, { type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
-import { ElMessage } from 'element-plus'
+
 import { ADMIN_SESSION_EXPIRED_EVENT, ADMIN_SESSION_REFRESHED_EVENT, AdminSessionExpiredError, createAdminSessionGuard, isAdminSessionExpired } from '../../../../packages/admin-ui/session-expiry'
 import type { AdminRequestSession } from '../../../../packages/admin-ui/session-expiry'
 import type { ApiResponse } from '@/types'
@@ -57,7 +60,7 @@ instance.interceptors.response.use(
         return instance.request(request)
       }
       if (recovery.kind !== 'unhandled') throw new AdminSessionExpiredError()
-      ElMessage.error(res.message || '请求失败')
+      ElMessage.error((res.message || uiText('请求失败')))
       return Promise.reject(new Error(res.message || '请求失败'))
     }
     return res.data as any
@@ -72,7 +75,7 @@ instance.interceptors.response.use(
       return instance.request(request)
     }
     if (recovery.kind !== 'unhandled') return Promise.reject(new AdminSessionExpiredError())
-    ElMessage.error(error.response?.data?.message || error.message || '网络异常')
+    ElMessage.error(((error.response?.data?.message || error.message) || uiText('网络异常')))
     return Promise.reject(error)
   }
 )

@@ -3,7 +3,11 @@
     "target": "ES2020",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -17,11 +21,22 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "vue": ["./node_modules/vue"],
-      "@/*": ["src/*"],
-      "@askxuan/domain-status": ["../../packages/domain-status/src/index.ts"]
+      "vue": [
+        "./node_modules/vue"
+      ],
+      "@/*": [
+        "src/*"
+      ],
+      "@askxuan/domain-status": [
+        "../../packages/domain-status/src/index.ts"
+      ],
+      "@askxuan/localization": [
+        "../../packages/localization/language.ts"
+      ]
     },
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
   "include": [
     "src/**/*.ts",
@@ -31,5 +46,9 @@
     "../../packages/domain-status/**/*.ts",
     "vite.config.ts"
   ],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
 }

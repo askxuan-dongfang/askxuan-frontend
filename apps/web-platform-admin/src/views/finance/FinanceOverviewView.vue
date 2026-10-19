@@ -1,88 +1,88 @@
 <template>
   <div class="dfx-page">
-    <PageHeader title="财务概览" subtitle="全平台收入总览与抽成配置">
+    <PageHeader :title='$t("财务概览")' :subtitle='$t("全平台收入总览与抽成配置")'>
       <template #actions>
-        <el-button :icon="Refresh" @click="loadData">刷新</el-button>
+        <el-button :icon="Refresh" @click="loadData">{{ $t("刷新") }}</el-button>
       </template>
     </PageHeader>
 
     <div v-if="loadIssueCount" class="ax-page-feedback" :class="{ 'is-error': loadIssueCount === 2 }" role="status">
       <div class="ax-page-feedback__copy">
-        <div class="ax-page-feedback__title">{{ loadIssueCount === 2 ? '财务概览暂时无法加载' : '部分财务数据加载失败' }}</div>
-        <div class="ax-page-feedback__description">未加载的指标显示为“—”，不会用 0 掩盖接口失败。</div>
+        <div class="ax-page-feedback__title">{{ $t((loadIssueCount === 2 ? $t('财务概览暂时无法加载') : $t('部分财务数据加载失败'))) }}</div>
+        <div class="ax-page-feedback__description">{{ $t("未加载的指标显示为“—”，不会用 0 掩盖接口失败。") }}</div>
       </div>
-      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+      <el-button :loading="loading" @click="loadData">{{ $t("重新加载") }}</el-button>
     </div>
 
     <details class="dfx-card config-card" @toggle="onDemoToggle">
-      <summary>模拟钱包资金 · 独立测试账目</summary>
-      <p>测试余额订单的收款、退款、分账与模拟提现，不计入正式财务概览。</p>
-      <p v-if="demoError" role="alert">{{demoError}}</p>
-      <div v-if="demoWallet" class="summary-grid"><div><span>模拟收款</span><b>{{demoMoney(demoWallet.totals.receivedCents)}}</b></div><div><span>模拟退款</span><b>{{demoMoney(demoWallet.totals.refundedCents)}}</b></div><div><span>模拟提现</span><b>{{demoMoney(demoWallet.totals.paidCents)}}</b></div><div><span>模拟平台费用</span><b>{{demoMoney(demoWallet.commissionCents)}}</b></div></div>
-      <el-table v-if="demoWallet" :data="demoWallet.settlements"><el-table-column prop="number" label="结算单"/><el-table-column prop="sourceNo" label="业务单"/><el-table-column label="应结金额"><template #default="{row}">{{demoMoney(row.netCents)}}</template></el-table-column><el-table-column prop="status" label="状态"/></el-table>
-      <el-button :loading="demoLoading" @click="loadDemo">刷新测试账目</el-button>
+      <summary>{{ $t("模拟钱包资金 · 独立测试账目") }}</summary>
+      <p>{{ $t("测试余额订单的收款、退款、分账与模拟提现，不计入正式财务概览。") }}</p>
+      <p v-if="demoError" role="alert">{{$t(demoError)}}</p>
+      <div v-if="demoWallet" class="summary-grid"><div><span>{{ $t("模拟收款") }}</span><b>{{$t(demoMoney(demoWallet.totals.receivedCents))}}</b></div><div><span>{{ $t("模拟退款") }}</span><b>{{$t(demoMoney(demoWallet.totals.refundedCents))}}</b></div><div><span>{{ $t("模拟提现") }}</span><b>{{$t(demoMoney(demoWallet.totals.paidCents))}}</b></div><div><span>{{ $t("模拟平台费用") }}</span><b>{{$t(demoMoney(demoWallet.commissionCents))}}</b></div></div>
+      <el-table v-if="demoWallet" :data="demoWallet.settlements"><el-table-column prop="number" :label='$t("结算单")'/><el-table-column prop="sourceNo" :label='$t("业务单")'/><el-table-column :label='$t("应结金额")'><template #default="{row}">{{$t(demoMoney(row.netCents))}}</template></el-table-column><el-table-column prop="status" :label='$t("状态")'/></el-table>
+      <el-button :loading="demoLoading" @click="loadDemo">{{ $t("刷新测试账目") }}</el-button>
     </details>
     <div class="stat-row">
-      <StatCard label="平台总收入" :value="overview?.totalIncome ?? '—'" icon="Money" icon-color="#C8A96E" :prefix="overview ? '¥' : ''" />
-      <StatCard label="寺院结算" :value="overview?.templeIncome ?? '—'" icon="OfficeBuilding" icon-color="#C45A3C" :prefix="overview ? '¥' : ''" />
-      <StatCard label="法师结算" :value="overview?.masterIncome ?? '—'" icon="Avatar" icon-color="#B5453A" :prefix="overview ? '¥' : ''" />
-      <StatCard label="商城结算" :value="overview?.shopIncome ?? '—'" icon="ShoppingCart" icon-color="#5B8C5A" :prefix="overview ? '¥' : ''" />
-      <StatCard label="平台抽成" :value="overview?.commissionIncome ?? '—'" icon="Coin" icon-color="#D4A843" :prefix="overview ? '¥' : ''" />
-      <StatCard label="待审提现" :value="overview?.pendingWithdraw ?? '—'" icon="Wallet" icon-color="#D4735A" :suffix="overview ? ' 笔' : ''" />
+      <StatCard :label='$t("平台总收入")' :value="overview?.totalIncome ?? '—'" icon="Money" icon-color="#C8A96E" :prefix="overview ? '¥' : ''" />
+      <StatCard :label='$t("寺院结算")' :value="overview?.templeIncome ?? '—'" icon="OfficeBuilding" icon-color="#C45A3C" :prefix="overview ? '¥' : ''" />
+      <StatCard :label='$t("法师结算")' :value="overview?.masterIncome ?? '—'" icon="Avatar" icon-color="#B5453A" :prefix="overview ? '¥' : ''" />
+      <StatCard :label='$t("商城结算")' :value="overview?.shopIncome ?? '—'" icon="ShoppingCart" icon-color="#5B8C5A" :prefix="overview ? '¥' : ''" />
+      <StatCard :label='$t("平台抽成")' :value="overview?.commissionIncome ?? '—'" icon="Coin" icon-color="#D4A843" :prefix="overview ? '¥' : ''" />
+      <StatCard :label='$t("待审提现")' :value="overview?.pendingWithdraw ?? '—'" icon="Wallet" icon-color="#D4735A" :suffix="overview ? ' 笔' : ''" />
     </div>
 
     <div class="charts-row desktop-finance-chart">
       <div class="dfx-card chart-card">
-        <div class="section-title">收入构成</div>
-        <div v-if="overview" ref="pieRef" class="chart-body" aria-label="收入构成图表"></div>
-        <div v-else class="chart-unavailable">财务汇总加载成功后显示收入构成</div>
+        <div class="section-title">{{ $t("收入构成") }}</div>
+        <div v-if="overview" ref="pieRef" class="chart-body" :aria-label='$t("收入构成图表")'></div>
+        <div v-else class="chart-unavailable">{{ $t("财务汇总加载成功后显示收入构成") }}</div>
       </div>
     </div>
 
     <div class="dfx-card mobile-finance-summary">
-      <div class="section-title">收入构成摘要</div>
+      <div class="section-title">{{ $t("收入构成摘要") }}</div>
       <div v-if="overview" class="summary-grid">
-        <div><span>寺院结算</span><b>¥{{ overview.templeIncome }}</b></div>
-        <div><span>法师结算</span><b>¥{{ overview.masterIncome }}</b></div>
-        <div><span>商城结算</span><b>¥{{ overview.shopIncome }}</b></div>
-        <div><span>平台抽成</span><b>¥{{ overview.commissionIncome }}</b></div>
+        <div><span>{{ $t("寺院结算") }}</span><b>¥{{ $t(overview.templeIncome) }}</b></div>
+        <div><span>{{ $t("法师结算") }}</span><b>¥{{ $t(overview.masterIncome) }}</b></div>
+        <div><span>{{ $t("商城结算") }}</span><b>¥{{ $t(overview.shopIncome) }}</b></div>
+        <div><span>{{ $t("平台抽成") }}</span><b>¥{{ $t(overview.commissionIncome) }}</b></div>
       </div>
-      <div v-else class="chart-unavailable">暂无法生成收入构成摘要</div>
+      <div v-else class="chart-unavailable">{{ $t("暂无法生成收入构成摘要") }}</div>
     </div>
 
     <!-- 抽成配置 -->
     <div class="dfx-card config-card">
-      <div class="section-title">抽成配置</div>
+      <div class="section-title">{{ $t("抽成配置") }}</div>
       <el-table class="desktop-table" :data="configs" v-loading="configLoading" style="width: 100%">
-        <el-table-column label="业务类型" width="160">
-          <template #default="{ row }">{{ bizTypeText(row.bizType) }}</template>
+        <el-table-column :label='$t("业务类型")' width="160">
+          <template #default="{ row }">{{ $t(bizTypeText(row.bizType)) }}</template>
         </el-table-column>
-        <el-table-column label="抽成比例" width="160">
+        <el-table-column :label='$t("抽成比例")' width="160">
           <template #default="{ row }">
             <el-input-number v-model="row.rate" :min="0" :max="1" :step="0.01" :precision="2" size="small" controls-position="right" style="width: 120px" />
           </template>
         </el-table-column>
-        <el-table-column label="说明" min-width="200">
+        <el-table-column :label='$t("说明")' min-width="200">
           <template #default="{ row }">
             <el-input v-model="row.description" size="small" />
           </template>
         </el-table-column>
-        <el-table-column label="更新时间" width="170">
-          <template #default="{ row }">{{ formatDate(row.updateTime) }}</template>
+        <el-table-column :label='$t("更新时间")' width="170">
+          <template #default="{ row }">{{ $t(formatDate(row.updateTime)) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="100" fixed="right">
+        <el-table-column :label='$t("操作")' width="100" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" :loading="row._saving" @click="saveConfig(row)">保存</el-button>
+            <el-button link type="primary" :loading="row._saving" @click="saveConfig(row)">{{ $t("保存") }}</el-button>
           </template>
         </el-table-column>
       </el-table>
       <MobileTaskList :items="configs" :loading="configLoading" :total="configs.length" :size="Math.max(1, configs.length)">
         <template #item="{ item: row }">
           <article class="mobile-task-card config-task-card">
-            <div class="mobile-task-card__head"><strong>{{ bizTypeText(row.bizType) }}</strong><span class="muted">{{ formatDate(row.updateTime) }}</span></div>
-            <label class="config-field"><span>抽成比例</span><el-input-number v-model="row.rate" :min="0" :max="1" :step="0.01" :precision="2" controls-position="right" /></label>
-            <label class="config-field"><span>说明</span><el-input v-model="row.description" /></label>
-            <el-button type="primary" :loading="row._saving" @click="saveConfig(row)">保存配置</el-button>
+            <div class="mobile-task-card__head"><strong>{{ $t(bizTypeText(row.bizType)) }}</strong><span class="muted">{{ $t(formatDate(row.updateTime)) }}</span></div>
+            <label class="config-field"><span>{{ $t("抽成比例") }}</span><el-input-number v-model="row.rate" :min="0" :max="1" :step="0.01" :precision="2" controls-position="right" /></label>
+            <label class="config-field"><span>{{ $t("说明") }}</span><el-input v-model="row.description" /></label>
+            <el-button type="primary" :loading="row._saving" @click="saveConfig(row)">{{ $t("保存配置") }}</el-button>
           </article>
         </template>
       </MobileTaskList>
@@ -91,12 +91,15 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 import { withAdminChartTheme, watchAdminChartAppearance } from '../../../../../packages/admin-ui/chart-theme'
 import client from '@/api/client'
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { Refresh } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+
 import PageHeader from '@/components/PageHeader.vue'
 import StatCard from '@/components/StatCard.vue'
 import MobileTaskList from '@/components/MobileTaskList.vue'
@@ -171,7 +174,7 @@ async function saveConfig(row: ConfigRow) {
   row._saving = true
   try {
     await updateCommissionConfig(row.id, { rate: row.rate, description: row.description })
-    ElMessage.success('配置已保存')
+    ElMessage.success(uiText('配置已保存'))
   } finally {
     row._saving = false
   }

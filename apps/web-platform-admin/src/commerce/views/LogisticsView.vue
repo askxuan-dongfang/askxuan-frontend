@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 // 物流管理 - 快递公司 / 运费模板 / 物流追踪（Tab 切换）
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { type FormInstance, type FormRules } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import { logisticsApi } from '@/commerce/api/logistics'
@@ -82,7 +85,7 @@ async function handleExpressSubmit() {
       const { id, ...payload } = expressForm
       if (id) {
         await logisticsApi.expressUpdate(id, payload)
-        ElMessage.success('更新成功')
+        ElMessage.success(uiText('更新成功'))
       } else {
         await logisticsApi.expressCreate({
           code: payload.code,
@@ -91,7 +94,7 @@ async function handleExpressSubmit() {
           customerService: payload.customerService,
           sort: payload.sort
         })
-        ElMessage.success('创建成功')
+        ElMessage.success(uiText('创建成功'))
       }
       expressDialogVisible.value = false
       loadExpress()
@@ -105,7 +108,7 @@ async function handleExpressStatusToggle(row: any) {
   const next = row.status === 'enabled' ? 'disabled' : 'enabled'
   try {
     await logisticsApi.expressUpdate(row.id, { status: next })
-    ElMessage.success('状态已更新')
+    ElMessage.success(uiText('状态已更新'))
     loadExpress()
   } catch {
     // 忽略
@@ -182,7 +185,7 @@ async function handleFreightSubmit() {
       const { id, ...payload } = freightForm
       if (id) {
         await logisticsApi.freightTemplateUpdate(id, payload)
-        ElMessage.success('更新成功')
+        ElMessage.success(uiText('更新成功'))
       } else {
         await logisticsApi.freightTemplateCreate({
           name: payload.name,
@@ -190,7 +193,7 @@ async function handleFreightSubmit() {
           freeShipping: payload.freeShipping,
           config: payload.config
         })
-        ElMessage.success('创建成功')
+        ElMessage.success(uiText('创建成功'))
       }
       freightDialogVisible.value = false
       loadFreight()
@@ -204,7 +207,7 @@ async function handleFreightStatusToggle(row: any) {
   const next = row.status === 'enabled' ? 'disabled' : 'enabled'
   try {
     await logisticsApi.freightTemplateUpdate(row.id, { status: next })
-    ElMessage.success('状态已更新')
+    ElMessage.success(uiText('状态已更新'))
     loadFreight()
   } catch {
     // 忽略
@@ -218,7 +221,7 @@ const trackResult = ref<TrackQueryResp | null>(null)
 
 async function handleTrackQuery() {
   if (!trackingNo.value.trim()) {
-    ElMessage.warning('请输入运单号')
+    ElMessage.warning(uiText('请输入运单号'))
     return
   }
   trackLoading.value = true
@@ -233,13 +236,13 @@ async function handleTrackQuery() {
 
 async function handleBatchSync() {
   try {
-    await ElMessageBox.confirm('确认批量同步所有非终态物流记录？', '提示', {
-      confirmButtonText: '同步',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(uiText('确认批量同步所有非终态物流记录？'), uiText('提示'), {
+      confirmButtonText: uiText('同步'),
+      cancelButtonText: uiText('取消'),
       type: 'warning'
     })
     const res = await logisticsApi.tracksBatchSync()
-    ElMessage.success(`同步完成：成功 ${res.success} / 失败 ${res.failed} / 共 ${res.total}`)
+    ElMessage.success((uiText("同步完成：成功 ") + String(res.success) + uiText(" / 失败 ") + String(res.failed) + uiText(" / 共 ") + String(res.total) + uiText("")))
   } catch {
     // 取消
   }
@@ -252,126 +255,126 @@ onMounted(() => {
 
 <template>
   <div class="page-wrap">
-    <PageHeader title="物流管理" subtitle="快递公司 / 运费模板 / 物流追踪">
+    <PageHeader :title='$t("物流管理")' :subtitle='$t("快递公司 / 运费模板 / 物流追踪")'>
       <template #extra>
-        <el-button type="primary" plain @click="handleBatchSync">批量同步物流</el-button>
+        <el-button type="primary" plain @click="handleBatchSync">{{ $t("批量同步物流") }}</el-button>
       </template>
     </PageHeader>
 
     <div class="df-card">
       <el-tabs v-model="activeTab" @tab-change="(name: any) => name === 'freight' && loadFreight()">
         <!-- 快递公司 -->
-        <el-tab-pane label="快递公司" name="express">
+        <el-tab-pane :label='$t("快递公司")' name="express">
           <div class="filter-bar">
             <el-form inline @submit.prevent="loadExpress">
-              <el-form-item label="名称">
+              <el-form-item :label='$t("名称")'>
                 <el-input v-model="expressQuery.name" clearable style="width: 180px" @keyup.enter="loadExpress" />
               </el-form-item>
-              <el-form-item label="编码">
+              <el-form-item :label='$t("编码")'>
                 <el-input v-model="expressQuery.code" clearable style="width: 140px" @keyup.enter="loadExpress" />
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" @click="loadExpress">查询</el-button>
-                <el-button type="success" @click="openExpressCreate">新建</el-button>
+                <el-button type="primary" @click="loadExpress">{{ $t("查询") }}</el-button>
+                <el-button type="success" @click="openExpressCreate">{{ $t("新建") }}</el-button>
               </el-form-item>
             </el-form>
           </div>
-          <el-table v-loading="expressLoading" :data="expressList" style="width: 100%" empty-text="暂无快递公司">
-            <el-table-column label="编码" prop="code" width="120" />
-            <el-table-column label="名称" prop="name" min-width="160" />
-            <el-table-column label="客服电话" prop="customerService" width="160" />
-            <el-table-column label="排序" prop="sort" width="80" />
-            <el-table-column label="状态" width="100">
+          <el-table v-loading="expressLoading" :data="expressList" style="width: 100%" :empty-text='$t("暂无快递公司")'>
+            <el-table-column :label='$t("编码")' prop="code" width="120" />
+            <el-table-column :label='$t("名称")' prop="name" min-width="160" />
+            <el-table-column :label='$t("客服电话")' prop="customerService" width="160" />
+            <el-table-column :label='$t("排序")' prop="sort" width="80" />
+            <el-table-column :label='$t("状态")' width="100">
               <template #default="{ row }">
                 <StatusTag :status="row.status" domain="enabled" />
               </template>
             </el-table-column>
-            <el-table-column label="创建时间" prop="createTime" width="180" />
-            <el-table-column label="操作" width="200" fixed="right">
+            <el-table-column :label='$t("创建时间")' prop="createTime" width="180" />
+            <el-table-column :label='$t("操作")' width="200" fixed="right">
               <template #default="{ row }">
-                <el-button text type="primary" size="small" @click="openExpressEdit(row)">编辑</el-button>
+                <el-button text type="primary" size="small" @click="openExpressEdit(row)">{{ $t("编辑") }}</el-button>
                 <el-button
                   text
                   :type="row.status === 'enabled' ? 'warning' : 'success'"
                   size="small"
                   @click="handleExpressStatusToggle(row)"
-                >{{ row.status === 'enabled' ? '禁用' : '启用' }}</el-button>
+                >{{ $t((row.status === 'enabled' ? $t('禁用') : $t('启用'))) }}</el-button>
               </template>
             </el-table-column>
           </el-table>
         </el-tab-pane>
 
         <!-- 运费模板 -->
-        <el-tab-pane label="运费模板" name="freight">
+        <el-tab-pane :label='$t("运费模板")' name="freight">
           <div class="filter-bar">
             <el-form inline @submit.prevent="loadFreight">
-              <el-form-item label="名称">
+              <el-form-item :label='$t("名称")'>
                 <el-input v-model="freightQuery.name" clearable style="width: 180px" @keyup.enter="loadFreight" />
               </el-form-item>
-              <el-form-item label="计费方式">
+              <el-form-item :label='$t("计费方式")'>
                 <el-select v-model="freightQuery.type" clearable style="width: 140px">
-                  <el-option label="按件" value="by_piece" />
-                  <el-option label="按重量" value="by_weight" />
+                  <el-option :label='$t("按件")' value="by_piece" />
+                  <el-option :label='$t("按重量")' value="by_weight" />
                 </el-select>
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" @click="loadFreight">查询</el-button>
-                <el-button type="success" @click="openFreightCreate">新建</el-button>
+                <el-button type="primary" @click="loadFreight">{{ $t("查询") }}</el-button>
+                <el-button type="success" @click="openFreightCreate">{{ $t("新建") }}</el-button>
               </el-form-item>
             </el-form>
           </div>
-          <el-table v-loading="freightLoading" :data="freightList" style="width: 100%" empty-text="暂无运费模板">
-            <el-table-column label="名称" prop="name" min-width="180" />
-            <el-table-column label="计费方式" width="120">
-              <template #default="{ row }">{{ row.type === 'by_weight' ? '按重量' : '按件' }}</template>
+          <el-table v-loading="freightLoading" :data="freightList" style="width: 100%" :empty-text='$t("暂无运费模板")'>
+            <el-table-column :label='$t("名称")' prop="name" min-width="180" />
+            <el-table-column :label='$t("计费方式")' width="120">
+              <template #default="{ row }">{{ $t((row.type === 'by_weight' ? $t('按重量') : $t('按件'))) }}</template>
             </el-table-column>
-            <el-table-column label="是否包邮" width="100">
-              <template #default="{ row }">{{ row.freeShipping ? '是' : '否' }}</template>
+            <el-table-column :label='$t("是否包邮")' width="100">
+              <template #default="{ row }">{{ $t((row.freeShipping ? $t('是') : $t('否'))) }}</template>
             </el-table-column>
-            <el-table-column label="计费规则" prop="config" min-width="240" show-overflow-tooltip />
-            <el-table-column label="状态" width="100">
+            <el-table-column :label='$t("计费规则")' prop="config" min-width="240" show-overflow-tooltip />
+            <el-table-column :label='$t("状态")' width="100">
               <template #default="{ row }">
                 <StatusTag :status="row.status" domain="enabled" />
               </template>
             </el-table-column>
-            <el-table-column label="更新时间" prop="updateTime" width="180" />
-            <el-table-column label="操作" width="200" fixed="right">
+            <el-table-column :label='$t("更新时间")' prop="updateTime" width="180" />
+            <el-table-column :label='$t("操作")' width="200" fixed="right">
               <template #default="{ row }">
-                <el-button text type="primary" size="small" @click="openFreightEdit(row)">编辑</el-button>
+                <el-button text type="primary" size="small" @click="openFreightEdit(row)">{{ $t("编辑") }}</el-button>
                 <el-button
                   text
                   :type="row.status === 'enabled' ? 'warning' : 'success'"
                   size="small"
                   @click="handleFreightStatusToggle(row)"
-                >{{ row.status === 'enabled' ? '禁用' : '启用' }}</el-button>
+                >{{ $t((row.status === 'enabled' ? $t('禁用') : $t('启用'))) }}</el-button>
               </template>
             </el-table-column>
           </el-table>
         </el-tab-pane>
 
         <!-- 物流追踪 -->
-        <el-tab-pane label="物流追踪" name="track">
+        <el-tab-pane :label='$t("物流追踪")' name="track">
           <div class="filter-bar">
             <el-form inline @submit.prevent="handleTrackQuery">
-              <el-form-item label="运单号">
-                <el-input v-model="trackingNo" placeholder="请输入运单号" clearable style="width: 280px" @keyup.enter="handleTrackQuery" />
+              <el-form-item :label='$t("运单号")'>
+                <el-input v-model="trackingNo" :placeholder='$t("请输入运单号")' clearable style="width: 280px" @keyup.enter="handleTrackQuery" />
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" :loading="trackLoading" @click="handleTrackQuery">查询</el-button>
+                <el-button type="primary" :loading="trackLoading" @click="handleTrackQuery">{{ $t("查询") }}</el-button>
               </el-form-item>
             </el-form>
           </div>
           <template v-if="trackResult">
             <el-descriptions :column="2" border>
-              <el-descriptions-item label="运单号">{{ trackResult.trackingNo }}</el-descriptions-item>
-              <el-descriptions-item label="快递公司">{{ trackResult.expressName }} ({{ trackResult.expressCode }})</el-descriptions-item>
-              <el-descriptions-item label="业务类型">{{ trackResult.bizType }}</el-descriptions-item>
-              <el-descriptions-item label="业务单号">{{ trackResult.bizNo }}</el-descriptions-item>
-              <el-descriptions-item label="物流状态">{{ trackResult.status }}</el-descriptions-item>
-              <el-descriptions-item label="最后同步">{{ formatDateTime(trackResult.lastSyncTime) }}</el-descriptions-item>
+              <el-descriptions-item :label='$t("运单号")'>{{ $t(trackResult.trackingNo) }}</el-descriptions-item>
+              <el-descriptions-item :label='$t("快递公司")'>{{ $t(trackResult.expressName) }} ({{ $t(trackResult.expressCode) }})</el-descriptions-item>
+              <el-descriptions-item :label='$t("业务类型")'>{{ $t(trackResult.bizType) }}</el-descriptions-item>
+              <el-descriptions-item :label='$t("业务单号")'>{{ $t(trackResult.bizNo) }}</el-descriptions-item>
+              <el-descriptions-item :label='$t("物流状态")'>{{ $t(trackResult.status) }}</el-descriptions-item>
+              <el-descriptions-item :label='$t("最后同步")'>{{ $t(formatDateTime(trackResult.lastSyncTime)) }}</el-descriptions-item>
             </el-descriptions>
             <div class="track-timeline">
-              <div class="section-title">物流轨迹</div>
+              <div class="section-title">{{ $t("物流轨迹") }}</div>
               <el-timeline v-if="trackResult.traces?.length">
                 <el-timeline-item
                   v-for="(t, idx) in trackResult.traces"
@@ -379,81 +382,81 @@ onMounted(() => {
                   :timestamp="t.time"
                   placement="top"
                 >
-                  {{ t.desc }}
+                  {{ $t(t.desc) }}
                 </el-timeline-item>
               </el-timeline>
-              <el-empty v-else description="暂无轨迹" :image-size="80" />
+              <el-empty v-else :description='$t("暂无轨迹")' :image-size="80" />
             </div>
           </template>
-          <el-empty v-else description="请输入运单号查询物流轨迹" />
+          <el-empty v-else :description='$t("请输入运单号查询物流轨迹")' />
         </el-tab-pane>
       </el-tabs>
     </div>
 
     <!-- 快递公司弹窗 -->
-    <el-dialog v-model="expressDialogVisible" :title="expressDialogTitle" width="480px" append-to-body>
+    <el-dialog v-model="expressDialogVisible" :title="$t(expressDialogTitle)" width="480px" append-to-body>
       <el-form ref="expressFormRef" :model="expressForm" :rules="expressRules" label-width="100px">
-        <el-form-item label="编码" prop="code">
-          <el-input v-model="expressForm.code" placeholder="如 SF / ZTO" :disabled="!!expressForm.id" />
+        <el-form-item :label='$t("编码")' prop="code">
+          <el-input v-model="expressForm.code" :placeholder='$t("如 SF / ZTO")' :disabled="!!expressForm.id" />
         </el-form-item>
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="expressForm.name" placeholder="如 顺丰速运" />
+        <el-form-item :label='$t("名称")' prop="name">
+          <el-input v-model="expressForm.name" :placeholder='$t("如 顺丰速运")' />
         </el-form-item>
         <el-form-item label="Logo URL">
-          <el-input v-model="expressForm.logoUrl" placeholder="可选" />
+          <el-input v-model="expressForm.logoUrl" :placeholder='$t("可选")' />
         </el-form-item>
-        <el-form-item label="客服电话">
-          <el-input v-model="expressForm.customerService" placeholder="可选" />
+        <el-form-item :label='$t("客服电话")'>
+          <el-input v-model="expressForm.customerService" :placeholder='$t("可选")' />
         </el-form-item>
-        <el-form-item label="排序">
+        <el-form-item :label='$t("排序")'>
           <el-input-number v-model="expressForm.sort" :min="0" controls-position="right" />
         </el-form-item>
-        <el-form-item v-if="expressForm.id" label="状态">
+        <el-form-item v-if="expressForm.id" :label='$t("状态")'>
           <el-radio-group v-model="expressForm.status">
-            <el-radio value="enabled">启用</el-radio>
-            <el-radio value="disabled">禁用</el-radio>
+            <el-radio value="enabled">{{ $t("启用") }}</el-radio>
+            <el-radio value="disabled">{{ $t("禁用") }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="expressDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="expressSaving" @click="handleExpressSubmit">保存</el-button>
+        <el-button @click="expressDialogVisible = false">{{ $t("取消") }}</el-button>
+        <el-button type="primary" :loading="expressSaving" @click="handleExpressSubmit">{{ $t("保存") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 运费模板弹窗 -->
-    <el-dialog v-model="freightDialogVisible" :title="freightDialogTitle" width="560px" append-to-body>
+    <el-dialog v-model="freightDialogVisible" :title="$t(freightDialogTitle)" width="560px" append-to-body>
       <el-form ref="freightFormRef" :model="freightForm" :rules="freightRules" label-width="100px">
-        <el-form-item label="模板名称" prop="name">
-          <el-input v-model="freightForm.name" placeholder="如 默认运费模板" />
+        <el-form-item :label='$t("模板名称")' prop="name">
+          <el-input v-model="freightForm.name" :placeholder='$t("如 默认运费模板")' />
         </el-form-item>
-        <el-form-item label="计费方式" prop="type">
+        <el-form-item :label='$t("计费方式")' prop="type">
           <el-radio-group v-model="freightForm.type">
-            <el-radio value="by_piece">按件计费</el-radio>
-            <el-radio value="by_weight">按重量计费</el-radio>
+            <el-radio value="by_piece">{{ $t("按件计费") }}</el-radio>
+            <el-radio value="by_weight">{{ $t("按重量计费") }}</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="是否包邮">
+        <el-form-item :label='$t("是否包邮")'>
           <el-switch v-model="freightForm.freeShipping" :active-value="1" :inactive-value="0" />
         </el-form-item>
-        <el-form-item label="计费规则" prop="config">
+        <el-form-item :label='$t("计费规则")' prop="config">
           <el-input
             v-model="freightForm.config"
             type="textarea"
             :rows="4"
-            placeholder='JSON 格式，如 {"first":1,"firstFee":10,"next":1,"nextFee":2}'
+            :placeholder='$t("JSON 格式，如 {\"first\":1,\"firstFee\":10,\"next\":1,\"nextFee\":2}")'
           />
         </el-form-item>
-        <el-form-item v-if="freightForm.id" label="状态">
+        <el-form-item v-if="freightForm.id" :label='$t("状态")'>
           <el-radio-group v-model="freightForm.status">
-            <el-radio value="enabled">启用</el-radio>
-            <el-radio value="disabled">禁用</el-radio>
+            <el-radio value="enabled">{{ $t("启用") }}</el-radio>
+            <el-radio value="disabled">{{ $t("禁用") }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="freightDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="freightSaving" @click="handleFreightSubmit">保存</el-button>
+        <el-button @click="freightDialogVisible = false">{{ $t("取消") }}</el-button>
+        <el-button type="primary" :loading="freightSaving" @click="handleFreightSubmit">{{ $t("保存") }}</el-button>
       </template>
     </el-dialog>
   </div>

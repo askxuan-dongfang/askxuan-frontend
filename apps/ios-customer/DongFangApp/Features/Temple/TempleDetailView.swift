@@ -38,7 +38,7 @@ struct TempleDetailView: View {
             }
 
             if viewModel.isLoading, viewModel.temple == nil {
-                ProgressView("正在加载寺院信息")
+                ProgressView(L10n.text("正在加载寺院信息"))
                     .tint(Color.brandDefault)
                     .padding(AppSpacing.xl)
                     .background(Color.bgSecondary)
@@ -125,16 +125,16 @@ struct TempleDetailView: View {
     // MARK: - 信息栏
     private var infoBar: some View {
         VStack(alignment: .leading, spacing: AppSpacing.sm) {
-            Text(viewModel.temple?.name ?? templeName)
+            Text(L10n.lookup(viewModel.temple?.name ?? templeName))
                 .font(AppTypography.title(22))
                 .foregroundStyle(Color.accentDefault)
 
             HStack(spacing: AppSpacing.sm) {
-                Text(viewModel.temple?.region ?? "")
+                Text(L10n.lookup(viewModel.temple?.region ?? ""))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                 Text("·").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
-                Text(viewModel.temple?.sect ?? "")
+                Text(L10n.lookup(viewModel.temple?.sect ?? ""))
                     .font(AppTypography.micro.weight(.medium))
                     .foregroundStyle(Color.brandDefault)
                     .padding(.horizontal, 8).padding(.vertical, 2)
@@ -149,7 +149,7 @@ struct TempleDetailView: View {
             }
 
             if let desc = viewModel.temple?.description {
-                Text(desc)
+                Text(L10n.lookup(desc))
                     .font(AppTypography.body)
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(3)
@@ -169,7 +169,7 @@ struct TempleDetailView: View {
                     AppMotion.perform { viewModel.selectedTab = index }
                 } label: {
                     VStack(spacing: 6) {
-                        Text(title)
+                        Text(L10n.lookup(title))
                             .font(AppTypography.body.weight(isSelected ? .semibold : .regular))
                             .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                         Capsule()
@@ -200,12 +200,12 @@ struct TempleDetailView: View {
 
     private var basicInfoPanel: some View {
         VStack(spacing: 0) {
-            infoRow(label: "寺院名称", value: viewModel.temple?.name ?? templeName)
-            infoRow(label: "所属地区", value: viewModel.temple?.region ?? "—")
-            infoRow(label: "宗教类型", value: viewModel.temple?.type ?? "—")
-            infoRow(label: "所属教派", value: viewModel.temple?.sect ?? "—")
-            infoRow(label: "详细地址", value: viewModel.temple?.address ?? "—")
-            infoRow(label: "运营状态", value: viewModel.temple?.status ?? "正常", isLast: true)
+            infoRow(label: L10n.text("寺院名称"), value: viewModel.temple?.name ?? templeName)
+            infoRow(label: L10n.text("所属地区"), value: viewModel.temple?.region ?? "—")
+            infoRow(label: L10n.text("宗教类型"), value: viewModel.temple?.type ?? "—")
+            infoRow(label: L10n.text("所属教派"), value: viewModel.temple?.sect ?? "—")
+            infoRow(label: L10n.text("详细地址"), value: viewModel.temple?.address ?? "—")
+            infoRow(label: L10n.text("运营状态"), value: viewModel.temple?.status ?? "正常", isLast: true)
 
             if !viewModel.images.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -225,8 +225,8 @@ struct TempleDetailView: View {
 
     private func loadFailurePanel(_ message: String) -> some View {
         VStack(spacing: AppSpacing.md) {
-            DFEmptyState(icon: "exclamationmark.triangle", title: "寺院信息加载失败", subtitle: message)
-            Button("重新加载") {
+            DFEmptyState(icon: "exclamationmark.triangle", title: L10n.text("寺院信息加载失败"), subtitle: message)
+            Button(L10n.text("重新加载")) {
                 Task { await viewModel.load(id: templeId) }
             }
             .buttonStyle(.borderedProminent)
@@ -238,9 +238,9 @@ struct TempleDetailView: View {
     private func infoRow(label: String, value: String, isLast: Bool = false) -> some View {
         VStack(spacing: 0) {
             HStack(alignment: .top) {
-                Text(label).font(AppTypography.supporting).foregroundStyle(Color.textTertiary)
+                Text(L10n.lookup(label)).font(AppTypography.supporting).foregroundStyle(Color.textTertiary)
                 Spacer()
-                Text(value)
+                Text(L10n.lookup(value))
                     .font(AppTypography.body)
                     .foregroundStyle(Color.textPrimary)
                     .multilineTextAlignment(.trailing)
@@ -261,7 +261,7 @@ struct TempleDetailView: View {
 
     private var servicesPanel: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Text("寺院公共服务")
+            Text(L10n.text("寺院公共服务"))
                 .font(.cardTitle)
                 .foregroundStyle(Color.textPrimary)
                 .padding(.horizontal, AppSpacing.lg)
@@ -276,7 +276,7 @@ struct TempleDetailView: View {
                 }
                 .padding(.horizontal, AppSpacing.lg)
             } else {
-                DFEmptyState(icon: "calendar.badge.exclamationmark", title: "暂无可预约服务", subtitle: "以寺院实际开通项目为准")
+                DFEmptyState(icon: "calendar.badge.exclamationmark", title: L10n.text("暂无可预约服务"), subtitle: L10n.text("以寺院实际开通项目为准"))
             }
         }
     }
@@ -308,10 +308,10 @@ struct TempleDetailView: View {
             }
             .frame(width: 36, height: 36)
 
-            Text(service.serviceName)
+            Text(L10n.lookup(service.serviceName))
                 .font(AppTypography.body.weight(.semibold))
                 .foregroundStyle(Color.textPrimary)
-            Text("立即预约")
+            Text(L10n.text("立即预约"))
                 .font(AppTypography.supporting.weight(.semibold))
                 .foregroundStyle(Color.brandDefault)
         }
@@ -324,7 +324,7 @@ struct TempleDetailView: View {
 
     private var mastersPanel: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Text("驻寺大师")
+            Text(L10n.text("驻寺大师"))
                 .font(.cardTitle)
                 .foregroundStyle(Color.textPrimary)
                 .padding(.horizontal, AppSpacing.lg)
@@ -336,17 +336,17 @@ struct TempleDetailView: View {
                         NavigationLink(value: master) {
                             VStack(spacing: 6) {
                                 RemoteAvatar(urlString: master.avatar, size: 64)
-                                Text(master.dharmaName)
+                                Text(L10n.lookup(master.dharmaName))
                                     .font(AppTypography.supporting.weight(.semibold))
                                     .foregroundStyle(Color.textPrimary)
                                     .lineLimit(1)
-                                Text(master.position)
+                                Text(L10n.lookup(master.position))
                                     .font(AppTypography.micro)
                                     .foregroundStyle(Color.brandDefault)
                                     .padding(.horizontal, 8).padding(.vertical, 2)
                                     .background(Color.brandDefault.opacity(0.15))
                                     .clipShape(Capsule())
-                                Text(master.specialtiesText)
+                                Text(L10n.lookup(master.specialtiesText))
                                     .font(AppTypography.micro)
                                     .foregroundStyle(Color.textTertiary)
                                     .lineLimit(1)
@@ -363,7 +363,7 @@ struct TempleDetailView: View {
 
     private var productsPanel: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Text("文创法物")
+            Text(L10n.text("文创法物"))
                 .font(.cardTitle)
                 .foregroundStyle(Color.textPrimary)
                 .padding(.horizontal, AppSpacing.lg)
@@ -372,7 +372,7 @@ struct TempleDetailView: View {
             NavigationLink {
                 ShopView()
             } label: {
-                Label("浏览商城法物", systemImage: "bag")
+                Label(L10n.text("浏览商城法物"), systemImage: "bag")
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.brandDefault)
                     .frame(maxWidth: .infinity)

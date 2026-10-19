@@ -72,83 +72,83 @@ onMounted(() => {
 
 <template>
   <div class="page-wrap">
-    <PageHeader title="退货列表" subtitle="管理商品退货 / 换货申请" />
+    <PageHeader :title='$t("退货列表")' :subtitle='$t("管理商品退货 / 换货申请")' />
 
     <div class="df-card filter-bar">
       <el-form inline @submit.prevent="handleSearch">
-        <el-form-item label="退货状态">
-          <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 160px">
+        <el-form-item :label='$t("退货状态")'>
+          <el-select v-model="query.status" :placeholder='$t("全部状态")' clearable style="width: 160px">
             <el-option
               v-for="s in statusOptions"
               :key="s.value"
-              :label="s.label"
+              :label="$t(s.label)"
               :value="s.value"
             />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button type="primary" @click="handleSearch">{{ $t("查询") }}</el-button>
+          <el-button @click="handleReset">{{ $t("重置") }}</el-button>
         </el-form-item>
       </el-form>
     </div>
 
     <div v-if="loadError" class="ax-page-feedback is-error" role="status">
       <div class="ax-page-feedback__copy">
-        <div class="ax-page-feedback__title">退货列表加载失败</div>
-        <div class="ax-page-feedback__description">{{ loadError }}</div>
+        <div class="ax-page-feedback__title">{{ $t("退货列表加载失败") }}</div>
+        <div class="ax-page-feedback__description">{{ $t(loadError) }}</div>
       </div>
-      <el-button :loading="loading" @click="loadList">重试</el-button>
+      <el-button :loading="loading" @click="loadList">{{ $t("重试") }}</el-button>
     </div>
 
     <div class="df-card">
-      <div class="desktop-table"><el-table v-loading="loading" :data="list" style="width: 100%" empty-text="暂无退货单">
-        <el-table-column label="退货单号" prop="returnNo" width="200" />
-        <el-table-column label="原订单 ID" prop="orderId" width="120" />
-        <el-table-column label="类型" width="100">
+      <div class="desktop-table"><el-table v-loading="loading" :data="list" style="width: 100%" :empty-text='$t("暂无退货单")'>
+        <el-table-column :label='$t("退货单号")' prop="returnNo" width="200" />
+        <el-table-column :label='$t("原订单 ID")' prop="orderId" width="120" />
+        <el-table-column :label='$t("类型")' width="100">
           <template #default="{ row }">
             <el-tag size="small" :type="row.type === 'exchange' ? 'warning' : 'info'">
-              {{ row.type === 'exchange' ? '换货' : '退货' }}
+              {{ $t((row.type === 'exchange' ? $t('换货') : $t('退货'))) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="退款金额" width="130">
+        <el-table-column :label='$t("退款金额")' width="130">
           <template #default="{ row }">
-            <span class="price">{{ formatMoney(row.refundAmount) }}</span>
+            <span class="price">{{ $t(formatMoney(row.refundAmount)) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="120">
+        <el-table-column :label='$t("状态")' width="120">
           <template #default="{ row }">
             <el-tag :type="returnStatusType(row.status)" effect="light" round size="small">
-              {{ returnStatusLabel(row.status) }}
+              {{ $t(returnStatusLabel(row.status)) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="原因" prop="reason" min-width="200" show-overflow-tooltip />
-        <el-table-column label="申请时间" width="180">
-          <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
+        <el-table-column :label='$t("原因")' prop="reason" min-width="200" show-overflow-tooltip />
+        <el-table-column :label='$t("申请时间")' width="180">
+          <template #default="{ row }">{{ $t(formatDateTime(row.createTime)) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column :label='$t("操作")' width="120" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" size="small" @click="router.push(`/commerce/returns/${row.id}`)">详情</el-button>
+            <el-button text type="primary" size="small" @click="router.push(`/commerce/returns/${row.id}`)">{{ $t("详情") }}</el-button>
           </template>
         </el-table-column>
       </el-table></div>
 
-      <div class="mobile-task-list" aria-label="售后任务列表">
+      <div class="mobile-task-list" :aria-label='$t("售后任务列表")'>
         <button v-for="item in list" :key="item.id" class="mobile-task-card" type="button" @click="router.push(`/commerce/returns/${item.id}`)">
           <span class="mobile-task-card__head">
-            <strong>{{ item.returnNo }}</strong>
-            <el-tag :type="returnStatusType(item.status)" effect="light" round size="small">{{ returnStatusLabel(item.status) }}</el-tag>
+            <strong>{{ $t(item.returnNo) }}</strong>
+            <el-tag :type="returnStatusType(item.status)" effect="light" round size="small">{{ $t(returnStatusLabel(item.status)) }}</el-tag>
           </span>
-          <span class="mobile-task-card__meta">{{ item.type === 'exchange' ? '换货' : '退货' }} · {{ formatDateTime(item.createTime) }}</span>
-          <span class="mobile-task-card__foot"><span>{{ item.reason || '未填写原因' }}</span><b>{{ formatMoney(item.refundAmount) }}</b></span>
+          <span class="mobile-task-card__meta">{{ $t((item.type === 'exchange' ? $t('换货') : $t('退货'))) }} · {{ $t(formatDateTime(item.createTime)) }}</span>
+          <span class="mobile-task-card__foot"><span>{{ $t((item.reason || $t('未填写原因'))) }}</span><b>{{ $t(formatMoney(item.refundAmount)) }}</b></span>
         </button>
-        <div v-if="!loading && !list.length && !loadError" class="mobile-task-empty">当前筛选下暂无售后任务</div>
+        <div v-if="!loading && !list.length && !loadError" class="mobile-task-empty">{{ $t("当前筛选下暂无售后任务") }}</div>
         <div v-if="total > (query.size || 20)" class="mobile-task-pager">
-          <el-button :disabled="(query.page || 1) <= 1" @click="handlePageChange((query.page || 1) - 1)">上一页</el-button>
-          <span>第 {{ query.page || 1 }} 页</span>
-          <el-button :disabled="(query.page || 1) * (query.size || 20) >= total" @click="handlePageChange((query.page || 1) + 1)">下一页</el-button>
+          <el-button :disabled="(query.page || 1) <= 1" @click="handlePageChange((query.page || 1) - 1)">{{ $t("上一页") }}</el-button>
+          <span>{{ $t("第 ") }}{{ $t((query.page || 1)) }}{{ $t(" 页") }}</span>
+          <el-button :disabled="(query.page || 1) * (query.size || 20) >= total" @click="handlePageChange((query.page || 1) + 1)">{{ $t("下一页") }}</el-button>
         </div>
       </div>
 

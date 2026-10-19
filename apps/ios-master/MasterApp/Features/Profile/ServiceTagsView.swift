@@ -27,13 +27,13 @@ struct ServiceTagsView: View {
     var body: some View {
         Group {
             if isLoading && myTags.isEmpty {
-                ProgressView("正在加载服务标签")
+                ProgressView(L10n.text("正在加载服务标签"))
                     .tint(Color.accentDefault)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: AppSpacing.md) {
-                        Text("勾选你提供的服务并定价；取消勾选即下架该标签。")
+                        Text(L10n.text("勾选你提供的服务并定价；取消勾选即下架该标签。"))
                             .font(AppTypography.caption)
                             .foregroundStyle(Color.textTertiary)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -50,7 +50,7 @@ struct ServiceTagsView: View {
             }
         }
         .background(Color.bgPrimary)
-        .navigationTitle("服务标签")
+        .navigationTitle(L10n.text("服务标签"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -60,17 +60,17 @@ struct ServiceTagsView: View {
                     if isSaving {
                         ProgressView().tint(Color.accentDefault)
                     } else {
-                        Text("保存").font(AppTypography.body.weight(.semibold))
+                        Text(L10n.text("保存")).font(AppTypography.body.weight(.semibold))
                             .foregroundStyle(Color.accentDefault)
                     }
                 }
                 .disabled(isSaving)
             }
         }
-        .alert("保存结果", isPresented: $showSaveMessage) {
-            Button("知道了", role: .cancel) {}
+        .alert(L10n.text("保存结果"), isPresented: $showSaveMessage) {
+            Button(L10n.text("知道了"), role: .cancel) {}
         } message: {
-            Text(saveMessage)
+            Text(L10n.lookup(saveMessage))
         }
         .task { await load() }
     }
@@ -92,9 +92,9 @@ struct ServiceTagsView: View {
             .buttonStyle(CardPressButtonStyle())
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.name).font(AppTypography.body.weight(.medium))
+                Text(L10n.lookup(item.name)).font(AppTypography.body.weight(.medium))
                     .foregroundStyle(Color.textPrimary)
-                Text(item.code).font(.caption2).foregroundStyle(Color.textTertiary)
+                Text(L10n.lookup(item.code)).font(.caption2).foregroundStyle(Color.textTertiary)
             }
 
             Spacer()
@@ -104,7 +104,7 @@ struct ServiceTagsView: View {
                     Text("¥")
                         .font(AppTypography.supporting)
                         .foregroundStyle(Color.textSecondary)
-                    TextField("价格", text: Binding(
+                    TextField(L10n.text("价格"), text: Binding(
                         get: { myTags[item.code].map { String(format: "%.0f", $0) } ?? "" },
                         set: { myTags[item.code] = Double($0) ?? 0 }
                     ))

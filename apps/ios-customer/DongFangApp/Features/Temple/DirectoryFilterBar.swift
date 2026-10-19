@@ -37,27 +37,27 @@ struct DirectoryFilterBar: View {
                         option(item.name, code: item.code, selected: region) { region = item.code }
                     }
                 }.padding(.horizontal, 16)
-            }.accessibilityElement(children: .contain).accessibilityLabel("地区筛选")
+            }.accessibilityElement(children: .contain).accessibilityLabel(L10n.text("地区筛选"))
             HStack {
                 Menu {
-                    Button("全部宗派 / 信俗") { tradition = "" }
-                    ForEach(catalog.traditions) { item in Button(item.name) { tradition = item.code } }
+                    Button(L10n.text("全部宗派 / 信俗")) { tradition = "" }
+                    ForEach(catalog.traditions) { item in Button(L10n.lookup(item.name)) { tradition = item.code } }
                 } label: {
-                    Label(catalog.traditions.first { $0.code == tradition }?.name ?? "宗派 / 信俗", systemImage: "line.3.horizontal.decrease")
+                    Label(L10n.lookup(catalog.traditions.first { $0.code == tradition }?.name ?? L10n.text("宗派 / 信俗")), systemImage: "line.3.horizontal.decrease")
                         .font(.subheadline).frame(minHeight: 40)
-                }.accessibilityLabel("宗派与信俗筛选")
+                }.accessibilityLabel(L10n.text("宗派与信俗筛选"))
                 Spacer()
                 if !region.isEmpty || !tradition.isEmpty {
-                    Button("清除") { AppMotion.perform { region = ""; tradition = "" } }.font(.subheadline).frame(minHeight: 40)
+                    Button(L10n.text("清除")) { AppMotion.perform { region = ""; tradition = "" } }.font(.subheadline).frame(minHeight: 40)
                 }
-                if let error = catalog.error { Button(error + "，重试") { Task { await catalog.load() } }.font(.caption) }
+                if let error = catalog.error { Button(L10n.lookup(error + L10n.text("，重试"))) { Task { await catalog.load() } }.font(.caption) }
             }.padding(.horizontal, 16)
         }.padding(.vertical, 4).background(Color.bgPrimary)
             .task { await catalog.load() }
     }
     private func option(_ title: String, code: String, selected: String, action: @escaping () -> Void) -> some View {
         Button { AppMotion.perform { action() } } label: {
-            Text(title).font(.subheadline).padding(.horizontal, 14).frame(minHeight: 40)
+            Text(L10n.lookup(title)).font(.subheadline).padding(.horizontal, 14).frame(minHeight: 40)
                 .background(code == selected ? Color.brandDefault : Color.bgSecondary, in: Capsule())
                 .foregroundStyle(code == selected ? .white : Color.textSecondary)
         }.buttonStyle(CardPressButtonStyle())

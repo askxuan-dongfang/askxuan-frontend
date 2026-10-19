@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 const props = withDefaults(defineProps<{ section?: 'models' | 'search'; embedded?: boolean }>(), { section: 'models', embedded: false })
 import { computed, onMounted, onBeforeUnmount, reactive, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+
 import { Connection, Check, Refresh, Lock, ArrowRight } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { aiSettingsApi, type AIProviderSettings, type AIProviderUpdate, type AIModelOption } from '@/api/aiSettings'
@@ -68,9 +71,9 @@ async function testConnection() {
 }
 async function save() {
   const probeNotice = isVolcengine.value ? '保存前会对每个已填模型发送一次固定测试请求，图片模型附带测试图片，可能消耗少量 Token。' : '保存前会再次验证连接与模型。'
-  try { await ElMessageBox.confirm(probeNotice + '生效后，新问事和新报告将使用这份配置，正在生成的回答不受影响。', '保存并生效', { confirmButtonText: '确认生效', cancelButtonText: '继续编辑', type: 'info' }) } catch { return }
+  try { await ElMessageBox.confirm((probeNotice + uiText('生效后，新问事和新报告将使用这份配置，正在生成的回答不受影响。')), uiText('保存并生效'), { confirmButtonText: uiText('确认生效'), cancelButtonText: uiText('继续编辑'), type: 'info' }) } catch { return }
   saving.value = true
-  try { useSaved(await aiSettingsApi.save({ ...form, enabledModels: [...form.enabledModels] })); ElMessage.success('配置已生效，新的请求将使用新设置') }
+  try { useSaved(await aiSettingsApi.save({ ...form, enabledModels: [...form.enabledModels] })); ElMessage.success(uiText('配置已生效，新的请求将使用新设置')) }
   catch { /* client displays the sanitized server error; keep the draft for correction */ }
   finally { saving.value = false }
 }
@@ -78,7 +81,7 @@ function reset() { if (saved.value) useSaved(saved.value); connectionChanged() }
 onBeforeRouteLeave(async to => {
   if (['/ai/connections/legacy','/ai/connections/search'].includes(to.path)) return true
   if (!dirty.value || loading.value || !saved.value) return true
-  try { await ElMessageBox.confirm('当前修改尚未保存，离开后将丢弃。', '离开设置页面', { confirmButtonText: '离开', cancelButtonText: '继续编辑' }); return true } catch { return false }
+  try { await ElMessageBox.confirm(uiText('当前修改尚未保存，离开后将丢弃。'), uiText('离开设置页面'), { confirmButtonText: uiText('离开'), cancelButtonText: uiText('继续编辑') }); return true } catch { return false }
 })
 async function testSearch(target: 'primary' | 'fallback' = 'primary') {
  searchTesting.value=true;searchResult.value='';searchError.value=''
@@ -92,114 +95,114 @@ onMounted(load)
 
 <template>
   <div class="dfx-page ai-settings" :class="{ 'ai-settings-embedded': props.embedded }" v-loading="loading">
-    <PageHeader v-if="!props.embedded" title="AI 模型设置" subtitle="管理 AI 问事与专题报告使用的大模型连接" />
-    <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon><el-button text @click="load">重新加载</el-button></el-alert>
+    <PageHeader v-if="!props.embedded" :title='$t("AI 模型设置")' :subtitle='$t("管理 AI 问事与专题报告使用的大模型连接")' />
+    <el-alert v-if="loadError" :title="$t(loadError)" type="error" :closable="false" show-icon><el-button text @click="load">{{ $t("重新加载") }}</el-button></el-alert>
     <template v-else-if="saved">
-      <el-alert v-if="!saved.writable" title="当前为只读模式，服务器尚未启用配置持久化" type="warning" :closable="false" show-icon class="storage-warning" />
+      <el-alert v-if="!saved.writable" :title='$t("当前为只读模式，服务器尚未启用配置持久化")' type="warning" :closable="false" show-icon class="storage-warning" />
       <div class="ai-settings-layout">
         <div class="ai-settings-main">
           <section v-show="props.section === 'search'" class="ai-setting-card">
- <div class="ai-section-heading"><div><h2>联网搜索</h2><p>接入独立搜索服务，供 Harness 按需检索公开网页。仅在智能体已发布允许联网、且用户开启联网时使用。</p></div></div>
+ <div class="ai-section-heading"><div><h2>{{ $t("联网搜索") }}</h2><p>{{ $t("接入独立搜索服务，供 Harness 按需检索公开网页。仅在智能体已发布允许联网、且用户开启联网时使用。") }}</p></div></div>
  <el-form label-position="top" :disabled="busy || !saved.writable" @submit.prevent>
- <el-form-item label="主用搜索服务"><el-select v-model="form.webSearchProvider" @change="form.webSearchApiKey='';searchResult='';searchError=''" aria-label="搜索服务"><el-option label="停用" value="disabled"/><el-option v-for="p in searchProviders" :key="p.value" :label="p.label" :value="p.value"/></el-select></el-form-item>
- <el-form-item label="搜索 API Key"><el-input v-model="form.webSearchApiKey" type="password" autocomplete="new-password" show-password :disabled="form.webSearchProvider==='disabled'" :placeholder="saved.hasWebSearchKey?'留空保留；更换服务须填写新密钥':'尚未配置，请填写搜索服务密钥'" @input="searchResult='';searchError=''"/></el-form-item>
- <el-checkbox v-model="form.clearWebSearchKey">清除已保存的搜索密钥</el-checkbox>
- <p class="ai-field-hint">密钥加密保存在服务器。DeepSeek 密钥不能代替搜索密钥。连接测试会向所选搜索服务提交一次固定公共查询，可能消耗搜索额度。</p>
- <el-button :loading="searchTesting" :disabled="form.webSearchProvider==='disabled'||form.clearWebSearchKey" @click="testSearch('primary')">测试搜索连接</el-button>
+ <el-form-item :label='$t("主用搜索服务")'><el-select v-model="form.webSearchProvider" @change="form.webSearchApiKey='';searchResult='';searchError=''" :aria-label='$t("搜索服务")'><el-option :label='$t("停用")' value="disabled"/><el-option v-for="p in searchProviders" :key="p.value" :label="$t(p.label)" :value="p.value"/></el-select></el-form-item>
+ <el-form-item :label='$t("搜索 API Key")'><el-input v-model="form.webSearchApiKey" type="password" autocomplete="new-password" show-password :disabled="form.webSearchProvider==='disabled'" :placeholder="$t((saved.hasWebSearchKey ? $t('留空保留；更换服务须填写新密钥') : $t('尚未配置，请填写搜索服务密钥')))" @input="searchResult='';searchError=''"/></el-form-item>
+ <el-checkbox v-model="form.clearWebSearchKey">{{ $t("清除已保存的搜索密钥") }}</el-checkbox>
+ <p class="ai-field-hint">{{ $t("密钥加密保存在服务器。DeepSeek 密钥不能代替搜索密钥。连接测试会向所选搜索服务提交一次固定公共查询，可能消耗搜索额度。") }}</p>
+ <el-button :loading="searchTesting" :disabled="form.webSearchProvider==='disabled'||form.clearWebSearchKey" @click="testSearch('primary')">{{ $t("测试搜索连接") }}</el-button>
  <el-divider />
- <el-form-item label="备用搜索服务"><el-select v-model="form.webSearchFallbackProvider" aria-label="备用搜索服务" @change="form.webSearchFallbackApiKey='';searchResult='';searchError=''"><el-option label="不使用备用" value="disabled"/><el-option v-for="p in searchProviders" :key="p.value" :label="p.label" :value="p.value" :disabled="p.value===form.webSearchProvider"/></el-select></el-form-item>
- <el-form-item label="备用 API Key"><el-input v-model="form.webSearchFallbackApiKey" type="password" autocomplete="new-password" :disabled="form.webSearchFallbackProvider==='disabled'" :placeholder="saved.hasWebSearchFallbackKey?'留空保留；更换服务须填写新密钥':'尚未配置备用密钥'"/></el-form-item>
- <el-checkbox v-model="form.clearWebSearchFallbackKey">清除已保存的备用密钥</el-checkbox>
- <p class="ai-field-hint">主服务连接、额度或响应异常时，最多切换备用服务一次；没有搜索结果不会重复消费。停用主服务即关闭整条联网链路。腾讯云请使用 WSA 服务 API Key，不是 SecretId / SecretKey。</p>
- <el-button :loading="searchTesting" :disabled="form.webSearchFallbackProvider==='disabled'||form.clearWebSearchFallbackKey" @click="testSearch('fallback')">测试备用连接</el-button>
+ <el-form-item :label='$t("备用搜索服务")'><el-select v-model="form.webSearchFallbackProvider" :aria-label='$t("备用搜索服务")' @change="form.webSearchFallbackApiKey='';searchResult='';searchError=''"><el-option :label='$t("不使用备用")' value="disabled"/><el-option v-for="p in searchProviders" :key="p.value" :label="$t(p.label)" :value="p.value" :disabled="p.value===form.webSearchProvider"/></el-select></el-form-item>
+ <el-form-item :label='$t("备用 API Key")'><el-input v-model="form.webSearchFallbackApiKey" type="password" autocomplete="new-password" :disabled="form.webSearchFallbackProvider==='disabled'" :placeholder="$t((saved.hasWebSearchFallbackKey ? $t('留空保留；更换服务须填写新密钥') : $t('尚未配置备用密钥')))"/></el-form-item>
+ <el-checkbox v-model="form.clearWebSearchFallbackKey">{{ $t("清除已保存的备用密钥") }}</el-checkbox>
+ <p class="ai-field-hint">{{ $t("主服务连接、额度或响应异常时，最多切换备用服务一次；没有搜索结果不会重复消费。停用主服务即关闭整条联网链路。腾讯云请使用 WSA 服务 API Key，不是 SecretId / SecretKey。") }}</p>
+ <el-button :loading="searchTesting" :disabled="form.webSearchFallbackProvider==='disabled'||form.clearWebSearchFallbackKey" @click="testSearch('fallback')">{{ $t("测试备用连接") }}</el-button>
  <el-divider />
  <div v-if="form.webSearchOptions" class="ai-form-grid">
- <el-form-item label="每轮最多搜索次数"><el-input-number v-model="form.webSearchOptions.maxSearches" aria-label="每轮最多搜索次数" :min="1" :max="4"/></el-form-item>
- <el-form-item label="按需读取来源正文"><el-switch v-model="form.webSearchOptions.readPages" aria-label="按需读取来源正文"/><span class="ai-field-hint">仅可读取本轮搜索已返回的公开网页，每轮最多两页；与搜索共用 Harness 工具预算。</span></el-form-item>
- <el-form-item label="每次最多来源数"><el-input-number v-model="form.webSearchOptions.maxResults" aria-label="每次最多来源数" :min="1" :max="10"/><span class="ai-field-hint">单次检索最多调用两个引擎；每轮受 Harness 工具次数预算约束。</span></el-form-item>
- <el-form-item label="时间范围"><el-select v-model="form.webSearchOptions.freshness" placeholder="不限" aria-label="搜索时间范围"><el-option label="不限" value=""/><el-option label="最近一天" value="day"/><el-option label="最近一周" value="week"/><el-option label="最近一月" value="month"/><el-option label="最近一年" value="year"/></el-select></el-form-item>
- <el-form-item label="语言偏好（Brave）"><el-select v-model="form.webSearchOptions.language" placeholder="自动" aria-label="搜索语言"><el-option label="自动" value=""/><el-option label="简体中文" value="zh-hans"/><el-option label="繁体中文" value="zh-hant"/><el-option label="英语" value="en"/></el-select></el-form-item>
- <el-form-item label="地区偏好（Brave）"><el-select v-model="form.webSearchOptions.country" placeholder="默认" aria-label="搜索地区"><el-option label="默认" value=""/><el-option label="中国大陆" value="CN"/><el-option label="中国香港" value="HK"/><el-option label="中国台湾" value="TW"/><el-option label="美国" value="US"/></el-select></el-form-item>
- <el-form-item label="只保留这些站点"><el-input v-model="form.webSearchOptions.includeDomains" type="textarea" placeholder="例：nlc.cn，每行或逗号分隔，最多 10 个域名"/></el-form-item>
- <el-form-item label="排除这些站点"><el-input v-model="form.webSearchOptions.excludeDomains" type="textarea" placeholder="域名不含 https://、路径或通配符"/></el-form-item>
+ <el-form-item :label='$t("每轮最多搜索次数")'><el-input-number v-model="form.webSearchOptions.maxSearches" :aria-label='$t("每轮最多搜索次数")' :min="1" :max="4"/></el-form-item>
+ <el-form-item :label='$t("按需读取来源正文")'><el-switch v-model="form.webSearchOptions.readPages" :aria-label='$t("按需读取来源正文")'/><span class="ai-field-hint">{{ $t("仅可读取本轮搜索已返回的公开网页，每轮最多两页；与搜索共用 Harness 工具预算。") }}</span></el-form-item>
+ <el-form-item :label='$t("每次最多来源数")'><el-input-number v-model="form.webSearchOptions.maxResults" :aria-label='$t("每次最多来源数")' :min="1" :max="10"/><span class="ai-field-hint">{{ $t("单次检索最多调用两个引擎；每轮受 Harness 工具次数预算约束。") }}</span></el-form-item>
+ <el-form-item :label='$t("时间范围")'><el-select v-model="form.webSearchOptions.freshness" :placeholder='$t("不限")' :aria-label='$t("搜索时间范围")'><el-option :label='$t("不限")' value=""/><el-option :label='$t("最近一天")' value="day"/><el-option :label='$t("最近一周")' value="week"/><el-option :label='$t("最近一月")' value="month"/><el-option :label='$t("最近一年")' value="year"/></el-select></el-form-item>
+ <el-form-item :label='$t("语言偏好（Brave）")'><el-select v-model="form.webSearchOptions.language" :placeholder='$t("自动")' :aria-label='$t("搜索语言")'><el-option :label='$t("自动")' value=""/><el-option :label='$t("简体中文")' value="zh-hans"/><el-option :label='$t("繁体中文")' value="zh-hant"/><el-option :label='$t("英语")' value="en"/></el-select></el-form-item>
+ <el-form-item :label='$t("地区偏好（Brave）")'><el-select v-model="form.webSearchOptions.country" :placeholder='$t("默认")' :aria-label='$t("搜索地区")'><el-option :label='$t("默认")' value=""/><el-option :label='$t("中国大陆")' value="CN"/><el-option :label='$t("中国香港")' value="HK"/><el-option :label='$t("中国台湾")' value="TW"/><el-option :label='$t("美国")' value="US"/></el-select></el-form-item>
+ <el-form-item :label='$t("只保留这些站点")'><el-input v-model="form.webSearchOptions.includeDomains" type="textarea" :placeholder='$t("例：nlc.cn，每行或逗号分隔，最多 10 个域名")'/></el-form-item>
+ <el-form-item :label='$t("排除这些站点")'><el-input v-model="form.webSearchOptions.excludeDomains" type="textarea" :placeholder='$t("域名不含 https://、路径或通配符")'/></el-form-item>
  </div>
- <p class="ai-field-hint">站点规则会校验最终来源；供应商不支持的站点组合在结果返回后过滤，条数可能减少。语言与地区参数仅用于 Brave，其他服务依据问题语言检索。搜索返回摘要，不会自动导入知识库或 Wiki。</p>
- <el-alert v-if="searchResult" :title="searchResult" type="success" :closable="false"/><el-alert v-if="searchError" :title="searchError" type="error" :closable="false"/>
+ <p class="ai-field-hint">{{ $t("站点规则会校验最终来源；供应商不支持的站点组合在结果返回后过滤，条数可能减少。语言与地区参数仅用于 Brave，其他服务依据问题语言检索。搜索返回摘要，不会自动导入知识库或 Wiki。") }}</p>
+ <el-alert v-if="searchResult" :title="$t(searchResult)" type="success" :closable="false"/><el-alert v-if="searchError" :title="$t(searchError)" type="error" :closable="false"/>
  </el-form></section>
  <section v-show="props.section === 'models'" class="ai-setting-card">
-            <div class="ai-section-heading"><span class="ai-step">01</span><div><h2>连接大模型</h2><p>密钥由服务器保管，客户端通过平台调用。</p></div><el-icon class="ai-heading-icon"><Connection /></el-icon></div>
+            <div class="ai-section-heading"><span class="ai-step">01</span><div><h2>{{ $t("连接大模型") }}</h2><p>{{ $t("密钥由服务器保管，客户端通过平台调用。") }}</p></div><el-icon class="ai-heading-icon"><Connection /></el-icon></div>
             <el-form label-position="top" :disabled="busy || !saved.writable" @submit.prevent>
               <el-form-item label="Provider">
-                <el-select v-model="form.provider" aria-label="Provider" @change="changeProvider"><el-option label="DeepSeek · 官方接口" value="deepseek" /><el-option label="火山引擎 · 火山方舟" value="volcengine" /><el-option label="OpenAI 兼容接口" value="openai_compatible" /><el-option v-if="form.provider === 'mock'" label="本地模拟（当前配置）" value="mock" disabled /></el-select>
+                <el-select v-model="form.provider" aria-label="Provider" @change="changeProvider"><el-option :label='$t("DeepSeek · 官方接口")' value="deepseek" /><el-option :label='$t("火山引擎 · 火山方舟")' value="volcengine" /><el-option :label='$t("OpenAI 兼容接口")' value="openai_compatible" /><el-option v-if="form.provider === 'mock'" :label='$t("本地模拟（当前配置）")' value="mock" disabled /></el-select>
               </el-form-item>
-              <el-form-item v-if="isVolcengine" label="火山接入方式">
-                <el-select :model-value="isAgentPlan ? 'plan' : 'model'" aria-label="火山接入方式" @change="changeVolcengineService"><el-option label="模型服务 · 按量计费" value="model" /><el-option label="Agent Plan · 套餐额度" value="plan" /></el-select>
-                <span class="ai-field-hint">套餐使用 /api/plan/v3；普通 /api/v3 使用模型服务额度，可能产生额外费用。切换接入方式后需重新填写对应密钥。</span>
+              <el-form-item v-if="isVolcengine" :label='$t("火山接入方式")'>
+                <el-select :model-value="isAgentPlan ? 'plan' : 'model'" :aria-label='$t("火山接入方式")' @change="changeVolcengineService"><el-option :label='$t("模型服务 · 按量计费")' value="model" /><el-option :label='$t("Agent Plan · 套餐额度")' value="plan" /></el-select>
+                <span class="ai-field-hint">{{ $t("套餐使用 /api/plan/v3；普通 /api/v3 使用模型服务额度，可能产生额外费用。切换接入方式后需重新填写对应密钥。") }}</span>
               </el-form-item>
-              <el-form-item label="接口地址"><el-input v-model="form.baseUrl" aria-label="接口地址" placeholder="https://api.deepseek.com" :disabled="form.provider === 'deepseek'" @input="connectionChanged" /><span class="ai-field-hint">填写 API 根地址，不包含 /chat/completions。自定义接口支持公网 HTTPS。</span></el-form-item>
-              <el-alert v-if="isVolcengine" :title="isAgentPlan ? '使用 Agent Plan 套餐 API Key，填写套餐支持的 Model Name。ark-code-latest 跟随火山控制台所选模型；切换模型后请重新测试，图片能力以实际所选模型为准。' : '使用火山方舟模型服务的 API Key，并在下方填写已开通的 Model ID 或推理接入点 ID（ep-...）。接口地址应与接入点所在地域一致。'" type="info" :closable="false" show-icon />
+              <el-form-item :label='$t("接口地址")'><el-input v-model="form.baseUrl" :aria-label='$t("接口地址")' placeholder="https://api.deepseek.com" :disabled="form.provider === 'deepseek'" @input="connectionChanged" /><span class="ai-field-hint">{{ $t("填写 API 根地址，不包含 /chat/completions。自定义接口支持公网 HTTPS。") }}</span></el-form-item>
+              <el-alert v-if="isVolcengine" :title="$t((isAgentPlan ? $t('使用 Agent Plan 套餐 API Key，填写套餐支持的 Model Name。ark-code-latest 跟随火山控制台所选模型；切换模型后请重新测试，图片能力以实际所选模型为准。') : $t('使用火山方舟模型服务的 API Key，并在下方填写已开通的 Model ID 或推理接入点 ID（ep-...）。接口地址应与接入点所在地域一致。')))" type="info" :closable="false" show-icon />
               <el-form-item label="API Key">
-                <el-input v-model="form.apiKey" aria-label="API Key" type="password" autocomplete="new-password" :placeholder="saved.hasApiKey ? '已配置 · 留空保留现有密钥' : '填写 Provider API Key'" @input="connectionChanged" />
-                <span class="ai-field-hint"><el-icon><Lock /></el-icon> {{ saved.hasApiKey ? '现有密钥不会回显；变更接口地址时，请同时填写新密钥。' : '密钥加密保存，不会发送给 H5 或 iOS 客户端。' }}</span>
+                <el-input v-model="form.apiKey" aria-label="API Key" type="password" autocomplete="new-password" :placeholder="$t((saved.hasApiKey ? $t('已配置 · 留空保留现有密钥') : $t('填写 Provider API Key')))" @input="connectionChanged" />
+                <span class="ai-field-hint"><el-icon><Lock /></el-icon> {{ $t((saved.hasApiKey ? $t('现有密钥不会回显；变更接口地址时，请同时填写新密钥。') : $t('密钥加密保存，不会发送给 H5 或 iOS 客户端。'))) }}</span>
               </el-form-item>
-              <div class="ai-test-row"><el-button :icon="Connection" :loading="testing" @click="testConnection">{{ isVolcengine ? '测试已填模型连接' : '测试连接与获取模型' }}</el-button><span class="ai-field-hint">{{ isVolcengine ? '对每个已填模型发送固定测试文本；图片模型附带测试图片。可能消耗少量 Token，不发送用户问事内容。' : '仅读取模型列表，不发送问事内容。' }}</span></div>
+              <div class="ai-test-row"><el-button :icon="Connection" :loading="testing" @click="testConnection">{{ $t((isVolcengine ? $t('测试已填模型连接') : $t('测试连接与获取模型'))) }}</el-button><span class="ai-field-hint">{{ $t((isVolcengine ? $t('对每个已填模型发送固定测试文本；图片模型附带测试图片。可能消耗少量 Token，不发送用户问事内容。') : $t('仅读取模型列表，不发送问事内容。'))) }}</span></div>
             </el-form>
-            <div v-if="tested" class="ai-connection-result" role="status"><el-icon><Check /></el-icon><div><strong>连接成功</strong><span>{{ isVolcengine ? '已验证' : '发现' }} {{ models.length }} 个可用模型，可以继续设置。</span></div></div>
-            <el-alert v-if="testError" :title="testError" type="error" :closable="false" class="ai-test-error" show-icon />
+            <div v-if="tested" class="ai-connection-result" role="status"><el-icon><Check /></el-icon><div><strong>{{ $t("连接成功") }}</strong><span>{{ $t((isVolcengine ? $t('已验证') : $t('发现'))) }} {{ $t(models.length) }}{{ $t(" 个可用模型，可以继续设置。") }}</span></div></div>
+            <el-alert v-if="testError" :title="$t(testError)" type="error" :closable="false" class="ai-test-error" show-icon />
           </section>
 
           <section v-show="props.section === 'models'" class="ai-setting-card">
-            <div class="ai-section-heading"><span class="ai-step">02</span><div><h2>模型与生成偏好</h2><p>默认用于新问事；用户也可选择平台开放的模型。</p></div></div>
+            <div class="ai-section-heading"><span class="ai-step">02</span><div><h2>{{ $t("模型与生成偏好") }}</h2><p>{{ $t("默认用于新问事；用户也可选择平台开放的模型。") }}</p></div></div>
             <el-form label-position="top" :disabled="busy || !saved.writable" @submit.prevent>
               <div class="ai-form-grid">
-                <el-form-item label="默认模型">
-                  <el-input v-if="isVolcengine" v-model.trim="form.defaultModel" aria-label="默认模型" :placeholder="isAgentPlan ? '套餐 Model Name，例如 ark-code-latest' : 'Model ID 或 ep-...'" @input="modelSelectionChanged" />
-                  <el-select v-else v-model="form.defaultModel" aria-label="默认模型" filterable allow-create default-first-option placeholder="先测试连接，或输入模型 ID"><el-option v-for="m in models" :key="m.id" :label="m.name" :value="m.id" /></el-select>
+                <el-form-item :label='$t("默认模型")'>
+                  <el-input v-if="isVolcengine" v-model.trim="form.defaultModel" :aria-label='$t("默认模型")' :placeholder="$t((isAgentPlan ? $t('套餐 Model Name，例如 ark-code-latest') : $t('Model ID 或 ep-...')))" @input="modelSelectionChanged" />
+                  <el-select v-else v-model="form.defaultModel" :aria-label='$t("默认模型")' filterable allow-create default-first-option :placeholder='$t("先测试连接，或输入模型 ID")'><el-option v-for="m in models" :key="m.id" :label="$t(m.name)" :value="m.id" /></el-select>
                 </el-form-item>
-                <el-form-item label="图片模型">
-                  <el-input v-if="isVolcengine" v-model.trim="form.visionModel" aria-label="图片模型" clearable :placeholder="isAgentPlan ? '支持图片的套餐 Model Name（可选）' : '支持图片的 Model ID 或 ep-...（可选）'" @input="modelSelectionChanged" />
-                  <el-select v-else v-model="form.visionModel" aria-label="图片模型" clearable filterable allow-create placeholder="不设置图片路由"><el-option v-for="m in visionOptions" :key="m.id" :label="m.name" :value="m.id" /></el-select>
-                  <span class="ai-field-hint">旧版本客户端发送图片时使用；请确认供应商支持图片输入。</span>
+                <el-form-item :label='$t("图片模型")'>
+                  <el-input v-if="isVolcengine" v-model.trim="form.visionModel" :aria-label='$t("图片模型")' clearable :placeholder="$t((isAgentPlan ? $t('支持图片的套餐 Model Name（可选）') : $t('支持图片的 Model ID 或 ep-...（可选）')))" @input="modelSelectionChanged" />
+                  <el-select v-else v-model="form.visionModel" :aria-label='$t("图片模型")' clearable filterable allow-create :placeholder='$t("不设置图片路由")'><el-option v-for="m in visionOptions" :key="m.id" :label="$t(m.name)" :value="m.id" /></el-select>
+                  <span class="ai-field-hint">{{ $t("旧版本客户端发送图片时使用；请确认供应商支持图片输入。") }}</span>
                 </el-form-item>
               </div>
-              <el-form-item label="向用户开放的模型">
-                <el-select v-model="form.enabledModels" aria-label="向用户开放的模型" multiple filterable allow-create default-first-option :collapse-tags="false" :placeholder="isAgentPlan ? '填写套餐 Model Name，按回车添加' : isVolcengine ? '填写 Model ID 或 ep-...，按回车添加' : '留空：开放供应商当前全部可用模型'" @change="modelSelectionChanged"><el-option v-for="m in models" :key="m.id" :label="m.name" :value="m.id" /></el-select>
-                <span class="ai-field-hint">{{ isVolcengine ? '留空时仅开放上方已填的默认模型和图片模型。添加多个模型时，须包含默认模型与图片模型；每个 ID 都会验证后再保存。' : '默认模型与图片模型需包含在选择范围内。留空时，后续新增模型自动进入可选列表。' }}</span>
+              <el-form-item :label='$t("向用户开放的模型")'>
+                <el-select v-model="form.enabledModels" :aria-label='$t("向用户开放的模型")' multiple filterable allow-create default-first-option :collapse-tags="false" :placeholder="$t((isAgentPlan ? $t('填写套餐 Model Name，按回车添加') : (isVolcengine ? $t('填写 Model ID 或 ep-...，按回车添加') : $t('留空：开放供应商当前全部可用模型'))))" @change="modelSelectionChanged"><el-option v-for="m in models" :key="m.id" :label="$t(m.name)" :value="m.id" /></el-select>
+                <span class="ai-field-hint">{{ $t((isVolcengine ? $t('留空时仅开放上方已填的默认模型和图片模型。添加多个模型时，须包含默认模型与图片模型；每个 ID 都会验证后再保存。') : $t('默认模型与图片模型需包含在选择范围内。留空时，后续新增模型自动进入可选列表。'))) }}</span>
               </el-form-item>
               <div class="ai-form-grid">
-                <el-form-item label="思考模式"><span v-if="isAgentPlan" class="ai-field-hint">跟随模型默认设置（部分套餐模型必须思考）</span><div v-else class="ai-switch-row"><el-switch v-model="form.thinkingEnabled" aria-label="思考模式" /><span>{{ form.thinkingEnabled ? '开启' : '关闭' }}</span></div></el-form-item>
-                <el-form-item v-if="!isAgentPlan" label="推理强度"><el-select v-model="form.reasoningEffort" aria-label="推理强度" :disabled="!form.thinkingEnabled"><el-option label="低 · 更快回复" value="low" /><el-option label="中 · 均衡" value="medium" /><el-option label="高 · 更多推理" value="high" /></el-select></el-form-item>
-                <el-form-item label="最大输出 Token"><el-input-number v-model="form.maxOutputTokens" aria-label="最大输出 Token" :min="64" :max="32768" :step="256" controls-position="right" /><span class="ai-field-hint">普通问事每次模型调用的输出预算，包含供应商计入的思考 Token。</span></el-form-item>
+                <el-form-item :label='$t("思考模式")'><span v-if="isAgentPlan" class="ai-field-hint">{{ $t("跟随模型默认设置（部分套餐模型必须思考）") }}</span><div v-else class="ai-switch-row"><el-switch v-model="form.thinkingEnabled" :aria-label='$t("思考模式")' /><span>{{ $t((form.thinkingEnabled ? $t('开启') : $t('关闭'))) }}</span></div></el-form-item>
+                <el-form-item v-if="!isAgentPlan" :label='$t("推理强度")'><el-select v-model="form.reasoningEffort" :aria-label='$t("推理强度")' :disabled="!form.thinkingEnabled"><el-option :label='$t("低 · 更快回复")' value="low" /><el-option :label='$t("中 · 均衡")' value="medium" /><el-option :label='$t("高 · 更多推理")' value="high" /></el-select></el-form-item>
+                <el-form-item :label='$t("最大输出 Token")'><el-input-number v-model="form.maxOutputTokens" :aria-label='$t("最大输出 Token")' :min="64" :max="32768" :step="256" controls-position="right" /><span class="ai-field-hint">{{ $t("普通问事每次模型调用的输出预算，包含供应商计入的思考 Token。") }}</span></el-form-item>
               </div>
               <div class="ai-form-grid">
-                <el-form-item label="复杂分析输出 Token"><el-input-number v-model="form.complexOutputTokens" aria-label="复杂分析输出 Token" :min="form.maxOutputTokens" :max="32768" :step="1024" /><span class="ai-field-hint">报告、计算与明确要求深入分析的问题使用此预算。</span></el-form-item>
-                <el-form-item label="平台上下文额度"><el-input-number v-model="form.contextWindow" aria-label="平台上下文额度" :min="32768" :max="1048576" :step="32768" /><span class="ai-field-hint">输入和输出合计；实际取平台额度与模型容量中的较小值。</span></el-form-item>
-                <el-form-item label="单次输入字符上限"><el-input-number v-model="form.maxInputChars" aria-label="单次输入字符上限" :min="2000" :max="100000" :step="2000" /></el-form-item>
-                <el-form-item label="任务时限（秒）"><el-input-number v-model="form.taskTimeoutSeconds" aria-label="任务时限（秒）" :min="60" :max="600" :step="30" /><span class="ai-field-hint">异步执行，用户可停止生成；不会随页面连接断开而重复执行。</span></el-form-item>
+                <el-form-item :label='$t("复杂分析输出 Token")'><el-input-number v-model="form.complexOutputTokens" :aria-label='$t("复杂分析输出 Token")' :min="form.maxOutputTokens" :max="32768" :step="1024" /><span class="ai-field-hint">{{ $t("报告、计算与明确要求深入分析的问题使用此预算。") }}</span></el-form-item>
+                <el-form-item :label='$t("平台上下文额度")'><el-input-number v-model="form.contextWindow" :aria-label='$t("平台上下文额度")' :min="32768" :max="1048576" :step="32768" /><span class="ai-field-hint">{{ $t("输入和输出合计；实际取平台额度与模型容量中的较小值。") }}</span></el-form-item>
+                <el-form-item :label='$t("单次输入字符上限")'><el-input-number v-model="form.maxInputChars" :aria-label='$t("单次输入字符上限")' :min="2000" :max="100000" :step="2000" /></el-form-item>
+                <el-form-item :label='$t("任务时限（秒）")'><el-input-number v-model="form.taskTimeoutSeconds" :aria-label='$t("任务时限（秒）")' :min="60" :max="600" :step="30" /><span class="ai-field-hint">{{ $t("异步执行，用户可停止生成；不会随页面连接断开而重复执行。") }}</span></el-form-item>
               </div>
-              <el-alert v-if="selectedCapability" type="info" :closable="false" :title="`模型声明：上下文 ${selectedCapability.contextWindow?.toLocaleString() || '未提供（按 32K 保守处理）'} · 最大输出 ${selectedCapability.maxOutputTokens?.toLocaleString() || '未提供'}`" />
-              <p class="ai-field-hint">上下文按文本保守估算装配，保留当前问题与工具结果，必要时压缩旧对话。估算占用不等于计费用量；实际用量以供应商返回为准。</p>
-              <p class="ai-field-hint">{{ isAgentPlan ? 'Agent Plan 的连接测试与实际回答均使用模型默认思考配置，平台不强制开关思考或指定推理强度。' : '思考参数由兼容接口传递，实际支持能力取决于所选供应商。' }}</p>
+              <el-alert v-if="selectedCapability" type="info" :closable="false" :title="$t(($t('模型声明：上下文 ') + String((selectedCapability.contextWindow?.toLocaleString() || $t('未提供（按 32K 保守处理）'))) + $t(' · 最大输出 ') + String((selectedCapability.maxOutputTokens?.toLocaleString() || $t('未提供'))) + $t('')))" />
+              <p class="ai-field-hint">{{ $t("上下文按文本保守估算装配，保留当前问题与工具结果，必要时压缩旧对话。估算占用不等于计费用量；实际用量以供应商返回为准。") }}</p>
+              <p class="ai-field-hint">{{ $t((isAgentPlan ? $t('Agent Plan 的连接测试与实际回答均使用模型默认思考配置，平台不强制开关思考或指定推理强度。') : $t('思考参数由兼容接口传递，实际支持能力取决于所选供应商。'))) }}</p>
             </el-form>
           </section>
         </div>
 
         <aside class="ai-settings-aside">
           <section class="ai-setting-card ai-active-card">
-            <div class="ai-live-label"><span /> 当前生效</div>
-            <h2>{{ providerName(saved.provider) }}</h2>
-            <p class="ai-current-model">{{ saved.defaultModel || '尚未设置默认模型' }}</p>
-            <dl><div><dt>主用搜索</dt><dd>{{ searchProviders.find(p=>p.value===saved?.webSearchProvider)?.label || '停用' }} · {{ saved.hasWebSearchKey ? '密钥已配置' : '无密钥' }}</dd></div><div><dt>备用搜索</dt><dd>{{ searchProviders.find(p=>p.value===saved?.webSearchFallbackProvider)?.label || '停用' }} · {{ saved.hasWebSearchFallbackKey ? '密钥已配置' : '无密钥' }}</dd></div><div><dt>配置来源</dt><dd>{{ saved.source === 'platform' ? '管理平台' : '服务器初始配置' }}</dd></div><div><dt>密钥状态</dt><dd>{{ saved.hasApiKey ? '已配置' : '未配置' }}</dd></div><div><dt>普通 / 复杂输出</dt><dd>{{ saved.maxOutputTokens }} / {{ saved.complexOutputTokens }} Token</dd></div><div><dt>平台上下文</dt><dd>{{ saved.contextWindow?.toLocaleString() }} Token</dd></div><div><dt>版本</dt><dd>v{{ saved.revision }}</dd></div></dl>
-            <div class="ai-flow"><span>管理平台</span><el-icon><ArrowRight /></el-icon><span>AI 服务</span><el-icon><ArrowRight /></el-icon><span>用户端</span></div>
-            <p>保存后立即用于新请求。H5 和 iOS 共用此设置，无需重新发布客户端。</p>
+            <div class="ai-live-label"><span />{{ $t(" 当前生效") }}</div>
+            <h2>{{ $t(providerName(saved.provider)) }}</h2>
+            <p class="ai-current-model">{{ $t((saved.defaultModel || $t('尚未设置默认模型'))) }}</p>
+            <dl><div><dt>{{ $t("主用搜索") }}</dt><dd>{{ $t((searchProviders.find(p=>p.value===saved?.webSearchProvider)?.label || $t('停用'))) }} · {{ $t((saved.hasWebSearchKey ? $t('密钥已配置') : $t('无密钥'))) }}</dd></div><div><dt>{{ $t("备用搜索") }}</dt><dd>{{ $t((searchProviders.find(p=>p.value===saved?.webSearchFallbackProvider)?.label || $t('停用'))) }} · {{ $t((saved.hasWebSearchFallbackKey ? $t('密钥已配置') : $t('无密钥'))) }}</dd></div><div><dt>{{ $t("配置来源") }}</dt><dd>{{ $t((saved.source === 'platform' ? $t('管理平台') : $t('服务器初始配置'))) }}</dd></div><div><dt>{{ $t("密钥状态") }}</dt><dd>{{ $t((saved.hasApiKey ? $t('已配置') : $t('未配置'))) }}</dd></div><div><dt>{{ $t("普通 / 复杂输出") }}</dt><dd>{{ $t(saved.maxOutputTokens) }} / {{ $t(saved.complexOutputTokens) }} Token</dd></div><div><dt>{{ $t("平台上下文") }}</dt><dd>{{ $t(saved.contextWindow?.toLocaleString()) }} Token</dd></div><div><dt>{{ $t("版本") }}</dt><dd>v{{ $t(saved.revision) }}</dd></div></dl>
+            <div class="ai-flow"><span>{{ $t("管理平台") }}</span><el-icon><ArrowRight /></el-icon><span>{{ $t("AI 服务") }}</span><el-icon><ArrowRight /></el-icon><span>{{ $t("用户端") }}</span></div>
+            <p>{{ $t("保存后立即用于新请求。H5 和 iOS 共用此设置，无需重新发布客户端。") }}</p>
           </section>
           <section class="ai-setting-card ai-history-card">
-            <h2>最近变更</h2><p v-if="!saved.history.length" class="ai-field-hint">尚无平台变更记录。首次保存后开始记录。</p>
-            <ol v-else class="ai-history"><li v-for="item in saved.history.slice(0, 8)" :key="item.revision"><strong>v{{ item.revision }} <span>管理员 {{ item.actor }}</span></strong><p>{{ item.fields.map(f => names[f] || f).join('、') || '重新验证配置' }}</p><time>{{ new Date(item.at).toLocaleString() }}</time></li></ol>
+            <h2>{{ $t("最近变更") }}</h2><p v-if="!saved.history.length" class="ai-field-hint">{{ $t("尚无平台变更记录。首次保存后开始记录。") }}</p>
+            <ol v-else class="ai-history"><li v-for="item in saved.history.slice(0, 8)" :key="item.revision"><strong>v{{ $t(item.revision) }} <span>{{ $t("管理员 ") }}{{ $t(item.actor) }}</span></strong><p>{{ $t((item.fields.map(f => names[f] || f).join('、') || $t('重新验证配置'))) }}</p><time>{{ $t(new Date(item.at).toLocaleString()) }}</time></li></ol>
           </section>
         </aside>
       </div>
-      <footer class="ai-settings-actions"><span :class="{ 'is-dirty': dirty }">{{ dirty ? '大模型与联网搜索有未保存修改，将一并保存' : '已与当前配置同步' }}</span><div><el-button :disabled="busy || !dirty" :icon="Refresh" @click="reset">撤销修改</el-button><el-button type="primary" :disabled="busy || !dirty || !saved.writable" :loading="saving" @click="save">保存并生效</el-button></div></footer>
+      <footer class="ai-settings-actions"><span :class="{ 'is-dirty': dirty }">{{ $t((dirty ? $t('大模型与联网搜索有未保存修改，将一并保存') : $t('已与当前配置同步'))) }}</span><div><el-button :disabled="busy || !dirty" :icon="Refresh" @click="reset">{{ $t("撤销修改") }}</el-button><el-button type="primary" :disabled="busy || !dirty || !saved.writable" :loading="saving" @click="save">{{ $t("保存并生效") }}</el-button></div></footer>
     </template>
   </div>
 </template>

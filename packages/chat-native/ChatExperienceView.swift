@@ -22,18 +22,18 @@ struct ChatExperienceView: View {
             Color.bgPrimary.ignoresSafeArea()
             ConversationWebView(conversationID: conversationID, role: role, accountID: accountID,
                                 userID: userID, token: token, nickname: nickname,
-                                theme: colorScheme == .dark ? "dark" : "light",
+                                theme: colorScheme == .dark ? "dark" : "light", language: L10n.store.resolved,
                                 onClose: { dismiss() }, onFailure: { failure = $0; loading = false },
                                 onReady: { failure = nil; loading = false })
                 .id(reload)
-            if loading { ProgressView("正在打开对话…").tint(Color.accentDefault).foregroundStyle(Color.textSecondary) }
+            if loading { ProgressView(L10n.text("正在打开对话…")).tint(Color.accentDefault).foregroundStyle(Color.textSecondary) }
             if let failure {
                 VStack(spacing: 18) {
                     Image(systemName: "wifi.exclamationmark").font(.system(size: 30))
-                    Text(failure).font(.subheadline).multilineTextAlignment(.center)
-                    Button("重新加载") { self.failure = nil; loading = true; reload = UUID() }
+                    Text(L10n.lookup(failure)).font(.subheadline).multilineTextAlignment(.center)
+                    Button(L10n.text("重新加载")) { self.failure = nil; loading = true; reload = UUID() }
                         .buttonStyle(.borderedProminent).tint(Color.brandDefault)
-                    Button("返回") { dismiss() }
+                    Button(L10n.text("返回")) { dismiss() }
                 }.padding(30).foregroundStyle(Color.textPrimary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color.bgPrimary)
@@ -51,6 +51,7 @@ private struct ConversationWebView: UIViewRepresentable {
     let conversationID: String; let role: String; let accountID: String; let userID: String
     let token: String; let nickname: String
     let theme: String
+    let language: String
     let onClose: () -> Void; let onFailure: (String) -> Void; let onReady: () -> Void
     static var origin: URL {
         // The deployed web entry shares the API origin. A build may override it
@@ -69,6 +70,9 @@ private struct ConversationWebView: UIViewRepresentable {
         return """
         if (window.location.origin === \(quotedOrigin)[0]) {
             const theme = '\(resolved)';
+            const language = '\(language)';
+            try { localStorage.setItem('askxuan-language', language); } catch (_) {}
+            window.dispatchEvent(new StorageEvent('storage', { key: 'askxuan-language', newValue: language }));
             try { localStorage.setItem('askxuan-theme', theme); } catch (_) {}
             if (document.documentElement) {
                 document.documentElement.dataset.theme = theme;
@@ -105,6 +109,7 @@ private struct ConversationWebView: UIViewRepresentable {
         let script = authenticationScript(token: token)
         context.coordinator.bootstrapScript = script
         context.coordinator.appliedTheme = theme
+        context.coordinator.appliedLanguage = language
         config.userContentController.addUserScript(WKUserScript(source: script + "\n" + themeScript, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         let web = WKWebView(frame: .zero, configuration: config)
         web.navigationDelegate = context.coordinator; web.uiDelegate = context.coordinator
@@ -123,8 +128,9 @@ private struct ConversationWebView: UIViewRepresentable {
     }
     func updateUIView(_ uiView: WKWebView, context: Context) {
         context.coordinator.parent = self
-        guard context.coordinator.appliedTheme != theme else { return }
+        guard context.coordinator.appliedTheme != theme || context.coordinator.appliedLanguage != language else { return }
         context.coordinator.appliedTheme = theme
+        context.coordinator.appliedLanguage = language
         uiView.overrideUserInterfaceStyle = theme == "dark" ? .dark : .light
         // This WKWebView owns a single combined bootstrap script. Keep subsequent
         // navigations in sync as well as the currently loaded conversation.
@@ -143,6 +149,7 @@ private struct ConversationWebView: UIViewRepresentable {
         var parent: ConversationWebView; weak var web: WKWebView?
         var bootstrapScript = ""
         var appliedTheme = ""
+        var appliedLanguage = ""
         var conversationURL: URL?
         private var sessionContext: AuthRequestSession?
         private var recoveringSession = false

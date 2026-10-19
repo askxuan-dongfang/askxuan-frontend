@@ -47,11 +47,11 @@ struct OrderListView: View {
             VStack(spacing: AppSpacing.md) {
                 tabBar
                 if isLoading && isEmpty {
-                    ProgressView("正在加载订单")
+                    ProgressView(L10n.text("正在加载订单"))
                         .tint(Color.accentDefault)
                         .frame(height: 320)
                 } else if isEmpty {
-                    DFEmptyState(icon: "doc.text", title: "暂无订单", subtitle: "去首页看看吧")
+                    DFEmptyState(icon: "doc.text", title: L10n.text("暂无订单"), subtitle: L10n.text("去首页看看吧"))
                         .frame(height: 320)
                 } else {
                     orderContent
@@ -62,7 +62,7 @@ struct OrderListView: View {
             .padding(.top, AppSpacing.md)
         }
         .background(Color.bgPrimary)
-        .navigationTitle("我的订单")
+        .navigationTitle(L10n.text("我的订单"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadOrders() }
         .refreshable { await loadOrders() }
@@ -72,13 +72,13 @@ struct OrderListView: View {
                 Task { await loadOrders() }
             }
         }
-        .alert("订单加载失败", isPresented: .init(
+        .alert(L10n.text("订单加载失败"), isPresented: .init(
             get: { errorMessage != nil },
             set: { if !$0 { errorMessage = nil } }
         )) {
-            Button("知道了", role: .cancel) {}
+            Button(L10n.text("知道了"), role: .cancel) {}
         } message: {
-            Text(errorMessage ?? "")
+            Text(L10n.lookup(errorMessage ?? ""))
         }
     }
 
@@ -86,7 +86,7 @@ struct OrderListView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: AppSpacing.sm) {
                 ForEach(tabs, id: \.key) { tab in
-                    Text(tab.title)
+                    Text(L10n.lookup(tab.title))
                         .font(AppTypography.supporting.weight(selectedTab == tab.key ? .semibold : .regular))
                         .foregroundStyle(selectedTab == tab.key ? Color.accentDefault : Color.textTertiary)
                         .padding(.horizontal, AppSpacing.md)
@@ -114,7 +114,7 @@ struct OrderListView: View {
                     } label: {
                         orderCard(
                             icon: "calendar",
-                            title: booking.serviceName.isEmpty ? "预约服务" : booking.serviceName,
+                            title: booking.serviceName.isEmpty ? L10n.text("预约服务") : booking.serviceName,
                             desc: [booking.templeName, booking.masterName, booking.bookingDate].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "),
                             amount: booking.meritMoneyText,
                             status: booking.statusDisplayText
@@ -125,7 +125,7 @@ struct OrderListView: View {
                         Button {
                             reviewBooking = booking
                         } label: {
-                            Label("评价本次服务", systemImage: "star.bubble")
+                            Label(L10n.text("评价本次服务"), systemImage: "star.bubble")
                                 .font(AppTypography.supporting.weight(.semibold))
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 38)
@@ -144,7 +144,7 @@ struct OrderListView: View {
                 } label: {
                     orderCard(
                         icon: "bag",
-                        title: order.items?.first?.productName ?? "商城订单 \(order.orderNo)",
+                        title: order.items?.first?.productName ?? L10n.text("商城订单 \(order.orderNo)"),
                         desc: order.orderNo,
                         amount: String(format: "¥%.2f", order.payAmount),
                         status: order.statusText
@@ -161,7 +161,7 @@ struct OrderListView: View {
                 } label: {
                     orderCard(
                         icon: "circle.grid.2x2",
-                        title: "DIY 手串 · \(order.orderNo)",
+                        title: L10n.text("DIY 手串 · \(order.orderNo)"),
                         desc: order.source == "design_square" ? "设计广场下单" : "自定义设计",
                         amount: order.totalFeeText,
                         status: order.statusDisplayText
@@ -174,11 +174,11 @@ struct OrderListView: View {
 
     private func orderSectionTitle(_ title: String, count: Int) -> some View {
         HStack {
-            Text(title)
+            Text(L10n.lookup(title))
                 .font(AppTypography.body.weight(.semibold))
                 .foregroundStyle(Color.textPrimary)
             Spacer()
-            Text("\(count)单")
+            Text(L10n.text("\(count)单"))
                 .font(AppTypography.caption)
                 .foregroundStyle(Color.textTertiary)
         }
@@ -194,22 +194,22 @@ struct OrderListView: View {
                     .foregroundStyle(Color.textTertiary)
             }
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text(L10n.lookup(title))
                     .font(AppTypography.body.weight(.medium))
                     .foregroundStyle(Color.textPrimary)
                     .lineLimit(1)
-                Text(desc.isEmpty ? "暂无补充信息" : desc)
+                Text(L10n.lookup(desc.isEmpty ? L10n.text("暂无补充信息") : desc))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 4) {
-                Text(amount)
+                Text(L10n.lookup(amount))
                     .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.accentDefault)
                     .monospacedDigit()
-                Text(status)
+                Text(L10n.lookup(status))
                     .font(AppTypography.micro)
                     .foregroundStyle(Color.stateWarning)
             }
@@ -276,7 +276,7 @@ struct CustomerBookingDetailView: View {
         Group {
             if let booking {
                 List {
-                    Section("预约") {
+                    Section(L10n.text("预约")) {
                         detailRow("预约单号", booking.id)
                         detailRow("状态", booking.statusDisplayText)
                         detailRow("寺院", booking.templeName ?? booking.templeId)
@@ -285,25 +285,25 @@ struct CustomerBookingDetailView: View {
                         detailRow("日期", booking.bookingDate)
                         detailRow("时段", booking.timeSlot)
                     }
-                    if let errorMessage { Section { Text(errorMessage).foregroundStyle(.red) } }
-                    if booking.status == "pending_payment" { Section { Button("继续支付") { Task { do { _ = try await CashCheckout.pay("booking", bookingId); await load() } catch { errorMessage = error.localizedDescription } } } } }
-                    Section("服务进度与回执") { JourneyRecordPanel(bookingId: bookingId) { _ in Task { await load() } } }
-                    Section("费用与备注") {
+                    if let errorMessage { Section { Text(L10n.lookup(errorMessage)).foregroundStyle(.red) } }
+                    if booking.status == "pending_payment" { Section { Button(L10n.text("继续支付")) { Task { do { _ = try await CashCheckout.pay("booking", bookingId); await load() } catch { errorMessage = error.localizedDescription } } } } }
+                    Section(L10n.text("服务进度与回执")) { JourneyRecordPanel(bookingId: bookingId) { _ in Task { await load() } } }
+                    Section(L10n.text("费用与备注")) {
                         detailRow("功德金", booking.meritMoneyText)
                         if !booking.note.isEmpty {
-                            Text(booking.note).foregroundStyle(Color.textSecondary)
+                            Text(L10n.lookup(booking.note)).foregroundStyle(Color.textSecondary)
                         }
                     }
                 }
                 .scrollContentBackground(.hidden)
             } else if let errorMessage {
-                DFEmptyState(icon: "exclamationmark.triangle", title: "预约加载失败", subtitle: errorMessage)
+                DFEmptyState(icon: "exclamationmark.triangle", title: L10n.text("预约加载失败"), subtitle: errorMessage)
             } else {
                 DFLoadingView()
             }
         }
         .background(Color.bgPrimary)
-        .navigationTitle("预约详情")
+        .navigationTitle(L10n.text("预约详情"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
     }
@@ -319,9 +319,9 @@ struct CustomerBookingDetailView: View {
 
     private func detailRow(_ label: String, _ value: String) -> some View {
         HStack(alignment: .top) {
-            Text(label).foregroundStyle(Color.textSecondary)
+            Text(L10n.lookup(label)).foregroundStyle(Color.textSecondary)
             Spacer()
-            Text(value.isEmpty ? "—" : value)
+            Text(L10n.lookup(value.isEmpty ? "—" : value))
                 .foregroundStyle(Color.textPrimary)
                 .multilineTextAlignment(.trailing)
         }
@@ -339,15 +339,15 @@ private struct CustomerDiyOrderDetailView: View {
         Group {
             if let order {
                 List {
-                    Section("制作与交付") {
+                    Section(L10n.text("制作与交付")) {
                         if let logistics=order.logistics {Text("\(logistics.expressCompany) · \(logistics.trackingNo)").textSelection(.enabled)}
-                        Text("选材 → 审核 → 制作 → 开光（选购）→ 发货 → 收货").font(AppTypography.caption).foregroundStyle(Color.accentDefault)
-                        if let errorMessage {Text(errorMessage).foregroundStyle(.red)}
-                        if order.status=="shipped" {Button("确认收到作品"){confirmReceipt=true}.disabled(busy)}
-                        if order.status=="pending_review" && order.paymentStatus != "success" {Button("继续支付"){Task{await act(false)}}.disabled(busy)}
-                        Button("刷新制作进度"){Task{await load()}}.disabled(busy)
+                        Text(L10n.text("选材 → 审核 → 制作 → 开光（选购）→ 发货 → 收货")).font(AppTypography.caption).foregroundStyle(Color.accentDefault)
+                        if let errorMessage {Text(L10n.lookup(errorMessage)).foregroundStyle(.red)}
+                        if order.status=="shipped" {Button(L10n.text("确认收到作品")){confirmReceipt=true}.disabled(busy)}
+                        if order.status=="pending_review" && order.paymentStatus != "success" {Button(L10n.text("继续支付")){Task{await act(false)}}.disabled(busy)}
+                        Button(L10n.text("刷新制作进度")){Task{await load()}}.disabled(busy)
                     }
-                    Section("订单") {
+                    Section(L10n.text("订单")) {
                         detailRow("订单号", order.orderNo)
                         detailRow("状态", order.statusDisplayText)
                         detailRow("支付 / 退款", ["success":"已支付","pending":"待支付","refunding":"退款中","refunded":"已退款"][order.paymentStatus ?? "pending"] ?? "待确认")
@@ -358,17 +358,17 @@ private struct CustomerDiyOrderDetailView: View {
                     }
                     DiyConsecrationSection(order: order)
                     if let items = order.items, !items.isEmpty {
-                        Section("材料明细") {
+                        Section(L10n.text("材料明细")) {
                             ForEach(items) { item in
                                 HStack {
                                     VStack(alignment: .leading, spacing: 3) {
-                                        Text(item.materialName)
+                                        Text(L10n.lookup(item.materialName))
                                         Text("\(item.spec) × \(item.quantity)")
                                             .font(AppTypography.caption)
                                             .foregroundStyle(Color.textTertiary)
                                     }
                                     Spacer()
-                                    Text(String(format: "¥%.2f", item.unitPrice * Double(item.quantity)))
+                                    Text(L10n.lookup(String(format: "¥%.2f", item.unitPrice * Double(item.quantity))))
                                 }
                             }
                         }
@@ -376,16 +376,16 @@ private struct CustomerDiyOrderDetailView: View {
                 }
                 .scrollContentBackground(.hidden)
             } else if let errorMessage {
-                DFEmptyState(icon: "exclamationmark.triangle", title: "DIY 订单加载失败", subtitle: errorMessage)
+                DFEmptyState(icon: "exclamationmark.triangle", title: L10n.text("DIY 订单加载失败"), subtitle: errorMessage)
             } else {
                 DFLoadingView()
             }
         }
         .background(Color.bgPrimary)
-        .navigationTitle("DIY 订单详情")
+        .navigationTitle(L10n.text("DIY 订单详情"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }.refreshable{await load()}
-        .alert("确认已收到定制作品？",isPresented:$confirmReceipt){Button("返回",role:.cancel){};Button("确认收货"){Task{await act(true)}}}
+        .alert(L10n.text("确认已收到定制作品？"),isPresented:$confirmReceipt){Button(L10n.text("返回"),role:.cancel){};Button(L10n.text("确认收货")){Task{await act(true)}}}
     }
 
     @MainActor
@@ -403,9 +403,9 @@ private struct CustomerDiyOrderDetailView: View {
     }
     private func detailRow(_ label: String, _ value: String) -> some View {
         HStack {
-            Text(label).foregroundStyle(Color.textSecondary)
+            Text(L10n.lookup(label)).foregroundStyle(Color.textSecondary)
             Spacer()
-            Text(value).foregroundStyle(Color.textPrimary)
+            Text(L10n.lookup(value)).foregroundStyle(Color.textPrimary)
         }
     }
 }
@@ -425,12 +425,12 @@ private struct BookingReviewSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("本次服务") {
-                    Text(booking.serviceName)
+                Section(L10n.text("本次服务")) {
+                    Text(L10n.lookup(booking.serviceName))
                     Text([booking.templeName, booking.masterName].compactMap { $0 }.joined(separator: " · "))
                         .foregroundStyle(Color.textSecondary)
                 }
-                Section("评分") {
+                Section(L10n.text("评分")) {
                     HStack(spacing: 14) {
                         ForEach(1...5, id: \.self) { value in
                             Button {
@@ -445,29 +445,29 @@ private struct BookingReviewSheet: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                Section("评价内容") {
-                    TextField("请写下真实的服务体验", text: $content, axis: .vertical)
+                Section(L10n.text("评价内容")) {
+                    TextField(L10n.text("请写下真实的服务体验"), text: $content, axis: .vertical)
                         .lineLimit(4...8)
                 }
             }
-            .navigationTitle("服务评价")
+            .navigationTitle(L10n.text("服务评价"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
+                    Button(L10n.text("取消")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("提交") { Task { await submit() } }
+                    Button(L10n.text("提交")) { Task { await submit() } }
                         .disabled(isSubmitting || content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
-            .alert("提交失败", isPresented: .init(
+            .alert(L10n.text("提交失败"), isPresented: .init(
                 get: { errorMessage != nil },
                 set: { if !$0 { errorMessage = nil } }
             )) {
-                Button("知道了", role: .cancel) {}
+                Button(L10n.text("知道了"), role: .cancel) {}
             } message: {
-                Text(errorMessage ?? "")
+                Text(L10n.lookup(errorMessage ?? ""))
             }
         }
     }
@@ -508,9 +508,9 @@ struct FavoritesView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("收藏分类", selection: $section) {
+            Picker(L10n.text("收藏分类"), selection: $section) {
                 ForEach(Section.allCases) { s in
-                    Text(s.rawValue).tag(s)
+                    Text(L10n.lookup(s.rawValue)).tag(s)
                 }
             }
             .pickerStyle(.segmented)
@@ -519,11 +519,11 @@ struct FavoritesView: View {
 
             Group {
                 if isLoading && isEmpty {
-                    ProgressView("正在加载收藏")
+                    ProgressView(L10n.text("正在加载收藏"))
                         .tint(Color.accentDefault)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if isEmpty {
-                    DFEmptyState(icon: emptyIcon, title: "暂无收藏",
+                    DFEmptyState(icon: emptyIcon, title: L10n.text("暂无收藏"),
                                  subtitle: errorMessage ?? emptySubtitle)
                 } else {
                     ScrollView(showsIndicators: false) {
@@ -563,7 +563,7 @@ struct FavoritesView: View {
             }
         }
         .background(Color.bgPrimary)
-        .navigationTitle("我的收藏")
+        .navigationTitle(L10n.text("我的收藏"))
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await load() }
         .task { await load() }
@@ -633,7 +633,7 @@ struct FavoritesView: View {
         HStack(spacing: 12) {
             RemoteAvatar(urlString: master.avatar, size: 48)
             VStack(alignment: .leading, spacing: 3) {
-                Text(master.dharmaName)
+                Text(L10n.lookup(master.dharmaName))
                     .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text(master.templeName)
@@ -652,7 +652,7 @@ struct FavoritesView: View {
                 .frame(width: 48, height: 48)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 3) {
-                Text(temple.name)
+                Text(L10n.lookup(temple.name))
                     .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text("\(temple.region) · \(temple.sect)")
@@ -671,7 +671,7 @@ struct FavoritesView: View {
                 .frame(width: 48, height: 48)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 3) {
-                Text(product.name)
+                Text(L10n.lookup(product.name))
                     .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text("¥\(product.price, specifier: "%.2f")")
@@ -717,10 +717,10 @@ struct AddressListView: View {
     var body: some View {
         Group {
             if isLoading && addresses.isEmpty {
-                ProgressView("正在加载地址")
+                ProgressView(L10n.text("正在加载地址"))
                     .tint(Color.accentDefault)
             } else if addresses.isEmpty {
-                DFEmptyState(icon: "mappin.and.ellipse", title: "暂无收货地址", subtitle: "点击右上角添加地址")
+                DFEmptyState(icon: "mappin.and.ellipse", title: L10n.text("暂无收货地址"), subtitle: L10n.text("点击右上角添加地址"))
             } else {
                 List {
                     ForEach(addresses) { addr in
@@ -729,14 +729,14 @@ struct AddressListView: View {
                         } label: {
                             VStack(alignment: .leading, spacing: AppSpacing.sm) {
                                 HStack(spacing: AppSpacing.sm) {
-                                    Text(addr.name)
+                                    Text(L10n.lookup(addr.name))
                                         .font(AppTypography.body.weight(.semibold))
                                         .foregroundStyle(Color.textPrimary)
-                                    Text(addr.maskedPhone)
+                                    Text(L10n.lookup(addr.maskedPhone))
                                         .font(AppTypography.supporting)
                                         .foregroundStyle(Color.textTertiary)
                                     if addr.isDefault {
-                                        Text("默认")
+                                        Text(L10n.text("默认"))
                                             .font(AppTypography.micro.weight(.medium))
                                             .foregroundStyle(Color.white)
                                             .padding(.horizontal, 6).padding(.vertical, 2)
@@ -748,7 +748,7 @@ struct AddressListView: View {
                                         .font(AppTypography.body)
                                         .foregroundStyle(Color.accentDefault)
                                 }
-                                Text(addr.fullAddress)
+                                Text(L10n.lookup(addr.fullAddress))
                                     .font(AppTypography.supporting)
                                     .foregroundStyle(Color.textSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -762,7 +762,7 @@ struct AddressListView: View {
                             Button(role: .destructive) {
                                 Task { await deleteAddress(addr) }
                             } label: {
-                                Label("删除", systemImage: "trash")
+                                Label(L10n.text("删除"), systemImage: "trash")
                             }
                         }
                     }
@@ -772,7 +772,7 @@ struct AddressListView: View {
             }
         }
         .background(Color.bgPrimary)
-        .navigationTitle("收货地址")
+        .navigationTitle(L10n.text("收货地址"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -802,13 +802,13 @@ struct AddressListView: View {
                 }
             }
         }
-        .alert("地址操作失败", isPresented: .init(
+        .alert(L10n.text("地址操作失败"), isPresented: .init(
             get: { errorMessage != nil },
             set: { if !$0 { errorMessage = nil } }
         )) {
-            Button("知道了", role: .cancel) {}
+            Button(L10n.text("知道了"), role: .cancel) {}
         } message: {
-            Text(errorMessage ?? "")
+            Text(L10n.lookup(errorMessage ?? ""))
         }
     }
 
@@ -872,45 +872,45 @@ private struct AddressEditorView: View {
 
     var body: some View {
         Form {
-            Section("联系人") {
-                TextField("姓名", text: $name)
-                TextField("手机号", text: $phone)
+            Section(L10n.text("联系人")) {
+                TextField(L10n.text("姓名"), text: $name)
+                TextField(L10n.text("手机号"), text: $phone)
                     .keyboardType(.phonePad)
             }
-            Section("所在地区") {
-                TextField("省份", text: $province)
-                TextField("城市", text: $city)
-                TextField("区县", text: $district)
-                TextField("详细地址", text: $detail, axis: .vertical)
+            Section(L10n.text("所在地区")) {
+                TextField(L10n.text("省份"), text: $province)
+                TextField(L10n.text("城市"), text: $city)
+                TextField(L10n.text("区县"), text: $district)
+                TextField(L10n.text("详细地址"), text: $detail, axis: .vertical)
                     .lineLimit(2...4)
             }
             Section {
-                Toggle("设为默认地址", isOn: $isDefault)
+                Toggle(L10n.text("设为默认地址"), isOn: $isDefault)
                     .tint(Color.brandDefault)
             }
         }
         .scrollContentBackground(.hidden)
         .background(Color.bgPrimary)
-        .navigationTitle(address == nil ? "新增地址" : "编辑地址")
+        .navigationTitle(L10n.lookup(address == nil ? L10n.text("新增地址") : L10n.text("编辑地址")))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("取消") { dismiss() }
+                Button(L10n.text("取消")) { dismiss() }
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button(isSaving ? "保存中" : "保存") {
+                Button(L10n.lookup(isSaving ? L10n.text("保存中") : L10n.text("保存"))) {
                     Task { await save() }
                 }
                 .disabled(isSaving || !isValid)
             }
         }
-        .alert("保存失败", isPresented: .init(
+        .alert(L10n.text("保存失败"), isPresented: .init(
             get: { errorMessage != nil },
             set: { if !$0 { errorMessage = nil } }
         )) {
-            Button("知道了", role: .cancel) {}
+            Button(L10n.text("知道了"), role: .cancel) {}
         } message: {
-            Text(errorMessage ?? "")
+            Text(L10n.lookup(errorMessage ?? ""))
         }
     }
 
@@ -957,17 +957,17 @@ struct ReviewListView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: AppSpacing.md) {
                 if isLoading && reviews.isEmpty {
-                    ProgressView("正在加载评价")
+                    ProgressView(L10n.text("正在加载评价"))
                         .tint(Color.accentDefault)
                         .frame(height: 300)
                 } else if reviews.isEmpty {
-                    DFEmptyState(icon: "star", title: "暂无评价", subtitle: "完成服务后可提交评价")
+                    DFEmptyState(icon: "star", title: L10n.text("暂无评价"), subtitle: L10n.text("完成服务后可提交评价"))
                         .frame(height: 300)
                 }
                 ForEach(reviews) { item in
                     VStack(alignment: .leading, spacing: AppSpacing.sm) {
                         HStack {
-                            Text(targetName(item))
+                            Text(L10n.lookup(targetName(item)))
                                 .font(AppTypography.body.weight(.medium))
                                 .foregroundStyle(Color.textPrimary)
                             Spacer()
@@ -983,7 +983,7 @@ struct ReviewListView: View {
                             .font(AppTypography.supporting)
                             .foregroundStyle(Color.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
-                        Text(item.createTime)
+                        Text(L10n.lookup(item.createTime))
                             .font(AppTypography.micro)
                             .foregroundStyle(Color.textTertiary)
                     }
@@ -999,17 +999,17 @@ struct ReviewListView: View {
             .padding(.top, AppSpacing.md)
         }
         .background(Color.bgPrimary)
-        .navigationTitle("我的评价")
+        .navigationTitle(L10n.text("我的评价"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadReviews() }
         .refreshable { await loadReviews() }
-        .alert("评价加载失败", isPresented: .init(
+        .alert(L10n.text("评价加载失败"), isPresented: .init(
             get: { errorMessage != nil },
             set: { if !$0 { errorMessage = nil } }
         )) {
-            Button("知道了", role: .cancel) {}
+            Button(L10n.text("知道了"), role: .cancel) {}
         } message: {
-            Text(errorMessage ?? "")
+            Text(L10n.lookup(errorMessage ?? ""))
         }
     }
 
@@ -1050,21 +1050,21 @@ struct CouponView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: AppSpacing.md) {
                 if isLoading && coupons.isEmpty {
-                    ProgressView("正在加载优惠券")
+                    ProgressView(L10n.text("正在加载优惠券"))
                         .tint(Color.accentDefault)
                         .frame(height: 300)
                 } else if coupons.isEmpty {
-                    DFEmptyState(icon: "ticket", title: "暂无优惠券", subtitle: "可在活动页面领取优惠券")
+                    DFEmptyState(icon: "ticket", title: L10n.text("暂无优惠券"), subtitle: L10n.text("可在活动页面领取优惠券"))
                         .frame(height: 300)
                 }
                 ForEach(coupons) { item in
                     HStack(spacing: 0) {
                         VStack(spacing: 2) {
-                            Text(item.valueText)
+                            Text(L10n.lookup(item.valueText))
                                 .font(.system(size: 26, weight: .semibold))
                                 .foregroundStyle(Color.brandDefault)
                                 .monospacedDigit()
-                            Text(item.minAmount > 0 ? "满¥\(Int(item.minAmount))可用" : "无门槛")
+                            Text(L10n.lookup(item.minAmount > 0 ? L10n.text("满¥\(Int(item.minAmount))可用") : L10n.text("无门槛")))
                                 .font(AppTypography.micro)
                                 .foregroundStyle(Color.textTertiary)
                         }
@@ -1074,13 +1074,13 @@ struct CouponView: View {
                         Rectangle().fill(Color.borderDivider).frame(width: 1)
 
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(item.name)
+                            Text(L10n.lookup(item.name))
                                 .font(AppTypography.body.weight(.medium))
                                 .foregroundStyle(Color.textPrimary)
-                            Text(item.statusText)
+                            Text(L10n.lookup(item.statusText))
                                 .font(AppTypography.caption)
                                 .foregroundStyle(item.status == "unused" ? Color.stateSuccess : Color.textSecondary)
-                            Text("\(item.endTime) 到期")
+                            Text(L10n.text("\(item.endTime) 到期"))
                                 .font(AppTypography.micro)
                                 .foregroundStyle(Color.textTertiary)
                         }
@@ -1097,17 +1097,17 @@ struct CouponView: View {
             .padding(.top, AppSpacing.md)
         }
         .background(Color.bgPrimary)
-        .navigationTitle("优惠券")
+        .navigationTitle(L10n.text("优惠券"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadCoupons() }
         .refreshable { await loadCoupons() }
-        .alert("优惠券加载失败", isPresented: .init(
+        .alert(L10n.text("优惠券加载失败"), isPresented: .init(
             get: { errorMessage != nil },
             set: { if !$0 { errorMessage = nil } }
         )) {
-            Button("知道了", role: .cancel) {}
+            Button(L10n.text("知道了"), role: .cancel) {}
         } message: {
-            Text(errorMessage ?? "")
+            Text(L10n.lookup(errorMessage ?? ""))
         }
     }
 
@@ -1150,9 +1150,9 @@ struct PointsWalletCard: View {
     let onRules: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack { Text("可用积分").font(.subheadline); Spacer(); Button("规则", action: onRules).font(.subheadline) }.foregroundStyle(palette.muted)
-            HStack(alignment: .firstTextBaseline) { Text(balance.map { $0.formatted() } ?? "—").font(AppTypography.numeric(42, weight: .medium)).minimumScaleFactor(0.6).lineLimit(1).contentTransition(.numericText()); Text("积分").font(AppTypography.caption) }.foregroundStyle(palette.text)
-            if (balance ?? 0) < 0 { Text("退款扣回后余额不足，后续获得的积分先补足余额。").font(.caption2).foregroundStyle(palette.muted) }
+            HStack { Text(L10n.text("可用积分")).font(.subheadline); Spacer(); Button(L10n.text("规则"), action: onRules).font(.subheadline) }.foregroundStyle(palette.muted)
+            HStack(alignment: .firstTextBaseline) { Text(L10n.lookup(balance.map { $0.formatted() } ?? "—")).font(AppTypography.numeric(42, weight: .medium)).minimumScaleFactor(0.6).lineLimit(1).contentTransition(.numericText()); Text(L10n.text("积分")).font(AppTypography.caption) }.foregroundStyle(palette.text)
+            if (balance ?? 0) < 0 { Text(L10n.text("退款扣回后余额不足，后续获得的积分先补足余额。")).font(.caption2).foregroundStyle(palette.muted) }
         }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
             .background(palette.card, in: RoundedRectangle(cornerRadius: 20))
             .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.accentDefault.opacity(0.35), lineWidth: 1))
@@ -1163,11 +1163,11 @@ struct PointsRulesSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("01 · 消费积累") { Text("每笔实付满 100 元得 1 积分，不足部分舍去。例如 199 元得 1 积分，200 元得 2 积分。") }
-                Section("02 · 兑换与参与") { Text("积分商城按标价兑换；转盘按次扣分，可多次抽奖，中奖后也可继续；奖池每人每期一次。成功参与后无论中奖与否均不退回，奖品预算由平台承担。") }
-                Section("03 · 退款与记录") { Text("退款按净实付重算所得积分，余额不足时可能为负；后续获得的积分先补足。取消待发货兑换会退回积分。所有变动可查积分明细。") }
-                Text("功德值独立记录成长，不用于兑换，也不影响中奖概率。").font(AppTypography.caption).foregroundStyle(.secondary)
-            }.navigationTitle("积分规则").navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .confirmationAction) { Button("知道了") { dismiss() } } }
+                Section(L10n.text("01 · 消费积累")) { Text(L10n.text("每笔实付满 100 元得 1 积分，不足部分舍去。例如 199 元得 1 积分，200 元得 2 积分。")) }
+                Section(L10n.text("02 · 兑换与参与")) { Text(L10n.text("积分商城按标价兑换；转盘按次扣分，可多次抽奖，中奖后也可继续；奖池每人每期一次。成功参与后无论中奖与否均不退回，奖品预算由平台承担。")) }
+                Section(L10n.text("03 · 退款与记录")) { Text(L10n.text("退款按净实付重算所得积分，余额不足时可能为负；后续获得的积分先补足。取消待发货兑换会退回积分。所有变动可查积分明细。")) }
+                Text(L10n.text("功德值独立记录成长，不用于兑换，也不影响中奖概率。")).font(AppTypography.caption).foregroundStyle(.secondary)
+            }.navigationTitle(L10n.text("积分规则")).navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .confirmationAction) { Button(L10n.text("知道了")) { dismiss() } } }
         }.tint(Color.accentDefault)
     }
 }
@@ -1182,16 +1182,16 @@ struct PointsView: View {
             PointsWalletCard(balance: balance) { showRules = true }.padding(.horizontal, 16).padding(.top, 12)
             HStack(spacing: 0) {
                 ForEach(Array(["兑换记录", "抽奖记录", "开奖记录", "我的奖品"].enumerated()), id: \.offset) { i, label in
-                    Button(label) { history = i + 1 }.font(.system(size: 12)).frame(maxWidth: .infinity, minHeight: 44)
+                    Button(L10n.lookup(label)) { history = i + 1 }.font(.system(size: 12)).frame(maxWidth: .infinity, minHeight: 44)
                 }
             }.padding(.horizontal, 12).tint(Color.textSecondary)
-            Picker("积分模式", selection: $mode) { Text("积分转盘").tag(0); Text("积分商城").tag(1); Text("奖池").tag(2) }
+            Picker(L10n.text("积分模式"), selection: $mode) { Text(L10n.text("积分转盘")).tag(0); Text(L10n.text("积分商城")).tag(1); Text(L10n.text("奖池")).tag(2) }
                 .pickerStyle(.segmented).padding(.horizontal, 16).padding(.bottom, 10).accessibilityIdentifier("points-modes")
             if mode == 1 { PointsRecordsView(initialTab: 1, embedded: true, onBalanceChange: { balance = $0 }) }
             else { RewardsView(initialTab: mode == 0 ? 1 : 0, embedded: true, onBalanceChange: { balance = $0 }).id(mode) }
         }.background(Color.bgPrimary)
-            .navigationTitle("积分中心").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("明细") { history = 0 } } }
+            .navigationTitle(L10n.text("积分中心")).navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button(L10n.text("明细")) { history = 0 } } }
             .task(id: auth.userId) { balance = nil; if auth.isLoggedIn { let account: PointsAccount? = try? await APIClient.shared.request(.pointsAccount); balance = account?.balance } }
             .sheet(isPresented: $showRules) { PointsRulesSheet() }
             .navigationDestination(isPresented: Binding(get: { history != nil }, set: { if !$0 { history = nil } })) { PointsHistoryView(initialTab: history ?? 0) }
@@ -1205,13 +1205,13 @@ struct PointsHistoryView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 20) {
                     ForEach(Array(["积分明细", "兑换记录", "抽奖记录", "开奖记录", "我的奖品"].enumerated()), id: \.offset) { i, title in
-                        Button { tab = i } label: { Text(title).font(.subheadline).foregroundStyle(tab == i ? Color.accentDefault : Color.textSecondary).padding(.vertical, 14).overlay(alignment: .bottom) { if tab == i { Rectangle().fill(Color.accentDefault).frame(height: 2) } } }
+                        Button { tab = i } label: { Text(L10n.lookup(title)).font(.subheadline).foregroundStyle(tab == i ? Color.accentDefault : Color.textSecondary).padding(.vertical, 14).overlay(alignment: .bottom) { if tab == i { Rectangle().fill(Color.accentDefault).frame(height: 2) } } }
                     }
                 }.padding(.horizontal, 16)
             }
             if tab < 2 { PointsRecordsView(initialTab: tab == 0 ? 0 : 2, embedded: true).id(tab) }
             else { RewardsView(initialTab: tab == 2 ? 2 : tab == 3 ? 4 : 3, embedded: true).id(tab) }
-        }.background(Color.bgPrimary).navigationTitle("积分记录").navigationBarTitleDisplayMode(.inline)
+        }.background(Color.bgPrimary).navigationTitle(L10n.text("积分记录")).navigationBarTitleDisplayMode(.inline)
     }
 }
 struct PointsHomeEntry: View {
@@ -1223,9 +1223,9 @@ struct PointsHomeEntry: View {
         NavigationLink { PointsView() } label: {
             HStack(spacing: 14) {
                 Image(systemName: "star.circle").font(.system(size: 36, weight: .light)).foregroundStyle(palette.accent)
-                VStack(alignment: .leading, spacing: 6) { Text("积分中心").font(.system(size: 17, weight: .semibold)); Text("转盘 · 商城 · 奖池").font(.system(size: 12)).foregroundStyle(palette.muted) }
+                VStack(alignment: .leading, spacing: 6) { Text(L10n.text("积分中心")).font(.system(size: 17, weight: .semibold)); Text(L10n.text("转盘 · 商城 · 奖池")).font(.system(size: 12)).foregroundStyle(palette.muted) }
                 Spacer(minLength: 8)
-                VStack(alignment: .trailing, spacing: 4) { Text(balance.map { $0.formatted() } ?? "去看看").font(.system(size: 20, weight: .medium)).monospacedDigit().foregroundStyle(palette.accent); if balance != nil { Text("可用积分").font(.system(size: 11)).foregroundStyle(palette.muted) } }
+                VStack(alignment: .trailing, spacing: 4) { Text(L10n.lookup(balance.map { $0.formatted() } ?? L10n.text("去看看"))).font(.system(size: 20, weight: .medium)).monospacedDigit().foregroundStyle(palette.accent); if balance != nil { Text(L10n.text("可用积分")).font(.system(size: 11)).foregroundStyle(palette.muted) } }
                 Image(systemName: "chevron.right").font(.caption).foregroundStyle(palette.accent)
             }.foregroundStyle(palette.text).padding(18).background(palette.card, in: RoundedRectangle(cornerRadius: 18))
         }.buttonStyle(CardPressButtonStyle()).accessibilityIdentifier("home-points")
@@ -1254,19 +1254,19 @@ struct PointsRecordsView: View {
     var body: some View {
         List {
             if !embedded { PointsWalletCard(balance: balance) { showRules = true }.listRowInsets(EdgeInsets()).listRowBackground(Color.clear) }
-            if tab == 1 { HStack { TextField("搜索积分商品", text: $keyword).onSubmit { page = 1; Task { await load() } }; Button("搜索") { page = 1; Task { await load() } } }.listRowBackground(Color.bgSecondary) }
-            if let error { Text(error).foregroundStyle(.red); Button("重试") { Task { await load() } } }
+            if tab == 1 { HStack { TextField(L10n.text("搜索积分商品"), text: $keyword).onSubmit { page = 1; Task { await load() } }; Button(L10n.text("搜索")) { page = 1; Task { await load() } } }.listRowBackground(Color.bgSecondary) }
+            if let error { Text(L10n.lookup(error)).foregroundStyle(.red); Button(L10n.text("重试")) { Task { await load() } } }
             if busy { ProgressView() }
             if tab == 0 {
                 ForEach(entries) { e in
                     DisclosureGroup {
-                        Text("关联单号：\(e.referenceNo)").font(.caption2).foregroundStyle(.secondary).textSelection(.enabled)
+                        Text(L10n.text("关联单号：\(e.referenceNo)")).font(.caption2).foregroundStyle(.secondary).textSelection(.enabled)
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: e.delta > 0 ? "plus.circle.fill" : "minus.circle").font(.title2).foregroundStyle(Color.accentDefault)
-                            VStack(alignment: .leading, spacing: 6) { Text(e.title); Text(e.createdAt).font(.caption2).foregroundStyle(.secondary) }
+                            VStack(alignment: .leading, spacing: 6) { Text(L10n.lookup(e.title)); Text(L10n.lookup(e.createdAt)).font(.caption2).foregroundStyle(.secondary) }
                             Spacer()
-                            VStack(alignment: .trailing, spacing: 6) { Text("\(e.delta > 0 ? "+" : "")\(e.delta)").font(.title3).monospacedDigit().foregroundStyle(e.delta > 0 ? Color.accentDefault : Color.textPrimary); Text("余额 \(e.balanceAfter)").font(.caption2).foregroundStyle(.secondary) }
+                            VStack(alignment: .trailing, spacing: 6) { Text("\(e.delta > 0 ? "+" : "")\(e.delta)").font(.title3).monospacedDigit().foregroundStyle(e.delta > 0 ? Color.accentDefault : Color.textPrimary); Text(L10n.text("余额 \(e.balanceAfter)")).font(.caption2).foregroundStyle(.secondary) }
                         }.padding(.vertical, 6)
                     }
                 }
@@ -1275,7 +1275,7 @@ struct PointsRecordsView: View {
                     Button { selected = p } label: {
                         HStack {
                             if let url = URL(string: p.image), !p.image.isEmpty { AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { Color.gray.opacity(0.15) }.frame(width: 64, height: 64).clipped().cornerRadius(12) } else { Image(systemName: "gift.fill").font(.title).foregroundStyle(Color.accentDefault).frame(width: 64, height: 64).background(Color.accentDefault.opacity(0.12), in: RoundedRectangle(cornerRadius: 12)) }
-                            VStack(alignment: .leading, spacing: 6) { Text(p.name).foregroundStyle(Color.textPrimary); Text("\(p.pointsPrice) 积分 · 库存 \(p.stock)").foregroundStyle(Color.accentDefault); Text(p.stock < 1 ? "已兑完" : (balance ?? 0) < p.pointsPrice ? "还差 \(p.pointsPrice - (balance ?? 0)) 积分" : "立即兑换 →").font(AppTypography.caption).foregroundStyle(.secondary) }
+                            VStack(alignment: .leading, spacing: 6) { Text(L10n.lookup(p.name)).foregroundStyle(Color.textPrimary); Text(L10n.text("\(p.pointsPrice) 积分 · 库存 \(p.stock)")).foregroundStyle(Color.accentDefault); Text(L10n.lookup(p.stock < 1 ? L10n.text("已兑完") : (balance ?? 0) < p.pointsPrice ? L10n.text("还差 \(p.pointsPrice - (balance ?? 0)) 积分") : L10n.text("立即兑换 →"))).font(AppTypography.caption).foregroundStyle(.secondary) }
                         }
                     }
                 }
@@ -1283,27 +1283,27 @@ struct PointsRecordsView: View {
                 ForEach(orders) { o in
                     VStack(alignment: .leading, spacing: 8) {
                         Text("\(o.productName) × \(o.quantity)").font(.headline)
-                        Text("\(o.pointsTotal) 积分 · \(o.statusText)")
+                        Text(L10n.text("\(o.pointsTotal) 积分 · \(o.statusText)"))
                         if o.status != "cancelled" { RewardDeliverySteps(status: o.status, firstLabel: "已兑换") }
-                        DisclosureGroup("订单与收货信息") { Text(o.orderNo).font(.caption2); Text(o.address).font(AppTypography.caption); Text(o.createdAt).font(.caption2) }
+                        DisclosureGroup(L10n.text("订单与收货信息")) { Text(L10n.lookup(o.orderNo)).font(.caption2); Text(o.address).font(AppTypography.caption); Text(L10n.lookup(o.createdAt)).font(.caption2) }
                         if !o.trackingNo.isEmpty { Text("\(o.carrier)：\(o.trackingNo)").font(AppTypography.caption) }
-                        if o.status == "pending" || o.status == "shipped" { Button(o.status == "pending" ? "取消兑换" : "确认收货") { pendingAction = o }.disabled(busy) }
+                        if o.status == "pending" || o.status == "shipped" { Button(L10n.lookup(o.status == "pending" ? L10n.text("取消兑换") : L10n.text("确认收货"))) { pendingAction = o }.disabled(busy) }
                     }
                 }
             }
-            if !busy && error == nil && count == 0 { ContentUnavailableView(tab == 1 ? "暂无积分商品" : tab == 0 ? "暂无积分明细" : "暂无兑换记录", systemImage: tab == 0 ? "list.bullet.rectangle" : "gift", description: Text(tab == 1 ? "商品上架后可用积分兑换。" : "消费、兑换和活动扣分会显示在这里。")) }
-            if page > 1 || count >= 20 { HStack { Button("上一页") { page -= 1 }.disabled(page == 1 || busy); Spacer(); Text("第 \(page) 页"); Spacer(); Button("下一页") { page += 1 }.disabled(count < 20 || busy) } }
+            if !busy && error == nil && count == 0 { ContentUnavailableView(tab == 1 ? L10n.text("暂无积分商品") : tab == 0 ? L10n.text("暂无积分明细") : L10n.text("暂无兑换记录"), systemImage: tab == 0 ? "list.bullet.rectangle" : "gift", description: Text(L10n.lookup(tab == 1 ? L10n.text("商品上架后可用积分兑换。") : L10n.text("消费、兑换和活动扣分会显示在这里。")))) }
+            if page > 1 || count >= 20 { HStack { Button(L10n.text("上一页")) { page -= 1 }.disabled(page == 1 || busy); Spacer(); Text(L10n.text("第 \(page) 页")); Spacer(); Button(L10n.text("下一页")) { page += 1 }.disabled(count < 20 || busy) } }
         }
         .scrollContentBackground(.hidden).background(Color.bgPrimary)
-        .navigationTitle(embedded && tab == 1 ? "积分中心" : "积分记录").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(L10n.lookup(embedded && tab == 1 ? L10n.text("积分中心") : L10n.text("积分记录"))).navigationBarTitleDisplayMode(.inline)
         .task(id: "\(tab)-\(page)") { await load() }.refreshable { await load() }
         .onChange(of: tab) { _, _ in page = 1 }
         .sheet(isPresented: $showRules) { PointsRulesSheet() }
         .sheet(item: $selected, onDismiss: { Task { await load() } }) { product in PointsRedeemSheet(product: product, balance: balance ?? 0) }
-        .alert("确认操作", isPresented: Binding(get: { pendingAction != nil }, set: { if !$0 { pendingAction = nil } })) {
-            Button("返回", role: .cancel) { pendingAction = nil }
-            Button("确认") { if let order = pendingAction { Task { await transition(order) } }; pendingAction = nil }
-        } message: { Text(pendingAction?.status == "pending" ? "取消兑换后将退回积分。" : "请确认已收到商品。") }
+        .alert(L10n.text("确认操作"), isPresented: Binding(get: { pendingAction != nil }, set: { if !$0 { pendingAction = nil } })) {
+            Button(L10n.text("返回"), role: .cancel) { pendingAction = nil }
+            Button(L10n.text("确认")) { if let order = pendingAction { Task { await transition(order) } }; pendingAction = nil }
+        } message: { Text(L10n.lookup(pendingAction?.status == "pending" ? L10n.text("取消兑换后将退回积分。") : L10n.text("请确认已收到商品。"))) }
     }
     @MainActor private func load() async {
         generation += 1; let version = generation
@@ -1336,18 +1336,18 @@ struct PointsRedeemSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(product.name) { Text(product.description); Text("每件 \(product.pointsPrice) 积分 · 库存 \(product.stock)") }
+                Section(L10n.lookup(product.name)) { Text(L10n.lookup(product.description)); Text(L10n.text("每件 \(product.pointsPrice) 积分 · 库存 \(product.stock)")) }
                 if product.stock > 0 { Stepper("数量：\(quantity)", value: $quantity, in: 1...Int(min(99, product.stock))).disabled(busy || request != nil) }
-                Section("收货地址") {
-                    if addresses.isEmpty { Text("请先在“我的”添加收货地址") }
-                    Picker("地址", selection: $addressID) { ForEach(addresses) { a in Text("\(a.name) \(a.phone) \(a.fullAddress)").tag(a.id) } }.disabled(busy || request != nil)
+                Section(L10n.text("收货地址")) {
+                    if addresses.isEmpty { Text(L10n.text("请先在“我的”添加收货地址")) }
+                    Picker(L10n.text("地址"), selection: $addressID) { ForEach(addresses) { a in Text("\(a.name) \(a.phone) \(a.fullAddress)").tag(a.id) } }.disabled(busy || request != nil)
                 }
-                Section("兑换合计") { Text("\(Int64(quantity) * product.pointsPrice) 积分").font(.title2).foregroundStyle(Color.accentDefault); Text(balance >= Int64(quantity) * product.pointsPrice ? "兑换后剩余 \(balance - Int64(quantity) * product.pointsPrice) 积分" : "还差 \(Int64(quantity) * product.pointsPrice - balance) 积分").font(AppTypography.caption).foregroundStyle(.secondary) }
-                if let error { Text(error).foregroundStyle(.red) }
-                Button(busy ? "兑换中…" : request == nil ? "确认兑换" : "重试本次兑换") { Task { await redeem() } }.disabled(busy || addressID == 0 || product.stock < quantity || balance < Int64(quantity) * product.pointsPrice)
+                Section(L10n.text("兑换合计")) { Text(L10n.text("\(Int64(quantity) * product.pointsPrice) 积分")).font(.title2).foregroundStyle(Color.accentDefault); Text(L10n.lookup(balance >= Int64(quantity) * product.pointsPrice ? L10n.text("兑换后剩余 \(balance - Int64(quantity) * product.pointsPrice) 积分") : L10n.text("还差 \(Int64(quantity) * product.pointsPrice - balance) 积分"))).font(AppTypography.caption).foregroundStyle(.secondary) }
+                if let error { Text(L10n.lookup(error)).foregroundStyle(.red) }
+                Button(L10n.lookup(busy ? L10n.text("兑换中…") : request == nil ? L10n.text("确认兑换") : L10n.text("重试本次兑换"))) { Task { await redeem() } }.disabled(busy || addressID == 0 || product.stock < quantity || balance < Int64(quantity) * product.pointsPrice)
             }
-            .navigationTitle("兑换商品")
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() }.disabled(busy) } }
+            .navigationTitle(L10n.text("兑换商品"))
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(L10n.text("关闭")) { dismiss() }.disabled(busy) } }
             .interactiveDismissDisabled(busy)
             .task { do { addresses = try await APIClient.shared.request(.addressList); addressID = (addresses.first(where: { $0.isDefault }) ?? addresses.first)?.id ?? 0 } catch { self.error = error.localizedDescription } }
         }
@@ -1364,9 +1364,9 @@ struct PointsRedeemSheet: View {
 // MARK: - 8. 浏览记录
 struct HistoryView: View {
     var body: some View {
-        DFEmptyState(icon: "clock", title: "暂无浏览记录", subtitle: "最近浏览的内容会显示在这里")
+        DFEmptyState(icon: "clock", title: L10n.text("暂无浏览记录"), subtitle: L10n.text("最近浏览的内容会显示在这里"))
         .background(Color.bgPrimary)
-        .navigationTitle("浏览记录")
+        .navigationTitle(L10n.text("浏览记录"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -1374,9 +1374,9 @@ struct HistoryView: View {
 // MARK: - 9. 通话记录
 struct CallHistoryView: View {
     var body: some View {
-        DFEmptyState(icon: "phone", title: "暂无通话记录", subtitle: "已完成的音视频通话会显示在这里")
+        DFEmptyState(icon: "phone", title: L10n.text("暂无通话记录"), subtitle: L10n.text("已完成的音视频通话会显示在这里"))
         .background(Color.bgPrimary)
-        .navigationTitle("通话记录")
+        .navigationTitle(L10n.text("通话记录"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -1400,12 +1400,12 @@ struct HelpView: View {
                             Image(systemName: "questionmark.circle")
                                 .font(AppTypography.body)
                                 .foregroundStyle(Color.accentDefault)
-                            Text(item.q)
+                            Text(L10n.lookup(item.q))
                                 .font(AppTypography.body.weight(.medium))
                                 .foregroundStyle(Color.textPrimary)
                             Spacer()
                         }
-                        Text(item.a)
+                        Text(L10n.lookup(item.a))
                             .font(AppTypography.supporting)
                             .foregroundStyle(Color.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -1422,7 +1422,7 @@ struct HelpView: View {
             .padding(.top, AppSpacing.md)
         }
         .background(Color.bgPrimary)
-        .navigationTitle("帮助与客服")
+        .navigationTitle(L10n.text("帮助与客服"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -1454,11 +1454,11 @@ struct ProfileEditView: View {
             .padding(.top, AppSpacing.md)
         }
         .background(Color.bgPrimary)
-        .navigationTitle("个人资料")
+        .navigationTitle(L10n.text("个人资料"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button(isSaving ? "保存中" : "保存") {
+                Button(L10n.lookup(isSaving ? L10n.text("保存中") : L10n.text("保存"))) {
                     Task { await saveProfile() }
                 }
                 .disabled(isSaving || isLoading || nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -1469,7 +1469,7 @@ struct ProfileEditView: View {
         .overlay {
             if isLoading { ProgressView().tint(Color.accentDefault) }
         }
-        .alert("提示", isPresented: .init(
+        .alert(L10n.text("提示"), isPresented: .init(
             get: { errorMessage != nil || savedMessage != nil },
             set: {
                 if !$0 {
@@ -1478,9 +1478,9 @@ struct ProfileEditView: View {
                 }
             }
         )) {
-            Button("知道了", role: .cancel) {}
+            Button(L10n.text("知道了"), role: .cancel) {}
         } message: {
-            Text(errorMessage ?? savedMessage ?? "")
+            Text(L10n.lookup(errorMessage ?? savedMessage ?? ""))
         }
     }
 
@@ -1491,40 +1491,40 @@ struct ProfileEditView: View {
 
     private var infoSection: some View {
         VStack(spacing: 0) {
-            editRow(label: "昵称", value: $nickname)
+            editRow(label: L10n.text("昵称"), value: $nickname)
             divider
             HStack {
-                Text("手机号")
+                Text(L10n.text("手机号"))
                     .font(AppTypography.body)
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
-                Text(maskedMobile)
+                Text(L10n.lookup(maskedMobile))
                     .font(AppTypography.body)
                     .foregroundStyle(Color.textTertiary)
             }
             .padding(AppSpacing.md)
             divider
             HStack {
-                Text("性别")
+                Text(L10n.text("性别"))
                     .font(AppTypography.body)
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
-                Picker("性别", selection: $gender) {
-                    Text("未知").tag("unknown")
-                    Text("男").tag("male")
-                    Text("女").tag("female")
+                Picker(L10n.text("性别"), selection: $gender) {
+                    Text(L10n.text("未知")).tag("unknown")
+                    Text(L10n.text("男")).tag("male")
+                    Text(L10n.text("女")).tag("female")
                 }
                 .labelsHidden()
                 .tint(Color.textSecondary)
             }
             .padding(AppSpacing.md)
             divider
-            editRow(label: "生日", value: $birthday)
+            editRow(label: L10n.text("生日"), value: $birthday)
             divider
-            editRow(label: "地区", value: $region)
+            editRow(label: L10n.text("地区"), value: $region)
             divider
             VStack(alignment: .leading, spacing: AppSpacing.sm) {
-                Text("个人简介")
+                Text(L10n.text("个人简介"))
                     .font(AppTypography.body)
                     .foregroundStyle(Color.textPrimary)
                 TextEditor(text: $bio)
@@ -1550,7 +1550,7 @@ struct ProfileEditView: View {
 
     private func editRow(label: String, value: Binding<String>) -> some View {
         HStack {
-            Text(label)
+            Text(L10n.lookup(label))
                 .font(AppTypography.body)
                 .foregroundStyle(Color.textPrimary)
             Spacer()
@@ -1627,19 +1627,19 @@ struct NotificationSettingsView: View {
             .padding(.top, AppSpacing.md)
         }
         .background(Color.bgPrimary)
-        .navigationTitle("消息通知")
+        .navigationTitle(L10n.text("消息通知"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private var toggleGroup: some View {
         VStack(spacing: 0) {
-            toggleRow(icon: "doc.text", title: "订单通知", subtitle: "订单状态变更提醒", isOn: $orderNotify)
+            toggleRow(icon: "doc.text", title: L10n.text("订单通知"), subtitle: L10n.text("订单状态变更提醒"), isOn: $orderNotify)
             divider
-            toggleRow(icon: "gift", title: "活动通知", subtitle: "优惠活动与福利提醒", isOn: $activityNotify)
+            toggleRow(icon: "gift", title: L10n.text("活动通知"), subtitle: L10n.text("优惠活动与福利提醒"), isOn: $activityNotify)
             divider
-            toggleRow(icon: "bell", title: "系统通知", subtitle: "系统消息与公告", isOn: $systemNotify)
+            toggleRow(icon: "bell", title: L10n.text("系统通知"), subtitle: L10n.text("系统消息与公告"), isOn: $systemNotify)
             divider
-            toggleRow(icon: "bubble.left", title: "消息通知", subtitle: "法师/客服消息提醒", isOn: $chatNotify)
+            toggleRow(icon: "bubble.left", title: L10n.text("消息通知"), subtitle: L10n.text("法师/客服消息提醒"), isOn: $chatNotify)
         }
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.lg)
@@ -1653,10 +1653,10 @@ struct NotificationSettingsView: View {
                 .foregroundStyle(Color.textTertiary)
                 .frame(width: 24)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                Text(L10n.lookup(title))
                     .font(AppTypography.body)
                     .foregroundStyle(Color.textPrimary)
-                Text(subtitle)
+                Text(L10n.lookup(subtitle))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }
@@ -1696,11 +1696,11 @@ struct SecurityView: View {
                                     .font(AppTypography.reading)
                                     .foregroundStyle(Color.textTertiary)
                                     .frame(width: 24)
-                                Text(item.title)
+                                Text(L10n.lookup(item.title))
                                     .font(AppTypography.body)
                                     .foregroundStyle(Color.textPrimary)
                                 Spacer()
-                                Text(item.value)
+                                Text(L10n.lookup(item.value))
                                     .font(AppTypography.supporting)
                                     .foregroundStyle(Color.textTertiary)
                                 Image(systemName: "chevron.right")
@@ -1718,7 +1718,7 @@ struct SecurityView: View {
                 .cornerRadius(AppRadius.lg)
                 .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
 
-                Text("如遇账号异常，请联系客服：400-000-0000")
+                Text(L10n.text("如遇账号异常，请联系客服：400-000-0000"))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .frame(maxWidth: .infinity)
@@ -1728,7 +1728,7 @@ struct SecurityView: View {
             .padding(.top, AppSpacing.md)
         }
         .background(Color.bgPrimary)
-        .navigationTitle("账号安全")
+        .navigationTitle(L10n.text("账号安全"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -1741,9 +1741,9 @@ struct SecurityView: View {
 private struct SecurityDetailView: View {
     let title: String
     var body: some View {
-        DFEmptyState(icon: "lock.shield", title: title, subtitle: "功能开发中，敬请期待")
+        DFEmptyState(icon: "lock.shield", title: title, subtitle: L10n.text("功能开发中，敬请期待"))
             .background(Color.bgPrimary)
-            .navigationTitle(title)
+            .navigationTitle(L10n.lookup(title))
             .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -1766,10 +1766,10 @@ struct AboutView: View {
                         .scaledToFit()
                         .frame(width: 96, height: 96)
                         .accessibilityHidden(true)
-                    Text("问玄东方")
+                    Text(L10n.text("问玄东方"))
                         .font(AppTypography.title(20))
                         .foregroundStyle(Color.accentDefault)
-                    Text("版本 \(AppConfig.clientVersion) (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"))")
+                    Text(L10n.text("版本 \(AppConfig.clientVersion) (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"))"))
                         .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
@@ -1784,7 +1784,7 @@ struct AboutView: View {
                                 .font(AppTypography.reading)
                                 .foregroundStyle(Color.textTertiary)
                                 .frame(width: 24)
-                            Text(item.title)
+                            Text(L10n.lookup(item.title))
                                 .font(AppTypography.body)
                                 .foregroundStyle(Color.textPrimary)
                             Spacer()
@@ -1801,7 +1801,7 @@ struct AboutView: View {
                 .cornerRadius(AppRadius.lg)
                 .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
 
-                Text("© 2026 问玄东方 保留所有权利")
+                Text(L10n.text("© 2026 问玄东方 保留所有权利"))
                     .font(AppTypography.micro)
                     .foregroundStyle(Color.textTertiary)
                 Spacer(minLength: AppSpacing.xl)
@@ -1810,7 +1810,7 @@ struct AboutView: View {
             .padding(.top, AppSpacing.md)
         }
         .background(Color.bgPrimary)
-        .navigationTitle("关于问玄东方")
+        .navigationTitle(L10n.text("关于问玄东方"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -1835,21 +1835,21 @@ struct NativeMessageCenterView: View {
         List {
             Section {
                 HStack {
-                    Text("\(unread) 条未读").foregroundStyle(Color.textSecondary)
+                    Text(L10n.text("\(unread) 条未读")).foregroundStyle(Color.textSecondary)
                     Spacer()
-                    Button("全部已读") { Task { await markAll() } }.disabled(busy || unread == 0)
+                    Button(L10n.text("全部已读")) { Task { await markAll() } }.disabled(busy || unread == 0)
                 }.listRowBackground(Color.bgSecondary)
             }
-            if let error { Section { Text(error).foregroundStyle(Color.brandDefault); Button("重试") { Task { await load(reset: true) } } } }
-            if messages.isEmpty && !loading { ContentUnavailableView("暂无消息", systemImage: "bell", description: Text("预约和服务进度更新会显示在这里")) }
+            if let error { Section { Text(L10n.lookup(error)).foregroundStyle(Color.brandDefault); Button(L10n.text("重试")) { Task { await load(reset: true) } } } }
+            if messages.isEmpty && !loading { ContentUnavailableView(L10n.text("暂无消息"), systemImage: "bell", description: Text(L10n.text("预约和服务进度更新会显示在这里"))) }
             ForEach(messages) { message in
                 VStack(alignment: .leading, spacing: 10) {
                     Button { Task { await expand(message) } } label: {
                         HStack(alignment: .top, spacing: 10) {
                             Circle().fill(message.isReadBool ? Color.clear : Color.brandDefault).frame(width: 7, height: 7).padding(.top, 7)
                             VStack(alignment: .leading, spacing: 5) {
-                                Text(message.title).font(AppTypography.body.weight(message.isReadBool ? .regular : .semibold)).foregroundStyle(Color.textPrimary)
-                                Text(message.createdAt ?? "").font(AppTypography.micro).foregroundStyle(Color.textTertiary)
+                                Text(L10n.lookup(message.title)).font(AppTypography.body.weight(message.isReadBool ? .regular : .semibold)).foregroundStyle(Color.textPrimary)
+                                Text(L10n.lookup(message.createdAt ?? "")).font(AppTypography.micro).foregroundStyle(Color.textTertiary)
                             }
                             Spacer(minLength: 0)
                             Image(systemName: expandedID == message.id ? "chevron.up" : "chevron.down").foregroundStyle(Color.textTertiary)
@@ -1862,19 +1862,19 @@ struct NativeMessageCenterView: View {
                         }
                     }
                 }.padding(.vertical, 5).listRowBackground(Color.bgSecondary)
-                    .swipeActions { Button("删除", role: .destructive) { deletion = message } }
+                    .swipeActions { Button(L10n.text("删除"), role: .destructive) { deletion = message } }
             }
             if loading { ProgressView().frame(maxWidth: .infinity) }
-            if messages.count < total { Button("加载更多") { Task { await load(reset: false) } }.disabled(loading) }
+            if messages.count < total { Button(L10n.text("加载更多")) { Task { await load(reset: false) } }.disabled(loading) }
         }
         .scrollContentBackground(.hidden).background(Color.bgPrimary)
-        .navigationTitle("消息").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(L10n.text("消息")).navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .task(id: auth.userId) { await load(reset: true) }
         .refreshable { await load(reset: true) }
-        .confirmationDialog("删除这条消息？", isPresented: Binding(get: { deletion != nil }, set: { if !$0 { deletion = nil } }), titleVisibility: .visible) {
-            Button("删除", role: .destructive) { if let message = deletion { Task { await remove(message) } } }
-            Button("取消", role: .cancel) { deletion = nil }
+        .confirmationDialog(L10n.text("删除这条消息？"), isPresented: Binding(get: { deletion != nil }, set: { if !$0 { deletion = nil } }), titleVisibility: .visible) {
+            Button(L10n.text("删除"), role: .destructive) { if let message = deletion { Task { await remove(message) } } }
+            Button(L10n.text("取消"), role: .cancel) { deletion = nil }
         }
     }
     private func load(reset: Bool) async {

@@ -1,44 +1,44 @@
 <template>
   <div class="dfx-page">
-    <PageHeader title="评论审核" subtitle="大师广场评论先审后显">
+    <PageHeader :title='$t("评论审核")' :subtitle='$t("大师广场评论先审后显")'>
       <template #actions>
-        <el-button :icon="Refresh" @click="loadData">刷新</el-button>
+        <el-button :icon="Refresh" @click="loadData">{{ $t("刷新") }}</el-button>
       </template>
     </PageHeader>
 
     <div class="dfx-card filter-bar">
-      <el-select v-model="query.status" placeholder="审核状态" clearable style="width: 160px" @change="onSearch">
-        <el-option label="待审核" value="pending" />
-        <el-option label="已通过" value="approved" />
-        <el-option label="已驳回" value="rejected" />
+      <el-select v-model="query.status" :placeholder='$t("审核状态")' clearable style="width: 160px" @change="onSearch">
+        <el-option :label='$t("待审核")' value="pending" />
+        <el-option :label='$t("已通过")' value="approved" />
+        <el-option :label='$t("已驳回")' value="rejected" />
       </el-select>
     </div>
 
     <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
       <div class="ax-page-feedback__copy">
-        <div class="ax-page-feedback__title">评论审核任务加载失败</div>
-        <div class="ax-page-feedback__description">当前结果不是“暂无评论”，请重试后再处理。</div>
+        <div class="ax-page-feedback__title">{{ $t("评论审核任务加载失败") }}</div>
+        <div class="ax-page-feedback__description">{{ $t("当前结果不是“暂无评论”，请重试后再处理。") }}</div>
       </div>
-      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+      <el-button :loading="loading" @click="loadData">{{ $t("重新加载") }}</el-button>
     </div>
 
     <div class="dfx-card table-wrap">
       <DataTable class="desktop-table" :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
-        <el-table-column label="评论ID" prop="id" width="190" show-overflow-tooltip />
-        <el-table-column label="帖子ID" prop="postId" width="190" show-overflow-tooltip />
-        <el-table-column label="用户" prop="userId" width="130" />
-        <el-table-column label="评论内容" prop="content" min-width="280" show-overflow-tooltip />
-        <el-table-column label="状态" width="110">
+        <el-table-column :label='$t("评论ID")' prop="id" width="190" show-overflow-tooltip />
+        <el-table-column :label='$t("帖子ID")' prop="postId" width="190" show-overflow-tooltip />
+        <el-table-column :label='$t("用户")' prop="userId" width="130" />
+        <el-table-column :label='$t("评论内容")' prop="content" min-width="280" show-overflow-tooltip />
+        <el-table-column :label='$t("状态")' width="110">
           <template #default="{ row }"><StatusTag :status="row.status" /></template>
         </el-table-column>
-        <el-table-column label="审核备注" prop="auditRemark" min-width="140" show-overflow-tooltip />
-        <el-table-column label="提交时间" width="170">
-          <template #default="{ row }">{{ formatDate(row.createTime) }}</template>
+        <el-table-column :label='$t("审核备注")' prop="auditRemark" min-width="140" show-overflow-tooltip />
+        <el-table-column :label='$t("提交时间")' width="170">
+          <template #default="{ row }">{{ $t(formatDate(row.createTime)) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column :label='$t("操作")' width="140" fixed="right">
           <template #default="{ row }">
             <AuditAction v-if="row.status === 'pending'" :on-confirm="(a, r) => doAudit(row, a, r)" @success="loadData" />
-            <span v-else class="muted">已处理</span>
+            <span v-else class="muted">{{ $t("已处理") }}</span>
           </template>
         </el-table-column>
       </DataTable>
@@ -46,12 +46,12 @@
         <template #item="{ item: row }">
           <article class="mobile-task-card">
             <div class="mobile-task-card__head"><strong>{{ row.content || '无评论正文' }}</strong><StatusTag :status="row.status" /></div>
-            <div class="mobile-task-card__meta">用户 {{ row.userId }} · 帖子 {{ row.postId }}</div>
-            <div class="mobile-task-card__meta">提交于 {{ formatDate(row.createTime) }}</div>
+            <div class="mobile-task-card__meta">{{ $t("用户 ") }}{{ $t(row.userId) }}{{ $t(" · 帖子 ") }}{{ $t(row.postId) }}</div>
+            <div class="mobile-task-card__meta">{{ $t("提交于 ") }}{{ $t(formatDate(row.createTime)) }}</div>
             <div class="mobile-task-card__foot">
-              <span>{{ row.auditRemark || (row.status === 'pending' ? '等待人工审核' : '未填写审核备注') }}</span>
+              <span>{{ $t((row.auditRemark || ((row.status === 'pending' ? $t('等待人工审核') : $t('未填写审核备注'))))) }}</span>
               <AuditAction v-if="row.status === 'pending'" :on-confirm="(a, r) => doAudit(row, a, r)" @success="loadData" />
-              <b v-else>已处理</b>
+              <b v-else>{{ $t("已处理") }}</b>
             </div>
           </article>
         </template>

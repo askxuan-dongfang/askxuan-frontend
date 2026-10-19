@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../packages/localization/language'
+
 import { ref, watch, onUnmounted } from 'vue';
 import client from '@/api/client';
-import { ElMessage } from 'element-plus';
+;
 type FileRow = {
     id: string;
     name: string;
@@ -74,7 +77,7 @@ async function submit() { busy.value = true; error.value = ''; try {
     summary.value = '';
     await load();
     emit('changed');
-    ElMessage.success('回执已提交，等待信众确认');
+    ElMessage.success(uiText('回执已提交，等待信众确认'));
 }
 catch (e) {
     error.value = (e as Error).message;
@@ -82,41 +85,41 @@ catch (e) {
 finally {
     busy.value = false;
 } }
-async function publishStage(){busy.value=true;error.value='';try{await client.post(`/bookings/${props.id}/progress/update`,{id:requestId,content:note.value,fileIds:stageFiles.value.map(f=>f.id)});note.value='';stageFiles.value=[];requestId=crypto.randomUUID();await load();emit('changed');ElMessage.success('阶段记录已发布，信众可以查看')}catch(e){error.value=(e as Error).message}finally{busy.value=false}}
+async function publishStage(){busy.value=true;error.value='';try{await client.post(`/bookings/${props.id}/progress/update`,{id:requestId,content:note.value,fileIds:stageFiles.value.map(f=>f.id)});note.value='';stageFiles.value=[];requestId=crypto.randomUUID();await load();emit('changed');ElMessage.success(uiText('阶段记录已发布，信众可以查看'))}catch(e){error.value=(e as Error).message}finally{busy.value=false}}
 watch([note,stageFiles],()=>{requestId=crypto.randomUUID()},{deep:true})
 </script>
 <template>
  <section class="df-card" style="padding:20px;margin-bottom:16px">
-  <h3>心愿与过程记录</h3>
-  <p v-if="!records.length">尚未留下心愿或阶段记录。</p>
+  <h3>{{ $t("心愿与过程记录") }}</h3>
+  <p v-if="!records.length">{{ $t("尚未留下心愿或阶段记录。") }}</p>
   <article v-for="r in records" :key="r.id" class="stage-record" :class="{'is-wish':r.kind==='wish'}">
-   <strong>{{r.kind==='wish'?'信众心愿':'执行记录'}}</strong><time>{{r.createdAt}}</time><p>{{r.content}}</p>
-   <div v-for="f in r.files" :key="f.id"><template v-if="previews[f.id]"><video v-if="f.contentType.startsWith('video/')" :src="previews[f.id]" controls preload="metadata"/><img v-else :src="previews[f.id]" :alt="f.name"/></template><el-button v-else @click="preview(f)">查看{{f.contentType.startsWith('video/')?'视频':'图片'}} · {{f.name}}</el-button></div>
+   <strong>{{$t((r.kind==='wish' ? $t('信众心愿') : $t('执行记录')))}}</strong><time>{{$t(r.createdAt)}}</time><p>{{r.content}}</p>
+   <div v-for="f in r.files" :key="f.id"><template v-if="previews[f.id]"><video v-if="f.contentType.startsWith('video/')" :src="previews[f.id]" controls preload="metadata"/><img v-else :src="previews[f.id]" :alt="$t(f.name)"/></template><el-button v-else @click="preview(f)">{{ $t("查看") }}{{$t((f.contentType.startsWith('video/') ? $t('视频') : $t('图片')))}} · {{$t(f.name)}}</el-button></div>
   </article>
   <div v-if="status==='in_progress'" class="stage-composer">
-   <h4>发布阶段记录</h4><p>说明实际执行的步骤，让信众了解服务进展。</p><label for="stage-note">本阶段的执行情况</label><el-input id="stage-note" v-model="note" type="textarea" :rows="3" maxlength="2000"/>
-   <p><label>添加图片／视频（选填，每条最多 8 个，每个最多 20 MB）<input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" :disabled="busy" @change="upload($event,true)"/></label></p>
-   <div v-for="f in stageFiles" :key="f.id">{{f.name}}<el-button text :disabled="busy" @click="stageFiles=stageFiles.filter(x=>x.id!==f.id)">移除</el-button></div>
-   <el-button type="primary" :loading="busy" :disabled="busy||note.trim().length<2" @click="publishStage">发布真实进展</el-button>
+   <h4>{{ $t("发布阶段记录") }}</h4><p>{{ $t("说明实际执行的步骤，让信众了解服务进展。") }}</p><label for="stage-note">{{ $t("本阶段的执行情况") }}</label><el-input id="stage-note" v-model="note" type="textarea" :rows="3" maxlength="2000"/>
+   <p><label>{{ $t("添加图片／视频（选填，每条最多 8 个，每个最多 20 MB）") }}<input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" :disabled="busy" @change="upload($event,true)"/></label></p>
+   <div v-for="f in stageFiles" :key="f.id">{{$t(f.name)}}<el-button text :disabled="busy" @click="stageFiles=stageFiles.filter(x=>x.id!==f.id)">{{ $t("移除") }}</el-button></div>
+   <el-button type="primary" :loading="busy" :disabled="busy||note.trim().length<2" @click="publishStage">{{ $t("发布真实进展") }}</el-button>
   </div>
-  <h3>履约回执</h3><p>确认接单 → 执行服务 → 提交回执 → 信众确认完成</p>
-  <el-alert v-if="error" :title="error" type="error" :closable="false"/><el-button v-if="error" @click="load">重试</el-button>
-  <p v-if="!receipts.length">{{ ['completed','reviewed'].includes(status)?'此历史订单未留存履约回执。':'尚未提交回执。' }}</p>
+  <h3>{{ $t("履约回执") }}</h3><p>{{ $t("确认接单 → 执行服务 → 提交回执 → 信众确认完成") }}</p>
+  <el-alert v-if="error" :title="$t(error)" type="error" :closable="false"/><el-button v-if="error" @click="load">{{ $t("重试") }}</el-button>
+  <p v-if="!receipts.length">{{ $t((['completed','reviewed'].includes(status) ? $t('此历史订单未留存履约回执。') : $t('尚未提交回执。'))) }}</p>
   <article v-for="(r,i) in receipts" :key="r.id" style="border-top:1px solid var(--admin-border-strong);padding:12px 0">
-   <strong>回执 {{ i+1 }} · {{ r.createdAt }}</strong><p style="white-space:pre-wrap">{{ r.summary }}</p>
+   <strong>{{ $t("回执 ") }}{{ $t((i + 1)) }} · {{ $t(r.createdAt) }}</strong><p style="white-space:pre-wrap">{{ $t(r.summary) }}</p>
    <div v-for="f in r.files" :key="f.id" style="margin-bottom:8px">
-    <template v-if="previews[f.id]"><video v-if="f.contentType.startsWith('video/')" :src="previews[f.id]" controls style="max-width:100%;max-height:360px"/><img v-else :src="previews[f.id]" :alt="f.name" style="max-width:100%;max-height:360px"/></template>
-    <el-button v-else @click="preview(f)">查看{{ f.contentType.startsWith('video/')?'视频':'图片' }} · {{ f.name }}</el-button>
+    <template v-if="previews[f.id]"><video v-if="f.contentType.startsWith('video/')" :src="previews[f.id]" controls style="max-width:100%;max-height:360px"/><img v-else :src="previews[f.id]" :alt="$t(f.name)" style="max-width:100%;max-height:360px"/></template>
+    <el-button v-else @click="preview(f)">{{ $t("查看") }}{{ $t((f.contentType.startsWith('video/') ? $t('视频') : $t('图片'))) }} · {{ $t(f.name) }}</el-button>
    </div>
-   <details><summary>回执校验信息</summary><p style="overflow-wrap:anywhere">{{ r.digest }}</p><p>文件 SHA-256 完整性校验，非区块链存证。</p></details>
+   <details><summary>{{ $t("回执校验信息") }}</summary><p style="overflow-wrap:anywhere">{{ $t(r.digest) }}</p><p>{{ $t("文件 SHA-256 完整性校验，非区块链存证。") }}</p></details>
   </article>
   <div v-if="status==='in_progress'">
-   <label>执行说明（5–2000 字）</label><el-input v-model="summary" type="textarea" :rows="4" :maxlength="2000" placeholder="说明执行内容、时间和结果"/>
-   <p><label>图片／视频（1–8 个，每个最多 20 MB）<input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" :disabled="busy" @change="upload($event)"/></label></p>
-   <div v-for="f in files" :key="f.id">{{ f.name }} <el-button text :disabled="busy" @click="files=files.filter(x=>x.id!==f.id)">移除</el-button></div>
-   <el-button type="primary" :loading="busy" :disabled="busy||summary.trim().length<5||!files.length" @click="submit">提交回执，等待信众确认</el-button>
+   <label>{{ $t("执行说明（5–2000 字）") }}</label><el-input v-model="summary" type="textarea" :rows="4" :maxlength="2000" :placeholder='$t("说明执行内容、时间和结果")'/>
+   <p><label>{{ $t("图片／视频（1–8 个，每个最多 20 MB）") }}<input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" :disabled="busy" @change="upload($event)"/></label></p>
+   <div v-for="f in files" :key="f.id">{{ $t(f.name) }} <el-button text :disabled="busy" @click="files=files.filter(x=>x.id!==f.id)">{{ $t("移除") }}</el-button></div>
+   <el-button type="primary" :loading="busy" :disabled="busy||summary.trim().length<5||!files.length" @click="submit">{{ $t("提交回执，等待信众确认") }}</el-button>
   </div>
-  <el-alert v-if="status==='pending_receipt'" title="回执已提交，等待信众核对；信众要求补充时可继续提交新版本。" type="info" :closable="false"/>
+  <el-alert v-if="status==='pending_receipt'" :title='$t("回执已提交，等待信众核对；信众要求补充时可继续提交新版本。")' type="info" :closable="false"/>
  </section>
 </template>
 

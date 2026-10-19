@@ -60,6 +60,20 @@ export function runLegacyShop(scope, adminBase = '/admin/') {
     const dark = preference === 'dark' || (preference === 'system' && scope.matchMedia('(prefers-color-scheme: dark)').matches)
     scope.document.documentElement.dataset.theme = dark ? 'dark' : 'light'
   } catch { /* The HTML's system appearance is a safe fallback. */ }
+  try {
+    const preference = scope.localStorage.getItem('askxuan-language') || 'system'
+    const preferred = (scope.navigator?.languages || []).find(value => /^zh(?:[-_]|$)/i.test(value)) || ''
+    const parts = preferred.replace(/_/g, '-').toLowerCase().split('-')
+    const traditional = preference === 'zh-Hant' || (preference === 'system' && (parts.includes('hant') || (!parts.includes('hans') && parts.some(value => ['tw', 'hk', 'mo'].includes(value)))))
+    scope.document.documentElement.lang = traditional ? 'zh-Hant' : 'zh-Hans'
+    if (traditional) {
+      scope.document.title = '問玄東方 · 統一運營管理臺'
+      const status = scope.document.querySelector?.('[role="status"]')
+      const link = scope.document.querySelector?.('a')
+      if (status) status.textContent = '正在進入統一運營管理臺…'
+      if (link) link.textContent = '進入管理臺'
+    }
+  } catch { /* Navigation remains available if storage is blocked. */ }
   scope.location.replace(target.href)
   return target.href
 }

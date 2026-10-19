@@ -46,7 +46,7 @@ struct MainTabView: View {
                     .rootTabPage()
                     .navigationDestination(for: AuthRoute.self) { _ in LoginView() }
             }
-            .tabItem { Label("首页", systemImage: "house") }
+            .tabItem { Label(L10n.text("首页"), systemImage: "house") }
             .tag(0)
 
             // 对话：需要登录
@@ -55,12 +55,12 @@ struct MainTabView: View {
                     .rootTabPage()
                     .requireAuth(
                         icon: "bubble.left.and.bubble.right.fill",
-                        title: "登录后查看对话",
-                        subtitle: "与法师一对一咨询，接收预约通知"
+                        title: L10n.text("登录后查看对话"),
+                        subtitle: L10n.text("与法师一对一咨询，接收预约通知")
                     )
                     .navigationDestination(for: AuthRoute.self) { _ in LoginView() }
             }
-            .tabItem { Label("对话", systemImage: "bubble.left.and.bubble.right") }
+            .tabItem { Label(L10n.text("对话"), systemImage: "bubble.left.and.bubble.right") }
             .badge(chatNotifications.chatUnread)
             .tag(1)
 
@@ -71,7 +71,7 @@ struct MainTabView: View {
                         switch route {
                         case .topic(let code): AiReportTopicEntry(code: code)
                         case .example(let code): if let sample = AiReportCatalog.examples.first(where: { $0.code == code }) { AiReportExampleView(example: sample) }
-                        case .report(let id): AiReportWorkspace(reportID: id).requireAuth(title: "登录后查看报告")
+                        case .report(let id): AiReportWorkspace(reportID: id).requireAuth(title: L10n.text("登录后查看报告"))
                         }
                     }
                     .id(authStore.sessionID)
@@ -79,7 +79,7 @@ struct MainTabView: View {
                     .navigationDestination(for: AuthRoute.self) { _ in LoginView() }
             }
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("AskXuanReportConversation"))) { _ in navigationPaths[2] = NavigationPath() }
-            .tabItem { Label("AI问事", systemImage: "sparkles") }
+            .tabItem { Label(L10n.text("AI问事"), systemImage: "sparkles") }
             .tag(2)
 
             // 商城：游客可浏览，下单时拦截
@@ -88,7 +88,7 @@ struct MainTabView: View {
                     .rootTabPage()
                     .navigationDestination(for: AuthRoute.self) { _ in LoginView() }
             }
-            .tabItem { Label("商城", systemImage: "bag") }
+            .tabItem { Label(L10n.text("商城"), systemImage: "bag") }
             .tag(3)
 
             // 我的：未登录显示登录引导
@@ -97,7 +97,7 @@ struct MainTabView: View {
                     .rootTabPage()
                     .navigationDestination(for: AuthRoute.self) { _ in LoginView() }
             }
-            .tabItem { Label("我的", systemImage: "person.crop.circle") }
+            .tabItem { Label(L10n.text("我的"), systemImage: "person.crop.circle") }
             .tag(4)
         }
         .tint(.brandDefault)

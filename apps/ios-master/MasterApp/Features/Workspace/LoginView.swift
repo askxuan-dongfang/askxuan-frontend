@@ -81,31 +81,32 @@ struct LoginView: View {
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 20) {
+        HStack { Spacer(); NavigationLink { LanguageSettingsView() } label: { Label(L10n.text("语言"), systemImage: "character.bubble") } }
         Image("brand-logo").resizable().scaledToFit().frame(width: 52, height: 52)
           .accessibilityHidden(true)
-        Text("问玄东方 · " + (master ? "师傅工作台" : "与美好相遇")).font(.subheadline).foregroundStyle(
+        Text(L10n.lookup(L10n.text("问玄东方 · ") + (master ? "师傅工作台" : L10n.text("与美好相遇")))).font(.subheadline).foregroundStyle(
           .secondary)
-        Text(mode == "login" ? "欢迎回来" : mode == "register" ? "注册独立大师账号" : mode == "activate" ? "激活寺院分配账号" : "找回密码").font(
+        Text(L10n.lookup(mode == "login" ? L10n.text("欢迎回来") : mode == "register" ? L10n.text("注册独立大师账号") : mode == "activate" ? L10n.text("激活寺院分配账号") : L10n.text("找回密码"))).font(
           .largeTitle.bold())
         if mode != "reset" && mode != "activate" {
-          Picker("认证方式", selection: $mode) {
-            Text("账号登录").tag("login")
-            Text("独立大师注册").tag("register")
+          Picker(L10n.text("认证方式"), selection: $mode) {
+            Text(L10n.text("账号登录")).tag("login")
+            Text(L10n.text("独立大师注册")).tag("register")
           }.pickerStyle(.segmented).disabled(busy)
         }
         Group {
           if mode == "login" {
-            TextField("邮箱／用户名", text: $account).textContentType(.username)
+            TextField(L10n.text("邮箱／用户名"), text: $account).textContentType(.username)
           } else {
-            TextField("邮箱", text: $email).keyboardType(.emailAddress).textContentType(.emailAddress)
+            TextField(L10n.text("邮箱"), text: $email).keyboardType(.emailAddress).textContentType(.emailAddress)
           }
           if mode == "register" {
-            TextField("用户名（4–32 位字母、数字或下划线）", text: $username).textContentType(.username)
+            TextField(L10n.text("用户名（4–32 位字母、数字或下划线）"), text: $username).textContentType(.username)
           }
-          SecureField(mode == "reset" ? "新密码（至少 12 个字符）" : "密码", text: $password).textContentType(
+          SecureField(L10n.lookup(mode == "reset" ? L10n.text("新密码（至少 12 个字符）") : L10n.text("密码")), text: $password).textContentType(
             mode == "login" ? .password : .newPassword)
           HStack {
-            TextField("图片验证码", text: $human).keyboardType(.numberPad).accessibilityLabel("图片验证码")
+            TextField(L10n.text("图片验证码"), text: $human).keyboardType(.numberPad).accessibilityLabel(L10n.text("图片验证码"))
             Button {
               Task { await reloadCaptcha() }
             } label: {
@@ -114,38 +115,38 @@ struct LoginView: View {
               {
                 Image(uiImage: image).resizable().scaledToFit().frame(width: 140, height: 48)
               } else {
-                Text("加载验证码").frame(width: 140, height: 48)
+                Text(L10n.text("加载验证码")).frame(width: 140, height: 48)
               }
-            }.accessibilityLabel("更换图片验证码").disabled(busy)
+            }.accessibilityLabel(L10n.text("更换图片验证码")).disabled(busy)
           }
           if mode != "login" {
             HStack {
-              TextField("邮箱验证码", text: $code).keyboardType(.numberPad).textContentType(.oneTimeCode)
+              TextField(L10n.text("邮箱验证码"), text: $code).keyboardType(.numberPad).textContentType(.oneTimeCode)
               TimelineView(.periodic(from: .now, by: 1)) { context in
                 let seconds = max(0, Int(ceil(retryAt.timeIntervalSince(context.date))))
-                Button(seconds > 0 ? "\(seconds) 秒后重发" : "发送验证码") { Task { await sendCode() } }
+                Button(L10n.lookup(seconds > 0 ? L10n.text("\(seconds) 秒后重发") : L10n.text("发送验证码"))) { Task { await sendCode() } }
                   .disabled(
                     busy || seconds > 0 || options?.emailEnabled != true || human.count != 5
                   ).frame(minHeight: 44)
               }
             }
-            Text("发送后图片会更新，提交前请输入新图片验证码。").font(.caption).foregroundStyle(.secondary)
+            Text(L10n.text("发送后图片会更新，提交前请输入新图片验证码。")).font(.caption).foregroundStyle(.secondary)
           }
         }.textFieldStyle(.roundedBorder).textInputAutocapitalization(.never)
           .autocorrectionDisabled()
         if mode == "register" || mode == "activate" {
-          Toggle("我已阅读并同意", isOn: $agreed)
+          Toggle(L10n.text("我已阅读并同意"), isOn: $agreed)
           HStack {
-            Button("用户协议") { legal = "用户协议" }
-            Button("隐私政策") { legal = "隐私政策" }
+            Button(L10n.text("用户协议")) { legal = "用户协议" }
+            Button(L10n.text("隐私政策")) { legal = "隐私政策" }
           }
         }
         if !failure.isEmpty {
-          Text(failure).foregroundStyle(.red).accessibilityLabel("错误：" + failure)
+          Text(L10n.lookup(failure)).foregroundStyle(.red).accessibilityLabel(L10n.lookup(L10n.text("错误：") + failure))
         }
-        if !message.isEmpty { Text(message).font(.callout).foregroundStyle(.secondary) }
+        if !message.isEmpty { Text(L10n.lookup(message)).font(.callout).foregroundStyle(.secondary) }
         if mode != "login" && options?.emailEnabled == false {
-          Text("邮箱验证暂未开放，请稍后重试。工作账户可联系管理员。").font(.callout)
+          Text(L10n.text("邮箱验证暂未开放，请稍后重试。工作账户可联系管理员。")).font(.callout)
         }
         Button {
           Task { await submit() }
@@ -153,15 +154,15 @@ struct LoginView: View {
           HStack {
             Spacer()
             if busy { ProgressView() }
-            Text(busy ? "正在处理…" : mode == "login" ? "登录" : mode == "register" ? "注册并登录" : mode == "activate" ? "验证邮箱并激活" : "重置密码")
+            Text(L10n.lookup(busy ? L10n.text("正在处理…") : mode == "login" ? L10n.text("登录") : mode == "register" ? L10n.text("注册并登录") : mode == "activate" ? L10n.text("验证邮箱并激活") : L10n.text("重置密码")))
             Spacer()
           }.frame(minHeight: 44)
         }.buttonStyle(.borderedProminent).disabled(
           busy || captcha == nil || (mode != "login" && options?.emailEnabled != true))
-        Button(mode == "login" ? "忘记密码" : "返回登录") { mode = mode == "login" ? "reset" : "login" }
+        Button(L10n.lookup(mode == "login" ? L10n.text("忘记密码") : L10n.text("返回登录"))) { mode = mode == "login" ? "reset" : "login" }
           .frame(minHeight: 44).disabled(busy)
-        Button("寺院分配账号激活") { mode = "activate" }.disabled(busy)
-        Text("独立大师注册后申请平台认证；纳管大师使用寺院分配邮箱激活账号。").font(.caption).foregroundStyle(.secondary)
+        Button(L10n.text("寺院分配账号激活")) { mode = "activate" }.disabled(busy)
+        Text(L10n.text("独立大师注册后申请平台认证；纳管大师使用寺院分配邮箱激活账号。")).font(.caption).foregroundStyle(.secondary)
       }.padding(24).frame(maxWidth: 480).frame(maxWidth: .infinity)
     }.background(Color.bgPrimary).task {
       await loadOptions()
@@ -179,12 +180,10 @@ struct LoginView: View {
         ScrollView {
           VStack(alignment: .leading, spacing: 16) {
             Text(
-              legal == "用户协议"
-                ? "请使用本人可访问的邮箱注册并妥善保管密码。请勿冒用他人身份、滥用验证码或发布违法内容。注册账户用于保存个人资料、收藏、设计和服务记录。具体服务内容、价格及履约条件以相应页面和订单约定为准。"
-                : "账户系统处理邮箱、用户名和密码哈希，用于身份验证、账户找回和保护账户。密码不以明文保存。验证码限时有效、验证后失效；发送频次和登录尝试记录用于防止滥用。注册成功时记录同意的协议版本。"
+              L10n.lookup(legal == "用户协议" ? L10n.text("请使用本人可访问的邮箱注册并妥善保管密码。请勿冒用他人身份、滥用验证码或发布违法内容。注册账户用于保存个人资料、收藏、设计和服务记录。具体服务内容、价格及履约条件以相应页面和订单约定为准。") : L10n.text("账户系统处理邮箱、用户名和密码哈希，用于身份验证、账户找回和保护账户。密码不以明文保存。验证码限时有效、验证后失效；发送频次和登录尝试记录用于防止滥用。注册成功时记录同意的协议版本。"))
             )
           }.padding()
-        }.navigationTitle(legal ?? "账户说明").toolbar { Button("完成") { legal = nil } }
+        }.navigationTitle(L10n.lookup(legal ?? L10n.text("账户说明"))).toolbar { Button(L10n.text("完成")) { legal = nil } }
       }.appSheetSurface()
     }
   }
@@ -298,7 +297,7 @@ struct DFTextField: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
-      Text(title)
+      Text(L10n.lookup(title))
         .font(AppTypography.caption)
         .foregroundStyle(.textSecondary)
       HStack(spacing: 8) {
@@ -307,7 +306,7 @@ struct DFTextField: View {
             .font(AppTypography.body)
             .foregroundStyle(.textTertiary)
         }
-        TextField(placeholder, text: $text)
+        TextField(L10n.lookup(placeholder), text: $text)
           .font(AppTypography.body)
           .foregroundStyle(.textPrimary)
           .autocorrectionDisabled()
@@ -334,7 +333,7 @@ struct DFSecureField: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
-      Text(title)
+      Text(L10n.lookup(title))
         .font(AppTypography.caption)
         .foregroundStyle(.textSecondary)
       HStack(spacing: 8) {
@@ -345,9 +344,9 @@ struct DFSecureField: View {
         }
         Group {
           if isSecure {
-            SecureField(placeholder, text: $text)
+            SecureField(L10n.lookup(placeholder), text: $text)
           } else {
-            TextField(placeholder, text: $text)
+            TextField(L10n.lookup(placeholder), text: $text)
           }
         }
         .font(AppTypography.body)

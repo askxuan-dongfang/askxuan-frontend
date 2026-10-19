@@ -22,11 +22,11 @@ struct DFEmptyState: View {
                 .background(Color.accentDefault.opacity(0.07), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(Color.accentDefault.opacity(0.12)))
                 .accessibilityHidden(true)
-            Text(title)
+            Text(L10n.lookup(title))
                 .font(AppTypography.body.weight(.medium))
                 .foregroundStyle(.textSecondary)
             if let subtitle {
-                Text(subtitle)
+                Text(L10n.lookup(subtitle))
                     .font(AppTypography.caption)
                     .foregroundStyle(.textTertiary)
                     .multilineTextAlignment(.center)
@@ -40,6 +40,6 @@ struct DFEmptyState: View {
 }
 
 #Preview {
-    DFEmptyState(icon: "building.columns", title: "暂无寺院", subtitle: "下拉刷新试试")
+    DFEmptyState(icon: "building.columns", title: L10n.text("暂无寺院"), subtitle: L10n.text("下拉刷新试试"))
         .preferredColorScheme(.dark)
 }

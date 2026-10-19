@@ -118,7 +118,7 @@ final class APIClient {
         return try await withSessionRecovery(context, allowsRefresh: allowsRefresh) { current in
             if initialAttempt {
                 initialAttempt = false
-                throw AuthenticationFailure(code: 40102, message: "登录已过期，请重新登录")
+                throw AuthenticationFailure(code: 40102, message: L10n.text("登录已过期，请重新登录"))
             }
             return current
         }
@@ -189,13 +189,13 @@ final class APIClient {
         let current = try await currentLogin(context)
         if current.accessToken != context.accessToken { return current }
         guard let refreshToken = context.refreshToken, !refreshToken.isEmpty else {
-            throw AuthenticationFailure(code: 40105, message: "登录已过期，请重新登录")
+            throw AuthenticationFailure(code: 40105, message: L10n.text("登录已过期，请重新登录"))
         }
         var request = try buildRequest(.authRefresh(refreshToken: refreshToken))
         request.setValue(nil, forHTTPHeaderField: "Authorization")
         let response: RefreshResponse = try await perform(request: request)
         guard !response.accessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw AuthenticationFailure(code: 40105, message: "登录已过期，请重新登录")
+            throw AuthenticationFailure(code: 40105, message: L10n.text("登录已过期，请重新登录"))
         }
         let accepted = await MainActor.run {
             AuthStore.shared.acceptRefreshedAccessToken(response.accessToken, for: context)
@@ -216,7 +216,7 @@ final class APIClient {
             return APIError.serverError(status.code, message)
         }
         if http.statusCode == 401 {
-            return AuthenticationFailure(code: 401, message: "登录已过期，请重新登录")
+            return AuthenticationFailure(code: 401, message: L10n.text("登录已过期，请重新登录"))
         }
         if !(200..<300).contains(http.statusCode) {
             return APIError.serverError(http.statusCode, String(data: data, encoding: .utf8) ?? "未知错误")

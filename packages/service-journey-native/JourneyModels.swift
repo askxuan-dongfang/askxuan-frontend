@@ -97,7 +97,7 @@ enum JourneyAPI {
     var components = URLComponents(
       url: APIClient.shared.baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
     if !query.isEmpty { components.queryItems = query }
-    guard let url = components.url else { throw JourneyFailure(message: "请求地址无效") }
+    guard let url = components.url else { throw JourneyFailure(message: L10n.text("请求地址无效")) }
     var request = URLRequest(url: url)
     if let body {
       request.httpMethod = method
@@ -133,9 +133,9 @@ enum JourneyAPI {
   static func upload(_ id: String, data: Data, name: String, mime: String) async throws
     -> JourneyMedia
   {
-    guard data.count <= 20 * 1024 * 1024 else { throw JourneyFailure(message: "每个文件最多 20 MB") }
+    guard data.count <= 20 * 1024 * 1024 else { throw JourneyFailure(message: L10n.text("每个文件最多 20 MB")) }
     guard ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm"].contains(mime) else {
-      throw JourneyFailure(message: "请选择 JPG、PNG、WebP 图片或 MP4、WebM 视频")
+      throw JourneyFailure(message: L10n.text("请选择 JPG、PNG、WebP 图片或 MP4、WebM 视频"))
     }
     let boundary = "Journey-\(UUID().uuidString)"
     var body = Data(
@@ -158,7 +158,7 @@ enum JourneyAPI {
       for: URLRequest(
         url: APIClient.shared.baseURL.appendingPathComponent(
           "bookings/\(id)/receipt-files/\(file.id)")))
-    guard response.mimeType == file.contentType else { throw JourneyFailure(message: "文件类型不符，请重试") }
+    guard response.mimeType == file.contentType else { throw JourneyFailure(message: L10n.text("文件类型不符，请重试")) }
     return data
   }
 }

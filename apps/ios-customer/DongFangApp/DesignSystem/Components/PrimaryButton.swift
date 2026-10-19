@@ -26,13 +26,13 @@ struct DFPrimaryButton: View {
             ZStack {
                 HStack(spacing: 6) {
                     if let icon { Image(systemName: icon) }
-                    Text(title)
+                    Text(L10n.lookup(title))
                 }
                 .opacity(isLoading ? 0 : 1)
                 if isLoading {
                     HStack(spacing: 8) {
                         ProgressView().tint(.white)
-                        Text("处理中…")
+                        Text(L10n.text("处理中…"))
                     }
                     .transition(.opacity)
                 }
@@ -48,8 +48,8 @@ struct DFPrimaryButton: View {
             .opacity(isEnabled ? 1.0 : 0.5)
         }
         .buttonStyle(CardPressButtonStyle(prominent: true))
-        .accessibilityLabel(title)
-        .accessibilityValue(isLoading ? "正在处理" : "")
+        .accessibilityLabel(L10n.lookup(title))
+        .accessibilityValue(isLoading ? L10n.text("正在处理") : "")
         .disabled(!isEnabled || isLoading)
     }
 }
@@ -71,7 +71,7 @@ struct DFSecondaryButton: View {
                     Image(systemName: icon)
                         .font(AppTypography.control)
                 }
-                Text(title)
+                Text(L10n.lookup(title))
                     .font(AppTypography.control)
             }
             .foregroundStyle(Color.accentDefault)

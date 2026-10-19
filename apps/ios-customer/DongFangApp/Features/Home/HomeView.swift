@@ -23,15 +23,15 @@ struct HomeView: View {
                     if !viewModel.banners.isEmpty { bannerSection }
                     entryCardsSection
                     PointsHomeEntry().padding(.horizontal, AppSpacing.lg)
-                    if viewModel.isLoading && viewModel.beliefEntries.isEmpty { ProgressView("正在加载首页") }
+                    if viewModel.isLoading && viewModel.beliefEntries.isEmpty { ProgressView(L10n.text("正在加载首页")) }
                     if let error = viewModel.errorMessage {
-                        HStack { Text("部分内容加载失败：" + error).font(AppTypography.caption); Spacer(); Button("重试") { Task { await viewModel.load() } } }.padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)).padding(.horizontal, 20)
+                        HStack { Text(L10n.lookup(L10n.text("部分内容加载失败：") + error)).font(AppTypography.caption); Spacer(); Button(L10n.text("重试")) { Task { await viewModel.load() } } }.padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)).padding(.horizontal, 20)
                     }
                     if authStore.isLoggedIn { JourneyEntryView(home: true).padding(.horizontal, AppSpacing.lg) }
                     beliefSection
                     intentionSection
                     NavigationLink { ServicesView() } label: {
-                        Label("查看全部服务", systemImage: "square.grid.2x2")
+                        Label(L10n.text("查看全部服务"), systemImage: "square.grid.2x2")
                             .font(AppTypography.body).frame(maxWidth: .infinity, alignment: .leading)
                             .padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
                     }.buttonStyle(CardPressButtonStyle()).padding(.horizontal, AppSpacing.lg).accessibilityIdentifier("home-services")
@@ -83,8 +83,8 @@ struct HomeView: View {
                 } else {
                     LoginRequiredView(
                         icon: "sparkles",
-                        title: "登录后使用此服务",
-                        subtitle: "祈福 / 供灯 / 上香 / 超度 / 开光 / 化太岁",
+                        title: L10n.text("登录后使用此服务"),
+                        subtitle: L10n.text("祈福 / 供灯 / 上香 / 超度 / 开光 / 化太岁"),
                         isPresented: .constant(false)
                     )
                 }
@@ -97,8 +97,8 @@ struct HomeView: View {
                 } else {
                     LoginRequiredView(
                         icon: "calendar.badge.plus",
-                        title: "登录后预约法师",
-                        subtitle: "在线预约，法师确认",
+                        title: L10n.text("登录后预约法师"),
+                        subtitle: L10n.text("在线预约，法师确认"),
                         isPresented: .constant(false)
                     )
                 }
@@ -123,7 +123,7 @@ struct HomeView: View {
                 .frame(width: 28, height: 28)
                 .accessibilityHidden(true)
 
-            Text("问玄东方")
+            Text(L10n.text("问玄东方"))
                 .font(AppTypography.title(18))
                 .foregroundStyle(Color.accentDefault)
                 .lineLimit(1)
@@ -153,9 +153,9 @@ struct HomeView: View {
                             .frame(width: geometry.size.width, height: 184).clipped()
                         LinearGradient(colors: [.clear, .black.opacity(0.72)], startPoint: .top, endPoint: .bottom)
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("精选推荐").font(AppTypography.caption).tracking(2)
-                            Text(banner.title).font(AppTypography.title(25)).lineLimit(2)
-                            Label("查看详情", systemImage: "arrow.up.right").font(AppTypography.caption)
+                            Text(L10n.text("精选推荐")).font(AppTypography.caption).tracking(2)
+                            Text(L10n.lookup(banner.title)).font(AppTypography.title(25)).lineLimit(2)
+                            Label(L10n.text("查看详情"), systemImage: "arrow.up.right").font(AppTypography.caption)
                         }.foregroundStyle(.white).padding(20).padding(.bottom, viewModel.banners.count > 1 ? 12 : 0)
                     }.frame(width: geometry.size.width, height: 184).clipShape(RoundedRectangle(cornerRadius: 16))
                     }.frame(height: 184)
@@ -168,8 +168,8 @@ struct HomeView: View {
 
     private var entryCardsSection: some View {
         HStack(spacing: 10) {
-            NavigationLink(value: HomeRoute.templeList) { entryCard(icon: "building.columns", title: "找寺院", detail: "探访与服务") }.accessibilityIdentifier("home-temples")
-            NavigationLink(value: HomeRoute.masterList) { entryCard(icon: "person.crop.circle", title: "找师傅", detail: "咨询与交流") }.accessibilityIdentifier("home-masters")
+            NavigationLink(value: HomeRoute.templeList) { entryCard(icon: "building.columns", title: L10n.text("找寺院"), detail: "探访与服务") }.accessibilityIdentifier("home-temples")
+            NavigationLink(value: HomeRoute.masterList) { entryCard(icon: "person.crop.circle", title: L10n.text("找师傅"), detail: "咨询与交流") }.accessibilityIdentifier("home-masters")
         }.buttonStyle(CardPressButtonStyle()).padding(.horizontal, 20)
     }
 
@@ -177,8 +177,8 @@ struct HomeView: View {
         HStack(spacing: 8) {
             Image(systemName: icon).font(.system(size: 23, weight: .regular)).foregroundStyle(Color.accentDefault)
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(AppTypography.title(18)).foregroundStyle(Color.textPrimary)
-                Text(detail).font(AppTypography.micro).foregroundStyle(Color.textSecondary)
+                Text(L10n.lookup(title)).font(AppTypography.title(18)).foregroundStyle(Color.textPrimary)
+                Text(L10n.lookup(detail)).font(AppTypography.micro).foregroundStyle(Color.textSecondary)
             }.lineLimit(1).minimumScaleFactor(0.8)
             Spacer(minLength: 0)
             Image(systemName: "chevron.right").font(.system(size: 10)).foregroundStyle(Color.textTertiary)
@@ -189,7 +189,7 @@ struct HomeView: View {
 
     private var beliefSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("信仰流派").font(AppTypography.section).foregroundStyle(Color.textPrimary)
+            Text(L10n.text("信仰流派")).font(AppTypography.section).foregroundStyle(Color.textPrimary)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 2), spacing: 1) {
                 ForEach(viewModel.beliefEntries.prefix(4)) { entry in
                     NavigationLink(value: HomeRoute.templeBelief(entry.id)) { beliefItem(entry) }
@@ -203,17 +203,17 @@ struct HomeView: View {
     private func beliefItem(_ entry: BeliefEntry) -> some View {
         HStack(spacing: 6) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(entry.title).font(AppTypography.title(16)).foregroundStyle(Color.textPrimary)
-                Text(entry.subtitle).font(AppTypography.micro).foregroundStyle(Color.textSecondary).lineLimit(2)
+                Text(L10n.lookup(entry.title)).font(AppTypography.title(16)).foregroundStyle(Color.textPrimary)
+                Text(L10n.lookup(entry.subtitle)).font(AppTypography.micro).foregroundStyle(Color.textSecondary).lineLimit(2)
             }.frame(maxWidth: .infinity, alignment: .leading)
-            Text(String(entry.title.prefix(1))).font(AppTypography.title(16)).foregroundStyle(Color.accentDefault)
+            Text(L10n.lookup(String(entry.title.prefix(1)))).font(AppTypography.title(16)).foregroundStyle(Color.accentDefault)
                 .frame(width: 26, height: 32).overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.accentDefault.opacity(0.25)))
         }.padding(12).frame(maxWidth: .infinity, minHeight: 76, alignment: .leading).background(Color.bgSecondary)
     }
 
     private var intentionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("按心愿办").font(AppTypography.section).foregroundStyle(Color.textPrimary)
+            Text(L10n.text("按心愿办")).font(AppTypography.section).foregroundStyle(Color.textPrimary)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 4), spacing: 1) {
                 ForEach(viewModel.intentionEntries) { entry in
                     NavigationLink(value: entry.landingType == "diy" ? HomeRoute.diyBracelet : HomeRoute.intention(entry)) {
@@ -229,7 +229,7 @@ struct HomeView: View {
         HStack(spacing: 4) {
             IntentionLineIcon(code: entry.landingType == "diy" ? "diy" : entry.id)
                 .frame(width: 20, height: 22).foregroundStyle(entry.landingType == "diy" ? Color.brandDefault : Color.accentDefault)
-            Text(entry.landingType == "diy" ? "DIY手串" : entry.title)
+            Text(L10n.lookup(entry.landingType == "diy" ? L10n.text("DIY手串") : entry.title))
                 .font(.system(size: 12, weight: .medium)).lineLimit(1).minimumScaleFactor(0.8)
         }.foregroundStyle(Color.textPrimary).frame(maxWidth: .infinity, minHeight: 48)
             .background(entry.landingType == "diy" ? Color.brandDefault.opacity(0.08) : Color.bgSecondary)
@@ -241,7 +241,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             NavigationLink(value: HomeRoute.templeList) {
                 HStack {
-                    Text("热门寺院")
+                    Text(L10n.text("热门寺院"))
                         .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                     Spacer()
@@ -274,7 +274,7 @@ struct HomeView: View {
                 RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.columns")
                     .frame(width: 168, height: 100)
                     .clipped()
-                Text(temple.type)
+                Text(L10n.lookup(temple.type))
                     .font(AppTypography.micro.weight(.medium))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 8).padding(.vertical, 2)
@@ -285,7 +285,7 @@ struct HomeView: View {
 
             VStack(spacing: 4) {
                 HStack {
-                    Text(temple.name)
+                    Text(L10n.lookup(temple.name))
                         .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
@@ -299,7 +299,7 @@ struct HomeView: View {
                     Image(systemName: "mappin.circle.fill")
                         .font(AppTypography.micro)
                         .foregroundStyle(Color.textTertiary)
-                    Text(temple.region)
+                    Text(L10n.lookup(temple.region))
                         .font(AppTypography.micro)
                         .foregroundStyle(Color.textTertiary)
                         .lineLimit(1)
@@ -309,14 +309,14 @@ struct HomeView: View {
                 if !temple.serviceTagsText.isEmpty || temple.serviceCountText != nil {
                     HStack {
                         if !temple.serviceTagsText.isEmpty {
-                            Text(temple.serviceTagsText)
+                            Text(L10n.lookup(temple.serviceTagsText))
                                 .font(AppTypography.micro)
                                 .foregroundStyle(Color.textSecondary)
                                 .lineLimit(2)
                         }
                         Spacer()
                         if let countText = temple.serviceCountText {
-                            Text(countText)
+                            Text(L10n.lookup(countText))
                                 .font(AppTypography.micro.weight(.medium))
                                 .foregroundStyle(Color.brandDefault)
                         }
@@ -347,7 +347,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             NavigationLink(value: HomeRoute.masterList) {
                 HStack {
-                    Text("热门师傅")
+                    Text(L10n.text("热门师傅"))
                         .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                     Spacer()
@@ -378,7 +378,7 @@ struct HomeView: View {
         VStack(spacing: 4) {
             RemoteAvatar(urlString: master.avatar, size: 56)
 
-            Text(master.dharmaName)
+            Text(L10n.lookup(master.dharmaName))
                 .font(AppTypography.body.weight(.semibold))
                 .foregroundStyle(Color.textPrimary)
                 .lineLimit(1)
@@ -387,7 +387,7 @@ struct HomeView: View {
             // 宗派标签 + 寺院
             HStack(spacing: 4) {
                 if !master.sect.isEmpty {
-                    Text(master.sect)
+                    Text(L10n.lookup(master.sect))
                         .font(AppTypography.micro)
                         .foregroundStyle(Color.accentDefault)
                         .padding(.horizontal, 6).padding(.vertical, 1)
@@ -401,7 +401,7 @@ struct HomeView: View {
             }
 
             // 专长标签
-            Text(master.specialtiesText)
+            Text(L10n.lookup(master.specialtiesText))
                 .font(AppTypography.micro)
                 .foregroundStyle(Color.textSecondary)
                 .lineLimit(1)
@@ -412,7 +412,7 @@ struct HomeView: View {
                 Image(systemName: "star.fill")
                     .font(AppTypography.micro)
                     .foregroundStyle(Color.accentDefault)
-                Text(master.ratingText)
+                Text(L10n.lookup(master.ratingText))
                     .font(AppTypography.micro.weight(.medium))
                     .foregroundStyle(Color.accentDefault)
             }
@@ -421,14 +421,14 @@ struct HomeView: View {
             if !master.specialtiesText.isEmpty || master.startPriceText != nil {
                 HStack {
                     if !master.specialtiesText.isEmpty {
-                        Text(master.specialtiesText)
+                        Text(L10n.lookup(master.specialtiesText))
                             .font(AppTypography.micro)
                             .foregroundStyle(Color.textSecondary)
                             .lineLimit(2)
                     }
                     Spacer()
                     if let price = master.startPriceText {
-                        Text(price)
+                        Text(L10n.lookup(price))
                             .font(AppTypography.micro.weight(.semibold))
                             .foregroundStyle(Color.brandDefault)
                             .lineLimit(1)
@@ -511,13 +511,13 @@ private struct IntentionHubView: View {
                 if viewModel.isLoading && viewModel.resources.isEmpty {
                     ProgressView().frame(maxWidth: .infinity).padding(.top, 60)
                 } else if let message = viewModel.errorMessage {
-                    ContentUnavailableView("暂时无法读取", systemImage: "wifi.exclamationmark", description: Text(message))
-                    Button("重试") { Task { await viewModel.load() } }
+                    ContentUnavailableView(L10n.text("暂时无法读取"), systemImage: "wifi.exclamationmark", description: Text(L10n.lookup(message)))
+                    Button(L10n.text("重试")) { Task { await viewModel.load() } }
                         .buttonStyle(.borderedProminent).frame(maxWidth: .infinity)
                 } else if viewModel.resources.isEmpty {
-                    ContentUnavailableView("暂无匹配内容", systemImage: "square.grid.2x2")
+                    ContentUnavailableView(L10n.text("暂无匹配内容"), systemImage: "square.grid.2x2")
                 } else {
-                    Text("相关寺院服务与大师服务")
+                    Text(L10n.text("相关寺院服务与大师服务"))
                         .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                         .padding(.horizontal, 20)
@@ -531,7 +531,7 @@ private struct IntentionHubView: View {
                 }
             }.padding(.vertical, 12)
         }
-        .navigationTitle(entry.title)
+        .navigationTitle(L10n.lookup(entry.title))
         .navigationBarTitleDisplayMode(.inline)
         .task { await viewModel.load() }
     }
@@ -563,10 +563,10 @@ private struct IntentionHubView: View {
                     .clipShape(Circle())
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(heroTitle)
+                    Text(L10n.lookup(heroTitle))
                         .font(AppTypography.title(22))
                         .foregroundStyle(Color.textPrimary)
-                    Text(heroSummary)
+                    Text(L10n.lookup(heroSummary))
                         .font(AppTypography.supporting)
                         .foregroundStyle(Color.textSecondary)
                         .lineSpacing(4)
@@ -593,7 +593,7 @@ private struct IntentionHubView: View {
     }
 
     private var actionLabel: some View {
-        Label(heroActionTitle, systemImage: "arrow.right.circle.fill")
+        Label(L10n.lookup(heroActionTitle), systemImage: "arrow.right.circle.fill")
             .font(AppTypography.body.weight(.semibold))
             .foregroundStyle(Color.white)
             .frame(maxWidth: .infinity)
@@ -618,10 +618,10 @@ private struct IntentionHubView: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text(resourceTypeLabel(item.resourceType))
+                Text(L10n.lookup(resourceTypeLabel(item.resourceType)))
                     .font(AppTypography.micro.weight(.semibold)).foregroundStyle(Color.accentDefault)
-                Text(item.title).font(AppTypography.body.weight(.semibold)).foregroundStyle(Color.textPrimary).lineLimit(2)
-                Text(item.subtitle).font(AppTypography.caption).foregroundStyle(Color.textSecondary).lineLimit(1)
+                Text(L10n.lookup(item.title)).font(AppTypography.body.weight(.semibold)).foregroundStyle(Color.textPrimary).lineLimit(2)
+                Text(L10n.lookup(item.subtitle)).font(AppTypography.caption).foregroundStyle(Color.textSecondary).lineLimit(1)
                 Text("¥\(Int(item.price))").font(AppTypography.body.weight(.semibold)).foregroundStyle(Color.brandDefault)
             }
             Spacer()
@@ -708,26 +708,26 @@ private struct BeliefTopicView: View {
                     Image(systemName: entry.iconName)
                         .font(.system(size: 30))
                         .foregroundStyle(Color.accentDefault)
-                    Text(viewModel.profile?.name ?? entry.title)
+                    Text(L10n.lookup(viewModel.profile?.name ?? entry.title))
                         .font(AppTypography.title(28))
-                    Text(viewModel.profile?.summary ?? entry.subtitle)
+                    Text(L10n.lookup(viewModel.profile?.summary ?? entry.subtitle))
                         .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.accentDefault)
-                    Text(viewModel.profile?.description ?? "正在读取流派简介")
+                    Text(L10n.lookup(viewModel.profile?.description ?? L10n.text("正在读取流派简介")))
                         .font(AppTypography.body)
                         .foregroundStyle(Color.textSecondary)
                         .lineSpacing(5)
                 }
                 .padding(.horizontal, 20)
 
-                topicSection(title: "该流派大师", more: .masterBelief(entry.id)) {
+                topicSection(title: L10n.text("该流派大师"), more: .masterBelief(entry.id)) {
                     ForEach(viewModel.masters.prefix(4)) { master in
                         NavigationLink(value: master) {
                             HStack(spacing: 12) {
                                 RemoteImage(urlString: master.avatar, placeholderIcon: "person.fill")
                                     .frame(width: 52, height: 52).clipShape(Circle())
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(master.dharmaName).font(AppTypography.body.weight(.semibold))
+                                    Text(L10n.lookup(master.dharmaName)).font(AppTypography.body.weight(.semibold))
                                     Text("\(master.sect) · \(master.templeName)").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
                                 }
                                 Spacer()
@@ -737,14 +737,14 @@ private struct BeliefTopicView: View {
                     }
                 }
 
-                topicSection(title: "该流派寺庙", more: .templeBelief(entry.id)) {
+                topicSection(title: L10n.text("该流派寺庙"), more: .templeBelief(entry.id)) {
                     ForEach(viewModel.temples.prefix(4)) { temple in
                         NavigationLink(value: temple) {
                             HStack(spacing: 12) {
                                 RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.columns.fill")
                                     .frame(width: 72, height: 52).clipShape(RoundedRectangle(cornerRadius: 6))
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(temple.name).font(AppTypography.body.weight(.semibold))
+                                    Text(L10n.lookup(temple.name)).font(AppTypography.body.weight(.semibold))
                                     Text("\(temple.region) · \(temple.sect)").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
                                 }
                                 Spacer()
@@ -756,7 +756,7 @@ private struct BeliefTopicView: View {
             }.padding(.vertical, 20)
         }
         .background(Color.bgPrimary)
-        .navigationTitle(entry.title)
+        .navigationTitle(L10n.lookup(entry.title))
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if viewModel.isLoading { ProgressView() } }
         .task { await viewModel.load(code: entry.id) }
@@ -765,9 +765,9 @@ private struct BeliefTopicView: View {
     private func topicSection<Content: View>(title: String, more: HomeRoute, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(title).font(AppTypography.title(19))
+                Text(L10n.lookup(title)).font(AppTypography.title(19))
                 Spacer()
-                NavigationLink(value: more) { Text("更多").font(AppTypography.supporting).foregroundStyle(Color.accentDefault) }
+                NavigationLink(value: more) { Text(L10n.text("更多")).font(AppTypography.supporting).foregroundStyle(Color.accentDefault) }
             }
             content()
         }.padding(.horizontal, 20)
@@ -860,19 +860,19 @@ struct NativeDiscoveryDestination: View {
             case "masters":
                 if let id = identifier { MasterProfileView(masterId: id) } else { MasterListView() }
             case "diy": DiyBraceletView()
-            case "ai": AiDivinationView().requireAuth(title: "登录后开启 AI 问事")
+            case "ai": AiDivinationView().requireAuth(title: L10n.text("登录后开启 AI 问事"))
             case "shop":
                 if identifier == nil { ShopView() }
                 else if let product { ShopProductDetailView(product: product) }
-                else { VStack { DFTopNavBar(title); Spacer(); if loading { ProgressView() } else { Text(error ?? "商品暂时无法加载"); Button("重试") { Task { await loadProduct() } } }; Spacer() } }
+                else { VStack { DFTopNavBar(title); Spacer(); if loading { ProgressView() } else { Text(L10n.lookup(error ?? L10n.text("商品暂时无法加载"))); Button(L10n.text("重试")) { Task { await loadProduct() } } }; Spacer() } }
             case "services":
                 if let id = identifier, let type = ServiceType.from(serviceCode: id) { ServiceContainerView(serviceType: type) }
-                else { ScrollView { VStack { DFTopNavBar("预约服务"); ForEach(ServiceType.allCases, id: \.self) { type in NavigationLink { ServiceContainerView(serviceType: type) } label: { HStack { Text(type.rawValue); Spacer(); Image(systemName: "chevron.right") }.padding(18).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)) } } }.padding(.horizontal, 16) } }
+                else { ScrollView { VStack { DFTopNavBar("预约服务"); ForEach(ServiceType.allCases, id: \.self) { type in NavigationLink { ServiceContainerView(serviceType: type) } label: { HStack { Text(L10n.lookup(type.rawValue)); Spacer(); Image(systemName: "chevron.right") }.padding(18).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)) } } }.padding(.horizontal, 16) } }
             case "rewards":
                 if let id = identifier.flatMap(Int64.init) { RewardDetailView(id: id) } else { RewardsView() }
             case "activities":
                 if let id = identifier { NativeMarketingActivityView(id: id) }
-            default: DFEmptyState(icon: "link", title: "推荐已更新", subtitle: "请返回首页刷新后查看")
+            default: DFEmptyState(icon: "link", title: L10n.text("推荐已更新"), subtitle: L10n.text("请返回首页刷新后查看"))
             }
         }.background(Color.bgPrimary).toolbar(.hidden, for: .navigationBar)
             .task(id: route) { if kind == "shop", identifier != nil { await loadProduct() } }
@@ -899,13 +899,13 @@ struct NativeMarketingActivityView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         if let image = details?.imageUrl { RemoteImage(urlString: image, placeholderIcon: "photo").frame(height: 200).clipShape(RoundedRectangle(cornerRadius: 16)) }
-                        Text(activity.name).font(AppTypography.title(28))
-                        Text("活动时间（北京时间）\n\(activity.startTime.isEmpty ? "即日起" : activity.startTime) — \(activity.endTime.isEmpty ? "长期有效" : activity.endTime)").font(AppTypography.supporting).foregroundStyle(Color.textSecondary)
-                        if let location = details?.location { Text("活动地点：" + location) }
-                        Text(details?.description ?? "活动具体安排请以主办方公布的信息为准。").lineSpacing(6)
+                        Text(L10n.lookup(activity.name)).font(AppTypography.title(28))
+                        Text(L10n.text("活动时间（北京时间）\n\(activity.startTime.isEmpty ? "即日起" : activity.startTime) — \(activity.endTime.isEmpty ? "长期有效" : activity.endTime)")).font(AppTypography.supporting).foregroundStyle(Color.textSecondary)
+                        if let location = details?.location { Text(L10n.lookup(L10n.text("活动地点：") + location)) }
+                        Text(L10n.lookup(details?.description ?? L10n.text("活动具体安排请以主办方公布的信息为准。"))).lineSpacing(6)
                     }.frame(maxWidth: .infinity, alignment: .leading).padding(20)
                 }
-            } else if let error { ContentUnavailableView { Label("活动暂时无法加载", systemImage: "wifi.exclamationmark") } description: { Text(error) } actions: { Button("重试") { Task { await load() } } } }
+            } else if let error { ContentUnavailableView { Label(L10n.text("活动暂时无法加载"), systemImage: "wifi.exclamationmark") } description: { Text(L10n.lookup(error)) } actions: { Button(L10n.text("重试")) { Task { await load() } } } }
             else { Spacer(); ProgressView(); Spacer() }
         }.background(Color.bgPrimary).toolbar(.hidden, for: .navigationBar).task { await load() }
     }

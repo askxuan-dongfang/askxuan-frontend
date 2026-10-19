@@ -7,32 +7,32 @@ struct DiyBraceletView: View {
     var body: some View {
         VStack(spacing: 0) {
             DFTopNavBar("东方珠作", showsBackButton: true) { EmptyView() } trailing: {
-                NavigationLink { DiyMyDesignsView().requireAuth(title: "登录后查看我的作品", subtitle: "登录后同步和管理你的手串设计") } label: {
+                NavigationLink { DiyMyDesignsView().requireAuth(title: L10n.text("登录后查看我的作品"), subtitle: L10n.text("登录后同步和管理你的手串设计")) } label: {
                     Image(systemName: "square.stack").frame(width: 44, height: 44)
                 }
-                .accessibilityLabel("我的作品")
+                .accessibilityLabel(L10n.text("我的作品"))
             }
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 22) {
                         workbench
                         HStack(spacing: 12) {
-                            NavigationLink { DiyMyDesignsView().requireAuth(title: "登录后查看我的作品", subtitle: "登录后同步和管理你的手串设计") } label: {
-                                quickItem(title: "我的作品", subtitle: "保存每一次灵感", icon: "square.stack")
+                            NavigationLink { DiyMyDesignsView().requireAuth(title: L10n.text("登录后查看我的作品"), subtitle: L10n.text("登录后同步和管理你的手串设计")) } label: {
+                                quickItem(title: L10n.text("我的作品"), subtitle: L10n.text("保存每一次灵感"), icon: "square.stack")
                             }
                             Button {
                                 AppMotion.perform(AppMotion.reveal) { proxy.scrollTo("inspiration", anchor: .top) }
                             } label: {
-                                quickItem(title: "灵感广场", subtitle: "发现心仪的搭配", icon: "sparkles")
+                                quickItem(title: L10n.text("灵感广场"), subtitle: L10n.text("发现心仪的搭配"), icon: "sparkles")
                             }
                         }
                         .buttonStyle(DiyPressButtonStyle())
                         inspirationSection.id("inspiration")
                         if let error = viewModel.errorMessage {
                             VStack(spacing: 10) {
-                                Label(error, systemImage: "wifi.exclamationmark")
+                                Label(L10n.lookup(error), systemImage: "wifi.exclamationmark")
                                     .font(.caption).foregroundStyle(Color.textSecondary)
-                                Button("重新加载") { Task { await viewModel.loadDesigns() } }
+                                Button(L10n.text("重新加载")) { Task { await viewModel.loadDesigns() } }
                                     .font(.subheadline).frame(minHeight: 44)
                             }
                             .padding(16).frame(maxWidth: .infinity).diySurface()
@@ -41,7 +41,7 @@ struct DiyBraceletView: View {
                             Button { Task { await viewModel.loadDesigns(append: true) } } label: {
                                 HStack(spacing: 8) {
                                     if viewModel.isLoading { ProgressView().tint(Color.accentDefault) }
-                                    Text(viewModel.isLoading ? "加载中…" : "发现更多作品")
+                                    Text(L10n.lookup(viewModel.isLoading ? L10n.text("加载中…") : L10n.text("发现更多作品")))
                                 }.frame(maxWidth: .infinity, minHeight: 48)
                             }
                             .buttonStyle(DiyPressButtonStyle()).disabled(viewModel.isLoading).diySurface()
@@ -68,19 +68,19 @@ struct DiyBraceletView: View {
                         .scaledToFit()
                         .frame(width: 22, height: 22)
                         .accessibilityHidden(true)
-                    Text("东方珠作 · 手串设计室")
+                    Text(L10n.text("东方珠作 · 手串设计室"))
                         .font(.caption.weight(.medium)).foregroundStyle(Color.accentLight)
                 }
                 Spacer()
                 Text("DIY").font(.caption.weight(.semibold)).tracking(3)
                     .foregroundStyle(Color.textSecondary)
             }
-            Text("一颗一念\n串起你的心意")
+            Text(L10n.text("一颗一念\n串起你的心意"))
                 .font(AppTypography.title(30)).foregroundStyle(Color.textPrimary)
                 .lineSpacing(6).fixedSize(horizontal: false, vertical: true)
             DiyMiniBracelet(slots: slots(for: viewModel.designs.first), fallbackCount: 14)
                 .frame(height: 222)
-                .accessibilityLabel("手串搭配示意")
+                .accessibilityLabel(L10n.text("手串搭配示意"))
             HStack(spacing: 0) {
                 journeyStep("01", "挑选材质")
                 journeyStep("02", "自由搭配")
@@ -89,7 +89,7 @@ struct DiyBraceletView: View {
             NavigationLink { DiyDesignView() } label: {
                 HStack {
                     Image(systemName: "plus")
-                    Text("开始我的设计").accessibilityIdentifier("diy-start")
+                    Text(L10n.text("开始我的设计")).accessibilityIdentifier("diy-start")
                     Spacer()
                     Image(systemName: "arrow.up.right")
                 }
@@ -108,8 +108,8 @@ struct DiyBraceletView: View {
 
     private func journeyStep(_ number: String, _ title: String) -> some View {
         HStack(spacing: 5) {
-            Text(number).appNumericFont(12).foregroundStyle(Color.accentDefault)
-            Text(title).font(.caption).foregroundStyle(Color.textSecondary)
+            Text(L10n.lookup(number)).appNumericFont(12).foregroundStyle(Color.accentDefault)
+            Text(L10n.lookup(title)).font(.caption).foregroundStyle(Color.textSecondary)
         }.frame(maxWidth: .infinity)
     }
 
@@ -120,8 +120,8 @@ struct DiyBraceletView: View {
                 Spacer()
                 Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(Color.textSecondary)
             }
-            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(Color.textPrimary)
-            Text(subtitle).font(.caption).foregroundStyle(Color.textSecondary)
+            Text(L10n.lookup(title)).font(.subheadline.weight(.semibold)).foregroundStyle(Color.textPrimary)
+            Text(L10n.lookup(subtitle)).font(.caption).foregroundStyle(Color.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading).padding(16).diySurface()
     }
@@ -129,15 +129,15 @@ struct DiyBraceletView: View {
     private var inspirationSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .firstTextBaseline) {
-                Text("在这里，遇见灵感").font(AppTypography.title(22)).foregroundStyle(Color.textPrimary)
+                Text(L10n.text("在这里，遇见灵感")).font(AppTypography.title(22)).foregroundStyle(Color.textPrimary)
                 Spacer()
-                Text("\(viewModel.designs.count) 件作品").font(.caption).foregroundStyle(Color.textSecondary)
+                Text(L10n.text("\(viewModel.designs.count) 件作品")).font(.caption).foregroundStyle(Color.textSecondary)
             }
             if viewModel.isLoading && viewModel.designs.isEmpty {
-                ProgressView("正在寻找灵感").tint(Color.accentDefault)
+                ProgressView(L10n.text("正在寻找灵感")).tint(Color.accentDefault)
                     .frame(maxWidth: .infinity, minHeight: 160)
             } else if viewModel.designs.isEmpty && viewModel.errorMessage == nil {
-                DFEmptyState(icon: "sparkles", title: "灵感即将相遇", subtitle: "")
+                DFEmptyState(icon: "sparkles", title: L10n.text("灵感即将相遇"), subtitle: "")
             } else {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach(viewModel.designs) { design in
@@ -155,11 +155,11 @@ struct DiyBraceletView: View {
                 .background(RadialGradient(colors: [Color.bgElevated, Color.bgTertiary], center: .center, startRadius: 0, endRadius: 130))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 8) {
-                Text(design.name).font(.subheadline.weight(.semibold)).foregroundStyle(Color.textPrimary).lineLimit(1)
+                Text(L10n.lookup(design.name)).font(.subheadline.weight(.semibold)).foregroundStyle(Color.textPrimary).lineLimit(1)
                 HStack {
-                    Text("灵感作品").font(.caption).foregroundStyle(Color.textSecondary)
+                    Text(L10n.text("灵感作品")).font(.caption).foregroundStyle(Color.textSecondary)
                     Spacer(minLength: 4)
-                    Text(AppDateFormatter.moneyText(design.totalPrice)).appNumericFont(14, weight: .semibold).foregroundStyle(Color.accentLight)
+                    Text(L10n.lookup(AppDateFormatter.moneyText(design.totalPrice))).appNumericFont(14, weight: .semibold).foregroundStyle(Color.accentLight)
                 }
             }.padding(12)
         }
@@ -247,7 +247,7 @@ struct DiyPreviewModePicker: View {
         Button {
             AppMotion.perform { show3D = is3D }
         } label: {
-            Label(title, systemImage: icon)
+            Label(L10n.lookup(title), systemImage: icon)
                 .font(.subheadline.weight(.medium))
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .foregroundStyle(show3D == is3D ? Color.accentLight : Color.textSecondary)

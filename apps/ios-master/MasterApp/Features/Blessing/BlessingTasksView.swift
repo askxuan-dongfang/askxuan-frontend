@@ -84,7 +84,7 @@ struct BlessingTasksView: View {
                 HStack(spacing: AppSpacing.sm) {
                     ForEach(tabs, id: \.1) { tab in
                         let isActive = viewModel.selectedStatus == tab.0
-                        Text(tab.1)
+                        Text(L10n.lookup(tab.1))
                             .font(AppTypography.supporting.weight(isActive ? .semibold : .regular))
                             .foregroundStyle(isActive ? .white : .textSecondary)
                             .padding(.horizontal, AppSpacing.md)
@@ -101,7 +101,7 @@ struct BlessingTasksView: View {
             taskList
         }
         .background(Color.bgPrimary)
-        .navigationTitle("加持任务")
+        .navigationTitle(L10n.text("加持任务"))
         .navigationBarTitleDisplayMode(.large)
 
         .task { await viewModel.load() }
@@ -114,7 +114,7 @@ struct BlessingTasksView: View {
             LoadingView(fullScreen: true)
         } else if viewModel.tasks.isEmpty {
             EmptyState(icon: "sparkles",
-                       title: "暂无加持任务",
+                       title: L10n.text("暂无加持任务"),
                        message: viewModel.errorMessage) {
                 Task { await viewModel.load() }
             }
@@ -135,7 +135,7 @@ struct BlessingTasksView: View {
                         }
                     }
                     if viewModel.isLoading {
-                        LoadingView(message: "加载更多...")
+                        LoadingView(message: L10n.text("加载更多..."))
                     }
                 }
                 .padding(.horizontal, AppSpacing.pageHorizontal)
@@ -149,26 +149,26 @@ struct BlessingTasksView: View {
         MasterCard(padding: AppSpacing.md) {
             VStack(alignment: .leading, spacing: AppSpacing.sm) {
                 HStack {
-                    Text("加持任务")
+                    Text(L10n.text("加持任务"))
                         .font(.cardTitle)
                         .foregroundStyle(.textPrimary)
                     Spacer()
                     StatusBadge(status: task.status, kind: .blessing)
                 }
                 HStack(spacing: AppSpacing.lg) {
-                    Label(task.taskNo, systemImage: "number")
-                    Label(DFDateFormatter.dayOnly(task.assignTime), systemImage: "calendar")
+                    Label(L10n.lookup(task.taskNo), systemImage: "number")
+                    Label(L10n.lookup(DFDateFormatter.dayOnly(task.assignTime)), systemImage: "calendar")
                 }
                 .font(AppTypography.caption)
                 .foregroundStyle(.textSecondary)
 
                 HStack {
-                    Text("DIY 订单：\(task.diyOrderNo)")
+                    Text(L10n.text("DIY 订单：\(task.diyOrderNo)"))
                         .font(AppTypography.caption)
                         .foregroundStyle(.textTertiary)
                     Spacer()
                     if task.canAccept {
-                        Text("待接单")
+                        Text(L10n.text("待接单"))
                             .font(.micro)
                             .foregroundStyle(.stateWarning)
                     }

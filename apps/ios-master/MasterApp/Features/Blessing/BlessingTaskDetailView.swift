@@ -132,7 +132,7 @@ struct BlessingTaskDetailView: View {
                 VStack(spacing: AppSpacing.lg) {
                     statusHeader(task)
 
-                    infoCard(title: "任务信息", icon: "sparkles") {
+                    infoCard(title: L10n.text("任务信息"), icon: "sparkles") {
                         infoRow("任务编号", task.taskNo)
                         infoRow("DIY 订单", task.diyOrderNo)
                         infoRow("寺院编码", task.templeCode)
@@ -142,14 +142,14 @@ struct BlessingTaskDetailView: View {
                     }
 
                     if !task.certificateUrls.isEmpty {
-                        infoCard(title: "开光证书", icon: "doc.richtext") {
+                        infoCard(title: L10n.text("开光证书"), icon: "doc.richtext") {
                             VStack(alignment: .leading, spacing: AppSpacing.sm) {
                                 ForEach(Array(task.certificateUrls.enumerated()), id: \.offset) { _, url in
                                     Link(destination: URL(string: url) ?? URL(string: "about:blank")!) {
                                         HStack {
                                             Image(systemName: "link.circle")
                                                 .foregroundStyle(.accentDefault)
-                                            Text("查看开光凭证")
+                                            Text(L10n.text("查看开光凭证"))
                                                 .font(AppTypography.caption)
                                                 .foregroundStyle(.accentDefault)
                                                 .lineLimit(1)
@@ -166,14 +166,14 @@ struct BlessingTaskDetailView: View {
                 .padding(.bottom, AppSpacing.xl)
             } else {
                 EmptyState(icon: "exclamationmark.triangle.fill",
-                           title: "加载失败",
+                           title: L10n.text("加载失败"),
                            message: viewModel.errorMessage) {
                     Task { await viewModel.load() }
                 }
             }
         }
         .background(Color.bgPrimary)
-        .navigationTitle("任务详情")
+        .navigationTitle(L10n.text("任务详情"))
         .navigationBarTitleDisplayMode(.inline)
 
         .task { await viewModel.load() }
@@ -181,13 +181,13 @@ struct BlessingTaskDetailView: View {
             guard !items.isEmpty else { return }
             Task { await viewModel.upload(items); selectedPhotos = [] }
         }
-        .alert("提示", isPresented: Binding(
+        .alert(L10n.text("提示"), isPresented: Binding(
             get: { viewModel.successMessage != nil },
             set: { if !$0 { viewModel.successMessage = nil } }
         )) {
-            Button("好的") { viewModel.successMessage = nil }
+            Button(L10n.text("好的")) { viewModel.successMessage = nil }
         } message: {
-            Text(viewModel.successMessage ?? "")
+            Text(L10n.lookup(viewModel.successMessage ?? ""))
         }
     }
 
@@ -195,10 +195,10 @@ struct BlessingTaskDetailView: View {
         MasterCard(padding: AppSpacing.lg) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("开光任务")
+                    Text(L10n.text("开光任务"))
                         .font(.pageTitle)
                         .foregroundStyle(.textPrimary)
-                    Text("编号：\(task.taskNo)")
+                    Text(L10n.text("编号：\(task.taskNo)"))
                         .font(AppTypography.caption)
                         .foregroundStyle(.textTertiary)
                 }
@@ -216,7 +216,7 @@ struct BlessingTaskDetailView: View {
                     Image(systemName: icon)
                         .font(AppTypography.body)
                         .foregroundStyle(.accentDefault)
-                    Text(title)
+                    Text(L10n.lookup(title))
                         .font(.cardTitle)
                         .foregroundStyle(.textPrimary)
                 }
@@ -227,11 +227,11 @@ struct BlessingTaskDetailView: View {
 
     private func infoRow(_ label: String, _ value: String) -> some View {
         HStack(alignment: .top) {
-            Text(label)
+            Text(L10n.lookup(label))
                 .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)
                 .frame(width: 72, alignment: .leading)
-            Text(value)
+            Text(L10n.lookup(value))
                 .font(AppTypography.body)
                 .foregroundStyle(.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -241,7 +241,7 @@ struct BlessingTaskDetailView: View {
     @ViewBuilder
     private func actionSection(_ task: BlessingTask) -> some View {
         if let error = viewModel.errorMessage {
-            Text(error)
+            Text(L10n.lookup(error))
                 .font(AppTypography.caption)
                 .foregroundStyle(.stateError)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -249,7 +249,7 @@ struct BlessingTaskDetailView: View {
 
         let status = task.statusEnum
         if status.isTerminal {
-            Text("该任务已结束")
+            Text(L10n.text("该任务已结束"))
                 .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)
                 .frame(maxWidth: .infinity)
@@ -258,9 +258,9 @@ struct BlessingTaskDetailView: View {
             VStack(spacing: AppSpacing.md) {
                 if status == .inProgress {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("开光凭证").font(.cardTitle)
+                        Text(L10n.text("开光凭证")).font(.cardTitle)
                         PhotosPicker(selection: $selectedPhotos, maxSelectionCount: max(1, 9 - viewModel.certificateURLs.count), matching: .images) {
-                            Label(viewModel.isUploading ? "正在上传…" : "从相册选择照片", systemImage: "photo.on.rectangle")
+                            Label(L10n.lookup(viewModel.isUploading ? L10n.text("正在上传…") : L10n.text("从相册选择照片")), systemImage: "photo.on.rectangle")
                                 .frame(maxWidth: .infinity).padding()
                                 .background(Color.bgTertiary).clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
                         }
@@ -269,9 +269,9 @@ struct BlessingTaskDetailView: View {
                             HStack {
                                 AsyncImage(url: URL(string: raw)) { image in image.resizable().scaledToFill() } placeholder: { Image(systemName: "photo") }
                                     .frame(width: 96, height: 72).clipped().clipShape(RoundedRectangle(cornerRadius: 8))
-                                Text("凭证 \(index + 1)")
+                                Text(L10n.text("凭证 \(index + 1)"))
                                 Spacer()
-                                Button("移除") { viewModel.certificateURLs.remove(at: index) }
+                                Button(L10n.text("移除")) { viewModel.certificateURLs.remove(at: index) }
                                     .disabled(viewModel.isUploading || viewModel.isActionLoading)
                             }
                         }
@@ -279,22 +279,22 @@ struct BlessingTaskDetailView: View {
                 }
 
                 if status.canAccept {
-                    PrimaryButton(title: "接单", icon: "hand.thumbsup.fill",
+                    PrimaryButton(title: L10n.text("接单"), icon: "hand.thumbsup.fill",
                                   isLoading: viewModel.isActionLoading) {
                         Task { await viewModel.accept() }
                     }
-                    SecondaryButton(title: "拒绝", icon: "xmark.circle") {
+                    SecondaryButton(title: L10n.text("拒绝"), icon: "xmark.circle") {
                         Task { await viewModel.reject() }
                     }
                 }
                 if status.canStart {
-                    PrimaryButton(title: "开始开光", icon: "play.circle.fill",
+                    PrimaryButton(title: L10n.text("开始开光"), icon: "play.circle.fill",
                                   isLoading: viewModel.isActionLoading) {
                         Task { await viewModel.start() }
                     }
                 }
                 if status.canComplete {
-                    PrimaryButton(title: "完成开光", icon: "checkmark.seal.fill",
+                    PrimaryButton(title: L10n.text("完成开光"), icon: "checkmark.seal.fill",
                                   isEnabled: !viewModel.certificateURLs.isEmpty && !viewModel.isUploading,
                                   isLoading: viewModel.isActionLoading) {
                         Task { await viewModel.complete() }

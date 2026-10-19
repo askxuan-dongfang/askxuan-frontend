@@ -47,25 +47,25 @@ struct BookingView: View {
 		.onChange(of: viewModel.selectedServiceId) { _, _ in
 			Task { await viewModel.refreshAvailability() }
 		}
-        .alert("提交失败", isPresented: .init(
+        .alert(L10n.text("提交失败"), isPresented: .init(
             get: { viewModel.errorMessage != nil },
             set: { if !$0 { viewModel.errorMessage = nil } }
         )) {
-            Button("好的", role: .cancel) {}
+            Button(L10n.text("好的"), role: .cancel) {}
         } message: {
-            Text(viewModel.errorMessage ?? "")
+            Text(L10n.lookup(viewModel.errorMessage ?? ""))
         }
-        .alert(viewModel.submittedBooking?.paymentStatus == "success" ? "预约已支付" : "预约待支付", isPresented: $viewModel.showSuccess) {
-            Button("好的") { dismiss() }
+        .alert(L10n.lookup(viewModel.submittedBooking?.paymentStatus == "success" ? L10n.text("预约已支付") : L10n.text("预约待支付")), isPresented: $viewModel.showSuccess) {
+            Button(L10n.text("好的")) { dismiss() }
         } message: {
-			Text(viewModel.submittedBooking?.paymentStatus == "success" ? (viewModel.submittedBooking?.simulated == true ? "演示支付完成，预约等待确认。" : "支付成功，预约等待确认。") : "订单已保留，请在有效时间内完成支付。")
+			Text(L10n.lookup(viewModel.submittedBooking?.paymentStatus == "success" ? (viewModel.submittedBooking?.simulated == true ? L10n.text("演示支付完成，预约等待确认。") : L10n.text("支付成功，预约等待确认。")) : L10n.text("订单已保留，请在有效时间内完成支付。")))
         }
     }
 
     // MARK: - 顶部导航（返回 + 标题）
     private var topNav: some View {
         ZStack {
-            Text("预约服务")
+            Text(L10n.text("预约服务"))
                 .font(AppTypography.reading.weight(.semibold))
                 .foregroundStyle(Color.accentDefault)
         }
@@ -89,7 +89,7 @@ struct BookingView: View {
                     RemoteAvatar(urlString: master.avatar, size: 48)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(master.dharmaName)
+                        Text(L10n.lookup(master.dharmaName))
                             .font(AppTypography.reading.weight(.semibold))
                             .foregroundStyle(Color.textPrimary)
                         Text("\(master.templeName) · \(master.position)")
@@ -98,7 +98,7 @@ struct BookingView: View {
 
                         HStack(spacing: 8) {
                             if let specialty = master.specialties.first {
-                                Text(specialty)
+                                Text(L10n.lookup(specialty))
                                     .font(AppTypography.caption.weight(.medium))
                                     .foregroundStyle(Color.white)
                                     .padding(.horizontal, 10)
@@ -110,7 +110,7 @@ struct BookingView: View {
                                 Image(systemName: "star.fill")
                                     .font(AppTypography.caption)
                                     .foregroundStyle(Color.accentDefault)
-                                Text(master.ratingText)
+                                Text(L10n.lookup(master.ratingText))
                                     .font(AppTypography.supporting)
                                     .foregroundStyle(Color.accentDefault)
                             }
@@ -131,10 +131,10 @@ struct BookingView: View {
                             .foregroundStyle(Color.brandDefault)
                     }
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(viewModel.templeName.isEmpty ? "寺院预约" : viewModel.templeName)
+                        Text(viewModel.templeName.isEmpty ? L10n.text("寺院预约") : viewModel.templeName)
                             .font(AppTypography.reading.weight(.semibold))
                             .foregroundStyle(Color.textPrimary)
-                        Text("全寺执行 · 不指定法师")
+                        Text(L10n.text("全寺执行 · 不指定法师"))
                             .font(AppTypography.supporting)
                             .foregroundStyle(Color.textTertiary)
                     }
@@ -152,7 +152,7 @@ struct BookingView: View {
     // MARK: - 服务选择
     private var serviceSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("选择服务项目")
+            Text(L10n.text("选择服务项目"))
                 .font(.cardTitle)
                 .foregroundStyle(Color.textPrimary)
 
@@ -161,7 +161,7 @@ struct BookingView: View {
                     serviceCard(service)
                 }
 				if viewModel.services.isEmpty && !viewModel.isLoading {
-					Text("该寺院暂无可预约服务")
+					Text(L10n.text("该寺院暂无可预约服务"))
 						.font(AppTypography.body)
 						.foregroundStyle(Color.textTertiary)
 				}
@@ -193,10 +193,10 @@ struct BookingView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-					Text(service.serviceName)
+					Text(L10n.lookup(service.serviceName))
                         .font(AppTypography.body.weight(.medium))
                         .foregroundStyle(Color.textPrimary)
-					Text("以寺院实时可用时段为准")
+					Text(L10n.text("以寺院实时可用时段为准"))
                         .font(AppTypography.supporting)
                         .foregroundStyle(Color.textTertiary)
                 }
@@ -207,7 +207,7 @@ struct BookingView: View {
 					Text("¥\(Int(service.price))")
                         .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.brandDefault)
-                    Text("/次")
+                    Text(L10n.text("/次"))
                         .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
@@ -226,7 +226,7 @@ struct BookingView: View {
     // MARK: - 日期 + 时段
     private var dateTimeSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("选择预约时间")
+            Text(L10n.text("选择预约时间"))
                 .font(.cardTitle)
                 .foregroundStyle(Color.textPrimary)
 
@@ -236,10 +236,10 @@ struct BookingView: View {
                     ForEach(Array(viewModel.upcomingDates.prefix(7).enumerated()), id: \.offset) { index, date in
                         let isSelected = viewModel.selectedDateIndex == index
                         VStack(spacing: 4) {
-                            Text(AppDateFormatter.dayLabel(for: date))
+                            Text(L10n.lookup(AppDateFormatter.dayLabel(for: date)))
                                 .font(AppTypography.caption)
                                 .foregroundStyle(isSelected ? Color.textPrimary : Color.textTertiary)
-                            Text(AppDateFormatter.shortDay.string(from: date))
+                            Text(L10n.lookup(AppDateFormatter.shortDay.string(from: date)))
                                 .font(AppTypography.reading.weight(.semibold))
                                 .foregroundStyle(isSelected ? Color.white : Color.textSecondary)
                         }
@@ -275,10 +275,10 @@ struct BookingView: View {
 							Image(systemName: slot.timeRange.hasPrefix("0") ? "sun.max" : "clock")
                                 .font(.system(size: 18))
                                 .foregroundStyle(isSelected ? Color.brandDefault : Color.accentDefault)
-							Text(slot.label)
+							Text(L10n.lookup(slot.label))
                                 .font(AppTypography.supporting.weight(.medium))
                                 .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary)
-							Text("\(slot.timeRange) · 余\(slot.remaining)")
+							Text(L10n.text("\(slot.timeRange) · 余\(slot.remaining)"))
                                 .font(AppTypography.micro)
                                 .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                         }
@@ -297,7 +297,7 @@ struct BookingView: View {
                 }
             }
 			if viewModel.availableSlots.isEmpty {
-				Text("当日暂无可预约时段")
+				Text(L10n.text("当日暂无可预约时段"))
 					.font(AppTypography.supporting)
 					.foregroundStyle(Color.textTertiary)
 			}
@@ -309,11 +309,11 @@ struct BookingView: View {
     // MARK: - 备注
     private var remarkSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("备注说明（选填）")
+            Text(L10n.text("备注说明（选填）"))
                 .font(.cardTitle)
                 .foregroundStyle(Color.textPrimary)
 
-            TextField("请描述您的需求或祈福对象...", text: $viewModel.note, axis: .vertical)
+            TextField(L10n.text("请描述您的需求或祈福对象..."), text: $viewModel.note, axis: .vertical)
                 .lineLimit(4, reservesSpace: true)
                 .font(AppTypography.body)
                 .foregroundStyle(Color.textPrimary)
@@ -330,7 +330,7 @@ struct BookingView: View {
     // MARK: - 随喜功德
     private var meritSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("随喜功德（选填）")
+            Text(L10n.text("随喜功德（选填）"))
                 .font(.cardTitle)
                 .foregroundStyle(Color.textPrimary)
 
@@ -365,7 +365,7 @@ struct BookingView: View {
                 Text("¥")
                     .font(AppTypography.body)
                     .foregroundStyle(Color.textTertiary)
-                TextField("自定义金额", text: $viewModel.customMeritMoney)
+                TextField(L10n.text("自定义金额"), text: $viewModel.customMeritMoney)
                     .keyboardType(.numberPad)
                     .font(AppTypography.body)
                     .foregroundStyle(Color.textPrimary)
@@ -388,12 +388,12 @@ struct BookingView: View {
 
         return VStack(spacing: 0) {
             if let tag = viewModel.masterTagFee {
-                priceRow(label: "大师执行费", value: "¥\(Int(tag))", valueColor: Color.textPrimary)
-                priceRow(label: "寺院服务费", value: "¥\(serviceFee)", valueColor: Color.textPrimary)
-                priceRow(label: "随喜功德", value: "¥\(Int(merit))", valueColor: Color.accentDefault)
+                priceRow(label: L10n.text("大师执行费"), value: "¥\(Int(tag))", valueColor: Color.textPrimary)
+                priceRow(label: L10n.text("寺院服务费"), value: "¥\(serviceFee)", valueColor: Color.textPrimary)
+                priceRow(label: L10n.text("随喜功德"), value: "¥\(Int(merit))", valueColor: Color.accentDefault)
             } else {
-                priceRow(label: "服务费用", value: "¥\(serviceFee)", valueColor: Color.textPrimary)
-                priceRow(label: "随喜功德", value: "¥\(Int(merit))", valueColor: Color.accentDefault)
+                priceRow(label: L10n.text("服务费用"), value: "¥\(serviceFee)", valueColor: Color.textPrimary)
+                priceRow(label: L10n.text("随喜功德"), value: "¥\(Int(merit))", valueColor: Color.accentDefault)
             }
 
             Rectangle()
@@ -402,7 +402,7 @@ struct BookingView: View {
                 .padding(.vertical, 10)
 
             HStack {
-                Text("合计")
+                Text(L10n.text("合计"))
                     .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
@@ -415,7 +415,7 @@ struct BookingView: View {
                 Image(systemName: "info.circle")
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
-                Text("预约成功后24小时内可免费取消")
+                Text(L10n.text("预约成功后24小时内可免费取消"))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }
@@ -432,11 +432,11 @@ struct BookingView: View {
 
     private func priceRow(label: String, value: String, valueColor: Color) -> some View {
         HStack {
-            Text(label)
+            Text(L10n.lookup(label))
                 .font(AppTypography.body)
                 .foregroundStyle(Color.textSecondary)
             Spacer()
-            Text(value)
+            Text(L10n.lookup(value))
                 .font(AppTypography.body)
                 .foregroundStyle(valueColor)
         }
@@ -463,7 +463,7 @@ struct BookingView: View {
                         Image(systemName: "creditcard")
                             .font(.system(size: 18))
                     }
-                    Text("确认预约并支付 ¥\(Int(viewModel.displayTotal))")
+                    Text(L10n.text("确认预约并支付 ¥\(Int(viewModel.displayTotal))"))
                         .font(AppTypography.reading.weight(.semibold))
                 }
                 .foregroundStyle(Color.white)

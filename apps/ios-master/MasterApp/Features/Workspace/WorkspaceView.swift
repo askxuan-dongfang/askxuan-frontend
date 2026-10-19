@@ -137,11 +137,11 @@ struct WorkspaceView: View {
     private var quickActions: [QuickAction] {
         var actions: [QuickAction] = []
         if manageBy == "temple" {
-            actions.append(QuickAction(icon: "calendar", label: "设置日程"))
+            actions.append(QuickAction(icon: "calendar", label: L10n.text("设置日程")))
         }
-        actions.append(QuickAction(icon: "clock", label: "休息请假"))
-        actions.append(QuickAction(icon: "person", label: "个人主页"))
-        actions.append(QuickAction(icon: "yensign", label: "收入提现"))
+        actions.append(QuickAction(icon: "clock", label: L10n.text("休息请假")))
+        actions.append(QuickAction(icon: "person", label: L10n.text("个人主页")))
+        actions.append(QuickAction(icon: "yensign", label: L10n.text("收入提现")))
         return actions
     }
 
@@ -150,7 +150,7 @@ struct WorkspaceView: View {
             VStack(spacing: 0) {
                 HStack(spacing: 8) {
                     Image("brand-logo").resizable().scaledToFit().frame(width: 28, height: 28).accessibilityHidden(true)
-                    Text("问玄东方 · 师傅工作台").font(AppTypography.navigation).foregroundStyle(Color.accentDefault)
+                    Text(L10n.text("问玄东方 · 师傅工作台")).font(AppTypography.navigation).foregroundStyle(Color.accentDefault)
                     Spacer()
                 }.padding(.horizontal, AppSpacing.pageHorizontal).padding(.top, 12)
                 greetingSection
@@ -183,10 +183,10 @@ struct WorkspaceView: View {
                     .font(.system(size: 20))
                     .foregroundStyle(.accentDefault)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("内容与直播")
+                    Text(L10n.text("内容与直播"))
                         .font(.headline)
                         .foregroundStyle(.textPrimary)
-                    Text("上传短视频并管理直播状态")
+                    Text(L10n.text("上传短视频并管理直播状态"))
                         .font(AppTypography.caption)
                         .foregroundStyle(.textSecondary)
                 }
@@ -208,10 +208,10 @@ struct WorkspaceView: View {
 
     private var greetingSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("\(authStore.nickname ?? "师傅")，您好")
+            Text(L10n.text("\(authStore.nickname ?? "师傅")，您好"))
                 .font(.pageTitle)
                 .foregroundStyle(.textPrimary)
-            Text(Date().formatted(.dateTime.month(.wide).day().weekday(.wide)))
+            Text(L10n.lookup(Date().formatted(.dateTime.month(.wide).day().weekday(.wide))))
                 .font(AppTypography.caption)
                 .foregroundStyle(.textSecondary)
         }
@@ -225,18 +225,18 @@ struct WorkspaceView: View {
 
     private var statsRow: some View {
         let stats = [
-            WorkspaceStat(value: viewModel.earnings.map { String(format: "¥%.2f", $0.monthIncome) } ?? "—", label: "本月收入", highlight: true),
-            WorkspaceStat(value: viewModel.reviewsLoaded && viewModel.reviewTotal > 0 ? String(format: "%.1f%%", viewModel.positiveReviewRate) : "—", label: "好评率", highlight: false)
+            WorkspaceStat(value: viewModel.earnings.map { String(format: "¥%.2f", $0.monthIncome) } ?? "—", label: L10n.text("本月收入"), highlight: true),
+            WorkspaceStat(value: viewModel.reviewsLoaded && viewModel.reviewTotal > 0 ? String(format: "%.1f%%", viewModel.positiveReviewRate) : "—", label: L10n.text("好评率"), highlight: false)
         ]
         return HStack(spacing: 10) {
             ForEach(stats.indices, id: \.self) { index in
                 let stat = stats[index]
                 VStack(spacing: 4) {
-                    Text(stat.value)
+                    Text(L10n.lookup(stat.value))
                         .appNumericFont(stat.highlight ? 18 : 22, weight: .semibold)
                         .appNumericTransition(value: stat.value)
                         .foregroundStyle(stat.highlight ? .accentDefault : .textPrimary)
-                    Text(stat.label)
+                    Text(L10n.lookup(stat.label))
                         .font(.micro)
                         .foregroundStyle(.textSecondary)
                 }
@@ -273,7 +273,7 @@ struct WorkspaceView: View {
                     .background(Color.bgSecondary)
                     .cornerRadius(AppRadius.md)
                     .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault))
-                Text(action.label)
+                Text(L10n.lookup(action.label))
                     .font(.micro)
                     .foregroundStyle(.textSecondary)
             }
@@ -294,19 +294,19 @@ struct WorkspaceView: View {
     // MARK: - 今日预约
 
     private func retryRow(_ text: String) -> some View {
-        HStack { Text(text).font(.caption).foregroundStyle(Color.textSecondary); Spacer(); Button("重试") { Task { await viewModel.load() } }.frame(minHeight: 44) }
+        HStack { Text(L10n.lookup(text)).font(.caption).foregroundStyle(Color.textSecondary); Spacer(); Button(L10n.text("重试")) { Task { await viewModel.load() } }.frame(minHeight: 44) }
             .padding(.horizontal, AppSpacing.pageHorizontal).tint(Color.accentDefault)
     }
     private var pendingBookingsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("待处理预约 \(viewModel.pendingTotal.map(String.init) ?? "—")").font(AppTypography.reading.weight(.semibold)).foregroundStyle(Color.textPrimary)
+                Text(L10n.text("待处理预约 \(viewModel.pendingTotal.map(String.init) ?? "—")")).font(AppTypography.reading.weight(.semibold)).foregroundStyle(Color.textPrimary)
                 Spacer()
                 NavigationLink("查看全部") { BookingsView(status: .pending) }.font(.caption).foregroundStyle(Color.textSecondary).frame(minHeight: 44)
             }.padding(.horizontal, AppSpacing.pageHorizontal)
             if viewModel.isLoading { ProgressView().frame(maxWidth: .infinity).padding() }
             else if viewModel.pendingTotal == nil { retryRow("待处理预约暂时无法加载") }
-            else if viewModel.pendingBookings.isEmpty { Text("暂时没有待确认的预约").font(.caption).foregroundStyle(Color.textSecondary).frame(maxWidth: .infinity).padding() }
+            else if viewModel.pendingBookings.isEmpty { Text(L10n.text("暂时没有待确认的预约")).font(.caption).foregroundStyle(Color.textSecondary).frame(maxWidth: .infinity).padding() }
             ForEach(viewModel.pendingBookings) { booking in
                 NavigationLink { BookingDetailView(bookingId: booking.id) } label: { bookingCard(booking) }.buttonStyle(CardPressButtonStyle())
             }
@@ -316,14 +316,14 @@ struct WorkspaceView: View {
     private var todayBookingsSection: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("今日预约")
+                Text(L10n.text("今日预约"))
                     .font(AppTypography.reading.weight(.semibold))
                     .foregroundStyle(.textPrimary)
                 Spacer()
                 NavigationLink {
                     BookingsView(date: WorkspaceViewModel.today)
                 } label: {
-                    Text("查看全部")
+                    Text(L10n.text("查看全部"))
                         .font(AppTypography.caption)
                         .foregroundStyle(.textSecondary)
                 }
@@ -335,7 +335,7 @@ struct WorkspaceView: View {
             if viewModel.isLoading { ProgressView().padding() }
             else if viewModel.todayTotal == nil { retryRow("今日预约暂时无法加载") }
             else if viewModel.todayBookings.isEmpty {
-                Text("今日暂无预约")
+                Text(L10n.text("今日暂无预约"))
                     .font(AppTypography.caption)
                     .foregroundStyle(.textTertiary)
                     .frame(maxWidth: .infinity)
@@ -358,10 +358,10 @@ struct WorkspaceView: View {
         return HStack(spacing: 12) {
             // 时间块
             VStack(spacing: 2) {
-                Text(times.first ?? booking.timeSlot)
+                Text(L10n.lookup(times.first ?? booking.timeSlot))
                     .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(.textPrimary)
-                Text(times.count > 1 ? times[1] : "")
+                Text(L10n.lookup(times.count > 1 ? times[1] : ""))
                     .font(.micro)
                     .foregroundStyle(.textTertiary)
             }
@@ -369,17 +369,17 @@ struct WorkspaceView: View {
 
             // 预约信息
             VStack(alignment: .leading, spacing: 2) {
-                Text(booking.serviceName)
+                Text(L10n.lookup(booking.serviceName))
                     .font(AppTypography.body.weight(.medium))
                     .foregroundStyle(.textPrimary)
-                Text("\(booking.bookingDate) · \(booking.templeName.isEmpty ? "独立服务" : booking.templeName)")
+                Text(L10n.text("\(booking.bookingDate) · \(booking.templeName.isEmpty ? "独立服务" : booking.templeName)"))
                     .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             // 状态徽章
-            Text(badge.text)
+            Text(L10n.lookup(badge.text))
                 .font(AppTypography.micro.weight(.medium))
                 .foregroundStyle(badge.color)
                 .padding(.horizontal, AppSpacing.sm)
@@ -411,14 +411,14 @@ struct WorkspaceView: View {
     private var blessingTaskSection: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("加持任务")
+                Text(L10n.text("加持任务"))
                     .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(.textPrimary)
                 Spacer()
                 NavigationLink {
                     BlessingTasksView()
                 } label: {
-                    Text("查看全部 >")
+                    Text(L10n.text("查看全部 >"))
                         .font(AppTypography.caption)
                         .foregroundStyle(.accentDefault)
                 }
@@ -435,15 +435,15 @@ struct WorkspaceView: View {
                 } label: {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("加持任务 \(task.taskNo)")
+                        Text(L10n.text("加持任务 \(task.taskNo)"))
                             .font(AppTypography.supporting.weight(.semibold))
                             .foregroundStyle(.textPrimary)
-                        Text("订单 \(task.diyOrderNo) · \(task.assignTime)")
+                        Text(L10n.text("订单 \(task.diyOrderNo) · \(task.assignTime)"))
                             .font(.micro)
                             .foregroundStyle(.textTertiary)
                     }
                     Spacer()
-                    Text(task.statusEnum.badgeInfo.text)
+                    Text(L10n.lookup(task.statusEnum.badgeInfo.text))
                         .font(AppTypography.micro.weight(.medium))
                         .foregroundStyle(.brandDefault)
                         .padding(.horizontal, AppSpacing.sm)
@@ -462,7 +462,7 @@ struct WorkspaceView: View {
             }
             .buttonStyle(CardPressButtonStyle())
             } else {
-                Text("暂无待接单加持任务")
+                Text(L10n.text("暂无待接单加持任务"))
                     .font(AppTypography.caption)
                     .foregroundStyle(.textTertiary)
                     .frame(maxWidth: .infinity)
@@ -643,39 +643,39 @@ struct MediaStudioView: View {
 
     var body: some View {
         Form {
-            Section("发布内容") {
-                Picker("类型", selection: $postType) {
-                    Text("短视频").tag("video")
-                    Text("图文").tag("article")
+            Section(L10n.text("发布内容")) {
+                Picker(L10n.text("类型"), selection: $postType) {
+                    Text(L10n.text("短视频")).tag("video")
+                    Text(L10n.text("图文")).tag("article")
                 }
                 .pickerStyle(.segmented)
-                TextField("标题", text: $postTitle)
-                TextField("正文", text: $postContent, axis: .vertical)
-                Picker("信仰流派", selection: $beliefCode) {
-                    Text("不限定").tag("")
-                    Text("汉传佛教").tag("han_buddhism")
-                    Text("藏传佛教").tag("tibetan_buddhism")
-                    Text("道教").tag("daoism")
-                    Text("民间信仰").tag("folk")
+                TextField(L10n.text("标题"), text: $postTitle)
+                TextField(L10n.text("正文"), text: $postContent, axis: .vertical)
+                Picker(L10n.text("信仰流派"), selection: $beliefCode) {
+                    Text(L10n.text("不限定")).tag("")
+                    Text(L10n.text("汉传佛教")).tag("han_buddhism")
+                    Text(L10n.text("藏传佛教")).tag("tibetan_buddhism")
+                    Text(L10n.text("道教")).tag("daoism")
+                    Text(L10n.text("民间信仰")).tag("folk")
                 }
 
                 if postType == "video" {
                     PhotosPicker(selection: $coverItem, matching: .images) {
-                        Label(coverData == nil ? "选择封面" : "已选择封面", systemImage: "photo")
+                        Label(L10n.lookup(coverData == nil ? L10n.text("选择封面") : L10n.text("已选择封面")), systemImage: "photo")
                     }
                     PhotosPicker(selection: $videoItem, matching: .videos) {
-                        Label(videoData == nil ? "选择视频" : "已选择视频", systemImage: "video")
+                        Label(L10n.lookup(videoData == nil ? L10n.text("选择视频") : L10n.text("已选择视频")), systemImage: "video")
                     }
                     Button {
                         guard let videoData else { return }
                         Task { await viewModel.upload(video: videoData, cover: coverData) }
                     } label: {
-                        Label(viewModel.isUploading ? "上传中" : "上传", systemImage: "arrow.up.circle")
+                        Label(L10n.lookup(viewModel.isUploading ? L10n.text("上传中") : L10n.text("上传")), systemImage: "arrow.up.circle")
                     }
                     .disabled(videoData == nil || viewModel.isUploading)
 
                     if let media = viewModel.media {
-                        Text(media.status == "ready" ? "可播放 · 审核\(media.auditStatus)" : media.status)
+                        Text(L10n.lookup(media.status == "ready" ? L10n.text("可播放 · 审核\(media.auditStatus)") : media.status))
                         if media.status == "ready", let url = URL(string: media.playbackUrl), !media.playbackUrl.isEmpty {
                             VideoPlayer(player: AVPlayer(url: url))
                                 .frame(minHeight: 220)
@@ -683,49 +683,49 @@ struct MediaStudioView: View {
                     }
                 } else {
                     PhotosPicker(selection: $imageItems, maxSelectionCount: 9, matching: .images) {
-                        Label(imageData.isEmpty ? "选择图片（最多 9 张）" : "已选择 \(imageData.count) 张", systemImage: "photo.stack")
+                        Label(L10n.lookup(imageData.isEmpty ? L10n.text("选择图片（最多 9 张）") : L10n.text("已选择 \(imageData.count) 张")), systemImage: "photo.stack")
                     }
                     Button {
                         Task { await viewModel.upload(images: imageData) }
                     } label: {
-                        Label(viewModel.isUploading ? "上传中" : "上传图片", systemImage: "arrow.up.circle")
+                        Label(L10n.lookup(viewModel.isUploading ? L10n.text("上传中") : L10n.text("上传图片")), systemImage: "arrow.up.circle")
                     }
                     .disabled(imageData.isEmpty || viewModel.isUploading)
                     if !viewModel.imageMedia.isEmpty {
-                        Text("已上传 \(viewModel.imageMedia.count) 张图片").foregroundStyle(.secondary)
+                        Text(L10n.text("已上传 \(viewModel.imageMedia.count) 张图片")).foregroundStyle(.secondary)
                     }
                 }
 
                 HStack {
-                    Button("保存草稿") { Task { await save(submit: false) } }
-                    Button("提交审核") { Task { await save(submit: true) } }
+                    Button(L10n.text("保存草稿")) { Task { await save(submit: false) } }
+                    Button(L10n.text("提交审核")) { Task { await save(submit: true) } }
                         .buttonStyle(.borderedProminent)
                 }
                 if editingId != nil {
-                    Button("取消编辑") { resetEditor() }.foregroundStyle(.secondary)
+                    Button(L10n.text("取消编辑")) { resetEditor() }.foregroundStyle(.secondary)
                 }
             }.listRowBackground(Color.bgSecondary)
 
-            Section("我的内容") {
-                if viewModel.posts.isEmpty { Text("暂无内容").foregroundStyle(.secondary) }
+            Section(L10n.text("我的内容")) {
+                if viewModel.posts.isEmpty { Text(L10n.text("暂无内容")).foregroundStyle(.secondary) }
                 ForEach(viewModel.posts) { post in
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text(post.title).font(.headline)
+                            Text(L10n.lookup(post.title)).font(.headline)
                             Spacer()
-                            Text(statusText(post.status)).font(AppTypography.caption).foregroundStyle(statusColor(post.status))
+                            Text(L10n.lookup(statusText(post.status))).font(AppTypography.caption).foregroundStyle(statusColor(post.status))
                         }
-                        Text("点赞 \(post.likeCount) · 评论 \(post.commentCount)").font(AppTypography.caption).foregroundStyle(.secondary)
+                        Text(L10n.text("点赞 \(post.likeCount) · 评论 \(post.commentCount)")).font(AppTypography.caption).foregroundStyle(.secondary)
                         if let remark = post.auditRemark, !remark.isEmpty {
-                            Text("驳回原因：\(remark)").font(AppTypography.caption).foregroundStyle(.red)
+                            Text(L10n.text("驳回原因：\(remark)")).font(AppTypography.caption).foregroundStyle(.red)
                         }
                         HStack {
                             if ["draft", "rejected"].contains(post.status) {
-                                Button { beginEditing(post) } label: { Label("编辑", systemImage: "pencil") }
-                                Button("提交") { Task { await viewModel.changeStatus(post, status: "submit") } }
+                                Button { beginEditing(post) } label: { Label(L10n.text("编辑"), systemImage: "pencil") }
+                                Button(L10n.text("提交")) { Task { await viewModel.changeStatus(post, status: "submit") } }
                             }
                             if post.status == "approved" {
-                                Button("下架", role: .destructive) { Task { await viewModel.changeStatus(post, status: "off_shelf") } }
+                                Button(L10n.text("下架"), role: .destructive) { Task { await viewModel.changeStatus(post, status: "off_shelf") } }
                             }
                         }
                         .buttonStyle(.bordered)
@@ -734,24 +734,24 @@ struct MediaStudioView: View {
                 }
             }.listRowBackground(Color.bgSecondary)
 
-            Section("直播") {
+            Section(L10n.text("直播")) {
                 if viewModel.capabilities?.canStart == true {
-                    TextField("直播标题", text: $liveTitle)
-                    TextField("OpenIM 群组 ID", text: $openIMGroupId)
+                    TextField(L10n.text("直播标题"), text: $liveTitle)
+                    TextField(L10n.text("OpenIM 群组 ID"), text: $openIMGroupId)
                     Button {
                         Task { await viewModel.createAndStartLive(title: liveTitle, groupId: openIMGroupId) }
                     } label: {
-                        Label("开始直播", systemImage: "dot.radiowaves.left.and.right")
+                        Label(L10n.text("开始直播"), systemImage: "dot.radiowaves.left.and.right")
                     }
                     .disabled(liveTitle.isEmpty || openIMGroupId.isEmpty)
                 } else {
-                    Label("直播能力未开放", systemImage: "video.slash")
+                    Label(L10n.text("直播能力未开放"), systemImage: "video.slash")
                         .foregroundStyle(.secondary)
                 }
                 if let room = viewModel.room {
-                    Text("房间 \(room.roomNo) · \(room.status)")
+                    Text(L10n.text("房间 \(room.roomNo) · \(room.status)"))
                     if room.status == "live" {
-                        Button("结束直播", role: .destructive) {
+                        Button(L10n.text("结束直播"), role: .destructive) {
                             Task { await viewModel.closeLive() }
                         }
                     }
@@ -759,13 +759,13 @@ struct MediaStudioView: View {
             }.listRowBackground(Color.bgSecondary)
 
             if let message = viewModel.errorMessage {
-                Section { Text(message).foregroundStyle(Color.stateError) }.listRowBackground(Color.bgSecondary)
+                Section { Text(L10n.lookup(message)).foregroundStyle(Color.stateError) }.listRowBackground(Color.bgSecondary)
             }
         }
         .scrollContentBackground(.hidden).background(Color.bgPrimary)
         .disabled(viewModel.isWorking || viewModel.isUploading)
-        .overlay { if viewModel.isWorking { ProgressView("正在处理…").padding(24).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16)) } }
-        .navigationTitle("内容与直播")
+        .overlay { if viewModel.isWorking { ProgressView(L10n.text("正在处理…")).padding(24).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16)) } }
+        .navigationTitle(L10n.text("内容与直播"))
         .task {
             await viewModel.loadCapabilities()
             await viewModel.loadPosts()

@@ -34,18 +34,18 @@ struct DiyDetailView: View {
             DFTopNavBar("作品详情", showsBackButton: true) { EmptyView() } trailing: {
                 if viewModel.currentDesign?.status == "public", let url = URL(string: "/c/diy/\(designId)", relativeTo: AppConfig.baseURL)?.absoluteURL {
                     ShareLink(item: url) { Image(systemName: "square.and.arrow.up").frame(width: 44, height: 44) }
-                        .accessibilityLabel("分享作品")
+                        .accessibilityLabel(L10n.text("分享作品"))
                 }
             }
             ScrollView(showsIndicators: false) {
                 VStack(spacing: AppSpacing.lg) {
                     if viewModel.isLoading && viewModel.currentDesign == nil {
-                        ProgressView("正在展开作品").tint(Color.accentDefault).frame(maxWidth: .infinity, minHeight: 320)
+                        ProgressView(L10n.text("正在展开作品")).tint(Color.accentDefault).frame(maxWidth: .infinity, minHeight: 320)
                     } else if viewModel.currentDesign == nil {
                         VStack(spacing: 16) {
                             Image(systemName: "square.stack").font(.largeTitle)
-                            Text("暂时无法打开作品").font(.headline)
-                            Button("重新加载") { Task { await viewModel.loadDesign(id: designId) } }.frame(minHeight: 44)
+                            Text(L10n.text("暂时无法打开作品")).font(.headline)
+                            Button(L10n.text("重新加载")) { Task { await viewModel.loadDesign(id: designId) } }.frame(minHeight: 44)
                         }.foregroundStyle(Color.textSecondary).frame(maxWidth: .infinity, minHeight: 320)
                     } else {
                         previewSection
@@ -75,10 +75,10 @@ struct DiyDetailView: View {
         }) { NavigationStack { LoginView() }.appVisualDefaults() }
         .onChange(of: auth.isLoggedIn) { _, loggedIn in if loggedIn { showLogin = false } }
         .sheet(isPresented: $showEditor) { NavigationStack { DiyDesignView(viewModel: viewModel) } }
-        .confirmationDialog(viewModel.currentDesign?.status == "public" ? "下架后，仅你可见；已有副本与订单保留。" : "发布后，其他人可以分享、复制搭配和定制。", isPresented: $showPublishConfirm, titleVisibility: .visible) {
-            Button(viewModel.currentDesign?.status == "public" ? "确认下架" : "确认发布") { Task { await viewModel.setPublication(viewModel.currentDesign?.status != "public") } }
+        .confirmationDialog(L10n.lookup(viewModel.currentDesign?.status == "public" ? L10n.text("下架后，仅你可见；已有副本与订单保留。") : L10n.text("发布后，其他人可以分享、复制搭配和定制。")), isPresented: $showPublishConfirm, titleVisibility: .visible) {
+            Button(L10n.lookup(viewModel.currentDesign?.status == "public" ? L10n.text("确认下架") : L10n.text("确认发布"))) { Task { await viewModel.setPublication(viewModel.currentDesign?.status != "public") } }
         }
-        .alert("提示", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) { Button("好的", role: .cancel) {} } message: { Text(viewModel.errorMessage ?? "") }
+        .alert(L10n.text("提示"), isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) { Button(L10n.text("好的"), role: .cancel) {} } message: { Text(L10n.lookup(viewModel.errorMessage ?? "")) }
         .sheet(isPresented: $showOrderPage) {
             NavigationStack {
                 DiyOrderView(designId: viewModel.currentDesign?.id ?? designId, viewModel: viewModel, orderSource: viewModel.isDesignOwner ? .cart : .design)
@@ -98,19 +98,19 @@ struct DiyDetailView: View {
                 }
             }.frame(height: 270)
             VStack(spacing: 10) {
-                Text(designStatusText).font(.caption.weight(.medium)).foregroundStyle(Color.accentLight)
+                Text(L10n.lookup(designStatusText)).font(.caption.weight(.medium)).foregroundStyle(Color.accentLight)
                     .padding(.horizontal, 12).padding(.vertical, 5)
                     .background(Color.accentDefault.opacity(0.12), in: Capsule())
-                Text(viewModel.currentDesign?.name ?? "我的手串")
+                Text(L10n.lookup(viewModel.currentDesign?.name ?? L10n.text("我的手串")))
                     .font(AppTypography.title(26)).foregroundStyle(Color.textPrimary).multilineTextAlignment(.center)
-                Text((viewModel.currentDesign?.description?.isEmpty == false ? viewModel.currentDesign?.description : nil) ?? "把喜欢的珠子，串成自己的心意。")
+                Text(L10n.lookup((viewModel.currentDesign?.description?.isEmpty == false ? viewModel.currentDesign?.description : nil) ?? L10n.text("把喜欢的珠子，串成自己的心意。")))
                     .font(.subheadline).foregroundStyle(Color.textSecondary).multilineTextAlignment(.center).lineSpacing(4)
                 HStack(spacing: 18) {
-                    Label("\(viewModel.beadSlots.count) 颗", systemImage: "circle.dotted")
-                    Label(String(format: "%.1f cm 手围", Double(viewModel.wristSizeMm) / 10), systemImage: "ruler")
+                    Label(L10n.text("\(viewModel.beadSlots.count) 颗"), systemImage: "circle.dotted")
+                    Label(L10n.lookup(String(format: "%.1f cm 手围", Double(viewModel.wristSizeMm) / 10)), systemImage: "ruler")
                 }.font(.caption).foregroundStyle(Color.textSecondary)
-                Text(viewModel.totalPriceText).appNumericFont(28, weight: .semibold).foregroundStyle(Color.accentLight)
-                Text("搭配预估 · 以确认订单页为准").font(.caption).foregroundStyle(Color.textSecondary)
+                Text(L10n.lookup(viewModel.totalPriceText)).appNumericFont(28, weight: .semibold).foregroundStyle(Color.accentLight)
+                Text(L10n.text("搭配预估 · 以确认订单页为准")).font(.caption).foregroundStyle(Color.textSecondary)
             }.padding(.horizontal, 20).padding(.bottom, 24)
         }
         .background(RadialGradient(colors: [Color.bgElevated, Color.bgSecondary], center: .center, startRadius: 0, endRadius: 330))
@@ -122,28 +122,28 @@ struct DiyDetailView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 if viewModel.isDesignOwner { Button { showPublishConfirm = true } label: {
-                    Label(viewModel.currentDesign?.status == "public" ? "管理公开作品" : "发布到广场", systemImage: viewModel.currentDesign?.status == "public" ? "eye" : "sparkles")
+                    Label(L10n.lookup(viewModel.currentDesign?.status == "public" ? L10n.text("管理公开作品") : L10n.text("发布到广场")), systemImage: viewModel.currentDesign?.status == "public" ? "eye" : "sparkles")
                         .frame(minHeight: 44)
                 }.disabled(viewModel.isSubmitting) }
                 Spacer()
                 if viewModel.currentDesign?.status == "public", let url = URL(string: "/c/diy/\(viewModel.currentDesign?.id ?? designId)", relativeTo: AppConfig.baseURL)?.absoluteURL {
-                    ShareLink(item: url) { Label("分享", systemImage: "square.and.arrow.up").frame(minHeight: 44) }
+                    ShareLink(item: url) { Label(L10n.text("分享"), systemImage: "square.and.arrow.up").frame(minHeight: 44) }
                 }
             }.font(.subheadline).foregroundStyle(Color.accentDefault)
-            if let message = viewModel.successMessage { Text(message).font(.caption).foregroundStyle(Color.stateSuccess) }
-            if let source = viewModel.currentDesign?.sourceDesignId, source > 0 { Text("源自作品 #\(source) 的灵感再创作").font(.caption).foregroundStyle(Color.textTertiary) }
-            Text("复制后保留珠子顺序，自由替换材料；原作品不会改变。").font(.caption).foregroundStyle(Color.textSecondary)
-            if let url = URL(string: "/assets/diy/materials-v2/credits.html", relativeTo: AppConfig.baseURL)?.absoluteURL { Link("实拍参考与材质素材来源", destination: url).font(.caption) }
+            if let message = viewModel.successMessage { Text(L10n.lookup(message)).font(.caption).foregroundStyle(Color.stateSuccess) }
+            if let source = viewModel.currentDesign?.sourceDesignId, source > 0 { Text(L10n.text("源自作品 #\(source) 的灵感再创作")).font(.caption).foregroundStyle(Color.textTertiary) }
+            Text(L10n.text("复制后保留珠子顺序，自由替换材料；原作品不会改变。")).font(.caption).foregroundStyle(Color.textSecondary)
+            if let url = URL(string: "/assets/diy/materials-v2/credits.html", relativeTo: AppConfig.baseURL)?.absoluteURL { Link(L10n.text("实拍参考与材质素材来源"), destination: url).font(.caption) }
         }.padding(16).diySurface().padding(.horizontal, 16)
     }
 
     // MARK: - 信息卡
     private var infoSection: some View {
         VStack(spacing: 0) {
-            infoRow(label: "设计编号", value: viewModel.currentDesign?.designNo ?? "—")
-            infoRow(label: "创建时间", value: viewModel.currentDesign?.createTime ?? "—")
-            infoRow(label: "总价", value: AppDateFormatter.moneyText(viewModel.currentDesign?.totalPrice ?? 0))
-            infoRow(label: "状态", value: designStatusText, isLast: true)
+            infoRow(label: L10n.text("设计编号"), value: viewModel.currentDesign?.designNo ?? "—")
+            infoRow(label: L10n.text("创建时间"), value: viewModel.currentDesign?.createTime ?? "—")
+            infoRow(label: L10n.text("总价"), value: AppDateFormatter.moneyText(viewModel.currentDesign?.totalPrice ?? 0))
+            infoRow(label: L10n.text("状态"), value: designStatusText, isLast: true)
         }
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.md)
@@ -153,11 +153,11 @@ struct DiyDetailView: View {
     private func infoRow(label: String, value: String, isLast: Bool = false) -> some View {
         VStack(spacing: 0) {
             HStack {
-                Text(label)
+                Text(L10n.lookup(label))
                     .font(AppTypography.supporting)
                     .foregroundStyle(Color.textTertiary)
                 Spacer()
-                Text(value)
+                Text(L10n.lookup(value))
                     .font(AppTypography.body)
                     .multilineTextAlignment(.trailing)
                     .foregroundStyle(Color.textPrimary)
@@ -186,11 +186,11 @@ struct DiyDetailView: View {
     private var materialsSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             HStack {
-                Text("材料清单")
+                Text(L10n.text("材料清单"))
                     .font(.cardTitle)
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
-                Text("\(viewModel.cartItems.count) 种")
+                Text(L10n.text("\(viewModel.cartItems.count) 种"))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }
@@ -198,7 +198,7 @@ struct DiyDetailView: View {
             .padding(.top, AppSpacing.lg)
 
             if viewModel.cartItems.isEmpty {
-                Text("材料配置暂未加载")
+                Text(L10n.text("材料配置暂未加载"))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .frame(maxWidth: .infinity)
@@ -224,7 +224,7 @@ struct DiyDetailView: View {
                 .frame(width: 44, height: 44).accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.material.name)
+                Text(L10n.lookup(item.material.name))
                     .font(AppTypography.body.weight(.medium))
                     .foregroundStyle(Color.textPrimary)
                 Text("\(item.material.spec) · \(item.material.categoryDisplay)")
@@ -237,7 +237,7 @@ struct DiyDetailView: View {
             Text("×\(item.quantity)")
                 .font(AppTypography.supporting.weight(.semibold))
                 .foregroundStyle(Color.textSecondary)
-            Text(item.subtotalText)
+            Text(L10n.lookup(item.subtotalText))
                 .font(AppTypography.body.weight(.semibold))
                 .foregroundStyle(Color.brandDefault)
                 .frame(width: 60, alignment: .trailing)
@@ -250,13 +250,13 @@ struct DiyDetailView: View {
 
     private func availabilityWarning(_ message: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label("该作品暂不可直接下单", systemImage: "exclamationmark.triangle.fill")
+            Label(L10n.text("该作品暂不可直接下单"), systemImage: "exclamationmark.triangle.fill")
                 .font(AppTypography.body.weight(.semibold))
                 .foregroundStyle(Color.stateWarning)
-            Text(message)
+            Text(L10n.lookup(message))
                 .font(AppTypography.caption)
                 .foregroundStyle(Color.textSecondary)
-            Text("请进入编辑器替换已失效材料。")
+            Text(L10n.text("请进入编辑器替换已失效材料。"))
                 .font(AppTypography.caption)
                 .foregroundStyle(Color.textTertiary)
         }
@@ -275,7 +275,7 @@ struct DiyDetailView: View {
                 Image(systemName: "sparkles")
                     .font(AppTypography.body)
                     .foregroundStyle(Color.accentDefault)
-                Text("法师加持")
+                Text(L10n.text("法师加持"))
                     .font(.cardTitle)
                     .foregroundStyle(Color.textPrimary)
             }
@@ -285,10 +285,10 @@ struct DiyDetailView: View {
                     .font(.system(size: 24))
                     .foregroundStyle(Color.stateSuccess)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("可享法师开光加持")
+                    Text(L10n.text("可享法师开光加持"))
                         .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
-                    Text("下单时可选择加持服务，由法师诵经开光加持。")
+                    Text(L10n.text("下单时可选择加持服务，由法师诵经开光加持。"))
                         .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                         .lineSpacing(3)
@@ -315,11 +315,11 @@ struct DiyDetailView: View {
     // MARK: - 底部操作栏
     private var bottomActionBar: some View {
         HStack(spacing: AppSpacing.md) {
-            DFSecondaryButton(title: viewModel.isDesignOwner ? "继续编辑" : "复制并编辑", icon: "pencil") {
+            DFSecondaryButton(title: viewModel.isDesignOwner ? L10n.text("继续编辑") : L10n.text("复制并编辑"), icon: "pencil") {
                 performAction("edit")
             }
             DFPrimaryButton(
-                title: viewModel.isCurrentDesignOrderable ? "立即下单" : "材料需替换",
+                title: viewModel.isCurrentDesignOrderable ? L10n.text("立即下单") : L10n.text("材料需替换"),
                 icon: "creditcard.fill",
                 isEnabled: viewModel.isCurrentDesignOrderable
             ) {

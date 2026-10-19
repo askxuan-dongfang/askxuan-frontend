@@ -7,7 +7,7 @@ struct JourneyDetailView: View {
   let bookingId: String
   var body: some View {
     ScrollView { JourneyRecordPanel(bookingId: bookingId).padding(16) }
-      .background(Color.bgPrimary).navigationTitle(JourneyHost.provider ? "服务履约" : "我的服务记录")
+      .background(Color.bgPrimary).navigationTitle(L10n.lookup(JourneyHost.provider ? L10n.text("服务履约") : L10n.text("我的服务记录")))
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
@@ -35,8 +35,8 @@ struct JourneyRecordPanel: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
       if let error {
-        Text(error).foregroundStyle(Color.red).font(.subheadline)
-        Button("重新加载") { Task { await load() } }
+        Text(L10n.lookup(error)).foregroundStyle(Color.red).font(.subheadline)
+        Button(L10n.text("重新加载")) { Task { await load() } }
       }
       if let progress {
         statusCard(progress)
@@ -50,11 +50,11 @@ struct JourneyRecordPanel: View {
           JourneyComposer(bookingId: bookingId, finalReceipt: true) { await load() }
         }
         if let success {
-          Text(success).font(.subheadline).foregroundStyle(Color.accentDefault)
+          Text(L10n.lookup(success)).font(.subheadline).foregroundStyle(Color.accentDefault)
             .accessibilityAddTraits(.updatesFrequently)
         }
       } else if error == nil {
-        ProgressView("正在展开服务记录…").frame(maxWidth: .infinity)
+        ProgressView(L10n.text("正在展开服务记录…")).frame(maxWidth: .infinity)
       }
     }.foregroundStyle(Color.textPrimary).tint(Color.brandDefault)
       .task(id: bookingId) {
@@ -71,10 +71,10 @@ struct JourneyRecordPanel: View {
         VStack(spacing: 18) {
           Image(systemName: "checkmark.seal").font(.system(size: 56, weight: .light))
             .foregroundStyle(Color.accentDefault)
-          Text("这份心意，已有记录").font(.title2).fontDesign(.serif)
-          Text("你已确认本次服务回执，完整记录已归档。").font(.subheadline).foregroundStyle(Color.textSecondary)
+          Text(L10n.text("这份心意，已有记录")).font(.title2).fontDesign(.serif)
+          Text(L10n.text("你已确认本次服务回执，完整记录已归档。")).font(.subheadline).foregroundStyle(Color.textSecondary)
             .multilineTextAlignment(.center)
-          Button("留存这份记录") { completed = false }.buttonStyle(.borderedProminent).foregroundStyle(
+          Button(L10n.text("留存这份记录")) { completed = false }.buttonStyle(.borderedProminent).foregroundStyle(
             Color.textOnBrand)
         }.padding(28).frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.bgPrimary)
           .presentationDetents([.medium]).presentationDragIndicator(.visible)
@@ -83,15 +83,15 @@ struct JourneyRecordPanel: View {
   private func statusCard(_ progress: JourneyProgress) -> some View {
     JourneyCard {
       HStack {
-        Text(JourneyText.status(progress.status)).font(.headline)
+        Text(L10n.lookup(JourneyText.status(progress.status))).font(.headline)
         Spacer()
         Image(systemName: "leaf.circle").font(.title).foregroundStyle(Color.accentDefault)
           .accessibilityHidden(true)
       }
       JourneySteps(status: progress.status)
-      Text(statusHint(progress.status)).font(.subheadline).foregroundStyle(Color.textSecondary)
+      Text(L10n.lookup(statusHint(progress.status))).font(.subheadline).foregroundStyle(Color.textSecondary)
       if JourneyHost.provider && ["pending", "confirmed"].contains(progress.status) {
-        Button(progress.status == "pending" ? "确认接单" : "开始执行") {
+        Button(L10n.lookup(progress.status == "pending" ? L10n.text("确认接单") : L10n.text("开始执行"))) {
           Task { await advance(progress.status) }
         }.buttonStyle(.borderedProminent).foregroundStyle(Color.textOnBrand).disabled(busy)
       }
@@ -100,32 +100,32 @@ struct JourneyRecordPanel: View {
 
   private func wishCard(_ progress: JourneyProgress) -> some View {
     JourneyCard {
-      Label(JourneyHost.provider ? "信众的心愿" : "我的心愿", systemImage: "leaf").font(.headline)
+      Label(L10n.lookup(JourneyHost.provider ? L10n.text("信众的心愿") : L10n.text("我的心愿")), systemImage: "leaf").font(.headline)
       if let latest = progress.records.last(where: { $0.kind == "wish" }) {
         Text(latest.content).font(.title3).fontDesign(.serif).lineSpacing(6)
-        Text(latest.createdAt).font(.caption).foregroundStyle(Color.textSecondary)
+        Text(L10n.lookup(latest.createdAt)).font(.caption).foregroundStyle(Color.textSecondary)
         if progress.records.filter({ $0.kind == "wish" }).count > 1 {
-          DisclosureGroup("之前的心愿") {
+          DisclosureGroup(L10n.text("之前的心愿")) {
             ForEach(progress.records.filter { $0.kind == "wish" && $0.id != latest.id }) {
               row in
               Text(row.content).font(.subheadline)
-              Text(row.createdAt).font(.caption2)
+              Text(L10n.lookup(row.createdAt)).font(.caption2)
             }
           }
         }
       } else {
-        Text("本次服务尚未留下心愿。").font(.subheadline).foregroundStyle(Color.textSecondary)
+        Text(L10n.text("本次服务尚未留下心愿。")).font(.subheadline).foregroundStyle(Color.textSecondary)
       }
       if !JourneyHost.provider && ["pending", "confirmed"].contains(progress.status) {
-        DisclosureGroup("留一句心愿（选填）", isExpanded: $wishExpanded) {
-          TextField("写下心意或希望执行方留意的事项", text: $wish, axis: .vertical).lineLimit(3...6)
+        DisclosureGroup(L10n.text("留一句心愿（选填）"), isExpanded: $wishExpanded) {
+          TextField(L10n.text("写下心意或希望执行方留意的事项"), text: $wish, axis: .vertical).lineLimit(3...6)
             .textFieldStyle(.roundedBorder).accessibilityIdentifier("journey.wish")
             .onChange(of: wish) { _, value in
               wish = String(value.prefix(300))
               wishID = UUID().uuidString
             }
-          Text("\(wish.count)/300 · 填写与否不影响服务").font(.caption)
-          Button("记下心愿") { Task { await publishWish() } }.disabled(
+          Text(L10n.text("\(wish.count)/300 · 填写与否不影响服务")).font(.caption)
+          Button(L10n.text("记下心愿")) { Task { await publishWish() } }.disabled(
             busy || wish.trimmingCharacters(in: .whitespacesAndNewlines).count < 2)
         }
       }
@@ -134,7 +134,7 @@ struct JourneyRecordPanel: View {
 
   private func timelineCard(_ progress: JourneyProgress) -> some View {
     JourneyCard {
-      Label("一路的进展", systemImage: "list.bullet.clipboard").font(.headline)
+      Label(L10n.text("一路的进展"), systemImage: "list.bullet.clipboard").font(.headline)
       ForEach(timeline(progress)) { row in
         HStack(alignment: .top, spacing: 12) {
           Image(systemName: "circle.fill").font(.system(size: 7)).foregroundStyle(
@@ -142,59 +142,59 @@ struct JourneyRecordPanel: View {
           ).padding(.top, 6)
           VStack(alignment: .leading, spacing: 7) {
             HStack {
-              Text(row.title).font(.subheadline.bold())
+              Text(L10n.lookup(row.title)).font(.subheadline.bold())
               Spacer()
-              Text(JourneyText.actor(row.actor)).font(.caption2)
+              Text(L10n.lookup(JourneyText.actor(row.actor))).font(.caption2)
             }
-            Text(row.date).font(.caption2).foregroundStyle(Color.textSecondary)
+            Text(L10n.lookup(row.date)).font(.caption2).foregroundStyle(Color.textSecondary)
             if !row.content.isEmpty { Text(row.content).font(.subheadline) }
             ForEach(row.files) { file in JourneyMediaView(bookingId: bookingId, file: file) }
           }
         }.padding(.vertical, 6)
       }
       if timeline(progress).isEmpty {
-        Text("真实执行记录将在这里显示。").font(.subheadline).foregroundStyle(Color.textSecondary)
+        Text(L10n.text("真实执行记录将在这里显示。")).font(.subheadline).foregroundStyle(Color.textSecondary)
       }
     }
   }
 
   private func receiptsCard(_ progress: JourneyProgress) -> some View {
     JourneyCard {
-      Label("服务回执 · \(progress.receipts.count) 份留存", systemImage: "doc.text.image").font(
+      Label(L10n.text("服务回执 · \(progress.receipts.count) 份留存"), systemImage: "doc.text.image").font(
         .headline)
       if progress.receipts.isEmpty {
         Text(
-          ["completed", "reviewed"].contains(progress.status) ? "此历史订单未留存回执。" : "执行方尚未提交最终回执。"
+          L10n.lookup(["completed", "reviewed"].contains(progress.status) ? L10n.text("此历史订单未留存回执。") : L10n.text("执行方尚未提交最终回执。"))
         ).font(.subheadline).foregroundStyle(Color.textSecondary)
       }
       ForEach(Array(progress.receipts.enumerated()), id: \.element.id) { index, receipt in
         VStack(alignment: .leading, spacing: 12) {
-          Text("回执 \(index+1)").font(.headline)
+          Text(L10n.text("回执 \(index+1)")).font(.headline)
           Text("\(receipt.createdAt) · \(JourneyText.actor(receipt.operatorType))").font(
             .caption
           ).foregroundStyle(Color.textSecondary)
-          Text(receipt.summary).font(.subheadline)
+          Text(L10n.lookup(receipt.summary)).font(.subheadline)
           ForEach(receipt.files) { file in JourneyMediaView(bookingId: bookingId, file: file) }
-          DisclosureGroup("回执校验信息") {
-            Text(receipt.digest).font(.caption2).textSelection(.enabled)
-            Text("SHA-256 用于文件完整性校验，非区块链存证，不代表平台已核实服务现场。").font(.caption2).foregroundStyle(
+          DisclosureGroup(L10n.text("回执校验信息")) {
+            Text(L10n.lookup(receipt.digest)).font(.caption2).textSelection(.enabled)
+            Text(L10n.text("SHA-256 用于文件完整性校验，非区块链存证，不代表平台已核实服务现场。")).font(.caption2).foregroundStyle(
               Color.textSecondary)
           }
           Divider()
         }
       }
       if !JourneyHost.provider && progress.status == "pending_receipt" {
-        Toggle("我已查看回执，确认本次服务已完成。", isOn: $reviewed).font(.subheadline).accessibilityIdentifier(
+        Toggle(L10n.text("我已查看回执，确认本次服务已完成。"), isOn: $reviewed).font(.subheadline).accessibilityIdentifier(
           "journey.reviewed")
-        Button("回执已核对，确认完成") { Task { await accept() } }.buttonStyle(.borderedProminent)
+        Button(L10n.text("回执已核对，确认完成")) { Task { await accept() } }.buttonStyle(.borderedProminent)
           .foregroundStyle(Color.textOnBrand)
           .disabled(busy || !reviewed).accessibilityIdentifier("journey.accept")
-        DisclosureGroup("需要补充回执") {
-          TextField("请描述需要补充的内容（至少 5 字）", text: $reason, axis: .vertical).lineLimit(2...5)
+        DisclosureGroup(L10n.text("需要补充回执")) {
+          TextField(L10n.text("请描述需要补充的内容（至少 5 字）"), text: $reason, axis: .vertical).lineLimit(2...5)
             .textFieldStyle(.roundedBorder).onChange(of: reason) { _, v in
               reason = String(v.prefix(200))
             }
-          Button("要求补充回执") {
+          Button(L10n.text("要求补充回执")) {
             Task { await action("request-revision", body: ["remark": reason]) }
           }.disabled(busy || reason.trimmingCharacters(in: .whitespacesAndNewlines).count < 5)
         }
@@ -223,7 +223,7 @@ struct JourneyRecordPanel: View {
     }
       + p.records.filter { $0.kind == "update" }.map {
         TimelineRow(
-          id: $0.id, title: "执行记录", order: 30, date: $0.createdAt, actor: $0.operatorType,
+          id: $0.id, title: L10n.text("执行记录"), order: 30, date: $0.createdAt, actor: $0.operatorType,
           content: $0.content,
           files: $0.files)
       }).sorted { a, b in
@@ -313,10 +313,10 @@ struct JourneyComposer: View {
   @State private var selectedPhoto: PhotosPickerItem?
   var body: some View {
     JourneyCard {
-      Text(finalReceipt ? "提交最终回执" : "发布阶段记录").font(.headline)
-      Text(finalReceipt ? "附上执行说明和现场影像，提交后等待信众确认。" : "记录实际执行的步骤，最终回执另行提交。").font(.caption)
+      Text(L10n.lookup(finalReceipt ? L10n.text("提交最终回执") : L10n.text("发布阶段记录"))).font(.headline)
+      Text(L10n.lookup(finalReceipt ? L10n.text("附上执行说明和现场影像，提交后等待信众确认。") : L10n.text("记录实际执行的步骤，最终回执另行提交。"))).font(.caption)
         .foregroundStyle(Color.textSecondary)
-      TextField("执行内容、时间与情况", text: $content, axis: .vertical).lineLimit(3...8).textFieldStyle(
+      TextField(L10n.text("执行内容、时间与情况"), text: $content, axis: .vertical).lineLimit(3...8).textFieldStyle(
         .roundedBorder
       ).accessibilityIdentifier(finalReceipt ? "journey.receipt.text" : "journey.progress.text")
         .onChange(of: content) { _, v in
@@ -328,26 +328,26 @@ struct JourneyComposer: View {
           selection: $selectedPhoto, matching: .any(of: [.images, .videos]),
           preferredItemEncoding: .compatible
         ) {
-          Label("照片／视频", systemImage: "photo")
+          Label(L10n.text("照片／视频"), systemImage: "photo")
         }.disabled(busy || files.count >= 8)
-        Button("选取文件") { importing = true }.disabled(busy || files.count >= 8)
+        Button(L10n.text("选取文件")) { importing = true }.disabled(busy || files.count >= 8)
       }.font(.subheadline)
-      Text("JPG、PNG、WebP、MP4、WebM · 最多 8 个，每个 20 MB").font(.caption2).foregroundStyle(
+      Text(L10n.text("JPG、PNG、WebP、MP4、WebM · 最多 8 个，每个 20 MB")).font(.caption2).foregroundStyle(
         Color.textSecondary)
       ForEach(files) { file in
         HStack {
-          Text(file.name).font(.caption)
+          Text(L10n.lookup(file.name)).font(.caption)
           Spacer()
-          Button("移除") {
+          Button(L10n.text("移除")) {
             files.removeAll { $0.id == file.id }
             requestID = UUID().uuidString
           }.disabled(busy)
         }
       }
-      if busy { ProgressView("正在保存…") }
-      if let error { Text(error).font(.caption).foregroundStyle(Color.red) }
-      if let success { Text(success).font(.caption).foregroundStyle(Color.accentDefault) }
-      Button(finalReceipt ? "提交回执，等待信众确认" : "发布真实进展") { Task { await submit() } }.buttonStyle(
+      if busy { ProgressView(L10n.text("正在保存…")) }
+      if let error { Text(L10n.lookup(error)).font(.caption).foregroundStyle(Color.red) }
+      if let success { Text(L10n.lookup(success)).font(.caption).foregroundStyle(Color.accentDefault) }
+      Button(L10n.lookup(finalReceipt ? L10n.text("提交回执，等待信众确认") : L10n.text("发布真实进展"))) { Task { await submit() } }.buttonStyle(
         .borderedProminent
       ).foregroundStyle(Color.textOnBrand)
         .disabled(
@@ -362,7 +362,7 @@ struct JourneyComposer: View {
           let scoped = url.startAccessingSecurityScopedResource()
           defer { if scoped { url.stopAccessingSecurityScopedResource() } }
           let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-          guard size <= 20 * 1024 * 1024 else { throw JourneyFailure(message: "每个文件最多 20 MB") }
+          guard size <= 20 * 1024 * 1024 else { throw JourneyFailure(message: L10n.text("每个文件最多 20 MB")) }
           let mime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? ""
           await upload(try Data(contentsOf: url), name: url.lastPathComponent, mime: mime)
         } catch { self.error = error.localizedDescription }
@@ -377,7 +377,7 @@ struct JourneyComposer: View {
         }
         do {
           guard let data = try await item.loadTransferable(type: Data.self) else {
-            throw JourneyFailure(message: "未能读取所选文件")
+            throw JourneyFailure(message: L10n.text("未能读取所选文件"))
           }
           let type = item.supportedContentTypes.first
           await upload(
@@ -393,7 +393,7 @@ struct JourneyComposer: View {
     error = nil
     defer { busy = false }
     do {
-      guard data.count <= 20 * 1024 * 1024 else { throw JourneyFailure(message: "每个文件最多 20 MB") }
+      guard data.count <= 20 * 1024 * 1024 else { throw JourneyFailure(message: L10n.text("每个文件最多 20 MB")) }
       let uploadData: Data
       let uploadName: String
       let uploadMime: String
@@ -449,7 +449,7 @@ struct JourneyMediaView: View {
       if let image {
         Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 320).clipShape(
           RoundedRectangle(cornerRadius: 12)
-        ).accessibilityLabel(file.name)
+        ).accessibilityLabel(L10n.lookup(file.name))
       } else if let player {
         VideoPlayer(player: player).frame(height: 220).clipShape(RoundedRectangle(cornerRadius: 12))
       } else {
@@ -457,12 +457,11 @@ struct JourneyMediaView: View {
           task = Task { await load() }
         } label: {
           Label(
-            loading
-              ? "正在读取…" : "查看\(file.contentType.hasPrefix("video/") ? "视频":"图片") · \(file.name)",
+            L10n.lookup(loading ? L10n.text("正在读取…") : L10n.text("查看\(file.contentType.hasPrefix("video/") ? "视频":"图片") · \(file.name)")),
             systemImage: file.contentType.hasPrefix("video/") ? "play.rectangle" : "photo")
         }.font(.subheadline).disabled(loading)
       }
-      if let error { Text(error).font(.caption).foregroundStyle(Color.red) }
+      if let error { Text(L10n.lookup(error)).font(.caption).foregroundStyle(Color.red) }
     }.onDisappear {
       task?.cancel()
       player?.pause()
@@ -486,7 +485,7 @@ struct JourneyMediaView: View {
         temporaryURL = url
         player = AVPlayer(url: url)
       } else {
-        guard let decoded = UIImage(data: data) else { throw JourneyFailure(message: "无法显示此图片") }
+        guard let decoded = UIImage(data: data) else { throw JourneyFailure(message: L10n.text("无法显示此图片")) }
         image = decoded
       }
     } catch is CancellationError {} catch { self.error = error.localizedDescription }

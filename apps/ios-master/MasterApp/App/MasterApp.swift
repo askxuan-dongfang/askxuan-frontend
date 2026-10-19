@@ -39,6 +39,7 @@ struct MasterApp: App {
             RootView()
                 .id(authStore.sessionID)
                 .environmentObject(authStore)
+                .appLanguage()
                 .preferredColorScheme(AppTheme(rawValue: themeValue)?.colorScheme)
                 .appVisualDefaults()
                 .tint(Color.brandDefault)

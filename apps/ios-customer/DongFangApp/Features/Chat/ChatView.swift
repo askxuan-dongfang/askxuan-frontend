@@ -59,7 +59,7 @@ struct ChatView: View {
     // MARK: - 顶部导航
     private var topNav: some View {
         ZStack {
-            Text("对话")
+            Text(L10n.text("对话"))
                 .font(AppTypography.title(17))
                 .foregroundStyle(Color.accentDefault)
 
@@ -83,7 +83,7 @@ struct ChatView: View {
             Circle()
                 .fill(connectionDotColor)
                 .frame(width: 6, height: 6)
-            Text(connectionText)
+            Text(L10n.lookup(connectionText))
                 .font(AppTypography.micro)
                 .foregroundStyle(Color.textTertiary)
         }
@@ -116,7 +116,7 @@ struct ChatView: View {
                     }
                 } label: {
                     VStack(spacing: 0) {
-                        Text(title + (index == 1 && chatNotifications.chatUnread > 0 ? " · \(chatNotifications.chatUnread)" : ""))
+                        Text(L10n.lookup(title + (index == 1 && chatNotifications.chatUnread > 0 ? " · \(chatNotifications.chatUnread)" : "")))
                             .font(AppTypography.body.weight(isSelected ? .semibold : .medium))
                             .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                         Capsule()
@@ -152,8 +152,8 @@ struct ChatView: View {
             VStack(spacing: 0) {
                 ChatNotificationPrompt()
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("每一次对话，皆有回应").font(AppTypography.title(26)).foregroundStyle(Color.textPrimary)
-                    HStack { Text("你的即时咨询与预约沟通"); Spacer(); Text("\(viewModel.conversations.count) 个会话") }
+                    Text(L10n.text("每一次对话，皆有回应")).font(AppTypography.title(26)).foregroundStyle(Color.textPrimary)
+                    HStack { Text(L10n.text("你的即时咨询与预约沟通")); Spacer(); Text(L10n.text("\(viewModel.conversations.count) 个会话")) }
                         .font(AppTypography.caption).foregroundStyle(Color.textSecondary)
                 }.frame(maxWidth: .infinity, alignment: .leading).padding(20)
                 // 搜索栏
@@ -161,11 +161,11 @@ struct ChatView: View {
                     Image(systemName: "magnifyingglass")
                         .font(AppTypography.body)
                         .foregroundStyle(Color.textTertiary)
-                    TextField("搜索姓名、服务或消息", text: $searchText)
+                    TextField(L10n.text("搜索姓名、服务或消息"), text: $searchText)
                         .font(AppTypography.body)
                         .foregroundStyle(Color.textPrimary)
                     Button { unreadOnly.toggle() } label: {
-                        Text("未读").font(AppTypography.caption.weight(.medium)).foregroundStyle(unreadOnly ? Color.brandDefault : Color.textSecondary).frame(minWidth: 44, minHeight: 44)
+                        Text(L10n.text("未读")).font(AppTypography.caption.weight(.medium)).foregroundStyle(unreadOnly ? Color.brandDefault : Color.textSecondary).frame(minWidth: 44, minHeight: 44)
                     }.buttonStyle(.plain).accessibilityAddTraits(unreadOnly ? .isSelected : [])
                 }
                 .padding(.horizontal, 12)
@@ -186,17 +186,17 @@ struct ChatView: View {
                 }
 
                 if viewModel.hasMoreConversations {
-                    Button(viewModel.loadingMoreConversations ? "加载中…" : "加载更多会话") {Task{await viewModel.loadMoreConversations()}}
+                    Button(L10n.lookup(viewModel.loadingMoreConversations ? L10n.text("加载中…") : L10n.text("加载更多会话"))) {Task{await viewModel.loadMoreConversations()}}
                         .disabled(viewModel.loadingMoreConversations).padding(18)
                 }
                 if let error=viewModel.errorMessage {
-                    VStack{Text(error).font(.caption);Button("重试"){Task{await viewModel.loadConversations()}}}.padding(16)
+                    VStack{Text(L10n.lookup(error)).font(.caption);Button(L10n.text("重试")){Task{await viewModel.loadConversations()}}}.padding(16)
                 }
                 if viewModel.conversations.isEmpty && !viewModel.isLoading {
                     ContentUnavailableView(
-                        "暂无可用私聊",
+                        L10n.text("暂无可用私聊"),
                         systemImage: "bubble.left.and.exclamationmark.bubble.right",
-                        description: Text(viewModel.errorMessage ?? "预约并完成支付后，可在这里与对应法师沟通")
+                        description: Text(L10n.lookup(viewModel.errorMessage ?? L10n.text("预约并完成支付后，可在这里与对应法师沟通")))
                     )
                     .padding(.top, 48)
                 }
@@ -237,11 +237,11 @@ struct ChatView: View {
                         .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                     Spacer()
-                    Text(conversation.lastTime)
+                    Text(L10n.lookup(conversation.lastTime))
                         .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
-                Text(conversation.lastMessage)
+                Text(L10n.lookup(conversation.lastMessage))
                     .font(AppTypography.supporting)
                     .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)
@@ -281,15 +281,15 @@ struct ChatView: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Text(record.name)
+                        Text(L10n.lookup(record.name))
                             .font(AppTypography.body.weight(.semibold))
                             .foregroundStyle(Color.textPrimary)
                         Spacer()
-                        Text(record.time)
+                        Text(L10n.lookup(record.time))
                             .font(AppTypography.caption)
                             .foregroundStyle(Color.textTertiary)
                     }
-                    Text(record.duration)
+                    Text(L10n.lookup(record.duration))
                         .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
@@ -319,14 +319,14 @@ private struct ChatFavoritesPanel: View {
         ScrollView(showsIndicators: false) {
             LazyVStack(spacing: 0) {
                 if isLoading && masters.isEmpty {
-                    ProgressView("正在加载关注")
+                    ProgressView(L10n.text("正在加载关注"))
                         .tint(Color.accentDefault)
                         .padding(.top, 48)
                 } else if masters.isEmpty {
                     ContentUnavailableView(
-                        "还没有关注的大师",
+                        L10n.text("还没有关注的大师"),
                         systemImage: "heart",
-                        description: Text(message ?? "在大师主页关注后，会显示在这里")
+                        description: Text(L10n.lookup(message ?? L10n.text("在大师主页关注后，会显示在这里")))
                     )
                     .padding(.top, 48)
                 } else {
@@ -337,15 +337,15 @@ private struct ChatFavoritesPanel: View {
                             HStack(spacing: 12) {
                                 RemoteAvatar(urlString: master.avatar, size: 48)
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(master.dharmaName)
+                                    Text(L10n.lookup(master.dharmaName))
                                         .font(AppTypography.body.weight(.semibold))
                                         .foregroundStyle(Color.textPrimary)
-                                    Text(master.templeName.isEmpty ? "独立大师" : master.templeName)
+                                    Text(master.templeName.isEmpty ? L10n.text("独立大师") : master.templeName)
                                         .font(AppTypography.caption)
                                         .foregroundStyle(Color.textTertiary)
                                 }
                                 Spacer()
-                                Text("已关注")
+                                Text(L10n.text("已关注"))
                                     .font(AppTypography.micro)
                                     .foregroundStyle(Color.accentDefault)
                                     .padding(.horizontal, 8)
@@ -426,17 +426,17 @@ private struct CommunityPlazaView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 6) { Text("日常有悟 · 相遇有缘").font(.caption).foregroundStyle(Color.accentDefault); Text("在这里，看见另一种生活").font(AppTypography.section).foregroundStyle(Color.textPrimary) }.padding(.top, 12)
-                Picker("内容分类", selection: $filter) { Text("发现").tag("all"); Text("关注").tag("following"); Text("图文").tag("article"); Text("视频").tag("video") }.pickerStyle(.segmented)
-                HStack { TextField("搜索广场内容", text: $keyword).onSubmit { refresh() }; Button("搜索") { refresh() } }.padding(12).background(Color.bgSecondary).clipShape(Capsule())
-                HStack { Text("慢下来，发现身边的美好").font(.caption).foregroundStyle(Color.textTertiary); Spacer(); Button(popular ? "热门 ↓" : "最新 ↓") { popular.toggle(); refresh() }.font(.caption) }
-                ForEach(liveRooms.filter { $0.status == "live" }) { room in NavigationLink { LiveViewerView(room: room) } label: { Label(room.title + " · 直播中", systemImage: "dot.radiowaves.left.and.right").font(.subheadline).foregroundStyle(Color.stateError) } }
-                if viewModel.posts.contains(where: { $0.type == "video" }) { NavigationLink { CommunityVideoFeedView(posts: viewModel.posts.filter { $0.type == "video" }) } label: { Label("沉浸浏览视频", systemImage: "play.rectangle.fill").font(.subheadline) } }
+                VStack(alignment: .leading, spacing: 6) { Text(L10n.text("日常有悟 · 相遇有缘")).font(.caption).foregroundStyle(Color.accentDefault); Text(L10n.text("在这里，看见另一种生活")).font(AppTypography.section).foregroundStyle(Color.textPrimary) }.padding(.top, 12)
+                Picker(L10n.text("内容分类"), selection: $filter) { Text(L10n.text("发现")).tag("all"); Text(L10n.text("关注")).tag("following"); Text(L10n.text("图文")).tag("article"); Text(L10n.text("视频")).tag("video") }.pickerStyle(.segmented)
+                HStack { TextField(L10n.text("搜索广场内容"), text: $keyword).onSubmit { refresh() }; Button(L10n.text("搜索")) { refresh() } }.padding(12).background(Color.bgSecondary).clipShape(Capsule())
+                HStack { Text(L10n.text("慢下来，发现身边的美好")).font(.caption).foregroundStyle(Color.textTertiary); Spacer(); Button(L10n.lookup(popular ? L10n.text("热门 ↓") : L10n.text("最新 ↓"))) { popular.toggle(); refresh() }.font(.caption) }
+                ForEach(liveRooms.filter { $0.status == "live" }) { room in NavigationLink { LiveViewerView(room: room) } label: { Label(L10n.lookup(room.title + L10n.text(" · 直播中")), systemImage: "dot.radiowaves.left.and.right").font(.subheadline).foregroundStyle(Color.stateError) } }
+                if viewModel.posts.contains(where: { $0.type == "video" }) { NavigationLink { CommunityVideoFeedView(posts: viewModel.posts.filter { $0.type == "video" }) } label: { Label(L10n.text("沉浸浏览视频"), systemImage: "play.rectangle.fill").font(.subheadline) } }
                 LazyVGrid(columns: columns, spacing: 12) { ForEach(viewModel.posts) { post in NavigationLink { CommunityPostDetailView(postId: post.id) } label: { CommunityPostCard(post: post) }.buttonStyle(.plain) } }
-                if let message = viewModel.message { Text(message).font(.footnote).foregroundStyle(Color.stateWarning); Button("重新加载") { refresh() } }
+                if let message = viewModel.message { Text(L10n.lookup(message)).font(.footnote).foregroundStyle(Color.stateWarning); Button(L10n.text("重新加载")) { refresh() } }
                 if viewModel.loading { ProgressView().frame(maxWidth: .infinity) }
-                else if viewModel.posts.isEmpty && viewModel.message == nil { ContentUnavailableView(filter == "following" ? "关注之后，好内容在这里相遇" : "新的分享，正在路上", systemImage: "leaf", description: Text("可以换个分类看看，或稍后刷新。")) }
-                else if Int64(viewModel.posts.count) < viewModel.total { Button("加载更多内容") { Task { await viewModel.load(more: true) } }.frame(maxWidth: .infinity) }
+                else if viewModel.posts.isEmpty && viewModel.message == nil { ContentUnavailableView(filter == "following" ? L10n.text("关注之后，好内容在这里相遇") : L10n.text("新的分享，正在路上"), systemImage: "leaf", description: Text(L10n.text("可以换个分类看看，或稍后刷新。"))) }
+                else if Int64(viewModel.posts.count) < viewModel.total { Button(L10n.text("加载更多内容")) { Task { await viewModel.load(more: true) } }.frame(maxWidth: .infinity) }
                 Color.clear.frame(height: AppSpacing.navBottom)
             }.padding(.horizontal, AppSpacing.lg)
         }.task { await viewModel.load() }.refreshable { await viewModel.load() }.onChange(of: filter) { _, _ in refresh() }
@@ -467,9 +467,9 @@ private struct CommunityPostCard: View {
             .frame(height: post.type == "video" ? 210 : 150)
             .clipped()
 
-            Text(post.title).font(.subheadline.weight(.semibold)).foregroundStyle(Color.textPrimary).lineLimit(2)
+            Text(L10n.lookup(post.title)).font(.subheadline.weight(.semibold)).foregroundStyle(Color.textPrimary).lineLimit(2)
             HStack {
-                Text(author?.dharmaName ?? "广场作者").font(AppTypography.caption).foregroundStyle(Color.textTertiary).lineLimit(1)
+                Text(L10n.lookup(author?.dharmaName ?? L10n.text("广场作者"))).font(AppTypography.caption).foregroundStyle(Color.textTertiary).lineLimit(1)
                 Spacer()
                 Label("\(post.likeCount)", systemImage: post.liked ? "heart.fill" : "heart").font(.caption2).foregroundStyle(Color.textSecondary)
             }
@@ -516,8 +516,8 @@ private struct CommunityPostDetailView: View {
                         .frame(height: 360)
                     }
 
-                    NavigationLink { MasterProfileView(masterId: post.masterId) } label: { Label(author?.dharmaName ?? "广场作者", systemImage: "person.crop.circle").font(.subheadline) }
-                    Text(post.title).font(AppTypography.section).foregroundStyle(Color.textPrimary)
+                    NavigationLink { MasterProfileView(masterId: post.masterId) } label: { Label(L10n.lookup(author?.dharmaName ?? L10n.text("广场作者")), systemImage: "person.crop.circle").font(.subheadline) }
+                    Text(L10n.lookup(post.title)).font(AppTypography.section).foregroundStyle(Color.textPrimary)
                     Text(post.content).font(AppTypography.body).foregroundStyle(Color.textSecondary)
 
                     HStack(spacing: 12) {
@@ -525,15 +525,15 @@ private struct CommunityPostDetailView: View {
                             Label("\(likeCount)", systemImage: liked ? "heart.fill" : "heart")
                         }
                         Button { Task { await toggleFollow() } } label: {
-                            Label(following ? "已关注" : "关注大师", systemImage: following ? "person.crop.circle.badge.checkmark" : "person.crop.circle.badge.plus")
+                            Label(L10n.lookup(following ? L10n.text("已关注") : L10n.text("关注大师")), systemImage: following ? "person.crop.circle.badge.checkmark" : "person.crop.circle.badge.plus")
                         }
                     }
                     .buttonStyle(.bordered).disabled(busy)
 
                     Divider()
-                    Text("评论 · \(commentsTotal)").font(.headline)
+                    Text(L10n.text("评论 · \(commentsTotal)")).font(.headline)
                     HStack {
-                        TextField("写下评论，审核通过后展示", text: $commentText, axis: .vertical)
+                        TextField(L10n.text("写下评论，审核通过后展示"), text: $commentText, axis: .vertical)
                             .textFieldStyle(.roundedBorder)
                         Button { Task { await submitComment() } } label: { Image(systemName: "paperplane.fill") }
                             .buttonStyle(.borderedProminent)
@@ -542,22 +542,22 @@ private struct CommunityPostDetailView: View {
                     ForEach(comments) { comment in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(comment.content).foregroundStyle(Color.textPrimary)
-                            Text(comment.status == "pending" ? "我 · 待审核，仅自己可见" : "同修").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
+                            Text(L10n.lookup(comment.status == "pending" ? L10n.text("我 · 待审核，仅自己可见") : L10n.text("同修"))).font(AppTypography.caption).foregroundStyle(Color.textTertiary)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, 6)
                     }
-                    if comments.filter({ $0.status == "approved" }).count < commentsTotal { Button("查看更多评论") { Task { await loadMoreComments() } }.disabled(busy) }
-                    if let message { Text(message).font(AppTypography.caption).foregroundStyle(Color.stateWarning) }
+                    if comments.filter({ $0.status == "approved" }).count < commentsTotal { Button(L10n.text("查看更多评论")) { Task { await loadMoreComments() } }.disabled(busy) }
+                    if let message { Text(L10n.lookup(message)).font(AppTypography.caption).foregroundStyle(Color.stateWarning) }
                 }
                 .padding(AppSpacing.lg)
             } else if let message {
-                ContentUnavailableView("内容暂不可用", systemImage: "doc.text.magnifyingglass", description: Text(message))
+                ContentUnavailableView(L10n.text("内容暂不可用"), systemImage: "doc.text.magnifyingglass", description: Text(L10n.lookup(message)))
             } else {
                 ProgressView().frame(maxWidth: .infinity).padding(.top, 80)
             }
         }
-        .navigationTitle("大师广场")
+        .navigationTitle(L10n.text("大师广场"))
         .task { await load() }
     }
 
@@ -620,7 +620,7 @@ private struct CommunityImage: View {
             Color.bgTertiary
             if let media, let url = URL(string: media.playbackUrl), !media.playbackUrl.isEmpty {
                 AsyncImage(url: url) { image in image.resizable().scaledToFit() } placeholder: { ProgressView() }
-            } else { ContentUnavailableView("图片暂不可用", systemImage: "photo") }
+            } else { ContentUnavailableView(L10n.text("图片暂不可用"), systemImage: "photo") }
         }
     }
 }
@@ -630,7 +630,7 @@ private struct CommunityVideoPlayer: View {
     @State private var player: AVPlayer?
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
-        Group { if let player { VideoPlayer(player: player) } else { ContentUnavailableView("视频暂不可播放", systemImage: "video.slash") } }
+        Group { if let player { VideoPlayer(player: player) } else { ContentUnavailableView(L10n.text("视频暂不可播放"), systemImage: "video.slash") } }
         .task(id: media?.playbackUrl) { player?.pause(); player = nil; if let media, media.status == "ready", !media.playbackUrl.isEmpty, let url = URL(string: media.playbackUrl) { player = AVPlayer(url: url) } }
         .onDisappear { player?.pause() }
         .onChange(of: scenePhase) { _, phase in if phase != .active { player?.pause() } }
@@ -654,7 +654,7 @@ private struct CommunityVideoFeedView: View {
             .scrollTargetBehavior(.paging)
         }
         .background(.black)
-        .navigationTitle("视频")
+        .navigationTitle(L10n.text("视频"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -667,8 +667,8 @@ private struct CommunityVideoPage: View {
             CommunityVideoPlayer(media: media)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             VStack(alignment: .leading, spacing: 6) {
-                Text("大师 \(post.masterId)").font(.subheadline.weight(.semibold))
-                Text(post.title).font(.headline)
+                Text(L10n.text("大师 \(post.masterId)")).font(.subheadline.weight(.semibold))
+                Text(L10n.lookup(post.title)).font(.headline)
                 Label("\(post.likeCount)", systemImage: "heart.fill").font(AppTypography.caption)
             }
             .foregroundStyle(.white)
@@ -694,16 +694,16 @@ private struct MediaPlaybackView: View {
             if let media, media.status == "ready", let url = URL(string: media.playbackUrl), !media.playbackUrl.isEmpty {
                 VideoPlayer(player: AVPlayer(url: url))
                     .aspectRatio(9 / 16, contentMode: .fit)
-                Text(title).font(.headline).frame(maxWidth: .infinity, alignment: .leading)
-                Text("审核状态：\(media.auditStatus)").font(AppTypography.caption).foregroundStyle(.secondary)
+                Text(L10n.lookup(title)).font(.headline).frame(maxWidth: .infinity, alignment: .leading)
+                Text(L10n.text("审核状态：\(media.auditStatus)")).font(AppTypography.caption).foregroundStyle(.secondary)
             } else if let message {
-                ContentUnavailableView("视频暂不可用", systemImage: "video.slash", description: Text(message))
+                ContentUnavailableView(L10n.text("视频暂不可用"), systemImage: "video.slash", description: Text(L10n.lookup(message)))
             } else {
                 ProgressView()
             }
         }
         .padding()
-        .navigationTitle("短视频")
+        .navigationTitle(L10n.text("短视频"))
         .task {
             do {
                 media = try await APIClient.shared.request(.mediaDetail(mediaId))
@@ -725,10 +725,10 @@ private struct LiveViewerView: View {
                 VideoPlayer(player: AVPlayer(url: url))
                     .aspectRatio(9 / 16, contentMode: .fit)
             } else {
-                ContentUnavailableView("直播流暂不可用", systemImage: "video.slash")
+                ContentUnavailableView(L10n.text("直播流暂不可用"), systemImage: "video.slash")
             }
             HStack {
-                TextField("发送群聊消息", text: $chatText)
+                TextField(L10n.text("发送群聊消息"), text: $chatText)
                     .textFieldStyle(.roundedBorder)
                 Button {
                     let text = chatText
@@ -741,10 +741,10 @@ private struct LiveViewerView: View {
                 }
                 .disabled(chatText.isEmpty || room.openimGroupId.isEmpty)
             }
-            if !sendState.isEmpty { Text(sendState).font(AppTypography.caption).foregroundStyle(.secondary) }
+            if !sendState.isEmpty { Text(L10n.lookup(sendState)).font(AppTypography.caption).foregroundStyle(.secondary) }
         }
         .padding()
-        .navigationTitle(room.title)
+        .navigationTitle(L10n.lookup(room.title))
     }
 }
 

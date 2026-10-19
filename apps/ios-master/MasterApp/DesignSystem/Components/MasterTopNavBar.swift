@@ -42,7 +42,7 @@ struct MasterTopNavBar<Leading: View, Trailing: View>: View {
                     Image("brand-logo").resizable().scaledToFit()
                         .frame(width: 26, height: 26).accessibilityHidden(true)
                 }
-                Text(title).font(AppTypography.navigation)
+                Text(L10n.lookup(title)).font(AppTypography.navigation)
                     .foregroundStyle(Color.accentDefault).lineLimit(1)
             }
 
@@ -79,7 +79,7 @@ private struct BackButton: View {
                 .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(BackPressButtonStyle())
-        .accessibilityLabel("返回")
+        .accessibilityLabel(L10n.text("返回"))
     }
 }
 

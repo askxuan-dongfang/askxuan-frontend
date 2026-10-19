@@ -40,22 +40,22 @@ struct AiTraceView: View {
     @State private var expanded = false
     @State private var error = ""
     var body: some View {
-        DisclosureGroup("查看处理过程", isExpanded: $expanded) {
+        DisclosureGroup(L10n.text("查看处理过程"), isExpanded: $expanded) {
             VStack(alignment: .leading, spacing: 8) {
                 if let agent = message.agent {
-                    Text("Harness · 模型 \(agent.modelCalls) 次 · 工具 \(agent.toolCalls) 次")
+                    Text(L10n.text("Harness · 模型 \(agent.modelCalls) 次 · 工具 \(agent.toolCalls) 次"))
                     if let context = agent.context {
-                        Text("上下文估算 \(context.estimatedInputTokens) / \(context.window) token · 输出预算 \(context.outputBudget)")
-                        if context.droppedMessages > 0 { Text("已压缩较早消息，保留必要上下文") }
+                        Text(L10n.text("上下文估算 \(context.estimatedInputTokens) / \(context.window) token · 输出预算 \(context.outputBudget)"))
+                        if context.droppedMessages > 0 { Text(L10n.text("已压缩较早消息，保留必要上下文")) }
                     }
                 }
                 if let trace {
-                    if trace.tools.isEmpty { Text("本轮未调用计算工具") }
+                    if trace.tools.isEmpty { Text(L10n.text("本轮未调用计算工具")) }
                     ForEach(trace.tools) { tool in
-                        HStack { Text(tool.tool); Spacer(); Text(tool.status == "completed" ? "完成" : tool.status == "failed" ? "失败" : tool.status); Text("\(tool.latencyMs) ms") }
+                        HStack { Text(L10n.lookup(tool.tool)); Spacer(); Text(L10n.lookup(tool.status == "completed" ? L10n.text("完成") : tool.status == "failed" ? L10n.text("失败") : tool.status)); Text("\(tool.latencyMs) ms") }
                     }
                 } else if error.isEmpty { ProgressView() }
-                if !error.isEmpty { Text(error); Button("重试") { Task { await load() } } }
+                if !error.isEmpty { Text(L10n.lookup(error)); Button(L10n.text("重试")) { Task { await load() } } }
             }.font(.caption).foregroundStyle(.secondary).padding(.vertical, 8)
         }.font(.caption).task(id: expanded) { if expanded { await load() } }
     }
@@ -83,28 +83,28 @@ struct AiNativeFields: View {
         VStack(alignment: .leading, spacing: 18) {
             ForEach(fields.filter { $0.visible(in: values) }) { field in
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(field.label + (field.needed(in: values) ? " · 必填" : " · 选填")).font(.subheadline.weight(.medium))
-                    if let help = field.helpText { Text(help).font(.caption).foregroundStyle(.secondary) }
+                    Text(L10n.lookup(field.label + (field.needed(in: values) ? L10n.text(" · 必填") : L10n.text(" · 选填")))).font(.subheadline.weight(.medium))
+                    if let help = field.helpText { Text(L10n.lookup(help)).font(.caption).foregroundStyle(.secondary) }
                     if field.type == "select" {
                         ForEach(field.options ?? []) { option in
                             Button { set(field, option.value) } label: {
-                                HStack { VStack(alignment: .leading, spacing: 4) { Text(option.label); if let description = option.description { Text(description).font(.caption).foregroundStyle(.secondary) } }; Spacer(); Image(systemName: values[field.key] == option.value ? "checkmark.circle.fill" : "circle") }
+                                HStack { VStack(alignment: .leading, spacing: 4) { Text(L10n.lookup(option.label)); if let description = option.description { Text(L10n.lookup(description)).font(.caption).foregroundStyle(.secondary) } }; Spacer(); Image(systemName: values[field.key] == option.value ? "checkmark.circle.fill" : "circle") }
                                     .padding(12).frame(minHeight: 44).background(Color.bgPrimary, in: RoundedRectangle(cornerRadius: 12))
                             }.buttonStyle(AiExperiencePressStyle()).accessibilityAddTraits(values[field.key] == option.value ? .isSelected : [])
                         }
                     } else if ["date", "time", "datetime"].contains(field.type), !field.lunar(in: values) {
                         Button { date = formatter(field.type).date(from: values[field.key] ?? "") ?? Date(); dateField = field } label: {
-                            HStack { Text(values[field.key] ?? "请选择" + field.label); Spacer(); Image(systemName: field.type == "time" ? "clock" : "calendar") }.padding(14).background(Color.bgPrimary, in: RoundedRectangle(cornerRadius: 12))
-                        }.accessibilityLabel(field.label).accessibilityValue(values[field.key] ?? "未填写")
-                        if field.type == "datetime" { Button("使用当前北京时间") { set(field, formatter(field.type).string(from: Date())) }.font(.caption).frame(minHeight: 44) }
+                            HStack { Text(L10n.lookup(values[field.key] ?? L10n.text("请选择") + field.label)); Spacer(); Image(systemName: field.type == "time" ? "clock" : "calendar") }.padding(14).background(Color.bgPrimary, in: RoundedRectangle(cornerRadius: 12))
+                        }.accessibilityLabel(L10n.lookup(field.label)).accessibilityValue(values[field.key] ?? L10n.text("未填写"))
+                        if field.type == "datetime" { Button(L10n.text("使用当前北京时间")) { set(field, formatter(field.type).string(from: Date())) }.font(.caption).frame(minHeight: 44) }
                     } else {
-                        TextField(field.lunar(in: values) ? "YYYY-MM-DD，例如 1990-02-30" : field.placeholder ?? "请填写", text: binding(field), axis: field.key == "dream" ? .vertical : .horizontal)
+                        TextField(L10n.lookup(field.lunar(in: values) ? L10n.text("YYYY-MM-DD，例如 1990-02-30") : field.placeholder ?? L10n.text("请填写")), text: binding(field), axis: field.key == "dream" ? .vertical : .horizontal)
                             .lineLimit(field.key == "dream" ? 4...8 : 1...3).textInputAutocapitalization(.never).autocorrectionDisabled()
                             .keyboardType(field.type == "number" ? .numbersAndPunctuation : .default).padding(14)
-                            .background(Color.bgPrimary, in: RoundedRectangle(cornerRadius: 12)).accessibilityLabel(field.label)
+                            .background(Color.bgPrimary, in: RoundedRectangle(cornerRadius: 12)).accessibilityLabel(L10n.lookup(field.label))
                     }
                     if !(values[field.key] ?? "").isEmpty && !field.valid(in: values) {
-                        Text("请核对格式和范围。" + (field.helpText ?? "")).font(.caption).foregroundStyle(Color.stateError)
+                        Text(L10n.lookup(L10n.text("请核对格式和范围。") + (field.helpText ?? ""))).font(.caption).foregroundStyle(Color.stateError)
                     }
                 }.font(.body)
             }
@@ -112,8 +112,8 @@ struct AiNativeFields: View {
             NavigationStack {
                 DatePicker(field.label, selection: $date, displayedComponents: field.type == "date" ? [.date] : field.type == "time" ? [.hourAndMinute] : [.date, .hourAndMinute])
                     .datePickerStyle(.wheel).labelsHidden().environment(\.locale, Locale(identifier: "zh_CN")).environment(\.timeZone, TimeZone(secondsFromGMT: 28800) ?? .current)
-                    .navigationTitle(field.label).navigationBarTitleDisplayMode(.inline)
-                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("确定") { set(field, formatter(field.type).string(from: date)); dateField = nil } }; ToolbarItem(placement: .cancellationAction) { Button("取消") { dateField = nil } } }
+                    .navigationTitle(L10n.lookup(field.label)).navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L10n.text("确定")) { set(field, formatter(field.type).string(from: date)); dateField = nil } }; ToolbarItem(placement: .cancellationAction) { Button(L10n.text("取消")) { dateField = nil } } }
             }.appSheetSurface()
         }
     }
@@ -133,14 +133,14 @@ struct AiClarificationView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     Text(clarification.question)
                     AiNativeFields(fields: clarification.fields, values: $values)
-                    Button("确认资料并继续") {
+                    Button(L10n.text("确认资料并继续")) {
                         let confirmed = values.filter { key, value in !value.isEmpty && clarification.fields.contains { $0.key == key && $0.visible(in: values) } }
                         dismiss(); Task { await submit(confirmed) }
                     }.buttonStyle(.borderedProminent).disabled(!clarification.fields.allSatisfy { $0.valid(in: values) })
-                    Text("请只填写已确认的资料，不确定时可以取消。").font(.caption).foregroundStyle(.secondary)
+                    Text(L10n.text("请只填写已确认的资料，不确定时可以取消。")).font(.caption).foregroundStyle(.secondary)
                 }.padding(20)
-            }.scrollDismissesKeyboard(.interactively).background(Color.bgPrimary).navigationTitle("补充资料")
-                .navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } } }
+            }.scrollDismissesKeyboard(.interactively).background(Color.bgPrimary).navigationTitle(L10n.text("补充资料"))
+                .navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .cancellationAction) { Button(L10n.text("取消")) { dismiss() } } }
         }.presentationDragIndicator(.visible)
     }
 }

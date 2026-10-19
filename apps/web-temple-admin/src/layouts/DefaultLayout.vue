@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { ElMessageBox } from '@/i18n'
+import { t as uiText } from '../../../../packages/localization/language'
+
 import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
 import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import { computed } from 'vue'
 import { useAdminNavigation } from '../../../../packages/admin-ui/navigation'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { ElMessageBox } from 'element-plus'
+
 import {
   ArrowDown,
   Calendar,
@@ -39,9 +42,9 @@ const pageTitle = computed(() => (route.meta.title as string) || '寺院管理�
 
 async function handleLogout() {
   try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '退出登录', {
-      confirmButtonText: '退出',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(uiText('确定要退出登录吗？'), uiText('退出登录'), {
+      confirmButtonText: uiText('退出'),
+      cancelButtonText: uiText('取消'),
       type: 'warning'
     })
     auth.logout()
@@ -59,19 +62,19 @@ async function handleLogout() {
     class="ax-admin-shell"
     :class="{ 'is-collapsed': collapsed && !mobile, 'is-drawer-open': drawerOpen }"
   >
-    <button class="ax-admin-overlay" type="button" aria-label="关闭导航" tabindex="-1" :aria-hidden="!drawerOpen" @click="closeNavigation"></button>
+    <button class="ax-admin-overlay" type="button" :aria-label='$t("关闭导航")' tabindex="-1" :aria-hidden="!drawerOpen" @click="closeNavigation"></button>
 
-    <aside id="admin-navigation" ref="sidebarRef" class="ax-admin-sidebar" tabindex="-1" :role="mobile && drawerOpen ? 'dialog' : undefined" :aria-modal="mobile && drawerOpen ? true : undefined" :aria-hidden="mobile && !drawerOpen ? true : undefined" :inert="mobile && !drawerOpen" aria-label="寺院管理台主导航">
+    <aside id="admin-navigation" ref="sidebarRef" class="ax-admin-sidebar" tabindex="-1" :role="mobile && drawerOpen ? 'dialog' : undefined" :aria-modal="mobile && drawerOpen ? true : undefined" :aria-hidden="mobile && !drawerOpen ? true : undefined" :inert="mobile && !drawerOpen" :aria-label='$t("寺院管理台主导航")'>
       <div class="ax-admin-logo">
-        <BrandLogo class="ax-admin-logo__image" identity="temple" label="问玄东方寺院管理台" />
+        <BrandLogo class="ax-admin-logo__image" identity="temple" :label='$t("问玄东方寺院管理台")' />
         <div class="ax-admin-logo__copy">
-          <div class="ax-admin-logo__title">问玄东方</div>
-          <div class="ax-admin-logo__subtitle">寺院管理台</div>
+          <div class="ax-admin-logo__title">{{ $t("问玄东方") }}</div>
+          <div class="ax-admin-logo__subtitle">{{ $t("寺院管理台") }}</div>
         </div>
       </div>
 
-      <button v-if="mobile" class="ax-admin-sidebar__close" type="button" aria-label="关闭主导航" @click="closeNavigation">
-        <span aria-hidden="true">×</span><span>关闭导航</span>
+      <button v-if="mobile" class="ax-admin-sidebar__close" type="button" :aria-label='$t("关闭主导航")' @click="closeNavigation">
+        <span aria-hidden="true">×</span><span>{{ $t("关闭导航") }}</span>
       </button>
 
       <el-menu
@@ -87,47 +90,47 @@ async function handleLogout() {
       >
         <el-menu-item index="/dashboard">
           <el-icon><Odometer /></el-icon>
-          <template #title>今日工作台</template>
+          <template #title>{{ $t("今日工作台") }}</template>
         </el-menu-item>
 
         <el-sub-menu index="temple-profile">
           <template #title>
             <el-icon><OfficeBuilding /></el-icon>
-            <span>寺院主页</span>
+            <span>{{ $t("寺院主页") }}</span>
           </template>
-          <el-menu-item index="/temple-info">基本信息</el-menu-item>
-          <el-menu-item index="/temple-gallery">寺院图册</el-menu-item>
+          <el-menu-item index="/temple-info">{{ $t("基本信息") }}</el-menu-item>
+          <el-menu-item index="/temple-gallery">{{ $t("寺院图册") }}</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="people-services">
           <template #title>
             <el-icon><User /></el-icon>
-            <span>人员与服务</span>
+            <span>{{ $t("人员与服务") }}</span>
           </template>
-          <el-menu-item index="/masters">法师管理</el-menu-item>
-          <el-menu-item index="/services">服务管理</el-menu-item>
+          <el-menu-item index="/masters">{{ $t("法师管理") }}</el-menu-item>
+          <el-menu-item index="/services">{{ $t("服务管理") }}</el-menu-item>
         </el-sub-menu>
 
         <el-menu-item index="/fulfillment">
           <el-icon><Calendar /></el-icon>
-          <template #title>履约工作台</template>
+          <template #title>{{ $t("履约工作台") }}</template>
         </el-menu-item>
         <el-menu-item index="/blessing-tasks">
           <el-icon><MagicStick /></el-icon>
-          <template #title>加持任务</template>
+          <template #title>{{ $t("加持任务") }}</template>
         </el-menu-item>
         <el-menu-item index="/reviews">
           <el-icon><ChatDotRound /></el-icon>
-          <template #title>评价互动</template>
+          <template #title>{{ $t("评价互动") }}</template>
         </el-menu-item>
-        <el-menu-item index="/wallet"><el-icon><OfficeBuilding /></el-icon><template #title>寺院钱包</template></el-menu-item>
+        <el-menu-item index="/wallet"><el-icon><OfficeBuilding /></el-icon><template #title>{{ $t("寺院钱包") }}</template></el-menu-item>
         <el-menu-item index="/report">
           <el-icon><TrendCharts /></el-icon>
-          <template #title>经营报表</template>
+          <template #title>{{ $t("经营报表") }}</template>
         </el-menu-item>
         <el-menu-item index="/settings">
           <el-icon><Setting /></el-icon>
-          <template #title>设置</template>
+          <template #title>{{ $t("设置") }}</template>
         </el-menu-item>
       </el-menu>
 
@@ -152,7 +155,7 @@ async function handleLogout() {
             class="ax-admin-nav-toggle"
             aria-controls="admin-navigation"
             type="button"
-            :aria-label="mobile ? (drawerOpen ? '关闭主导航' : '打开主导航') : (collapsed ? '展开主导航' : '收起主导航')"
+            :aria-label="$t((mobile ? ((drawerOpen ? $t('关闭主导航') : $t('打开主导航'))) : ((collapsed ? $t('展开主导航') : $t('收起主导航')))))"
             :aria-expanded="mobile ? drawerOpen : !collapsed"
             @click="toggleNavigation"
           >
@@ -163,8 +166,8 @@ async function handleLogout() {
             </el-icon>
           </button>
           <div>
-            <div class="ax-admin-header__eyebrow">寺院管理台</div>
-            <div class="ax-admin-header__title">{{ pageTitle }}</div>
+            <div class="ax-admin-header__eyebrow">{{ $t("寺院管理台") }}</div>
+            <div class="ax-admin-header__title">{{ $t(pageTitle) }}</div>
           </div>
         </div>
 
@@ -176,13 +179,13 @@ async function handleLogout() {
               <el-avatar :size="32" :src="auth.userInfo?.avatar">
                 {{ auth.userInfo?.nickname?.charAt(0) || '寺' }}
               </el-avatar>
-              <span class="ax-admin-user-name">{{ auth.userInfo?.nickname || '管理员' }}</span>
+              <span class="ax-admin-user-name">{{ auth.userInfo?.nickname || $t('管理员') }}</span>
               <el-icon><ArrowDown /></el-icon>
             </button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="router.push('/settings')">系统设置</el-dropdown-item>
-                <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
+                <el-dropdown-item @click="router.push('/settings')">{{ $t("系统设置") }}</el-dropdown-item>
+                <el-dropdown-item divided @click="handleLogout">{{ $t("退出登录") }}</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>

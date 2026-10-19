@@ -10,7 +10,10 @@
 		0B8A144E34F2EBEC73F1BF4D /* AdminPortalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A2A2BF4A41540BC180FBEB5 /* AdminPortalTests.swift */; };
 		1CF92F051F49651FECB032C3 /* AdminPortal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6803E67471D3BC33289567CC /* AdminPortal.swift */; };
 		3EB1CF45087977CF08323B1E /* AskXuanAdminApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A00890F0E8A245C5B2BA679 /* AskXuanAdminApp.swift */; };
+		4D5A28D44E42A8AD03F8DDC9 /* zh-Hant.json in Resources */ = {isa = PBXBuildFile; fileRef = BCF07030B330A96350B239CD /* zh-Hant.json */; };
+		723A875D1305C42EA5C16E97 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CF4F48F0AC5E9094C2678AB /* AppLanguage.swift */; };
 		A4292057939A61E722D99F5A /* AdminSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C93A92A643C5319C76156E5 /* AdminSession.swift */; };
+		B9158698BFD9160CF739E5FB /* LanguageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 698616910C578F4B4CD3A396 /* LanguageTests.swift */; };
 		CE6E653BCB842F0315FF22A6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 095CFD1FB6C3A36356FD1F74 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -30,8 +33,11 @@
 		0D8B3DC58BA54EA134B99163 /* AskXuanAdmin.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AskXuanAdmin.entitlements; sourceTree = "<group>"; };
 		5A2A2BF4A41540BC180FBEB5 /* AdminPortalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminPortalTests.swift; sourceTree = "<group>"; };
 		6803E67471D3BC33289567CC /* AdminPortal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminPortal.swift; sourceTree = "<group>"; };
+		698616910C578F4B4CD3A396 /* LanguageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageTests.swift; sourceTree = "<group>"; };
 		6A00890F0E8A245C5B2BA679 /* AskXuanAdminApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskXuanAdminApp.swift; sourceTree = "<group>"; };
 		6C93A92A643C5319C76156E5 /* AdminSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminSession.swift; sourceTree = "<group>"; };
+		8CF4F48F0AC5E9094C2678AB /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
+		BCF07030B330A96350B239CD /* zh-Hant.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "zh-Hant.json"; sourceTree = "<group>"; };
 		FB99F265BD3D74FF047D5ACB /* AskXuanAdminTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AskXuanAdminTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -40,14 +46,35 @@
 			isa = PBXGroup;
 			children = (
 				5A2A2BF4A41540BC180FBEB5 /* AdminPortalTests.swift */,
+				698616910C578F4B4CD3A396 /* LanguageTests.swift */,
 			);
 			path = Tests;
+			sourceTree = "<group>";
+		};
+		0801210F740CE841A3097809 /* native */ = {
+			isa = PBXGroup;
+			children = (
+				8CF4F48F0AC5E9094C2678AB /* AppLanguage.swift */,
+			);
+			name = native;
+			path = ../../packages/localization/native;
+			sourceTree = "<group>";
+		};
+		7A92FCEECDC44D501F0B5E8D /* localization */ = {
+			isa = PBXGroup;
+			children = (
+				BCF07030B330A96350B239CD /* zh-Hant.json */,
+			);
+			name = localization;
+			path = ../../packages/localization;
 			sourceTree = "<group>";
 		};
 		E8434990F872D2EF449F5FB8 = {
 			isa = PBXGroup;
 			children = (
 				F3537D59E10DA2C31C442EA6 /* AskXuanAdmin */,
+				7A92FCEECDC44D501F0B5E8D /* localization */,
+				0801210F740CE841A3097809 /* native */,
 				013AEBAAD5423B091919DBBA /* Tests */,
 				F87EE39A940D35DA3C9269F2 /* Products */,
 			);
@@ -158,6 +185,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CE6E653BCB842F0315FF22A6 /* Assets.xcassets in Resources */,
+				4D5A28D44E42A8AD03F8DDC9 /* zh-Hant.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -170,6 +198,7 @@
 			files = (
 				1CF92F051F49651FECB032C3 /* AdminPortal.swift in Sources */,
 				A4292057939A61E722D99F5A /* AdminSession.swift in Sources */,
+				723A875D1305C42EA5C16E97 /* AppLanguage.swift in Sources */,
 				3EB1CF45087977CF08323B1E /* AskXuanAdminApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -179,6 +208,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0B8A144E34F2EBEC73F1BF4D /* AdminPortalTests.swift in Sources */,
+				B9158698BFD9160CF739E5FB /* LanguageTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

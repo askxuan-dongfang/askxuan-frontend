@@ -1,3 +1,4 @@
+import { installLanguage } from './i18n'
 import { initOverlayViewport } from '../../../packages/admin-ui/overlay-viewport'
 import { initAdminTheme } from '../../../packages/admin-ui/theme'
 import { createApp } from 'vue'
@@ -13,6 +14,7 @@ initAdminTheme()
 initOverlayViewport()
 
 const app = createApp(App)
+installLanguage(app)
 
 app.use(createPinia())
 app.use(router)

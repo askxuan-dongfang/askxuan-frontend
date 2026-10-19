@@ -75,8 +75,8 @@ struct AiTopicEntrances: View {
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            if loading { ProgressView("正在展开专题…") }
-            if error { Button("专题暂未加载 · 重试") { Task { await load() } } }
+            if loading { ProgressView(L10n.text("正在展开专题…")) }
+            if error { Button(L10n.text("专题暂未加载 · 重试")) { Task { await load() } } }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 12)], spacing: 12) {
                 ForEach(orderedTopics) { topic in
                     NavigationLink(value: AiNativeRoute.topic(topic.code)) { AiTopicTile(topic: topic) }
@@ -84,16 +84,16 @@ struct AiTopicEntrances: View {
                         .accessibilityIdentifier("ai-topic-" + topic.code)
                 }
             }
-            DisclosureGroup("先看一份示例报告") {
+            DisclosureGroup(L10n.text("先看一份示例报告")) {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(AiReportCatalog.examples) { sample in
                         NavigationLink(value: AiNativeRoute.example(sample.code)) {
-                            Label(sample.title, systemImage: AiReportCatalog.icon(sample.code)).frame(minHeight: 44)
+                            Label(L10n.lookup(sample.title), systemImage: AiReportCatalog.icon(sample.code)).frame(minHeight: 44)
                         }.accessibilityIdentifier("ai-example-" + sample.code)
                     }
                 }.padding(.top, 8)
             }
-            Text(auth.isLoggedIn ? "免费生成摘要 · 完整解读按专题使用积分" : "示例可直接阅读 · 登录后生成个人报告")
+            Text(L10n.lookup(auth.isLoggedIn ? L10n.text("免费生成摘要 · 完整解读按专题使用积分") : L10n.text("示例可直接阅读 · 登录后生成个人报告")))
                 .font(.caption).foregroundStyle(.secondary)
         }.foregroundStyle(Color.textPrimary).task(id: auth.isLoggedIn) { await load() }
     }
@@ -138,15 +138,15 @@ struct AiReportWorkspace: View {
         ScrollViewReader { proxy in
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                if !error.isEmpty { Text(error).font(.footnote).foregroundStyle(.red).padding().accessibilityLabel("错误：" + error) }
-                if loading { ProgressView("正在整理内容…").frame(maxWidth: .infinity).padding(40) }
+                if !error.isEmpty { Text(L10n.lookup(error)).font(.footnote).foregroundStyle(.red).padding().accessibilityLabel(L10n.lookup(L10n.text("错误：") + error)) }
+                if loading { ProgressView(L10n.text("正在整理内容…")).frame(maxWidth: .infinity).padding(40) }
                 if let report { reportBody(report, proxy: proxy) }
                 else if let topic { topicBody(topic) }
-                Text("问玄东方 · 以文化为镜，以生活为本").font(AppTypography.micro).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 25)
+                Text(L10n.text("问玄东方 · 以文化为镜，以生活为本")).font(AppTypography.micro).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 25)
             }.padding(20).frame(maxWidth: 760).frame(maxWidth: .infinity)
         }
         }.background(reportPaper).foregroundStyle(Color.textPrimary)
-        .navigationTitle("问玄 · 专题").toolbar(.visible, for: .navigationBar)
+        .navigationTitle(L10n.text("问玄 · 专题")).toolbar(.visible, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
         .task { await load(); await refreshBalance() }
         .task(id: selectedPhoto) {
@@ -164,17 +164,17 @@ struct AiReportWorkspace: View {
                 catch { if !Task.isCancelled { self.error = error.localizedDescription }; return }
             }
         }
-        .confirmationDialog("确认购买完整报告？", isPresented: $confirm, titleVisibility: .visible) {
-            if let report { Button("使用 \(report.pointsPrice) 积分解锁") { Task { await unlock(report) } }.disabled(busy || balance == nil || (balance ?? 0) < report.pointsPrice) }
-            Button("取消", role: .cancel) {}
-        } message: { if let report, let balance { Text("当前余额 \(balance) 积分，解锁后剩余 \(balance - report.pointsPrice) 积分。购买后可重复阅读。") } }
+        .confirmationDialog(L10n.text("确认购买完整报告？"), isPresented: $confirm, titleVisibility: .visible) {
+            if let report { Button(L10n.text("使用 \(report.pointsPrice) 积分解锁")) { Task { await unlock(report) } }.disabled(busy || balance == nil || (balance ?? 0) < report.pointsPrice) }
+            Button(L10n.text("取消"), role: .cancel) {}
+        } message: { if let report, let balance { Text(L10n.text("当前余额 \(balance) 积分，解锁后剩余 \(balance - report.pointsPrice) 积分。购买后可重复阅读。")) } }
     }
     private func hero(_ title: String, subtitle: String) -> some View {
         HStack(spacing: 5) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("EXPLORE / 专题解读").font(.system(size: 9)).tracking(2).opacity(0.6)
-                Text(title).font(AppTypography.title(28)).foregroundStyle(accent)
-                Text(subtitle).font(AppTypography.supporting).lineSpacing(5).foregroundStyle(.secondary)
+                Text(L10n.text("EXPLORE / 专题解读")).font(.system(size: 9)).tracking(2).opacity(0.6)
+                Text(L10n.lookup(title)).font(AppTypography.title(28)).foregroundStyle(accent)
+                Text(L10n.lookup(subtitle)).font(AppTypography.supporting).lineSpacing(5).foregroundStyle(.secondary)
             }.frame(maxWidth: .infinity, alignment: .leading)
             AiTopicArtwork(code: topic?.code ?? report?.skillCode ?? "fengshui").frame(width: 116, height: 135)
         }.padding(.vertical, 23)
@@ -183,74 +183,74 @@ struct AiReportWorkspace: View {
         VStack(alignment: .leading, spacing: 16, content: content).padding(22).frame(maxWidth: .infinity, alignment: .leading).background(Color.bgSecondary.opacity(0.9)).clipShape(RoundedRectangle(cornerRadius: 20)).overlay(RoundedRectangle(cornerRadius: 20).stroke(accent.opacity(0.10)))
     }
     private func chapters(_ list: [String]) -> some View {
-        ForEach(Array(list.enumerated()), id: \.offset) { index, title in HStack(spacing: 16) { Text(String(format: "%02d", index + 1)).font(AppTypography.title(14)).opacity(0.5); Text(title).font(AppTypography.body); Spacer() }.padding(.vertical, 5) }
+        ForEach(Array(list.enumerated()), id: \.offset) { index, title in HStack(spacing: 16) { Text(L10n.lookup(String(format: "%02d", index + 1))).font(AppTypography.title(14)).opacity(0.5); Text(L10n.lookup(title)).font(AppTypography.body); Spacer() }.padding(.vertical, 5) }
     }
     private func primary(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Text(busy ? "正在处理…" : title).font(AppTypography.body.weight(.medium)).frame(maxWidth: .infinity).padding(16).background(Color.brandDefault).foregroundStyle(Color.textOnBrand).clipShape(RoundedRectangle(cornerRadius: 12)) }.disabled(busy)
+        Button(action: action) { Text(L10n.lookup(busy ? L10n.text("正在处理…") : title)).font(AppTypography.body.weight(.medium)).frame(maxWidth: .infinity).padding(16).background(Color.brandDefault).foregroundStyle(Color.textOnBrand).clipShape(RoundedRectangle(cornerRadius: 12)) }.disabled(busy)
     }
     @ViewBuilder private func topicBody(_ topic: AiTopic) -> some View {
         hero(topic.title, subtitle: topic.subtitle)
         if let sample = AiReportCatalog.examples.first(where: { $0.code == topic.code }) {
             NavigationLink("先看示例 · 图表与完整阅读结构", value: AiNativeRoute.example(sample.code))
         }
-        HStack { Text("摘要免费"); Text("·"); Text("完整解读 \(topic.pointsPrice) 积分") }.font(AppTypography.micro).foregroundStyle(accent).padding(.bottom, 5)
+        HStack { Text(L10n.text("摘要免费")); Text("·"); Text(L10n.text("完整解读 \(topic.pointsPrice) 积分")) }.font(AppTypography.micro).foregroundStyle(accent).padding(.bottom, 5)
         card {
             HStack(spacing: 12) {
-                Label("补充资料", systemImage: step == 1 ? "checkmark.circle.fill" : "1.circle.fill").opacity(step == 0 ? 1 : 0.6)
+                Label(L10n.text("补充资料"), systemImage: step == 1 ? "checkmark.circle.fill" : "1.circle.fill").opacity(step == 0 ? 1 : 0.6)
                 Rectangle().frame(height: 1).opacity(0.2)
-                Label("说说问题", systemImage: "2.circle.fill").opacity(step == 1 ? 1 : 0.4)
+                Label(L10n.text("说说问题"), systemImage: "2.circle.fill").opacity(step == 1 ? 1 : 0.4)
             }.font(AppTypography.caption)
-            Text(step == 0 ? "为这次解读，补充一点线索" : "这一次，您最在意什么？").font(AppTypography.section).padding(.top, 8)
+            Text(L10n.lookup(step == 0 ? L10n.text("为这次解读，补充一点线索") : L10n.text("这一次，您最在意什么？"))).font(AppTypography.section).padding(.top, 8)
             if step == 0 {
-                Text("补充标注“必填”的资料；选填内容不确定时可以留空。").font(.footnote).foregroundStyle(.secondary)
+                Text(L10n.text("补充标注“必填”的资料；选填内容不确定时可以留空。")).font(.footnote).foregroundStyle(.secondary)
                 AiNativeFields(fields: skill?.inputSchema.fields ?? [], values: $inputs)
                 if topic.code == "face_palm" {
-                    PhotosPicker(selection: $selectedPhoto, matching: .images) { Label(photoLoading ? "正在读取图片…" : photoData == nil ? "选择用于图解的照片" : "已选择照片 · 更换", systemImage: "photo") }.disabled(busy || photoLoading)
+                    PhotosPicker(selection: $selectedPhoto, matching: .images) { Label(L10n.lookup(photoLoading ? L10n.text("正在读取图片…") : photoData == nil ? L10n.text("选择用于图解的照片") : L10n.text("已选择照片 · 更换")), systemImage: "photo") }.disabled(busy || photoLoading)
                     if let data = photoData, let image = UIImage(data: data) { Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 180).clipShape(RoundedRectangle(cornerRadius: 12)) }
-                    Text("仅解释可见特征和文化术语，不凭照片判断性格、健康或命运。").font(.caption).foregroundStyle(.secondary)
+                    Text(L10n.text("仅解释可见特征和文化术语，不凭照片判断性格、健康或命运。")).font(.caption).foregroundStyle(.secondary)
                 }
                 primary("下一步，说说问题 →") { AppMotion.perform { step = 1 } }.disabled(skill == nil || !fieldsReady || photoLoading || (topic.code == "face_palm" && photoData == nil))
             } else {
                 ForEach(AiTopicPresentation(code: topic.code).prompts, id: \.self) { prompt in
-                    Button { question = prompt } label: { HStack { Text(prompt).multilineTextAlignment(.leading); Spacer(); Image(systemName: "plus") }.font(AppTypography.caption).padding(13).frame(maxWidth: .infinity, alignment: .leading).background(accent.opacity(0.07)).clipShape(RoundedRectangle(cornerRadius: 12)) }.buttonStyle(.plain).disabled(submittedRequest != nil)
+                    Button { question = prompt } label: { HStack { Text(L10n.lookup(prompt)).multilineTextAlignment(.leading); Spacer(); Image(systemName: "plus") }.font(AppTypography.caption).padding(13).frame(maxWidth: .infinity, alignment: .leading).background(accent.opacity(0.07)).clipShape(RoundedRectangle(cornerRadius: 12)) }.buttonStyle(.plain).disabled(submittedRequest != nil)
                 }
-                Text("本次关注（选填）").font(.subheadline)
-                TextEditor(text: $question).frame(minHeight: 125).padding(8).scrollContentBackground(.hidden).background(reportPaper).clipShape(RoundedRectangle(cornerRadius: 10)).accessibilityLabel("最想了解的问题").disabled(submittedRequest != nil)
+                Text(L10n.text("本次关注（选填）")).font(.subheadline)
+                TextEditor(text: $question).frame(minHeight: 125).padding(8).scrollContentBackground(.hidden).background(reportPaper).clipShape(RoundedRectangle(cornerRadius: 10)).accessibilityLabel(L10n.text("最想了解的问题")).disabled(submittedRequest != nil)
                 Text("\(question.count) / 1500").font(.caption2).foregroundStyle(question.count > 1500 ? .red : .secondary).frame(maxWidth: .infinity, alignment: .trailing)
-                if !(skill?.inputSchema.fields.isEmpty ?? true) { Button("← 修改资料") { step = 0 }.font(.footnote).disabled(busy || submittedRequest != nil) }
+                if !(skill?.inputSchema.fields.isEmpty ?? true) { Button(L10n.text("← 修改资料")) { step = 0 }.font(.footnote).disabled(busy || submittedRequest != nil) }
                 primary(submittedRequest == nil ? "生成免费摘要 →" : "重试提交") { Task { await create(topic) } }.disabled(skill == nil || !fieldsReady || !questionReady)
-                Text(submittedRequest == nil ? "生成摘要不扣积分，阅读后再决定是否解锁。" : "若提交超时，重试会查询同一次请求，也可前往我的报告查看。").font(.footnote).foregroundStyle(.secondary)
+                Text(L10n.lookup(submittedRequest == nil ? L10n.text("生成摘要不扣积分，阅读后再决定是否解锁。") : L10n.text("若提交超时，重试会查询同一次请求，也可前往我的报告查看。"))).font(.footnote).foregroundStyle(.secondary)
             }
         }
-        card { DisclosureGroup("这份解读，将为您梳理哪些线索？") { VStack(alignment: .leading, spacing: 12) { chapters(topic.chapters); Text("传统文化参考，不承诺预测结果。主题图形用于视觉表达，不代表您的排盘或抽牌结果。").font(.footnote).foregroundStyle(.secondary) }.padding(.top, 14) }.font(.subheadline).tint(accent) }
+        card { DisclosureGroup(L10n.text("这份解读，将为您梳理哪些线索？")) { VStack(alignment: .leading, spacing: 12) { chapters(topic.chapters); Text(L10n.text("传统文化参考，不承诺预测结果。主题图形用于视觉表达，不代表您的排盘或抽牌结果。")).font(.footnote).foregroundStyle(.secondary) }.padding(.top, 14) }.font(.subheadline).tint(accent) }
     }
     @ViewBuilder private func reportBody(_ r: AiReport, proxy: ScrollViewProxy) -> some View {
         hero(r.title, subtitle: r.visibleQuestion)
         if r.status == "generating" {
-            card { AiTopicArtwork(code: r.skillCode).frame(height: 150).frame(maxWidth: .infinity); ProgressView("报告生成中 · 尚未扣除积分").font(.footnote); Text("正在整理您的专题报告").font(.headline); Text(["checking":"正在核对您填写的资料。", "calculating":"正在排盘并整理计算结果。", "writing":"正在组织分章解读、比较表与行动建议。"][r.generationStage ?? ""] ?? "任务已开始，完成后自动展示。").font(.subheadline); Text("您可以离开，稍后在我的报告查看。当前尚未扣款；超过五分钟可恢复生成。").font(.subheadline); primary("检查并恢复生成") { Task { await retry(r) } } }
+            card { AiTopicArtwork(code: r.skillCode).frame(height: 150).frame(maxWidth: .infinity); ProgressView(L10n.text("报告生成中 · 尚未扣除积分")).font(.footnote); Text(L10n.text("正在整理您的专题报告")).font(.headline); Text(L10n.lookup(["checking":"正在核对您填写的资料。", "calculating":"正在排盘并整理计算结果。", "writing":"正在组织分章解读、比较表与行动建议。"][r.generationStage ?? ""] ?? L10n.text("任务已开始，完成后自动展示。"))).font(.subheadline); Text(L10n.text("您可以离开，稍后在我的报告查看。当前尚未扣款；超过五分钟可恢复生成。")).font(.subheadline); primary("检查并恢复生成") { Task { await retry(r) } } }
         } else if r.status == "failed" {
-            card { Text("这次生成未能完成").font(.headline); Text(r.errorMessage); primary("免费重试") { Task { await retry(r) } } }
+            card { Text(L10n.text("这次生成未能完成")).font(.headline); Text(L10n.lookup(r.errorMessage)); primary("免费重试") { Task { await retry(r) } } }
         } else {
-            card { Text("分析摘要").font(AppTypography.section); Text(r.summary).lineSpacing(7) }
+            card { Text(L10n.text("分析摘要")).font(AppTypography.section); Text(L10n.lookup(r.summary)).lineSpacing(7) }
             if r.unlocked {
                 if let document = r.document, !(document.blocks ?? []).isEmpty { card { AiReportDocumentView(document: document) } }
                 card {
-                    HStack { Text("完整分析 · 已解锁").font(AppTypography.section); Spacer(); Button(largeType ? "标准字号" : "放大字号") { largeType.toggle() }.font(AppTypography.caption) }
-                    DisclosureGroup("章节导航") {
+                    HStack { Text(L10n.text("完整分析 · 已解锁")).font(AppTypography.section); Spacer(); Button(L10n.lookup(largeType ? L10n.text("标准字号") : L10n.text("放大字号"))) { largeType.toggle() }.font(AppTypography.caption) }
+                    DisclosureGroup(L10n.text("章节导航")) {
                         ForEach(Array(r.content.components(separatedBy: "\n").enumerated()), id: \.offset) { index, line in
-                            if line.hasPrefix("#") { Button(line.trimmingCharacters(in: CharacterSet(charactersIn: "# "))) { AppMotion.perform(AppMotion.reveal) { proxy.scrollTo("chapter-\(index)", anchor: .top) } }.font(.subheadline).padding(.vertical, 5) }
+                            if line.hasPrefix("#") { Button(L10n.lookup(line.trimmingCharacters(in: CharacterSet(charactersIn: "# ")))) { AppMotion.perform(AppMotion.reveal) { proxy.scrollTo("chapter-\(index)", anchor: .top) } }.font(.subheadline).padding(.vertical, 5) }
                         }
                     }
                     AiMarkdownText(text: r.content, large: largeType).foregroundStyle(Color.textPrimary)
-                    Text("✦ 让解读回到生活，让行动带来答案。").font(AppTypography.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 20);
- Button("生成 PDF（含图表）") { do { pdfURL = try AiReportPDF.export(r) } catch { self.error = error.localizedDescription } }
-                    if let pdfURL { ShareLink(item: pdfURL) { Label("保存或分享 PDF", systemImage: "square.and.arrow.up") } }
- ShareLink(item: r.title + "\n\n" + r.content) { Label("保存或分享报告", systemImage: "square.and.arrow.up") }; primary("围绕这份报告继续问事 →") { Task { await followup(r) } }; Text("自动带入报告内容，聊天按账户正常额度使用。").font(.footnote).foregroundStyle(.secondary) }
+                    Text(L10n.text("✦ 让解读回到生活，让行动带来答案。")).font(AppTypography.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 20);
+ Button(L10n.text("生成 PDF（含图表）")) { do { pdfURL = try AiReportPDF.export(r) } catch { self.error = error.localizedDescription } }
+                    if let pdfURL { ShareLink(item: pdfURL) { Label(L10n.text("保存或分享 PDF"), systemImage: "square.and.arrow.up") } }
+ ShareLink(item: r.title + "\n\n" + r.content) { Label(L10n.text("保存或分享报告"), systemImage: "square.and.arrow.up") }; primary("围绕这份报告继续问事 →") { Task { await followup(r) } }; Text(L10n.text("自动带入报告内容，聊天按账户正常额度使用。")).font(.footnote).foregroundStyle(.secondary) }
             } else {
-                card { Button("钱包余额支付 ¥\(CashAPI.money(r.priceCents))") { Task { await unlockCash(r) } }.disabled(busy); Text("把线索，展开成完整答案").font(AppTypography.section); chapters(r.chapters); HStack(alignment: .firstTextBaseline) { Text("\(r.pointsPrice)").font(AppTypography.title(36)); Text("积分"); Spacer(); Text("一次购买 · 随时回看").font(AppTypography.caption) }; Text("可用积分：" + (balance.map(String.init) ?? "暂未获取") + "。也可使用钱包余额购买。").font(.footnote).foregroundStyle(.secondary); if let balance {
+                card { Button(L10n.text("钱包余额支付 ¥\(CashAPI.money(r.priceCents))")) { Task { await unlockCash(r) } }.disabled(busy); Text(L10n.text("把线索，展开成完整答案")).font(AppTypography.section); chapters(r.chapters); HStack(alignment: .firstTextBaseline) { Text("\(r.pointsPrice)").font(AppTypography.title(36)); Text(L10n.text("积分")); Spacer(); Text(L10n.text("一次购买 · 随时回看")).font(AppTypography.caption) }; Text(L10n.lookup(L10n.text("可用积分：") + (balance.map(String.init) ?? L10n.text("暂未获取")) + L10n.text("。也可使用钱包余额购买。"))).font(.footnote).foregroundStyle(.secondary); if let balance {
                     if balance >= r.pointsPrice { primary("解锁完整报告") { confirm = true } }
-                    else { Text("还差 \(r.pointsPrice - balance) 积分，摘要已为您保留。").font(.footnote).padding(14).frame(maxWidth: .infinity).background(accent.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 10)) }
-                } else { Button("重新获取积分余额") { Task { await refreshBalance() } } } }
+                    else { Text(L10n.text("还差 \(r.pointsPrice - balance) 积分，摘要已为您保留。")).font(.footnote).padding(14).frame(maxWidth: .infinity).background(accent.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 10)) }
+                } else { Button(L10n.text("重新获取积分余额")) { Task { await refreshBalance() } } } }
             }
         }
     }
@@ -299,10 +299,10 @@ struct AiReportLibrary: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                if !error.isEmpty { Text(error).foregroundStyle(Color.stateError); Button("重试") { Task { await load() } } }
-                if reports.isEmpty && !busy { Text("还没有专题报告，生成的报告会保存在这里。").foregroundStyle(Color.textSecondary).padding(.vertical, 40) }
+                if !error.isEmpty { Text(L10n.lookup(error)).foregroundStyle(Color.stateError); Button(L10n.text("重试")) { Task { await load() } } }
+                if reports.isEmpty && !busy { Text(L10n.text("还没有专题报告，生成的报告会保存在这里。")).foregroundStyle(Color.textSecondary).padding(.vertical, 40) }
                 if !reports.isEmpty {
-                    HStack { Text("已保存 \(reports.count)\(more ? "+" : "") 份报告"); Spacer(); Text("最近生成") }
+                    HStack { Text(L10n.text("已保存 \(reports.count)\(more ? "+" : "") 份报告")); Spacer(); Text(L10n.text("最近生成")) }
                         .font(AppTypography.caption).foregroundStyle(Color.textSecondary)
                     LazyVStack(spacing: 0) {
                         ForEach(reports) { report in
@@ -312,8 +312,8 @@ struct AiReportLibrary: View {
                                     Image(systemName: "doc.text").font(.system(size: 21)).foregroundStyle(Color.accentDefault)
                                         .frame(width: 36, height: 40).background(Color.accentDefault.opacity(0.07), in: RoundedRectangle(cornerRadius: 8))
                                     VStack(alignment: .leading, spacing: 7) {
-                                        Text(report.title).font(AppTypography.card).foregroundStyle(Color.textPrimary)
-                                        Text(report.listPreview).font(AppTypography.supporting).foregroundStyle(Color.textSecondary).lineLimit(2)
+                                        Text(L10n.lookup(report.title)).font(AppTypography.card).foregroundStyle(Color.textPrimary)
+                                        Text(L10n.lookup(report.listPreview)).font(AppTypography.supporting).foregroundStyle(Color.textSecondary).lineLimit(2)
                                         ViewThatFits(in: .horizontal) {
                                             HStack(spacing: 14) { reportMetadata(report) }
                                             VStack(alignment: .leading, spacing: 4) { reportMetadata(report) }
@@ -326,15 +326,15 @@ struct AiReportLibrary: View {
                     }.background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
                         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.borderDefault, lineWidth: 1))
                 }
-                if busy { ProgressView() } else if more && !reports.isEmpty { Button("加载更多") { Task { await load() } } }
+                if busy { ProgressView() } else if more && !reports.isEmpty { Button(L10n.text("加载更多")) { Task { await load() } } }
             }.padding(16).frame(maxWidth: 880)
-        }.background(reportPaper).foregroundStyle(reportGreen).navigationTitle("我的报告").navigationBarTitleDisplayMode(.inline)
+        }.background(reportPaper).foregroundStyle(reportGreen).navigationTitle(L10n.text("我的报告")).navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .task { if reports.isEmpty { await load() } }
     }
     @ViewBuilder private func reportMetadata(_ report: AiReport) -> some View {
-        Text(report.listDate).foregroundStyle(Color.textTertiary)
-        Text(report.listStatus).foregroundStyle(report.status == "failed" ? Color.stateError : Color.accentDefault)
+        Text(L10n.lookup(report.listDate)).foregroundStyle(Color.textTertiary)
+        Text(L10n.lookup(report.listStatus)).foregroundStyle(report.status == "failed" ? Color.stateError : Color.accentDefault)
     }
     private func load() async { guard !busy else { return }; busy = true; defer { busy = false }; do { let rows: [AiReport] = try await APIClient.shared.request(.aiReports(page)); reports += rows; page += 1; more = rows.count == 20; error = "" } catch { self.error = error.localizedDescription } }
 }
@@ -418,8 +418,8 @@ struct AiTopicTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack { Image(systemName: AiReportCatalog.icon(topic.code)).font(.title2); Spacer(); Image(systemName: "arrow.up.right").font(.caption) }.foregroundStyle(Color.accentDefault)
-            Text(topic.title).font(AppTypography.title(20)).fixedSize(horizontal: false, vertical: true)
-            Text(topic.ready == false ? (topic.executionNote ?? "暂未开放") : AiReportCatalog.subtitle(topic.code))
+            Text(L10n.lookup(topic.title)).font(AppTypography.title(20)).fixedSize(horizontal: false, vertical: true)
+            Text(L10n.lookup(topic.ready == false ? (topic.executionNote ?? L10n.text("暂未开放")) : AiReportCatalog.subtitle(topic.code)))
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }.padding(16).frame(maxWidth: .infinity, minHeight: 155, alignment: .topLeading)
@@ -466,13 +466,13 @@ struct AiMarkdownText: View {
             ForEach(blocks) { block in
                 Group {
                     switch block.kind {
-                    case "heading": Text(inline(block.value)).font(.system(size: large ? 23 : 18, weight: .semibold)).padding(.top, 10)
+                    case "heading": Text(L10n.lookup(inline(block.value))).font(.system(size: large ? 23 : 18, weight: .semibold)).padding(.top, 10)
                     case "rule": Divider().padding(.vertical, 8)
-                    case "code": ScrollView(.horizontal) { Text(block.value).font(.system(size: 12, design: .monospaced)).padding(12) }.background(.primary.opacity(0.05)).clipShape(RoundedRectangle(cornerRadius: 8))
-                    case "quote": HStack(alignment: .top, spacing: 10) { Rectangle().fill(.primary.opacity(0.35)).frame(width: 3); Text(inline(block.value)).padding(.vertical, 5) }.fixedSize(horizontal: false, vertical: true).padding(.horizontal, 8).background(.primary.opacity(0.04))
-                    case "list": HStack(alignment: .top, spacing: 9) { Text("•"); Text(inline(block.value)).frame(maxWidth: .infinity, alignment: .leading) }
+                    case "code": ScrollView(.horizontal) { Text(L10n.lookup(block.value)).font(.system(size: 12, design: .monospaced)).padding(12) }.background(.primary.opacity(0.05)).clipShape(RoundedRectangle(cornerRadius: 8))
+                    case "quote": HStack(alignment: .top, spacing: 10) { Rectangle().fill(.primary.opacity(0.35)).frame(width: 3); Text(L10n.lookup(inline(block.value))).padding(.vertical, 5) }.fixedSize(horizontal: false, vertical: true).padding(.horizontal, 8).background(.primary.opacity(0.04))
+                    case "list": HStack(alignment: .top, spacing: 9) { Text("•"); Text(L10n.lookup(inline(block.value))).frame(maxWidth: .infinity, alignment: .leading) }
                     case "table": table(block.value)
-                    default: Text(inline(block.value))
+                    default: Text(L10n.lookup(inline(block.value)))
                     }
                 }.id("chapter-\(block.id)")
             }
@@ -483,10 +483,10 @@ struct AiMarkdownText: View {
         if exporting {
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
-                    Text(inline(row.map { $0.trimmingCharacters(in: .whitespaces) }.joined(separator: " / "))).font(.system(size: 12, weight: index == 0 ? .semibold : .regular))
+                    Text(L10n.lookup(inline(row.map { $0.trimmingCharacters(in: .whitespaces) }.joined(separator: " / ")))).font(.system(size: 12, weight: index == 0 ? .semibold : .regular))
                 }
             }
-        } else { ScrollView(.horizontal) { VStack(alignment: .leading, spacing: 0) { ForEach(Array(rows.enumerated()), id: \.offset) { index, row in HStack(alignment: .top, spacing: 0) { ForEach(Array(row.enumerated()), id: \.offset) { _, cell in Text(inline(cell.trimmingCharacters(in: .whitespaces))).font(AppTypography.supporting.weight(index == 0 ? .semibold : .regular)).frame(width: 140, alignment: .leading).padding(10) } }.background(.primary.opacity(index == 0 ? 0.07 : 0.02)); Divider() } } }.clipShape(RoundedRectangle(cornerRadius: 8))
+        } else { ScrollView(.horizontal) { VStack(alignment: .leading, spacing: 0) { ForEach(Array(rows.enumerated()), id: \.offset) { index, row in HStack(alignment: .top, spacing: 0) { ForEach(Array(row.enumerated()), id: \.offset) { _, cell in Text(L10n.lookup(inline(cell.trimmingCharacters(in: .whitespaces)))).font(AppTypography.supporting.weight(index == 0 ? .semibold : .regular)).frame(width: 140, alignment: .leading).padding(10) } }.background(.primary.opacity(index == 0 ? 0.07 : 0.02)); Divider() } } }.clipShape(RoundedRectangle(cornerRadius: 8))
         }
     }
 }

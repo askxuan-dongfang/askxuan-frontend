@@ -50,31 +50,31 @@ struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
 
     private let menuItems: [ProfileMenuItem] = [
-        ProfileMenuItem(icon: "person.fill", label: "个人资料",
+        ProfileMenuItem(icon: "person.fill", label: L10n.text("个人资料"),
                      iconColor: .accentDefault,
                      iconBgColor: Color.accentDefault.opacity(0.12),
                      extra: nil),
-        ProfileMenuItem(icon: "star.fill", label: "专长管理",
+        ProfileMenuItem(icon: "star.fill", label: L10n.text("专长管理"),
                      iconColor: Color(hex: "5B7AAA"),
                      iconBgColor: Color(hex: "5B7AAA").opacity(0.12),
                      extra: nil),
-        ProfileMenuItem(icon: "tag.fill", label: "服务标签",
+        ProfileMenuItem(icon: "tag.fill", label: L10n.text("服务标签"),
                      iconColor: Color(hex: "7A8FA6"),
                      iconBgColor: Color(hex: "7A8FA6").opacity(0.12),
                      extra: nil),
-        ProfileMenuItem(icon: "yensign", label: "服务定价",
+        ProfileMenuItem(icon: "yensign", label: L10n.text("服务定价"),
                      iconColor: .brandDefault,
                      iconBgColor: Color.brandDefault.opacity(0.12),
                      extra: nil),
-        ProfileMenuItem(icon: "creditcard.fill", label: "我的钱包",
+        ProfileMenuItem(icon: "creditcard.fill", label: L10n.text("我的钱包"),
                      iconColor: .stateWarning,
                      iconBgColor: Color.stateWarning.opacity(0.12),
                      extra: nil),
-        ProfileMenuItem(icon: "bubble.left.fill", label: "评价管理",
+        ProfileMenuItem(icon: "bubble.left.fill", label: L10n.text("评价管理"),
                      iconColor: .stateSuccess,
                      iconBgColor: Color.stateSuccess.opacity(0.12),
                      extra: nil),
-        ProfileMenuItem(icon: "gearshape.fill", label: "设置",
+        ProfileMenuItem(icon: "gearshape.fill", label: L10n.text("设置"),
                      iconColor: .textTertiary,
                      iconBgColor: Color.textTertiary.opacity(0.15),
                      extra: nil)
@@ -85,7 +85,7 @@ struct ProfileView: View {
             VStack(spacing: 0) {
                 profileCard
                 NavigationLink { MediaStudioView() } label: {
-                    Label("内容与直播", systemImage: "video.badge.waveform")
+                    Label(L10n.text("内容与直播"), systemImage: "video.badge.waveform")
                         .frame(maxWidth: .infinity, alignment: .leading).padding(20)
                         .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: AppRadius.lg))
                 }.buttonStyle(CardPressButtonStyle()).padding(.horizontal, AppSpacing.lg).padding(.top, AppSpacing.lg)
@@ -96,7 +96,7 @@ struct ProfileView: View {
         .softScrollEdge(.bottom)
         .background(Color.bgPrimary)
         .toolbar(showsBackButton ? .visible : .hidden, for: .navigationBar)
-        .navigationTitle(showsBackButton ? "个人主页" : "")
+        .navigationTitle(L10n.lookup(showsBackButton ? L10n.text("个人主页") : ""))
         .task { await viewModel.load() }
         .refreshable { await viewModel.load() }
     }
@@ -112,21 +112,21 @@ struct ProfileView: View {
             }.disabled(viewModel.profile == nil)
 
             // 名字
-            Text(viewModel.profile?.dharmaName ?? "法师资料")
+            Text(L10n.lookup(viewModel.profile?.dharmaName ?? L10n.text("法师资料")))
                 .font(.pageTitle)
                 .foregroundStyle(.textPrimary)
                 .padding(.top, AppSpacing.md)
 
             // 寺院 + 已认证 badge
             HStack(spacing: AppSpacing.sm) {
-                Text(viewModel.profile?.manageBy == "platform" ? "独立执业" : viewModel.profile?.templeId.isEmpty == false ? "寺院纳管" : "未关联寺院")
+                Text(L10n.lookup(viewModel.profile?.manageBy == "platform" ? L10n.text("独立执业") : viewModel.profile?.templeId.isEmpty == false ? L10n.text("寺院纳管") : L10n.text("未关联寺院")))
                     .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
                 HStack(spacing: 4) {
                     Image(systemName: "star.fill")
                         .font(AppTypography.micro)
                         .foregroundStyle(.accentDefault)
-                    Text(viewModel.profile?.authStatusText ?? "未认证")
+                    Text(L10n.lookup(viewModel.profile?.authStatusText ?? L10n.text("未认证")))
                         .font(.micro)
                         .foregroundStyle(.accentDefault)
                 }
@@ -146,7 +146,7 @@ struct ProfileView: View {
             .padding(.top, AppSpacing.sm)
 
             // 角色
-            Text(viewModel.profile?.position ?? "")
+            Text(L10n.lookup(viewModel.profile?.position ?? ""))
                 .font(AppTypography.caption)
                 .foregroundStyle(.textSecondary)
                 .padding(.top, 4)
@@ -197,7 +197,7 @@ struct ProfileView: View {
                     .cornerRadius(AppRadius.md)
 
                 // 标签
-                Text(item.label)
+                Text(L10n.lookup(item.label))
                     .font(AppTypography.body.weight(.medium))
                     .foregroundStyle(.textPrimary)
 
@@ -205,7 +205,7 @@ struct ProfileView: View {
 
                 // 额外信息
                 if let extra = item.extra {
-                    Text(extra)
+                    Text(L10n.lookup(extra))
                         .font(AppTypography.caption)
                         .foregroundStyle(.textTertiary)
                         .padding(.trailing, AppSpacing.sm)

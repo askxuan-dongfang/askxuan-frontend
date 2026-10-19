@@ -42,10 +42,12 @@
 		89D7BBFC4E2F2E6D840641D4 /* ReviewsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3026C9DC1087AC58ADEC51B9 /* ReviewsView.swift */; };
 		9619B9B9DAFDEB978E3DEA3B /* JourneyDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98AA08B26A9C7D8074843450 /* JourneyDetailView.swift */; };
 		96390722CA31EBFAE44F0339 /* ChatNativeAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D60118E276C91B57E350A3 /* ChatNativeAPI.swift */; };
+		9A6BB152D5A20225E0D4C053 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D82284569D035DFEFE8CA6A /* AppLanguage.swift */; };
 		9A7DB57BAEEA3865A094411D /* Earnings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38F985729DB8F65B54C97E03 /* Earnings.swift */; };
 		A0F10117E6D90C9269BD2857 /* ChatNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 469E4DB3E6F9F7E66696CD2C /* ChatNotifications.swift */; };
 		A55778C2DB32E28112C114A8 /* AvatarEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 188F3FC99067875DD67FC244 /* AvatarEditor.swift */; };
 		A978F55AF8627E8504E8D723 /* Withdrawal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EB5A36CFF824BB1C39E4F07 /* Withdrawal.swift */; };
+		AA06E9CB23C05D009224816B /* LanguageUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5D411EC06631F1746B40192 /* LanguageUITests.swift */; };
 		ACA2F2A516B4E7E34582395D /* BlessingTasksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5636A8918EB1CFB94FC4F61C /* BlessingTasksView.swift */; };
 		AFE88373B6FA8115851B5F67 /* JourneyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056F3DABECB9BBA51678561B /* JourneyModels.swift */; };
 		B15AB1796B7EA133D0D3B88B /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECB7504D8D30BE0BD2E3F1B /* LoginView.swift */; };
@@ -57,14 +59,15 @@
 		C9CF302CA0062EDBB0FCCB14 /* MasterBottomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25948AEA2C41B259710EF0CA /* MasterBottomTabBar.swift */; };
 		D0D565E17D40295FC3041F9F /* OpenIMManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBF136A072F2CEB2A097FF4C /* OpenIMManager.swift */; };
 		D11E93879C84E88484F0F5C5 /* Booking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46CD85C8AE5D21F67C8E6BD0 /* Booking.swift */; };
-		D5B593067D918F83F5C29B8A /* Pods_MasterApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 45FE51D267ECED87E275139A /* Pods_MasterApp.framework */; };
 		D950C7387F9E0BBD8C246111 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA2672C09B8030E0DC0CDBC /* Tokens.swift */; };
 		DEB81846F4CF10F6C34B535F /* JSONHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C5831F8CA301D517AC0775 /* JSONHelper.swift */; };
+		DF6FF538B29D2476545864B4 /* zh-Hant.json in Resources */ = {isa = PBXBuildFile; fileRef = CC5DCAFCCE8305E82F1CBAD5 /* zh-Hant.json */; };
 		DF773D73106610D2BD33FDF8 /* MasterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FA36D4309EA42963B9A5E9A /* MasterApp.swift */; };
 		EA194FC023D167582AD46BF9 /* BookingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8978EDA5C0EC0A6EE28D1E /* BookingDetailView.swift */; };
 		EA84F4073A4C7FEAA4599782 /* JourneyCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7CDA2111D1E95D0661FDC26 /* JourneyCenterView.swift */; };
 		EB9A110BE9AF604BEDD7362E /* BlessingTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBFDC3C10932AC277DEE16B /* BlessingTask.swift */; };
 		ED552CDF61642357C8E16180 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 3D3EC8043776C7BF1C00A516 /* README.md */; };
+		EE8F2F96937E086592C8E0CE /* Pods_MasterApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A33F6ABA450FC4F78460612 /* Pods_MasterApp.framework */; };
 		F1E117240EA0E03EDEA065F4 /* MasterProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117AC1A1E7E1366FE627EB3A /* MasterProfile.swift */; };
 		F71A5213ABF488A6AA8657B0 /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF7347A424F372232E7A162 /* CalendarView.swift */; };
 		FD109E64B5C5E531902E6FE8 /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE37F18E7F2177EAD5C86FF7 /* Card.swift */; };
@@ -93,25 +96,25 @@
 		1E588C841018BB5FF471D384 /* SharedMotionTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedMotionTokens.swift; sourceTree = "<group>"; };
 		25948AEA2C41B259710EF0CA /* MasterBottomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterBottomTabBar.swift; sourceTree = "<group>"; };
 		28E0BB1674DF935723FF0DDA /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
-		2A669F8FC632A5F0ACFFF9B0 /* Pods-MasterApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MasterApp.debug.xcconfig"; path = "Target Support Files/Pods-MasterApp/Pods-MasterApp.debug.xcconfig"; sourceTree = "<group>"; };
 		2ECDD4D04158DEF9F38E93BF /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		2FA36D4309EA42963B9A5E9A /* MasterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterApp.swift; sourceTree = "<group>"; };
 		3026C9DC1087AC58ADEC51B9 /* ReviewsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewsView.swift; sourceTree = "<group>"; };
 		38F985729DB8F65B54C97E03 /* Earnings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Earnings.swift; sourceTree = "<group>"; };
 		3CB14D64C5E7CB18BA8DD83E /* WebSocketManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketManager.swift; sourceTree = "<group>"; };
 		3D3EC8043776C7BF1C00A516 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		45FE51D267ECED87E275139A /* Pods_MasterApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MasterApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		469E4DB3E6F9F7E66696CD2C /* ChatNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatNotifications.swift; sourceTree = "<group>"; };
 		46CD85C8AE5D21F67C8E6BD0 /* Booking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Booking.swift; sourceTree = "<group>"; };
 		4D252E073923435424D957A1 /* MasterOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterOnboardingView.swift; sourceTree = "<group>"; };
 		4F891FC0C6DBBF8634C714DD /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		5636A8918EB1CFB94FC4F61C /* BlessingTasksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlessingTasksView.swift; sourceTree = "<group>"; };
+		5D82284569D035DFEFE8CA6A /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
 		5EB5A36CFF824BB1C39E4F07 /* Withdrawal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Withdrawal.swift; sourceTree = "<group>"; };
 		64D60118E276C91B57E350A3 /* ChatNativeAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatNativeAPI.swift; sourceTree = "<group>"; };
 		67CE46785FAD34C06035563D /* Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
 		6A5247BAC17CC4686A4D4BFC /* MasterAppUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MasterAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6D4AE240EEF4162EEEFF2542 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		6D7F3D7E1327B18F35A9CA02 /* ChatExperienceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatExperienceView.swift; sourceTree = "<group>"; };
+		6DF7FAEDF7412484B2C74CAD /* Pods-MasterApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MasterApp.debug.xcconfig"; path = "Target Support Files/Pods-MasterApp/Pods-MasterApp.debug.xcconfig"; sourceTree = "<group>"; };
 		6FBFDC3C10932AC277DEE16B /* BlessingTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlessingTask.swift; sourceTree = "<group>"; };
 		73A4003DFFC22A55D24EFB7A /* ProfileSpecialtyPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSpecialtyPicker.swift; sourceTree = "<group>"; };
 		79EB2DCF3A26790FD0045B82 /* MessagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagesView.swift; sourceTree = "<group>"; };
@@ -120,11 +123,11 @@
 		7F45D5DD053D3976CA498408 /* EarningsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EarningsView.swift; sourceTree = "<group>"; };
 		829AE82CD7FDAB4E3FD82B10 /* MasterApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MasterApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		84B26EEB977A1D87D0F27C56 /* ProfileEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileEditView.swift; sourceTree = "<group>"; };
-		917682A639028CA9E5E031F7 /* Pods-MasterApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MasterApp.release.xcconfig"; path = "Target Support Files/Pods-MasterApp/Pods-MasterApp.release.xcconfig"; sourceTree = "<group>"; };
 		962C28CB4001BEF27D348848 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C5831F8CA301D517AC0775 /* JSONHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONHelper.swift; sourceTree = "<group>"; };
 		989CCF92D975A7BDE5A6B6FB /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		98AA08B26A9C7D8074843450 /* JourneyDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyDetailView.swift; sourceTree = "<group>"; };
+		9A33F6ABA450FC4F78460612 /* Pods_MasterApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MasterApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C8978EDA5C0EC0A6EE28D1E /* BookingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingDetailView.swift; sourceTree = "<group>"; };
 		9E26F25318ECFCF2694656F6 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
 		A7CDA2111D1E95D0661FDC26 /* JourneyCenterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyCenterView.swift; sourceTree = "<group>"; };
@@ -136,11 +139,14 @@
 		B76AC9AF5F7ADA5DF9CAEA60 /* MasterTopNavBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterTopNavBar.swift; sourceTree = "<group>"; };
 		BDB3199F3735DB54C92147CD /* BookingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingsView.swift; sourceTree = "<group>"; };
 		C3D076D59FF3810052A8C9E3 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
+		CC5DCAFCCE8305E82F1CBAD5 /* zh-Hant.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "zh-Hant.json"; sourceTree = "<group>"; };
 		CE37F18E7F2177EAD5C86FF7 /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
 		CECB7504D8D30BE0BD2E3F1B /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		D08E241BB37FEF43E10DA8E9 /* Pods-MasterApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MasterApp.release.xcconfig"; path = "Target Support Files/Pods-MasterApp/Pods-MasterApp.release.xcconfig"; sourceTree = "<group>"; };
 		DAE6CEDDBC24DE5E36E16856 /* MasterApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MasterApp.entitlements; sourceTree = "<group>"; };
 		DB7CCB22E8BFF8458460ADEF /* H5ParityUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = H5ParityUITests.swift; sourceTree = "<group>"; };
 		DD0CC2D117C0F4925E9A00D3 /* Endpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Endpoint.swift; sourceTree = "<group>"; };
+		E5D411EC06631F1746B40192 /* LanguageUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageUITests.swift; sourceTree = "<group>"; };
 		E667C710AFB12809D4C0661E /* Debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Debug.entitlements; sourceTree = "<group>"; };
 		E901E7A8208DE7E7196905CB /* GlassBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassBackground.swift; sourceTree = "<group>"; };
 		EB0AB53E985870DCBDE1435E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -151,11 +157,11 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		6BBDCC3E0D732DAC397CF7FF /* Frameworks */ = {
+		10AC0D187C62D8E7903EEDEB /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D5B593067D918F83F5C29B8A /* Pods_MasterApp.framework in Frameworks */,
+				EE8F2F96937E086592C8E0CE /* Pods_MasterApp.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -175,6 +181,7 @@
 			isa = PBXGroup;
 			children = (
 				DB7CCB22E8BFF8458460ADEF /* H5ParityUITests.swift */,
+				E5D411EC06631F1746B40192 /* LanguageUITests.swift */,
 			);
 			path = MasterAppUITests;
 			sourceTree = "<group>";
@@ -194,6 +201,14 @@
 				5636A8918EB1CFB94FC4F61C /* BlessingTasksView.swift */,
 			);
 			path = Blessing;
+			sourceTree = "<group>";
+		};
+		21352209EF502C59405109B1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				9A33F6ABA450FC4F78460612 /* Pods_MasterApp.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		24178A6FD5B56DCBC3B768AA /* Profile */ = {
@@ -238,18 +253,19 @@
 			children = (
 				C416B4682E2E03082EF7168B /* chat-native */,
 				D2B801D48C6AF61FD1DF948F /* design-tokens */,
+				CEF74FB5CE9F6BD5F33374B7 /* localization */,
 				53B32451C9D2D08F32EA8323 /* profile-native */,
 				32ECC01E4AB4BA20ECF0F2E8 /* service-journey-native */,
 			);
 			path = packages;
 			sourceTree = "<group>";
 		};
-		4684F71DD174A5F67CA6B788 /* Frameworks */ = {
+		3FA34B7569E5E2AD7D7F6E94 /* native */ = {
 			isa = PBXGroup;
 			children = (
-				45FE51D267ECED87E275139A /* Pods_MasterApp.framework */,
+				5D82284569D035DFEFE8CA6A /* AppLanguage.swift */,
 			);
-			name = Frameworks;
+			path = native;
 			sourceTree = "<group>";
 		};
 		53B32451C9D2D08F32EA8323 /* profile-native */ = {
@@ -356,16 +372,6 @@
 			path = Earnings;
 			sourceTree = "<group>";
 		};
-		B9AFC1244105C44CB972CBC6 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				2A669F8FC632A5F0ACFFF9B0 /* Pods-MasterApp.debug.xcconfig */,
-				917682A639028CA9E5E031F7 /* Pods-MasterApp.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
-			sourceTree = "<group>";
-		};
 		BC321B93ADAC90848CD425D7 = {
 			isa = PBXGroup;
 			children = (
@@ -373,8 +379,8 @@
 				2E2F261EBBC51D711208BF54 /* MasterApp */,
 				15544E1CFAF8E801F9B41502 /* MasterAppUITests */,
 				5D732DA65FE8D0F7FA25FB7A /* Products */,
-				B9AFC1244105C44CB972CBC6 /* Pods */,
-				4684F71DD174A5F67CA6B788 /* Frameworks */,
+				EFB05B935EDA22CA309E32CC /* Pods */,
+				21352209EF502C59405109B1 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -396,6 +402,15 @@
 				469E4DB3E6F9F7E66696CD2C /* ChatNotifications.swift */,
 			);
 			path = "chat-native";
+			sourceTree = "<group>";
+		};
+		CEF74FB5CE9F6BD5F33374B7 /* localization */ = {
+			isa = PBXGroup;
+			children = (
+				3FA34B7569E5E2AD7D7F6E94 /* native */,
+				CC5DCAFCCE8305E82F1CBAD5 /* zh-Hant.json */,
+			);
+			path = localization;
 			sourceTree = "<group>";
 		};
 		D2B801D48C6AF61FD1DF948F /* design-tokens */ = {
@@ -438,6 +453,16 @@
 			path = Core;
 			sourceTree = "<group>";
 		};
+		EFB05B935EDA22CA309E32CC /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				6DF7FAEDF7412484B2C74CAD /* Pods-MasterApp.debug.xcconfig */,
+				D08E241BB37FEF43E10DA8E9 /* Pods-MasterApp.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		F0702F3C472DA1610411E864 /* Features */ = {
 			isa = PBXGroup;
 			children = (
@@ -468,11 +493,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 089EE079B027D359B9892005 /* Build configuration list for PBXNativeTarget "MasterApp" */;
 			buildPhases = (
-				8A6C86A5E4B888AF3E7675E6 /* [CP] Check Pods Manifest.lock */,
+				7AA0B6AC9AD185B3D5DF9FD9 /* [CP] Check Pods Manifest.lock */,
 				C75AFCBEFCB45EBB6C0F2D05 /* Sources */,
 				591B5DE4A8C6B07725F7AADF /* Resources */,
-				6BBDCC3E0D732DAC397CF7FF /* Frameworks */,
-				5023565F537AC5D9ABE38A95 /* [CP] Embed Pods Frameworks */,
+				10AC0D187C62D8E7903EEDEB /* Frameworks */,
+				6F002572A7BA8174902B8D94 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -546,13 +571,14 @@
 				39F86E6173BE596A51082751 /* Assets.xcassets in Resources */,
 				237B3B68AB7F68140A2F0AE8 /* OFL.txt in Resources */,
 				ED552CDF61642357C8E16180 /* README.md in Resources */,
+				DF6FF538B29D2476545864B4 /* zh-Hant.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		5023565F537AC5D9ABE38A95 /* [CP] Embed Pods Frameworks */ = {
+		6F002572A7BA8174902B8D94 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -569,7 +595,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MasterApp/Pods-MasterApp-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		8A6C86A5E4B888AF3E7675E6 /* [CP] Check Pods Manifest.lock */ = {
+		7AA0B6AC9AD185B3D5DF9FD9 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -599,6 +625,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				837C3ABCF5E0A1D28AC05BBF /* H5ParityUITests.swift in Sources */,
+				AA06E9CB23C05D009224816B /* LanguageUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -608,6 +635,7 @@
 			files = (
 				B7BFE2307E6C564B3C6FC5F6 /* APIClient.swift in Sources */,
 				6E9A87DA9178D4042FB018C4 /* APIResponse.swift in Sources */,
+				9A6BB152D5A20225E0D4C053 /* AppLanguage.swift in Sources */,
 				5FE4A3FB40B5AB20BC7436DF /* AuthStore.swift in Sources */,
 				A55778C2DB32E28112C114A8 /* AvatarEditor.swift in Sources */,
 				EB9A110BE9AF604BEDD7362E /* BlessingTask.swift in Sources */,
@@ -834,7 +862,7 @@
 		};
 		2D7B9044EF5B939C5FEAFECD /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 2A669F8FC632A5F0ACFFF9B0 /* Pods-MasterApp.debug.xcconfig */;
+			baseConfigurationReference = 6DF7FAEDF7412484B2C74CAD /* Pods-MasterApp.debug.xcconfig */;
 			buildSettings = {
 				APS_ENVIRONMENT = development;
 				ASKXUAN_API_BASE_URL = "https://101.96.228.71/api/v1";
@@ -858,7 +886,7 @@
 		};
 		37DC07D5C41A0FEC1123E7CB /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 917682A639028CA9E5E031F7 /* Pods-MasterApp.release.xcconfig */;
+			baseConfigurationReference = D08E241BB37FEF43E10DA8E9 /* Pods-MasterApp.release.xcconfig */;
 			buildSettings = {
 				APS_ENVIRONMENT = production;
 				ASKXUAN_API_BASE_URL = "https://101.96.228.71/api/v1";

@@ -75,78 +75,78 @@ onMounted(() => {
 
 <template>
   <div class="page-wrap">
-    <PageHeader title="DIY 订单" subtitle="管理手串 DIY 订单、审核与发货" />
+    <PageHeader :title='$t("DIY 订单")' :subtitle='$t("管理手串 DIY 订单、审核与发货")' />
 
     <div class="df-card filter-bar">
       <el-form inline @submit.prevent="handleSearch">
-        <el-form-item label="订单状态">
-          <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 160px">
+        <el-form-item :label='$t("订单状态")'>
+          <el-select v-model="query.status" :placeholder='$t("全部状态")' clearable style="width: 160px">
             <el-option
               v-for="s in statusOptions"
               :key="s.value"
-              :label="s.label"
+              :label="$t(s.label)"
               :value="s.value"
             />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button type="primary" @click="handleSearch">{{ $t("查询") }}</el-button>
+          <el-button @click="handleReset">{{ $t("重置") }}</el-button>
         </el-form-item>
       </el-form>
     </div>
 
     <div v-if="loadError" class="ax-page-feedback is-error" role="status">
       <div class="ax-page-feedback__copy">
-        <div class="ax-page-feedback__title">DIY 订单加载失败</div>
-        <div class="ax-page-feedback__description">{{ loadError }}</div>
+        <div class="ax-page-feedback__title">{{ $t("DIY 订单加载失败") }}</div>
+        <div class="ax-page-feedback__description">{{ $t(loadError) }}</div>
       </div>
-      <el-button :loading="loading" @click="loadList">重试</el-button>
+      <el-button :loading="loading" @click="loadList">{{ $t("重试") }}</el-button>
     </div>
 
     <div class="df-card">
-      <div class="desktop-table"><el-table v-loading="loading" :data="list" style="width: 100%" empty-text="暂无 DIY 订单">
-        <el-table-column label="订单号" prop="orderNo" width="200" />
-        <el-table-column label="用户 ID" prop="userId" width="160" />
-        <el-table-column label="设计 ID" prop="designId" width="100" />
-        <el-table-column label="材料费" width="120">
-          <template #default="{ row }">{{ formatMoney(row.materialFee) }}</template>
+      <div class="desktop-table"><el-table v-loading="loading" :data="list" style="width: 100%" :empty-text='$t("暂无 DIY 订单")'>
+        <el-table-column :label='$t("订单号")' prop="orderNo" width="200" />
+        <el-table-column :label='$t("用户 ID")' prop="userId" width="160" />
+        <el-table-column :label='$t("设计 ID")' prop="designId" width="100" />
+        <el-table-column :label='$t("材料费")' width="120">
+          <template #default="{ row }">{{ $t(formatMoney(row.materialFee)) }}</template>
         </el-table-column>
-        <el-table-column label="加持费" width="120">
-          <template #default="{ row }">{{ formatMoney(row.blessFee) }}</template>
+        <el-table-column :label='$t("加持费")' width="120">
+          <template #default="{ row }">{{ $t(formatMoney(row.blessFee)) }}</template>
         </el-table-column>
-        <el-table-column label="合计" width="130">
+        <el-table-column :label='$t("合计")' width="130">
           <template #default="{ row }">
-            <span class="price">{{ formatMoney(row.totalFee) }}</span>
+            <span class="price">{{ $t(formatMoney(row.totalFee)) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="120">
+        <el-table-column :label='$t("状态")' width="120">
           <template #default="{ row }">
-            <el-tag :type="diyOrderStatusType(row.status)" effect="light">{{ diyOrderStatusLabel(row.status) }}</el-tag>
+            <el-tag :type="diyOrderStatusType(row.status)" effect="light">{{ $t(diyOrderStatusLabel(row.status)) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="下单时间" prop="createTime" width="180" />
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column :label='$t("下单时间")' prop="createTime" width="180" />
+        <el-table-column :label='$t("操作")' width="120" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" size="small" @click="router.push(`/commerce/diy-orders/${row.id}`)">详情</el-button>
+            <el-button text type="primary" size="small" @click="router.push(`/commerce/diy-orders/${row.id}`)">{{ $t("详情") }}</el-button>
           </template>
         </el-table-column>
       </el-table></div>
 
-      <div class="mobile-task-list" aria-label="DIY 订单列表">
+      <div class="mobile-task-list" :aria-label='$t("DIY 订单列表")'>
         <button v-for="item in list" :key="item.id" class="mobile-task-card" type="button" @click="router.push(`/commerce/diy-orders/${item.id}`)">
           <span class="mobile-task-card__head">
-            <strong>{{ item.orderNo }}</strong>
-            <el-tag :type="diyOrderStatusType(item.status)" effect="light" round size="small">{{ diyOrderStatusLabel(item.status) }}</el-tag>
+            <strong>{{ $t(item.orderNo) }}</strong>
+            <el-tag :type="diyOrderStatusType(item.status)" effect="light" round size="small">{{ $t(diyOrderStatusLabel(item.status)) }}</el-tag>
           </span>
-          <span class="mobile-task-card__meta">设计 {{ item.designId }} · {{ item.createTime }}</span>
-          <span class="mobile-task-card__foot"><span>材料 {{ formatMoney(item.materialFee) }} · 加持 {{ formatMoney(item.blessFee) }}</span><b>{{ formatMoney(item.totalFee) }}</b></span>
+          <span class="mobile-task-card__meta">{{ $t("设计 ") }}{{ $t(item.designId) }} · {{ $t(item.createTime) }}</span>
+          <span class="mobile-task-card__foot"><span>{{ $t("材料 ") }}{{ $t(formatMoney(item.materialFee)) }}{{ $t(" · 加持 ") }}{{ $t(formatMoney(item.blessFee)) }}</span><b>{{ $t(formatMoney(item.totalFee)) }}</b></span>
         </button>
-        <div v-if="!loading && !list.length && !loadError" class="mobile-task-empty">当前筛选下暂无 DIY 订单</div>
+        <div v-if="!loading && !list.length && !loadError" class="mobile-task-empty">{{ $t("当前筛选下暂无 DIY 订单") }}</div>
         <div v-if="total > (query.size || 20)" class="mobile-task-pager">
-          <el-button :disabled="(query.page || 1) <= 1" @click="handlePageChange((query.page || 1) - 1)">上一页</el-button>
-          <span>第 {{ query.page || 1 }} 页</span>
-          <el-button :disabled="(query.page || 1) * (query.size || 20) >= total" @click="handlePageChange((query.page || 1) + 1)">下一页</el-button>
+          <el-button :disabled="(query.page || 1) <= 1" @click="handlePageChange((query.page || 1) - 1)">{{ $t("上一页") }}</el-button>
+          <span>{{ $t("第 ") }}{{ $t((query.page || 1)) }}{{ $t(" 页") }}</span>
+          <el-button :disabled="(query.page || 1) * (query.size || 20) >= total" @click="handlePageChange((query.page || 1) + 1)">{{ $t("下一页") }}</el-button>
         </div>
       </div>
 

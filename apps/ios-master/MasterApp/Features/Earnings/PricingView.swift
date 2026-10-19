@@ -100,14 +100,14 @@ struct PricingView: View {
                 tierSelector
 
                 // 保存按钮
-                PrimaryButton(title: "保存定价", icon: "checkmark.circle.fill",
+                PrimaryButton(title: L10n.text("保存定价"), icon: "checkmark.circle.fill",
                               isEnabled: viewModel.canSave,
                               isLoading: viewModel.isSaving) {
                     Task { await viewModel.save() }
                 }
 
                 if let msg = viewModel.message {
-                    Text(msg)
+                    Text(L10n.lookup(msg))
                         .font(AppTypography.caption)
                         .foregroundStyle(msg.contains("已更新") ? .stateSuccess : .stateError)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -119,7 +119,7 @@ struct PricingView: View {
             .padding(.bottom, AppSpacing.xl)
         }
         .background(Color.bgPrimary)
-        .navigationTitle("定价管理")
+        .navigationTitle(L10n.text("定价管理"))
         .navigationBarTitleDisplayMode(.large)
 
         .task { await viewModel.load() }
@@ -132,7 +132,7 @@ struct PricingView: View {
                     Image(systemName: "tag.fill")
                         .font(AppTypography.body)
                         .foregroundStyle(.accentDefault)
-                    Text("定价说明")
+                    Text(L10n.text("定价说明"))
                         .font(.cardTitle)
                         .foregroundStyle(.textPrimary)
                 }
@@ -153,7 +153,7 @@ struct PricingView: View {
 
     private var tierSelector: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Text("常用功德金档位")
+            Text(L10n.text("常用功德金档位"))
                 .font(.sectionTitle)
                 .foregroundStyle(.textPrimary)
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
@@ -163,7 +163,7 @@ struct PricingView: View {
                     Button {
                         AppMotion.perform { viewModel.toggleTier(tier) }
                     } label: {
-                        Text(tier)
+                        Text(L10n.lookup(tier))
                             .font(AppTypography.body.weight(selected ? .bold : .regular))
                             .foregroundStyle(selected ? .white : .textPrimary)
                             .frame(maxWidth: .infinity)
@@ -191,7 +191,7 @@ struct PricingView: View {
             HStack(alignment: .top, spacing: AppSpacing.sm) {
                 Image(systemName: "info.circle.fill")
                     .foregroundStyle(.accentDefault)
-                Text("定价说明将展示给信众，建议明确各档位对应的服务内容。档位调整不影响已下单的预约。")
+                Text(L10n.text("定价说明将展示给信众，建议明确各档位对应的服务内容。档位调整不影响已下单的预约。"))
                     .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
             }

@@ -106,8 +106,8 @@ struct RewardCategoryEntry: View {
         Button { showActivity = true } label: {
             VStack(alignment: .leading, spacing: 8) {
                 RewardGiftArt(kind: kind).frame(height: 100)
-                Text(kind == "wheel" ? "积分转盘" : "大奖池").font(.headline)
-                Text(kind == "wheel" ? "扣积分参与 · 即转即开" : "一期一码 · 截止开奖").font(.caption2).lineLimit(2, reservesSpace: true)
+                Text(L10n.lookup(kind == "wheel" ? L10n.text("积分转盘") : L10n.text("大奖池"))).font(.headline)
+                Text(L10n.lookup(kind == "wheel" ? L10n.text("扣积分参与 · 即转即开") : L10n.text("一期一码 · 截止开奖"))).font(.caption2).lineLimit(2, reservesSpace: true)
             }.foregroundStyle(Color.accentDefault).padding(14).frame(maxWidth: .infinity, alignment: .leading)
                 .background(LinearGradient(colors: [.brown.opacity(0.4), Color.bgSecondary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 18))
         }.buttonStyle(.plain).accessibilityIdentifier("reward-category-\(kind)")
@@ -146,7 +146,7 @@ struct RewardGiftArt: View {
                         path.addCurve(to: CGPoint(x: 25, y: 17), control1: CGPoint(x: 62, y: -9), control2: CGPoint(x: 47, y: 32))
                     }.stroke(Color(hex: "C8A96E"), style: StrokeStyle(lineWidth: 3, lineCap: .round)).frame(width: 50, height: 24)
                     Rectangle().fill(Color(hex: "1C1210").opacity(0.5)).frame(height: 5).padding(.horizontal, 12)
-                    Text("安").font(AppTypography.title(36)).foregroundStyle(Color(red: 1, green: 0.88, blue: 0.66)).frame(maxHeight: .infinity)
+                    Text(L10n.text("安")).font(AppTypography.title(36)).foregroundStyle(Color(red: 1, green: 0.88, blue: 0.66)).frame(maxHeight: .infinity)
                 }
             }
         } else {
@@ -160,7 +160,7 @@ struct RewardGiftArt: View {
                             .frame(width: side * 0.19, height: side * 0.19)
                             .offset(x: sin(angle) * side * 0.38, y: -cos(angle) * side * 0.38)
                     }
-                    Text("缘").font(AppTypography.title(25)).foregroundStyle(Color(hex: "C8A96E"))
+                    Text(L10n.text("缘")).font(AppTypography.title(25)).foregroundStyle(Color(hex: "C8A96E"))
                 }.frame(width: p.size.width, height: p.size.height)
             }
         }
@@ -172,9 +172,9 @@ struct RewardCountdown: View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let seconds = max(0, endsAt - Int64(context.date.timeIntervalSince1970))
             HStack(spacing: 7) {
-                Text(seconds == 0 ? "已截止" : "距离截止").foregroundStyle(.secondary)
-                if seconds >= 86400 { Text("\(seconds / 86400) 天") }
-                Text(String(format: "%02lld : %02lld : %02lld", seconds / 3600 % 24, seconds / 60 % 60, seconds % 60)).monospacedDigit().foregroundStyle(Color.accentDefault)
+                Text(L10n.lookup(seconds == 0 ? L10n.text("已截止") : L10n.text("距离截止"))).foregroundStyle(.secondary)
+                if seconds >= 86400 { Text(L10n.text("\(seconds / 86400) 天")) }
+                Text(L10n.lookup(String(format: "%02lld : %02lld : %02lld", seconds / 3600 % 24, seconds / 60 % 60, seconds % 60))).monospacedDigit().foregroundStyle(Color.accentDefault)
             }.font(AppTypography.caption).padding(.vertical, 5).accessibilityElement(children: .combine)
         }
     }
@@ -229,7 +229,7 @@ struct RewardWheelArt: View {
                                 .fill(RadialGradient(colors: light ? palette.soft : palette.strong, center: .topLeading, startRadius: 0, endRadius: size))
                             RewardWheelSector(index: index, count: 10).stroke(Color(hex: "B59862"), lineWidth: 0.6)
                             VStack(spacing: size * 0.028) {
-                                Text(gift ? prizes[prizeIndex].name : "谢谢参与").font(.system(size: size * 0.031, weight: .medium)).lineLimit(2).multilineTextAlignment(.center).frame(width: size * 0.18, height: size * 0.08)
+                                Text(L10n.lookup(gift ? prizes[prizeIndex].name : L10n.text("谢谢参与"))).font(.system(size: size * 0.031, weight: .medium)).lineLimit(2).multilineTextAlignment(.center).frame(width: size * 0.18, height: size * 0.08)
                                 if gift, let url = URL(string: prizes[prizeIndex].image), !prizes[prizeIndex].image.isEmpty {
                                     AsyncImage(url: url) { image in image.resizable().scaledToFit() } placeholder: { Image(systemName: "gift") }.frame(width: size * 0.09, height: size * 0.09)
                                 } else { Image(systemName: gift ? (prizes[prizeIndex].kind == "physical" ? "gift" : "ticket") : "leaf").font(.system(size: size * 0.064, weight: .light)) }
@@ -253,7 +253,7 @@ struct RewardWheelArt: View {
                             Button { onPrize(prize) } label: {
                                 Color.clear.contentShape(RewardWheelSector(index: index, count: 10))
                             }.buttonStyle(.plain).disabled(spinning)
-                                .accessibilityLabel("查看\(prize.name)详情")
+                                .accessibilityLabel(L10n.text("查看\(prize.name)详情"))
                                 .accessibilityIdentifier("reward-wheel-prize-\(prize.id)-\(index)")
                             }
                         }
@@ -262,9 +262,9 @@ struct RewardWheelArt: View {
                 if let onDraw {
                     Button(action: onDraw) { center(size: size) }
                         .buttonStyle(.plain).disabled(actionDisabled).opacity(actionDisabled ? 0.7 : 1)
-                        .accessibilityLabel(actionLabel ?? "\(cost) 积分转一次")
+                        .accessibilityLabel(L10n.lookup(actionLabel ?? L10n.text("\(cost) 积分转一次")))
                         .accessibilityIdentifier("reward-wheel-draw")
-                } else { center(size: size).accessibilityLabel("十格积分转盘，扇区面积不代表概率") }
+                } else { center(size: size).accessibilityLabel(L10n.text("十格积分转盘，扇区面积不代表概率")) }
             }.frame(width: size, height: size)
                 .shadow(color: jade.opacity(0.1), radius: 9, y: 7)
                 .frame(width: proxy.size.width, height: proxy.size.height)
@@ -272,8 +272,8 @@ struct RewardWheelArt: View {
     }
     private func center(size: CGFloat) -> some View {
         VStack(spacing: 5) {
-            Text(spinning ? "揭晓中" : hasResult ? "查看结果" : "转一次").font(.system(size: max(14, size * 0.05), weight: .semibold))
-            Text(spinning ? "请稍候" : hasResult ? "本期已参与" : "\(cost) 积分").font(.system(size: max(10, size * 0.031)))
+            Text(L10n.lookup(spinning ? L10n.text("揭晓中") : hasResult ? L10n.text("查看结果") : L10n.text("转一次"))).font(.system(size: max(14, size * 0.05), weight: .semibold))
+            Text(L10n.lookup(spinning ? L10n.text("请稍候") : hasResult ? L10n.text("本期已参与") : L10n.text("\(cost) 积分"))).font(.system(size: max(10, size * 0.031)))
                 .foregroundStyle(palette.strongText.opacity(0.8))
         }.foregroundStyle(palette.strongText)
             .frame(width: size * 0.257, height: size * 0.257)
@@ -293,16 +293,16 @@ struct RewardCampaignCard: View {
                     if let url = URL(string: c.image), !c.image.isEmpty {
                         AsyncImage(url: url) { image in image.resizable().scaledToFit() } placeholder: { RewardGiftArt(kind: c.kind) }
                     } else { RewardGiftArt(kind: c.kind) }
-                    Text(c.phaseText).font(.caption2.bold()).padding(8).background(Color.bgPrimary.opacity(0.85), in: Capsule())
+                    Text(L10n.lookup(c.phaseText)).font(.caption2.bold()).padding(8).background(Color.bgPrimary.opacity(0.85), in: Capsule())
                 }.frame(height: 190).padding(8).background(Color.accentDefault.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
-                Text(c.title).font(AppTypography.card).foregroundStyle(Color.textPrimary)
+                Text(L10n.lookup(c.title)).font(AppTypography.card).foregroundStyle(Color.textPrimary)
                 Text("\(c.prizeName) × \(c.prizeQuantity)").font(.subheadline)
                 ProgressView(value: Double(c.participantCount), total: Double(c.capacity)).tint(Color.accentDefault)
-                HStack { Text("\(c.participantCount) 人已参与"); Spacer(); Text("限 \(c.capacity) 人") }.font(AppTypography.caption)
+                HStack { Text(L10n.text("\(c.participantCount) 人已参与")); Spacer(); Text(L10n.text("限 \(c.capacity) 人")) }.font(AppTypography.caption)
                 RewardCountdown(endsAt: c.endsAt)
                 HStack {
-                    Text("\(c.pointsCost) 积分参与").font(.caption2)
-                    Spacer(); Text("查看详情 →").font(.caption.bold())
+                    Text(L10n.text("\(c.pointsCost) 积分参与")).font(.caption2)
+                    Spacer(); Text(L10n.text("查看详情 →")).font(.caption.bold())
                 }
             }.foregroundStyle(Color.accentDefault).padding(.vertical, 8)
         }.accessibilityIdentifier("reward-campaign-\(c.id)")
@@ -329,15 +329,15 @@ struct RewardsView: View {
     private var wheel: RewardCampaign? { campaigns.first { $0.id == selectedWheel } ?? campaigns.first { $0.phase == "open" } ?? campaigns.first { $0.phase == "scheduled" } ?? campaigns.first }
     var body: some View {
         VStack(spacing: 0) {
-            if !embedded { Picker("活动分类", selection: $tab) {
-                Text("转盘").tag(1); Text("大奖池").tag(0); Text("参与记录").tag(2); Text("我的奖品").tag(3)
+            if !embedded { Picker(L10n.text("活动分类"), selection: $tab) {
+                Text(L10n.text("转盘")).tag(1); Text(L10n.text("大奖池")).tag(0); Text(L10n.text("参与记录")).tag(2); Text(L10n.text("我的奖品")).tag(3)
             }.pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 10) }
-            if let error { VStack { Text(error).font(AppTypography.caption).foregroundStyle(.red); Button("重新加载") { Task { await load() } } }.padding() }
-            if loading { ProgressView("正在准备活动…").padding() }
+            if let error { VStack { Text(L10n.lookup(error)).font(AppTypography.caption).foregroundStyle(.red); Button(L10n.text("重新加载")) { Task { await load() } } }.padding() }
+            if loading { ProgressView(L10n.text("正在准备活动…")).padding() }
             if tab == 1, let wheel {
                 if campaigns.count > 1 {
-                    Picker("选择转盘活动", selection: Binding(get: { wheel.id }, set: { selectedWheel = $0 })) {
-                        ForEach(campaigns) { Text($0.title).tag($0.id) }
+                    Picker(L10n.text("选择转盘活动"), selection: Binding(get: { wheel.id }, set: { selectedWheel = $0 })) {
+                        ForEach(campaigns) { Text(L10n.lookup($0.title)).tag($0.id) }
                     }.tint(Color.accentDefault).padding(.horizontal)
                 }
                 RewardDetailView(id: wheel.id, embedded: true, onBalanceChange: onBalanceChange).id(wheel.id)
@@ -350,9 +350,9 @@ struct RewardsView: View {
                                 HStack(spacing: 12) {
                                     Image(systemName: e.outcome == "won" ? "sparkles" : "ticket").font(.title2).foregroundStyle(Color.accentDefault)
                                     VStack(alignment: .leading, spacing: 8) {
-                                        HStack { Text(e.title); Spacer(); Text(e.outcomeText).font(AppTypography.caption).foregroundStyle(Color.accentDefault) }
-                                        Text("消耗 \(e.pointsSpent) 积分 · \(rewardDate(e.createdAt))").font(AppTypography.caption).foregroundStyle(.secondary)
-                                        Text(e.code).font(.system(.caption2, design: .monospaced)).foregroundStyle(.secondary)
+                                        HStack { Text(L10n.lookup(e.title)); Spacer(); Text(L10n.lookup(e.outcomeText)).font(AppTypography.caption).foregroundStyle(Color.accentDefault) }
+                                        Text(L10n.text("消耗 \(e.pointsSpent) 积分 · \(rewardDate(e.createdAt))")).font(AppTypography.caption).foregroundStyle(.secondary)
+                                        Text(L10n.lookup(e.code)).font(.system(.caption2, design: .monospaced)).foregroundStyle(.secondary)
                                     }
                                 }.padding(.vertical, 8)
                             }
@@ -360,48 +360,48 @@ struct RewardsView: View {
                     }
                     if tab == 4 { ForEach(campaigns) { c in
                         NavigationLink { RewardDetailView(id: c.id) } label: {
-                            VStack(alignment: .leading, spacing: 8) { Text(c.title).font(.headline); Text("\(c.kind == "wheel" ? "积分转盘" : "奖池") · \(rewardDate(c.drawnAt))").font(.caption).foregroundStyle(.secondary); Text("\(c.awardedCount) 次中奖 · 查看开奖 →").font(.subheadline).foregroundStyle(Color.accentDefault) }.padding(.vertical, 8)
+                            VStack(alignment: .leading, spacing: 8) { Text(L10n.lookup(c.title)).font(.headline); Text(L10n.text("\(c.kind == "wheel" ? "积分转盘" : "奖池") · \(rewardDate(c.drawnAt))")).font(.caption).foregroundStyle(.secondary); Text(L10n.text("\(c.awardedCount) 次中奖 · 查看开奖 →")).font(.subheadline).foregroundStyle(Color.accentDefault) }.padding(.vertical, 8)
                         }
                     } }
                     if tab == 3 { ForEach(orders) { orderCard($0) } }
                     if !loading && error == nil && count == 0 {
-                        ContentUnavailableView(tab == 2 ? "暂无抽奖记录" : tab == 3 ? "暂无中奖奖品" : tab == 4 ? "暂无开奖记录" : "暂无活动", systemImage: "gift", description: Text(tab == 4 ? "活动开奖后可查看结果。" : "活动和领奖进度会显示在这里。"))
+                        ContentUnavailableView(tab == 2 ? L10n.text("暂无抽奖记录") : tab == 3 ? L10n.text("暂无中奖奖品") : tab == 4 ? L10n.text("暂无开奖记录") : L10n.text("暂无活动"), systemImage: "gift", description: Text(L10n.lookup(tab == 4 ? L10n.text("活动开奖后可查看结果。") : L10n.text("活动和领奖进度会显示在这里。"))))
                     }
                     if page > 1 || count >= 20 {
-                        HStack { Button("上一页") { page -= 1 }.disabled(page == 1 || loading); Spacer(); Text("第 \(page) 页"); Spacer(); Button("下一页") { page += 1 }.disabled(count < 20 || loading) }.font(AppTypography.caption)
+                        HStack { Button(L10n.text("上一页")) { page -= 1 }.disabled(page == 1 || loading); Spacer(); Text(L10n.text("第 \(page) 页")); Spacer(); Button(L10n.text("下一页")) { page += 1 }.disabled(count < 20 || loading) }.font(AppTypography.caption)
                     }
-                    Text("功德值独立记录成长，与活动概率无关。").font(AppTypography.caption).foregroundStyle(.secondary)
+                    Text(L10n.text("功德值独立记录成长，与活动概率无关。")).font(AppTypography.caption).foregroundStyle(.secondary)
                 }.scrollContentBackground(.hidden).refreshable { await load() }
             }
         }.background(Color.bgPrimary)
-        .navigationTitle(embedded ? (tab < 2 ? "积分中心" : "积分记录") : "积分活动").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(L10n.lookup(embedded ? (tab < 2 ? L10n.text("积分中心") : L10n.text("积分记录")) : L10n.text("积分活动"))).navigationBarTitleDisplayMode(.inline)
         .task(id: "\(tab)-\(page)-\(auth.userId)") { await load() }
         .onChange(of: tab) { _, _ in page = 1; selectedWheel = nil }
         .sheet(item: $redemption) { RewardRedemptionSheet(order: $0) }
         .sheet(item: $claim, onDismiss: { Task { await load() } }) { RewardClaimSheet(order: $0) }
-        .alert("确认已收到奖品？", isPresented: Binding(get: { completing != nil }, set: { if !$0 { completing = nil } })) {
-            Button("取消", role: .cancel) { completing = nil }
-            Button("确认收货") { if let o = completing { Task { await complete(o) } } }
-        } message: { Text("确认后本次实物领奖流程完成。") }
+        .alert(L10n.text("确认已收到奖品？"), isPresented: Binding(get: { completing != nil }, set: { if !$0 { completing = nil } })) {
+            Button(L10n.text("取消"), role: .cancel) { completing = nil }
+            Button(L10n.text("确认收货")) { if let o = completing { Task { await complete(o) } } }
+        } message: { Text(L10n.text("确认后本次实物领奖流程完成。")) }
     }
     private func orderCard(_ o: RewardOrder) -> some View {
         Section {
-            HStack { Text(o.prizeName).font(.headline); Spacer(); Text(o.statusText).font(AppTypography.caption).foregroundStyle(Color.accentDefault) }
+            HStack { Text(L10n.lookup(o.prizeName)).font(.headline); Spacer(); Text(L10n.lookup(o.statusText)).font(AppTypography.caption).foregroundStyle(Color.accentDefault) }
             if o.isDigital {
-                Text(o.platform ?? "").font(AppTypography.caption).foregroundStyle(.secondary)
-                if let expires = o.expiresAt, expires > 0 { Text("有效期至 \(rewardDate(expires))").font(AppTypography.caption).foregroundStyle(.secondary) }
-                Button(o.prizeKind == "code" ? "查看兑换码" : "查看兑换券") { redemption = o }.buttonStyle(.borderedProminent)
+                Text(L10n.lookup(o.platform ?? "")).font(AppTypography.caption).foregroundStyle(.secondary)
+                if let expires = o.expiresAt, expires > 0 { Text(L10n.text("有效期至 \(rewardDate(expires))")).font(AppTypography.caption).foregroundStyle(.secondary) }
+                Button(L10n.lookup(o.prizeKind == "code" ? L10n.text("查看兑换码") : L10n.text("查看兑换券"))) { redemption = o }.buttonStyle(.borderedProminent)
             } else { RewardDeliverySteps(status: o.status) }
-            if !o.trackingNo.isEmpty { Text("物流：\(o.carrier) · \(o.trackingNo)").font(AppTypography.caption).textSelection(.enabled) }
-            DisclosureGroup("领取与订单详情") {
+            if !o.trackingNo.isEmpty { Text(L10n.text("物流：\(o.carrier) · \(o.trackingNo)")).font(AppTypography.caption).textSelection(.enabled) }
+            DisclosureGroup(L10n.text("领取与订单详情")) {
                 NavigationLink("中奖码 \(o.code)") { RewardDetailView(id: o.campaignId) }.font(AppTypography.caption)
                 if !o.address.isEmpty { Text("\(o.receiver) · \(o.mobile)\n\(o.address)").font(AppTypography.caption) }
-                if o.claimedAt > 0 { Text("提交地址 \(rewardDate(o.claimedAt))").font(AppTypography.caption) }
-                if o.shippedAt > 0 { Text("发货 \(rewardDate(o.shippedAt))").font(AppTypography.caption) }
-                if o.completedAt > 0 { Text("已完成 \(rewardDate(o.completedAt))").font(AppTypography.caption) }
+                if o.claimedAt > 0 { Text(L10n.text("提交地址 \(rewardDate(o.claimedAt))")).font(AppTypography.caption) }
+                if o.shippedAt > 0 { Text(L10n.text("发货 \(rewardDate(o.shippedAt))")).font(AppTypography.caption) }
+                if o.completedAt > 0 { Text(L10n.text("已完成 \(rewardDate(o.completedAt))")).font(AppTypography.caption) }
             }
-            if o.status == "awaiting_address" { Button("填写收货地址") { claim = o }.buttonStyle(.borderedProminent) }
-            if o.status == "shipped" { Button("确认收货") { completing = o }.disabled(loading) }
+            if o.status == "awaiting_address" { Button(L10n.text("填写收货地址")) { claim = o }.buttonStyle(.borderedProminent) }
+            if o.status == "shipped" { Button(L10n.text("确认收货")) { completing = o }.disabled(loading) }
         }.tint(Color.accentDefault)
     }
     @MainActor private func load() async {
@@ -429,7 +429,7 @@ struct RewardDeliverySteps: View {
             ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
                 VStack(spacing: 8) {
                     Capsule().fill(index <= (steps.firstIndex(of: status) ?? 0) ? Color.accentDefault : Color.gray.opacity(0.2)).frame(height: 3)
-                    Text([firstLabel, "待发货", "已发货", "完成"][index]).font(.caption2)
+                    Text(L10n.lookup([firstLabel, "待发货", "已发货", "完成"][index])).font(.caption2)
                 }.foregroundStyle(index <= (steps.firstIndex(of: status) ?? 0) ? Color.accentDefault : .secondary)
             }
         }.padding(.vertical, 12).accessibilityElement(children: .combine)
@@ -456,7 +456,7 @@ struct RewardDetailView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: 18) {
-                    if let error { VStack { Text(error).font(AppTypography.caption).foregroundStyle(.red); Button("重新加载") { Task { await load() } } }.rewardPanel() }
+                    if let error { VStack { Text(L10n.lookup(error)).font(AppTypography.caption).foregroundStyle(.red); Button(L10n.text("重新加载")) { Task { await load() } } }.rewardPanel() }
                     if let d = detail {
                         if d.campaign.kind == "wheel" {
                             RewardWheelExperience(detail: d, busy: busy, spinning: spinning, rotation: rotation, hasError: error != nil, onJoin: { confirming = true }, onResult: { result = d.mine }).id("reward-art")
@@ -467,7 +467,7 @@ struct RewardDetailView: View {
                         rules(d).rewardPanel()
                         if !d.campaign.announcement.isEmpty || !d.winners.isEmpty { announcement(d).rewardPanel() }
                         }
-                    } else if error == nil { ProgressView("正在准备活动…").padding(40) }
+                    } else if error == nil { ProgressView(L10n.text("正在准备活动…")).padding(40) }
                 }.padding(16)
             }.onChange(of: motionID) { _, _ in
                 AppMotion.perform(AppMotion.reveal) { proxy.scrollTo("reward-art", anchor: .top) }
@@ -475,26 +475,26 @@ struct RewardDetailView: View {
         }
         .background(Color.bgPrimary)
         .safeAreaInset(edge: .bottom) { if let d = detail, d.campaign.kind != "wheel" { actionBar(d) } }
-        .navigationTitle(embedded ? "积分中心" : detail?.campaign.kind == "wheel" ? "幸运转盘" : "活动详情").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(L10n.lookup(embedded ? L10n.text("积分中心") : detail?.campaign.kind == "wheel" ? L10n.text("幸运转盘") : L10n.text("活动详情"))).navigationBarTitleDisplayMode(.inline)
         .task(id: "\(id)-\(auth.userId)") {
             await load()
             while !Task.isCancelled { do { try await Task.sleep(for: .seconds(15)) } catch { return }; if !busy { await load() } }
         }
         .refreshable { if !busy { await load() } }
         .onDisappear { actionTask?.cancel() }
-        .alert("确认扣除积分参与？", isPresented: $confirming) {
-            Button("再想想", role: .cancel) {}
-            Button("确认扣除 \(detail?.campaign.pointsCost ?? 0) 积分") { actionTask = Task { await participate() } }
+        .alert(L10n.text("确认扣除积分参与？"), isPresented: $confirming) {
+            Button(L10n.text("再想想"), role: .cancel) {}
+            Button(L10n.text("确认扣除 \(detail?.campaign.pointsCost ?? 0) 积分")) { actionTask = Task { await participate() } }
         } message: {
-            Text("当前可用 \(detail?.pointsBalance ?? 0) 积分，本次消耗 \(detail?.campaign.pointsCost ?? 0) 积分。" + "参与成功后无论中奖与否均不退回；失败不扣分，重复请求不重复扣分。")
+            Text(L10n.lookup(L10n.text("当前可用 \(detail?.pointsBalance ?? 0) 积分，本次消耗 \(detail?.campaign.pointsCost ?? 0) 积分。") + L10n.text("参与成功后无论中奖与否均不退回；失败不扣分，重复请求不重复扣分。")))
         }
         .sheet(item: $result, onDismiss: { if repeatAfterDismiss { repeatAfterDismiss = false; confirming = true } }) { entry in RewardResultSheet(entry: entry, prizeName: detail?.campaign.kind == "wheel" ? (entry.prizeName?.isEmpty == false ? entry.prizeName : detail?.campaign.prizeName) : nil, onAgain: detail?.campaign.kind == "wheel" && detail?.campaign.phase == "open" && (detail?.pointsBalance ?? 0) >= (detail?.campaign.pointsCost ?? 1) ? { repeatAfterDismiss = true } : nil).appSheetSurface() }
     }
     private func hero(_ d: RewardDetail) -> some View {
         VStack(spacing: 16) {
-            Text("\(d.campaign.kind == "wheel" ? "LUCKY WHEEL" : "THE PRIZE POOL") · 第 \(id) 期").font(.caption2).tracking(2).foregroundStyle(Color.accentDefault)
-            Text(d.campaign.title).font(AppTypography.title(28)).multilineTextAlignment(.center)
-            Text(d.campaign.phaseText).font(AppTypography.caption).padding(.horizontal, 12).padding(.vertical, 6).background(Color.accentDefault.opacity(0.15), in: Capsule())
+            Text(L10n.text("\(d.campaign.kind == "wheel" ? "LUCKY WHEEL" : "THE PRIZE POOL") · 第 \(id) 期")).font(.caption2).tracking(2).foregroundStyle(Color.accentDefault)
+            Text(L10n.lookup(d.campaign.title)).font(AppTypography.title(28)).multilineTextAlignment(.center)
+            Text(L10n.lookup(d.campaign.phaseText)).font(AppTypography.caption).padding(.horizontal, 12).padding(.vertical, 6).background(Color.accentDefault.opacity(0.15), in: Capsule())
             if d.campaign.kind == "wheel" {
                 RewardWheelArt(rotation: spinning ? rotation : d.campaign.wheelAngle(for: d.mine), spinning: spinning, cost: d.campaign.pointsCost, prizes: d.campaign.displayPrizes).frame(height: 280)
             } else {
@@ -505,14 +505,14 @@ struct RewardDetailView: View {
                     if spinning {
                         VStack(spacing: 16) {
                             Image(systemName: "sparkle").font(.system(size: 52)).symbolEffect(.pulse, options: .repeating, isActive: !reduceMotion)
-                            Text(d.mine == nil ? "正在生成参与码" : "正在揭晓幸运码").font(.headline)
+                            Text(L10n.lookup(d.mine == nil ? L10n.text("正在生成参与码") : L10n.text("正在揭晓幸运码"))).font(.headline)
                             Text("✧ · ✦ · ✧").font(.title2)
                         }.foregroundStyle(Color.accentDefault).frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.bgPrimary.opacity(0.9), in: RoundedRectangle(cornerRadius: 18))
                     }
                 }.frame(height: 240)
             }
             Text("\(d.campaign.prizeName) × \(d.campaign.prizeQuantity)").font(.headline)
-            Text("平台提供 · \(d.campaign.pointsCost) 积分参与 · 实物包邮").font(AppTypography.caption).foregroundStyle(.secondary)
+            Text(L10n.text("平台提供 · \(d.campaign.pointsCost) 积分参与 · 实物包邮")).font(AppTypography.caption).foregroundStyle(.secondary)
         }.padding(18).frame(maxWidth: .infinity).background(LinearGradient(colors: [Color.brown.opacity(0.4), Color.bgSecondary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 22))
     }
     private func facts(_ d: RewardDetail) -> some View {
@@ -523,46 +523,46 @@ struct RewardDetailView: View {
                 fact(d.campaign.kind == "pool" ? "按当前人数估算" : "下一位即时概率", d.campaign.oddsText)
             }
             ProgressView(value: Double(d.campaign.participantCount), total: Double(d.campaign.capacity)).tint(Color.accentDefault)
-            Text("活动进度 · \(d.campaign.participantCount) / \(d.campaign.capacity) 人").font(AppTypography.caption)
+            Text(L10n.text("活动进度 · \(d.campaign.participantCount) / \(d.campaign.capacity) 人")).font(AppTypography.caption)
             RewardCountdown(endsAt: d.campaign.endsAt)
-            Text("开始：\(rewardDate(d.campaign.startsAt))\n截止：\(rewardDate(d.campaign.endsAt))").font(AppTypography.caption).foregroundStyle(.secondary)
-            Text(d.campaign.kind == "pool" ? "截止后自动开奖，不需要等满额。最终概率为 min(奖品数量, 有效人数) ÷ 有效人数；100 人抽 1 人，每人为 1%。" : "扇区仅作动画展示，不代表概率。正式活动当前概率 = 剩余奖品 ÷ 剩余名额。").font(AppTypography.caption).foregroundStyle(.secondary)
+            Text(L10n.text("开始：\(rewardDate(d.campaign.startsAt))\n截止：\(rewardDate(d.campaign.endsAt))")).font(AppTypography.caption).foregroundStyle(.secondary)
+            Text(L10n.lookup(d.campaign.kind == "pool" ? L10n.text("截止后自动开奖，不需要等满额。最终概率为 min(奖品数量, 有效人数) ÷ 有效人数；100 人抽 1 人，每人为 1%。") : L10n.text("扇区仅作动画展示，不代表概率。正式活动当前概率 = 剩余奖品 ÷ 剩余名额。"))).font(AppTypography.caption).foregroundStyle(.secondary)
         }
     }
     private func fact(_ title: String, _ value: String) -> some View {
-        VStack(spacing: 7) { Text(value).font(.title3.bold()).foregroundStyle(Color.accentDefault); Text(title).font(AppTypography.micro).foregroundStyle(.secondary) }
+        VStack(spacing: 7) { Text(L10n.lookup(value)).font(.title3.bold()).foregroundStyle(Color.accentDefault); Text(L10n.lookup(title)).font(AppTypography.micro).foregroundStyle(.secondary) }
     }
     private func ticket(_ e: RewardEntry) -> some View {
         VStack(spacing: 14) {
-            Text("我的专属参与码").font(AppTypography.caption)
-            Text(e.code).font(.system(.title3, design: .monospaced)).foregroundStyle(Color.accentDefault).textSelection(.enabled)
-            Text(spinning ? "正在揭晓…" : e.outcomeText).font(.headline)
-            Text("消耗 \(e.pointsSpent) 积分 · \(rewardDate(e.createdAt))").font(AppTypography.caption).foregroundStyle(.secondary)
+            Text(L10n.text("我的专属参与码")).font(AppTypography.caption)
+            Text(L10n.lookup(e.code)).font(.system(.title3, design: .monospaced)).foregroundStyle(Color.accentDefault).textSelection(.enabled)
+            Text(L10n.lookup(spinning ? L10n.text("正在揭晓…") : e.outcomeText)).font(.headline)
+            Text(L10n.text("消耗 \(e.pointsSpent) 积分 · \(rewardDate(e.createdAt))")).font(AppTypography.caption).foregroundStyle(.secondary)
             if e.outcome == "won" && !spinning { NavigationLink("查看我的奖品并领奖") { PointsHistoryView(initialTab: 4) }.buttonStyle(.borderedProminent) }
         }.frame(maxWidth: .infinity).tint(Color.accentDefault)
     }
     private func rules(_ d: RewardDetail) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("这一份礼物").font(.headline); Text(d.campaign.description).font(.subheadline)
-            Text("参与规则").font(.headline); Text(d.campaign.rules).font(.subheadline)
-            Group { Text("每个账号每期一次，消耗 \(d.campaign.pointsCost) 积分；成功参与后无论中奖与否均不退回。请求失败不扣分，重复点击不重复扣分。奖品预算由平台承担，功德值不变。").font(AppTypography.caption).foregroundStyle(.secondary) }
+            Text(L10n.text("这一份礼物")).font(.headline); Text(L10n.lookup(d.campaign.description)).font(.subheadline)
+            Text(L10n.text("参与规则")).font(.headline); Text(L10n.lookup(d.campaign.rules)).font(.subheadline)
+            Group { Text(L10n.text("每个账号每期一次，消耗 \(d.campaign.pointsCost) 积分；成功参与后无论中奖与否均不退回。请求失败不扣分，重复点击不重复扣分。奖品预算由平台承担，功德值不变。")).font(AppTypography.caption).foregroundStyle(.secondary) }
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
     private func announcement(_ d: RewardDetail) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("开奖公告").font(.headline)
-            Text(d.campaign.announcement.isEmpty ? "本期实时中奖码，活动结束后归档。" : d.campaign.announcement).font(.subheadline)
-            if d.campaign.drawnAt > 0 { Text("实际开奖 \(rewardDate(d.campaign.drawnAt))").font(AppTypography.caption) }
-            ForEach(d.winners) { Text($0.code).font(.system(.caption, design: .monospaced)).foregroundStyle(Color.accentDefault).textSelection(.enabled) }
+            Text(L10n.text("开奖公告")).font(.headline)
+            Text(L10n.lookup(d.campaign.announcement.isEmpty ? L10n.text("本期实时中奖码，活动结束后归档。") : d.campaign.announcement)).font(.subheadline)
+            if d.campaign.drawnAt > 0 { Text(L10n.text("实际开奖 \(rewardDate(d.campaign.drawnAt))")).font(AppTypography.caption) }
+            ForEach(d.winners) { Text(L10n.lookup($0.code)).font(.system(.caption, design: .monospaced)).foregroundStyle(Color.accentDefault).textSelection(.enabled) }
             if !d.campaign.poolDigest.isEmpty {
-                DisclosureGroup("开奖留档信息") { Text(d.campaign.algorithm); Text("参与码按创建顺序以换行分隔，SHA-256："); Text(d.campaign.poolDigest).textSelection(.enabled) }.font(AppTypography.caption)
+                DisclosureGroup(L10n.text("开奖留档信息")) { Text(L10n.lookup(d.campaign.algorithm)); Text(L10n.text("参与码按创建顺序以换行分隔，SHA-256：")); Text(L10n.lookup(d.campaign.poolDigest)).textSelection(.enabled) }.font(AppTypography.caption)
             }
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
     private func actionBar(_ d: RewardDetail) -> some View {
         VStack(spacing: 8) {
-            Text(d.mine != nil ? "本期已参与，记录保留" : "可用 \(d.pointsBalance) 积分 · 每期一次").font(AppTypography.caption).foregroundStyle(.secondary)
-            Button(busy ? "正在揭晓…" : d.mine != nil ? "本期已参与" : d.campaign.phase != "open" ? d.campaign.phaseText : d.pointsBalance < d.campaign.pointsCost ? "积分不足" : "\(d.campaign.pointsCost) 积分\(d.campaign.kind == "wheel" ? "转一次" : "参与奖池")") { confirming = true }
+            Text(L10n.lookup(d.mine != nil ? L10n.text("本期已参与，记录保留") : L10n.text("可用 \(d.pointsBalance) 积分 · 每期一次"))).font(AppTypography.caption).foregroundStyle(.secondary)
+            Button(L10n.lookup(busy ? L10n.text("正在揭晓…") : d.mine != nil ? L10n.text("本期已参与") : d.campaign.phase != "open" ? d.campaign.phaseText : d.pointsBalance < d.campaign.pointsCost ? L10n.text("积分不足") : L10n.text("\(d.campaign.pointsCost) 积分\(d.campaign.kind == "wheel" ? "转一次" : "参与奖池")"))) { confirming = true }
                 .buttonStyle(.borderedProminent).controlSize(.large).frame(maxWidth: .infinity).tint(Color.accentDefault)
                 .disabled(busy || d.mine != nil || d.campaign.phase != "open" || error != nil || d.pointsBalance < d.campaign.pointsCost || d.campaign.pointsCost < 1)
         }.padding(.horizontal, 16).padding(.vertical, 10).frame(maxWidth: .infinity).background(Color.bgPrimary).overlay(alignment: .top) { Rectangle().fill(Color.accentDefault.opacity(0.2)).frame(height: 1) }
@@ -615,20 +615,20 @@ struct RewardWheelExperience: View {
     var body: some View {
         VStack(spacing: 16) {
             VStack(spacing: 10) {
-                HStack(spacing: 6) { Circle().fill(Color.brandDefault).frame(width: 5, height: 5); Text(c.phaseText) }.font(AppTypography.caption).foregroundStyle(.secondary)
-                Text(c.title).font(AppTypography.title(25)).multilineTextAlignment(.center)
+                HStack(spacing: 6) { Circle().fill(Color.brandDefault).frame(width: 5, height: 5); Text(L10n.lookup(c.phaseText)) }.font(AppTypography.caption).foregroundStyle(.secondary)
+                Text(L10n.lookup(c.title)).font(AppTypography.title(25)).multilineTextAlignment(.center)
                 RewardWheelArt(rotation: spinning ? rotation : c.wheelAngle(for: detail.mine), spinning: busy, cost: c.pointsCost, prizes: c.displayPrizes, slots: c.wheelSlots, actionLabel: actionLabel, actionDisabled: blocked, onDraw: onJoin, onPrize: { selectedPrize = $0 })
                     .frame(maxWidth: 360).aspectRatio(1, contentMode: .fit).padding(.vertical, 8)
-                Text("可用 \(detail.pointsBalance) 积分").font(AppTypography.caption).foregroundStyle(.secondary)
-                if blocked && !busy { Text(hasError ? "加载失败，请重试" : actionLabel).font(AppTypography.caption).foregroundStyle(.secondary) }
+                Text(L10n.text("可用 \(detail.pointsBalance) 积分")).font(AppTypography.caption).foregroundStyle(.secondary)
+                if blocked && !busy { Text(L10n.lookup(hasError ? L10n.text("加载失败，请重试") : actionLabel)).font(AppTypography.caption).foregroundStyle(.secondary) }
             }.padding(18).frame(maxWidth: .infinity).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 22)).overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.accentDefault.opacity(0.16), lineWidth: 1))
-            if let mine = detail.mine { Button("上次：\(mine.outcomeText) · 查看结果", action: onResult).font(.caption).tint(Color.accentDefault) }
+            if let mine = detail.mine { Button(L10n.text("上次：\(mine.outcomeText) · 查看结果"), action: onResult).font(.caption).tint(Color.accentDefault) }
             HStack {
-                Button("抽奖记录") { showRecords = true }.frame(maxWidth: .infinity)
+                Button(L10n.text("抽奖记录")) { showRecords = true }.frame(maxWidth: .infinity)
                 Divider().frame(height: 14)
                 NavigationLink("我的奖品") { PointsHistoryView(initialTab: 4) }.frame(maxWidth: .infinity)
                 Divider().frame(height: 14)
-                Button("活动规则") { showRules = true }.frame(maxWidth: .infinity)
+                Button(L10n.text("活动规则")) { showRules = true }.frame(maxWidth: .infinity)
             }.font(AppTypography.caption).tint(Color.accentDefault).disabled(busy).padding(.vertical, 8)
         }
         .sheet(item: $selectedPrize) { RewardPrizeSheet(prize: $0, campaign: c) }
@@ -650,19 +650,19 @@ struct RewardPrizeSheet: View {
                                 AsyncImage(url: url) { image in image.resizable().scaledToFit() } placeholder: { Image(systemName: "gift") }
                             } else { Image(systemName: prize.kind == "physical" ? "gift" : "ticket").font(.largeTitle) }
                         }.frame(width: 120, height: 120).foregroundStyle(Color.accentDefault)
-                        Text(prize.kindText).font(.caption).foregroundStyle(.secondary)
-                        Text(prize.name).font(AppTypography.title(24)).multilineTextAlignment(.center)
+                        Text(L10n.lookup(prize.kindText)).font(.caption).foregroundStyle(.secondary)
+                        Text(L10n.lookup(prize.name)).font(AppTypography.title(24)).multilineTextAlignment(.center)
                     }.frame(maxWidth: .infinity).padding(.vertical, 12)
-                    LabeledContent("中奖概率", value: rewardProbabilityText(campaign.probability(for: prize)))
-                    LabeledContent(prize.kind == "code" ? "面值" : "参考价值", value: String(format: "¥%.2f", Double(prize.value) / 100))
-                    if !prize.platform.isEmpty { LabeledContent("使用平台", value: prize.platform) }
-                    if prize.expiresAt > 0 { LabeledContent("有效期至", value: rewardDate(prize.expiresAt)) }
+                    LabeledContent(L10n.text("中奖概率"), value: rewardProbabilityText(campaign.probability(for: prize)))
+                    LabeledContent(prize.kind == "code" ? L10n.text("面值") : L10n.text("参考价值"), value: String(format: "¥%.2f", Double(prize.value) / 100))
+                    if !prize.platform.isEmpty { LabeledContent(L10n.text("使用平台"), value: prize.platform) }
+                    if prize.expiresAt > 0 { LabeledContent(L10n.text("有效期至"), value: rewardDate(prize.expiresAt)) }
                 }
                 Section {
-                    Text(prize.instructions.isEmpty ? (prize.kind == "physical" ? "中奖后在“我的奖品”填写收货地址。" : "中奖后在“我的奖品”查看兑换凭证。") : prize.instructions).font(.subheadline)
+                    Text(L10n.lookup(prize.instructions.isEmpty ? (prize.kind == "physical" ? L10n.text("中奖后在“我的奖品”填写收货地址。") : L10n.text("中奖后在“我的奖品”查看兑换凭证。")) : prize.instructions)).font(.subheadline)
                 }
-            }.scrollContentBackground(.hidden).background(Color.bgPrimary).navigationTitle("奖品详情").navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() } } }
+            }.scrollContentBackground(.hidden).background(Color.bgPrimary).navigationTitle(L10n.text("奖品详情")).navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L10n.text("关闭")) { dismiss() } } }
         }.tint(Color.accentDefault)
     }
 }
@@ -677,37 +677,37 @@ private struct RewardWheelInfoSheet: View {
                 if records {
                     if let e = detail.mine {
                         Section {
-                            Text(e.outcomeText).font(AppTypography.card).foregroundStyle(Color.accentDefault)
-                            Text("\(rewardDate(e.createdAt)) · 消耗 \(e.pointsSpent) 积分").font(AppTypography.caption)
-                            Text(e.code).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
+                            Text(L10n.lookup(e.outcomeText)).font(AppTypography.card).foregroundStyle(Color.accentDefault)
+                            Text(L10n.text("\(rewardDate(e.createdAt)) · 消耗 \(e.pointsSpent) 积分")).font(AppTypography.caption)
+                            Text(L10n.lookup(e.code)).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
                             if e.outcome == "won" { NavigationLink("查看奖品与领奖") { PointsHistoryView(initialTab: 4) } }
                         }
-                    } else { Text("本期还没有抽奖记录，转一次试试手气。").font(.subheadline).foregroundStyle(.secondary) }
+                    } else { Text(L10n.text("本期还没有抽奖记录，转一次试试手气。")).font(.subheadline).foregroundStyle(.secondary) }
                     if !c.announcement.isEmpty || !detail.winners.isEmpty {
-                        DisclosureGroup("本期开奖留档") {
-                            Text(c.announcement.isEmpty ? "本期转盘实时中奖记录。" : c.announcement)
-                            if c.drawnAt > 0 { Text("实际开奖 \(rewardDate(c.drawnAt))") }
-                            ForEach(detail.winners) { Text($0.code).font(.system(.caption, design: .monospaced)).textSelection(.enabled) }
-                            if !c.poolDigest.isEmpty { Text(c.algorithm); Text(c.poolDigest).textSelection(.enabled) }
+                        DisclosureGroup(L10n.text("本期开奖留档")) {
+                            Text(L10n.lookup(c.announcement.isEmpty ? L10n.text("本期转盘实时中奖记录。") : c.announcement))
+                            if c.drawnAt > 0 { Text(L10n.text("实际开奖 \(rewardDate(c.drawnAt))")) }
+                            ForEach(detail.winners) { Text(L10n.lookup($0.code)).font(.system(.caption, design: .monospaced)).textSelection(.enabled) }
+                            if !c.poolDigest.isEmpty { Text(L10n.lookup(c.algorithm)); Text(L10n.lookup(c.poolDigest)).textSelection(.enabled) }
                         }.font(AppTypography.caption)
                     }
                     NavigationLink("查看全部参与记录") { PointsHistoryView(initialTab: 2) }
                 } else {
-                    Section { Text(c.description); Text(c.rules) }.font(.subheadline)
+                    Section { Text(L10n.lookup(c.description)); Text(L10n.lookup(c.rules)) }.font(.subheadline)
                     Section {
-                        LabeledContent("活动时间", value: "\(rewardDate(c.startsAt)) 至 \(rewardDate(c.endsAt))")
-                        LabeledContent("每次消耗", value: "\(c.pointsCost) 积分")
+                        LabeledContent(L10n.text("活动时间"), value: "\(rewardDate(c.startsAt)) 至 \(rewardDate(c.endsAt))")
+                        LabeledContent(L10n.text("每次消耗"), value: "\(c.pointsCost) 积分")
                     }.font(AppTypography.caption)
-                    Section("奖品与概率") {
+                    Section(L10n.text("奖品与概率")) {
                         ForEach(c.displayPrizes) { p in
                             LabeledContent(p.name, value: rewardProbabilityText(c.probability(for: p)))
                         }
-                        LabeledContent("谢谢参与", value: rewardProbabilityText(c.noPrizeProbability))
+                        LabeledContent(L10n.text("谢谢参与"), value: rewardProbabilityText(c.noPrizeProbability))
                     }
-                    Text("可多次抽奖，每次成功参与扣除 \(c.pointsCost) 积分，无论是否中奖均不退回；失败不扣分，重复请求不重复扣分。" + (c.hasFixedOdds ? "活动期间按公示的固定概率抽取。" : "本期沿用原有规则，以上为下一次抽奖的即时概率。") + "扇区大小不代表中奖概率。").font(AppTypography.caption).foregroundStyle(.secondary)
+                    Text(L10n.lookup(L10n.text("可多次抽奖，每次成功参与扣除 \(c.pointsCost) 积分，无论是否中奖均不退回；失败不扣分，重复请求不重复扣分。") + (c.hasFixedOdds ? "活动期间按公示的固定概率抽取。" : L10n.text("本期沿用原有规则，以上为下一次抽奖的即时概率。")) + L10n.text("扇区大小不代表中奖概率。"))).font(AppTypography.caption).foregroundStyle(.secondary)
                 }
-            }.navigationTitle(records ? "抽奖记录" : "活动规则").navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() } } }
+            }.navigationTitle(L10n.lookup(records ? L10n.text("抽奖记录") : L10n.text("活动规则"))).navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L10n.text("关闭")) { dismiss() } } }
         }.tint(Color.accentDefault)
     }
 }
@@ -737,11 +737,11 @@ struct RewardResultSheet: View {
             ScrollView {
             VStack(spacing: 18) {
                 Image(systemName: entry.outcome == "won" ? "sparkles" : entry.outcome == "pending" ? "ticket.fill" : "sparkle").font(.system(size: 48)).foregroundStyle(Color.accentDefault).scaleEffect(appear ? 1 : 0.6)
-                Text(entry.outcomeText).font(AppTypography.section)
-                if let prizeName { if entry.outcome == "won" { Text(prizeName).font(.headline).foregroundStyle(Color.accentDefault) } } else { Text(entry.code).font(.system(.subheadline, design: .monospaced)).foregroundStyle(Color.accentDefault) }
-                Text("已扣 \(entry.pointsSpent) 积分").font(AppTypography.caption)
-                if let onAgain { Button("再转一次 · \(entry.pointsSpent) 积分") { dismiss(); onAgain() }.buttonStyle(.borderedProminent).tint(Color.accentDefault) }
-                Button("关闭") { dismiss() }.buttonStyle(.bordered).controlSize(.large).tint(Color.accentDefault)
+                Text(L10n.lookup(entry.outcomeText)).font(AppTypography.section)
+                if let prizeName { if entry.outcome == "won" { Text(L10n.lookup(prizeName)).font(.headline).foregroundStyle(Color.accentDefault) } } else { Text(L10n.lookup(entry.code)).font(.system(.subheadline, design: .monospaced)).foregroundStyle(Color.accentDefault) }
+                Text(L10n.text("已扣 \(entry.pointsSpent) 积分")).font(AppTypography.caption)
+                if let onAgain { Button(L10n.text("再转一次 · \(entry.pointsSpent) 积分")) { dismiss(); onAgain() }.buttonStyle(.borderedProminent).tint(Color.accentDefault) }
+                Button(L10n.text("关闭")) { dismiss() }.buttonStyle(.bordered).controlSize(.large).tint(Color.accentDefault)
             }.padding(24).frame(maxWidth: .infinity)
             }
         }.onAppear { withAnimation(reduceMotion ? nil : .spring(duration: 0.5)) { appear = true } }
@@ -756,7 +756,7 @@ struct RewardClaimSheet:View {
     @State private var address=""
     @State private var busy=false
     @State private var error:String?
-    var body:some View { NavigationStack { Form { Section(order.prizeName) { Text("平台包邮，填写地址后进入待发货。").font(.subheadline);Text(order.code).font(AppTypography.caption) };Section("收货信息") { TextField("收货人",text:$receiver).textContentType(.name);TextField("联系电话",text:$mobile).keyboardType(.phonePad).textContentType(.telephoneNumber);TextField("省市区、街道与门牌号",text:$address,axis:.vertical).textContentType(.fullStreetAddress).lineLimit(3...5) }.disabled(busy);if let error {Text(error).foregroundStyle(.red)};Section { Text("提交后请等待平台发货，请先核对地址和联系电话。").font(AppTypography.caption);Button(busy ? "提交中…":"确认地址，等待发货") {Task{await submit()}}.disabled(busy||receiver.trimmingCharacters(in:.whitespaces).isEmpty||mobile.count<6||address.count<5) } }.navigationTitle("领奖地址").navigationBarTitleDisplayMode(.inline).toolbar {ToolbarItem(placement:.cancellationAction){Button("稍后填写"){dismiss()}.disabled(busy)}}.interactiveDismissDisabled(busy) } }
+    var body:some View { NavigationStack { Form { Section(L10n.lookup(order.prizeName)) { Text(L10n.text("平台包邮，填写地址后进入待发货。")).font(.subheadline);Text(L10n.lookup(order.code)).font(AppTypography.caption) };Section(L10n.text("收货信息")) { TextField(L10n.text("收货人"),text:$receiver).textContentType(.name);TextField(L10n.text("联系电话"),text:$mobile).keyboardType(.phonePad).textContentType(.telephoneNumber);TextField(L10n.text("省市区、街道与门牌号"),text:$address,axis:.vertical).textContentType(.fullStreetAddress).lineLimit(3...5) }.disabled(busy);if let error {Text(L10n.lookup(error)).foregroundStyle(.red)};Section { Text(L10n.text("提交后请等待平台发货，请先核对地址和联系电话。")).font(AppTypography.caption);Button(L10n.lookup(busy ? L10n.text("提交中…") : L10n.text("确认地址，等待发货"))) {Task{await submit()}}.disabled(busy||receiver.trimmingCharacters(in:.whitespaces).isEmpty||mobile.count<6||address.count<5) } }.navigationTitle(L10n.text("领奖地址")).navigationBarTitleDisplayMode(.inline).toolbar {ToolbarItem(placement:.cancellationAction){Button(L10n.text("稍后填写")){dismiss()}.disabled(busy)}}.interactiveDismissDisabled(busy) } }
     @MainActor private func submit()async {busy=true;error=nil;defer{busy=false};do{let _:PointsActionResult=try await APIClient.shared.request(.rewardClaim(order.id,RewardAddressRequest(receiver:receiver.trimmingCharacters(in:.whitespacesAndNewlines),mobile:mobile.trimmingCharacters(in:.whitespacesAndNewlines),address:address.trimmingCharacters(in:.whitespacesAndNewlines))));dismiss()}catch{self.error=error.localizedDescription}}
 }
 
@@ -770,25 +770,25 @@ struct RewardRedemptionSheet: View {
         NavigationStack {
             List {
                 Section {
-                    Text(order.prizeName).font(.headline)
+                    Text(L10n.lookup(order.prizeName)).font(.headline)
                     if let value {
-                        Text(value.platform).foregroundStyle(.secondary)
-                        Text("有效期至 \(rewardDate(value.expiresAt))").font(AppTypography.caption)
-                        if value.expiresAt < Int64(Date().timeIntervalSince1970) { Text("已过有效期").foregroundStyle(.secondary) }
-                        Text(value.instructions).font(.subheadline)
+                        Text(L10n.lookup(value.platform)).foregroundStyle(.secondary)
+                        Text(L10n.text("有效期至 \(rewardDate(value.expiresAt))")).font(AppTypography.caption)
+                        if value.expiresAt < Int64(Date().timeIntervalSince1970) { Text(L10n.text("已过有效期")).foregroundStyle(.secondary) }
+                        Text(L10n.lookup(value.instructions)).font(.subheadline)
                         if !value.code.isEmpty {
-                            Text(value.code).font(.system(.title3, design: .monospaced)).textSelection(.enabled)
-                            Button(copied ? "已复制" : "复制兑换码") {
+                            Text(L10n.lookup(value.code)).font(.system(.title3, design: .monospaced)).textSelection(.enabled)
+                            Button(L10n.lookup(copied ? L10n.text("已复制") : L10n.text("复制兑换码"))) {
                                 UIPasteboard.general.setItems([[UIPasteboard.typeAutomatic: value.code]], options: [.localOnly: true, .expirationDate: Date().addingTimeInterval(120)])
                                 copied = true
                             }
                         }
-                        if let url = value.safeURL { Link("前往 \(url.host ?? "兑换平台") 兑换 ↗", destination: url) }
-                    } else if let error { Text(error).foregroundStyle(.red); Button("重新读取") { Task { await load() } } }
-                    else { ProgressView("正在读取…") }
+                        if let url = value.safeURL { Link(L10n.text("前往 \(url.host ?? "兑换平台") 兑换 ↗"), destination: url) }
+                    } else if let error { Text(L10n.lookup(error)).foregroundStyle(.red); Button(L10n.text("重新读取")) { Task { await load() } } }
+                    else { ProgressView(L10n.text("正在读取…")) }
                 }
-            }.navigationTitle(order.prizeKind == "code" ? "兑换码" : "兑换券").navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() } } }
+            }.navigationTitle(L10n.lookup(order.prizeKind == "code" ? L10n.text("兑换码") : L10n.text("兑换券"))).navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L10n.text("关闭")) { dismiss() } } }
                 .task { await load() }
         }.tint(Color.accentDefault)
     }

@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node ../../scripts/sync-admin-ui-components.mjs --check && node ../../scripts/sync-typography.mjs --check && node ../../scripts/sync-motion.mjs --check && node --test ../../packages/admin-ui/session-expiry.test.mjs",
+    "prebuild": "node ../../scripts/sync-admin-ui-components.mjs --check && node ../../scripts/sync-typography.mjs --check && node ../../scripts/sync-motion.mjs --check && node --test ../../packages/admin-ui/session-expiry.test.mjs && node --test ../../packages/localization/language.test.mjs ../../packages/admin-ui/localized-feedback.test.mjs && node ../../packages/localization/scripts/check.mjs",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview"
   },

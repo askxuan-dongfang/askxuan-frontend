@@ -205,40 +205,40 @@ function refreshChartAppearance() {
 
 <template>
   <div class="dashboard">
-    <PageHeader title="今日工作台" subtitle="先处理履约、DIY 与售后任务，再查看经营趋势">
+    <PageHeader :title='$t("今日工作台")' :subtitle='$t("先处理履约、DIY 与售后任务，再查看经营趋势")'>
       <template #extra>
-        <el-button :loading="loading" @click="loadDashboard">刷新数据</el-button>
+        <el-button :loading="loading" @click="loadDashboard">{{ $t("刷新数据") }}</el-button>
       </template>
     </PageHeader>
 
     <div v-if="loadIssueCount" class="ax-page-feedback" :class="{ 'is-error': loadIssueCount === 3 }" role="status">
       <div class="ax-page-feedback__copy">
-        <div class="ax-page-feedback__title">{{ loadIssueCount === 3 ? '商城工作台暂时无法加载' : '部分商城数据加载失败' }}</div>
-        <div class="ax-page-feedback__description">失败模块：{{ failedModules.join('、') }}。未取得的数据保持“—”，不会将接口失败显示为 0。</div>
+        <div class="ax-page-feedback__title">{{ $t((loadIssueCount === 3 ? $t('商城工作台暂时无法加载') : $t('部分商城数据加载失败'))) }}</div>
+        <div class="ax-page-feedback__description">{{ $t("失败模块：") }}{{ $t(failedModules.join('、')) }}{{ $t("。未取得的数据保持“—”，不会将接口失败显示为 0。") }}</div>
       </div>
-      <el-button :loading="loading" @click="loadDashboard">重新加载</el-button>
+      <el-button :loading="loading" @click="loadDashboard">{{ $t("重新加载") }}</el-button>
     </div>
 
-    <div class="ax-task-grid"><router-link class="ax-task-card" to="/commerce/points-mall"><span class="ax-task-card__icon"><el-icon><Present /></el-icon></span><span class="ax-task-card__copy"><span class="ax-task-card__label">积分商城</span><span class="ax-task-card__meta">独立商品、兑换与发货</span></span><strong class="ax-task-card__value">查看</strong></router-link>
+    <div class="ax-task-grid"><router-link class="ax-task-card" to="/commerce/points-mall"><span class="ax-task-card__icon"><el-icon><Present /></el-icon></span><span class="ax-task-card__copy"><span class="ax-task-card__label">{{ $t("积分商城") }}</span><span class="ax-task-card__meta">{{ $t("独立商品、兑换与发货") }}</span></span><strong class="ax-task-card__value">{{ $t("查看") }}</strong></router-link>
       <router-link class="ax-task-card" to="/commerce/diy-orders">
         <span class="ax-task-card__icon"><el-icon><Brush /></el-icon></span>
-        <span class="ax-task-card__copy"><span class="ax-task-card__label">DIY 审核与制作</span><span class="ax-task-card__meta">查看当前制作节点</span></span>
-        <strong class="ax-task-card__value">查看</strong>
+        <span class="ax-task-card__copy"><span class="ax-task-card__label">{{ $t("DIY 审核与制作") }}</span><span class="ax-task-card__meta">{{ $t("查看当前制作节点") }}</span></span>
+        <strong class="ax-task-card__value">{{ $t("查看") }}</strong>
       </router-link>
       <router-link class="ax-task-card" to="/commerce/orders">
         <span class="ax-task-card__icon"><el-icon><Box /></el-icon></span>
-        <span class="ax-task-card__copy"><span class="ax-task-card__label">待发货订单</span><span class="ax-task-card__meta">进入订单履约列表</span></span>
-        <strong class="ax-task-card__value">{{ pendingShip }}</strong>
+        <span class="ax-task-card__copy"><span class="ax-task-card__label">{{ $t("待发货订单") }}</span><span class="ax-task-card__meta">{{ $t("进入订单履约列表") }}</span></span>
+        <strong class="ax-task-card__value">{{ $t(pendingShip) }}</strong>
       </router-link>
       <router-link class="ax-task-card" to="/commerce/returns">
         <span class="ax-task-card__icon"><el-icon><RefreshLeft /></el-icon></span>
-        <span class="ax-task-card__copy"><span class="ax-task-card__label">售后处理</span><span class="ax-task-card__meta">退货、退款与异常单</span></span>
-        <strong class="ax-task-card__value">查看</strong>
+        <span class="ax-task-card__copy"><span class="ax-task-card__label">{{ $t("售后处理") }}</span><span class="ax-task-card__meta">{{ $t("退货、退款与异常单") }}</span></span>
+        <strong class="ax-task-card__value">{{ $t("查看") }}</strong>
       </router-link>
       <router-link class="ax-task-card" to="/commerce/materials">
         <span class="ax-task-card__icon"><el-icon><Warning /></el-icon></span>
-        <span class="ax-task-card__copy"><span class="ax-task-card__label">材料库存</span><span class="ax-task-card__meta">检查上下架与库存状态</span></span>
-        <strong class="ax-task-card__value">查看</strong>
+        <span class="ax-task-card__copy"><span class="ax-task-card__label">{{ $t("材料库存") }}</span><span class="ax-task-card__meta">{{ $t("检查上下架与库存状态") }}</span></span>
+        <strong class="ax-task-card__value">{{ $t("查看") }}</strong>
       </router-link>
     </div>
 
@@ -247,7 +247,7 @@ function refreshChartAppearance() {
       <StatCard
         v-for="item in stats"
         :key="item.label"
-        :label="item.label"
+        :label="$t(item.label)"
         :value="item.value"
         :change="item.change"
         :up="item.up"
@@ -259,46 +259,44 @@ function refreshChartAppearance() {
     <!-- 销售趋势 -->
     <div class="df-card chart-card">
       <div class="chart-header">
-        <h3>近 7 日销售趋势</h3>
-        <el-tag size="small" type="info" effect="plain">本周</el-tag>
+        <h3>{{ $t("近 7 日销售趋势") }}</h3>
+        <el-tag size="small" type="info" effect="plain">{{ $t("本周") }}</el-tag>
       </div>
       <div v-if="reportLoaded" ref="trendChartRef" class="chart-box desktop-chart"></div>
-      <div v-else class="chart-state">趋势数据未加载</div>
+      <div v-else class="chart-state">{{ $t("趋势数据未加载") }}</div>
       <div v-if="reportLoaded" class="chart-mobile-summary">
-        <div><span>今日销售额</span><b>{{ stats[1].value }}</b></div>
-        <div><span>今日订单</span><b>{{ stats[0].value }} 单</b></div>
-        <el-button link type="primary" @click="router.push('/commerce/reports')">查看完整经营报表</el-button>
+        <div><span>{{ $t("今日销售额") }}</span><b>{{ $t(stats[1].value) }}</b></div>
+        <div><span>{{ $t("今日订单") }}</span><b>{{ $t(stats[0].value) }}{{ $t(" 单") }}</b></div>
+        <el-button link type="primary" @click="router.push('/commerce/reports')">{{ $t("查看完整经营报表") }}</el-button>
       </div>
     </div>
 
     <!-- 近期订单 -->
     <div class="df-card">
       <div class="chart-header">
-        <h3>最新订单</h3>
-        <el-button text type="primary" @click="router.push('/commerce/orders')">
-          查看全部
-          <el-icon><ArrowRight /></el-icon>
+        <h3>{{ $t("最新订单") }}</h3>
+        <el-button text type="primary" @click="router.push('/commerce/orders')">{{ $t(" 查看全部 ") }}<el-icon><ArrowRight /></el-icon>
         </el-button>
       </div>
       <el-table :data="recentOrders" style="width: 100%" :empty-text="ordersLoaded ? '暂无订单数据' : '订单列表加载失败'">
-        <el-table-column label="订单号" prop="orderNo" width="200" />
-        <el-table-column label="用户" prop="userId" width="160" />
-        <el-table-column label="支付金额" width="140">
+        <el-table-column :label='$t("订单号")' prop="orderNo" width="200" />
+        <el-table-column :label='$t("用户")' prop="userId" width="160" />
+        <el-table-column :label='$t("支付金额")' width="140">
           <template #default="{ row }">
-            <span class="font-semibold">{{ formatMoney(row.payAmount) }}</span>
+            <span class="font-semibold">{{ $t(formatMoney(row.payAmount)) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="120">
+        <el-table-column :label='$t("状态")' width="120">
           <template #default="{ row }">
             <el-tag :type="orderStatusType(row.status)" effect="light" round size="small">
-              {{ orderStatusLabel(row.status) }}
+              {{ $t(orderStatusLabel(row.status)) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="下单时间" prop="createTime" min-width="180" />
-        <el-table-column label="操作" width="100" fixed="right">
+        <el-table-column :label='$t("下单时间")' prop="createTime" min-width="180" />
+        <el-table-column :label='$t("操作")' width="100" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" size="small" @click="router.push(`/commerce/orders/${row.id}`)">详情</el-button>
+            <el-button text type="primary" size="small" @click="router.push(`/commerce/orders/${row.id}`)">{{ $t("详情") }}</el-button>
           </template>
         </el-table-column>
       </el-table>

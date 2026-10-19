@@ -26,12 +26,12 @@ struct AiReportDocumentView: View {
     var body: some View {
         if let blocks = document.blocks, !blocks.isEmpty {
             VStack(alignment: .leading, spacing: 20) {
-                Label("盘面与依据", systemImage: "chart.xyaxis.line").font(AppTypography.section)
+                Label(L10n.text("盘面与依据"), systemImage: "chart.xyaxis.line").font(AppTypography.section)
                 ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
                     AiReportBlockView(block: block)
                     Divider()
                 }
-            }.accessibilityElement(children: .contain).accessibilityLabel("报告图表")
+            }.accessibilityElement(children: .contain).accessibilityLabel(L10n.text("报告图表"))
         }
     }
 }
@@ -43,15 +43,15 @@ struct AiReportBlockView: View {
         VStack(alignment: .leading, spacing: 12) {
             if block.kind == "table" {
                 if expanded {
-                    Text(block.title).font(.headline)
-                    Text((block.columns ?? []).joined(separator: " / ")).font(.caption.bold())
-                    ForEach(Array((block.rows ?? []).enumerated()), id: \.offset) { _, row in Text(row.joined(separator: " / ")).font(.caption) }
+                    Text(L10n.lookup(block.title)).font(.headline)
+                    Text(L10n.lookup((block.columns ?? []).joined(separator: " / "))).font(.caption.bold())
+                    ForEach(Array((block.rows ?? []).enumerated()), id: \.offset) { _, row in Text(L10n.lookup(row.joined(separator: " / "))).font(.caption) }
                 }
                 else { DisclosureGroup(block.title) { dataTable.padding(.top, 8) }.font(.subheadline).accessibilityIdentifier("report-table-" + block.title) }
             } else {
-                Text(block.title).font(AppTypography.title(20))
-                Text(block.sourceName).font(.caption).foregroundStyle(.secondary)
-                if let note = block.note { Text(note).font(.caption).foregroundStyle(.secondary) }
+                Text(L10n.lookup(block.title)).font(AppTypography.title(20))
+                Text(L10n.lookup(block.sourceName)).font(.caption).foregroundStyle(.secondary)
+                if let note = block.note { Text(L10n.lookup(note)).font(.caption).foregroundStyle(.secondary) }
                 chart
             }
         }
@@ -65,30 +65,30 @@ struct AiReportBlockView: View {
         case "elements":
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 HStack(spacing: 12) {
-                    Text(item.label).frame(width: 24)
+                    Text(L10n.lookup(item.label)).frame(width: 24)
                     GeometryReader { bounds in
                         Capsule().fill(elementColor(item.label).opacity(0.12))
                         Capsule().fill(elementColor(item.label)).frame(width: bounds.size.width * min(8, max(0, Double(item.value) ?? 0)) / 8)
                     }.frame(height: 6)
-                    Text(item.value + " 个").monospacedDigit().font(.caption)
-                }.accessibilityElement(children: .ignore).accessibilityLabel(item.label + " " + item.value + " 个")
+                    Text(L10n.lookup(item.value + L10n.text(" 个"))).monospacedDigit().font(.caption)
+                }.accessibilityElement(children: .ignore).accessibilityLabel(L10n.lookup(item.label + " " + item.value + L10n.text(" 个")))
             }
         case "timeline":
             ScrollView(.horizontal) {
                 HStack(alignment: .top, spacing: 10) {
                     ForEach(Array(items.enumerated()), id: \.offset) { _, item in tile(item).frame(width: 125) }
                 }
-            }.accessibilityLabel("大运时间轴，可左右浏览")
+            }.accessibilityLabel(L10n.text("大运时间轴，可左右浏览"))
         case "palaces":
             LazyVGrid(columns: [GridItem(.adaptive(minimum: typeSize.isAccessibilitySize ? 240 : 120))], alignment: .leading, spacing: 8) {
                 ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                     DisclosureGroup {
-                        Text(item.value).font(.subheadline).textSelection(.enabled)
+                        Text(L10n.lookup(item.value)).font(.subheadline).textSelection(.enabled)
                     } label: {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(item.label).font(.headline)
-                            Text(item.value.components(separatedBy: " / ").first ?? "").font(.subheadline)
-                            if let detail = item.detail { Text(detail).font(.caption).foregroundStyle(.secondary) }
+                            Text(L10n.lookup(item.label)).font(.headline)
+                            Text(L10n.lookup(item.value.components(separatedBy: " / ").first ?? "")).font(.subheadline)
+                            if let detail = item.detail { Text(L10n.lookup(detail)).font(.caption).foregroundStyle(.secondary) }
                         }
                     }.padding(12).background(Color.bgPrimary, in: RoundedRectangle(cornerRadius: 12))
                 }
@@ -98,10 +98,10 @@ struct AiReportBlockView: View {
                 HStack(alignment: .top, spacing: 12) {
                     HStack(spacing: item.label.contains("六") ? 10 : 0) { Capsule().frame(height: 5); Capsule().frame(height: 5) }
                         .frame(width: 66, height: 24).foregroundStyle(Color.accentDefault)
-                        .accessibilityLabel(item.label.contains("六") ? "阴爻" : "阳爻")
+                        .accessibilityLabel(L10n.lookup(item.label.contains("六") ? L10n.text("阴爻") : L10n.text("阳爻")))
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(item.label + " · " + item.value).font(.subheadline)
-                        if let detail = item.detail { Text(detail).font(.caption).foregroundStyle(.secondary) }
+                        Text(L10n.lookup(item.label + " · " + item.value)).font(.subheadline)
+                        if let detail = item.detail { Text(L10n.lookup(detail)).font(.caption).foregroundStyle(.secondary) }
                     }
                 }
             }
@@ -116,9 +116,9 @@ struct AiReportBlockView: View {
     }
     func tile(_ item: AiReportItem) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(item.label).font(.caption).foregroundStyle(.secondary)
-            Text(item.value).font(AppTypography.title(block.kind == "pillars" ? 22 : 19))
-            if let detail = item.detail { Text(detail).font(.caption).foregroundStyle(.secondary) }
+            Text(L10n.lookup(item.label)).font(.caption).foregroundStyle(.secondary)
+            Text(L10n.lookup(item.value)).font(AppTypography.title(block.kind == "pillars" ? 22 : 19))
+            if let detail = item.detail { Text(L10n.lookup(detail)).font(.caption).foregroundStyle(.secondary) }
         }.frame(maxWidth: .infinity, alignment: .leading).padding(block.kind == "pillars" ? 8 : 12)
             .background(Color.bgPrimary, in: RoundedRectangle(cornerRadius: 12))
             .accessibilityElement(children: .combine)
@@ -131,10 +131,10 @@ struct AiReportBlockView: View {
                     GridRow { ForEach(Array(row.enumerated()), id: \.offset) { _, value in cell(value, heading: false) } }
                 }
             }
-        }.accessibilityLabel(block.title + "，左右滑动查看表格").textSelection(.enabled)
+        }.accessibilityLabel(L10n.lookup(block.title + L10n.text("，左右滑动查看表格"))).textSelection(.enabled)
     }
     private func cell(_ text: String, heading: Bool) -> some View {
-        Text(text).font(heading ? .subheadline.bold() : .subheadline).frame(width: 126, alignment: .leading).padding(10)
+        Text(L10n.lookup(text)).font(heading ? .subheadline.bold() : .subheadline).frame(width: 126, alignment: .leading).padding(10)
             .background(heading ? Color.accentDefault.opacity(0.1) : Color.bgPrimary)
             .overlay(Rectangle().stroke(Color.borderDefault, lineWidth: 0.5))
     }
@@ -168,17 +168,17 @@ struct AiReportExampleView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text(example.title).font(AppTypography.title(28))
-                Text(example.summary).foregroundStyle(.secondary)
-                Text("公开版式示例 · 原创说明与合成测试资料，不是你的个人测算。正式报告依据你填写的资料生成。")
+                Text(L10n.lookup(example.title)).font(AppTypography.title(28))
+                Text(L10n.lookup(example.summary)).foregroundStyle(.secondary)
+                Text(L10n.text("公开版式示例 · 原创说明与合成测试资料，不是你的个人测算。正式报告依据你填写的资料生成。"))
                     .font(.caption).padding(14).background(Color.accentDefault.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
                 if let document = example.document { AiReportDocumentView(document: document) }
-                Button(largeType ? "标准字号" : "放大字号") { largeType.toggle() }
+                Button(L10n.lookup(largeType ? L10n.text("标准字号") : L10n.text("放大字号"))) { largeType.toggle() }
                 AiMarkdownText(text: example.content, large: largeType)
                 NavigationLink("开始生成个人报告", value: AiNativeRoute.topic(example.code)).buttonStyle(.borderedProminent)
-                ShareLink(item: example.title + "\n\n" + example.content) { Label("分享示例正文", systemImage: "square.and.arrow.up") }
+                ShareLink(item: example.title + "\n\n" + example.content) { Label(L10n.text("分享示例正文"), systemImage: "square.and.arrow.up") }
             }.padding(20).frame(maxWidth: 760).frame(maxWidth: .infinity)
-        }.background(Color.bgPrimary).navigationTitle("示例报告").navigationBarTitleDisplayMode(.inline)
+        }.background(Color.bgPrimary).navigationTitle(L10n.text("示例报告")).navigationBarTitleDisplayMode(.inline)
             .toolbar(.visible, for: .navigationBar)
     }
 }
@@ -189,9 +189,9 @@ struct AiReportTopicEntry: View {
     var body: some View {
         Group {
             if let topic { AiReportWorkspace(topic: topic) }
-            else { VStack(spacing: 16) { if error.isEmpty { ProgressView("正在加载专题…") } else { Text(error); Button("重试") { Task { await load() } } } }.task { await load() } }
-        }.requireAuth(title: "登录后生成个人报告", subtitle: "请确认自己的资料后开始，示例不会用于个人测算")
-        .navigationTitle("专题资料").navigationBarTitleDisplayMode(.inline).toolbar(.visible, for: .navigationBar)
+            else { VStack(spacing: 16) { if error.isEmpty { ProgressView(L10n.text("正在加载专题…")) } else { Text(L10n.lookup(error)); Button(L10n.text("重试")) { Task { await load() } } } }.task { await load() } }
+        }.requireAuth(title: L10n.text("登录后生成个人报告"), subtitle: L10n.text("请确认自己的资料后开始，示例不会用于个人测算"))
+        .navigationTitle(L10n.text("专题资料")).navigationBarTitleDisplayMode(.inline).toolbar(.visible, for: .navigationBar)
     }
     private func load() async {
         guard AuthStore.shared.isLoggedIn else { return }

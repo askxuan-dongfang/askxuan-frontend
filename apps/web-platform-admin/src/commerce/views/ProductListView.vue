@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 // 商品列表
 import { ref, reactive, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
-import { ElMessage, ElMessageBox } from "element-plus";
+;
 import PageHeader from "@/components/PageHeader.vue";
 import StatusTag from "@/components/StatusTag.vue";
 import { productApi, type ProductListParams } from "@/commerce/api/product";
@@ -101,7 +104,7 @@ async function handleStatusChange(row: any, status: ProductStatus) {
   busyIds.value.push(row.id);
   try {
     await productApi.updateStatus(row.id, status as "on_shelf" | "off_shelf");
-    ElMessage.success("状态已更新");
+    ElMessage.success(uiText("状态已更新"));
     loadList();
   } catch {
     // API client reports the failure.
@@ -112,13 +115,13 @@ async function handleStatusChange(row: any, status: ProductStatus) {
 
 async function handleDelete(row: any) {
   try {
-    await ElMessageBox.confirm(`确认删除商品「${row.name}」吗？`, "提示", {
-      confirmButtonText: "删除",
-      cancelButtonText: "取消",
+    await ElMessageBox.confirm((uiText("确认删除商品「") + String(row.name) + uiText("」吗？")), uiText("提示"), {
+      confirmButtonText: uiText("删除"),
+      cancelButtonText: uiText("取消"),
       type: "warning",
     });
     await productApi.remove(row.id);
-    ElMessage.success("删除成功");
+    ElMessage.success(uiText("删除成功"));
     loadList();
   } catch {
     // 取消或失败
@@ -134,74 +137,72 @@ onMounted(() => {
 <template>
   <div class="page-wrap">
     <PageHeader
-      title="商品列表"
-      subtitle="商品内容、陈列预览、上下架与库存，一处管理"
+      :title='$t("商品列表")'
+      :subtitle='$t("商品内容、陈列预览、上下架与库存，一处管理")'
     >
       <template #extra>
         <el-button
           type="primary"
           @click="router.push('/commerce/products/edit')"
         >
-          <el-icon><Plus /></el-icon>
-          新建商品
-        </el-button>
+          <el-icon><Plus /></el-icon>{{ $t(" 新建商品 ") }}</el-button>
       </template>
     </PageHeader>
 
     <div class="catalog-overview">
       <div v-for="item in pageStats" :key="item.label">
-        <small>{{ item.label }}</small
-        ><strong>{{ item.value }}</strong>
+        <small>{{ $t(item.label) }}</small
+        ><strong>{{ $t(item.value) }}</strong>
       </div>
     </div>
     <el-alert
       v-if="loadError"
-      :title="loadError"
+      :title="$t(loadError)"
       type="error"
       :closable="false"
       show-icon
     />
     <div class="df-card filter-bar">
       <el-form inline @submit.prevent="handleSearch">
-        <el-form-item label="关键词">
+        <el-form-item :label='$t("关键词")'>
           <el-input
             v-model="query.keyword"
-            placeholder="商品名称 / 编号"
+            :placeholder='$t("商品名称 / 编号")'
             clearable
             style="width: 200px"
             @keyup.enter="handleSearch"
           />
         </el-form-item>
-        <el-form-item label="分类">
+        <el-form-item :label='$t("分类")'>
           <el-select
             v-model="query.categoryId"
-            placeholder="全部分类"
+            :placeholder='$t("全部分类")'
             clearable
             style="width: 180px"
           >
             <el-option
               v-for="c in categories"
               :key="c.id"
-              :label="c.name"
+              :label="$t(c.name)"
               :value="c.id"
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="状态">
+        <el-form-item :label='$t("状态")'>
           <el-select
             v-model="query.status"
-            placeholder="全部状态"
+            :placeholder='$t("全部状态")'
             clearable
             style="width: 140px"
           >
-            <el-option label="草稿" value="draft" />
-            <el-option label="已上架" value="on_shelf" />
-            <el-option label="已下架" value="off_shelf" />
+            <el-option :label='$t("草稿")' value="draft" />
+            <el-option :label='$t("已上架")' value="on_shelf" />
+            <el-option :label='$t("已下架")' value="off_shelf" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button type="primary" @click="handleSearch">{{ $t("查询") }}</el-button>
+          <el-button @click="handleReset">{{ $t("重置") }}</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -209,13 +210,13 @@ onMounted(() => {
     <div class="df-card">
       <div class="catalog-view-switch">
         <div>
-          <h2>商品陈列</h2>
-          <span>共 {{ total }} 件 · 分类与标签同步显示在顾客端</span>
+          <h2>{{ $t("商品陈列") }}</h2>
+          <span>{{ $t("共 ") }}{{ $t(total) }}{{ $t(" 件 · 分类与标签同步显示在顾客端") }}</span>
         </div>
         <el-radio-group v-model="viewMode"
-          ><el-radio-button value="table">管理列表</el-radio-button
+          ><el-radio-button value="table">{{ $t("管理列表") }}</el-radio-button
           ><el-radio-button value="cards"
-            >顾客视角</el-radio-button
+            >{{ $t("顾客视角") }}</el-radio-button
           ></el-radio-group
         >
       </div>
@@ -227,20 +228,20 @@ onMounted(() => {
         <article v-for="row in list" :key="row.id">
           <div class="catalog-preview-image">
             <el-image :src="row.mainImage" fit="cover"
-              ><template #error><span>物</span></template></el-image
-            ><small v-if="row.stock === 0">暂时售罄</small
+              ><template #error><span>{{ $t("物") }}</span></template></el-image
+            ><small v-if="row.stock === 0">{{ $t("暂时售罄") }}</small
             ><small v-else-if="row.tags">{{
-              row.tags.split(/[,，]/)[0]
+              $t(row.tags.split(/[,，]/)[0])
             }}</small>
           </div>
           <div class="catalog-preview-copy">
-            <small>{{ row.categoryName || "东方好物" }}</small>
-            <h3>{{ row.name }}</h3>
+            <small>{{ $t((row.categoryName || $t("东方好物"))) }}</small>
+            <h3>{{ $t(row.name) }}</h3>
             <el-tag v-if="row.isExperience" type="warning" size="small"
-              >体验商品</el-tag
+              >{{ $t("体验商品") }}</el-tag
             >
 
-            <strong>{{ formatMoney(row.price) }}</strong
+            <strong>{{ $t(formatMoney(row.price)) }}</strong
             ><StatusTag :status="row.status" domain="product" />
           </div>
           <div class="catalog-preview-actions">
@@ -248,7 +249,7 @@ onMounted(() => {
               text
               type="primary"
               @click="router.push(`/commerce/products/edit/${row.id}`)"
-              >编辑展示</el-button
+              >{{ $t("编辑展示") }}</el-button
             ><el-button
               text
               :disabled="busyIds.includes(row.id)"
@@ -258,13 +259,13 @@ onMounted(() => {
                   row.status === 'on_shelf' ? 'off_shelf' : 'on_shelf',
                 )
               "
-              >{{ row.status === "on_shelf" ? "下架" : "上架" }}</el-button
+              >{{ $t((row.status === "on_shelf" ? $t("下架") : $t("上架"))) }}</el-button
             >
           </div>
         </article>
         <el-empty
           v-if="!list.length && !loading"
-          description="当前筛选下暂无商品"
+          :description='$t("当前筛选下暂无商品")'
         />
       </div>
       <el-table
@@ -272,49 +273,49 @@ onMounted(() => {
         v-loading="loading"
         :data="list"
         style="width: 100%"
-        empty-text="暂无商品"
+        :empty-text='$t("暂无商品")'
       >
-        <el-table-column label="商品" min-width="280">
+        <el-table-column :label='$t("商品")' min-width="280">
           <template #default="{ row }">
             <div class="product-cell">
               <el-image :src="row.mainImage" fit="cover" class="product-thumb">
                 <template #error>
-                  <div class="product-thumb-placeholder">无图</div>
+                  <div class="product-thumb-placeholder">{{ $t("无图") }}</div>
                 </template>
               </el-image>
               <div class="product-info">
                 <div class="product-name">
-                  {{ row.name }}
+                  {{ $t(row.name) }}
                   <el-tag v-if="row.isExperience" type="warning" size="small"
-                    >体验商品</el-tag
+                    >{{ $t("体验商品") }}</el-tag
                   >
                 </div>
-                <div class="product-no">{{ row.productNo }}</div>
+                <div class="product-no">{{ $t(row.productNo) }}</div>
               </div>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="分类" prop="categoryName" width="120" />
-        <el-table-column label="售价" width="120">
+        <el-table-column :label='$t("分类")' prop="categoryName" width="120" />
+        <el-table-column :label='$t("售价")' width="120">
           <template #default="{ row }">
-            <span class="price">{{ formatMoney(row.price) }}</span>
+            <span class="price">{{ $t(formatMoney(row.price)) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="库存" prop="stock" width="100" />
-        <el-table-column label="状态" width="110">
+        <el-table-column :label='$t("库存")' prop="stock" width="100" />
+        <el-table-column :label='$t("状态")' width="110">
           <template #default="{ row }">
             <StatusTag :status="row.status" domain="product" />
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" prop="createTime" width="180" />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column :label='$t("创建时间")' prop="createTime" width="180" />
+        <el-table-column :label='$t("操作")' width="220" fixed="right">
           <template #default="{ row }">
             <el-button
               text
               type="primary"
               size="small"
               @click="router.push(`/commerce/products/edit/${row.id}`)"
-              >编辑</el-button
+              >{{ $t("编辑") }}</el-button
             >
             <el-button
               v-if="row.status !== 'on_shelf'"
@@ -323,7 +324,7 @@ onMounted(() => {
               size="small"
               :disabled="busyIds.includes(row.id)"
               @click="handleStatusChange(row, 'on_shelf')"
-              >上架</el-button
+              >{{ $t("上架") }}</el-button
             >
             <el-button
               v-else
@@ -332,14 +333,14 @@ onMounted(() => {
               size="small"
               :disabled="busyIds.includes(row.id)"
               @click="handleStatusChange(row, 'off_shelf')"
-              >下架</el-button
+              >{{ $t("下架") }}</el-button
             >
             <el-button
               text
               type="danger"
               size="small"
               @click="handleDelete(row)"
-              >删除</el-button
+              >{{ $t("删除") }}</el-button
             >
           </template>
         </el-table-column>

@@ -41,12 +41,12 @@ enum AppDateFormatter {
     }()
 
     /// 周X
-    static let weekday: DateFormatter = {
+    static var weekday: DateFormatter {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "zh_CN")
+        f.locale = L10n.store.locale
         f.dateFormat = "EEEE"
         return f
-    }()
+    }
 
     /// 生成未来 N 天日期
     static func upcomingDates(days: Int) -> [Date] {

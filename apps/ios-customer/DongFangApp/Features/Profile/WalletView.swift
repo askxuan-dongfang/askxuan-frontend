@@ -29,14 +29,14 @@ struct WalletView: View {
     private let refunds = ["pending":"待处理", "processing":"退款处理中", "success":"退款完成", "failed":"退款失败"]
     var body: some View {
         List {
-            Section { NavigationLink { CreatorWalletView().id(auth.sessionID) } label: { Label("创作收益与提现", systemImage: "paintpalette") } }
-            Section { NavigationLink { CashBalanceView() } label: { VStack(alignment: .leading, spacing: 8) { Label(cashBalance?.mode == "demo" ? "测试余额（模拟）" : "钱包余额", systemImage: "wallet.bifold"); Text(cashBalance.map { "¥" + CashAPI.money($0.availableCents) } ?? "—").font(.largeTitle.bold()).monospacedDigit(); Text("充值 · 余额流水 · 原路退款").font(.caption).foregroundStyle(.secondary) } } }
+            Section { NavigationLink { CreatorWalletView().id(auth.sessionID) } label: { Label(L10n.text("创作收益与提现"), systemImage: "paintpalette") } }
+            Section { NavigationLink { CashBalanceView() } label: { VStack(alignment: .leading, spacing: 8) { Label(L10n.lookup(cashBalance?.mode == "demo" ? L10n.text("测试余额（模拟）") : L10n.text("钱包余额")), systemImage: "wallet.bifold"); Text(L10n.lookup(cashBalance.map { "¥" + CashAPI.money($0.availableCents) } ?? "—")).font(.largeTitle.bold()).monospacedDigit(); Text(L10n.text("充值 · 余额流水 · 原路退款")).font(.caption).foregroundStyle(.secondary) } } }
             Section {
-                Picker("账单渠道", selection: $mode) { Text("真实消费").tag("channel"); Text("演示账单").tag("mock") }.pickerStyle(.segmented)
+                Picker(L10n.text("账单渠道"), selection: $mode) { Text(L10n.text("真实消费")).tag("channel"); Text(L10n.text("演示账单")).tag("mock") }.pickerStyle(.segmented)
                 VStack(alignment: .leading, spacing: 18) {
-                    Label(mode == "mock" ? "演示累计支付" : "累计支付记录", systemImage: "wallet.bifold")
+                    Label(L10n.lookup(mode == "mock" ? L10n.text("演示累计支付") : L10n.text("累计支付记录")), systemImage: "wallet.bifold")
                         .font(.subheadline).foregroundStyle(Color.textSecondary)
-                    Text(data.map { money($0.summary.paidCents) } ?? "—").font(.system(size: 34, weight: .semibold, design: .rounded)).monospacedDigit()
+                    Text(L10n.lookup(data.map { money($0.summary.paidCents) } ?? "—")).font(.system(size: 34, weight: .semibold, design: .rounded)).monospacedDigit()
                     Divider()
                     HStack {
                         stat("已退款", data?.summary.refundedCents)
@@ -44,28 +44,28 @@ struct WalletView: View {
                         stat("退款处理中", data?.summary.refundingCents)
                     }
                 }.padding(.vertical, 12)
-                Text(mode == "mock" ? "演示支付和模拟退款不代表真实扣款或到账。" : "汇总已支付账单，退款单独列示。实际扣款、退款到账以支付渠道为准。")
+                Text(L10n.lookup(mode == "mock" ? L10n.text("演示支付和模拟退款不代表真实扣款或到账。") : L10n.text("汇总已支付账单，退款单独列示。实际扣款、退款到账以支付渠道为准。")))
                     .font(.caption).foregroundStyle(Color.textSecondary)
             }
             Section {
-                Picker("账单类型", selection: $filter) { Text("全部账单").tag("all"); Text("退款记录").tag("refunds") }.pickerStyle(.segmented)
+                Picker(L10n.text("账单类型"), selection: $filter) { Text(L10n.text("全部账单")).tag("all"); Text(L10n.text("退款记录")).tag("refunds") }.pickerStyle(.segmented)
                 if let error {
-                    Text(error).foregroundStyle(Color.red)
-                    Button("重新加载") { revision += 1 }
+                    Text(L10n.lookup(error)).foregroundStyle(Color.red)
+                    Button(L10n.text("重新加载")) { revision += 1 }
                 } else if let data {
                     if data.list.isEmpty {
-                        ContentUnavailableView(filter == "refunds" ? "暂无退款记录" : "暂无这类账单", systemImage: "doc.text", description: Text(mode == "channel" ? "演示支付请切换至演示账单查看。" : "演示支付后，记录会出现在这里。"))
+                        ContentUnavailableView(filter == "refunds" ? L10n.text("暂无退款记录") : L10n.text("暂无这类账单"), systemImage: "doc.text", description: Text(L10n.lookup(mode == "channel" ? L10n.text("演示支付请切换至演示账单查看。") : L10n.text("演示支付后，记录会出现在这里。"))))
                     }
                     ForEach(data.list) { entry in
                         DisclosureGroup {
                             VStack(alignment: .leading, spacing: 10) {
-                                Text("支付单号：\(entry.paymentNo)")
-                                Text("订单编号：\(entry.orderNo)")
-                                Text("支付渠道：\(entry.channel == "demo_balance" ? "模拟余额支付" : entry.channel == "mock" ? "演示支付" : entry.channel == "wechat" ? "微信支付" : entry.channel == "alipay" ? "支付宝" : entry.channel)")
+                                Text(L10n.text("支付单号：\(entry.paymentNo)"))
+                                Text(L10n.text("订单编号：\(entry.orderNo)"))
+                                Text(L10n.text("支付渠道：\(entry.channel == "demo_balance" ? "模拟余额支付" : entry.channel == "mock" ? "演示支付" : entry.channel == "wechat" ? "微信支付" : entry.channel == "alipay" ? "支付宝" : entry.channel)"))
                                 ForEach(entry.refunds) { refund in
                                     VStack(alignment: .leading, spacing: 6) {
                                         Text("\(refunds[refund.status] ?? refund.status) · \(money(refund.amountCents))").fontWeight(.medium)
-                                        Text(refund.reason)
+                                        Text(L10n.lookup(refund.reason))
                                         Text("\(refund.createdAt) · \(refund.refundNo)").foregroundStyle(.secondary)
                                     }.padding(.vertical, 8)
                                 }
@@ -78,37 +78,37 @@ struct WalletView: View {
                         } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 6) {
-                                    Text(kinds[entry.orderType] ?? "订单支付").font(.body)
-                                    Text(entry.createdAt).font(.caption2).foregroundStyle(.secondary)
+                                    Text(L10n.lookup(kinds[entry.orderType] ?? L10n.text("订单支付"))).font(.body)
+                                    Text(L10n.lookup(entry.createdAt)).font(.caption2).foregroundStyle(.secondary)
                                 }
                                 Spacer()
                                 VStack(alignment: .trailing, spacing: 6) {
-                                    Text(money(entry.amountCents)).monospacedDigit()
-                                    Text(statuses[entry.status] ?? entry.status).font(.caption).foregroundStyle(.secondary)
+                                    Text(L10n.lookup(money(entry.amountCents))).monospacedDigit()
+                                    Text(L10n.lookup(statuses[entry.status] ?? entry.status)).font(.caption).foregroundStyle(.secondary)
                                 }
                             }.padding(.vertical, 6)
                         }
                     }
                     if page > 1 || data.total > 20 {
                         HStack {
-                            Button("上一页") { page -= 1 }.disabled(page == 1)
-                            Spacer(); Text("第 \(page) 页").font(.caption); Spacer()
-                            Button("下一页") { page += 1 }.disabled(page * 20 >= data.total)
+                            Button(L10n.text("上一页")) { page -= 1 }.disabled(page == 1)
+                            Spacer(); Text(L10n.text("第 \(page) 页")).font(.caption); Spacer()
+                            Button(L10n.text("下一页")) { page += 1 }.disabled(page * 20 >= data.total)
                         }.buttonStyle(.borderless)
                     }
-                } else { ProgressView("正在读取账单…") }
+                } else { ProgressView(L10n.text("正在读取账单…")) }
             }
-            Section { Text("钱包余额与真实消费分别记账。积分与功德值独立记录。").font(.caption).foregroundStyle(.secondary) }
+            Section { Text(L10n.text("钱包余额与真实消费分别记账。积分与功德值独立记录。")).font(.caption).foregroundStyle(.secondary) }
         }
         .scrollContentBackground(.hidden).background(Color.bgPrimary)
-        .navigationTitle("我的钱包").navigationBarTitleDisplayMode(.inline).toolbar(.visible, for: .navigationBar)
+        .navigationTitle(L10n.text("我的钱包")).navigationBarTitleDisplayMode(.inline).toolbar(.visible, for: .navigationBar)
         .onChange(of: mode) { _, _ in page = 1 }
         .onChange(of: filter) { _, _ in page = 1 }
         .task(id: requestKey) { await load() }
         .refreshable { revision += 1 }
     }
     private func stat(_ title: String, _ cents: Int64?) -> some View {
-        VStack(alignment: .leading, spacing: 6) { Text(title).font(.caption).foregroundStyle(.secondary); Text(cents.map(money) ?? "—").monospacedDigit() }
+        VStack(alignment: .leading, spacing: 6) { Text(L10n.lookup(title)).font(.caption).foregroundStyle(.secondary); Text(L10n.lookup(cents.map(money) ?? "—")).monospacedDigit() }
     }
     @MainActor private func load() async {
         let key = requestKey
@@ -190,19 +190,19 @@ private struct NativeCashier: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section { Text("¥\(CashAPI.money(quote.amountCents))").font(.largeTitle.bold()).monospacedDigit(); Text("订单 \(no)").font(.caption).foregroundStyle(.secondary) }
-                Section("支付方式") {
-                    Button { channel = balanceChannel } label: { HStack { Label(demo ? "模拟余额支付" : "钱包余额", systemImage: "wallet.bifold"); Spacer(); if channel == balanceChannel { Image(systemName: "checkmark.circle.fill") } } }.disabled(busy || !canBalance)
-                    Text(quote.experience && !demo ? "体验订单不能使用真实余额" : "可用 ¥\(CashAPI.money(quote.availableCents))\(quote.balanceEnabled ? (canBalance ? "" : " · 余额不足") : " · 暂未开通")").font(.caption).foregroundStyle(.secondary)
-                    if quote.mockEnabled { Button { channel = "mock" } label: { HStack { Text("演示支付，不扣真实资金"); Spacer(); if channel == "mock" { Image(systemName: "checkmark.circle.fill") } } }.disabled(busy) }
+                Section { Text("¥\(CashAPI.money(quote.amountCents))").font(.largeTitle.bold()).monospacedDigit(); Text(L10n.text("订单 \(no)")).font(.caption).foregroundStyle(.secondary) }
+                Section(L10n.text("支付方式")) {
+                    Button { channel = balanceChannel } label: { HStack { Label(L10n.lookup(demo ? L10n.text("模拟余额支付") : L10n.text("钱包余额")), systemImage: "wallet.bifold"); Spacer(); if channel == balanceChannel { Image(systemName: "checkmark.circle.fill") } } }.disabled(busy || !canBalance)
+                    Text(L10n.lookup(quote.experience && !demo ? L10n.text("体验订单不能使用真实余额") : L10n.text("可用 ¥\(CashAPI.money(quote.availableCents))\(quote.balanceEnabled ? (canBalance ? "" : " · 余额不足") : " · 暂未开通")"))).font(.caption).foregroundStyle(.secondary)
+                    if quote.mockEnabled { Button { channel = "mock" } label: { HStack { Text(L10n.text("演示支付，不扣真实资金")); Spacer(); if channel == "mock" { Image(systemName: "checkmark.circle.fill") } } }.disabled(busy) }
                 }
-                if let error { Section { Text(error).foregroundStyle(.red) } }
+                if let error { Section { Text(L10n.lookup(error)).foregroundStyle(.red) } }
                 Section {
-                    Button(busy ? "正在确认…" : channel == "mock" ? "确认演示支付" : "\(demo ? "模拟支付" : "确认支付") ¥\(CashAPI.money(quote.amountCents))") { Task { await pay() } }.disabled(busy || (channel == balanceChannel && !canBalance))
+                    Button(L10n.lookup(busy ? L10n.text("正在确认…") : channel == "mock" ? L10n.text("确认演示支付") : L10n.text("\(demo ? "模拟支付" : "确认支付") ¥\(CashAPI.money(quote.amountCents))"))) { Task { await pay() } }.disabled(busy || (channel == balanceChannel && !canBalance))
                     NavigationLink("查看钱包与充值") { CashBalanceView().onDisappear { Task { await refreshQuote() } } }.disabled(busy)
-                } footer: { Text(demo ? "扣减测试余额，不收取真实费用。退款退回测试余额。" : "余额支付的退款退回钱包，充值款可申请原路退回。") }
-            }.navigationTitle("确认支付").navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { finish(.failure(APIError.serverError(409, "订单已保留，可稍后继续支付"))) }.disabled(busy) } }
+                } footer: { Text(L10n.lookup(demo ? L10n.text("扣减测试余额，不收取真实费用。退款退回测试余额。") : L10n.text("余额支付的退款退回钱包，充值款可申请原路退回。"))) }
+            }.navigationTitle(L10n.text("确认支付")).navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button(L10n.text("取消")) { finish(.failure(APIError.serverError(409, "订单已保留，可稍后继续支付"))) }.disabled(busy) } }
         }.task { await refreshQuote() }
     }
     @MainActor private func refreshQuote() async {
@@ -240,40 +240,40 @@ struct CashBalanceView: View {
     private let labels = ["recharge": "充值到账", "payment": "余额支付", "order_refund": "订单退款", "refund_hold": "充值退款冻结", "recharge_refund": "充值款已退回"]
     var body: some View {
         Form {
-            Section(demo ? "测试余额（模拟）" : "可用余额") {
-                Text(data.map { "¥" + CashAPI.money($0.availableCents) } ?? "—").font(.largeTitle.bold()).monospacedDigit()
-                Text("退款冻结 ¥\(CashAPI.money(data?.heldCents ?? 0))").font(.caption).foregroundStyle(.secondary)
-                Button("刷新余额") { Task { await load() } }
+            Section(L10n.lookup(demo ? L10n.text("测试余额（模拟）") : L10n.text("可用余额"))) {
+                Text(L10n.lookup(data.map { "¥" + CashAPI.money($0.availableCents) } ?? "—")).font(.largeTitle.bold()).monospacedDigit()
+                Text(L10n.text("退款冻结 ¥\(CashAPI.money(data?.heldCents ?? 0))")).font(.caption).foregroundStyle(.secondary)
+                Button(L10n.text("刷新余额")) { Task { await load() } }
             }
-            if let error { Section { Text(error).foregroundStyle(.red) } }
-            Section("充值") {
-                TextField("充值金额（元）", text: $amount).keyboardType(.decimalPad).disabled(busy)
-                Picker("支付方式", selection: $channel) { ForEach(data?.channels ?? []) { c in Text(c.id == "demo" ? "模拟充值" : c.id == "wechat" ? "微信支付" : "支付宝").tag(c.id) } }.disabled(busy)
-                Button(busy ? "正在处理…" : demo ? "确认模拟充值" : "前往支付") { Task { await recharge() } }.disabled(busy || data?.channels.first(where: { $0.id == channel })?.enabled != true)
-                Text(demo ? "测试余额用于体验支付及退款，不代表真实资金，不可兑换或提现。" : data?.channels.contains(where: \.enabled) == true ? "支付确认后到账。返回后请刷新余额。" : "微信、支付宝充值暂未开通。演示支付不会增加余额。").font(.caption).foregroundStyle(.secondary)
+            if let error { Section { Text(L10n.lookup(error)).foregroundStyle(.red) } }
+            Section(L10n.text("充值")) {
+                TextField(L10n.text("充值金额（元）"), text: $amount).keyboardType(.decimalPad).disabled(busy)
+                Picker(L10n.text("支付方式"), selection: $channel) { ForEach(data?.channels ?? []) { c in Text(L10n.lookup(c.id == "demo" ? L10n.text("模拟充值") : c.id == "wechat" ? L10n.text("微信支付") : L10n.text("支付宝"))).tag(c.id) } }.disabled(busy)
+                Button(L10n.lookup(busy ? L10n.text("正在处理…") : demo ? L10n.text("确认模拟充值") : L10n.text("前往支付"))) { Task { await recharge() } }.disabled(busy || data?.channels.first(where: { $0.id == channel })?.enabled != true)
+                Text(L10n.lookup(demo ? L10n.text("测试余额用于体验支付及退款，不代表真实资金，不可兑换或提现。") : data?.channels.contains(where: \.enabled) == true ? L10n.text("支付确认后到账。返回后请刷新余额。") : L10n.text("微信、支付宝充值暂未开通。演示支付不会增加余额。"))).font(.caption).foregroundStyle(.secondary)
             }
-            Section("余额流水") {
-                ForEach(data?.entries ?? []) { e in VStack(alignment: .leading, spacing: 6) { HStack { Text(labels[e.kind] ?? e.kind); Spacer(); Text((e.deltaCents > 0 ? "+" : "") + CashAPI.money(e.deltaCents)).monospacedDigit() }; Text(e.createdAt).font(.caption).foregroundStyle(.secondary); Text("余额 ¥\(CashAPI.money(e.balanceAfterCents))").font(.caption) } }
-                if data?.entries.isEmpty == true { Text(demo ? "暂无测试余额变动" : "暂无真实余额变动").foregroundStyle(.secondary) }
-                HStack { Button("上一页") { page -= 1 }.disabled(page == 1); Spacer(); Text("第 \(page) 页"); Spacer(); Button("下一页") { page += 1 }.disabled(data?.hasMore != true) }.buttonStyle(.borderless)
+            Section(L10n.text("余额流水")) {
+                ForEach(data?.entries ?? []) { e in VStack(alignment: .leading, spacing: 6) { HStack { Text(L10n.lookup(labels[e.kind] ?? e.kind)); Spacer(); Text(L10n.lookup((e.deltaCents > 0 ? "+" : "") + CashAPI.money(e.deltaCents))).monospacedDigit() }; Text(L10n.lookup(e.createdAt)).font(.caption).foregroundStyle(.secondary); Text(L10n.text("余额 ¥\(CashAPI.money(e.balanceAfterCents))")).font(.caption) } }
+                if data?.entries.isEmpty == true { Text(L10n.lookup(demo ? L10n.text("暂无测试余额变动") : L10n.text("暂无真实余额变动"))).foregroundStyle(.secondary) }
+                HStack { Button(L10n.text("上一页")) { page -= 1 }.disabled(page == 1); Spacer(); Text(L10n.text("第 \(page) 页")); Spacer(); Button(L10n.text("下一页")) { page += 1 }.disabled(data?.hasMore != true) }.buttonStyle(.borderless)
             }
-            Section(demo ? "模拟充值记录" : "充值与原路退款") {
+            Section(L10n.lookup(demo ? L10n.text("模拟充值记录") : L10n.text("充值与原路退款"))) {
                 ForEach(data?.recharges ?? []) { r in VStack(alignment: .leading, spacing: 8) {
-                    Text("\(r.channel == "demo" ? "模拟" : r.channel == "wechat" ? "微信" : "支付宝")充值 ¥\(CashAPI.money(r.amountCents))")
-                    Text(["pending":"等待支付确认","success":"充值成功","refund_pending":"原路退款处理中","refunded":"充值退款完成","closed":"充值已关闭"][r.status] ?? r.status).font(.caption).foregroundStyle(.secondary)
-                    Text(r.createdAt).font(.caption2)
-                    if r.status == "success", (data?.availableCents ?? 0) > 0 { Button("申请原路退回") { refund = r }.disabled(busy) }
+                    Text(L10n.text("\(r.channel == "demo" ? "模拟" : r.channel == "wechat" ? "微信" : "支付宝")充值 ¥\(CashAPI.money(r.amountCents))"))
+                    Text(L10n.lookup(["pending":"等待支付确认","success":"充值成功","refund_pending":"原路退款处理中","refunded":"充值退款完成","closed":"充值已关闭"][r.status] ?? r.status)).font(.caption).foregroundStyle(.secondary)
+                    Text(L10n.lookup(r.createdAt)).font(.caption2)
+                    if r.status == "success", (data?.availableCents ?? 0) > 0 { Button(L10n.text("申请原路退回")) { refund = r }.disabled(busy) }
                 } }
             }
-        }.navigationTitle("钱包余额").navigationBarTitleDisplayMode(.inline)
+        }.navigationTitle(L10n.text("钱包余额")).navigationBarTitleDisplayMode(.inline)
             .task(id: page) { await load() }.refreshable { await load() }
             .onChange(of: amount) { _, _ in requestID = UUID().uuidString }
             .onChange(of: channel) { _, _ in requestID = UUID().uuidString }
             .onChange(of: scenePhase) { _, value in if value == .active { Task { await load() } } }
-            .confirmationDialog(demo ? "撤回测试余额" : "确认原路退款", isPresented: Binding(get: { refund != nil }, set: { if !$0 { refund = nil } }), presenting: refund) { r in
-                Button("退回 ¥\(CashAPI.money(min(r.amountCents, data?.availableCents ?? 0)))") { Task { await refundRecharge(r) } }
-                Button("取消", role: .cancel) { refund = nil }
-            } message: { _ in Text(demo ? "撤回本次充值的测试余额，不向任何账户转账。" : "先冻结相应余额，再退回本次充值的微信／支付宝账户。每笔充值支持一次退款。") }
+            .confirmationDialog(L10n.lookup(demo ? L10n.text("撤回测试余额") : L10n.text("确认原路退款")), isPresented: Binding(get: { refund != nil }, set: { if !$0 { refund = nil } }), presenting: refund) { r in
+                Button(L10n.text("退回 ¥\(CashAPI.money(min(r.amountCents, data?.availableCents ?? 0)))")) { Task { await refundRecharge(r) } }
+                Button(L10n.text("取消"), role: .cancel) { refund = nil }
+            } message: { _ in Text(L10n.lookup(demo ? L10n.text("撤回本次充值的测试余额，不向任何账户转账。") : L10n.text("先冻结相应余额，再退回本次充值的微信／支付宝账户。每笔充值支持一次退款。"))) }
     }
     @MainActor private func load() async { do { data = try await CashAPI.request("payments/wallet/balance?page=\(page)"); if data?.channels.first(where: { $0.id == channel && $0.enabled }) == nil, let first = data?.channels.first(where: \.enabled) { channel = first.id }; error = nil } catch { self.error = error.localizedDescription } }
     @MainActor private func recharge() async {

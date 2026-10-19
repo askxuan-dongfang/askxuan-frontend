@@ -56,18 +56,18 @@ struct DiyOrderView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Text("确认订单")
+                Text(L10n.text("确认订单"))
                     .font(AppTypography.reading.weight(.semibold))
                     .foregroundStyle(Color.accentDefault)
             }
         }
-        .alert("提示", isPresented: .init(
+        .alert(L10n.text("提示"), isPresented: .init(
             get: { viewModel.errorMessage != nil },
             set: { if !$0 { viewModel.errorMessage = nil } }
         )) {
-            Button("好的", role: .cancel) {}
+            Button(L10n.text("好的"), role: .cancel) {}
         } message: {
-            Text(viewModel.errorMessage ?? "")
+            Text(L10n.lookup(viewModel.errorMessage ?? ""))
         }
         .sheet(item: $checkoutOrder) { order in
             NavigationStack {
@@ -99,10 +99,10 @@ struct DiyOrderView: View {
 
             HStack(alignment: .bottom, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(viewModel.currentDesign?.name ?? "我的手串")
+                    Text(L10n.lookup(viewModel.currentDesign?.name ?? L10n.text("我的手串")))
                         .font(AppTypography.title(17))
                         .foregroundStyle(Color.textPrimary)
-                    Text("\(checkoutSlots.count) 颗 · \(materialLines.count) 种材料")
+                    Text(L10n.text("\(checkoutSlots.count) 颗 · \(materialLines.count) 种材料"))
                         .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
@@ -134,10 +134,10 @@ struct DiyOrderView: View {
             } label: {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("材料明细")
+                        Text(L10n.text("材料明细"))
                             .font(.cardTitle)
                             .foregroundStyle(Color.textPrimary)
-                        Text("\(materialLines.count) 种材料")
+                        Text(L10n.text("\(materialLines.count) 种材料"))
                             .font(AppTypography.micro)
                             .foregroundStyle(Color.textTertiary)
                     }
@@ -159,7 +159,7 @@ struct DiyOrderView: View {
                                 .frame(width: 28, height: 28)
                                 .shadow(color: Color.black.opacity(0.3), radius: 3, y: 2)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(line.name).font(AppTypography.caption.weight(.medium)).foregroundStyle(Color.textPrimary)
+                                Text(L10n.lookup(line.name)).font(AppTypography.caption.weight(.medium)).foregroundStyle(Color.textPrimary)
                                 Text("\(line.spec) × \(line.quantity)").font(AppTypography.micro).foregroundStyle(Color.textTertiary)
                             }
                             Spacer()
@@ -185,7 +185,7 @@ struct DiyOrderView: View {
                 Image(systemName: "location.circle.fill")
                     .font(AppTypography.body)
                     .foregroundStyle(Color.accentDefault)
-                Text("收货地址")
+                Text(L10n.text("收货地址"))
                     .font(.cardTitle)
                     .foregroundStyle(Color.textPrimary)
             }
@@ -194,14 +194,14 @@ struct DiyOrderView: View {
             if let address = selectedAddress {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
-                        Text(address.name)
+                        Text(L10n.lookup(address.name))
                             .font(AppTypography.body.weight(.semibold))
                             .foregroundStyle(Color.textPrimary)
-                        Text(address.maskedPhone)
+                        Text(L10n.lookup(address.maskedPhone))
                             .font(AppTypography.supporting)
                             .foregroundStyle(Color.textSecondary)
                         if address.isDefault {
-                            Text("默认")
+                            Text(L10n.text("默认"))
                                 .font(AppTypography.caption.weight(.medium))
                                 .foregroundStyle(Color.white)
                                 .padding(.horizontal, 6).padding(.vertical, 1)
@@ -209,7 +209,7 @@ struct DiyOrderView: View {
                                 .clipShape(Capsule())
                         }
                     }
-                    Text(address.fullAddress)
+                    Text(L10n.lookup(address.fullAddress))
                         .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                         .lineLimit(2)
@@ -227,7 +227,7 @@ struct DiyOrderView: View {
                         Image(systemName: "plus.circle.fill")
                             .font(AppTypography.reading)
                             .foregroundStyle(Color.brandDefault)
-                        Text("添加收货地址")
+                        Text(L10n.text("添加收货地址"))
                             .font(AppTypography.body)
                             .foregroundStyle(Color.brandDefault)
                         Spacer()
@@ -245,7 +245,7 @@ struct DiyOrderView: View {
                 HStack(spacing: AppSpacing.sm) {
                     ForEach(viewModel.addresses) { addr in
                         let isSelected = selectedAddress?.id == addr.id
-                        Text(addr.name + " " + addr.district)
+                        Text(L10n.lookup(addr.name + " " + addr.district))
                             .font(AppTypography.micro)
                             .foregroundStyle(isSelected ? Color.white : Color.textTertiary)
                             .padding(.horizontal, 10).padding(.vertical, 6)
@@ -269,7 +269,7 @@ struct DiyOrderView: View {
                 Image(systemName: "sparkles")
                     .font(AppTypography.body)
                     .foregroundStyle(Color.accentDefault)
-                Text("开光服务")
+                Text(L10n.text("开光服务"))
                     .font(.cardTitle)
                     .foregroundStyle(Color.textPrimary)
             }
@@ -280,10 +280,10 @@ struct DiyOrderView: View {
                     .font(.system(size: 20))
                     .foregroundStyle(selectedBlessingService == nil ? Color.brandDefault : Color.textTertiary)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("不需要开光")
+                    Text(L10n.text("不需要开光"))
                         .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
-                    Text("只制作手串")
+                    Text(L10n.text("只制作手串"))
                         .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
@@ -311,16 +311,16 @@ struct DiyOrderView: View {
                         .font(.system(size: 20))
                         .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(service.providerName.isEmpty ? "开光服务" : service.providerName)
+                        Text(L10n.lookup(service.providerName.isEmpty ? L10n.text("开光服务") : service.providerName))
                             .font(AppTypography.body.weight(.semibold))
                             .foregroundStyle(Color.textPrimary)
-                        Text(service.providerType == "temple" ? "寺院开光" : "法师开光")
+                        Text(L10n.lookup(service.providerType == "temple" ? L10n.text("寺院开光") : L10n.text("法师开光")))
                             .font(AppTypography.caption)
                             .foregroundStyle(Color.textTertiary)
                             .lineLimit(2)
                     }
                     Spacer()
-                    Text(service.priceText)
+                    Text(L10n.lookup(service.priceText))
                         .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.brandDefault)
                 }
@@ -339,12 +339,12 @@ struct DiyOrderView: View {
     // MARK: - 费用明细
     private var feeSection: some View {
         VStack(spacing: 0) {
-            feeRow(label: "材料费",
+            feeRow(label: L10n.text("材料费"),
                    value: String(format: "¥%.2f", checkoutMaterialFee))
-            feeRow(label: "开光服务",
+            feeRow(label: L10n.text("开光服务"),
                    value: String(format: "¥%.2f", checkoutBlessFee))
-            feeRow(label: "运费", value: "包邮")
-            feeRow(label: "合计",
+            feeRow(label: L10n.text("运费"), value: "包邮")
+            feeRow(label: L10n.text("合计"),
                    value: totalFeeText,
                    isLast: true, highlight: true)
         }
@@ -357,11 +357,11 @@ struct DiyOrderView: View {
                         isLast: Bool = false, highlight: Bool = false) -> some View {
         VStack(spacing: 0) {
             HStack {
-                Text(label)
+                Text(L10n.lookup(label))
                     .font(AppTypography.supporting)
                     .foregroundStyle(highlight ? Color.textPrimary : Color.textTertiary)
                 Spacer()
-                Text(value)
+                Text(L10n.lookup(value))
                     .font(.system(size: highlight ? 18 : 14, weight: highlight ? .bold : .medium))
                     .foregroundStyle(highlight ? Color.brandDefault : Color.textPrimary)
             }
@@ -420,16 +420,16 @@ struct DiyOrderView: View {
     private var submitBar: some View {
         HStack(spacing: AppSpacing.md) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("预估应付")
+                Text(L10n.text("预估应付"))
                     .font(AppTypography.micro)
                     .foregroundStyle(Color.textTertiary)
-                Text(totalFeeText)
+                Text(L10n.lookup(totalFeeText))
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(Color.brandDefault)
             }
             Spacer()
 
-            DFPrimaryButton(title: pendingOrder != nil ? "继续支付" : viewModel.isCurrentDesignOrderable ? "提交订单" : "材料需替换", icon: "checkmark.circle.fill",
+            DFPrimaryButton(title: pendingOrder != nil ? L10n.text("继续支付") : viewModel.isCurrentDesignOrderable ? L10n.text("提交订单") : L10n.text("材料需替换"), icon: "checkmark.circle.fill",
                             isEnabled: pendingOrder != nil || (selectedAddress != nil && viewModel.isCurrentDesignOrderable),
                             isLoading: viewModel.isSubmitting) {
                 Task {
@@ -453,10 +453,10 @@ struct DiyOrderView: View {
 
     private func availabilityWarning(_ message: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label("部分材料需要重新选择", systemImage: "exclamationmark.triangle.fill")
+            Label(L10n.text("部分材料需要重新选择"), systemImage: "exclamationmark.triangle.fill")
                 .font(AppTypography.body.weight(.semibold))
                 .foregroundStyle(Color.stateWarning)
-            Text(message)
+            Text(L10n.lookup(message))
                 .font(AppTypography.caption)
                 .foregroundStyle(Color.textSecondary)
         }
@@ -535,23 +535,23 @@ private struct DiyPaymentFlowView: View {
             .padding(AppSpacing.lg)
         }
         .background(Color.bgPrimary)
-        .navigationTitle("支付结果")
+        .navigationTitle(L10n.text("支付结果"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button("关闭") { dismiss() }
+                Button(L10n.text("关闭")) { dismiss() }
             }
         }
 		.navigationDestination(isPresented: $showOrderDetail) {
 			DiyOrderResultDetailView(order: viewModel.currentOrder ?? order)
         }
-        .alert("提示", isPresented: .init(
+        .alert(L10n.text("提示"), isPresented: .init(
             get: { viewModel.errorMessage != nil },
             set: { if !$0 { viewModel.errorMessage = nil } }
         )) {
-            Button("好的", role: .cancel) {}
+            Button(L10n.text("好的"), role: .cancel) {}
         } message: {
-            Text(viewModel.errorMessage ?? "")
+            Text(L10n.lookup(viewModel.errorMessage ?? ""))
         }
     }
 
@@ -560,13 +560,13 @@ private struct DiyPaymentFlowView: View {
             Image(systemName: paymentIcon)
                 .font(.system(size: 30, weight: .semibold))
                 .foregroundStyle(paymentColor)
-            Text(paymentTitle)
+            Text(L10n.lookup(paymentTitle))
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(Color.textPrimary)
             Text("¥\(String(format: "%.2f", order.totalFee))")
                 .font(.system(size: 30, weight: .semibold))
                 .foregroundStyle(Color.brandDefault)
-            Text(order.orderNo)
+            Text(L10n.lookup(order.orderNo))
                 .font(AppTypography.caption)
                 .foregroundStyle(Color.textTertiary)
         }
@@ -579,10 +579,10 @@ private struct DiyPaymentFlowView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(Color.stateWarning)
             VStack(alignment: .leading, spacing: 3) {
-                Text("材料价格已更新")
+                Text(L10n.text("材料价格已更新"))
                     .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
-                Text("作品展示 ¥\(String(format: "%.2f", order.originalMaterialFee ?? 0))，最终材料费 ¥\(String(format: "%.2f", order.materialFee))")
+                Text(L10n.text("作品展示 ¥\(String(format: "%.2f", order.originalMaterialFee ?? 0))，最终材料费 ¥\(String(format: "%.2f", order.materialFee))"))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textSecondary)
             }
@@ -595,10 +595,10 @@ private struct DiyPaymentFlowView: View {
 
     private var paymentChannel: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("支付方式")
+            Text(L10n.text("支付方式"))
                 .font(.cardTitle)
                 .foregroundStyle(Color.textPrimary)
-            Label("本地模拟支付（仅开发/测试）", systemImage: "testtube.2")
+            Label(L10n.text("本地模拟支付（仅开发/测试）"), systemImage: "testtube.2")
                 .font(AppTypography.body)
                 .foregroundStyle(Color.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -613,10 +613,10 @@ private struct DiyPaymentFlowView: View {
     private var paymentStatus: some View {
         if let payment {
             HStack {
-                Text("支付状态")
+                Text(L10n.text("支付状态"))
                     .foregroundStyle(Color.textSecondary)
                 Spacer()
-                Text(paymentStatusText(payment.status))
+                Text(L10n.lookup(paymentStatusText(payment.status)))
                     .fontWeight(.semibold)
                     .foregroundStyle(payment.status == "success" ? Color.stateSuccess : Color.stateWarning)
             }
@@ -632,7 +632,7 @@ private struct DiyPaymentFlowView: View {
             if let paymentResult {
                 if let raw = paymentResult.payUrl, let url = URL(string: raw) {
                     Link(destination: url) {
-                        Label("前往支付", systemImage: "arrow.up.right.square")
+                        Label(L10n.text("前往支付"), systemImage: "arrow.up.right.square")
                             .frame(maxWidth: .infinity)
                             .frame(height: 46)
                     }
@@ -642,7 +642,7 @@ private struct DiyPaymentFlowView: View {
                 Button {
                     Task { payment = await viewModel.loadPayment(id: paymentResult.id) }
                 } label: {
-                    Label("查询支付结果", systemImage: "arrow.clockwise")
+                    Label(L10n.text("查询支付结果"), systemImage: "arrow.clockwise")
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
                 }
@@ -656,7 +656,7 @@ private struct DiyPaymentFlowView: View {
                         }
                     }
                 } label: {
-                    Text("模拟支付 ¥\(String(format: "%.2f", order.totalFee))")
+                    Text(L10n.text("模拟支付 ¥\(String(format: "%.2f", order.totalFee))"))
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .frame(height: 46)
@@ -672,7 +672,7 @@ private struct DiyPaymentFlowView: View {
                     showOrderDetail = true
                 }
             } label: {
-                Label("查看订单详情", systemImage: "doc.text.magnifyingglass")
+                Label(L10n.text("查看订单详情"), systemImage: "doc.text.magnifyingglass")
                     .frame(maxWidth: .infinity)
                     .frame(height: 44)
             }
@@ -714,7 +714,7 @@ private struct DiyOrderResultDetailView: View {
 
     var body: some View {
         List {
-            Section("订单") {
+            Section(L10n.text("订单")) {
                 detailRow("订单号", order.orderNo)
                 detailRow("状态", order.statusDisplayText)
                 detailRow("材料费", "¥\(String(format: "%.2f", order.materialFee))")
@@ -724,11 +724,11 @@ private struct DiyOrderResultDetailView: View {
             }
             DiyConsecrationSection(order: order)
             if let items = order.items, !items.isEmpty {
-                Section("材料明细") {
+                Section(L10n.text("材料明细")) {
                     ForEach(items) { item in
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(item.materialName)
+                                Text(L10n.lookup(item.materialName))
                                 Text("\(item.spec) × \(item.quantity)")
                                     .font(AppTypography.caption)
                                     .foregroundStyle(Color.textTertiary)
@@ -742,15 +742,15 @@ private struct DiyOrderResultDetailView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Color.bgPrimary)
-        .navigationTitle("订单详情")
+        .navigationTitle(L10n.text("订单详情"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private func detailRow(_ label: String, _ value: String) -> some View {
         HStack {
-            Text(label).foregroundStyle(Color.textSecondary)
+            Text(L10n.lookup(label)).foregroundStyle(Color.textSecondary)
             Spacer()
-            Text(value).foregroundStyle(Color.textPrimary)
+            Text(L10n.lookup(value)).foregroundStyle(Color.textPrimary)
         }
     }
 }
@@ -769,17 +769,17 @@ struct DiyConsecrationSection: View {
 
     var body: some View {
         if let task = order.blessingTask, task.id > 0 {
-            Section("开光进度") {
-                LabeledContent("任务状态", value: statusText(task.status))
-                if let no = task.taskNo, !no.isEmpty { LabeledContent("任务编号", value: no) }
-                if let time = task.completeTime, !time.isEmpty { LabeledContent("完成时间", value: time) }
+            Section(L10n.text("开光进度")) {
+                LabeledContent(L10n.text("任务状态"), value: statusText(task.status))
+                if let no = task.taskNo, !no.isEmpty { LabeledContent(L10n.text("任务编号"), value: no) }
+                if let time = task.completeTime, !time.isEmpty { LabeledContent(L10n.text("完成时间"), value: time) }
                 ForEach(Array((task.certificateUrls ?? []).enumerated()), id: \.offset) { index, raw in
                     if let url = URL(string: raw), ["https", "http"].contains(url.scheme ?? "") {
                         Link(destination: url) {
                             HStack {
                                 AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { Image(systemName: "photo") }
                                     .frame(width: 96, height: 72).clipped().clipShape(RoundedRectangle(cornerRadius: 8))
-                                Text("查看开光凭证 \(index + 1)")
+                                Text(L10n.text("查看开光凭证 \(index + 1)"))
                             }
                         }
                     }

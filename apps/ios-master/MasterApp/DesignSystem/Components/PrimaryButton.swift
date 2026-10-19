@@ -26,13 +26,13 @@ struct PrimaryButton: View {
             ZStack {
                 HStack(spacing: 6) {
                     if let icon { Image(systemName: icon) }
-                    Text(title)
+                    Text(L10n.lookup(title))
                 }
                 .opacity(isLoading ? 0 : 1)
                 if isLoading {
                     HStack(spacing: 8) {
                         ProgressView().tint(.white)
-                        Text("处理中…")
+                        Text(L10n.text("处理中…"))
                     }
                     .transition(.opacity)
                 }
@@ -48,8 +48,8 @@ struct PrimaryButton: View {
             .opacity(isEnabled ? 1.0 : 0.5)
         }
         .buttonStyle(CardPressButtonStyle(prominent: true))
-        .accessibilityLabel(title)
-        .accessibilityValue(isLoading ? "正在处理" : "")
+        .accessibilityLabel(L10n.lookup(title))
+        .accessibilityValue(isLoading ? L10n.text("正在处理") : "")
         .disabled(!isEnabled || isLoading)
     }
 }
@@ -71,7 +71,7 @@ struct SecondaryButton: View {
                     Image(systemName: icon)
                         .font(AppTypography.control)
                 }
-                Text(title)
+                Text(L10n.lookup(title))
                     .font(AppTypography.control)
             }
             .foregroundStyle(Color.accentDefault)
@@ -93,11 +93,11 @@ struct SecondaryButton: View {
 
 #Preview {
     VStack(spacing: 16) {
-        PrimaryButton(title: "确认接单") {}
-        PrimaryButton(title: "提交", icon: "checkmark.circle.fill") {}
-        PrimaryButton(title: "加载中...", isLoading: true) {}
-        PrimaryButton(title: "不可用", isEnabled: false) {}
-        SecondaryButton(title: "查看详情") {}
+        PrimaryButton(title: L10n.text("确认接单")) {}
+        PrimaryButton(title: L10n.text("提交"), icon: "checkmark.circle.fill") {}
+        PrimaryButton(title: L10n.text("加载中..."), isLoading: true) {}
+        PrimaryButton(title: L10n.text("不可用"), isEnabled: false) {}
+        SecondaryButton(title: L10n.text("查看详情")) {}
     }
     .padding()
     .background(Color.bgPrimary)

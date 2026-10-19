@@ -36,6 +36,9 @@ targets:
     type: application
     platform: iOS
     sources:
+      - path: ../../packages/localization/native
+      - path: ../../packages/localization/zh-Hant.json
+        buildPhase: resources
       - path: ../../packages/service-journey-native
       - path: ../../packages/diy-materials/DiyMaterials
         type: folder
@@ -77,6 +80,7 @@ targets:
         NSMicrophoneUsageDescription: 用于录制咨询语音和语音通话
         NSCameraUsageDescription: 用于视频咨询通话
         UIAppFonts: ["AskXuanSerif-Semibold.ttf"]
+        CFBundleLocalizations: ["zh-Hans", "zh-Hant"]
         CFBundleDisplayName: 问玄东方
         CFBundleShortVersionString: "0.0.1"
         CFBundleVersion: "1"

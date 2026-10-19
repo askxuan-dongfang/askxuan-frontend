@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     dedupe: ['vue'],
     alias: {
+      '@askxuan/localization': fileURLToPath(new URL('../../packages/localization/language.ts', import.meta.url)),
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       '@askxuan/domain-status': fileURLToPath(new URL('../../packages/domain-status/src/index.ts', import.meta.url))
     }

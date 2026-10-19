@@ -1,12 +1,10 @@
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 // 分类管理 - 列表 + 新建/编辑弹窗
 import { ref, reactive, onMounted, computed } from "vue";
-import {
-  ElMessage,
-  ElMessageBox,
-  type FormInstance,
-  type FormRules,
-} from "element-plus";
+import { type FormInstance, type FormRules,  } from 'element-plus';
 import PageHeader from "@/components/PageHeader.vue";
 import { categoryApi, type CategorySaveParams } from "@/commerce/api/category";
 import type { ProductCategory } from "@/commerce/types";
@@ -87,10 +85,10 @@ async function handleSubmit() {
       const { id, ...payload } = form;
       if (id) {
         await categoryApi.update(id, payload);
-        ElMessage.success("更新成功");
+        ElMessage.success(uiText("更新成功"));
       } else {
         await categoryApi.create(payload);
-        ElMessage.success("创建成功");
+        ElMessage.success(uiText("创建成功"));
       }
       dialogVisible.value = false;
       loadList();
@@ -102,13 +100,13 @@ async function handleSubmit() {
 
 async function handleDelete(row: any) {
   try {
-    await ElMessageBox.confirm(`确认删除分类「${row.name}」吗？`, "提示", {
-      confirmButtonText: "删除",
-      cancelButtonText: "取消",
+    await ElMessageBox.confirm((uiText("确认删除分类「") + String(row.name) + uiText("」吗？")), uiText("提示"), {
+      confirmButtonText: uiText("删除"),
+      cancelButtonText: uiText("取消"),
       type: "warning",
     });
     await categoryApi.remove(row.id);
-    ElMessage.success("删除成功");
+    ElMessage.success(uiText("删除成功"));
     loadList();
   } catch {
     // 取消
@@ -123,25 +121,23 @@ onMounted(() => {
 <template>
   <div class="page-wrap">
     <PageHeader
-      title="分类管理"
-      subtitle="分类名称与排列顺序会同步到 H5 与 iOS 商城"
+      :title='$t("分类管理")'
+      :subtitle='$t("分类名称与排列顺序会同步到 H5 与 iOS 商城")'
     >
       <template #extra>
         <el-button type="primary" @click="openCreate()">
-          <el-icon><Plus /></el-icon>
-          新建分类
-        </el-button>
+          <el-icon><Plus /></el-icon>{{ $t(" 新建分类 ") }}</el-button>
       </template>
     </PageHeader>
 
     <section class="category-navigation-preview">
       <div>
-        <h2>商城导航预览</h2>
-        <p>按排序值从小到大排列；顾客可通过分类缩小商品范围。</p>
+        <h2>{{ $t("商城导航预览") }}</h2>
+        <p>{{ $t("按排序值从小到大排列；顾客可通过分类缩小商品范围。") }}</p>
       </div>
-      <nav aria-label="商城分类预览">
-        <span class="all">全部好物</span
-        ><span v-for="c in navPreview" :key="c.id">{{ c.name }}</span>
+      <nav :aria-label='$t("商城分类预览")'>
+        <span class="all">{{ $t("全部好物") }}</span
+        ><span v-for="c in navPreview" :key="c.id">{{ $t(c.name) }}</span>
       </nav>
     </section>
     <div class="df-card">
@@ -151,49 +147,49 @@ onMounted(() => {
         row-key="id"
         :tree-props="{ children: 'children' }"
         style="width: 100%"
-        empty-text="暂无分类"
+        :empty-text='$t("暂无分类")'
       >
-        <el-table-column label="分类名称" prop="name" min-width="220" />
-        <el-table-column label="层级" prop="level" width="100" />
-        <el-table-column label="父级 ID" prop="parentId" width="120" />
-        <el-table-column label="排序" prop="sort" width="100" />
+        <el-table-column :label='$t("分类名称")' prop="name" min-width="220" />
+        <el-table-column :label='$t("层级")' prop="level" width="100" />
+        <el-table-column :label='$t("父级 ID")' prop="parentId" width="120" />
+        <el-table-column :label='$t("排序")' prop="sort" width="100" />
         <el-table-column label="ID" prop="id" width="100" />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column :label='$t("操作")' width="220" fixed="right">
           <template #default="{ row }">
             <el-button text type="primary" size="small" @click="openCreate(row)"
-              >新增子分类</el-button
+              >{{ $t("新增子分类") }}</el-button
             >
             <el-button text type="primary" size="small" @click="openEdit(row)"
-              >编辑</el-button
+              >{{ $t("编辑") }}</el-button
             >
             <el-button
               text
               type="danger"
               size="small"
               @click="handleDelete(row)"
-              >删除</el-button
+              >{{ $t("删除") }}</el-button
             >
           </template>
         </el-table-column>
       </el-table>
-      <div class="total-bar">共 {{ total }} 个分类</div>
+      <div class="total-bar">{{ $t("共 ") }}{{ $t(total) }}{{ $t(" 个分类") }}</div>
     </div>
 
     <!-- 新建 / 编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="480px" append-to-body>
+    <el-dialog v-model="dialogVisible" :title="$t(dialogTitle)" width="480px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入分类名称" />
+        <el-form-item :label='$t("名称")' prop="name">
+          <el-input v-model="form.name" :placeholder='$t("请输入分类名称")' />
         </el-form-item>
-        <el-form-item label="父级 ID">
+        <el-form-item :label='$t("父级 ID")'>
           <el-input-number
             v-model="form.parentId"
             :min="0"
             controls-position="right"
           />
-          <span class="form-tip">0 表示顶级分类</span>
+          <span class="form-tip">{{ $t("0 表示顶级分类") }}</span>
         </el-form-item>
-        <el-form-item label="层级" prop="level">
+        <el-form-item :label='$t("层级")' prop="level">
           <el-input-number
             v-model="form.level"
             :min="1"
@@ -201,7 +197,7 @@ onMounted(() => {
             controls-position="right"
           />
         </el-form-item>
-        <el-form-item label="排序">
+        <el-form-item :label='$t("排序")'>
           <el-input-number
             v-model="form.sort"
             :min="0"
@@ -210,9 +206,9 @@ onMounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button @click="dialogVisible = false">{{ $t("取消") }}</el-button>
         <el-button type="primary" :loading="saving" @click="handleSubmit"
-          >保存</el-button
+          >{{ $t("保存") }}</el-button
         >
       </template>
     </el-dialog>

@@ -162,8 +162,8 @@ struct MessagesView: View {
 
     private var subTabs: some View {
         HStack(spacing: 0) {
-            subTabItem(title: "通知", index: 0, badge: viewModel.unreadCount)
-            subTabItem(title: "咨询", index: 1, badge: 0)
+            subTabItem(title: L10n.text("通知"), index: 0, badge: viewModel.unreadCount)
+            subTabItem(title: L10n.text("咨询"), index: 1, badge: 0)
         }
         .overlay(alignment: .bottom) {
             Rectangle()
@@ -176,7 +176,7 @@ struct MessagesView: View {
         let isSelected = selectedTab == index
         return VStack(spacing: 0) {
             HStack(spacing: 5) {
-                Text(title)
+                Text(L10n.lookup(title))
                     .font(AppTypography.body.weight(isSelected ? .semibold : .regular))
                     .foregroundStyle(isSelected ? .textPrimary : .textTertiary)
                 if badge > 0 {
@@ -209,8 +209,8 @@ struct MessagesView: View {
             VStack(spacing: 0) {
                 if viewModel.messages.isEmpty && !viewModel.isLoading {
                     EmptyState(icon: "bell.slash",
-                               title: "暂无通知",
-                               message: viewModel.errorMessage ?? "暂无站内消息")
+                               title: L10n.text("暂无通知"),
+                               message: viewModel.errorMessage ?? L10n.text("暂无站内消息"))
                         .padding(.top, 60)
                 } else {
                     ForEach(viewModel.messages) { message in
@@ -239,7 +239,7 @@ struct MessagesView: View {
             // 内容
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(m.title)
+                    Text(L10n.lookup(m.title))
                         .font(AppTypography.body.weight(.medium))
                         .foregroundStyle(.textPrimary)
                     Spacer()
@@ -248,7 +248,7 @@ struct MessagesView: View {
                             .fill(Color.brandDefault)
                             .frame(width: 8, height: 8)
                     }
-                    Text(DFDateFormatter.friendly(m.createdAt))
+                    Text(L10n.lookup(DFDateFormatter.friendly(m.createdAt)))
                         .font(.micro)
                         .foregroundStyle(.textTertiary)
                 }
@@ -276,12 +276,12 @@ struct MessagesView: View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 ChatNotificationPrompt()
-                HStack {Image(systemName:"magnifyingglass");TextField("搜索姓名、服务或消息",text:$chatSearch)}
+                HStack {Image(systemName:"magnifyingglass");TextField(L10n.text("搜索姓名、服务或消息"),text:$chatSearch)}
                     .font(AppTypography.body).padding(13).background(Color.bgTertiary,in:RoundedRectangle(cornerRadius:14)).padding(.horizontal,18).padding(.vertical,8)
                 if viewModel.chats.isEmpty && !viewModel.isLoading {
                     EmptyState(icon: "bubble.left.slash",
-                               title: "暂无咨询",
-                               message: viewModel.errorMessage ?? "信众购买即时咨询或完成预约支付后，对话会显示在这里")
+                               title: L10n.text("暂无咨询"),
+                               message: viewModel.errorMessage ?? L10n.text("信众购买即时咨询或完成预约支付后，对话会显示在这里"))
                         .padding(.top, 60)
                 } else {
                     ForEach(viewModel.chats) { conversation in
@@ -295,8 +295,8 @@ struct MessagesView: View {
                 }
             }
             .padding(.bottom, 70)
-            if viewModel.chatHasMore {Button(viewModel.chatLoading ? "加载中…" : "加载更多会话"){Task{await viewModel.moreChats()}}.disabled(viewModel.chatLoading).padding()}
-            if let error=viewModel.errorMessage {VStack{Text(error).font(.caption);Button("重试"){Task{await viewModel.loadChats()}}}.padding()}
+            if viewModel.chatHasMore {Button(L10n.lookup(viewModel.chatLoading ? L10n.text("加载中…") : L10n.text("加载更多会话"))){Task{await viewModel.moreChats()}}.disabled(viewModel.chatLoading).padding()}
+            if let error=viewModel.errorMessage {VStack{Text(L10n.lookup(error)).font(.caption);Button(L10n.text("重试")){Task{await viewModel.loadChats()}}}.padding()}
         }
         .softScrollEdge(.bottom)
         .task(id:chatSearch){try? await Task.sleep(for:.milliseconds(300));guard !Task.isCancelled else{return};await viewModel.searchChats(chatSearch)}
@@ -315,22 +315,22 @@ struct MessagesView: View {
             // 内容
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(conversation.peerName)
+                    Text(L10n.lookup(conversation.peerName))
                         .font(AppTypography.body.weight(.medium))
                         .foregroundStyle(.textPrimary)
                     Spacer()
-                    Text(DFDateFormatter.friendly(conversation.lastMessageAt))
+                    Text(L10n.lookup(DFDateFormatter.friendly(conversation.lastMessageAt)))
                         .font(.micro)
                         .foregroundStyle(.textTertiary)
                 }
-                Text(conversation.lastMessage)
+                Text(L10n.lookup(conversation.lastMessage))
                     .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            if conversation.unreadCount>0 {Text(conversation.unreadCount>99 ? "99+" : String(conversation.unreadCount)).font(AppTypography.micro).foregroundStyle(.white).padding(5).background(Color.brandDefault,in:Capsule())}
+            if conversation.unreadCount>0 {Text(L10n.lookup(conversation.unreadCount>99 ? "99+" : String(conversation.unreadCount))).font(AppTypography.micro).foregroundStyle(.white).padding(5).background(Color.brandDefault,in:Capsule())}
             Image(systemName: "chevron.right")
                 .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)

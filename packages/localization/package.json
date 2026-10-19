@@ -1,0 +1,12 @@
+{
+  "name": "@askxuan/localization",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "test": "node --test language.test.mjs"
+  },
+  "devDependencies": {
+    "opencc-js": "1.0.5"
+  }
+}

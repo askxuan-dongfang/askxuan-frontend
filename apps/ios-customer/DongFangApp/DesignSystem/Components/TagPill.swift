@@ -24,7 +24,7 @@ struct DFTagPill: View {
     }
 
     private var label: some View {
-        Text(title)
+        Text(L10n.lookup(title))
             .font(AppTypography.caption.weight(isSelected ? .semibold : .regular))
             .foregroundStyle(isSelected ? Color.white : Color.textTertiary)
             .padding(.horizontal, 14)

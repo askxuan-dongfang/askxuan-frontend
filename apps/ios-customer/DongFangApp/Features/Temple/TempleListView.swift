@@ -31,19 +31,19 @@ struct TempleListView: View {
                         .foregroundStyle(Color.accentDefault)
                 }
                 .buttonStyle(CardPressButtonStyle())
-                .accessibilityLabel("搜索")
+                .accessibilityLabel(L10n.text("搜索"))
             }
 
             if searchVisible || !viewModel.searchText.isEmpty {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass").foregroundStyle(Color.textTertiary)
-                    TextField("搜索寺院名称、地区", text: $viewModel.searchText)
+                    TextField(L10n.text("搜索寺院名称、地区"), text: $viewModel.searchText)
                         .focused($searchFocused).submitLabel(.search).autocorrectionDisabled()
-                    if !viewModel.searchText.isEmpty { Button { viewModel.searchText = "" } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel("清除搜索") }
+                    if !viewModel.searchText.isEmpty { Button { viewModel.searchText = "" } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel(L10n.text("清除搜索")) }
                 }.padding(12).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)).padding(.horizontal, 16).padding(.vertical, 6)
             }
             if let error = viewModel.errorMessage {
-                HStack { Text(error).font(AppTypography.caption); Spacer(); Button("重试") { Task { await viewModel.load() } } }.padding(12)
+                HStack { Text(L10n.lookup(error)).font(AppTypography.caption); Spacer(); Button(L10n.text("重试")) { Task { await viewModel.load() } } }.padding(12)
             }
 
             // 2. 教派标签横滑
@@ -80,7 +80,7 @@ struct TempleListView: View {
                     DFLoadingView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.filteredTemples.isEmpty {
-                    VStack { DFEmptyState(icon: "building.columns", title: "当前筛选无结果", subtitle: "可清除筛选查看全部寺院"); Button("清除筛选") { viewModel.searchText = ""; viewModel.selectedBeliefCode = ""; viewModel.selectedServiceCode = ""; viewModel.selectedRegionCode = ""; viewModel.selectedTraditionCode = "" } }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VStack { DFEmptyState(icon: "building.columns", title: L10n.text("当前筛选无结果"), subtitle: L10n.text("可清除筛选查看全部寺院")); Button(L10n.text("清除筛选")) { viewModel.searchText = ""; viewModel.selectedBeliefCode = ""; viewModel.selectedServiceCode = ""; viewModel.selectedRegionCode = ""; viewModel.selectedTraditionCode = "" } }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     templeListContent
                 }
@@ -120,7 +120,7 @@ struct TempleListView: View {
     // MARK: - 教派标签胶囊
     private func tagPill(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title)
+            Text(L10n.lookup(title))
                 .font(AppTypography.caption)
                 .foregroundStyle(isSelected ? Color.white : Color.textTertiary)
                 .padding(.horizontal, 14)
@@ -138,7 +138,7 @@ struct TempleListView: View {
                 Rectangle()
                     .fill(isSelected ? Color.brandDefault : Color.clear)
                     .frame(width: 2)
-                Text(title)
+                Text(L10n.lookup(title))
                     .font(AppTypography.caption.weight(isSelected ? .medium : .regular))
                     .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                     .frame(maxWidth: .infinity)
@@ -160,12 +160,12 @@ struct TempleListView: View {
             // 卡片 body
             VStack(spacing: 0) {
                 HStack(alignment: .center, spacing: 8) {
-                    Text(temple.name)
+                    Text(L10n.lookup(temple.name))
                         .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                     HStack(spacing: 4) {
-                        Text(temple.type)
-                        Text(temple.sect)
+                        Text(L10n.lookup(temple.type))
+                        Text(L10n.lookup(temple.sect))
                     }
                     .font(AppTypography.micro.weight(.medium))
                     .foregroundStyle(categoryBadgeColor(for: temple.type))
@@ -178,7 +178,7 @@ struct TempleListView: View {
                         Image(systemName: "star.fill")
                             .font(AppTypography.micro)
                             .foregroundStyle(Color.accentDefault)
-                        Text(String(format: "%.1f", temple.rating))
+                        Text(L10n.lookup(String(format: "%.1f", temple.rating)))
                             .font(AppTypography.supporting.weight(.semibold))
                             .foregroundStyle(Color.accentDefault)
                     }
@@ -189,11 +189,11 @@ struct TempleListView: View {
                     Image(systemName: "mappin.circle.fill")
                         .font(AppTypography.micro)
                         .foregroundStyle(Color.textTertiary)
-                    Text(temple.region)
+                    Text(L10n.lookup(temple.region))
                         .font(AppTypography.caption)
                         .foregroundStyle(Color.textTertiary)
                     Spacer()
-                    Text(startPriceText(for: temple))
+                    Text(L10n.lookup(startPriceText(for: temple)))
                         .font(AppTypography.supporting.weight(.semibold))
                         .foregroundStyle(priceColor(for: temple))
                 }
@@ -203,7 +203,7 @@ struct TempleListView: View {
                 HStack {
                     HStack(spacing: 6) {
                         ForEach((temple.serviceTags ?? []).prefix(4), id: \.self) { tag in
-                            Text(tag)
+                            Text(L10n.lookup(tag))
                                 .font(AppTypography.micro)
                                 .foregroundStyle(Color.textSecondary)
                                 .padding(.horizontal, 8)
@@ -214,7 +214,7 @@ struct TempleListView: View {
                     }
                     Spacer()
                     if let count = temple.serviceCount {
-                        Text("\(count)项服务")
+                        Text(L10n.text("\(count)项服务"))
                             .font(AppTypography.micro.weight(.medium))
                             .foregroundStyle(Color.brandDefault)
                     }

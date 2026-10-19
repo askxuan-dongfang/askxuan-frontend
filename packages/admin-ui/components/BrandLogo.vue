@@ -8,7 +8,7 @@ const assetBase = import.meta.env.BASE_URL
 </script>
 
 <template>
-  <span class="ax-brand-logo" role="img" :aria-label="label">
+  <span class="ax-brand-logo" role="img" :aria-label="$t(label)">
     <img class="ax-brand-logo__light" :src="`${assetBase}logos/logo-${identity}-light.svg`" alt="" width="96" height="96" />
     <img class="ax-brand-logo__dark" :src="`${assetBase}logos/logo-${identity}-dark.svg`" alt="" width="96" height="96" />
   </span>

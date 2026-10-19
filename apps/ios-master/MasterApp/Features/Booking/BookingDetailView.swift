@@ -97,7 +97,7 @@ struct BookingDetailView: View {
                     statusHeader(booking)
 
                     // 服务信息
-                    infoCard(title: "服务信息", icon: "sparkles") {
+                    infoCard(title: L10n.text("服务信息"), icon: "sparkles") {
                         infoRow("服务", booking.serviceName)
                         infoRow("寺院", booking.templeName)
                         infoRow("时段", "\(booking.bookingDate)  \(booking.timeSlot)")
@@ -106,7 +106,7 @@ struct BookingDetailView: View {
                     }
 
                     // 信众信息
-                    infoCard(title: "信众信息", icon: "person") {
+                    infoCard(title: L10n.text("信众信息"), icon: "person") {
                         infoRow("信众ID", booking.userId.isEmpty ? "匿名" : booking.userId)
                         infoRow("备注", booking.note.isEmpty ? "无" : booking.note)
                         infoRow("下单时间", DFDateFormatter.friendly(booking.createdAt))
@@ -119,24 +119,24 @@ struct BookingDetailView: View {
                 .padding(.bottom, AppSpacing.xl)
             } else {
                 EmptyState(icon: "exclamationmark.triangle.fill",
-                           title: "加载失败",
+                           title: L10n.text("加载失败"),
                            message: viewModel.errorMessage) {
                     Task { await viewModel.load() }
                 }
             }
         }
         .background(Color.bgPrimary)
-        .navigationTitle("预约详情")
+        .navigationTitle(L10n.text("预约详情"))
         .navigationBarTitleDisplayMode(.inline)
 
         .task { await viewModel.load() }
-        .alert("提示", isPresented: Binding(
+        .alert(L10n.text("提示"), isPresented: Binding(
             get: { viewModel.successMessage != nil },
             set: { if !$0 { viewModel.successMessage = nil } }
         )) {
-            Button("好的") { viewModel.successMessage = nil }
+            Button(L10n.text("好的")) { viewModel.successMessage = nil }
         } message: {
-            Text(viewModel.successMessage ?? "")
+            Text(L10n.lookup(viewModel.successMessage ?? ""))
         }
     }
 
@@ -144,10 +144,10 @@ struct BookingDetailView: View {
         MasterCard(padding: AppSpacing.lg) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(booking.serviceName)
+                    Text(L10n.lookup(booking.serviceName))
                         .font(.pageTitle)
                         .foregroundStyle(.textPrimary)
-                    Text("单号：\(booking.id)")
+                    Text(L10n.text("单号：\(booking.id)"))
                         .font(AppTypography.caption)
                         .foregroundStyle(.textTertiary)
                 }
@@ -165,7 +165,7 @@ struct BookingDetailView: View {
                     Image(systemName: icon)
                         .font(AppTypography.body)
                         .foregroundStyle(.accentDefault)
-                    Text(title)
+                    Text(L10n.lookup(title))
                         .font(.cardTitle)
                         .foregroundStyle(.textPrimary)
                 }
@@ -176,11 +176,11 @@ struct BookingDetailView: View {
 
     private func infoRow(_ label: String, _ value: String) -> some View {
         HStack(alignment: .top) {
-            Text(label)
+            Text(L10n.lookup(label))
                 .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)
                 .frame(width: 64, alignment: .leading)
-            Text(value)
+            Text(L10n.lookup(value))
                 .font(AppTypography.body)
                 .foregroundStyle(.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)

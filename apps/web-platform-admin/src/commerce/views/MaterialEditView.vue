@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 import { isAdminSessionExpired } from '@/api/client'
 // DIY 材料编辑 / 新建
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { type FormInstance, type FormRules } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import { materialApi, type MaterialSaveParams } from '@/commerce/api/material'
@@ -110,7 +113,7 @@ async function loadDetail() {
   loading.value = true
   try {
     const target = await materialApi.detail(materialId.value)
-    try { Object.assign(assets, JSON.parse(target.renderAssets || '{}')) } catch (sessionError) { if (isAdminSessionExpired(sessionError)) return; ElMessage.warning('材质素材配置无效，请重新填写') }
+    try { Object.assign(assets, JSON.parse(target.renderAssets || '{}')) } catch (sessionError) { if (isAdminSessionExpired(sessionError)) return; ElMessage.warning(uiText('材质素材配置无效，请重新填写')) }
     Object.assign(form, {
       name: target.name,
       spec: target.spec,
@@ -142,10 +145,10 @@ async function handleSubmit() {
     try {
       if (isEdit.value) {
         await materialApi.update(materialId.value, form)
-        ElMessage.success('更新成功')
+        ElMessage.success(uiText('更新成功'))
       } else {
         await materialApi.create(form)
-        ElMessage.success('创建成功')
+        ElMessage.success(uiText('创建成功'))
       }
       router.push('/commerce/materials')
     } finally {
@@ -165,7 +168,7 @@ onMounted(() => {
 
 <template>
   <div class="page-wrap" v-loading="loading">
-    <PageHeader :title="isEdit ? '编辑材料' : '新建材料'" subtitle="统一维护材料、渲染样式、价格与库存，C 端和 iOS 实时读取" />
+    <PageHeader :title="$t((isEdit ? $t('编辑材料') : $t('新建材料')))" :subtitle='$t("统一维护材料、渲染样式、价格与库存，C 端和 iOS 实时读取")' />
 
     <div class="df-card form-card">
       <el-form
@@ -175,104 +178,104 @@ onMounted(() => {
         label-width="100px"
         label-position="right"
       >
-        <el-form-item label="材料名称" prop="name">
-          <el-input v-model="form.name" placeholder="如：6mm 红玛瑙" maxlength="60" show-word-limit />
+        <el-form-item :label='$t("材料名称")' prop="name">
+          <el-input v-model="form.name" :placeholder='$t("如：6mm 红玛瑙")' maxlength="60" show-word-limit />
         </el-form-item>
 
-        <el-form-item label="规格" prop="spec">
-          <el-input v-model="form.spec" placeholder="如：8mm；绳线与流苏可留空" />
+        <el-form-item :label='$t("规格")' prop="spec">
+          <el-input v-model="form.spec" :placeholder='$t("如：8mm；绳线与流苏可留空")' />
         </el-form-item>
 
-        <el-form-item label="分类" prop="category">
-          <el-select v-model="form.category" placeholder="请选择分类" style="width: 220px">
+        <el-form-item :label='$t("分类")' prop="category">
+          <el-select v-model="form.category" :placeholder='$t("请选择分类")' style="width: 220px">
             <el-option
               v-for="c in categoryOptions"
               :key="c.value"
-              :label="c.label"
+              :label="$t(c.label)"
               :value="c.value"
             />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="五行属性">
-          <el-select v-model="form.fiveElements" placeholder="请选择（可选）" clearable style="width: 220px">
+        <el-form-item :label='$t("五行属性")'>
+          <el-select v-model="form.fiveElements" :placeholder='$t("请选择（可选）")' clearable style="width: 220px">
             <el-option
               v-for="f in fiveElementsOptions"
               :key="f.value"
-              :label="f.label"
+              :label="$t(f.label)"
               :value="f.value"
             />
           </el-select>
         </el-form-item>
 
-        <el-divider content-position="left">前端渲染样式</el-divider>
+        <el-divider content-position="left">{{ $t("前端渲染样式") }}</el-divider>
 
         <div class="render-grid">
-          <el-form-item label="材质大类" prop="materialType">
+          <el-form-item :label='$t("材质大类")' prop="materialType">
             <el-select v-model="form.materialType" style="width: 220px">
-              <el-option v-for="item in materialTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
+              <el-option v-for="item in materialTypeOptions" :key="item.value" :label="$t(item.label)" :value="item.value" />
             </el-select>
           </el-form-item>
-          <el-form-item label="珠型/造型" prop="shape">
+          <el-form-item :label='$t("珠型/造型")' prop="shape">
             <el-select v-model="form.shape" style="width: 220px">
-              <el-option v-for="item in shapeOptions" :key="item.value" :label="item.label" :value="item.value" />
+              <el-option v-for="item in shapeOptions" :key="item.value" :label="$t(item.label)" :value="item.value" />
             </el-select>
           </el-form-item>
-          <el-form-item label="纹理">
+          <el-form-item :label='$t("纹理")'>
             <el-select v-model="form.textureKey" filterable style="width: 220px">
-              <el-option v-for="item in textureOptions" :key="item.value" :label="item.label" :value="item.value" />
+              <el-option v-for="item in textureOptions" :key="item.value" :label="$t(item.label)" :value="item.value" />
             </el-select>
           </el-form-item>
-          <el-form-item label="表面工艺">
+          <el-form-item :label='$t("表面工艺")'>
             <el-select v-model="form.finish" style="width: 220px">
-              <el-option v-for="item in finishOptions" :key="item.value" :label="item.label" :value="item.value" />
+              <el-option v-for="item in finishOptions" :key="item.value" :label="$t(item.label)" :value="item.value" />
             </el-select>
           </el-form-item>
-          <el-form-item label="渲染直径">
+          <el-form-item :label='$t("渲染直径")'>
             <el-input-number v-model="form.diameterMm" :min="0" :max="40" :precision="1" :step="1" />
             <span class="form-tip">mm</span>
           </el-form-item>
-          <el-form-item label="通透度">
+          <el-form-item :label='$t("通透度")'>
             <el-slider v-model="form.translucency" :min="0" :max="1" :step="0.05" show-input />
           </el-form-item>
-          <el-form-item label="渲染主色" prop="colorHex">
+          <el-form-item :label='$t("渲染主色")' prop="colorHex">
             <el-color-picker v-model="form.colorHex" />
             <el-input v-model="form.colorHex" style="width: 140px; margin-left: 10px" />
           </el-form-item>
           <div class="bead-preview-wrap">
-            <span>无图时预览</span>
+            <span>{{ $t("无图时预览") }}</span>
             <div class="bead-preview" :class="[`shape-${form.shape}`, `finish-${form.finish}`]" :style="{ backgroundColor: form.colorHex, opacity: Math.max(0.45, 1 - form.translucency * 0.35) }" />
           </div>
         </div>
 
-        <el-form-item label="单价" prop="unitPrice">
+        <el-form-item :label='$t("单价")' prop="unitPrice">
           <el-input-number v-model="form.unitPrice" :min="0" :precision="2" :step="1" controls-position="right" />
-          <span class="form-tip">元</span>
+          <span class="form-tip">{{ $t("元") }}</span>
         </el-form-item>
 
-        <el-form-item label="单位" prop="unit">
-          <el-input v-model="form.unit" placeholder="如：颗 / 串 / 克" style="width: 200px" />
+        <el-form-item :label='$t("单位")' prop="unit">
+          <el-input v-model="form.unit" :placeholder='$t("如：颗 / 串 / 克")' style="width: 200px" />
         </el-form-item>
 
-        <el-form-item label="库存" prop="stock">
+        <el-form-item :label='$t("库存")' prop="stock">
           <el-input-number v-model="form.stock" :min="0" :step="1" controls-position="right" />
         </el-form-item>
 
-        <el-divider content-position="left">写实单珠与 3D 素材</el-divider>
-        <el-alert title="单珠图请使用有授权的透明底 PNG / WebP，统一正面视角与光照；3D 贴图使用去光照的展开纹理，不要上传整串商品照片。" type="info" :closable="false" style="margin-bottom:20px" />
-        <el-form-item label="单珠实拍"><ImageUploader v-model="assets.beadImageUrl" :multiple="false" placeholder="透明底单珠图片 URL" /></el-form-item>
-        <el-form-item label="颜色贴图"><el-input v-model="assets.albedoMapUrl" placeholder="3D 颜色纹理 URL（可选）" /></el-form-item>
-        <el-form-item label="法线贴图"><el-input v-model="assets.normalMapUrl" placeholder="表面细节纹理 URL（可选）" /></el-form-item>
-        <el-form-item label="粗糙度图"><el-input v-model="assets.roughnessMapUrl" placeholder="黑白粗糙度纹理 URL（可选）" /></el-form-item>
-        <el-form-item label="素材来源"><el-select v-model="assets.source"><el-option label="实拍素材" value="photograph"/><el-option label="授权素材" value="licensed"/><el-option label="程序材质预览" value="procedural"/></el-select></el-form-item>
-        <el-form-item label="授权与说明"><el-input v-model="assets.attribution" type="textarea" :rows="2" maxlength="400" placeholder="摄影归属、授权出处、拍摄批次" /></el-form-item>
-        <el-form-item label="材料图片" prop="image">
-          <ImageUploader v-model="form.image" :multiple="false" placeholder="粘贴材料图片 URL" />
+        <el-divider content-position="left">{{ $t("写实单珠与 3D 素材") }}</el-divider>
+        <el-alert :title='$t("单珠图请使用有授权的透明底 PNG / WebP，统一正面视角与光照；3D 贴图使用去光照的展开纹理，不要上传整串商品照片。")' type="info" :closable="false" style="margin-bottom:20px" />
+        <el-form-item :label='$t("单珠实拍")'><ImageUploader v-model="assets.beadImageUrl" :multiple="false" :placeholder='$t("透明底单珠图片 URL")' /></el-form-item>
+        <el-form-item :label='$t("颜色贴图")'><el-input v-model="assets.albedoMapUrl" :placeholder='$t("3D 颜色纹理 URL（可选）")' /></el-form-item>
+        <el-form-item :label='$t("法线贴图")'><el-input v-model="assets.normalMapUrl" :placeholder='$t("表面细节纹理 URL（可选）")' /></el-form-item>
+        <el-form-item :label='$t("粗糙度图")'><el-input v-model="assets.roughnessMapUrl" :placeholder='$t("黑白粗糙度纹理 URL（可选）")' /></el-form-item>
+        <el-form-item :label='$t("素材来源")'><el-select v-model="assets.source"><el-option :label='$t("实拍素材")' value="photograph"/><el-option :label='$t("授权素材")' value="licensed"/><el-option :label='$t("程序材质预览")' value="procedural"/></el-select></el-form-item>
+        <el-form-item :label='$t("授权与说明")'><el-input v-model="assets.attribution" type="textarea" :rows="2" maxlength="400" :placeholder='$t("摄影归属、授权出处、拍摄批次")' /></el-form-item>
+        <el-form-item :label='$t("材料图片")' prop="image">
+          <ImageUploader v-model="form.image" :multiple="false" :placeholder='$t("粘贴材料图片 URL")' />
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" :loading="saving" @click="handleSubmit">保存</el-button>
-          <el-button @click="handleCancel">取消</el-button>
+          <el-button type="primary" :loading="saving" @click="handleSubmit">{{ $t("保存") }}</el-button>
+          <el-button @click="handleCancel">{{ $t("取消") }}</el-button>
         </el-form-item>
       </el-form>
     </div>

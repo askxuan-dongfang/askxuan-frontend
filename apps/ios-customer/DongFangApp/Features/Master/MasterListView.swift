@@ -32,19 +32,19 @@ struct MasterListView: View {
                         .foregroundStyle(Color.accentDefault)
                 }
                 .buttonStyle(CardPressButtonStyle())
-                .accessibilityLabel("搜索")
+                .accessibilityLabel(L10n.text("搜索"))
             }
 
             if searchVisible || !viewModel.searchText.isEmpty {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass").foregroundStyle(Color.textTertiary)
-                    TextField("搜索师傅、宗派或专长", text: $viewModel.searchText)
+                    TextField(L10n.text("搜索师傅、宗派或专长"), text: $viewModel.searchText)
                         .focused($searchFocused).submitLabel(.search).autocorrectionDisabled()
-                    if !viewModel.searchText.isEmpty { Button { viewModel.searchText = "" } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel("清除搜索") }
+                    if !viewModel.searchText.isEmpty { Button { viewModel.searchText = "" } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel(L10n.text("清除搜索")) }
                 }.padding(12).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)).padding(.horizontal, 16).padding(.vertical, 6)
             }
             if let error = viewModel.errorMessage {
-                HStack { Text(error).font(AppTypography.caption); Spacer(); Button("重试") { Task { await viewModel.load() } } }.padding(12)
+                HStack { Text(L10n.lookup(error)).font(AppTypography.caption); Spacer(); Button(L10n.text("重试")) { Task { await viewModel.load() } } }.padding(12)
             }
 
             // 2. 分类标签横滑
@@ -79,7 +79,7 @@ struct MasterListView: View {
                     DFLoadingView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.filteredMasters.isEmpty {
-                    VStack { DFEmptyState(icon: "person.2", title: "暂无符合条件的师傅", subtitle: "可以换个关键词或清除筛选"); Button("清除筛选") { viewModel.clearFilters() } }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VStack { DFEmptyState(icon: "person.2", title: L10n.text("暂无符合条件的师傅"), subtitle: L10n.text("可以换个关键词或清除筛选")); Button(L10n.text("清除筛选")) { viewModel.clearFilters() } }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     masterListContent
                 }
@@ -119,7 +119,7 @@ struct MasterListView: View {
     // MARK: - 教派标签胶囊
     private func tagPill(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title)
+            Text(L10n.lookup(title))
                 .font(AppTypography.caption)
                 .foregroundStyle(isSelected ? Color.white : Color.textTertiary)
                 .padding(.horizontal, 14)
@@ -143,7 +143,7 @@ struct MasterListView: View {
                 }
             } label: {
                 HStack(spacing: 2) {
-                    Text(title)
+                    Text(L10n.lookup(title))
                         .font(AppTypography.micro.weight(.semibold))
                         .foregroundStyle(isExpanded ? Color.accentDefault : Color.textTertiary)
                         .lineLimit(1)
@@ -173,7 +173,7 @@ struct MasterListView: View {
                 Rectangle()
                     .fill(isSelected ? Color.brandDefault : Color.clear)
                     .frame(width: 2)
-                Text(title)
+                Text(L10n.lookup(title))
                     .font(AppTypography.micro.weight(isSelected ? .medium : .regular))
                     .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                     .lineLimit(1)
@@ -205,7 +205,7 @@ struct MasterListView: View {
             // 信息区（统一布局：法号+流派 / 归属 / 专长 / 可约服务 / 评分·价格）
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 8) {
-                    Text(master.dharmaName)
+                    Text(L10n.lookup(master.dharmaName))
                         .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
@@ -221,23 +221,23 @@ struct MasterListView: View {
                 }
 
                 // 归属：独立执业大师无寺院
-                Text(master.templeName.isEmpty ? "平台直管 · 独立执业大师" : "\(master.templeName) · \(master.position.isEmpty ? "寺院法师" : master.position)")
+                Text(master.templeName.isEmpty ? L10n.text("平台直管 · 独立执业大师") : L10n.text("\(master.templeName) · \(master.position.isEmpty ? "寺院法师" : master.position)"))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)
 
                 // 专长（大师资料字段）
                 HStack(spacing: 6) {
-                    Text("专长")
+                    Text(L10n.text("专长"))
                         .font(AppTypography.micro)
                         .foregroundStyle(Color.textTertiary)
                     if master.specialties.isEmpty {
-                        Text("暂无")
+                        Text(L10n.text("暂无"))
                             .font(AppTypography.micro)
                             .foregroundStyle(Color.textTertiary)
                     } else {
                         ForEach(master.specialties.prefix(2), id: \.self) { specialty in
-                            Text(specialty)
+                            Text(L10n.lookup(specialty))
                                 .font(AppTypography.micro)
                                 .foregroundStyle(Color.brandDefault)
                                 .padding(.horizontal, 8)
@@ -251,12 +251,12 @@ struct MasterListView: View {
 
                 // 可提供服务（大师服务标签，S001-S013 自定价）
                 HStack(spacing: 6) {
-                    Text("可约")
+                    Text(L10n.text("可约"))
                         .font(AppTypography.micro)
                         .foregroundStyle(Color.textTertiary)
                     if let tags = master.serviceTags, !tags.isEmpty {
                         ForEach(tags.prefix(2), id: \.self) { tag in
-                            Text(ServiceType.from(serviceCode: tag.serviceCode)?.rawValue ?? tag.serviceCode)
+                            Text(L10n.lookup(ServiceType.from(serviceCode: tag.serviceCode)?.rawValue ?? tag.serviceCode))
                                 .font(AppTypography.micro)
                                 .foregroundStyle(Color.stateSuccess)
                                 .padding(.horizontal, 8)
@@ -266,7 +266,7 @@ struct MasterListView: View {
                                 .lineLimit(1)
                         }
                     } else {
-                        Text("暂未配置")
+                        Text(L10n.text("暂未配置"))
                             .font(AppTypography.micro)
                             .foregroundStyle(Color.textTertiary)
                     }
@@ -275,18 +275,18 @@ struct MasterListView: View {
                 // 评分 + 在线状态 + 起价（统一展示）
                 HStack {
                     HStack(spacing: 3) {
-                        Text(String(format: "%.1f", master.rating))
+                        Text(L10n.lookup(String(format: "%.1f", master.rating)))
                             .font(AppTypography.supporting.weight(.semibold))
                             .foregroundStyle(Color.accentDefault)
                         Image(systemName: "star.fill")
                             .font(AppTypography.micro)
                             .foregroundStyle(Color.accentDefault)
                     }
-                    Text(master.isOnline == true ? "在线" : "离线")
+                    Text(L10n.lookup(master.isOnline == true ? L10n.text("在线") : L10n.text("离线")))
                         .font(AppTypography.micro)
                         .foregroundStyle(master.isOnline == true ? Color.stateSuccess : Color.textTertiary)
                     Spacer()
-                    Text(masterPriceText(master))
+                    Text(L10n.lookup(masterPriceText(master)))
                         .font(AppTypography.body.weight(.semibold))
                         .foregroundStyle(Color.brandDefault)
                 }

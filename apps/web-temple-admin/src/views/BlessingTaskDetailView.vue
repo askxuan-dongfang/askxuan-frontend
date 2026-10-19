@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../packages/localization/language'
+
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+
 import { ArrowLeft } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
@@ -39,13 +42,13 @@ async function load() {
 
 async function assign() {
   if (!selectedMaster.value) {
-    ElMessage.warning('请选择执行法师')
+    ElMessage.warning(uiText('请选择执行法师'))
     return
   }
   assigning.value = true
   try {
     task.value = await assignBlessingTask(taskId.value, selectedMaster.value)
-    ElMessage.success('加持任务已分配')
+    ElMessage.success(uiText('加持任务已分配'))
   } finally {
     assigning.value = false
   }
@@ -56,40 +59,40 @@ onMounted(load)
 
 <template>
   <div class="df-page" v-loading="loading">
-    <PageHeader title="加持任务详情" subtitle="核对订单来源、执行法师与履约凭证">
-      <el-button :icon="ArrowLeft" @click="router.push('/blessing-tasks')">返回列表</el-button>
+    <PageHeader :title='$t("加持任务详情")' :subtitle='$t("核对订单来源、执行法师与履约凭证")'>
+      <el-button :icon="ArrowLeft" @click="router.push('/blessing-tasks')">{{ $t("返回列表") }}</el-button>
     </PageHeader>
 
     <template v-if="task">
       <div class="df-card detail-card">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="任务编号">{{ task.taskNo }}</el-descriptions-item>
-          <el-descriptions-item label="状态"><StatusTag :status="task.status" kind="blessing" /></el-descriptions-item>
-          <el-descriptions-item label="DIY 订单">{{ task.diyOrderNo }}</el-descriptions-item>
-          <el-descriptions-item label="寺院编码">{{ task.templeCode }}</el-descriptions-item>
-          <el-descriptions-item label="分配时间">{{ formatDate(task.assignTime) }}</el-descriptions-item>
-          <el-descriptions-item label="完成时间">{{ formatDate(task.completeTime) }}</el-descriptions-item>
+          <el-descriptions-item :label='$t("任务编号")'>{{ $t(task.taskNo) }}</el-descriptions-item>
+          <el-descriptions-item :label='$t("状态")'><StatusTag :status="task.status" kind="blessing" /></el-descriptions-item>
+          <el-descriptions-item :label='$t("DIY 订单")'>{{ $t(task.diyOrderNo) }}</el-descriptions-item>
+          <el-descriptions-item :label='$t("寺院编码")'>{{ $t(task.templeCode) }}</el-descriptions-item>
+          <el-descriptions-item :label='$t("分配时间")'>{{ $t(formatDate(task.assignTime)) }}</el-descriptions-item>
+          <el-descriptions-item :label='$t("完成时间")'>{{ $t(formatDate(task.completeTime)) }}</el-descriptions-item>
         </el-descriptions>
       </div>
 
       <div class="df-card assignment-card">
-        <h3>执行法师</h3>
+        <h3>{{ $t("执行法师") }}</h3>
         <div class="assignment-row">
-          <el-select v-model="selectedMaster" filterable placeholder="选择本寺院法师" :disabled="!canAssign">
+          <el-select v-model="selectedMaster" filterable :placeholder='$t("选择本寺院法师")' :disabled="!canAssign">
             <el-option
               v-for="master in masters"
               :key="master.id"
-              :label="`${master.dharmaName} · ${master.position || '法师'}`"
+              :label="$t(($t('') + String(master.dharmaName) + $t(' · ') + String((master.position || $t('法师'))) + $t('')))"
               :value="master.id"
             />
           </el-select>
-          <el-button type="primary" :loading="assigning" :disabled="!canAssign" @click="assign">确认分配</el-button>
+          <el-button type="primary" :loading="assigning" :disabled="!canAssign" @click="assign">{{ $t("确认分配") }}</el-button>
         </div>
       </div>
 
       <div class="df-card certificate-card">
-        <h3>履约凭证</h3>
-        <el-empty v-if="!task.certificateUrls?.length" description="法师完成加持后上传凭证" :image-size="72" />
+        <h3>{{ $t("履约凭证") }}</h3>
+        <el-empty v-if="!task.certificateUrls?.length" :description='$t("法师完成加持后上传凭证")' :image-size="72" />
         <el-image
           v-for="url in task.certificateUrls"
           v-else

@@ -21,7 +21,11 @@ targets:
   AskXuanAdmin:
     type: application
     platform: macOS
-    sources: [AskXuanAdmin]
+    sources:
+      - path: AskXuanAdmin
+      - path: ../../packages/localization/native
+      - path: ../../packages/localization/zh-Hant.json
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.askxuan.admin.mac

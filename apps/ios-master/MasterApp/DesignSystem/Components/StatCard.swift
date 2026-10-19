@@ -23,11 +23,11 @@ struct StatCard: View {
                             .font(AppTypography.supporting.weight(.semibold))
                             .foregroundStyle(tint)
                     }
-                    Text(title)
+                    Text(L10n.lookup(title))
                         .font(AppTypography.caption)
                         .foregroundStyle(.textSecondary)
                 }
-                Text(value)
+                Text(L10n.lookup(value))
                     .appNumericFont(22)
                     .appNumericTransition(value: value)
                     .foregroundStyle(.textPrimary)
@@ -39,8 +39,8 @@ struct StatCard: View {
 
 #Preview {
     HStack(spacing: 12) {
-        StatCard(title: "今日待办", value: "5", icon: "list.clipboard", tint: .brandDefault)
-        StatCard(title: "本月收益", value: "¥8,640", icon: "yensign.circle", tint: .accentDefault)
+        StatCard(title: L10n.text("今日待办"), value: "5", icon: "list.clipboard", tint: .brandDefault)
+        StatCard(title: L10n.text("本月收益"), value: "¥8,640", icon: "yensign.circle", tint: .accentDefault)
     }
     .padding()
     .background(Color.bgPrimary)

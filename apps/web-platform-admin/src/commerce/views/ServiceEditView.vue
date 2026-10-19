@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 // 祈福服务编辑 / 新建
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { type FormInstance, type FormRules } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import { serviceApi, type BlessingServiceSaveParams } from '@/commerce/api/service'
 
@@ -58,10 +61,10 @@ async function handleSubmit() {
     try {
       if (isEdit.value) {
         await serviceApi.update(serviceId.value, form)
-        ElMessage.success('更新成功')
+        ElMessage.success(uiText('更新成功'))
       } else {
         await serviceApi.create(form)
-        ElMessage.success('创建成功')
+        ElMessage.success(uiText('创建成功'))
       }
       router.push('/commerce/services')
     } finally {
@@ -82,7 +85,7 @@ onMounted(() => {
 
 <template>
   <div class="page-wrap" v-loading="loading">
-    <PageHeader title="维护历史附加服务" subtitle="仅用于历史订单。新定制的开光服务沿用寺院或法师的原服务价格。" />
+    <PageHeader :title='$t("维护历史附加服务")' :subtitle='$t("仅用于历史订单。新定制的开光服务沿用寺院或法师的原服务价格。")' />
 
     <div class="df-card form-card">
       <el-form
@@ -92,44 +95,44 @@ onMounted(() => {
         label-width="100px"
         label-position="right"
       >
-        <el-form-item label="服务名称" prop="serviceName">
-          <el-input v-model="form.serviceName" placeholder="如：财神法会加持" maxlength="60" show-word-limit />
+        <el-form-item :label='$t("服务名称")' prop="serviceName">
+          <el-input v-model="form.serviceName" :placeholder='$t("如：财神法会加持")' maxlength="60" show-word-limit />
         </el-form-item>
 
-        <el-form-item label="寺院编码" prop="templeCode">
-          <el-input v-model="form.templeCode" placeholder="如：lingyin-temple" style="width: 320px" />
+        <el-form-item :label='$t("寺院编码")' prop="templeCode">
+          <el-input v-model="form.templeCode" :placeholder='$t("如：lingyin-temple")' style="width: 320px" />
         </el-form-item>
 
-        <el-form-item label="法师编码" prop="masterCode">
-          <el-input v-model="form.masterCode" placeholder="如：master-001" style="width: 320px" />
+        <el-form-item :label='$t("法师编码")' prop="masterCode">
+          <el-input v-model="form.masterCode" :placeholder='$t("如：master-001")' style="width: 320px" />
         </el-form-item>
 
-        <el-form-item label="价格" prop="price">
+        <el-form-item :label='$t("价格")' prop="price">
           <el-input-number v-model="form.price" :min="0" :precision="2" :step="10" controls-position="right" />
-          <span class="form-tip">元</span>
+          <span class="form-tip">{{ $t("元") }}</span>
         </el-form-item>
 
-        <el-form-item label="状态">
+        <el-form-item :label='$t("状态")'>
           <el-radio-group v-model="form.status">
-            <el-radio value="on_shelf">上架</el-radio>
-            <el-radio value="off_shelf">下架</el-radio>
+            <el-radio value="on_shelf">{{ $t("上架") }}</el-radio>
+            <el-radio value="off_shelf">{{ $t("下架") }}</el-radio>
           </el-radio-group>
         </el-form-item>
 
-        <el-form-item label="服务描述">
+        <el-form-item :label='$t("服务描述")'>
           <el-input
             v-model="form.description"
             type="textarea"
             :rows="5"
-            placeholder="请输入服务描述、流程说明等"
+            :placeholder='$t("请输入服务描述、流程说明等")'
             maxlength="1000"
             show-word-limit
           />
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" :loading="saving" @click="handleSubmit">保存</el-button>
-          <el-button @click="handleCancel">取消</el-button>
+          <el-button type="primary" :loading="saving" @click="handleSubmit">{{ $t("保存") }}</el-button>
+          <el-button @click="handleCancel">{{ $t("取消") }}</el-button>
         </el-form-item>
       </el-form>
     </div>

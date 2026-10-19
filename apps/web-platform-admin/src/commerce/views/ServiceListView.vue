@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 // 祈福服务列表
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import { serviceApi, type BlessingServiceListParams } from '@/commerce/api/service'
@@ -45,13 +48,13 @@ function handleSizeChange(s: number) {
 
 async function handleDelete(row: any) {
   try {
-    await ElMessageBox.confirm(`确认删除祈福服务「${row.serviceName}」吗？`, '提示', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm((uiText("确认删除祈福服务「") + String(row.serviceName) + uiText("」吗？")), uiText('提示'), {
+      confirmButtonText: uiText('删除'),
+      cancelButtonText: uiText('取消'),
       type: 'warning'
     })
     await serviceApi.remove(row.id)
-    ElMessage.success('删除成功')
+    ElMessage.success(uiText('删除成功'))
     loadList()
   } catch {
     // 取消
@@ -65,42 +68,42 @@ onMounted(() => {
 
 <template>
   <div class="page-wrap">
-    <PageHeader title="DIY 开光服务" subtitle="新订单直接选用寺院或独立法师已上架的开光服务，价格与原服务一致。" />
-    <el-alert type="info" :closable="false" style="margin-bottom: 16px" title="开光价格请在对应寺院或法师的服务设置中维护。寺院订单由该寺院分配法师，独立法师订单直接派给本人。" />
+    <PageHeader :title='$t("DIY 开光服务")' :subtitle='$t("新订单直接选用寺院或独立法师已上架的开光服务，价格与原服务一致。")' />
+    <el-alert type="info" :closable="false" style="margin-bottom: 16px" :title='$t("开光价格请在对应寺院或法师的服务设置中维护。寺院订单由该寺院分配法师，独立法师订单直接派给本人。")' />
     <el-radio-group v-model="legacy" style="margin-bottom: 16px">
-      <el-radio-button :value="false">当前开光服务</el-radio-button>
-      <el-radio-button :value="true">历史附加服务</el-radio-button>
+      <el-radio-button :value="false">{{ $t("当前开光服务") }}</el-radio-button>
+      <el-radio-button :value="true">{{ $t("历史附加服务") }}</el-radio-button>
     </el-radio-group>
-    <el-alert v-if="legacy" type="warning" :closable="false" style="margin-bottom: 16px" title="以下配置仅保留给历史订单，新定制不再使用独立加价项。" />
+    <el-alert v-if="legacy" type="warning" :closable="false" style="margin-bottom: 16px" :title='$t("以下配置仅保留给历史订单，新定制不再使用独立加价项。")' />
 
     <div class="df-card">
-      <el-table v-loading="loading" :data="list" style="width: 100%" empty-text="暂无可用服务">
-        <el-table-column label="服务编码" prop="serviceCode" width="180" />
-        <el-table-column label="服务名称" prop="serviceName" min-width="200" />
-        <el-table-column label="寺院" width="180">
+      <el-table v-loading="loading" :data="list" style="width: 100%" :empty-text='$t("暂无可用服务")'>
+        <el-table-column :label='$t("服务编码")' prop="serviceCode" width="180" />
+        <el-table-column :label='$t("服务名称")' prop="serviceName" min-width="200" />
+        <el-table-column :label='$t("寺院")' width="180">
           <template #default="{ row }">
             <span>{{ row.templeName || row.templeCode }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="法师" width="160">
+        <el-table-column :label='$t("法师")' width="160">
           <template #default="{ row }">
             <span>{{ row.masterName || row.masterCode }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="价格" width="120">
+        <el-table-column :label='$t("价格")' width="120">
           <template #default="{ row }">
-            <span class="price">{{ formatMoney(row.price) }}</span>
+            <span class="price">{{ $t(formatMoney(row.price)) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="110">
+        <el-table-column :label='$t("状态")' width="110">
           <template #default="{ row }">
             <StatusTag :status="row.status" domain="enabled" />
           </template>
         </el-table-column>
-        <el-table-column v-if="legacy" label="操作" width="180" fixed="right">
+        <el-table-column v-if="legacy" :label='$t("操作")' width="180" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" size="small" @click="router.push(`/commerce/services/edit/${row.id}`)">编辑</el-button>
-            <el-button text type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button text type="primary" size="small" @click="router.push(`/commerce/services/edit/${row.id}`)">{{ $t("编辑") }}</el-button>
+            <el-button text type="danger" size="small" @click="handleDelete(row)">{{ $t("删除") }}</el-button>
           </template>
         </el-table-column>
       </el-table>

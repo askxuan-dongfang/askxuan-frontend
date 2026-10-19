@@ -149,7 +149,7 @@ function refreshChartAppearance() {
 
 <template>
   <div class="df-page" v-loading="loading">
-    <PageHeader title="数据报表" subtitle="寺院运营数据可视化">
+    <PageHeader :title='$t("数据报表")' :subtitle='$t("寺院运营数据可视化")'>
       <el-date-picker
         v-model="dateRange"
         type="daterange"
@@ -159,48 +159,48 @@ function refreshChartAppearance() {
         end-placeholder="结束日期"
         style="width: 280px"
       />
-      <el-button :icon="Refresh" type="primary" @click="load">查询</el-button>
+      <el-button :icon="Refresh" type="primary" @click="load">{{ $t("查询") }}</el-button>
     </PageHeader>
 
     <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
-      <div class="ax-page-feedback__copy"><div class="ax-page-feedback__title">寺院报表加载失败</div><div class="ax-page-feedback__description">{{ loadError }}。页面不会用 0 代替缺失经营数据。</div></div>
-      <el-button :loading="loading" @click="load">重新加载</el-button>
+      <div class="ax-page-feedback__copy"><div class="ax-page-feedback__title">{{ $t("寺院报表加载失败") }}</div><div class="ax-page-feedback__description">{{ $t(loadError) }}{{ $t("。页面不会用 0 代替缺失经营数据。") }}</div></div>
+      <el-button :loading="loading" @click="load">{{ $t("重新加载") }}</el-button>
     </div>
 
     <div class="stat-grid" v-if="report">
-      <StatCard title="累计功德金" :value="formatMoney(report.revenueStats.totalRevenue)" :icon="Wallet" tone="accent" />
-      <StatCard title="预约总数" :value="report.revenueStats.bookingCount" :icon="Calendar" tone="brand" suffix="单" />
-      <StatCard title="客单功德" :value="formatMoney(report.revenueStats.avgBookingValue)" :icon="DataAnalysis" tone="success" />
-      <StatCard title="已完成数" :value="report.revenueStats.completedCount" :icon="CircleCheck" tone="warning" suffix="单" />
+      <StatCard :title='$t("累计功德金")' :value="formatMoney(report.revenueStats.totalRevenue)" :icon="Wallet" tone="accent" />
+      <StatCard :title='$t("预约总数")' :value="report.revenueStats.bookingCount" :icon="Calendar" tone="brand" :suffix='$t("单")' />
+      <StatCard :title='$t("客单功德")' :value="formatMoney(report.revenueStats.avgBookingValue)" :icon="DataAnalysis" tone="success" />
+      <StatCard :title='$t("已完成数")' :value="report.revenueStats.completedCount" :icon="CircleCheck" tone="warning" :suffix='$t("单")' />
     </div>
 
     <div v-if="report" class="desktop-report-charts">
     <div class="df-card chart-card big-chart">
-      <div class="chart-title">预约与功德金趋势</div>
+      <div class="chart-title">{{ $t("预约与功德金趋势") }}</div>
       <div ref="trendRef" class="chart-box"></div>
     </div>
 
     <div class="chart-grid">
       <div class="df-card chart-card">
-        <div class="chart-title">服务分布</div>
+        <div class="chart-title">{{ $t("服务分布") }}</div>
         <div ref="pieRef" class="chart-box small"></div>
       </div>
       <div class="df-card chart-card">
-        <div class="chart-title">法师功德金排行</div>
+        <div class="chart-title">{{ $t("法师功德金排行") }}</div>
         <div ref="barRef" class="chart-box small"></div>
       </div>
     </div>
     </div>
 
     <div v-if="report" class="df-card mobile-report-summary">
-      <div class="chart-title">经营摘要</div>
+      <div class="chart-title">{{ $t("经营摘要") }}</div>
       <div class="summary-list">
-        <div><span>趋势数据点</span><b>{{ report.bookingTrend.length }} 个</b></div>
-        <div><span>服务分类</span><b>{{ report.serviceDistribution.length }} 类</b></div>
-        <div><span>法师排行</span><b>{{ report.masterRanking.length }} 位</b></div>
+        <div><span>{{ $t("趋势数据点") }}</span><b>{{ $t(report.bookingTrend.length) }}{{ $t(" 个") }}</b></div>
+        <div><span>{{ $t("服务分类") }}</span><b>{{ $t(report.serviceDistribution.length) }}{{ $t(" 类") }}</b></div>
+        <div><span>{{ $t("法师排行") }}</span><b>{{ $t(report.masterRanking.length) }}{{ $t(" 位") }}</b></div>
       </div>
     </div>
-    <div v-else-if="!loading && !loadError" class="df-card report-empty">当前范围暂无可展示报表</div>
+    <div v-else-if="!loading && !loadError" class="df-card report-empty">{{ $t("当前范围暂无可展示报表") }}</div>
   </div>
 </template>
 

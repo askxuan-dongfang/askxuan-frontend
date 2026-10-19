@@ -3,7 +3,7 @@ import Foundation
 enum AdminPortal: String, CaseIterable, Identifiable {
     case platform, temple
     var id: String { rawValue }
-    var title: String { self == .platform ? "运营后台" : "寺院后台" }
+    var title: String { L10n.lookup(self == .platform ? "运营后台" : "寺院后台") }
     var icon: String { self == .platform ? "square.grid.2x2" : "building.columns" }
     var path: String { self == .platform ? "/admin/" : "/temple/" }
     // Separate persistent stores prevent same-origin localStorage/cookie collisions.

@@ -1,17 +1,17 @@
 <template>
   <div class="dfx-page">
-    <PageHeader :title="`用户详情 · ${detail?.user?.nickname || ''}`" subtitle="用户资料 / 消费画像 / 偏好">
+    <PageHeader :title="$t('用户详情 · ') + (detail?.user?.nickname || '')" :subtitle='$t("用户资料 / 消费画像 / 偏好")'>
       <template #actions>
-        <el-button :icon="Back" @click="$router.back()">返回</el-button>
+        <el-button :icon="Back" @click="$router.back()">{{ $t("返回") }}</el-button>
       </template>
     </PageHeader>
 
     <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
       <div class="ax-page-feedback__copy">
-        <div class="ax-page-feedback__title">用户详情加载失败</div>
-        <div class="ax-page-feedback__description">{{ loadError }}，未完整返回的数据不会按空资料展示。</div>
+        <div class="ax-page-feedback__title">{{ $t("用户详情加载失败") }}</div>
+        <div class="ax-page-feedback__description">{{ $t(loadError) }}{{ $t("，未完整返回的数据不会按空资料展示。") }}</div>
       </div>
-      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+      <el-button :loading="loading" @click="loadData">{{ $t("重新加载") }}</el-button>
     </div>
 
     <div v-loading="loading">
@@ -25,32 +25,32 @@
                 {{ detail.user.nickname }}
                 <StatusTag :status="detail.status" />
               </div>
-              <div class="profile__meta">ID: {{ detail.user.userId }} · {{ maskMobile(detail.user.mobile) }}</div>
+              <div class="profile__meta">ID: {{ $t(detail.user.userId) }} · {{ maskMobile(detail.user.mobile) }}</div>
             </div>
           </div>
           <div class="profile-grid">
-            <div class="profile-item"><span class="label">性别</span><span>{{ genderText }}</span></div>
-            <div class="profile-item"><span class="label">生日</span><span>{{ detail.user.birthday || '-' }}</span></div>
-            <div class="profile-item"><span class="label">地区</span><span>{{ detail.user.region || '-' }}</span></div>
-            <div class="profile-item"><span class="label">简介</span><span>{{ detail.user.bio || '-' }}</span></div>
+            <div class="profile-item"><span class="label">{{ $t("性别") }}</span><span>{{ $t(genderText) }}</span></div>
+            <div class="profile-item"><span class="label">{{ $t("生日") }}</span><span>{{ $t((detail.user.birthday || '-')) }}</span></div>
+            <div class="profile-item"><span class="label">{{ $t("地区") }}</span><span>{{ $t((detail.user.region || '-')) }}</span></div>
+            <div class="profile-item"><span class="label">{{ $t("简介") }}</span><span>{{ $t((detail.user.bio || '-')) }}</span></div>
           </div>
         </div>
 
         <!-- 消费画像 -->
         <div class="stat-row">
-          <StatCard label="累计订单" :value="detail.totalOrders" icon="List" icon-color="#C45A3C" suffix=" 单" />
-          <StatCard label="累计消费" :value="detail.totalSpent" icon="Money" icon-color="#C8A96E" prefix="¥" />
-          <StatCard label="最近活跃" :value="formatDate(detail.lastActiveTime)" icon="Clock" icon-color="#5B8C5A" />
-          <StatCard label="偏好标签" :value="detail.preferenceTags.length" icon="Star" icon-color="#D4A843" suffix=" 个" />
+          <StatCard :label='$t("累计订单")' :value="detail.totalOrders" icon="List" icon-color="#C45A3C" :suffix='$t(" 单")' />
+          <StatCard :label='$t("累计消费")' :value="detail.totalSpent" icon="Money" icon-color="#C8A96E" prefix="¥" />
+          <StatCard :label='$t("最近活跃")' :value="formatDate(detail.lastActiveTime)" icon="Clock" icon-color="#5B8C5A" />
+          <StatCard :label='$t("偏好标签")' :value="detail.preferenceTags.length" icon="Star" icon-color="#D4A843" :suffix='$t(" 个")' />
         </div>
 
         <!-- 偏好标签 -->
         <div class="dfx-card detail-section">
-          <div class="section-title">偏好标签</div>
+          <div class="section-title">{{ $t("偏好标签") }}</div>
           <div v-if="detail.preferenceTags.length" class="tags">
-            <el-tag v-for="t in detail.preferenceTags" :key="t" effect="dark" type="warning" round>{{ t }}</el-tag>
+            <el-tag v-for="t in detail.preferenceTags" :key="t" effect="dark" type="warning" round>{{ $t(t) }}</el-tag>
           </div>
-          <el-empty v-else description="暂无偏好标签" :image-size="60" />
+          <el-empty v-else :description='$t("暂无偏好标签")' :image-size="60" />
         </div>
       </div>
     </div>

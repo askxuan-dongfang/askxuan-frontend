@@ -19,37 +19,37 @@ struct SettingsView: View {
                 // 账号信息
                 MasterCard(padding: AppSpacing.md) {
                     VStack(alignment: .leading, spacing: AppSpacing.sm) {
-                        settingRow(icon: "person.circle", title: "当前账号",
+                        settingRow(icon: "person.circle", title: L10n.text("当前账号"),
                                    value: authStore.nickname ?? "法师", tint: .accentDefault)
                         Divider().background(Color.borderDivider)
-                        settingRow(icon: "number", title: "法师 ID",
+                        settingRow(icon: "number", title: L10n.text("法师 ID"),
                                    value: authStore.masterId ?? "—", tint: .brandDefault)
                     }
                 }
 
                 // 通用
                 VStack(alignment: .leading, spacing: AppSpacing.sm) {
-                    Text("通用")
+                    Text(L10n.text("通用"))
                         .font(AppTypography.caption)
                         .foregroundStyle(.textTertiary)
                         .padding(.leading, AppSpacing.xs)
                     MasterCard(padding: AppSpacing.md) {
                         VStack(alignment: .leading, spacing: AppSpacing.sm) {
                             NavigationLink { AppearanceSettingsView() } label: {
-                                settingRow(icon: "circle.lefthalf.filled", title: "外观",
+                                settingRow(icon: "circle.lefthalf.filled", title: L10n.text("外观与语言"),
                                            value: AppTheme(rawValue: themeValue)?.title ?? AppTheme.system.title,
                                            tint: .accentDefault, showArrow: true)
                             }
                             .buttonStyle(CardPressButtonStyle())
                             Divider().background(Color.borderDivider)
-                            settingRow(icon: "bell.badge", title: "消息通知", value: "已开启",
+                            settingRow(icon: "bell.badge", title: L10n.text("消息通知"), value: "已开启",
                                        tint: .accentDefault, showArrow: true)
                             Divider().background(Color.borderDivider)
-                            settingRow(icon: "wifi", title: "网络环境",
+                            settingRow(icon: "wifi", title: L10n.text("网络环境"),
                                        value: AppConfig.isDebug ? "Debug" : "Release",
                                        tint: .stateSuccess, showArrow: true)
                             Divider().background(Color.borderDivider)
-                            settingRow(icon: "lock.shield", title: "本地网络",
+                            settingRow(icon: "lock.shield", title: L10n.text("本地网络"),
                                        value: "已允许", tint: .stateSuccess, showArrow: true)
                         }
                     }
@@ -57,30 +57,30 @@ struct SettingsView: View {
 
                 // 关于
                 VStack(alignment: .leading, spacing: AppSpacing.sm) {
-                    Text("关于")
+                    Text(L10n.text("关于"))
                         .font(AppTypography.caption)
                         .foregroundStyle(.textTertiary)
                         .padding(.leading, AppSpacing.xs)
                     MasterCard(padding: AppSpacing.md) {
                         VStack(alignment: .leading, spacing: AppSpacing.sm) {
-                            settingRow(icon: "info.circle", title: "应用版本",
+                            settingRow(icon: "info.circle", title: L10n.text("应用版本"),
                                        value: AppConfig.clientVersion, tint: .accentDefault)
                             Divider().background(Color.borderDivider)
-                            settingRow(icon: "doc.text", title: "服务协议",
+                            settingRow(icon: "doc.text", title: L10n.text("服务协议"),
                                        value: nil, tint: .textSecondary, showArrow: true)
                             Divider().background(Color.borderDivider)
-                            settingRow(icon: "shield.lefthalf.filled", title: "隐私政策",
+                            settingRow(icon: "shield.lefthalf.filled", title: L10n.text("隐私政策"),
                                        value: nil, tint: .textSecondary, showArrow: true)
                         }
                     }
                 }
 
                 // 登出
-                PrimaryButton(title: "退出登录", icon: "arrow.right.square.fill") {
+                PrimaryButton(title: L10n.text("退出登录"), icon: "arrow.right.square.fill") {
                     showLogoutConfirm = true
                 }
 
-                Text("问玄东方 · 法师工作台")
+                Text(L10n.text("问玄东方 · 法师工作台"))
                     .font(.micro)
                     .foregroundStyle(.textTertiary)
                     .padding(.top, AppSpacing.md)
@@ -90,16 +90,16 @@ struct SettingsView: View {
             .padding(.bottom, AppSpacing.xl)
         }
         .background(Color.bgPrimary)
-        .navigationTitle("设置")
+        .navigationTitle(L10n.text("设置"))
         .navigationBarTitleDisplayMode(.large)
 
-        .alert("确认退出登录？", isPresented: $showLogoutConfirm) {
-            Button("取消", role: .cancel) {}
-            Button("退出", role: .destructive) {
+        .alert(L10n.text("确认退出登录？"), isPresented: $showLogoutConfirm) {
+            Button(L10n.text("取消"), role: .cancel) {}
+            Button(L10n.text("退出"), role: .destructive) {
                 authStore.logout()
             }
         } message: {
-            Text("退出后需重新登录才能使用法师工作台")
+            Text(L10n.text("退出后需重新登录才能使用法师工作台"))
         }
     }
 
@@ -110,12 +110,12 @@ struct SettingsView: View {
                 .font(AppTypography.reading)
                 .foregroundStyle(tint)
                 .frame(width: 24)
-            Text(title)
+            Text(L10n.lookup(title))
                 .font(AppTypography.body)
                 .foregroundStyle(.textPrimary)
             Spacer()
             if let value {
-                Text(value)
+                Text(L10n.lookup(value))
                     .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
             }

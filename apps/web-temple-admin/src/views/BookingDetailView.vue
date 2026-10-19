@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from '@/i18n'
+import { t as uiText } from '../../../../packages/localization/language'
+
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+
 import { ArrowLeft, Check, Close, ChatLineSquare } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
@@ -89,12 +92,12 @@ function doCancel() {
 
 async function doStart() {
  acting.value=true
- try { await client.put(`/admin/bookings/${bookingId.value}/start`, {remark:'寺院开始执行服务'}); ElMessage.success('服务已开始执行'); await load() } finally { acting.value=false }
+ try { await client.put(`/admin/bookings/${bookingId.value}/start`, {remark:'寺院开始执行服务'}); ElMessage.success(uiText('服务已开始执行')); await load() } finally { acting.value=false }
 }
 
 async function submitReply() {
   if (!replyText.value.trim()) {
-    ElMessage.warning('请输入回复内容')
+    ElMessage.warning(uiText('请输入回复内容'))
     return
   }
   replying.value = true
@@ -102,7 +105,7 @@ async function submitReply() {
     const r = await replyBookingReview(bookingId.value, replyText.value.trim())
     review.value = r
     replyText.value = ''
-    ElMessage.success('回复已发送')
+    ElMessage.success(uiText('回复已发送'))
   } finally {
     replying.value = false
   }
@@ -113,51 +116,51 @@ onMounted(load)
 
 <template>
   <div class="df-page" v-loading="loading">
-    <PageHeader title="预约详情" :subtitle="booking?.id">
-      <el-button :icon="ArrowLeft" @click="router.back()">返回</el-button>
-      <el-button v-if="canConfirm" type="primary" :icon="Check" :loading="acting" @click="doConfirm">确认预约</el-button>
-      <el-button v-if="booking?.status==='confirmed'" type="primary" :loading="acting" @click="doStart">开始执行</el-button>
-      <el-button v-if="canCancel" type="danger" plain :icon="Close" :loading="acting" @click="doCancel">取消预约</el-button>
+    <PageHeader :title='$t("预约详情")' :subtitle="$t(booking?.id)">
+      <el-button :icon="ArrowLeft" @click="router.back()">{{ $t("返回") }}</el-button>
+      <el-button v-if="canConfirm" type="primary" :icon="Check" :loading="acting" @click="doConfirm">{{ $t("确认预约") }}</el-button>
+      <el-button v-if="booking?.status==='confirmed'" type="primary" :loading="acting" @click="doStart">{{ $t("开始执行") }}</el-button>
+      <el-button v-if="canCancel" type="danger" plain :icon="Close" :loading="acting" @click="doCancel">{{ $t("取消预约") }}</el-button>
     </PageHeader>
 
     <div class="detail-grid" v-if="booking">
       <div class="detail-left">
         <div class="df-card section">
-          <div class="section-title">预约信息</div>
+          <div class="section-title">{{ $t("预约信息") }}</div>
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="预约号">{{ booking.id }}</el-descriptions-item>
-            <el-descriptions-item label="状态">
+            <el-descriptions-item :label='$t("预约号")'>{{ $t(booking.id) }}</el-descriptions-item>
+            <el-descriptions-item :label='$t("状态")'>
               <StatusTag :status="booking.status" kind="booking" />
             </el-descriptions-item>
-            <el-descriptions-item label="服务项目">{{ booking.serviceName }}</el-descriptions-item>
-            <el-descriptions-item label="法师">{{ booking.masterName || '全院执行' }}</el-descriptions-item>
-            <el-descriptions-item label="预约日期">{{ booking.bookingDate }}</el-descriptions-item>
-            <el-descriptions-item label="时段">{{ booking.timeSlot }}</el-descriptions-item>
-            <el-descriptions-item label="功德金">
-              <span class="price">{{ formatMoney(booking.meritMoney) }}</span>
-              <el-tag v-if="booking.meritMoneyTier" size="small" effect="plain" class="ml-2">{{ booking.meritMoneyTier }}</el-tag>
+            <el-descriptions-item :label='$t("服务项目")'>{{ $t(booking.serviceName) }}</el-descriptions-item>
+            <el-descriptions-item :label='$t("法师")'>{{ booking.masterName || '全院执行' }}</el-descriptions-item>
+            <el-descriptions-item :label='$t("预约日期")'>{{ $t(booking.bookingDate) }}</el-descriptions-item>
+            <el-descriptions-item :label='$t("时段")'>{{ $t(booking.timeSlot) }}</el-descriptions-item>
+            <el-descriptions-item :label='$t("功德金")'>
+              <span class="price">{{ $t(formatMoney(booking.meritMoney)) }}</span>
+              <el-tag v-if="booking.meritMoneyTier" size="small" effect="plain" class="ml-2">{{ $t(booking.meritMoneyTier) }}</el-tag>
             </el-descriptions-item>
-			<el-descriptions-item label="服务费"><span class="price">{{ formatMoney(booking.serviceFee) }}</span></el-descriptions-item>
-			<el-descriptions-item label="合计"><span class="price">{{ formatMoney(booking.totalFee) }}</span></el-descriptions-item>
-			<el-descriptions-item label="支付状态">
-			  <el-tag :type="booking.paymentStatus === 'success' ? 'success' : 'warning'">{{ booking.paymentStatus }}</el-tag>
+			<el-descriptions-item :label='$t("服务费")'><span class="price">{{ $t(formatMoney(booking.serviceFee)) }}</span></el-descriptions-item>
+			<el-descriptions-item :label='$t("合计")'><span class="price">{{ $t(formatMoney(booking.totalFee)) }}</span></el-descriptions-item>
+			<el-descriptions-item :label='$t("支付状态")'>
+			  <el-tag :type="booking.paymentStatus === 'success' ? 'success' : 'warning'">{{ $t(booking.paymentStatus) }}</el-tag>
 			</el-descriptions-item>
-			<el-descriptions-item label="支付单号">{{ booking.paymentNo || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="提交时间">{{ formatDate(booking.createdAt) }}</el-descriptions-item>
-            <el-descriptions-item label="用户ID" :span="2">{{ booking.userId }}</el-descriptions-item>
-            <el-descriptions-item label="备注" :span="2">{{ booking.note || '-' }}</el-descriptions-item>
+			<el-descriptions-item :label='$t("支付单号")'>{{ $t((booking.paymentNo || '-')) }}</el-descriptions-item>
+            <el-descriptions-item :label='$t("提交时间")'>{{ $t(formatDate(booking.createdAt)) }}</el-descriptions-item>
+            <el-descriptions-item :label='$t("用户ID")' :span="2">{{ $t(booking.userId) }}</el-descriptions-item>
+            <el-descriptions-item :label='$t("备注")' :span="2">{{ $t((booking.note || '-')) }}</el-descriptions-item>
           </el-descriptions>
         </div>
 
         <BookingFulfillment :id="booking.id" :status="booking.status" @changed="load" />
         <!-- 评价 -->
         <div class="df-card section" v-if="booking.status === 'reviewed'">
-          <div class="section-title">信众评价</div>
-          <div v-if="!review" class="muted">暂无评价数据</div>
+          <div class="section-title">{{ $t("信众评价") }}</div>
+          <div v-if="!review" class="muted">{{ $t("暂无评价数据") }}</div>
           <div v-else>
             <div class="review-head">
               <el-rate :model-value="review.rating" disabled />
-              <span class="muted">{{ formatDate(review.createTime) }}</span>
+              <span class="muted">{{ $t(formatDate(review.createTime)) }}</span>
             </div>
             <div class="review-content">{{ review.content }}</div>
             <div class="review-images" v-if="parseImages(review.images).length">
@@ -173,14 +176,14 @@ onMounted(load)
             </div>
 
             <div class="reply-block" v-if="review.masterReply">
-              <div class="reply-label">法师回复：</div>
-              <div class="reply-text">{{ review.masterReply }}</div>
+              <div class="reply-label">{{ $t("法师回复：") }}</div>
+              <div class="reply-text">{{ $t(review.masterReply) }}</div>
             </div>
             <div class="reply-block" v-else>
-              <div class="reply-label">回复评价：</div>
-              <el-input v-model="replyText" type="textarea" :rows="3" placeholder="请输入回复内容" />
+              <div class="reply-label">{{ $t("回复评价：") }}</div>
+              <el-input v-model="replyText" type="textarea" :rows="3" :placeholder='$t("请输入回复内容")' />
               <div class="reply-action">
-                <el-button type="primary" :icon="ChatLineSquare" :loading="replying" @click="submitReply">发送回复</el-button>
+                <el-button type="primary" :icon="ChatLineSquare" :loading="replying" @click="submitReply">{{ $t("发送回复") }}</el-button>
               </div>
             </div>
           </div>
@@ -190,7 +193,7 @@ onMounted(load)
       <!-- 状态流转 -->
       <div class="detail-right">
         <div class="df-card section">
-          <div class="section-title">状态流转</div>
+          <div class="section-title">{{ $t("状态流转") }}</div>
           <el-timeline v-if="logs.length">
             <el-timeline-item
               v-for="log in logs"
@@ -200,17 +203,17 @@ onMounted(load)
               :type="log.toStatus === 'cancelled' ? 'danger' : 'primary'"
             >
               <div class="log-line">
-                <span class="log-from">{{ bookingStatusText(log.fromStatus) }}</span>
+                <span class="log-from">{{ $t(bookingStatusText(log.fromStatus)) }}</span>
                 <span class="log-arrow">→</span>
-                <span class="log-to">{{ bookingStatusText(log.toStatus) }}</span>
+                <span class="log-to">{{ $t(bookingStatusText(log.toStatus)) }}</span>
               </div>
               <div class="log-meta">
-                <el-tag size="small" effect="plain">{{ log.operatorType }}</el-tag>
+                <el-tag size="small" effect="plain">{{ $t(log.operatorType) }}</el-tag>
                 <span v-if="log.remark" class="log-remark">{{ log.remark }}</span>
               </div>
             </el-timeline-item>
           </el-timeline>
-          <el-empty v-else description="暂无流转记录" :image-size="60" />
+          <el-empty v-else :description='$t("暂无流转记录")' :image-size="60" />
         </div>
       </div>
     </div>

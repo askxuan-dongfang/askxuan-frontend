@@ -33,10 +33,10 @@ struct LoginRequiredView: View {
                 )
 
             VStack(spacing: 8) {
-                Text(title)
+                Text(L10n.lookup(title))
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(Color.textPrimary)
-                Text(subtitle)
+                Text(L10n.lookup(subtitle))
                     .font(AppTypography.body)
                     .foregroundStyle(Color.textTertiary)
                     .multilineTextAlignment(.center)
@@ -45,7 +45,7 @@ struct LoginRequiredView: View {
             VStack(spacing: 12) {
                 // 登录按钮
                 NavigationLink(value: AuthRoute.login) {
-                    Text("立即登录")
+                    Text(L10n.text("立即登录"))
                         .font(AppTypography.reading.weight(.semibold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -61,7 +61,7 @@ struct LoginRequiredView: View {
                 }
 
                 // 注册提示
-                Text("新用户可通过邮箱验证创建账户")
+                Text(L10n.text("新用户可通过邮箱验证创建账户"))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
             }

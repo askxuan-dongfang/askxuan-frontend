@@ -39,7 +39,7 @@ struct DFTopNavBar<Leading: View, Trailing: View>: View {
                     Image(title == "东方珠作" ? "brand-atelier" : "brand-logo").resizable().scaledToFit()
                         .frame(width: 26, height: 26).accessibilityHidden(true)
                 }
-                Text(title).font(AppTypography.navigation)
+                Text(L10n.lookup(title)).font(AppTypography.navigation)
                     .foregroundStyle(Color.accentDefault).lineLimit(1)
             }
 
@@ -83,7 +83,7 @@ struct DFBackButton: View {
                 .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(BackPressButtonStyle())
-        .accessibilityLabel(label)
+        .accessibilityLabel(L10n.lookup(label))
     }
 }
 

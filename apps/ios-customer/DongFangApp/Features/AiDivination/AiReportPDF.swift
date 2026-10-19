@@ -36,26 +36,26 @@ import UIKit
                 cursor += 14
             }
             page()
-            add(Text(report.title).font(.title.bold()))
-            add(Text(report.reportNo).font(.caption))
-            add(Text(report.summary).font(.body))
+            add(Text(L10n.lookup(report.title)).font(.title.bold()))
+            add(Text(L10n.lookup(report.reportNo)).font(.caption))
+            add(Text(L10n.lookup(report.summary)).font(.body))
             for block in report.document?.blocks ?? [] {
                 if cursor > 690 { page() }
                 if block.kind == "table" {
-                    add(Text(block.title).font(.headline))
+                    add(Text(L10n.lookup(block.title)).font(.headline))
                     let header = block.columns?.joined(separator: " / ") ?? ""
-                    add(Text(header).font(.caption.bold()))
-                    for row in block.rows ?? [] { add(Text(row.joined(separator: " / ")).font(.caption)) }
+                    add(Text(L10n.lookup(header)).font(.caption.bold()))
+                    for row in block.rows ?? [] { add(Text(L10n.lookup(row.joined(separator: " / "))).font(.caption)) }
                 } else if ["timeline", "palaces", "pillars", "pairs", "cards"].contains(block.kind) {
-                    add(Text(block.title).font(.headline))
-                    if let note = block.note { add(Text(note).font(.caption)) }
+                    add(Text(L10n.lookup(block.title)).font(.headline))
+                    if let note = block.note { add(Text(L10n.lookup(note)).font(.caption)) }
                     for item in block.items ?? [] { add(AiReportBlockView(block: block).tile(item)) }
                 } else { add(AiReportBlockView(block: block, expanded: true)) }
             }
             for paragraph in report.content.components(separatedBy: "\n\n") {
                 add(AiMarkdownText(text: paragraph, exporting: true))
             }
-            add(Text("传统文化参考，不替代医疗、法律或财务建议。").font(.caption))
+            add(Text(L10n.text("传统文化参考，不替代医疗、法律或财务建议。")).font(.caption))
         }
         if renderFailed { try? FileManager.default.removeItem(at: url); throw CocoaError(.fileWriteUnknown) }
         return url

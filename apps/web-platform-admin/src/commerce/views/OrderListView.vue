@@ -76,38 +76,38 @@ onMounted(() => {
 
 <template>
   <div class="page-wrap">
-    <PageHeader title="商城订单" subtitle="管理商城商品订单，支持发货操作" />
+    <PageHeader :title='$t("商城订单")' :subtitle='$t("管理商城商品订单，支持发货操作")' />
 
     <div class="df-card filter-bar">
       <el-form inline @submit.prevent="handleSearch">
-        <el-form-item label="订单状态">
+        <el-form-item :label='$t("订单状态")'>
           <el-select
             v-model="query.status"
-            placeholder="全部状态"
+            :placeholder='$t("全部状态")'
             clearable
             style="width: 160px"
           >
             <el-option
               v-for="s in statusOptions"
               :key="s.value"
-              :label="s.label"
+              :label="$t(s.label)"
               :value="s.value"
             />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button type="primary" @click="handleSearch">{{ $t("查询") }}</el-button>
+          <el-button @click="handleReset">{{ $t("重置") }}</el-button>
         </el-form-item>
       </el-form>
     </div>
 
     <div v-if="loadError" class="ax-page-feedback is-error" role="status">
       <div class="ax-page-feedback__copy">
-        <div class="ax-page-feedback__title">商城订单加载失败</div>
-        <div class="ax-page-feedback__description">{{ loadError }}</div>
+        <div class="ax-page-feedback__title">{{ $t("商城订单加载失败") }}</div>
+        <div class="ax-page-feedback__description">{{ $t(loadError) }}</div>
       </div>
-      <el-button :loading="loading" @click="loadList">重试</el-button>
+      <el-button :loading="loading" @click="loadList">{{ $t("重试") }}</el-button>
     </div>
 
     <div class="df-card">
@@ -116,16 +116,16 @@ onMounted(() => {
           v-loading="loading"
           :data="list"
           style="width: 100%"
-          empty-text="暂无订单"
+          :empty-text='$t("暂无订单")'
         >
-          <el-table-column label="订单号" prop="orderNo" width="200" />
-          <el-table-column label="用户 ID" prop="userId" width="160" />
-          <el-table-column label="订单金额" width="130">
+          <el-table-column :label='$t("订单号")' prop="orderNo" width="200" />
+          <el-table-column :label='$t("用户 ID")' prop="userId" width="160" />
+          <el-table-column :label='$t("订单金额")' width="130">
             <template #default="{ row }">
-              <span class="price">{{ formatMoney(row.payAmount) }}</span>
+              <span class="price">{{ $t(formatMoney(row.payAmount)) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="110">
+          <el-table-column :label='$t("状态")' width="110">
             <template #default="{ row }">
               <el-tag
                 :type="orderStatusType(row.status)"
@@ -133,33 +133,33 @@ onMounted(() => {
                 round
                 size="small"
               >
-                {{ row.isExperience ? "体验 · " : ""
-                }}{{ orderStatusLabel(row.status) }}
+                {{ $t((row.isExperience ? $t("体验 · ") : ""))
+                }}{{ $t(orderStatusLabel(row.status)) }}
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column
-            label="备注"
+            :label='$t("备注")'
             prop="note"
             min-width="180"
             show-overflow-tooltip
           />
-          <el-table-column label="下单时间" prop="createTime" width="180" />
-          <el-table-column label="操作" width="120" fixed="right">
+          <el-table-column :label='$t("下单时间")' prop="createTime" width="180" />
+          <el-table-column :label='$t("操作")' width="120" fixed="right">
             <template #default="{ row }">
               <el-button
                 text
                 type="primary"
                 size="small"
                 @click="router.push(`/commerce/orders/${row.id}`)"
-                >详情</el-button
+                >{{ $t("详情") }}</el-button
               >
             </template>
           </el-table-column>
         </el-table>
       </div>
 
-      <div class="mobile-task-list" aria-label="商城订单列表">
+      <div class="mobile-task-list" :aria-label='$t("商城订单列表")'>
         <button
           v-for="item in list"
           :key="item.id"
@@ -168,40 +168,38 @@ onMounted(() => {
           @click="router.push(`/commerce/orders/${item.id}`)"
         >
           <span class="mobile-task-card__head">
-            <strong>{{ item.orderNo }}</strong>
+            <strong>{{ $t(item.orderNo) }}</strong>
             <el-tag
               :type="orderStatusType(item.status)"
               effect="light"
               round
               size="small"
-              >{{ orderStatusLabel(item.status) }}</el-tag
+              >{{ $t(orderStatusLabel(item.status)) }}</el-tag
             >
           </span>
           <span class="mobile-task-card__meta"
-            >用户 {{ item.userId }} · {{ item.createTime }}</span
+            >{{ $t("用户 ") }}{{ $t(item.userId) }} · {{ $t(item.createTime) }}</span
           >
           <span class="mobile-task-card__foot"
-            ><span>{{ item.note || "无备注" }}</span
-            ><b>{{ formatMoney(item.payAmount) }}</b></span
+            ><span>{{ $t((item.note || $t("无备注"))) }}</span
+            ><b>{{ $t(formatMoney(item.payAmount)) }}</b></span
           >
         </button>
         <div
           v-if="!loading && !list.length && !loadError"
           class="mobile-task-empty"
-        >
-          当前筛选下暂无商城订单
-        </div>
+        >{{ $t(" 当前筛选下暂无商城订单 ") }}</div>
         <div v-if="total > (query.size || 20)" class="mobile-task-pager">
           <el-button
             :disabled="(query.page || 1) <= 1"
             @click="handlePageChange((query.page || 1) - 1)"
-            >上一页</el-button
+            >{{ $t("上一页") }}</el-button
           >
-          <span>第 {{ query.page || 1 }} 页</span>
+          <span>{{ $t("第 ") }}{{ $t((query.page || 1)) }}{{ $t(" 页") }}</span>
           <el-button
             :disabled="(query.page || 1) * (query.size || 20) >= total"
             @click="handlePageChange((query.page || 1) + 1)"
-            >下一页</el-button
+            >{{ $t("下一页") }}</el-button
           >
         </div>
       </div>

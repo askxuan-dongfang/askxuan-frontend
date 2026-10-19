@@ -32,15 +32,15 @@ function changePage(nextPage: number) {
 
 <template>
   <div class="mobile-task-list" :aria-busy="loading">
-    <div v-if="loading" class="mobile-task-empty" role="status">正在加载任务…</div>
+    <div v-if="loading" class="mobile-task-empty" role="status">{{ $t("正在加载任务…") }}</div>
     <template v-else-if="items.length">
       <slot v-for="(item, index) in items" :key="(item as any)?.id ?? index" name="item" :item="item" :index="index" />
-      <div v-if="total > size" class="mobile-task-pager" aria-label="分页">
-        <el-button :disabled="page <= 1" @click="changePage(page - 1)">上一页</el-button>
-        <span>第 {{ page }} / {{ pageCount }} 页，共 {{ total }} 条</span>
-        <el-button :disabled="page >= pageCount" @click="changePage(page + 1)">下一页</el-button>
+      <div v-if="total > size" class="mobile-task-pager" :aria-label='$t("分页")'>
+        <el-button :disabled="page <= 1" @click="changePage(page - 1)">{{ $t("上一页") }}</el-button>
+        <span>{{ $t("第 ") }}{{ $t(page) }} / {{ $t(pageCount) }}{{ $t(" 页，共 ") }}{{ $t(total) }}{{ $t(" 条") }}</span>
+        <el-button :disabled="page >= pageCount" @click="changePage(page + 1)">{{ $t("下一页") }}</el-button>
       </div>
     </template>
-    <div v-else class="mobile-task-empty">{{ emptyText }}</div>
+    <div v-else class="mobile-task-empty">{{ $t(emptyText) }}</div>
   </div>
 </template>

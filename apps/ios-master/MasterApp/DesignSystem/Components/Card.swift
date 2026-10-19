@@ -33,10 +33,10 @@ struct MasterCard<Content: View>: View {
     VStack(spacing: 12) {
         MasterCard {
             VStack(alignment: .leading, spacing: 6) {
-                Text("今日待办")
+                Text(L10n.text("今日待办"))
                     .font(.cardTitle)
                     .foregroundStyle(.textPrimary)
-                Text("3 项待处理预约")
+                Text(L10n.text("3 项待处理预约"))
                     .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
             }

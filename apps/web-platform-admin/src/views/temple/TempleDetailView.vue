@@ -1,17 +1,17 @@
 <template>
   <div class="dfx-page">
-    <PageHeader :title="`寺院详情 · ${detail?.temple?.name || ''}`" subtitle="寺院基础信息 / 图册 / 服务项目">
+    <PageHeader :title="$t(($t('寺院详情 · ') + String((detail?.temple?.name || '')) + $t('')))" :subtitle='$t("寺院基础信息 / 图册 / 服务项目")'>
       <template #actions>
-        <el-button :icon="Back" @click="$router.back()">返回</el-button>
+        <el-button :icon="Back" @click="$router.back()">{{ $t("返回") }}</el-button>
       </template>
     </PageHeader>
 
     <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
       <div class="ax-page-feedback__copy">
-        <div class="ax-page-feedback__title">寺院详情加载失败</div>
-        <div class="ax-page-feedback__description">{{ loadError }}，未完整返回的数据不会按空资料展示。</div>
+        <div class="ax-page-feedback__title">{{ $t("寺院详情加载失败") }}</div>
+        <div class="ax-page-feedback__description">{{ $t(loadError) }}{{ $t("，未完整返回的数据不会按空资料展示。") }}</div>
       </div>
-      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+      <el-button :loading="loading" @click="loadData">{{ $t("重新加载") }}</el-button>
     </div>
 
     <div v-loading="loading">
@@ -20,56 +20,56 @@
         <div class="dfx-card detail-section">
           <div class="detail-cover">
             <el-image v-if="detail.temple.coverImage" :src="detail.temple.coverImage" fit="cover" class="detail-cover__img">
-              <template #error><div class="detail-cover__fallback">寺</div></template>
+              <template #error><div class="detail-cover__fallback">{{ $t("寺") }}</div></template>
             </el-image>
-            <div v-else class="detail-cover__fallback">寺</div>
+            <div v-else class="detail-cover__fallback">{{ $t("寺") }}</div>
           </div>
           <div class="detail-info">
-            <h2 class="detail-info__name dfx-serif">{{ detail.temple.name }}</h2>
+            <h2 class="detail-info__name dfx-serif">{{ $t(detail.temple.name) }}</h2>
             <div class="detail-info__meta">
               <StatusTag :status="detail.temple.status" />
-              <el-tag size="small" effect="plain">{{ detail.temple.type }}</el-tag>
-              <el-tag size="small" effect="plain" type="success">{{ detail.temple.beliefCode }}</el-tag>
-              <el-tag size="small" effect="plain" type="warning">{{ detail.temple.sect }}</el-tag>
-              <span class="star">★ {{ detail.temple.rating?.toFixed(1) }}</span>
+              <el-tag size="small" effect="plain">{{ $t(detail.temple.type) }}</el-tag>
+              <el-tag size="small" effect="plain" type="success">{{ $t(detail.temple.beliefCode) }}</el-tag>
+              <el-tag size="small" effect="plain" type="warning">{{ $t(detail.temple.sect) }}</el-tag>
+              <span class="star">★ {{ $t(detail.temple.rating?.toFixed(1)) }}</span>
             </div>
-            <div class="detail-info__row"><span class="label">寺院编码：</span>{{ detail.temple.id }}</div>
-            <div class="detail-info__row"><span class="label">所在地区：</span>{{ detail.temple.region }}</div>
-            <div class="detail-info__row"><span class="label">详细地址：</span>{{ detail.temple.address || '-' }}</div>
+            <div class="detail-info__row"><span class="label">{{ $t("寺院编码：") }}</span>{{ $t(detail.temple.id) }}</div>
+            <div class="detail-info__row"><span class="label">{{ $t("所在地区：") }}</span>{{ $t(detail.temple.region) }}</div>
+            <div class="detail-info__row"><span class="label">{{ $t("详细地址：") }}</span>{{ detail.temple.address || '-' }}</div>
             <div class="detail-info__row"><ProviderDirectoryTags kind="temple" :id="detail.temple.id" :name="detail.temple.name" @updated="loadData"/></div>
-            <div class="detail-info__row"><span class="label">简介：</span>{{ detail.temple.description || '-' }}</div>
+            <div class="detail-info__row"><span class="label">{{ $t("简介：") }}</span>{{ $t((detail.temple.description || '-')) }}</div>
           </div>
         </div>
 
         <!-- 图册 -->
         <div class="dfx-card detail-section">
-          <div class="section-title">寺院图册（{{ detail.images.length }}）</div>
+          <div class="section-title">{{ $t("寺院图册（") }}{{ $t(detail.images.length) }}）</div>
           <div v-if="detail.images.length" class="gallery">
             <div v-for="img in detail.images" :key="img.id" class="gallery__item">
               <el-image :src="img.url" fit="cover" class="gallery__img" :preview-src-list="[img.url]" preview-teleported>
-                <template #error><div class="gallery__fallback">图</div></template>
+                <template #error><div class="gallery__fallback">{{ $t("图") }}</div></template>
               </el-image>
-              <el-tag size="small" effect="dark" class="gallery__type">{{ img.type }}</el-tag>
+              <el-tag size="small" effect="dark" class="gallery__type">{{ $t(img.type) }}</el-tag>
             </div>
           </div>
-          <el-empty v-else description="暂无图片" :image-size="60" />
+          <el-empty v-else :description='$t("暂无图片")' :image-size="60" />
         </div>
 
         <!-- 服务项目 -->
         <div class="dfx-card detail-section">
-          <div class="section-title">服务项目（{{ detail.services.length }}）</div>
+          <div class="section-title">{{ $t("服务项目（") }}{{ $t(detail.services.length) }}）</div>
           <el-table :data="detail.services" style="width: 100%">
-            <el-table-column label="服务名称" prop="serviceName" min-width="160" />
-            <el-table-column label="编码" prop="serviceCode" width="120" />
-            <el-table-column label="价格" width="120">
-              <template #default="{ row }">¥{{ row.price?.toFixed(2) }}</template>
+            <el-table-column :label='$t("服务名称")' prop="serviceName" min-width="160" />
+            <el-table-column :label='$t("编码")' prop="serviceCode" width="120" />
+            <el-table-column :label='$t("价格")' width="120">
+              <template #default="{ row }">¥{{ $t(row.price?.toFixed(2)) }}</template>
             </el-table-column>
-            <el-table-column label="时段" min-width="200">
+            <el-table-column :label='$t("时段")' min-width="200">
               <template #default="{ row }">
-                <el-tag v-for="t in row.timeSlots" :key="t" size="small" effect="plain" style="margin-right: 4px">{{ t }}</el-tag>
+                <el-tag v-for="t in row.timeSlots" :key="t" size="small" effect="plain" style="margin-right: 4px">{{ $t(t) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="状态" width="100">
+            <el-table-column :label='$t("状态")' width="100">
               <template #default="{ row }"><StatusTag :status="row.status" /></template>
             </el-table-column>
           </el-table>

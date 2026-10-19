@@ -213,12 +213,12 @@ function refreshChartAppearance() {
 
 <template>
   <div class="page-wrap" v-loading="loading">
-    <PageHeader title="数据报表" subtitle="商城销售趋势、Top 商品销售排行" />
+    <PageHeader :title='$t("数据报表")' :subtitle='$t("商城销售趋势、Top 商品销售排行")' />
 
     <!-- 筛选 -->
     <div class="df-card filter-bar">
       <el-form inline @submit.prevent="handleSearch">
-        <el-form-item label="时间范围">
+        <el-form-item :label='$t("时间范围")'>
           <el-date-picker
             v-model="dateRange"
             type="daterange"
@@ -230,33 +230,33 @@ function refreshChartAppearance() {
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
+          <el-button type="primary" @click="handleSearch">{{ $t("查询") }}</el-button>
         </el-form-item>
       </el-form>
     </div>
 
     <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
       <div class="ax-page-feedback__copy">
-        <div class="ax-page-feedback__title">商城报表加载失败</div>
-        <div class="ax-page-feedback__description">{{ loadError }}。经营指标保持“—”，不会用 0 冒充真实结果。</div>
+        <div class="ax-page-feedback__title">{{ $t("商城报表加载失败") }}</div>
+        <div class="ax-page-feedback__description">{{ $t(loadError) }}{{ $t("。经营指标保持“—”，不会用 0 冒充真实结果。") }}</div>
       </div>
-      <el-button :loading="loading" @click="loadReport">重新加载</el-button>
+      <el-button :loading="loading" @click="loadReport">{{ $t("重新加载") }}</el-button>
     </div>
 
     <!-- 指标卡片 -->
     <div class="stat-grid" v-if="report">
-      <StatCard label="总销售额" :value="formatMoney(report.totalSales)" change="统计区间内" color="primary" icon="Money" />
-      <StatCard label="总订单数" :value="report.totalOrders" change="统计区间内" color="success" icon="List" />
-      <StatCard label="客单价" :value="formatMoney(report.avgOrderValue)" change="平均" color="accent" icon="Coin" />
-      <StatCard label="退货率" :value="`${(report.refundRate * 100).toFixed(2)}%`" :up="false" change="越低越好" color="warning" icon="RefreshLeft" />
+      <StatCard :label='$t("总销售额")' :value="formatMoney(report.totalSales)" change="统计区间内" color="primary" icon="Money" />
+      <StatCard :label='$t("总订单数")' :value="report.totalOrders" change="统计区间内" color="success" icon="List" />
+      <StatCard :label='$t("客单价")' :value="formatMoney(report.avgOrderValue)" change="平均" color="accent" icon="Coin" />
+      <StatCard :label='$t("退货率")' :value="`${(report.refundRate * 100).toFixed(2)}%`" :up="false" change="越低越好" color="warning" icon="RefreshLeft" />
     </div>
 
     <!-- 销售趋势 -->
     <div v-if="report" class="desktop-report-charts">
     <div class="df-card chart-card">
       <div class="chart-header">
-        <h3>销售趋势</h3>
-        <el-tag size="small" type="info" effect="plain">销售额 + 订单数</el-tag>
+        <h3>{{ $t("销售趋势") }}</h3>
+        <el-tag size="small" type="info" effect="plain">{{ $t("销售额 + 订单数") }}</el-tag>
       </div>
       <div ref="trendChartRef" class="chart-box"></div>
     </div>
@@ -264,7 +264,7 @@ function refreshChartAppearance() {
     <!-- Top 商品 -->
     <div class="df-card chart-card">
       <div class="chart-header">
-        <h3>Top 商品销售排行</h3>
+        <h3>{{ $t("Top 商品销售排行") }}</h3>
         <el-tag size="small" type="info" effect="plain">Top 10</el-tag>
       </div>
       <div ref="topChartRef" class="chart-box"></div>
@@ -272,30 +272,30 @@ function refreshChartAppearance() {
     </div>
 
     <div v-if="report" class="df-card mobile-report-summary">
-      <div class="chart-header"><h3>经营图表摘要</h3></div>
+      <div class="chart-header"><h3>{{ $t("经营图表摘要") }}</h3></div>
       <div class="summary-list">
-        <div><span>区间销售额</span><b>{{ formatMoney(report.totalSales) }}</b></div>
-        <div><span>区间订单数</span><b>{{ report.totalOrders }} 单</b></div>
-        <div><span>趋势数据点</span><b>{{ report.salesTrend.length }} 个</b></div>
-        <div><span>Top 商品</span><b>{{ report.topProducts[0]?.productName || '暂无' }}</b></div>
+        <div><span>{{ $t("区间销售额") }}</span><b>{{ $t(formatMoney(report.totalSales)) }}</b></div>
+        <div><span>{{ $t("区间订单数") }}</span><b>{{ $t(report.totalOrders) }}{{ $t(" 单") }}</b></div>
+        <div><span>{{ $t("趋势数据点") }}</span><b>{{ $t(report.salesTrend.length) }}{{ $t(" 个") }}</b></div>
+        <div><span>{{ $t("Top 商品") }}</span><b>{{ report.topProducts[0]?.productName || '暂无' }}</b></div>
       </div>
     </div>
 
     <!-- Top 商品列表 -->
     <div class="df-card" v-if="report && report.topProducts.length">
       <div class="chart-header">
-        <h3>Top 商品明细</h3>
+        <h3>{{ $t("Top 商品明细") }}</h3>
       </div>
       <el-table :data="report.topProducts" style="width: 100%">
-        <el-table-column label="排名" width="80" type="index" :index="1" />
-        <el-table-column label="商品 ID" prop="productId" width="120" />
-        <el-table-column label="商品名称" prop="productName" min-width="240" />
-        <el-table-column label="销售额" width="140">
+        <el-table-column :label='$t("排名")' width="80" type="index" :index="1" />
+        <el-table-column :label='$t("商品 ID")' prop="productId" width="120" />
+        <el-table-column :label='$t("商品名称")' prop="productName" min-width="240" />
+        <el-table-column :label='$t("销售额")' width="140">
           <template #default="{ row }">
-            <span class="price">{{ formatMoney(row.sales) }}</span>
+            <span class="price">{{ $t(formatMoney(row.sales)) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="订单数" prop="orderCount" width="120" />
+        <el-table-column :label='$t("订单数")' prop="orderCount" width="120" />
       </el-table>
     </div>
   </div>

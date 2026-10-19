@@ -79,12 +79,12 @@ struct BookingsView: View {
     @State private var selectedTabIndex: Int = 0
 
     private let tabs: [TabFilterItem] = [
-        TabFilterItem(title: "全部", status: nil),
-        TabFilterItem(title: "待确认", status: .pending),
-        TabFilterItem(title: "已确认", status: .confirmed),
-        TabFilterItem(title: "进行中", status: .inProgress),
-        TabFilterItem(title: "待确认回执", status: .pendingReceipt),
-        TabFilterItem(title: "已完成", status: .completed)
+        TabFilterItem(title: L10n.text("全部"), status: nil),
+        TabFilterItem(title: L10n.text("待确认"), status: .pending),
+        TabFilterItem(title: L10n.text("已确认"), status: .confirmed),
+        TabFilterItem(title: L10n.text("进行中"), status: .inProgress),
+        TabFilterItem(title: L10n.text("待确认回执"), status: .pendingReceipt),
+        TabFilterItem(title: L10n.text("已完成"), status: .completed)
     ]
 
     init(date: String? = nil, status: BookingStatus? = nil) {
@@ -96,7 +96,7 @@ struct BookingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             if let date = viewModel.date {
-                HStack { Text(date + " 的预约").font(.caption); Spacer(); Button("所有日期") { viewModel.date = nil; Task { await viewModel.load() } } }.padding(.horizontal).frame(minHeight: 44)
+                HStack { Text(L10n.lookup(date + L10n.text(" 的预约"))).font(.caption); Spacer(); Button(L10n.text("所有日期")) { viewModel.date = nil; Task { await viewModel.load() } } }.padding(.horizontal).frame(minHeight: 44)
             }
             tabFilters
             bookingList
@@ -121,7 +121,7 @@ struct BookingsView: View {
                         Task { await viewModel.switchStatus(tab.status) }
                     } label: {
                         HStack(spacing: 5) {
-                            Text(tab.title)
+                            Text(L10n.lookup(tab.title))
                                 .font(AppTypography.supporting.weight(isSelected ? .semibold : .regular))
                             if isSelected {
                                 Text("\(viewModel.total)")
@@ -160,11 +160,11 @@ struct BookingsView: View {
         if viewModel.isLoading && viewModel.bookings.isEmpty {
             LoadingView(fullScreen: true)
         } else if let error = viewModel.errorMessage, viewModel.bookings.isEmpty {
-            EmptyState(icon: "exclamationmark.triangle.fill", title: "加载失败", message: error) {
+            EmptyState(icon: "exclamationmark.triangle.fill", title: L10n.text("加载失败"), message: error) {
                 Task { await viewModel.load() }
             }
         } else if viewModel.bookings.isEmpty {
-            EmptyState(icon: "calendar.badge.checkmark", title: "暂无预约", message: "当前状态下没有预约记录")
+            EmptyState(icon: "calendar.badge.checkmark", title: L10n.text("暂无预约"), message: L10n.text("当前状态下没有预约记录"))
         } else {
             ScrollView {
                 LazyVStack(spacing: 0) {
@@ -207,10 +207,10 @@ struct BookingsView: View {
             // 中间信息
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    Text(booking.userId.isEmpty ? "匿名信众" : booking.userId)
+                    Text(L10n.lookup(booking.userId.isEmpty ? L10n.text("匿名信众") : booking.userId))
                         .font(AppTypography.body.weight(.medium))
                         .foregroundStyle(.textPrimary)
-                    Text(booking.serviceName)
+                    Text(L10n.lookup(booking.serviceName))
                         .font(AppTypography.micro.weight(.medium))
                         .foregroundStyle(.accentDefault)
                         .padding(.horizontal, AppSpacing.sm)
@@ -221,7 +221,7 @@ struct BookingsView: View {
                 Text("\(booking.bookingDate) \(booking.timeSlot) · \(booking.templeName)")
                     .font(AppTypography.caption)
                     .foregroundStyle(.textSecondary)
-                Text("查看详情")
+                Text(L10n.text("查看详情"))
                     .font(AppTypography.caption.weight(.medium))
                     .foregroundStyle(.brandDefault)
             }
@@ -229,10 +229,10 @@ struct BookingsView: View {
 
             // 右侧金额和状态
             VStack(alignment: .trailing, spacing: 4) {
-                Text(booking.meritMoneyText)
+                Text(L10n.lookup(booking.meritMoneyText))
                     .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(.accentDefault)
-                Text(badge.text)
+                Text(L10n.lookup(badge.text))
                     .font(AppTypography.micro.weight(.medium))
                     .foregroundStyle(badge.color)
                     .padding(.horizontal, AppSpacing.sm)

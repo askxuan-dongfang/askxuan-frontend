@@ -1,6 +1,10 @@
+import { ElMessage } from '@/i18n'
+import { t as localizeTitle, subscribeLanguage } from '../../../../packages/localization/language'
+
+import { t as uiText } from '../../../../packages/localization/language'
 // 统一后台：保留 28 条平台业务路由，迁入 17 条商城业务路由。
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import { ElMessage } from 'element-plus'
+
 import { agentCenterRoutes } from './agentCenter'
 import { commerceRoutes } from '@/commerce/routes'
 import { canAccessRoute, defaultRoute } from './access'
@@ -217,7 +221,7 @@ const router = createRouter({
 // 路由守卫：未登录跳 /login
 router.beforeEach((to, _from, next) => {
   const auth = useAuthStore()
-  document.title = `${to.meta.title || ''} · 问玄东方统一运营管理台`
+  document.title = `${localizeTitle(to.meta.title || '')} · ${localizeTitle('问玄东方统一运营管理台')}`
   if (to.meta.public) {
     if (to.name === 'Login' && auth.isLogin) {
       next(defaultRoute(auth.roles))
@@ -231,7 +235,7 @@ router.beforeEach((to, _from, next) => {
     return
   }
   if (!canAccessRoute(to, auth.roles)) {
-    ElMessage.error('当前账号无此功能权限')
+    ElMessage.error(uiText('当前账号无此功能权限'))
     if (auth.roles.some(role => ['platform_super', 'platform_service', 'shop_admin'].includes(role))) {
       next(defaultRoute(auth.roles))
     } else {
@@ -244,3 +248,5 @@ router.beforeEach((to, _from, next) => {
 })
 
 export default router
+
+subscribeLanguage(() => { document.title = `${localizeTitle(router.currentRoute.value.meta.title || '')} · ${localizeTitle('问玄东方统一运营管理台')}` })

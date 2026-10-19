@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { ElMessageBox } from '@/i18n'
+import { t as uiText } from '../../../../packages/localization/language'
+
 import { agentCenterSections } from '@/views/ai/centerNavigation'
 import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
 import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import { computed } from 'vue'
 import { useAdminNavigation } from '../../../../packages/admin-ui/navigation'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+
 import { canAccessRoute, defaultRoute } from '@/router/access'
 import { useAuthStore } from '@/stores/auth'
 
@@ -115,9 +118,9 @@ const pageParent = computed(() => (route.meta.parent as string) || '平台管理
 async function onCommand(cmd: string) {
   if (cmd === 'logout') {
     try {
-      await ElMessageBox.confirm('确定要退出登录吗？', '退出登录', {
-        confirmButtonText: '退出',
-        cancelButtonText: '取消',
+      await ElMessageBox.confirm(uiText('确定要退出登录吗？'), uiText('退出登录'), {
+        confirmButtonText: uiText('退出'),
+        cancelButtonText: uiText('取消'),
         type: 'warning'
       })
       auth.logout()
@@ -138,19 +141,19 @@ async function onCommand(cmd: string) {
     class="ax-admin-shell"
     :class="{ 'is-collapsed': collapsed && !mobile, 'is-drawer-open': drawerOpen }"
   >
-    <button class="ax-admin-overlay" type="button" aria-label="关闭导航" tabindex="-1" :aria-hidden="!drawerOpen" @click="closeNavigation"></button>
+    <button class="ax-admin-overlay" type="button" :aria-label='$t("关闭导航")' tabindex="-1" :aria-hidden="!drawerOpen" @click="closeNavigation"></button>
 
-    <aside id="admin-navigation" ref="sidebarRef" class="ax-admin-sidebar" tabindex="-1" :role="mobile && drawerOpen ? 'dialog' : undefined" :aria-modal="mobile && drawerOpen ? true : undefined" :aria-hidden="mobile && !drawerOpen ? true : undefined" :inert="mobile && !drawerOpen" aria-label="平台管理台主导航">
+    <aside id="admin-navigation" ref="sidebarRef" class="ax-admin-sidebar" tabindex="-1" :role="mobile && drawerOpen ? 'dialog' : undefined" :aria-modal="mobile && drawerOpen ? true : undefined" :aria-hidden="mobile && !drawerOpen ? true : undefined" :inert="mobile && !drawerOpen" :aria-label='$t("平台管理台主导航")'>
       <div class="ax-admin-logo">
-        <BrandLogo class="ax-admin-logo__image" identity="platform" label="问玄东方统一运营管理台" />
+        <BrandLogo class="ax-admin-logo__image" identity="platform" :label='$t("问玄东方统一运营管理台")' />
         <div class="ax-admin-logo__copy">
-          <div class="ax-admin-logo__title">问玄东方</div>
-          <div class="ax-admin-logo__subtitle">统一运营管理台</div>
+          <div class="ax-admin-logo__title">{{ $t("问玄东方") }}</div>
+          <div class="ax-admin-logo__subtitle">{{ $t("统一运营管理台") }}</div>
         </div>
       </div>
 
-      <button v-if="mobile" class="ax-admin-sidebar__close" type="button" aria-label="关闭主导航" @click="closeNavigation">
-        <span aria-hidden="true">×</span><span>关闭导航</span>
+      <button v-if="mobile" class="ax-admin-sidebar__close" type="button" :aria-label='$t("关闭主导航")' @click="closeNavigation">
+        <span aria-hidden="true">×</span><span>{{ $t("关闭导航") }}</span>
       </button>
 
       <el-menu
@@ -166,21 +169,21 @@ async function onCommand(cmd: string) {
       >
         <el-menu-item :index="homePath">
           <el-icon><Odometer /></el-icon>
-          <template #title>{{ homePath === '/dashboard' ? '平台总览' : '今日工作台' }}</template>
+          <template #title>{{ $t((homePath === '/dashboard' ? $t('平台总览') : $t('今日工作台'))) }}</template>
         </el-menu-item>
 
         <el-sub-menu v-for="group in menuGroups" :key="group.title" :index="group.title">
           <template #title>
             <el-icon><component :is="group.icon" /></el-icon>
-            <span>{{ group.title }}</span>
+            <span>{{ $t(group.title) }}</span>
           </template>
           <el-menu-item v-for="item in group.children" :key="item.path" :index="item.path">
-            {{ item.title }}
+            {{ $t(item.title) }}
           </el-menu-item>
         </el-sub-menu>
       </el-menu>
 
-      <div class="ax-admin-version">统一运营管理台</div>
+      <div class="ax-admin-version">{{ $t("统一运营管理台") }}</div>
     </aside>
 
     <section class="ax-admin-content" :inert="mobile && drawerOpen">
@@ -191,7 +194,7 @@ async function onCommand(cmd: string) {
             class="ax-admin-nav-toggle"
             aria-controls="admin-navigation"
             type="button"
-            :aria-label="mobile ? (drawerOpen ? '关闭主导航' : '打开主导航') : (collapsed ? '展开主导航' : '收起主导航')"
+            :aria-label="$t((mobile ? ((drawerOpen ? $t('关闭主导航') : $t('打开主导航'))) : ((collapsed ? $t('展开主导航') : $t('收起主导航')))))"
             :aria-expanded="mobile ? drawerOpen : !collapsed"
             @click="toggleNavigation"
           >
@@ -202,8 +205,8 @@ async function onCommand(cmd: string) {
             </el-icon>
           </button>
           <div>
-            <div class="ax-admin-header__eyebrow">{{ pageParent }}</div>
-            <div class="ax-admin-header__title">{{ pageTitle }}</div>
+            <div class="ax-admin-header__eyebrow">{{ $t(pageParent) }}</div>
+            <div class="ax-admin-header__title">{{ $t(pageTitle) }}</div>
           </div>
         </div>
 
@@ -211,14 +214,14 @@ async function onCommand(cmd: string) {
           <AppearanceSelector />
           <el-dropdown @command="onCommand">
             <button class="ax-admin-user" type="button">
-              <el-avatar :size="32" :src="auth.userInfo?.avatar">{{ avatarText }}</el-avatar>
-              <span class="layout__user-name">{{ auth.userInfo?.nickname || '管理员' }}</span>
+              <el-avatar :size="32" :src="auth.userInfo?.avatar">{{ $t(avatarText) }}</el-avatar>
+              <span class="layout__user-name">{{ auth.userInfo?.nickname || $t('管理员') }}</span>
               <el-icon><ArrowDown /></el-icon>
             </button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="dashboard">返回总览</el-dropdown-item>
-                <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+                <el-dropdown-item command="dashboard">{{ $t("返回总览") }}</el-dropdown-item>
+                <el-dropdown-item divided command="logout">{{ $t("退出登录") }}</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>

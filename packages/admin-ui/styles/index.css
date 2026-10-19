@@ -1296,3 +1296,5 @@ html:root {
   .el-dropdown-menu__item, .el-select-dropdown__item { min-height: 44px; }
   .el-dialog__headerbtn, .el-message-box__headerbtn, .el-drawer__close-btn { min-width: 44px; min-height: 44px; }
 }
+
+.ax-preferences{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}.ax-preferences.ax-appearance-login{max-width:calc(100vw - 28px);justify-content:flex-end}

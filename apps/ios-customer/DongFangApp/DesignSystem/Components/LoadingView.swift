@@ -19,7 +19,7 @@ struct DFLoadingView: View {
                 ProgressView().controlSize(.large).tint(.accentDefault)
                     .frame(width: 64, height: 64).offset(y: 44).accessibilityHidden(true)
             }.padding(.bottom, 38)
-            Text(text)
+            Text(L10n.lookup(text))
                 .font(AppTypography.caption)
                 .foregroundStyle(.textTertiary)
         }

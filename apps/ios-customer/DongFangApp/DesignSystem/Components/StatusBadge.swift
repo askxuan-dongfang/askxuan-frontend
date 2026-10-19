@@ -14,7 +14,7 @@ struct DFStatusBadge: View {
     let status: String
 
     var body: some View {
-        Text(displayText)
+        Text(L10n.lookup(displayText))
             .font(AppTypography.micro.weight(.medium))
             .foregroundStyle(.white)
             .padding(.horizontal, 10)

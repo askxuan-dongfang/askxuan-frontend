@@ -1,26 +1,26 @@
 <template>
   <div class="dfx-page">
-    <PageHeader title="角色权限" subtitle="管理台角色与权限点管理">
+    <PageHeader :title='$t("角色权限")' :subtitle='$t("管理台角色与权限点管理")'>
       <template #actions>
-        <el-button type="primary" :icon="Plus" @click="openCreate">新建角色</el-button>
-        <el-button :icon="Refresh" @click="loadData">刷新</el-button>
+        <el-button type="primary" :icon="Plus" @click="openCreate">{{ $t("新建角色") }}</el-button>
+        <el-button :icon="Refresh" @click="loadData">{{ $t("刷新") }}</el-button>
       </template>
     </PageHeader>
 
     <div class="grid">
       <!-- 角色列表 -->
       <div class="dfx-card section">
-        <div class="section-title">角色列表</div>
+        <div class="section-title">{{ $t("角色列表") }}</div>
         <el-table :data="roles" v-loading="roleLoading" style="width: 100%">
-          <el-table-column label="角色名称" prop="name" min-width="120" />
-          <el-table-column label="编码" prop="code" width="160" />
-          <el-table-column label="描述" prop="description" min-width="160" show-overflow-tooltip />
-          <el-table-column label="创建时间" width="170">
-            <template #default="{ row }">{{ formatDate(row.createTime) }}</template>
+          <el-table-column :label='$t("角色名称")' prop="name" min-width="120" />
+          <el-table-column :label='$t("编码")' prop="code" width="160" />
+          <el-table-column :label='$t("描述")' prop="description" min-width="160" show-overflow-tooltip />
+          <el-table-column :label='$t("创建时间")' width="170">
+            <template #default="{ row }">{{ $t(formatDate(row.createTime)) }}</template>
           </el-table-column>
-          <el-table-column label="操作" width="100" fixed="right">
+          <el-table-column :label='$t("操作")' width="100" fixed="right">
             <template #default="{ row }">
-              <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+              <el-button link type="primary" @click="openEdit(row)">{{ $t("编辑") }}</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -28,40 +28,43 @@
 
       <!-- 权限点 -->
       <div class="dfx-card section">
-        <div class="section-title">权限点列表</div>
+        <div class="section-title">{{ $t("权限点列表") }}</div>
         <el-table :data="permissions" v-loading="permLoading" style="width: 100%" max-height="420">
-          <el-table-column label="权限名称" prop="name" min-width="140" />
-          <el-table-column label="编码" prop="code" width="180" />
-          <el-table-column label="资源" prop="resource" width="160" />
-          <el-table-column label="操作" prop="action" width="100" />
+          <el-table-column :label='$t("权限名称")' prop="name" min-width="140" />
+          <el-table-column :label='$t("编码")' prop="code" width="180" />
+          <el-table-column :label='$t("资源")' prop="resource" width="160" />
+          <el-table-column :label='$t("操作")' prop="action" width="100" />
         </el-table>
       </div>
     </div>
 
-    <el-dialog v-model="dialog.visible" :title="dialog.isEdit ? '编辑角色' : '新建角色'" width="460px" append-to-body>
+    <el-dialog v-model="dialog.visible" :title="$t((dialog.isEdit ? $t('编辑角色') : $t('新建角色')))" width="460px" append-to-body>
       <el-form :model="dialog.form" label-width="80px">
-        <el-form-item label="角色名称">
-          <el-input v-model="dialog.form.name" placeholder="请输入角色名称" :disabled="dialog.isEdit" />
+        <el-form-item :label='$t("角色名称")'>
+          <el-input v-model="dialog.form.name" :placeholder='$t("请输入角色名称")' :disabled="dialog.isEdit" />
         </el-form-item>
-        <el-form-item v-if="!dialog.isEdit" label="角色编码">
-          <el-input v-model="dialog.form.code" placeholder="如 platform_admin" />
+        <el-form-item v-if="!dialog.isEdit" :label='$t("角色编码")'>
+          <el-input v-model="dialog.form.code" :placeholder='$t("如 platform_admin")' />
         </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="dialog.form.description" type="textarea" :rows="3" placeholder="角色描述" />
+        <el-form-item :label='$t("描述")'>
+          <el-input v-model="dialog.form.description" type="textarea" :rows="3" :placeholder='$t("角色描述")' />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dialog.loading" @click="submit">确认</el-button>
+        <el-button @click="dialog.visible = false">{{ $t("取消") }}</el-button>
+        <el-button type="primary" :loading="dialog.loading" @click="submit">{{ $t("确认") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 import { ref, reactive, onMounted } from 'vue'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+
 import PageHeader from '@/components/PageHeader.vue'
 import { getRoles, createRole, updateRole, getPermissions } from '@/api/system'
 import { formatDate } from '@/utils/format'
@@ -109,14 +112,14 @@ function openEdit(row: Role) {
 
 async function submit() {
   if (!dialog.form.name || (!dialog.isEdit && !dialog.form.code)) {
-    ElMessage.warning('请填写完整信息')
+    ElMessage.warning(uiText('请填写完整信息'))
     return
   }
   dialog.loading = true
   try {
     if (dialog.isEdit) await updateRole(dialog.editId, { name: dialog.form.name, description: dialog.form.description })
     else await createRole({ name: dialog.form.name, code: dialog.form.code, description: dialog.form.description })
-    ElMessage.success(dialog.isEdit ? '已更新' : '已创建')
+    ElMessage.success((dialog.isEdit ? uiText('已更新') : uiText('已创建')))
     dialog.visible = false
     loadData()
   } finally {

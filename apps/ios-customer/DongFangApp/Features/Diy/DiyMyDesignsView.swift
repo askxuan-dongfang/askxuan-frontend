@@ -19,41 +19,41 @@ struct DiyMyDesignsView: View {
             DFTopNavBar("我的作品", showsBackButton: true) { EmptyView() } trailing: {
                 NavigationLink { DiyDesignView() } label: {
                     Image(systemName: "plus").frame(width: 44, height: 44)
-                }.accessibilityLabel("开始新设计")
+                }.accessibilityLabel(L10n.text("开始新设计"))
             }
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("每一串，都是你的心意").font(AppTypography.title(24)).foregroundStyle(Color.textPrimary)
-                        Text("收藏搭配灵感，随时继续创作。")
+                        Text(L10n.text("每一串，都是你的心意")).font(AppTypography.title(24)).foregroundStyle(Color.textPrimary)
+                        Text(L10n.text("收藏搭配灵感，随时继续创作。"))
                             .font(.subheadline).foregroundStyle(Color.textSecondary)
                         NavigationLink { DiyDesignView() } label: {
-                            Label("开始新设计", systemImage: "plus")
+                            Label(L10n.text("开始新设计"), systemImage: "plus")
                                 .font(.subheadline.weight(.semibold)).foregroundStyle(Color.accentLight)
                                 .frame(minHeight: 44)
                         }.buttonStyle(DiyPressButtonStyle())
                     }
                     .frame(maxWidth: .infinity, alignment: .leading).padding(20).diySurface(highlighted: true)
                     if !designs.isEmpty {
-                        Picker("作品筛选", selection: $selectedFilter) {
-                            Text("全部").tag("all")
-                            Text("已公开").tag("public")
-                            Text("已下单").tag("ordered")
+                        Picker(L10n.text("作品筛选"), selection: $selectedFilter) {
+                            Text(L10n.text("全部")).tag("all")
+                            Text(L10n.text("已公开")).tag("public")
+                            Text(L10n.text("已下单")).tag("ordered")
                         }.pickerStyle(.segmented)
                     }
                     if isLoading && designs.isEmpty {
-                        ProgressView("正在加载作品").tint(Color.accentDefault)
+                        ProgressView(L10n.text("正在加载作品")).tint(Color.accentDefault)
                             .frame(maxWidth: .infinity, minHeight: 180)
                     } else if filteredDesigns.isEmpty {
                         VStack(spacing: 12) {
                             Image(systemName: errorMessage == nil ? "square.stack" : "wifi.exclamationmark")
                                 .font(.largeTitle).foregroundStyle(Color.accentDefault)
-                            Text(errorMessage == nil ? (designs.isEmpty ? "第一件作品，等你开始" : "暂无符合筛选的作品") : "作品加载失败")
+                            Text(L10n.lookup(errorMessage == nil ? (designs.isEmpty ? L10n.text("第一件作品，等你开始") : L10n.text("暂无符合筛选的作品")) : L10n.text("作品加载失败")))
                                 .font(.headline).foregroundStyle(Color.textPrimary)
-                            Text(errorMessage ?? "保存搭配后，就能在这里继续编辑和分享。")
+                            Text(L10n.lookup(errorMessage ?? L10n.text("保存搭配后，就能在这里继续编辑和分享。")))
                                 .font(.subheadline).foregroundStyle(Color.textSecondary).multilineTextAlignment(.center)
                             if errorMessage != nil {
-                                Button("重新加载") { Task { await load() } }.frame(minHeight: 44)
+                                Button(L10n.text("重新加载")) { Task { await load() } }.frame(minHeight: 44)
                             }
                         }.frame(maxWidth: .infinity, minHeight: 220).padding(16)
                     } else {
@@ -64,8 +64,8 @@ struct DiyMyDesignsView: View {
                             }
                         }
                         if let errorMessage {
-                            Text(errorMessage).font(.caption).foregroundStyle(Color.textSecondary)
-                            Button("重新加载") { Task { await load() } }.frame(minHeight: 44)
+                            Text(L10n.lookup(errorMessage)).font(.caption).foregroundStyle(Color.textSecondary)
+                            Button(L10n.text("重新加载")) { Task { await load() } }.frame(minHeight: 44)
                         }
                     }
                 }
@@ -106,7 +106,7 @@ struct DiyMyDesignsView: View {
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text(design.name)
+                Text(L10n.lookup(design.name))
                     .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.textPrimary)
                     .lineLimit(1)
@@ -126,7 +126,7 @@ struct DiyMyDesignsView: View {
                     .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(Color.accentLight)
                 if let time = design.updateTime, !time.isEmpty {
-                    Text(String(time.prefix(10)))
+                    Text(L10n.lookup(String(time.prefix(10))))
                         .font(AppTypography.micro)
                         .foregroundStyle(Color.textTertiary)
                 }
@@ -138,7 +138,7 @@ struct DiyMyDesignsView: View {
 
     private func statusBadge(_ status: String) -> some View {
         let (text, color) = designStatusInfo(status)
-        return Text(text)
+        return Text(L10n.lookup(text))
             .font(AppTypography.micro.weight(.medium))
             .foregroundStyle(color)
             .padding(.horizontal, 6)
@@ -147,7 +147,7 @@ struct DiyMyDesignsView: View {
     }
 
     private func orderBadge(_ status: String?) -> some View {
-        Text("已下单 · \(orderStatusLabel(status))")
+        Text(L10n.text("已下单 · \(orderStatusLabel(status))"))
             .font(AppTypography.micro.weight(.medium))
             .foregroundStyle(Color.stateSuccess)
             .padding(.horizontal, 6)

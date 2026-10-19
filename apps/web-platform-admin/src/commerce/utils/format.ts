@@ -1,3 +1,4 @@
+import { getLanguage } from '../../../../../packages/localization/language';
 // 问玄东方 · 商城管理台 - 工具函数
 import dayjs from 'dayjs'
 import { getStatusMeta } from '@askxuan/domain-status'
@@ -25,7 +26,7 @@ export function formatDateTime(date: string | Date | undefined | null): string {
  */
 export function formatMoney(amount: number | undefined | null): string {
   if (amount === undefined || amount === null) return '¥0'
-  return `¥${Number(amount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  return `¥${Number(amount).toLocaleString(getLanguage(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 /**

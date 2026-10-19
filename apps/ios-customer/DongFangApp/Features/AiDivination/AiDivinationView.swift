@@ -450,13 +450,13 @@ struct AiDivinationView: View {
     var body: some View {
         ZStack(alignment: .leading) {
             VStack(spacing: 0) {
-                Picker("AI 问事栏目", selection: $section) {
-                    ForEach(["探索", "问 AI", "我的报告"], id: \.self) { Text($0).tag($0) }
+                Picker(L10n.text("AI 问事栏目"), selection: $section) {
+                    ForEach(["探索", "问 AI", "我的报告"], id: \.self) { Text(L10n.lookup($0)).tag($0) }
                 }.pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 10)
                 if section == "探索" {
                     AiDiscoveryView(viewModel: viewModel) { section = "问 AI" }
                 } else if !auth.isLoggedIn {
-                    LoginRequiredView(icon: "sparkles", title: "登录后使用 " + section, subtitle: "专题示例可直接阅读，个人报告和会话仅自己可见", isPresented: .constant(false))
+                    LoginRequiredView(icon: "sparkles", title: L10n.text("登录后使用 ") + section, subtitle: L10n.text("专题示例可直接阅读，个人报告和会话仅自己可见"), isPresented: .constant(false))
                 } else if section == "我的报告" {
                     AiReportLibrary(showsDismissButton: false)
                 } else {
@@ -472,12 +472,12 @@ struct AiDivinationView: View {
         .sheet(isPresented: $isDrawerOpen) {
             historyDrawer
                 .appSheetSurface()
-                .confirmationDialog("删除这段会话？", isPresented: $confirmDeletion, titleVisibility: .visible) {
-                    Button("确认删除", role: .destructive) {
+                .confirmationDialog(L10n.text("删除这段会话？"), isPresented: $confirmDeletion, titleVisibility: .visible) {
+                    Button(L10n.text("确认删除"), role: .destructive) {
                         if let session = deletionTarget { Task { if await viewModel.deleteSession(session) { deletionTarget = nil } } }
                     }
-                    Button("保留会话", role: .cancel) { deletionTarget = nil }
-                } message: { Text("会话将从历史问事移除。已购买的专题报告仍可在「我的报告」阅读。") }
+                    Button(L10n.text("保留会话"), role: .cancel) { deletionTarget = nil }
+                } message: { Text(L10n.text("会话将从历史问事移除。已购买的专题报告仍可在「我的报告」阅读。")) }
         }
         .sheet(isPresented: $showsModelPicker) { modelSelectionSheet.appSheetSurface() }
         .navigationBarHidden(true)
@@ -505,18 +505,18 @@ struct AiDivinationView: View {
 
     private var navigationBar: some View {
         HStack(spacing: 12) {
-            iconButton("sidebar.left", label: "历史问事") {
+            iconButton("sidebar.left", label: L10n.text("历史问事")) {
                 focusedInput = nil
                 isDrawerOpen = true
             }
 
-            Text(viewModel.messages.isEmpty ? "" : viewModel.currentTitle)
+            Text(L10n.lookup(viewModel.messages.isEmpty ? "" : viewModel.currentTitle))
                 .font(AppTypography.body.weight(.medium))
                 .foregroundStyle(Color.textPrimary)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity)
 
-            iconButton("square.and.pencil", label: "新建问事") {
+            iconButton("square.and.pencil", label: L10n.text("新建问事")) {
                 focusedInput = nil
                 linkedReportID = nil
                 viewModel.newConversation()
@@ -532,13 +532,13 @@ struct AiDivinationView: View {
             showsModelPicker = true
         } label: {
             HStack(spacing: 6) {
-                Text(viewModel.selectedModel?.name ?? "选择模型").lineLimit(1)
+                Text(L10n.lookup(viewModel.selectedModel?.name ?? L10n.text("选择模型"))).lineLimit(1)
                 Image(systemName: "chevron.down").font(.caption2)
             }
             .font(.subheadline).padding(.horizontal, 12).frame(minHeight: 44)
             .background(Color.bgSecondary, in: Capsule())
         }
-        .accessibilityLabel("选择 AI 模型")
+        .accessibilityLabel(L10n.text("选择 AI 模型"))
         .disabled(viewModel.isSending)
     }
 
@@ -546,11 +546,11 @@ struct AiDivinationView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("用于接下来的提问，已有回答保持不变。")
+                    Text(L10n.text("用于接下来的提问，已有回答保持不变。"))
                         .font(.subheadline).foregroundStyle(Color.textSecondary)
-                    if viewModel.modelsLoading { ProgressView("正在加载模型…").frame(maxWidth: .infinity) }
+                    if viewModel.modelsLoading { ProgressView(L10n.text("正在加载模型…")).frame(maxWidth: .infinity) }
                     if let error = viewModel.modelsError {
-                        Text(error).font(.subheadline).foregroundStyle(Color.stateError)
+                        Text(L10n.lookup(error)).font(.subheadline).foregroundStyle(Color.stateError)
                     }
                     ForEach(viewModel.models) { model in
                         Button {
@@ -559,10 +559,10 @@ struct AiDivinationView: View {
                         } label: {
                             HStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 6) {
-                                    Text(model.name).font(.headline)
-                                    Text(model.description).font(.subheadline).foregroundStyle(Color.textSecondary)
+                                    Text(L10n.lookup(model.name)).font(.headline)
+                                    Text(L10n.lookup(model.description)).font(.subheadline).foregroundStyle(Color.textSecondary)
                                     if viewModel.hasConversationImages && !model.supportsVision {
-                                        Text("当前会话含图片，此模型暂不可选").font(.caption)
+                                        Text(L10n.text("当前会话含图片，此模型暂不可选")).font(.caption)
                                     }
                                 }
                                 Spacer(minLength: 0)
@@ -575,13 +575,13 @@ struct AiDivinationView: View {
                         .disabled(viewModel.isSending || (viewModel.hasConversationImages && !model.supportsVision))
                     }
                     if viewModel.models.isEmpty && !viewModel.modelsLoading {
-                        Button("重新加载模型") { Task { await viewModel.loadModels() } }
+                        Button(L10n.text("重新加载模型")) { Task { await viewModel.loadModels() } }
                             .buttonStyle(.bordered).frame(maxWidth: .infinity)
                     }
                 }.padding(20)
             }
-            .navigationTitle("选择模型").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { showsModelPicker = false } } }
+            .navigationTitle(L10n.text("选择模型")).navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L10n.text("完成")) { showsModelPicker = false } } }
         }
     }
 
@@ -615,10 +615,10 @@ struct AiDivinationView: View {
     private var emptyConversation: some View {
         VStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("今天想问什么？").font(AppTypography.title(24)).foregroundStyle(Color.textPrimary)
-                Text("把困惑写在下方，我们从这件事聊起。").font(AppTypography.body).foregroundStyle(Color.textSecondary)
+                Text(L10n.text("今天想问什么？")).font(AppTypography.title(24)).foregroundStyle(Color.textPrimary)
+                Text(L10n.text("把困惑写在下方，我们从这件事聊起。")).font(AppTypography.body).foregroundStyle(Color.textSecondary)
             }.frame(maxWidth: .infinity, alignment: .leading)
-            Button("也可以先探索一个主题 →") { section = "探索" }.padding(.top, 8)
+            Button(L10n.text("也可以先探索一个主题 →")) { section = "探索" }.padding(.top, 8)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 22)
@@ -647,15 +647,15 @@ struct AiDivinationView: View {
                 if message.status == "pending", message.content.isEmpty {
                     HStack(spacing: 8) {
                         ProgressView().controlSize(.small)
-						Text(stageLabel(message.stage))
+						Text(L10n.lookup(stageLabel(message.stage)))
                     }
                 } else if message.status == "failed" {
-                    Text(message.errorMessage.isEmpty ? "回答生成失败" : message.errorMessage)
+                    Text(L10n.lookup(message.errorMessage.isEmpty ? L10n.text("回答生成失败") : message.errorMessage))
                     if message.retryable {
                         Button {
                             Task { await viewModel.retry(message) }
                         } label: {
-                            Label("重试", systemImage: "arrow.clockwise")
+                            Label(L10n.text("重试"), systemImage: "arrow.clockwise")
                                 .font(AppTypography.supporting.weight(.semibold))
                         }
                         .buttonStyle(.plain)
@@ -667,13 +667,13 @@ struct AiDivinationView: View {
                 }
                 if message.role == "assistant" {
                     if message.status == "awaiting_input", let value = message.agent?.clarification {
-                        Button("补充资料并继续") { clarificationSession = message.sessionId; clarification = value }.buttonStyle(.bordered).disabled(viewModel.isSending)
+                        Button(L10n.text("补充资料并继续")) { clarificationSession = message.sessionId; clarification = value }.buttonStyle(.bordered).disabled(viewModel.isSending)
                     }
-                    if message.status == "pending" { Button("停止生成") { Task { await viewModel.stop(message) } }.font(.caption) }
+                    if message.status == "pending" { Button(L10n.text("停止生成")) { Task { await viewModel.stop(message) } }.font(.caption) }
                     if message.agent != nil { AiTraceView(message: message) }
                 }
                 if message.role == "assistant", let model = message.model, !model.isEmpty {
-                    Text(model).font(.system(size: 10)).foregroundStyle(Color.textTertiary)
+                    Text(L10n.lookup(model)).font(.system(size: 10)).foregroundStyle(Color.textTertiary)
                 }
             }
             .font(AppTypography.body)
@@ -697,7 +697,7 @@ struct AiDivinationView: View {
     private var composer: some View {
         VStack(spacing: 8) {
             if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
+                Text(L10n.lookup(errorMessage))
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.stateError)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -726,7 +726,7 @@ struct AiDivinationView: View {
                                             .foregroundStyle(.white, .black.opacity(0.72))
                                     }
                                     .offset(x: 5, y: -5)
-                                    .accessibilityLabel("移除图片")
+                                    .accessibilityLabel(L10n.text("移除图片"))
                                 }
                             }
                         }
@@ -739,8 +739,8 @@ struct AiDivinationView: View {
                 PhotosPicker(selection: $selectedPhotoItems, maxSelectionCount: 3, matching: .images) {
                     Image(systemName: "photo").frame(width: 36, height: 40)
                 }
-                .accessibilityLabel("添加图片")
-                TextField("输入你的问题", text: $viewModel.input, axis: .vertical)
+                .accessibilityLabel(L10n.text("添加图片"))
+                TextField(L10n.text("输入你的问题"), text: $viewModel.input, axis: .vertical)
                     .lineLimit(1...4)
                     .font(AppTypography.body)
                     .focused($focusedInput, equals: "question")
@@ -766,12 +766,12 @@ struct AiDivinationView: View {
                         .clipShape(Circle())
                 }
                 .disabled(!canSend)
-                .accessibilityLabel("发送")
+                .accessibilityLabel(L10n.text("发送"))
             }
 
             HStack { modelPicker; Spacer(minLength: 0) }
 
-            Text("AI 内容仅供参考，不替代医疗、法律或财务专业意见")
+            Text(L10n.text("AI 内容仅供参考，不替代医疗、法律或财务专业意见"))
                 .font(AppTypography.micro)
                 .foregroundStyle(Color.textTertiary)
         }
@@ -798,11 +798,11 @@ struct AiDivinationView: View {
     private var historyDrawer: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("历史问事")
+                Text(L10n.text("历史问事"))
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
-                iconButton("xmark", label: "关闭历史") { closeDrawer() }
+                iconButton("xmark", label: L10n.text("关闭历史")) { closeDrawer() }
             }
             .padding(.horizontal, 16)
             .frame(height: 54)
@@ -812,7 +812,7 @@ struct AiDivinationView: View {
                 viewModel.newConversation()
                 closeDrawer()
             } label: {
-                Label("新建问事", systemImage: "square.and.pencil")
+                Label(L10n.text("新建问事"), systemImage: "square.and.pencil")
                     .font(AppTypography.body.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .frame(height: 40)
@@ -826,8 +826,8 @@ struct AiDivinationView: View {
 
             ScrollView {
                 LazyVStack(spacing: 4) {
-                    if let error = viewModel.deletionError { Text("删除失败：" + error).font(.footnote).foregroundStyle(.red).padding(12) }
-                    if viewModel.sessions.isEmpty { Text("暂无历史问事").font(.subheadline).foregroundStyle(Color.textTertiary).padding(30) }
+                    if let error = viewModel.deletionError { Text(L10n.lookup(L10n.text("删除失败：") + error)).font(.footnote).foregroundStyle(.red).padding(12) }
+                    if viewModel.sessions.isEmpty { Text(L10n.text("暂无历史问事")).font(.subheadline).foregroundStyle(Color.textTertiary).padding(30) }
                     ForEach(viewModel.sessions) { session in
                         HStack(spacing: 0) {
                         Button {
@@ -840,11 +840,11 @@ struct AiDivinationView: View {
                                 Image(systemName: "bubble.left")
                                     .foregroundStyle(Color.textTertiary)
                                 VStack(alignment: .leading, spacing: 3) {
-                                    Text(session.title)
+                                    Text(L10n.lookup(session.title))
                                         .font(AppTypography.body.weight(.medium))
                                         .foregroundStyle(Color.textPrimary)
                                         .lineLimit(1)
-                                    Text(skillName(session.skillCode))
+                                    Text(L10n.lookup(skillName(session.skillCode)))
                                         .font(AppTypography.micro)
                                         .foregroundStyle(Color.textTertiary)
                                 }
@@ -863,7 +863,7 @@ struct AiDivinationView: View {
                         Button { deletionTarget = session; confirmDeletion = true } label: {
                             Image(systemName: "trash").font(AppTypography.reading).frame(width: 44, height: 48)
                         }.buttonStyle(.plain).foregroundStyle(Color.textTertiary)
-                            .accessibilityLabel("删除会话：" + session.title).disabled(viewModel.deletingSession)
+                            .accessibilityLabel(L10n.lookup(L10n.text("删除会话：") + session.title)).disabled(viewModel.deletingSession)
                         }
                     }
                 }
@@ -891,7 +891,7 @@ struct AiDivinationView: View {
                 .frame(width: 36, height: 36)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(label)
+        .accessibilityLabel(L10n.lookup(label))
     }
 
     private func closeDrawer() {

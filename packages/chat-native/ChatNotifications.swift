@@ -118,7 +118,7 @@ struct ChatNotificationPrompt: View {
                 if notifications.denied,let url=URL(string:UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
                 else { Task { await notifications.requestPermission() } }
             } label: {
-                HStack(spacing:9) { Image(systemName:"bell.badge");Text(notifications.error ?? (notifications.denied ? "前往设置，开启新消息提醒" : "开启新消息提醒"));Spacer();Image(systemName:"chevron.right").font(.caption2) }
+                HStack(spacing:9) { Image(systemName:"bell.badge");Text(L10n.lookup(notifications.error ?? (notifications.denied ? L10n.text("前往设置，开启新消息提醒") : L10n.text("开启新消息提醒"))));Spacer();Image(systemName:"chevron.right").font(.caption2) }
                 .font(.system(size:12)).foregroundStyle(Color.accentDefault)
                 .padding(14).background(Color.bgSecondary,in:RoundedRectangle(cornerRadius:13))
             }.buttonStyle(.plain).padding(.horizontal,18).padding(.vertical,8).task { await notifications.refresh() }

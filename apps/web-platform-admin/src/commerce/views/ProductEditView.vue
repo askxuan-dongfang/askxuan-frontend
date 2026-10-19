@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 // 商品编辑 / 新建
 import { ref, reactive, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ElMessage, type FormInstance, type FormRules } from "element-plus";
+import { type FormInstance, type FormRules } from 'element-plus';
 import PageHeader from "@/components/PageHeader.vue";
 import ImageUploader from "@/components/ImageUploader.vue";
 import { productApi, type ProductSaveParams } from "@/commerce/api/product";
@@ -146,7 +149,7 @@ async function handleSubmit() {
     form.isExperience &&
     (!form.sourceName?.trim() || !/^https:\/\//.test(form.sourceUrl || ""))
   ) {
-    ElMessage.warning("请填写案例来源和 HTTPS 原商品链接");
+    ElMessage.warning(uiText("请填写案例来源和 HTTPS 原商品链接"));
     return;
   }
   await formRef.value.validate(async (valid) => {
@@ -155,10 +158,10 @@ async function handleSubmit() {
     try {
       if (isEdit.value) {
         await productApi.update(productId.value, form);
-        ElMessage.success("更新成功");
+        ElMessage.success(uiText("更新成功"));
       } else {
         await productApi.create(form);
-        ElMessage.success("创建成功");
+        ElMessage.success(uiText("创建成功"));
       }
       router.push("/commerce/products");
     } finally {
@@ -178,19 +181,19 @@ watch(() => route.params.id, loadDetail, { immediate: true });
 <template>
   <div class="page-wrap product-editor" v-loading="loading">
     <PageHeader
-      :title="isEdit ? '编辑这份好物' : '上新一份好物'"
-      subtitle="商品信息与顾客端展示同步维护；保存后在商品列表管理上下架。"
+      :title="$t((isEdit ? $t('编辑这份好物') : $t('上新一份好物')))"
+      :subtitle='$t("商品信息与顾客端展示同步维护；保存后在商品列表管理上下架。")'
       ><template #extra
-        ><el-button @click="handleCancel">返回商品列表</el-button></template
+        ><el-button @click="handleCancel">{{ $t("返回商品列表") }}</el-button></template
       ></PageHeader
     >
     <el-alert
       v-if="loadError"
-      :title="loadError"
+      :title="$t(loadError)"
       type="error"
       :closable="false"
       show-icon
-    /><el-button v-if="loadError" @click="loadDetail">重新加载</el-button>
+    /><el-button v-if="loadError" @click="loadDetail">{{ $t("重新加载") }}</el-button>
     <div class="store-editor-layout">
       <el-form
         ref="formRef"
@@ -204,66 +207,66 @@ watch(() => route.params.id, loadDetail, { immediate: true });
           <div class="editor-section-title">
             <span>01</span>
             <div>
-              <h2>先认识这份好物</h2>
-              <p>名称、分类与首个标签会出现在商城商品卡片。</p>
+              <h2>{{ $t("先认识这份好物") }}</h2>
+              <p>{{ $t("名称、分类与首个标签会出现在商城商品卡片。") }}</p>
             </div>
           </div>
-          <el-form-item label="商品类型"
+          <el-form-item :label='$t("商品类型")'
             ><el-switch
               v-model="form.isExperience"
               :disabled="isEdit"
               active-text="体验商品"
               inactive-text="普通商品"
             /><span class="editor-help"
-              >类型创建后固定；体验商品仅模拟支付、库存与物流，不产生消费积分或商城销售收入。</span
+              >{{ $t("类型创建后固定；体验商品仅模拟支付、库存与物流，不产生消费积分或商城销售收入。") }}</span
             ></el-form-item
           >
           <template v-if="form.isExperience">
-            <el-form-item label="案例来源"
+            <el-form-item :label='$t("案例来源")'
               ><el-input
                 v-model="form.sourceName"
                 maxlength="100"
-                placeholder="原商家或公开案例名称"
+                :placeholder='$t("原商家或公开案例名称")'
             /></el-form-item>
-            <el-form-item label="原商品链接"
+            <el-form-item :label='$t("原商品链接")'
               ><el-input
                 v-model="form.sourceUrl"
                 maxlength="1000"
                 placeholder="https://"
             /></el-form-item>
-            <el-form-item label="来源说明"
+            <el-form-item :label='$t("来源说明")'
               ><el-input
                 v-model="form.sourceNote"
                 type="textarea"
                 :rows="3"
                 maxlength="500"
                 show-word-limit
-                placeholder="资料核对日期、参考范围与体验说明"
+                :placeholder='$t("资料核对日期、参考范围与体验说明")'
             /></el-form-item>
           </template>
-          <el-form-item label="商品名称" prop="name"
+          <el-form-item :label='$t("商品名称")' prop="name"
             ><el-input
               v-model="form.name"
-              placeholder="清晰描述材质与品类，例如：天然香珠手串"
+              :placeholder='$t("清晰描述材质与品类，例如：天然香珠手串")'
               maxlength="100"
               show-word-limit
           /></el-form-item>
-          <el-form-item label="所属分类" prop="categoryId"
+          <el-form-item :label='$t("所属分类")' prop="categoryId"
             ><el-select
               v-model="form.categoryId"
-              placeholder="请选择分类"
+              :placeholder='$t("请选择分类")'
               filterable
               style="width: 100%"
               ><el-option
                 v-for="c in categories"
                 :key="c.id"
-                :label="c.name"
+                :label="$t(c.name)"
                 :value="c.id" /></el-select
             ><span class="editor-help"
-              >顾客通过此分类找到商品；分类顺序在分类管理中设置。</span
+              >{{ $t("顾客通过此分类找到商品；分类顺序在分类管理中设置。") }}</span
             ></el-form-item
           >
-          <el-form-item label="展示标签"
+          <el-form-item :label='$t("展示标签")'
             ><el-select
               v-model="tagList"
               multiple
@@ -271,10 +274,10 @@ watch(() => route.params.id, loadDetail, { immediate: true });
               allow-create
               default-first-option
               :reserve-keyword="false"
-              placeholder="输入标签后回车，例如：天然材质、随身好物"
+              :placeholder='$t("输入标签后回车，例如：天然材质、随身好物")'
               style="width: 100%"
             /><span class="editor-help"
-              >首个标签显示在商品卡片，所有标签展示在详情页。请填写可核实的商品特点。</span
+              >{{ $t("首个标签显示在商品卡片，所有标签展示在详情页。请填写可核实的商品特点。") }}</span
             ></el-form-item
           >
         </section>
@@ -282,26 +285,25 @@ watch(() => route.params.id, loadDetail, { immediate: true });
           <div class="editor-section-title">
             <span>02</span>
             <div>
-              <h2>让细节看得见</h2>
-              <p>清晰的图片与介绍，让顾客更容易做决定。</p>
+              <h2>{{ $t("让细节看得见") }}</h2>
+              <p>{{ $t("清晰的图片与介绍，让顾客更容易做决定。") }}</p>
             </div>
           </div>
-          <el-form-item label="商品主图" prop="mainImage"
+          <el-form-item :label='$t("商品主图")' prop="mainImage"
             ><ImageUploader
               v-model="form.mainImage"
               :multiple="false"
-              placeholder="上传图片或粘贴图片链接"
+              :placeholder='$t("上传图片或粘贴图片链接")'
             /><span class="editor-help"
-              >建议使用清晰的正方形图片，主体居中；支持 HTTPS
-              图片或站内图片路径。</span
+              >{{ $t("建议使用清晰的正方形图片，主体居中；支持 HTTPS 图片或站内图片路径。") }}</span
             ></el-form-item
           >
-          <el-form-item label="商品介绍"
+          <el-form-item :label='$t("商品介绍")'
             ><el-input
               v-model="form.description"
               type="textarea"
               :rows="6"
-              placeholder="介绍材质、尺寸、工艺、使用与养护方式，让顾客看懂这份好物。"
+              :placeholder='$t("介绍材质、尺寸、工艺、使用与养护方式，让顾客看懂这份好物。")'
               maxlength="2000"
               show-word-limit
           /></el-form-item>
@@ -310,12 +312,12 @@ watch(() => route.params.id, loadDetail, { immediate: true });
           <div class="editor-section-title">
             <span>03</span>
             <div>
-              <h2>价格与履约</h2>
-              <p>库存为零时，商城展示售罄并停止购买。</p>
+              <h2>{{ $t("价格与履约") }}</h2>
+              <p>{{ $t("库存为零时，商城展示售罄并停止购买。") }}</p>
             </div>
           </div>
           <div class="editor-price-grid">
-            <el-form-item label="售价（元）" prop="price"
+            <el-form-item :label='$t("售价（元）")' prop="price"
               ><el-input-number
                 v-model="form.price"
                 :min="0"
@@ -323,7 +325,7 @@ watch(() => route.params.id, loadDetail, { immediate: true });
                 :step="1"
                 controls-position="right"
             /></el-form-item>
-            <el-form-item label="参考价（元，选填）"
+            <el-form-item :label='$t("参考价（元，选填）")'
               ><el-input-number
                 v-model="form.marketPrice"
                 :min="0"
@@ -331,7 +333,7 @@ watch(() => route.params.id, loadDetail, { immediate: true });
                 :step="1"
                 controls-position="right"
             /></el-form-item>
-            <el-form-item label="库存（件）" prop="stock"
+            <el-form-item :label='$t("库存（件）")' prop="stock"
               ><el-input-number
                 v-model="form.stock"
                 :min="0"
@@ -339,7 +341,7 @@ watch(() => route.params.id, loadDetail, { immediate: true });
                 :step="1"
                 controls-position="right"
             /></el-form-item>
-            <el-form-item label="运费模板 ID"
+            <el-form-item :label='$t("运费模板 ID")'
               ><el-input-number
                 v-model="form.freightTemplateId"
                 :min="0"
@@ -347,66 +349,63 @@ watch(() => route.params.id, loadDetail, { immediate: true });
                 controls-position="right"
             /></el-form-item>
           </div>
-          <p class="editor-help">
-            参考价高于售价时才展示划线价；运费模板保留现有配送配置。
-          </p>
+          <p class="editor-help">{{ $t(" 参考价高于售价时才展示划线价；运费模板保留现有配送配置。 ") }}</p>
         </section>
         <div class="store-editor-actions">
           <span>{{
-            isEdit ? "保存后更新商品展示" : "新建商品先保存为草稿"
+            $t((isEdit ? $t("保存后更新商品展示") : $t("新建商品先保存为草稿")))
           }}</span
-          ><el-button @click="handleCancel">取消</el-button
+          ><el-button @click="handleCancel">{{ $t("取消") }}</el-button
           ><el-button
             type="primary"
             :loading="saving"
             :disabled="!detailReady"
             @click="handleSubmit"
-            >{{ isEdit ? "保存修改" : "保存为草稿" }}</el-button
+            >{{ $t((isEdit ? $t("保存修改") : $t("保存为草稿"))) }}</el-button
           >
         </div>
       </el-form>
       <aside class="store-preview-column">
         <div class="store-preview-heading">
-          <h2>顾客看到的样子</h2>
-          <span>实时预览</span>
+          <h2>{{ $t("顾客看到的样子") }}</h2>
+          <span>{{ $t("实时预览") }}</span>
         </div>
         <div class="store-preview-device">
-          <div class="store-preview-brand">商城 <small>购物车</small></div>
-          <div class="store-preview-search">搜索商品名称 <span>搜索</span></div>
-          <div class="store-preview-category">
-            全部商品　 /　{{ categoryName }}
+          <div class="store-preview-brand">{{ $t("商城 ") }}<small>{{ $t("购物车") }}</small></div>
+          <div class="store-preview-search">{{ $t("搜索商品名称 ") }}<span>{{ $t("搜索") }}</span></div>
+          <div class="store-preview-category">{{ $t(" 全部商品 / ") }}{{ $t(categoryName) }}
           </div>
           <article class="store-preview-product">
             <div class="store-preview-media">
               <el-image v-if="imageValid" :src="form.mainImage" fit="cover"
                 ><template #error
-                  ><span class="store-preview-fallback">物</span></template
+                  ><span class="store-preview-fallback">{{ $t("物") }}</span></template
                 ></el-image
-              ><span v-else class="store-preview-fallback">物</span
-              ><small v-if="form.stock <= 0">暂时售罄</small
-              ><small v-else-if="tagList[0]">{{ tagList[0] }}</small>
+              ><span v-else class="store-preview-fallback">{{ $t("物") }}</span
+              ><small v-if="form.stock <= 0">{{ $t("暂时售罄") }}</small
+              ><small v-else-if="tagList[0]">{{ $t(tagList[0]) }}</small>
             </div>
             <div class="store-preview-copy">
-              <h3>{{ form.name || "给这份好物一个名字" }}</h3>
+              <h3>{{ $t((form.name || $t("给这份好物一个名字"))) }}</h3>
               <div>
-                <strong>¥{{ Number(form.price || 0).toFixed(2) }}</strong
+                <strong>¥{{ $t(Number(form.price || 0).toFixed(2)) }}</strong
                 ><del v-if="(form.marketPrice || 0) > form.price"
-                  >¥{{ Number(form.marketPrice).toFixed(2) }}</del
+                  >¥{{ $t(Number(form.marketPrice).toFixed(2)) }}</del
                 ><span>↗</span>
               </div>
             </div>
           </article>
         </div>
         <section class="df-card store-display-check">
-          <h3>展示检查</h3>
+          <h3>{{ $t("展示检查") }}</h3>
           <p v-for="item in presentationChecks" :key="item.label">
-            <span>{{ item.label }}</span
+            <span>{{ $t(item.label) }}</span
             ><b :class="{ ready: item.ok }">{{
-              item.ok ? "已就绪" : "待完善"
+              $t((item.ok ? $t("已就绪") : $t("待完善")))
             }}</b>
           </p>
           <small
-            >列表突出主图、名称与价格；完整介绍显示在商品详情。预览不会改变商品状态。</small
+            >{{ $t("列表突出主图、名称与价格；完整介绍显示在商品详情。预览不会改变商品状态。") }}</small
           >
         </section>
         <a
@@ -415,7 +414,7 @@ watch(() => route.params.id, loadDetail, { immediate: true });
           target="_blank"
           rel="noopener"
           class="editor-live-link"
-          >打开顾客端商品详情 ↗</a
+          >{{ $t("打开顾客端商品详情 ↗") }}</a
         >
       </aside>
     </div>

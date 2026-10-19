@@ -1,33 +1,33 @@
 <template>
   <div class="dfx-page">
-    <PageHeader title="法师审核" subtitle="法师资质认证审核">
+    <PageHeader :title='$t("法师审核")' :subtitle='$t("法师资质认证审核")'>
       <template #actions>
-        <el-button :icon="Refresh" @click="loadData">刷新</el-button>
+        <el-button :icon="Refresh" @click="loadData">{{ $t("刷新") }}</el-button>
       </template>
     </PageHeader>
 
     <div class="dfx-card filter-bar">
-      <el-select v-model="query.status" placeholder="审核状态" clearable style="width: 160px" @change="onSearch">
-        <el-option label="待审核" value="pending" />
-        <el-option label="已通过" value="pass" />
-        <el-option label="已驳回" value="rejected" />
+      <el-select v-model="query.status" :placeholder='$t("审核状态")' clearable style="width: 160px" @change="onSearch">
+        <el-option :label='$t("待审核")' value="pending" />
+        <el-option :label='$t("已通过")' value="pass" />
+        <el-option :label='$t("已驳回")' value="rejected" />
       </el-select>
     </div>
 
     <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
       <div class="ax-page-feedback__copy">
-        <div class="ax-page-feedback__title">法师资质申请加载失败</div>
-        <div class="ax-page-feedback__description">审核队列状态未知，请重试后再处理。</div>
+        <div class="ax-page-feedback__title">{{ $t("法师资质申请加载失败") }}</div>
+        <div class="ax-page-feedback__description">{{ $t("审核队列状态未知，请重试后再处理。") }}</div>
       </div>
-      <el-button :loading="loading" @click="loadData">重新加载</el-button>
+      <el-button :loading="loading" @click="loadData">{{ $t("重新加载") }}</el-button>
     </div>
 
     <div class="dfx-card table-wrap">
       <DataTable class="desktop-table" :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
-        <el-table-column label="申请编号" prop="id" width="90" />
-        <el-table-column label="法师编码" prop="masterCode" width="120" />
-        <el-table-column label="所属寺院" prop="templeCode" width="120" />
-        <el-table-column label="资质材料" min-width="180">
+        <el-table-column :label='$t("申请编号")' prop="id" width="90" />
+        <el-table-column :label='$t("法师编码")' prop="masterCode" width="120" />
+        <el-table-column :label='$t("所属寺院")' prop="templeCode" width="120" />
+        <el-table-column :label='$t("资质材料")' min-width="180">
           <template #default="{ row }">
             <el-image
               v-for="(url, i) in row.credentialUrls"
@@ -39,34 +39,34 @@
               :initial-index="i"
               preview-teleported
             >
-              <template #error><div class="cert-img cert-img--fallback">证</div></template>
+              <template #error><div class="cert-img cert-img--fallback">{{ $t("证") }}</div></template>
             </el-image>
             <span v-if="!row.credentialUrls?.length">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="110">
+        <el-table-column :label='$t("状态")' width="110">
           <template #default="{ row }"><StatusTag :status="row.status" /></template>
         </el-table-column>
-        <el-table-column label="申请时间" width="170">
-          <template #default="{ row }">{{ formatDate(row.createTime) }}</template>
+        <el-table-column :label='$t("申请时间")' width="170">
+          <template #default="{ row }">{{ $t(formatDate(row.createTime)) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column :label='$t("操作")' width="140" fixed="right">
           <template #default="{ row }">
             <AuditAction v-if="row.status === 'pending'" :on-confirm="(a, r) => doAudit(row, a, r)" @success="loadData" />
-            <span v-else class="muted">已处理</span>
+            <span v-else class="muted">{{ $t("已处理") }}</span>
           </template>
         </el-table-column>
       </DataTable>
       <MobileTaskList v-model:page="query.page" :items="list" :loading="loading" :total="total" :size="query.size" @change="loadData">
         <template #item="{ item: row }">
           <article class="mobile-task-card">
-            <div class="mobile-task-card__head"><strong>法师 {{ row.masterCode }}</strong><StatusTag :status="row.status" /></div>
-            <div class="mobile-task-card__meta">申请 #{{ row.id }} · 所属寺院 {{ row.templeCode }}</div>
-            <div class="mobile-task-card__meta">资质材料 {{ row.credentialUrls?.length || 0 }} 项 · {{ formatDate(row.createTime) }}</div>
+            <div class="mobile-task-card__head"><strong>{{ $t("法师 ") }}{{ $t(row.masterCode) }}</strong><StatusTag :status="row.status" /></div>
+            <div class="mobile-task-card__meta">{{ $t("申请 #") }}{{ $t(row.id) }}{{ $t(" · 所属寺院 ") }}{{ $t(row.templeCode) }}</div>
+            <div class="mobile-task-card__meta">{{ $t("资质材料 ") }}{{ $t((row.credentialUrls?.length || 0)) }}{{ $t(" 项 · ") }}{{ $t(formatDate(row.createTime)) }}</div>
             <div class="mobile-task-card__foot">
-              <span>{{ row.status === 'pending' ? '等待人工核验材料' : '审核流程已处理' }}</span>
+              <span>{{ $t((row.status === 'pending' ? $t('等待人工核验材料') : $t('审核流程已处理'))) }}</span>
               <AuditAction v-if="row.status === 'pending'" :on-confirm="(a, r) => doAudit(row, a, r)" @success="loadData" />
-              <b v-else>已处理</b>
+              <b v-else>{{ $t("已处理") }}</b>
             </div>
           </article>
         </template>

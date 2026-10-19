@@ -1,14 +1,17 @@
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../packages/localization/language'
+
 import AccountLogin from '../../../../packages/admin-ui/components/AccountLogin.vue'
 import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
 import {onMounted} from 'vue'
-import {ElMessage} from 'element-plus'
+
 import {useRouter,useRoute} from 'vue-router'
 import {useAuthStore} from '@/stores/auth'
 
 const router=useRouter();const route=useRoute();const auth=useAuthStore()
-onMounted(()=>{if(route.query.denied==='1')ElMessage.warning('该账号没有本管理台权限，请使用对应角色账号登录')})
+onMounted(()=>{if(route.query.denied==='1')ElMessage.warning(uiText('该账号没有本管理台权限，请使用对应角色账号登录'))})
 async function login(account:string,password:string,proof:{captchaId:string;captchaCode:string}){await auth.login(account,password,proof)}
 function complete(){if(auth.roles.includes('temple_applicant')){router.replace('/onboarding');return;}const next=typeof route.query.redirect==='string'?route.query.redirect:'';router.replace(next.startsWith('/')&&!next.startsWith('//')&&!next.includes(String.fromCharCode(92))&&!next.startsWith('/login')?next:'/dashboard')}
 </script>
@@ -18,19 +21,19 @@ function complete(){if(auth.roles.includes('temple_applicant')){router.replace('
     <div class="login-bg"></div>
     <div class="login-card df-card">
       <div class="login-brand">
-        <BrandLogo class="login-mark" identity="temple" label="问玄东方寺院管理台" />
+        <BrandLogo class="login-mark" identity="temple" :label='$t("问玄东方寺院管理台")' />
         <div>
-          <div class="login-title">问玄东方</div>
-          <div class="login-sub">寺院管理台</div>
+          <div class="login-title">{{ $t("问玄东方") }}</div>
+          <div class="login-sub">{{ $t("寺院管理台") }}</div>
         </div>
       </div>
-      <p class="login-desc">以虔诚之心，护寺院清誉 · 寺院数字化运营管理</p>
+      <p class="login-desc">{{ $t("以虔诚之心，护寺院清誉 · 寺院数字化运营管理") }}</p>
 
       <AccountLogin register-kind="temple" :login="login" @success="complete" />
 
 
     </div>
-    <div class="login-footer">© 问玄东方 · 寺院管理台 P02</div>
+    <div class="login-footer">{{ $t("© 问玄东方 · 寺院管理台 P02") }}</div>
   </div>
 </template>
 <style scoped>

@@ -136,7 +136,7 @@ struct CalendarView: View {
             .padding(.bottom, AppSpacing.xl)
         }
         .background(Color.bgPrimary)
-        .navigationTitle("日程日历")
+        .navigationTitle(L10n.text("日程日历"))
         .navigationBarTitleDisplayMode(.large)
 
         .task { await viewModel.load() }
@@ -148,7 +148,7 @@ struct CalendarView: View {
     private var monthHeader: some View {
         let title = dateFormatter("yyyy年MM月").string(from: viewModel.selectedDate)
         return HStack {
-            Text(title)
+            Text(L10n.lookup(title))
                 .font(.pageTitle)
                 .foregroundStyle(.textPrimary)
             Spacer()
@@ -165,7 +165,7 @@ struct CalendarView: View {
     private var weekHeader: some View {
         HStack(spacing: 0) {
             ForEach(weeks, id: \.self) { w in
-                Text(w)
+                Text(L10n.lookup(w))
                     .font(AppTypography.caption)
                     .foregroundStyle(.textTertiary)
                     .frame(maxWidth: .infinity)
@@ -240,17 +240,17 @@ struct CalendarView: View {
     private var scheduleSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             HStack {
-                Text("当日时段")
+                Text(L10n.text("当日时段"))
                     .font(.sectionTitle)
                     .foregroundStyle(.textPrimary)
                 Spacer()
-                Text(DFDateFormatter.dayOnly(viewModel.selectedDateString))
+                Text(L10n.lookup(DFDateFormatter.dayOnly(viewModel.selectedDateString)))
                     .font(AppTypography.caption)
                     .foregroundStyle(.textTertiary)
             }
 
             if viewModel.isLoading {
-                LoadingView(message: "加载日程...")
+                LoadingView(message: L10n.text("加载日程..."))
                     .frame(maxWidth: .infinity)
             } else {
                 ForEach(viewModel.availableSlots, id: \.self) { slot in
@@ -261,11 +261,11 @@ struct CalendarView: View {
                             HStack {
                                 Image(systemName: "clock.fill")
                                     .foregroundStyle(.accentDefault)
-                                Text(slot)
+                                Text(L10n.lookup(slot))
                                     .font(AppTypography.body)
                                     .foregroundStyle(.textPrimary)
                                 Spacer()
-                                Text(viewModel.selectedSlots.contains(slot) ? "可预约" : "休息")
+                                Text(L10n.lookup(viewModel.selectedSlots.contains(slot) ? L10n.text("可预约") : L10n.text("休息")))
                                     .font(.micro)
                                     .foregroundStyle(viewModel.selectedSlots.contains(slot) ? Color.stateSuccess : Color.textTertiary)
                                 Image(systemName: viewModel.selectedSlots.contains(slot) ? "checkmark.circle.fill" : "circle")
@@ -283,7 +283,7 @@ struct CalendarView: View {
                     Button {
                         Task { await viewModel.save(restDay: true) }
                     } label: {
-                        Text("设置休息日").frame(maxWidth: .infinity)
+                        Text(L10n.text("设置休息日")).frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
                     .tint(.textSecondary)
@@ -293,7 +293,7 @@ struct CalendarView: View {
                     } label: {
                         HStack {
                             if viewModel.isSaving { ProgressView().controlSize(.small) }
-                            Text("保存日程")
+                            Text(L10n.text("保存日程"))
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -303,10 +303,10 @@ struct CalendarView: View {
                 .disabled(viewModel.isSaving)
 
                 if let success = viewModel.successMessage {
-                    Text(success).font(AppTypography.caption).foregroundStyle(.stateSuccess)
+                    Text(L10n.lookup(success)).font(AppTypography.caption).foregroundStyle(.stateSuccess)
                 }
                 if let error = viewModel.errorMessage {
-                    Text(error).font(AppTypography.caption).foregroundStyle(.stateError)
+                    Text(L10n.lookup(error)).font(AppTypography.caption).foregroundStyle(.stateError)
                 }
             }
         }
@@ -318,7 +318,7 @@ struct CalendarView: View {
     private func dateFormatter(_ format: String) -> DateFormatter {
         let f = DateFormatter()
         f.dateFormat = format
-        f.locale = Locale(identifier: "zh_CN")
+        f.locale = L10n.store.locale
         return f
     }
 }

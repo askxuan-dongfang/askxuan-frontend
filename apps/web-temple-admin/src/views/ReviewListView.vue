@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../packages/localization/language'
+
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+
 import { Refresh, ChatLineSquare, Search } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
@@ -58,13 +61,13 @@ function openReply(row: Review) {
 async function submitReply() {
   if (!currentReview.value) return
   if (!replyContent.value.trim()) {
-    ElMessage.warning('请输入回复内容')
+    ElMessage.warning(uiText('请输入回复内容'))
     return
   }
   replying.value = true
   try {
     await replyReview(currentReview.value.id, String(auth.userInfo?.userId ?? '0'), replyContent.value.trim())
-    ElMessage.success('回复成功')
+    ElMessage.success(uiText('回复成功'))
     currentReview.value.masterReply = replyContent.value.trim()
     replyVisible.value = false
   } finally {
@@ -77,24 +80,24 @@ onMounted(load)
 
 <template>
   <div class="df-page">
-    <PageHeader title="评价管理" subtitle="查看信众评价并回复">
-      <el-button :icon="Refresh" @click="load">刷新</el-button>
+    <PageHeader :title='$t("评价管理")' :subtitle='$t("查看信众评价并回复")'>
+      <el-button :icon="Refresh" @click="load">{{ $t("刷新") }}</el-button>
     </PageHeader>
 
     <div class="df-card list-card">
       <div class="filter-bar">
-        <el-select v-model="query.status" placeholder="状态筛选" clearable style="width: 140px" @change="onSearch">
-          <el-option label="正常" value="normal" />
-          <el-option label="已隐藏" value="hidden" />
+        <el-select v-model="query.status" :placeholder='$t("状态筛选")' clearable style="width: 140px" @change="onSearch">
+          <el-option :label='$t("正常")' value="normal" />
+          <el-option :label='$t("已隐藏")' value="hidden" />
         </el-select>
-        <el-select v-model="query.rating" placeholder="评分筛选" clearable style="width: 140px" @change="onSearch">
-          <el-option :label="'5 星'" :value="5" />
-          <el-option :label="'4 星'" :value="4" />
-          <el-option :label="'3 星'" :value="3" />
-          <el-option :label="'2 星'" :value="2" />
-          <el-option :label="'1 星'" :value="1" />
+        <el-select v-model="query.rating" :placeholder='$t("评分筛选")' clearable style="width: 140px" @change="onSearch">
+          <el-option :label="$t('5 星')" :value="5" />
+          <el-option :label="$t('4 星')" :value="4" />
+          <el-option :label="$t('3 星')" :value="3" />
+          <el-option :label="$t('2 星')" :value="2" />
+          <el-option :label="$t('1 星')" :value="1" />
         </el-select>
-        <el-button :icon="Search" type="primary" plain @click="onSearch">查询</el-button>
+        <el-button :icon="Search" type="primary" plain @click="onSearch">{{ $t("查询") }}</el-button>
       </div>
 
       <DataTable
@@ -106,10 +109,10 @@ onMounted(load)
         row-key="id"
         @change="onPageChange"
       >
-        <el-table-column prop="reviewNo" label="评价编号" width="160" />
-        <el-table-column label="评价内容" min-width="240">
+        <el-table-column prop="reviewNo" :label='$t("评价编号")' width="160" />
+        <el-table-column :label='$t("评价内容")' min-width="240">
           <template #default="{ row }">
-            <strong>{{ row.serviceName || '预约服务' }} · {{ row.masterName || '全院执行' }}</strong><div class="review-content-cell">{{ row.content }}</div><p v-if="row.masterReply" class="muted">服务方回复：{{ row.masterReply }}</p>
+            <strong>{{ $t((row.serviceName || $t('预约服务'))) }} · {{ row.masterName || '全院执行' }}</strong><div class="review-content-cell">{{ row.content }}</div><p v-if="row.masterReply" class="muted">{{ $t("服务方回复：") }}{{ $t(row.masterReply) }}</p>
             <div class="review-imgs" v-if="parseImages(row.images).length">
               <el-image
                 v-for="(img, i) in parseImages(row.images).slice(0, 4)"
@@ -123,33 +126,33 @@ onMounted(load)
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="评分" width="150">
+        <el-table-column :label='$t("评分")' width="150">
           <template #default="{ row }"><el-rate :model-value="row.rating" disabled size="small" /></template>
         </el-table-column>
-        <el-table-column label="关联预约" width="160"><template #default="{ row }"><router-link :to="`/bookings/${row.targetId}`">查看订单与回执</router-link></template></el-table-column>
-        <el-table-column label="状态" width="90">
+        <el-table-column :label='$t("关联预约")' width="160"><template #default="{ row }"><router-link :to="`/bookings/${row.targetId}`">{{ $t("查看订单与回执") }}</router-link></template></el-table-column>
+        <el-table-column :label='$t("状态")' width="90">
           <template #default="{ row }"><StatusTag :status="row.status" kind="review" /></template>
         </el-table-column>
-        <el-table-column label="时间" width="160">
-          <template #default="{ row }">{{ formatDate(row.createTime) }}</template>
+        <el-table-column :label='$t("时间")' width="160">
+          <template #default="{ row }">{{ $t(formatDate(row.createTime)) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="100" fixed="right">
+        <el-table-column :label='$t("操作")' width="100" fixed="right">
           <template #default="{ row }">
-            <span v-if="row.masterReply">已回复</span><el-button v-else link type="primary" size="small" :icon="ChatLineSquare" @click="openReply(row as Review)">回复</el-button>
+            <span v-if="row.masterReply">{{ $t("已回复") }}</span><el-button v-else link type="primary" size="small" :icon="ChatLineSquare" @click="openReply(row as Review)">{{ $t("回复") }}</el-button>
           </template>
         </el-table-column>
       </DataTable>
     </div>
 
-    <el-dialog v-model="replyVisible" title="回复评价" width="520px" append-to-body>
+    <el-dialog v-model="replyVisible" :title='$t("回复评价")' width="520px" append-to-body>
       <div v-if="currentReview" class="reply-dialog">
         <el-rate :model-value="currentReview.rating" disabled />
         <div class="reply-dialog-content">{{ currentReview.content }}</div>
-        <el-input v-model="replyContent" type="textarea" :rows="4" placeholder="请输入回复内容" maxlength="500" show-word-limit />
+        <el-input v-model="replyContent" type="textarea" :rows="4" :placeholder='$t("请输入回复内容")' maxlength="500" show-word-limit />
       </div>
       <template #footer>
-        <el-button @click="replyVisible = false">取消</el-button>
-        <el-button type="primary" :loading="replying" @click="submitReply">发送回复</el-button>
+        <el-button @click="replyVisible = false">{{ $t("取消") }}</el-button>
+        <el-button type="primary" :loading="replying" @click="submitReply">{{ $t("发送回复") }}</el-button>
       </template>
     </el-dialog>
   </div>

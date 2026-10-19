@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { t as uiText } from '@askxuan/localization'
+
 import { isAdminSessionExpired } from '@/api/client'
 import { ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from '@/i18n'
 import { Plus, UploadFilled } from '@element-plus/icons-vue'
 import type { UploadFile, UploadFiles, UploadRequestOptions, UploadUserFile } from 'element-plus'
 import client from '@/api/client'
@@ -65,11 +67,11 @@ function extractURL(response: unknown): string {
 
 function beforeUpload(file: File) {
   if (!file.type.startsWith('image/')) {
-    ElMessage.warning('请选择图片文件')
+    ElMessage.warning(uiText('请选择图片文件'))
     return false
   }
   if (file.size > props.maxSizeMB * 1024 * 1024) {
-    ElMessage.warning(`单张图片不能超过 ${props.maxSizeMB}MB`)
+    ElMessage.warning((uiText("单张图片不能超过 ") + String(props.maxSizeMB) + uiText("MB")))
     return false
   }
   return true
@@ -86,10 +88,10 @@ async function httpRequest(options: UploadRequestOptions) {
     if (!url) throw new Error('上传成功但未返回文件地址')
     if (!props.multiple) emitURLs([url])
     options.onSuccess({ url })
-    if (!props.multiple) ElMessage.success('上传成功')
+    if (!props.multiple) ElMessage.success(uiText('上传成功'))
   } catch (error) { if (isAdminSessionExpired(error)) return;
     options.onError(error as any)
-    ElMessage.warning('上传失败，可手动填写图片 URL')
+    ElMessage.warning(uiText('上传失败，可手动填写图片 URL'))
   }
 }
 
@@ -97,13 +99,13 @@ function handleSuccess(response: unknown, file: UploadFile, files: UploadFiles) 
   if (!props.multiple) return
   const url = extractURL(response)
   if (!url) {
-    ElMessage.error('上传成功但未返回文件地址')
+    ElMessage.error(uiText('上传成功但未返回文件地址'))
     return
   }
   file.url = url
   fileList.value = files as UploadUserFile[]
   emitURLs(fileList.value.map((item) => item.url || '').filter(Boolean))
-  ElMessage.success('上传成功')
+  ElMessage.success(uiText('上传成功'))
 }
 
 function handleRemove(_file: UploadFile, files: UploadFiles) {
@@ -120,7 +122,7 @@ function addManualURL() {
   if (!url) return
   const urls = modelURLs(props.modelValue)
   if (props.multiple && urls.length >= props.limit) {
-    ElMessage.warning(`最多 ${props.limit} 张图片`)
+    ElMessage.warning((uiText("最多 ") + String(props.limit) + uiText(" 张图片")))
     return
   }
   emitURLs(props.multiple ? [...urls, url] : [url])
@@ -147,13 +149,13 @@ function clearSingle() {
         :on-preview="handlePreview"
       >
         <el-icon aria-hidden="true"><Plus /></el-icon>
-        <span class="sr-only">添加图片</span>
+        <span class="sr-only">{{ $t("添加图片") }}</span>
       </el-upload>
     </template>
     <template v-else>
       <div v-if="typeof modelValue === 'string' && modelValue" class="aui-image-uploader__preview">
-        <img :src="modelValue" alt="已上传图片预览" />
-        <el-button class="aui-image-uploader__remove" type="danger" @click="clearSingle">移除图片</el-button>
+        <img :src="modelValue" :alt='$t("已上传图片预览")' />
+        <el-button class="aui-image-uploader__remove" type="danger" @click="clearSingle">{{ $t("移除图片") }}</el-button>
       </div>
       <el-upload
         v-else
@@ -165,15 +167,15 @@ function clearSingle() {
         drag
       >
         <el-icon :size="30" aria-hidden="true"><UploadFilled /></el-icon>
-        <div>点击或拖拽上传图片</div>
+        <div>{{ $t("点击或拖拽上传图片") }}</div>
       </el-upload>
     </template>
 
     <div class="aui-image-uploader__manual">
-      <el-input v-model="urlInput" :placeholder="placeholder" clearable @keyup.enter="addManualURL" />
-      <el-button type="primary" plain @click="addManualURL">填入</el-button>
+      <el-input v-model="urlInput" :placeholder="$t(placeholder)" clearable @keyup.enter="addManualURL" />
+      <el-button type="primary" plain @click="addManualURL">{{ $t("填入") }}</el-button>
     </div>
-    <p class="aui-image-uploader__hint">{{ hint.replace('10MB', `${maxSizeMB}MB`) }}</p>
+    <p class="aui-image-uploader__hint">{{ $t(hint.replace('10MB', `${maxSizeMB}MB`)) }}</p>
   </div>
 </template>
 

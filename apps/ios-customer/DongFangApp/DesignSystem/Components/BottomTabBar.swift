@@ -16,11 +16,11 @@ struct DFTabItem: Identifiable {
 }
 
 private let tabItems: [DFTabItem] = [
-    DFTabItem(id: 0, title: "首页", icon: "house", selectedIcon: "house.fill"),
-    DFTabItem(id: 1, title: "对话", icon: "bubble.left.and.bubble.right", selectedIcon: "bubble.left.and.bubble.right.fill"),
-    DFTabItem(id: 2, title: "AI问事", icon: "sparkles", selectedIcon: "sparkles"),
-    DFTabItem(id: 3, title: "商城", icon: "bag", selectedIcon: "bag.fill"),
-    DFTabItem(id: 4, title: "我的", icon: "person.crop.circle", selectedIcon: "person.crop.circle.fill")
+    DFTabItem(id: 0, title: L10n.text("首页"), icon: "house", selectedIcon: "house.fill"),
+    DFTabItem(id: 1, title: L10n.text("对话"), icon: "bubble.left.and.bubble.right", selectedIcon: "bubble.left.and.bubble.right.fill"),
+    DFTabItem(id: 2, title: L10n.text("AI问事"), icon: "sparkles", selectedIcon: "sparkles"),
+    DFTabItem(id: 3, title: L10n.text("商城"), icon: "bag", selectedIcon: "bag.fill"),
+    DFTabItem(id: 4, title: L10n.text("我的"), icon: "person.crop.circle", selectedIcon: "person.crop.circle.fill")
 ]
 
 struct DFBottomTabBar: View {
@@ -60,7 +60,7 @@ struct DFBottomTabBar: View {
                     .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                     .frame(height: 24)
 
-                Text(item.title)
+                Text(L10n.lookup(item.title))
                     .font(AppTypography.micro.weight(isSelected ? .semibold : .regular))
                     .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
             }

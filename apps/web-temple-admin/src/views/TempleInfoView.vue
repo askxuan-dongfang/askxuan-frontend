@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../packages/localization/language'
+
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, type FormInstance } from 'element-plus'
+import { type FormInstance } from 'element-plus'
 import { Check, Picture } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
@@ -64,7 +67,7 @@ async function handleSave() {
         description: form.description
       })
       temple.value = t
-      ElMessage.success('寺院信息已保存')
+      ElMessage.success(uiText('寺院信息已保存'))
     } finally {
       saving.value = false
     }
@@ -79,57 +82,57 @@ onMounted(async () => {
 
 <template>
   <div class="df-page" v-loading="loading">
-    <PageHeader title="寺院信息" subtitle="维护寺院基础资料与封面">
-      <el-button type="primary" :icon="Check" :loading="saving" @click="handleSave">保存修改</el-button>
+    <PageHeader :title='$t("寺院信息")' :subtitle='$t("维护寺院基础资料与封面")'>
+      <el-button type="primary" :icon="Check" :loading="saving" @click="handleSave">{{ $t("保存修改") }}</el-button>
     </PageHeader>
 
     <div class="info-grid">
       <div class="df-card info-form">
         <el-form ref="formRef" :model="form" label-width="92px" label-position="right">
-          <el-form-item label="寺院名称" prop="name" required>
-            <el-input v-model="form.name" placeholder="请输入寺院名称" />
+          <el-form-item :label='$t("寺院名称")' prop="name" required>
+            <el-input v-model="form.name" :placeholder='$t("请输入寺院名称")' />
           </el-form-item>
-          <el-form-item label="所在地区">
-            <el-input v-model="form.region" placeholder="如 浙江杭州" />
+          <el-form-item :label='$t("所在地区")'>
+            <el-input v-model="form.region" :placeholder='$t("如 浙江杭州")' />
           </el-form-item>
-          <el-form-item label="详细地址">
-            <el-input v-model="form.address" placeholder="请输入详细地址" />
+          <el-form-item :label='$t("详细地址")'>
+            <el-input v-model="form.address" :placeholder='$t("请输入详细地址")' />
           </el-form-item>
-          <el-form-item label="一级流派" prop="beliefCode" required>
+          <el-form-item :label='$t("一级流派")' prop="beliefCode" required>
             <el-select v-model="form.beliefCode" style="width: 100%">
-              <el-option v-for="item in beliefOptions" :key="item.code" :label="item.name" :value="item.code" />
+              <el-option v-for="item in beliefOptions" :key="item.code" :label="$t(item.name)" :value="item.code" />
             </el-select>
           </el-form-item>
-          <el-form-item label="具体宗派" prop="sect" required>
-            <el-input v-model="form.sect" placeholder="如 禅宗、全真派、格鲁派" />
+          <el-form-item :label='$t("具体宗派")' prop="sect" required>
+            <el-input v-model="form.sect" :placeholder='$t("如 禅宗、全真派、格鲁派")' />
           </el-form-item>
-          <el-form-item label="类型">
-            <el-input v-model="form.type" placeholder="如 汉传佛教、道教" />
+          <el-form-item :label='$t("类型")'>
+            <el-input v-model="form.type" :placeholder='$t("如 汉传佛教、道教")' />
           </el-form-item>
-          <el-form-item label="运营状态">
+          <el-form-item :label='$t("运营状态")'>
             <StatusTag v-if="temple" :status="temple.status" kind="temple" />
             <span v-else>-</span>
           </el-form-item>
-          <el-form-item label="寺院评分">
+          <el-form-item :label='$t("寺院评分")'>
             <el-rate :model-value="temple?.rating ?? 0" disabled show-score />
           </el-form-item>
-          <el-form-item label="寺院简介">
+          <el-form-item :label='$t("寺院简介")'>
             <el-input
               v-model="form.description"
               type="textarea"
               :rows="5"
               maxlength="500"
               show-word-limit
-              placeholder="请输入寺院简介"
+              :placeholder='$t("请输入寺院简介")'
             />
           </el-form-item>
         </el-form>
       </div>
 
       <div class="df-card info-cover">
-        <div class="cover-title"><el-icon><Picture /></el-icon> 封面图片</div>
+        <div class="cover-title"><el-icon><Picture /></el-icon>{{ $t(" 封面图片") }}</div>
         <ImageUploader v-model="form.coverImage" hint="建议尺寸 1200×675，将展示在 C 端寺院详情页" />
-        <div v-if="form.coverImage" class="cover-preview-label">当前封面预览：</div>
+        <div v-if="form.coverImage" class="cover-preview-label">{{ $t("当前封面预览：") }}</div>
         <img v-if="form.coverImage" :src="form.coverImage" class="cover-preview" alt="cover" />
       </div>
     </div>

@@ -51,60 +51,60 @@ struct CreatorWalletView: View {
     var body: some View {
         List {
             Section {
-                Text("独立于消费余额，仅现金创作收益可申请提现。")
-                if let notice { Text(notice).foregroundStyle(Color.stateSuccess).accessibilityAddTraits(.updatesFrequently) }
-                if let error { Text(error).foregroundStyle(Color.stateError) }
+                Text(L10n.text("独立于消费余额，仅现金创作收益可申请提现。"))
+                if let notice { Text(L10n.lookup(notice)).foregroundStyle(Color.stateSuccess).accessibilityAddTraits(.updatesFrequently) }
+                if let error { Text(L10n.lookup(error)).foregroundStyle(Color.stateError) }
             }.listRowBackground(Color.bgSecondary)
             if let data {
-                Section("创作收益") {
+                Section(L10n.text("创作收益")) {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 20) {
                         metric("可提现", data.account.availableCents)
                         metric("待结算", data.pendingCents)
                         metric("提现中", data.account.heldCents)
                         metric("累计已打款", data.account.paidCents)
                     }.padding(.vertical, 8)
-                    if data.account.availableCents < 0 { Text("存在退款奖励待抵扣，后续收益会先抵扣欠额。").foregroundStyle(Color.stateWarning) }
-                    Text(policyText(data.policy)).font(.footnote).foregroundStyle(.secondary)
-                    Button("申请提现") { withdrawalOpen = true }
+                    if data.account.availableCents < 0 { Text(L10n.text("存在退款奖励待抵扣，后续收益会先抵扣欠额。")).foregroundStyle(Color.stateWarning) }
+                    Text(L10n.lookup(policyText(data.policy))).font(.footnote).foregroundStyle(.secondary)
+                    Button(L10n.text("申请提现")) { withdrawalOpen = true }
                         .disabled(data.account.availableCents < data.policy.minWithdrawCents || data.account.availableCents <= 0)
                     NavigationLink("我的优惠券") { CouponView() }
                 }.listRowBackground(Color.bgSecondary)
-                Section("创作奖励明细（\(data.total)）") {
-                    if data.rewards.isEmpty { Text("暂无采用成交奖励。发布到设计广场后，他人通过作品或其副本成交才会计奖。").foregroundStyle(.secondary) }
+                Section(L10n.text("创作奖励明细（\(data.total)）")) {
+                    if data.rewards.isEmpty { Text(L10n.text("暂无采用成交奖励。发布到设计广场后，他人通过作品或其副本成交才会计奖。")).foregroundStyle(.secondary) }
                     ForEach(data.rewards) { reward in
                         VStack(alignment: .leading, spacing: 6) {
                             NavigationLink("设计 #\(reward.designId)") { DiyDetailView(designId: reward.designId) }
-                            Text(reward.orderNo).font(.caption).textSelection(.enabled)
-                            Text("\(reward.kind == "cash" ? "现金收益" : reward.kind == "balance" ? "消费余额" : "优惠券") · \(reward.kind == "coupon" ? "1 张" : money(reward.amountCents)) · \(statuses[reward.status] ?? reward.status)")
-                            if !reward.reason.isEmpty { Text(reward.reason).font(.footnote) }
-                            Text(reward.createdAt).font(.caption).foregroundStyle(.secondary)
+                            Text(L10n.lookup(reward.orderNo)).font(.caption).textSelection(.enabled)
+                            Text(L10n.text("\(reward.kind == "cash" ? "现金收益" : reward.kind == "balance" ? "消费余额" : "优惠券") · \(reward.kind == "coupon" ? "1 张" : money(reward.amountCents)) · \(statuses[reward.status] ?? reward.status)"))
+                            if !reward.reason.isEmpty { Text(L10n.lookup(reward.reason)).font(.footnote) }
+                            Text(L10n.lookup(reward.createdAt)).font(.caption).foregroundStyle(.secondary)
                         }
                     }
                 }.listRowBackground(Color.bgSecondary)
-                Section("提现记录（\(data.withdrawalTotal)）") {
-                    if data.withdrawals.isEmpty { Text("暂无提现申请").foregroundStyle(.secondary) }
+                Section(L10n.text("提现记录（\(data.withdrawalTotal)）")) {
+                    if data.withdrawals.isEmpty { Text(L10n.text("暂无提现申请")).foregroundStyle(.secondary) }
                     ForEach(data.withdrawals) { item in
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("\(money(item.amountCents)) · \(item.status == "pending" ? "待审核" : statuses[item.status] ?? item.status)").monospacedDigit()
+                            Text(L10n.text("\(money(item.amountCents)) · \(item.status == "pending" ? "待审核" : statuses[item.status] ?? item.status)")).monospacedDigit()
                             Text("\(item.bankName) \(item.accountNumber)").font(.footnote)
-                            if !item.note.isEmpty { Text(item.note).font(.footnote) }
-                            if !item.transferReference.isEmpty { Text("打款流水：\(item.transferReference)").font(.caption).textSelection(.enabled) }
-                            Text(item.createdAt).font(.caption).foregroundStyle(.secondary)
+                            if !item.note.isEmpty { Text(L10n.lookup(item.note)).font(.footnote) }
+                            if !item.transferReference.isEmpty { Text(L10n.text("打款流水：\(item.transferReference)")).font(.caption).textSelection(.enabled) }
+                            Text(L10n.lookup(item.createdAt)).font(.caption).foregroundStyle(.secondary)
                         }
                     }
                     if max(data.total, data.withdrawalTotal) > 20 {
                         HStack {
-                            Button("上一页") { page -= 1 }.disabled(page == 1 || loading)
-                            Spacer(); Text("第 \(page) 页"); Spacer()
-                            Button("下一页") { page += 1 }.disabled(page * 20 >= max(data.total, data.withdrawalTotal) || loading)
+                            Button(L10n.text("上一页")) { page -= 1 }.disabled(page == 1 || loading)
+                            Spacer(); Text(L10n.text("第 \(page) 页")); Spacer()
+                            Button(L10n.text("下一页")) { page += 1 }.disabled(page * 20 >= max(data.total, data.withdrawalTotal) || loading)
                         }.buttonStyle(.borderless)
                     }
                 }.listRowBackground(Color.bgSecondary)
-            } else if loading { ProgressView("正在读取创作收益") }
-            if !loading { Button("刷新收益") { Task { await load() } } }
+            } else if loading { ProgressView(L10n.text("正在读取创作收益")) }
+            if !loading { Button(L10n.text("刷新收益")) { Task { await load() } } }
         }
         .scrollContentBackground(.hidden).background(Color.bgPrimary)
-        .navigationTitle("创作收益")
+        .navigationTitle(L10n.text("创作收益"))
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(auth.sessionID)-\(page)") { await load() }
         .refreshable { await load() }
@@ -114,8 +114,8 @@ struct CreatorWalletView: View {
     }
     private func metric(_ title: String, _ value: Int64) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
-            Text(money(value)).font(.title3.bold()).monospacedDigit().fixedSize(horizontal: false, vertical: true)
+            Text(L10n.lookup(title)).font(.caption).foregroundStyle(.secondary)
+            Text(L10n.lookup(money(value))).font(.title3.bold()).monospacedDigit().fixedSize(horizontal: false, vertical: true)
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
     private func policyText(_ policy: CreatorWalletData.Policy) -> String {
@@ -126,20 +126,20 @@ struct CreatorWalletView: View {
         NavigationStack {
             Form {
                 Section {
-                    Text("人民币人工银行转账，最低 \(money(data?.policy.minWithdrawCents ?? 0))，平台手续费 0 元。提交后等待审核及实际打款；到账以银行为准。")
-                    if let error { Text(error).foregroundStyle(Color.stateError) }
+                    Text(L10n.text("人民币人工银行转账，最低 \(money(data?.policy.minWithdrawCents ?? 0))，平台手续费 0 元。提交后等待审核及实际打款；到账以银行为准。"))
+                    if let error { Text(L10n.lookup(error)).foregroundStyle(Color.stateError) }
                 }.listRowBackground(Color.bgSecondary)
-                Section("本人银行账户") {
-                    TextField("金额（元）", text: $amount).keyboardType(.decimalPad)
-                    TextField("收款人姓名", text: $holder).textContentType(.name)
-                    TextField("银行及开户支行", text: $bank)
-                    TextField("银行卡号", text: $account).keyboardType(.numberPad).privacySensitive()
+                Section(L10n.text("本人银行账户")) {
+                    TextField(L10n.text("金额（元）"), text: $amount).keyboardType(.decimalPad)
+                    TextField(L10n.text("收款人姓名"), text: $holder).textContentType(.name)
+                    TextField(L10n.text("银行及开户支行"), text: $bank)
+                    TextField(L10n.text("银行卡号"), text: $account).keyboardType(.numberPad).privacySensitive()
                 }.disabled(submitting).listRowBackground(Color.bgSecondary)
-                Button(submitting ? "提交中…" : "确认申请") { Task { await submit() } }.disabled(submitting)
+                Button(L10n.lookup(submitting ? L10n.text("提交中…") : L10n.text("确认申请"))) { Task { await submit() } }.disabled(submitting)
             }
             .scrollContentBackground(.hidden).background(Color.bgPrimary)
-            .navigationTitle("申请提现").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { withdrawalOpen = false }.disabled(submitting) } }
+            .navigationTitle(L10n.text("申请提现")).navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(L10n.text("取消")) { withdrawalOpen = false }.disabled(submitting) } }
             .interactiveDismissDisabled(submitting)
             .onChange(of: [amount, holder, bank, account]) { _, _ in requestKey = UUID().uuidString; notice = nil }
         }

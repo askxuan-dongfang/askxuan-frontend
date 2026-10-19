@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { ElMessage } from '@/i18n'
+import { t as uiText } from '../../../../../packages/localization/language'
+
 import { isAdminSessionExpired } from '@/api/client'
 // 法师详情 / 平台编辑（独立执业大师无寺庙归属，平台为唯一管理方）
 // 含「可提供服务」标签（master_service_tag，S001-S013）查看与配置
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+
 import { getPublicDirectoryTags, type DirectoryTag } from '@/api/directoryTags'
 import { taxonomyApi } from '@/api/taxonomy'
 import ProviderDirectoryTags from '@/components/ProviderDirectoryTags.vue'
@@ -37,7 +40,7 @@ const serviceTags = ref<MasterServiceTagItem[]>([])
 const beliefOptions = ref<{value:string;label:string}[]>([])
 async function loadBeliefs(){
  try{const data=await taxonomyApi.beliefs();beliefOptions.value=data.list.filter(b=>b.status==='enabled').map(b=>({value:b.code,label:b.name}))}
- catch(sessionError) { if (isAdminSessionExpired(sessionError)) return;ElMessage.error('分类加载失败，请刷新重试')}
+ catch(sessionError) { if (isAdminSessionExpired(sessionError)) return;ElMessage.error(uiText('分类加载失败，请刷新重试'))}
 }
 
 const beliefName = (code: string) => beliefOptions.value.find((b) => b.value === code)?.label || code
@@ -55,7 +58,7 @@ const form = ref({
 })
 const tagInput = ref('')
 const directoryTags = ref<DirectoryTag[]>([])
-onMounted(async()=>{try{directoryTags.value=(await getPublicDirectoryTags()).list}catch{ElMessage.error('筛选标签加载失败')}})
+onMounted(async()=>{try{directoryTags.value=(await getPublicDirectoryTags()).list}catch{ElMessage.error(uiText('筛选标签加载失败'))}})
 
 // 可提供服务编辑态：每个目录项对应一个启用开关 + 定价
 const tagEdits = ref<{ code: string; name: string; enabled: boolean; price: number }[]>([])
@@ -78,7 +81,7 @@ async function loadDetail() {
   } catch (error) { if (isAdminSessionExpired(error)) return;
     master.value = null
     loadError.value = error instanceof Error ? error.message : '加载法师详情失败'
-    ElMessage.error('加载法师详情失败')
+    ElMessage.error(uiText('加载法师详情失败'))
   } finally {
     loading.value = false
   }
@@ -127,7 +130,7 @@ function syncType() {
 
 async function save() {
   if (!form.value.dharmaName.trim() || !form.value.sect.trim()) {
-    ElMessage.warning('请填写法号与宗派')
+    ElMessage.warning(uiText('请填写法号与宗派'))
     return
   }
   saving.value = true
@@ -148,10 +151,10 @@ async function save() {
       .map((t) => ({ serviceCode: t.code, price: Number(t.price) || 0 }))
     const saved = await updatePlatformMasterServiceTags(masterId.value, tags)
     serviceTags.value = saved.list || []
-    ElMessage.success('法师资料与服务标签已更新')
+    ElMessage.success(uiText('法师资料与服务标签已更新'))
     editing.value = false
   } catch (sessionError) { if (isAdminSessionExpired(sessionError)) return;
-    ElMessage.error('保存失败，请稍后重试')
+    ElMessage.error(uiText('保存失败，请稍后重试'))
   } finally {
     saving.value = false
   }
@@ -162,100 +165,100 @@ onMounted(() => { void loadBeliefs(); void loadDetail() })
 
 <template>
   <div class="dfx-page" v-loading="loading">
-    <PageHeader title="法师详情" subtitle="法师资料、可提供服务查看与平台编辑（寺院与独立执业两类大师）">
+    <PageHeader :title='$t("法师详情")' :subtitle='$t("法师资料、可提供服务查看与平台编辑（寺院与独立执业两类大师）")'>
       <template #actions>
-        <el-button @click="router.push('/master/list')">返回列表</el-button>
-        <el-button v-if="master && !editing" type="primary" @click="startEdit">编辑资料</el-button>
+        <el-button @click="router.push('/master/list')">{{ $t("返回列表") }}</el-button>
+        <el-button v-if="master && !editing" type="primary" @click="startEdit">{{ $t("编辑资料") }}</el-button>
       </template>
     </PageHeader>
 
     <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
-      <div class="ax-page-feedback__copy"><div class="ax-page-feedback__title">法师详情加载失败</div><div class="ax-page-feedback__description">{{ loadError }}，未展示的数据不会按空资料处理。</div></div>
-      <el-button :loading="loading" @click="loadDetail">重新加载</el-button>
+      <div class="ax-page-feedback__copy"><div class="ax-page-feedback__title">{{ $t("法师详情加载失败") }}</div><div class="ax-page-feedback__description">{{ $t(loadError) }}{{ $t("，未展示的数据不会按空资料处理。") }}</div></div>
+      <el-button :loading="loading" @click="loadDetail">{{ $t("重新加载") }}</el-button>
     </div>
 
     <!-- 查看态 -->
     <div v-if="master && !editing" class="df-card" style="max-width: 760px">
       <div class="master-head">
-        <el-avatar :size="64" :src="master.avatar">{{ master.dharmaName.slice(0, 1) }}</el-avatar>
+        <el-avatar :size="64" :src="master.avatar">{{ $t(master.dharmaName.slice(0, 1)) }}</el-avatar>
         <div class="master-head__info">
           <div class="master-head__name">
-            {{ master.dharmaName }}
-            <span class="master-head__lay">（{{ master.layName || '未填俗名' }}）</span>
+            {{ $t(master.dharmaName) }}
+            <span class="master-head__lay">（{{ $t((master.layName || $t('未填俗名'))) }}）</span>
             <el-tag :type="master.manageBy === 'platform' ? 'success' : 'info'" size="small" style="margin-left: 8px">
-              {{ master.manageBy === 'platform' ? '独立执业 · 平台管理' : '寺庙绑定' }}
+              {{ $t((master.manageBy === 'platform' ? $t('独立执业 · 平台管理') : $t('寺庙绑定'))) }}
             </el-tag>
           </div>
-          <div class="master-head__id">编码 {{ master.id }}</div>
+          <div class="master-head__id">{{ $t("编码 ") }}{{ $t(master.id) }}</div>
         </div>
       </div>
 
       <el-descriptions :column="2" border style="margin-top: 16px">
-        <el-descriptions-item label="管理方">
-          {{ master.manageBy === 'platform' ? '平台（独立执业大师）' : '寺庙绑定' }}
+        <el-descriptions-item :label='$t("管理方")'>
+          {{ $t((master.manageBy === 'platform' ? $t('平台（独立执业大师）') : $t('寺庙绑定'))) }}
         </el-descriptions-item>
-        <el-descriptions-item label="所属寺院">{{ master.templeName || '—' }}</el-descriptions-item>
-        <el-descriptions-item label="职位">{{ master.position || '—' }}</el-descriptions-item>
-        <el-descriptions-item label="一级流派">{{ beliefName(master.beliefCode) }}</el-descriptions-item>
-        <el-descriptions-item label="信俗标签" :span="2"><ProviderDirectoryTags kind="master" :id="master.id" :name="master.dharmaName" @updated="loadDetail"/></el-descriptions-item>
-        <el-descriptions-item label="宗派">{{ master.sect || '—' }}</el-descriptions-item>
-        <el-descriptions-item label="类型">{{ master.type || '—' }}</el-descriptions-item>
-        <el-descriptions-item label="专长" :span="2">
-          <el-tag v-for="s in master.specialties" :key="s" size="small" effect="plain" style="margin-right: 6px">{{ s }}</el-tag>
+        <el-descriptions-item :label='$t("所属寺院")'>{{ master.templeName || '—' }}</el-descriptions-item>
+        <el-descriptions-item :label='$t("职位")'>{{ $t((master.position || '—')) }}</el-descriptions-item>
+        <el-descriptions-item :label='$t("一级流派")'>{{ $t(beliefName(master.beliefCode)) }}</el-descriptions-item>
+        <el-descriptions-item :label='$t("信俗标签")' :span="2"><ProviderDirectoryTags kind="master" :id="master.id" :name="master.dharmaName" @updated="loadDetail"/></el-descriptions-item>
+        <el-descriptions-item :label='$t("宗派")'>{{ $t((master.sect || '—')) }}</el-descriptions-item>
+        <el-descriptions-item :label='$t("类型")'>{{ $t((master.type || '—')) }}</el-descriptions-item>
+        <el-descriptions-item :label='$t("专长")' :span="2">
+          <el-tag v-for="s in master.specialties" :key="s" size="small" effect="plain" style="margin-right: 6px">{{ $t(s) }}</el-tag>
           <span v-if="!master.specialties?.length">—</span>
         </el-descriptions-item>
-        <el-descriptions-item label="可提供服务" :span="2">
+        <el-descriptions-item :label='$t("可提供服务")' :span="2">
           <el-tag v-for="t in serviceTags" :key="t.serviceCode" size="small" style="margin-right: 6px">
-            {{ serviceName(t.serviceCode) }} ¥{{ t.price }}
+            {{ $t(serviceName(t.serviceCode)) }} ¥{{ $t(t.price) }}
           </el-tag>
-          <span v-if="!serviceTags.length" class="muted-text">未配置（C端按可提供服务筛选，独立执业大师上架前提）</span>
+          <span v-if="!serviceTags.length" class="muted-text">{{ $t("未配置（C端按可提供服务筛选，独立执业大师上架前提）") }}</span>
         </el-descriptions-item>
-        <el-descriptions-item label="认证状态"><StatusTag :status="master.authStatus" /></el-descriptions-item>
-        <el-descriptions-item label="上架状态"><StatusTag :status="master.shelfStatus" /></el-descriptions-item>
-        <el-descriptions-item label="平台状态"><StatusTag :status="master.platformStatus" /></el-descriptions-item>
-        <el-descriptions-item label="评分">★ {{ master.rating?.toFixed(1) }}</el-descriptions-item>
-        <el-descriptions-item label="即时咨询">
-          {{ master.consultEnabled ? `¥${master.consultFee} / ${master.consultValidHours}小时 / 首响${master.consultResponseMinutes}分钟` : '未开放' }}
+        <el-descriptions-item :label='$t("认证状态")'><StatusTag :status="master.authStatus" /></el-descriptions-item>
+        <el-descriptions-item :label='$t("上架状态")'><StatusTag :status="master.shelfStatus" /></el-descriptions-item>
+        <el-descriptions-item :label='$t("平台状态")'><StatusTag :status="master.platformStatus" /></el-descriptions-item>
+        <el-descriptions-item :label='$t("评分")'>★ {{ $t(master.rating?.toFixed(1)) }}</el-descriptions-item>
+        <el-descriptions-item :label='$t("即时咨询")'>
+          {{ $t((master.consultEnabled ? ($t("¥") + String(master.consultFee) + $t(" / ") + String(master.consultValidHours) + $t("小时 / 首响") + String(master.consultResponseMinutes) + $t("分钟")) : $t('未开放'))) }}
         </el-descriptions-item>
-        <el-descriptions-item label="头像">{{ master.avatar || '—' }}</el-descriptions-item>
+        <el-descriptions-item :label='$t("头像")'>{{ $t((master.avatar || '—')) }}</el-descriptions-item>
       </el-descriptions>
     </div>
 
     <!-- 编辑态 -->
     <div v-else-if="master" class="df-card" style="max-width: 640px">
       <el-form label-width="110px">
-        <el-form-item label="法号" required>
+        <el-form-item :label='$t("法号")' required>
           <el-input v-model="form.dharmaName" maxlength="32" />
         </el-form-item>
-        <el-form-item label="俗名">
+        <el-form-item :label='$t("俗名")'>
           <el-input v-model="form.layName" maxlength="32" />
         </el-form-item>
-        <el-form-item label="职位">
-          <el-select v-model="form.position" filterable allow-create default-first-option style="width:100%"><el-option v-for="tag in directoryTags.filter(t=>t.group==='position')" :key="tag.code" :value="tag.value" :label="tag.name"/></el-select>
+        <el-form-item :label='$t("职位")'>
+          <el-select v-model="form.position" filterable allow-create default-first-option style="width:100%"><el-option v-for="tag in directoryTags.filter(t=>t.group==='position')" :key="tag.code" :value="tag.value" :label="$t(tag.name)"/></el-select>
         </el-form-item>
-        <el-form-item label="一级流派" required>
+        <el-form-item :label='$t("一级流派")' required>
           <el-select v-model="form.beliefCode" style="width: 100%" @change="syncType">
-            <el-option v-for="b in beliefOptions" :key="b.value" :label="b.label" :value="b.value" />
+            <el-option v-for="b in beliefOptions" :key="b.value" :label="$t(b.label)" :value="b.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="宗派" required>
+        <el-form-item :label='$t("宗派")' required>
           <el-input v-model="form.sect" maxlength="32" />
         </el-form-item>
-        <el-form-item label="类型">
+        <el-form-item :label='$t("类型")'>
           <el-input v-model="form.type" maxlength="16" />
         </el-form-item>
-        <el-form-item label="专长"><el-select v-model="form.specialties" multiple filterable allow-create default-first-option style="width:100%"><el-option v-for="tag in directoryTags.filter(t=>t.group==='specialty')" :key="tag.code" :value="tag.value" :label="tag.name"/></el-select></el-form-item>
-        <el-form-item label="头像">
+        <el-form-item :label='$t("专长")'><el-select v-model="form.specialties" multiple filterable allow-create default-first-option style="width:100%"><el-option v-for="tag in directoryTags.filter(t=>t.group==='specialty')" :key="tag.code" :value="tag.value" :label="$t(tag.name)"/></el-select></el-form-item>
+        <el-form-item :label='$t("头像")'>
           <ImageUploader v-model="form.avatar" />
         </el-form-item>
 
-        <el-divider content-position="left">可提供服务（S001-S013 大师标签）</el-divider>
-        <el-form-item label="服务配置">
+        <el-divider content-position="left">{{ $t("可提供服务（S001-S013 大师标签）") }}</el-divider>
+        <el-form-item :label='$t("服务配置")'>
           <div style="width: 100%">
             <div v-for="t in tagEdits" :key="t.code" class="tag-row">
               <el-switch v-model="t.enabled" />
-              <span class="tag-row__name">{{ t.name }}</span>
-              <span class="tag-row__code">{{ t.code }}</span>
+              <span class="tag-row__name">{{ $t(t.name) }}</span>
+              <span class="tag-row__code">{{ $t(t.code) }}</span>
               <el-input-number
                 v-if="t.enabled"
                 v-model="t.price"
@@ -263,19 +266,19 @@ onMounted(() => { void loadBeliefs(); void loadDetail() })
                 :precision="2"
                 size="small"
                 style="width: 130px"
-                placeholder="定价"
+                :placeholder='$t("定价")'
               />
             </div>
           </div>
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" :loading="saving" @click="save">保存</el-button>
-          <el-button @click="cancelEdit">取消</el-button>
+          <el-button type="primary" :loading="saving" @click="save">{{ $t("保存") }}</el-button>
+          <el-button @click="cancelEdit">{{ $t("取消") }}</el-button>
         </el-form-item>
       </el-form>
     </div>
-    <div v-else-if="!loading && !loadError" class="df-card detail-empty">未找到该法师资料</div>
+    <div v-else-if="!loading && !loadError" class="df-card detail-empty">{{ $t("未找到该法师资料") }}</div>
   </div>
 </template>
 

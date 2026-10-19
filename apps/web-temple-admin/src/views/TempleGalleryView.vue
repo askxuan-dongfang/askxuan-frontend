@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from '@/i18n'
+import { t as uiText } from '../../../../packages/localization/language'
+
 import { onMounted, reactive, ref } from 'vue'
 import { Delete, Plus, Refresh } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+
 import PageHeader from '@/components/PageHeader.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import { createTempleImage, deleteTempleImage, getTempleImages } from '@/api/temple'
@@ -38,13 +41,13 @@ function openCreate() {
 
 async function submit() {
   if (!form.url) {
-    ElMessage.warning('请先上传图片')
+    ElMessage.warning(uiText('请先上传图片'))
     return
   }
   saving.value = true
   try {
     await createTempleImage(form)
-    ElMessage.success('图片已加入寺院图册')
+    ElMessage.success(uiText('图片已加入寺院图册'))
     dialogVisible.value = false
     await loadData()
   } finally {
@@ -53,13 +56,13 @@ async function submit() {
 }
 
 async function remove(image: TempleImage) {
-  await ElMessageBox.confirm('删除后 C 端将不再展示这张图片，确认继续？', '删除图片', {
-    confirmButtonText: '删除',
-    cancelButtonText: '取消',
+  await ElMessageBox.confirm(uiText('删除后 C 端将不再展示这张图片，确认继续？'), uiText('删除图片'), {
+    confirmButtonText: uiText('删除'),
+    cancelButtonText: uiText('取消'),
     type: 'warning'
   })
   await deleteTempleImage(image.id)
-  ElMessage.success('图片已删除')
+  ElMessage.success(uiText('图片已删除'))
   await loadData()
 }
 
@@ -68,50 +71,50 @@ onMounted(loadData)
 
 <template>
   <div class="df-page">
-    <PageHeader title="寺院图册" subtitle="维护 C 端寺院详情展示的头图与详情图片">
-      <el-button :icon="Refresh" @click="loadData">刷新</el-button>
-      <el-button type="primary" :icon="Plus" @click="openCreate">上传图片</el-button>
+    <PageHeader :title='$t("寺院图册")' :subtitle='$t("维护 C 端寺院详情展示的头图与详情图片")'>
+      <el-button :icon="Refresh" @click="loadData">{{ $t("刷新") }}</el-button>
+      <el-button type="primary" :icon="Plus" @click="openCreate">{{ $t("上传图片") }}</el-button>
     </PageHeader>
 
     <div class="df-card gallery-panel" v-loading="loading">
       <div v-if="list.length" class="gallery-grid">
         <article v-for="image in list" :key="image.id" class="gallery-item">
           <el-image :src="image.url" fit="cover" class="gallery-image" :preview-src-list="[image.url]" preview-teleported>
-            <template #error><div class="gallery-fallback">图片无法访问</div></template>
+            <template #error><div class="gallery-fallback">{{ $t("图片无法访问") }}</div></template>
           </el-image>
           <div class="gallery-meta">
             <div>
-              <el-tag size="small" effect="plain">{{ typeLabels[image.type] || image.type }}</el-tag>
-              <span class="sort">排序 {{ image.sort }}</span>
+              <el-tag size="small" effect="plain">{{ $t((typeLabels[image.type] || image.type)) }}</el-tag>
+              <span class="sort">{{ $t("排序 ") }}{{ $t(image.sort) }}</span>
             </div>
-            <el-button circle plain type="danger" :icon="Delete" title="删除图片" @click="remove(image)" />
+            <el-button circle plain type="danger" :icon="Delete" :title='$t("删除图片")' @click="remove(image)" />
           </div>
         </article>
       </div>
-      <el-empty v-else description="暂无图册图片" />
+      <el-empty v-else :description='$t("暂无图册图片")' />
     </div>
 
-    <el-dialog v-model="dialogVisible" title="上传寺院图片" width="520px" append-to-body>
+    <el-dialog v-model="dialogVisible" :title='$t("上传寺院图片")' width="520px" append-to-body>
       <el-form label-position="top">
-        <el-form-item label="图片">
+        <el-form-item :label='$t("图片")'>
           <ImageUploader v-model="form.url" hint="建议横图 1200×800，详情图最多 9 张" />
         </el-form-item>
         <div class="form-row">
-          <el-form-item label="展示类型">
+          <el-form-item :label='$t("展示类型")'>
             <el-select v-model="form.type" style="width: 180px">
-              <el-option label="详情图" value="detail" />
-              <el-option label="头图" value="hero" />
-              <el-option label="封面图" value="cover" />
+              <el-option :label='$t("详情图")' value="detail" />
+              <el-option :label='$t("头图")' value="hero" />
+              <el-option :label='$t("封面图")' value="cover" />
             </el-select>
           </el-form-item>
-          <el-form-item label="排序">
+          <el-form-item :label='$t("排序")'>
             <el-input-number v-model="form.sort" :min="0" :max="99" />
           </el-form-item>
         </div>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="submit">加入图册</el-button>
+        <el-button @click="dialogVisible = false">{{ $t("取消") }}</el-button>
+        <el-button type="primary" :loading="saving" @click="submit">{{ $t("加入图册") }}</el-button>
       </template>
     </el-dialog>
   </div>

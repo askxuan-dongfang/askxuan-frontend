@@ -15,7 +15,7 @@ struct StatusBadge: View {
 
     var body: some View {
         let info = displayInfo
-        Text(info.text)
+        Text(L10n.lookup(info.text))
             .font(AppTypography.micro.weight(.semibold))
             .foregroundStyle(info.color)
             .padding(.horizontal, AppSpacing.sm)
