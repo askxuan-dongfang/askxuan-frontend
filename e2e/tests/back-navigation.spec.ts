@@ -93,7 +93,7 @@ test('editor checkout browser Back keeps saved design and keyboard bead editing'
  await expect(count).toHaveText('1 / 60 颗');await preview.focus();await preview.press('ArrowRight');
  await expect(page.locator('.studio-accessible-selection')).toHaveText('第 1 颗 测试木珠');
  await expect(page.locator('.studio-bead-menu')).toHaveCount(0);await preview.press('Delete');await expect(count).toHaveText('0 / 60 颗');
- await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(count).toHaveText('1 / 60 颗');
+ await page.locator('.studio-history').getByRole('button',{name:'撤销',exact:true}).click();await expect(count).toHaveText('1 / 60 颗');
  await back(page).click();await expect(page).toHaveURL(/tab=mine$/);
 });
 test('repeated back clicks do not skip the originating my-design list',async({page})=>{
