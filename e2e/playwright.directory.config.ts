@@ -8,6 +8,7 @@ export default defineConfig({
   projects: [
     { name: 'directory-320', use: { viewport: { width: 320, height: 740 }, isMobile: true, hasTouch: true } },
     { name: 'directory-390', use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
+    { name: 'directory-509', use: { viewport: { width: 509, height: 954 }, isMobile: true, hasTouch: true } },
     { name: 'directory-768', use: { viewport: { width: 768, height: 1024 } } },
   ],
   webServer: {

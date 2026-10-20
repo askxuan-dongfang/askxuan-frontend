@@ -18,6 +18,22 @@ async function setup(page: Page, options: SessionFixture = {}) {
     const path = new URL(route.request().url()).pathname;
     let data: unknown = [];
     if (['/beliefs', '/intentions/tags', '/temples', '/masters', '/marketing/banners'].some(suffix => path.endsWith(suffix))) data = { total: 0, list: [] };
+    if (path.endsWith('/beliefs')) data = { list: [
+      { code: 'han_buddhism', name: '汉传佛教', summary: '慈悲与智慧并行' },
+      { code: 'tibetan_buddhism', name: '藏传佛教', summary: '传承、修持与慈悲' },
+      { code: 'theravada_buddhism', name: '南传佛教', summary: '戒、定、慧与日常修习' },
+      { code: 'daoism', name: '道教', summary: '道法自然，清静修持' },
+      { code: 'folk', name: '民间信仰', summary: '乡土传统与民俗传承' },
+    ] };
+    if (path.endsWith('/intentions/tags')) data = { list: [
+      { code: 'peace', name: '求平安', landingType: 'aggregate' },
+      { code: 'wealth', name: '求财运', landingType: 'aggregate' },
+      { code: 'love', name: '求姻缘', landingType: 'aggregate' },
+      { code: 'career', name: '事业发展', landingType: 'aggregate' },
+      { code: 'health', name: '身体健康', landingType: 'aggregate' },
+      { code: 'wisdom', name: '开启智慧', landingType: 'aggregate' },
+      { code: 'rite', name: '仪式服务', landingType: 'service' },
+    ] };
     if (path.endsWith('/auth/options')) data = { emailEnabled: true, agreementVersion: 'test' };
     if (path.endsWith('/auth/captcha')) data = { id: 'local-fixture', image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E', expiresIn: 300 };
     if (path.endsWith('/auth/login')) data = { accessToken: 'local-only', refreshToken: 'local-refresh', userInfo: { userId: 99026, nickname: '测试' } };
@@ -54,10 +70,13 @@ async function assertCoreGrid(page: Page, language: string) {
     const rect = element.getBoundingClientRect();
     const label = element.querySelector('strong')!.getBoundingClientRect();
     const pattern = element.querySelector('svg.home-core-pattern')!;
+    const icon = element.querySelector('.home-core-icon > svg')!.getBoundingClientRect();
+    const labelStyle = getComputedStyle(element.querySelector('strong')!);
     const style = getComputedStyle(element);
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right,
       labelFits: label.left >= rect.left && label.right <= rect.right && label.top >= rect.top && label.bottom <= rect.bottom,
-      pattern: pattern.innerHTML, opacity: Number(getComputedStyle(pattern).opacity), color: style.color, background: style.backgroundColor };
+      pattern: pattern.innerHTML, opacity: Number(getComputedStyle(pattern).opacity), color: style.color, background: style.backgroundColor,
+      iconSize: icon.width, labelSize: parseFloat(labelStyle.fontSize), font: labelStyle.fontFamily };
   }));
   expect(new Set(cards.map(card => card.pattern)).size).toBe(4);
   for (const card of cards) {
@@ -71,6 +90,26 @@ async function assertCoreGrid(page: Page, language: string) {
     expect(card.opacity).toBeLessThan(0.25);
     expect(card.background).not.toBe('rgba(0, 0, 0, 0)');
     expect(card.color).toBe(cards[0].color);
+    expect(card.iconSize).toBe(32);
+    expect(card.labelSize).toBe(18);
+  }
+  await expect(page.locator('.home-belief-copy strong')).toHaveCount(5);
+  await expect(page.locator('.home-belief-grid, .home-wishes')).toHaveCount(2);
+  const typography = await page.locator('.home-discovery-section').first().evaluate(element => ({
+    heading: getComputedStyle(element.querySelector('h2')!).fontFamily,
+    title: getComputedStyle(element.querySelector('.home-belief-copy strong')!).fontFamily,
+    description: getComputedStyle(element.querySelector('.home-belief-copy > span')!).fontFamily,
+  }));
+  expect(cards[0].font).toBe(typography.heading);
+  expect(typography.title).toBe(typography.heading);
+  expect(typography.description).toBe(typography.heading);
+  for (const section of await page.locator('.home-belief-grid, .home-wishes').all()) {
+    await expect(section).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(section).toHaveCSS('border-top-width', '0px');
+    await expect(section).toHaveCSS('border-radius', '0px');
+  }
+  for (const entry of await page.locator('.home-intent, .home-ritual-entry').all()) {
+    expect(await entry.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBeTruthy();
   }
   expect(Math.abs(cards[0].y - cards[1].y)).toBeLessThan(1);
   expect(Math.abs(cards[2].y - cards[3].y)).toBeLessThan(1);
@@ -81,7 +120,7 @@ async function assertCoreGrid(page: Page, language: string) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 }
 
-for (const theme of ['light', 'dark']) for (const language of ['zh-Hans', 'zh-Hant']) for (const width of [320, 503]) {
+for (const theme of ['light', 'dark']) for (const language of ['zh-Hans', 'zh-Hant']) for (const width of [320, 390, 509]) {
   test(`four equal patterned entries and guest redirect ${theme} ${language} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 954 });
     await setup(page, { theme, language });
