@@ -26,7 +26,6 @@ async function setup(page: Page, failSecondPage = false) {
     if (path === '/temples' || path === '/masters') {
       const pageNumber = Number(url.searchParams.get('page') || 1);
       if (shouldFail && pageNumber === 2) {
-        shouldFail = false;
         return route.fulfill({ status: 503, json: { code: 500, message: '分页暂时不可用' } });
       }
       const rows = Array.from({ length: 125 }, (_, index) => {
@@ -41,12 +40,12 @@ async function setup(page: Page, failSecondPage = false) {
     }
     await route.fulfill({ json: { code: 0, data } });
   });
-  return calls;
+  return { calls, recover: () => { shouldFail = false; } };
 }
 
 for (const directory of ['temples', 'masters'] as const) {
   test(`${directory}: all pages, simplified/traditional search and selected filters compose`, async ({ page }) => {
-    const calls = await setup(page);
+    const { calls } = await setup(page);
     await page.goto(`/c/${directory}`);
     const cards = page.locator('.directory-results a.card-press');
     await expect(cards).toHaveCount(125);
@@ -116,10 +115,17 @@ for (const directory of ['temples', 'masters'] as const) {
 }
 
 test('a failed later directory page is an error and retry retrieves the complete list', async ({ page }) => {
-  await setup(page, true);
+  const fixture = await setup(page, true);
   await page.goto('/c/temples');
   await expect(page.getByText('寺院列表加载失败', { exact: true })).toBeVisible();
+  await expect(page.getByText('分页暂时不可用', { exact: true })).toBeVisible();
   await expect(page.getByText('当前筛选无结果', { exact: true })).toHaveCount(0);
+  await expect(page.locator('.directory-results a.card-press')).toHaveCount(0);
+  // Keep every initial load failing, including React StrictMode's discarded load.
+  // Recovery is a server-state change, not whichever request happens to arrive first.
+  fixture.recover();
   await page.getByRole('button', { name: '重试', exact: true }).click();
   await expect(page.locator('.directory-results a.card-press')).toHaveCount(125);
+  await expect(page.getByText('寺院列表加载失败', { exact: true })).toHaveCount(0);
+  expect(fixture.calls.some(url => url.pathname.endsWith('/temples') && url.searchParams.get('page') === '7')).toBe(true);
 });
