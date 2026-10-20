@@ -59,23 +59,7 @@ struct DiyBraceletView: View {
     }
 
     private var workbench: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(L10n.text("一颗一念，串起心意"))
-                    .font(AppTypography.title(22)).foregroundStyle(Color.textPrimary)
-                NavigationLink { DiyDesignView() } label: {
-                    Label(L10n.text("开始我的设计"), systemImage: "plus")
-                        .accessibilityIdentifier("diy-start")
-                        .font(.subheadline.weight(.semibold)).foregroundStyle(Color.white)
-                        .padding(.horizontal, 16).frame(minHeight: 44)
-                        .background(Color.brandDefault, in: RoundedRectangle(cornerRadius: 12))
-                }.buttonStyle(DiyPressButtonStyle())
-            }.frame(maxWidth: .infinity, alignment: .leading)
-            DiyMiniBracelet(slots: slots(for: viewModel.designs.first), fallbackCount: 14)
-                .frame(width: 112, height: 112).accessibilityHidden(true)
-        }.padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
-            .accessibilityElement(children: .contain)
-            .accessibilityIdentifier("diy-home-intro")
+        DiyStudioIntro(identifier: "diy-home-intro")
     }
 
     private func quickItem(title: String, subtitle: String, icon: String) -> some View {
@@ -132,6 +116,65 @@ struct DiyBraceletView: View {
     }
 
     private func slots(for design: DiyDesign?) -> [DiyBeadSlot] { DiyDesignPreview.slots(from: design?.designData) }
+}
+
+/// A fixed brand ornament keeps the discovery header independent of catalogue contents.
+struct DiyStudioIntro: View {
+    let identifier: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(L10n.text("一颗一念，串起心意"))
+                    .font(AppTypography.title(22)).foregroundStyle(Color.textPrimary)
+                NavigationLink { DiyDesignView() } label: {
+                    Label(L10n.text("开始我的设计"), systemImage: "plus")
+                        .accessibilityIdentifier("diy-start")
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(Color.white)
+                        .padding(.horizontal, 16).frame(minHeight: 44)
+                        .background(Color.brandDefault, in: RoundedRectangle(cornerRadius: 12))
+                }.buttonStyle(DiyPressButtonStyle())
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            DiyIdentityOrnament().frame(width: 112, height: 112)
+        }.padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(identifier)
+    }
+}
+
+struct DiyIdentityOrnament: View {
+    var body: some View {
+        GeometryReader { geometry in
+            let edge = min(geometry.size.width, geometry.size.height)
+            let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
+            let radius = edge * 0.405
+            ZStack {
+                Circle().stroke(Color.accentDefault.opacity(0.32), lineWidth: 1)
+                    .frame(width: radius * 2, height: radius * 2)
+                    .position(center)
+                ForEach(0..<15, id: \.self) { index in
+                    let angle = -Double.pi / 2 + Double(index) * Double.pi * 2 / 15 - Double.pi / 15
+                    let size = edge * (index == 6 ? 0.11 : 0.16)
+                    let colors = index == 6 ? ["F5F1D7", "C6AD6B", "8A713C"] :
+                        (index + 1).isMultiple(of: 3) ? ["FFFBDD", "E8DCB0", "CBBB83", "A1925E"] :
+                        ["B4C5A3", "799771", "446A51", "2C4E3C"]
+                    Circle()
+                        .fill(RadialGradient(colors: colors.map { Color(hex: $0) }, center: .init(x: 0.3, y: 0.25), startRadius: 0, endRadius: size * 0.8))
+                        .frame(width: size, height: size)
+                        .shadow(color: .black.opacity(0.15), radius: 1.5, x: 1, y: 2)
+                        .position(x: center.x + cos(angle) * radius, y: center.y + sin(angle) * radius)
+                }
+                VStack(spacing: 5) {
+                    Text(L10n.text("一珠")).font(AppTypography.title(18)).tracking(3)
+                    Text(L10n.text("一心意")).font(AppTypography.title(9)).tracking(2)
+                }.foregroundStyle(Color.accentDefault).position(center)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L10n.text("一珠，一心意"))
+        .accessibilityAddTraits(.isImage)
+        .accessibilityIdentifier("diy-identity-ornament")
+    }
 }
 
 struct DiyMiniBracelet: View {

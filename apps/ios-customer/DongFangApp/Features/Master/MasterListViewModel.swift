@@ -22,9 +22,7 @@ final class MasterListViewModel: ObservableObject {
     // 所有筛选状态集中管理
     @Published var selectedBeliefCode: String = ""
     @Published var selectedTemple: String = "全部"         // 左侧：所属寺院
-    @Published var selectedLevel: String = "全部"          // 左侧：修为等级
-    @Published var selectedSpecialty: String = "全部"      // 左侧：擅长领域
-    @Published var selectedService: String = "全部"        // 左侧：可提供服务（大师标签 S001-S013）
+    @Published var selectedLevel: String = "全部"          // 左侧：职位
 
     @Published var beliefOptions: [BeliefFilterOption] = []
 
@@ -32,9 +30,7 @@ final class MasterListViewModel: ObservableObject {
         [
             ("价格区间", ["全部", "200元以下", "200–500元", "500–1000元", "1000元以上"]),
             ("所属寺院", ["全部"] + unique(masters.map(\.templeName))),
-            ("职位", ["全部"] + unique(masters.map(\.position))),
-            ("擅长领域", ["全部"] + unique(masters.flatMap(\.specialties))),
-            ("可提供服务", ["全部"] + ServiceType.allCases.map(\.rawValue))
+            ("职位", ["全部"] + unique(masters.map(\.position)))
         ]
     }
 
@@ -54,14 +50,12 @@ final class MasterListViewModel: ObservableObject {
             (selectedBeliefCode.isEmpty || m.beliefCode == selectedBeliefCode) &&
             matchPrice(m) &&
             matchTemple(m, selectedTemple) &&
-            matchLevel(m, selectedLevel) &&
-            matchSpecialty(m, selectedSpecialty) &&
-            matchService(m, selectedService)
+            matchLevel(m, selectedLevel)
         }
     }
 
     func clearFilters() {
-        selectedRegionCode = ""; selectedTraditionCode = ""; searchText = ""; selectedBeliefCode = ""; selectedTemple = "全部"; selectedLevel = "全部"; selectedSpecialty = "全部"; selectedService = "全部"; selectedPrice = "全部"
+        selectedRegionCode = ""; selectedTraditionCode = ""; searchText = ""; selectedBeliefCode = ""; selectedTemple = "全部"; selectedLevel = "全部"; selectedPrice = "全部"
     }
     private func matchPrice(_ master: Master) -> Bool {
         guard selectedPrice != "全部" else { return true }
@@ -86,22 +80,9 @@ final class MasterListViewModel: ObservableObject {
         return m.position == level
     }
 
-    private func matchSpecialty(_ m: Master, _ specialty: String) -> Bool {
-        if specialty == "全部" { return true }
-        return m.specialties.contains(specialty)
-    }
-
-    /// 按可提供服务筛选：大师服务标签（master_service_tag）包含所选服务编码
-    private func matchService(_ m: Master, _ serviceName: String) -> Bool {
-        if serviceName == "全部" { return true }
-        guard let code = ServiceType.allCases.first(where: { $0.rawValue == serviceName })?.code else { return true }
-        return (m.serviceTags ?? []).contains { $0.serviceCode == code && ($0.status == nil || $0.status == "" || $0.status == "enabled") }
-    }
-
     func startingPrice(_ master: Master) -> Double? {
-        let code = ServiceType.allCases.first { $0.rawValue == selectedService }?.code
         let prices = (master.serviceTags ?? []).filter {
-            ($0.status == nil || $0.status == "" || $0.status == "enabled") && (code == nil || $0.serviceCode == code)
+            $0.status == nil || $0.status == "" || $0.status == "enabled"
         }.map(\.price).filter { $0 > 0 }
         if let value = prices.min() { return value }
         if let value = master.startPrice, value > 0 { return value }

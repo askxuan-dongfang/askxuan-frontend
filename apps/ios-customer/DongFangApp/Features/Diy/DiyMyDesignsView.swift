@@ -16,6 +16,7 @@ struct DiyMyDesignsView: View {
     @StateObject private var editorModel = DiyViewModel()
     @State private var showEditor = false
     @State private var publicationDesign: MyDesignItem?
+    @State private var publishesSelection = false
     @State private var showPublicationConfirm = false
     @State private var busyDesignId: Int64?
 
@@ -28,6 +29,7 @@ struct DiyMyDesignsView: View {
             }
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
+                    DiyStudioIntro(identifier: "diy-my-designs-intro")
                     if !designs.isEmpty {
                         Picker(L10n.text("作品筛选"), selection: $selectedFilter) {
                             Text(L10n.text("全部")).tag("all")
@@ -60,11 +62,31 @@ struct DiyMyDesignsView: View {
                                         Button(L10n.text("继续编辑")) { openEditor(design) }
                                             .accessibilityIdentifier("diy-edit-design-\(design.id)")
                                         Spacer()
-                                        Button(L10n.lookup(design.status == "public" ? "下架" : "发布到广场")) {
-                                            publicationDesign = design; showPublicationConfirm = true
-                                        }.accessibilityIdentifier("diy-publish-design-\(design.id)")
+                                        if design.status == "public" {
+                                            Button(L10n.text("下架")) { confirmPublication(design, published: false) }
+                                                .accessibilityIdentifier("diy-unpublish-design-\(design.id)")
+                                        }
+                                        if design.status != "public" || design.draftChanged == true {
+                                            Button(L10n.lookup(design.status == "public" ? "发布新定稿" : "发布到广场")) {
+                                                confirmPublication(design, published: true)
+                                            }.disabled(!design.canPublish)
+                                                .accessibilityIdentifier("diy-publish-design-\(design.id)")
+                                        }
                                     }.font(.subheadline).foregroundStyle(Color.accentDefault)
                                         .frame(minHeight: 44).padding(.horizontal, 16)
+                                    if design.status != "public" || design.draftChanged == true {
+                                        Text(L10n.lookup(design.publicationMessage))
+                                            .font(AppTypography.caption).foregroundStyle(Color.textSecondary)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(.horizontal, 16).padding(.bottom, 12)
+                                            .accessibilityIdentifier("diy-publication-reason-\(design.id)")
+                                        if !design.canPublish {
+                                            publicationNextStep(design)
+                                                .font(AppTypography.caption).foregroundStyle(Color.accentDefault)
+                                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                                .padding(.horizontal, 16).padding(.bottom, 8)
+                                        }
+                                    }
                                 }.background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
                                     .disabled(busyDesignId != nil)
                             }
@@ -83,8 +105,8 @@ struct DiyMyDesignsView: View {
         .toolbar(.hidden, for: .navigationBar)
         .task { await load() }
         .sheet(isPresented: $showEditor, onDismiss: { Task { await load() } }) { NavigationStack { DiyDesignView(viewModel: editorModel) } }
-        .confirmationDialog(L10n.lookup(publicationDesign?.status == "public" ? "下架后，仅你可见；已有副本与订单保留。" : "发布后，其他人可以分享、复制搭配和定制。"), isPresented: $showPublicationConfirm, titleVisibility: .visible) {
-            Button(L10n.lookup(publicationDesign?.status == "public" ? "确认下架" : "确认发布")) { updatePublication() }
+        .confirmationDialog(L10n.lookup(publishesSelection ? "将发布已付款且确认的定稿版本，供其他人分享、复制和定制。" : "下架后，仅你可见；已有副本与订单保留。"), isPresented: $showPublicationConfirm, titleVisibility: .visible) {
+            Button(L10n.lookup(publishesSelection ? "确认发布" : "确认下架")) { updatePublication() }
         }
         .alert(L10n.text("提示"), isPresented: Binding(get: { errorMessage != nil && !designs.isEmpty }, set: { if !$0 { errorMessage = nil } })) {
             Button(L10n.text("好的"), role: .cancel) {}
@@ -104,15 +126,36 @@ struct DiyMyDesignsView: View {
     }
     private func updatePublication() {
         guard let design = publicationDesign, busyDesignId == nil else { return }
+        let shouldPublish = publishesSelection
         busyDesignId = design.id
         Task {
             await editorModel.loadDesign(id: design.id, checkAvailability: false, persistRestoredDraft: false)
             if editorModel.currentDesign?.id == design.id && editorModel.isDesignOwner {
-                await editorModel.setPublication(design.status != "public")
+                await editorModel.setPublication(shouldPublish)
             }
             let failure = editorModel.errorMessage
             busyDesignId = nil
-            if let failure { errorMessage = failure } else { await load() }
+            await load()
+            if let failure { errorMessage = failure }
+        }
+    }
+
+    private func confirmPublication(_ design: MyDesignItem, published: Bool) {
+        guard !published || design.canPublish else { return }
+        publicationDesign = design
+        publishesSelection = published
+        showPublicationConfirm = true
+    }
+
+    @ViewBuilder
+    private func publicationNextStep(_ design: MyDesignItem) -> some View {
+        switch design.publicationEligibility?.reason {
+        case "order_required", "design_changed", "snapshot_unavailable":
+            Button(L10n.text("去定制")) { openEditor(design) }
+        case "payment_required", "confirmation_required", "order_inactive":
+            NavigationLink { OrderListView(initialStatus: "diy") } label: { Text(L10n.text("查看订单进度")) }
+        default:
+            Button(L10n.text("重新加载")) { Task { await load() } }
         }
     }
 
@@ -151,6 +194,9 @@ struct DiyMyDesignsView: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     statusBadge(design.status)
+                    if design.draftChanged == true {
+                        Text(L10n.text("草稿已修改")).font(AppTypography.micro).foregroundStyle(Color.textSecondary)
+                    }
                     if design.hasOrder {
                         orderBadge(design.orderStatus)
                     }

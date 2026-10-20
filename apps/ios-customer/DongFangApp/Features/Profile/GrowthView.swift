@@ -2,10 +2,13 @@ import SwiftUI
 import AVKit
 
 struct GrowthView: View {
+    private let publicRead: Bool
  @Environment(\.scenePhase) private var phase
  @ObservedObject private var sync = GrowthSync.shared
     @EnvironmentObject private var auth: AuthStore
-    @State private var tab = "overview"
+    @State private var tab: String
+    @State private var rulesExpanded: Bool
+    @State private var focusRules: Bool
     @State private var overview: GrowthOverview?
     @State private var records: GrowthRecords?
     @State private var notes: [GrowthNote] = []
@@ -26,12 +29,20 @@ struct GrowthView: View {
     @State private var period = Self.currentMonth
     @State private var yearly = false
     @State private var summary: GrowthSummary?
+    init(initialTab: String = "overview", publicRead: Bool = false) {
+        self.publicRead = publicRead
+        let rules = initialTab == "rules"
+        _tab = State(initialValue: rules ? "benefits" : initialTab)
+        _rulesExpanded = State(initialValue: rules)
+        _focusRules = State(initialValue: rules)
+    }
+    private var readsPublicRules: Bool { publicRead && !auth.isLoggedIn }
     private static var currentMonth: String { let f = DateFormatter(); f.locale = Locale(identifier:"en_US_POSIX"); f.timeZone = TimeZone(identifier:"Asia/Shanghai"); f.dateFormat = "yyyy-MM"; return f.string(from:Date()) }
     var body: some View {
+        ScrollViewReader { proxy in
         List {
-            Section { Picker(L10n.text("成长中心"), selection: $tab) { Text(L10n.text("档案")).tag("overview"); Text(L10n.text("任务")).tag("tasks"); Text(L10n.text("明细")).tag("records"); Text(L10n.text("权益")).tag("benefits") }.pickerStyle(.segmented) }
+            Section { Picker(L10n.text("成长中心"), selection: $tab) { Text(L10n.text("档案")).tag("overview"); Text(L10n.text("任务")).tag("tasks"); Text(L10n.text("明细")).tag("records"); Text(L10n.text("权益")).tag("benefits") }.pickerStyle(.segmented).disabled(readsPublicRules).accessibilityIdentifier("growth-primary-tabs") }
             if let error { Section { Text(L10n.lookup(error)).foregroundStyle(.red); Button(L10n.text("重试")) { Task { await load() } }.disabled(busy) } }
-            Section { NavigationLink(L10n.text("成长规则与历史版本")) { GrowthRulesView() } }
             if sync.error != nil { Text(L10n.text("成长数据同步暂不可用，当前显示上次读取的记录。")) }
             if let notice { Text(L10n.lookup(notice)).accessibilityAddTraits(.updatesFrequently) }
             if busy { ProgressView() }
@@ -43,14 +54,30 @@ struct GrowthView: View {
                 default: archive(v)
                 }
             }
+            if tab == "benefits" {
+                GrowthMergedRulesSection(expanded: $rulesExpanded, publicRead: readsPublicRules) {
+                    if focusRules {
+                        proxy.scrollTo("growth-rules", anchor: .top)
+                        focusRules = false
+                    }
+                }
+            }
         }.scrollContentBackground(.hidden).background(Color.bgPrimary)
-            .navigationTitle(L10n.text("我的成长"))
-            .task(id: "\(auth.sessionID)-\(tab)") { await load() }
-            .refreshable { await sync.refresh(); await load() }
+            .navigationTitle(L10n.lookup(readsPublicRules ? "等级权益" : "我的成长"))
+            .task(id: "\(auth.sessionID)-\(tab)") {
+                if !readsPublicRules { await load() }
+                if tab == "benefits", focusRules, !readsPublicRules {
+                    await Task.yield()
+                    proxy.scrollTo("growth-rules", anchor: .top)
+                    focusRules = false
+                }
+            }
+            .refreshable { if !readsPublicRules { await sync.refresh(); await load() } }
             .onChange(of: sync.revision) { _, _ in if sync.identity == "\(auth.sessionID)", let current = sync.overview { overview = current } }
-            .task(id: "sync-\(auth.sessionID)-\(tab)-\(phase)") { guard phase == .active else { return }; while !Task.isCancelled { do { try await Task.sleep(for: .seconds(15)) } catch { return }; await refreshVisibleData() } }
+            .task(id: "sync-\(auth.sessionID)-\(tab)-\(phase)") { guard phase == .active, !readsPublicRules else { return }; while !Task.isCancelled { do { try await Task.sleep(for: .seconds(15)) } catch { return }; await refreshVisibleData() } }
             .sheet(item: $reader, onDismiss: { Task { await load() } }) { GrowthLearningView(content: $0) }
             .confirmationDialog(L10n.text("删除这条私人记录？成长值不受影响。"), isPresented: Binding(get: { deletion != nil }, set: { if !$0 { deletion = nil } })) { Button(L10n.text("删除"), role: .destructive) { if let n = deletion { Task { await mutate("notes/delete", ["day":n.day]); deletion = nil } } } }
+        }
     }
     @ViewBuilder private func archive(_ v: GrowthOverview) -> some View {
         Section {
@@ -171,6 +198,128 @@ struct GrowthView: View {
     @MainActor private func moreRecords() async {
         guard !busy,let old=records else{return};busy=true;defer{busy=false}
         do {var next:GrowthRecords=try await GrowthAPI.request("records?page=\(page+1)");next.entries=old.entries+next.entries;records=next;page += 1}catch{self.error=error.localizedDescription}
+    }
+}
+
+/// Customer rules live below level benefits. Provider rules retain their existing page.
+private struct GrowthMergedRulesSection: View {
+    @Binding var expanded: Bool
+    let publicRead: Bool
+    let onLoaded: () -> Void
+    @Environment(\.scenePhase) private var phase
+    @State private var history: GrowthRuleHistory?
+    @State private var current: GrowthRuleRelease?
+    @State private var page = 1
+    @State private var loading = false
+    @State private var error: String?
+
+    var body: some View {
+        if publicRead, let current {
+            Section(L10n.text("五级权益")) {
+                ForEach(current.config.levels) { level in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("L\(level.code) " + L10n.lookup(level.name) + " · \(level.threshold)").font(.headline)
+                        Text(L10n.text("指定商品") + " " + GrowthAPI.rate(level.goodsRateBps) + " · " + L10n.text("指定服务") + " " + GrowthAPI.rate(level.serviceRateBps))
+                        Text(L10n.lookup(level.benefit))
+                    }.padding(.vertical, 5)
+                }
+            }
+        }
+        Section {
+            DisclosureGroup(isExpanded: $expanded) {
+                Text(L10n.text("规则按北京时间生效，已支付订单沿用确认时的快照。")).font(.caption)
+                if loading && history == nil { ProgressView() }
+                if let error {
+                    Text(L10n.lookup(error)).foregroundStyle(Color.textSecondary)
+                    Button(L10n.text("重试")) { Task { await load() } }
+                }
+                if let current {
+                    Text(current.version + " · " + L10n.text("当前生效")).font(.headline)
+                    Text(stamp(current.effectiveAt > 0 ? current.effectiveAt : current.createdAt)).font(.caption)
+                    Text(L10n.lookup(current.summary)).font(.caption)
+                    ruleDetails(current)
+                } else if history != nil { Text(L10n.text("当前规则暂未发布")) }
+                DisclosureGroup(L10n.text("历史版本")) {
+                    ForEach((history?.items ?? []).filter { $0.status != "current" }) { rule in
+                        DisclosureGroup(rule.version) {
+                            Text(stamp(rule.effectiveAt > 0 ? rule.effectiveAt : rule.createdAt)).font(.caption)
+                            Text(L10n.lookup(rule.summary))
+                            ruleDetails(rule)
+                        }.accessibilityIdentifier("growth-rule-version-" + rule.version)
+                    }
+                    HStack {
+                        Button(L10n.text("上一页")) { page -= 1 }.disabled(page == 1 || loading)
+                        Spacer()
+                        Button(L10n.text("下一页")) { page += 1 }.disabled(history?.hasMore != true || loading)
+                    }
+                }.accessibilityIdentifier("growth-rule-history")
+            } label: {
+                Text(L10n.text("成长规则"))
+            }.accessibilityIdentifier("growth-rules-disclosure")
+        }.id("growth-rules")
+        .onChange(of: current?.version) { _, _ in
+            Task { await Task.yield(); onLoaded() }
+        }
+        .task(id: "\(page)|\(phase)|\(expanded)") {
+            guard phase == .active, expanded else { return }
+            while !Task.isCancelled {
+                await load()
+                do { try await Task.sleep(for: .seconds(15)) } catch { return }
+            }
+        }
+    }
+
+    @ViewBuilder private func ruleDetails(_ rule: GrowthRuleRelease) -> some View {
+        DisclosureGroup(L10n.text("获取规则")) {
+            ForEach(rule.config.tasks) { task in
+                Text(GrowthAPI.label(task.kind) + " +\(task.award) · \(task.limit) " + L10n.lookup(task.period == "day" ? "每日" : task.period == "month" ? "每月" : "一次"))
+            }
+            Text(L10n.text("周期任务月上限") + " \(rule.config.monthlyGrowthLimit)")
+            Text(L10n.text("消费观察期") + " \(rule.config.observationDays) " + L10n.text("天"))
+            Text(L10n.text("成长值不可支付、兑换或转赠；随喜、运费、充值、押金、积分和模拟支付不计成长。"))
+        }.accessibilityIdentifier("growth-rule-acquisition")
+        DisclosureGroup(L10n.text("升级规则")) {
+            ForEach(rule.config.levels) { level in
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("L\(level.code) " + L10n.lookup(level.name) + " · \(level.threshold)").font(.headline)
+                    Text(L10n.lookup(level.benefit))
+                    Text(L10n.text("升级礼券") + " ¥" + GrowthAPI.money(level.couponMinimumCents) + " − ¥" + GrowthAPI.money(level.couponValueCents)).font(.caption)
+                }.padding(.vertical, 5)
+            }
+            Text(L10n.text("礼券有效期") + " \(rule.config.couponDays) " + L10n.text("天"))
+        }.accessibilityIdentifier("growth-rule-upgrade")
+        DisclosureGroup(L10n.text("折扣范围")) {
+            ForEach(rule.config.levels) { level in
+                Text("L\(level.code) " + L10n.lookup(level.name) + " · " + L10n.text("指定商品") + " " + GrowthAPI.rate(level.goodsRateBps) + " · " + L10n.text("指定服务") + " " + GrowthAPI.rate(level.serviceRateBps))
+            }
+            Text(L10n.text("月优惠上限") + " ¥" + GrowthAPI.money(rule.config.monthlyDiscountLimitCents))
+            Text(L10n.text("单单商品优惠上限") + " ¥" + GrowthAPI.money(rule.config.goodsDiscountCapCents))
+            Text(L10n.text("单单服务优惠上限") + " ¥" + GrowthAPI.money(rule.config.serviceDiscountCapCents))
+            Text(L10n.text("折扣限已参与的商品和固定价服务，受服务方同意、预算及最低贡献约束。"))
+        }.accessibilityIdentifier("growth-rule-discounts")
+    }
+
+    private func stamp(_ seconds: Int64) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        return formatter.string(from: Date(timeIntervalSince1970: Double(seconds))) + " " + L10n.text("北京时间")
+    }
+
+    @MainActor private func load() async {
+        guard !loading else { return }
+        loading = true; defer { loading = false }
+        let requestedPage = page
+        do {
+            let result: GrowthRuleHistory = try await GrowthAPI.request((publicRead ? "public/rules" : "rules") + "?page=\(requestedPage)")
+            guard !Task.isCancelled, requestedPage == page else { return }
+            history = result
+            if let active = result.items.first(where: { $0.status == "current" }) { current = active }
+            error = nil
+        } catch is CancellationError {} catch {
+            if !Task.isCancelled { self.error = error.localizedDescription }
+        }
     }
 }
 

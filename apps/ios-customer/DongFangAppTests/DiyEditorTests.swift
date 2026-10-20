@@ -3,6 +3,71 @@ import UIKit
 @testable import DongFangApp
 
 @MainActor
+struct DiyPublicationContractTests {
+    private let legacy = #"{"id":99,"userId":"99029","name":"既有设计","totalPrice":28,"status":"private","orderNo":"DIY-PAID","orderStatus":"in_making"}"#
+
+    @Test func existingOrderDoesNotGrantPublicationWithoutAuthoritativeEligibility() throws {
+        let item = try JSONDecoder().decode(MyDesignItem.self, from: Data(legacy.utf8))
+        #expect(item.hasOrder)
+        #expect(!item.canPublish)
+        #expect(item.publicationMessage == "发布资格暂不可用，请刷新后重试")
+    }
+
+    @Test func publicationSnapshotAndCopyAttributionDecodeIndependentlyOfEligibility() throws {
+        let data = Data(#"{"id":100,"userId":"99029","name":"私有副本","totalPrice":28,"status":"private","sourceDesignId":99,"sourcePublicationId":7100,"publicationEligibility":{"canPublish":false,"reason":"order_required","message":"请先完成定制订单付款和确认"},"draftChanged":false}"#.utf8)
+        let copy = try JSONDecoder().decode(DiyDesign.self, from: data)
+        #expect(copy.sourceDesignId == 99)
+        #expect(copy.sourcePublicationId == 7100)
+        #expect(copy.publication == nil)
+        #expect(copy.publicationEligibility?.canPublish == false)
+        let redecoded = try JSONDecoder().decode(DiyDesign.self, from: JSONEncoder().encode(copy))
+        #expect(redecoded.sourcePublicationId == 7100)
+    }
+
+    @Test func changedPrivateDraftCanCoexistWithPublishedConfirmedSnapshot() throws {
+        let data = Data(#"{"id":99,"name":"新草稿","totalPrice":56,"status":"public","draftChanged":true,"publication":{"id":7100,"designRevision":1,"materialFee":28,"publishedAt":"2026-10-20T10:00:00Z"},"publicationEligibility":{"canPublish":false,"reason":"design_changed","message":"当前草稿尚未完成订单确认"}}"#.utf8)
+        let design = try JSONDecoder().decode(DiyDesign.self, from: data)
+        #expect(design.status == "public")
+        #expect(design.draftChanged == true)
+        #expect(design.publication?.materialFee == 28)
+        #expect(design.totalPrice == 56)
+        #expect(design.publicationEligibility?.reason == "design_changed")
+    }
+
+    @Test func publicViewingAlwaysRequestsConfirmedSnapshotWhileEditingUsesDraft() {
+        #expect(Endpoint.diyPublishedDesignById(99).path == Endpoint.diyDesignById(99).path)
+        #expect(Endpoint.diyPublishedDesignById(99).queryItems == [URLQueryItem(name: "view", value: "published")])
+        #expect(Endpoint.diyDesignById(99).queryItems == nil)
+    }
+
+    @Test func savingDraftDoesNotSendPublicationStatusOrForgedAttribution() throws {
+        let request = DiyDesignSaveRequest(userId: "99029", name: "草稿", designData: "{}", totalPrice: 28, blessServiceCode: nil)
+        let encoded = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(request)) as? [String: Any])
+        #expect(encoded["status"] == nil)
+        #expect(encoded["publication"] == nil)
+        #expect(encoded["sourcePublicationId"] == nil)
+    }
+
+    @Test func unknownEligibilityReasonKeepsServiceExplanation() {
+        let value = DiyPublicationEligibility(canPublish: false, reason: "future_gate", message: "服务端提供的新限制", orderId: nil, orderNo: nil, designRevision: nil)
+        #expect(value.localizedMessage == "服务端提供的新限制")
+        #expect(!value.canPublish)
+    }
+
+    @Test func missingEligibilityBlocksPublicationBeforeNetworkMutation() async throws {
+        let suite = "DiyPublicationTests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        let model = DiyViewModel(draftStore: store)
+        model.currentDesign = try JSONDecoder().decode(DiyDesign.self, from: Data(legacy.utf8))
+        await model.setPublication(true)
+        #expect(model.currentDesign?.status == "private")
+        #expect(model.errorMessage == "发布资格暂不可用，请刷新后重试")
+        #expect(!model.isSubmitting)
+    }
+}
+
+@MainActor
 final class DiyEditorTests: XCTestCase {
     private var suiteName: String!
     private var draftStore: UserDefaults!
@@ -162,6 +227,45 @@ final class DiyEditorTests: XCTestCase {
 }
 
 import Testing
+
+@MainActor
+struct MasterDirectoryRefinementTests {
+    private func master() -> Master {
+        var result = Master(id: "refinement", dharmaName: "验收师傅", layName: "", templeId: "", templeName: "", position: "独立师傅", sect: "禅宗", type: "佛教", authStatus: "已认证", specialties: ["禅修"], avatar: "", rating: 5, startPrice: 900, consultEnabled: false)
+        result.serviceTags = [
+            MasterServiceTag(serviceCode: "S001", price: 180, status: "enabled"),
+            MasterServiceTag(serviceCode: "S002", price: 900, status: "enabled"),
+            MasterServiceTag(serviceCode: "S003", price: 10, status: "disabled")
+        ]
+        return result
+    }
+
+    @Test func priceAndTextSearchRemainIndependentOfRemovedFilterGroups() {
+        let model = MasterListViewModel()
+        let record = master()
+        model.masters = [record]
+        #expect(model.startingPrice(record) == 180)
+        model.selectedPrice = "200元以下"
+        model.searchText = "禪修"
+        #expect(model.filteredMasters.map(\.id) == ["refinement"])
+        model.selectedPrice = "500–1000元"
+        #expect(model.filteredMasters.isEmpty)
+        model.clearFilters()
+        #expect(model.filteredMasters.count == 1)
+    }
+
+    @Test func serviceAndSpecialtyWordsStaySearchableWithoutTheirSidebarGroups() {
+        let catalog = DirectorySearchCatalog(services: [
+            ServiceFilterOption(code: "S001", name: "祈福"),
+            ServiceFilterOption(code: "S002", name: "供灯"),
+            ServiceFilterOption(code: "S003", name: "已停服务")
+        ])
+        let fields = DirectorySearch.fields(master: master(), catalog: catalog)
+        #expect(DirectorySearch.matches("禪修 祈福", fields: fields))
+        #expect(DirectorySearch.matches("供燈", fields: fields))
+        #expect(!DirectorySearch.matches("已停服务", fields: fields))
+    }
+}
 
 @MainActor
 struct NativePublicSearchTests {

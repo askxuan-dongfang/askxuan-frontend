@@ -185,6 +185,278 @@ final class ProfileExperienceUITests: XCTestCase {
     }
 }
 
+final class NativeDiscoveryRefinementUITests: XCTestCase {
+    private func launch(_ arguments: [String] = [], appearance: String = "light") -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
+        app.launchArguments = ["-askxuan.appearance", appearance] + arguments
+        app.launch()
+        return app
+    }
+
+    private func capture(_ app: XCUIApplication, _ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
+    }
+
+    func testMasterGroupsStaySingleLineAndSearchStillFindsServicesAndSpecialties() {
+        let app = launch()
+        let entry = app.buttons["home-masters"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 20)); entry.tap()
+        let price = app.buttons["master-filter-group-价格区间"]
+        XCTAssertTrue(price.waitForExistence(timeout: 15))
+        XCTAssertFalse(app.buttons["master-filter-group-擅长领域"].exists)
+        XCTAssertFalse(app.buttons["master-filter-group-可提供服务"].exists)
+        XCTAssertFalse(app.staticTexts["独立师傅 · 含演示资料"].exists)
+        for title in ["价格区间", "所属寺院", "职位"] {
+            let group = app.buttons["master-filter-group-" + title]
+            let before = group.frame
+            XCTAssertEqual(before.height, 52, accuracy: 1)
+            group.tap()
+            XCTAssertEqual(group.frame.height, before.height, accuracy: 1)
+            XCTAssertEqual(group.frame.width, before.width, accuracy: 1)
+            XCTAssertEqual(group.frame.minY, before.minY, accuracy: 1)
+        }
+        capture(app, "ios-master-three-stable-groups")
+        app.buttons["搜索"].tap()
+        let input = app.textFields["搜索师傅列表"]
+        XCTAssertTrue(input.waitForExistence(timeout: 5))
+        input.tap(); input.typeText("禪修 祈福\n")
+        XCTAssertTrue(app.staticTexts["末页台湾祈福平台师傅"].waitForExistence(timeout: 10))
+        capture(app, "ios-master-specialty-service-text-search")
+    }
+
+    func testCompactIdentityOrnamentOnGalleryAndMyDesigns() {
+        let app = launch(["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99029", "-tab", "3"])
+        let entry = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "DIY 定制")).firstMatch
+        XCTAssertTrue(entry.waitForExistence(timeout: 20)); entry.tap()
+        let gallery = app.descendants(matching: .any)["diy-home-intro"]
+        XCTAssertTrue(gallery.waitForExistence(timeout: 10))
+        XCTAssertLessThan(gallery.frame.height, 180)
+        let ornament = app.images["diy-identity-ornament"]
+        XCTAssertTrue(ornament.exists)
+        XCTAssertEqual(ornament.frame.height, 112, accuracy: 1)
+        XCTAssertEqual(ornament.label, "一珠，一心意")
+        capture(app, "ios-gallery-compact-green-gold-identity")
+        app.buttons["我的设计"].firstMatch.tap()
+        let mine = app.descendants(matching: .any)["diy-my-designs-intro"]
+        XCTAssertTrue(mine.waitForExistence(timeout: 10))
+        XCTAssertLessThan(mine.frame.height, 180)
+        XCTAssertTrue(ornament.exists)
+        XCTAssertEqual(ornament.frame.height, 112, accuracy: 1)
+        XCTAssertTrue(app.buttons["diy-my-design-9001"].exists)
+        capture(app, "ios-my-designs-compact-green-gold-identity")
+    }
+
+    func testHomeRefinedTypeAndOpenSectionsAcrossAppearanceAndLargeText() {
+        for (appearance, textSize) in [
+            ("light", "UICTContentSizeCategoryL"),
+            ("dark", "UICTContentSizeCategoryL"),
+            ("dark", "UICTContentSizeCategoryAccessibilityXXXL")
+        ] {
+            let app = launch(["-UIPreferredContentSizeCategoryName", textSize], appearance: appearance)
+            let cards = ["home-temples", "home-masters", "home-diy", "home-points"].map { app.buttons[$0] }
+            XCTAssertTrue(cards[0].waitForExistence(timeout: 20))
+            let frames = cards.map(\.frame)
+            for frame in frames {
+                XCTAssertEqual(frame.width, frames[0].width, accuracy: 1)
+                XCTAssertEqual(frame.height, frames[0].height, accuracy: 1)
+                XCTAssertGreaterThanOrEqual(frame.height, 100)
+                XCTAssertGreaterThanOrEqual(frame.minX, 0)
+                XCTAssertLessThanOrEqual(frame.maxX, app.frame.width)
+            }
+            XCTAssertEqual(frames[0].minY, frames[1].minY, accuracy: 1)
+            XCTAssertEqual(frames[2].minY, frames[3].minY, accuracy: 1)
+            XCTAssertGreaterThan(frames[2].minY, frames[0].maxY)
+            capture(app, "ios-home-refined-" + appearance + "-" + textSize)
+            for _ in 0..<3 where !app.buttons["home-belief-folk"].isHittable { app.swipeUp() }
+            XCTAssertTrue(app.buttons["home-belief-folk"].exists, "All five public belief entries remain available")
+            let intention = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "home-intention-")).firstMatch
+            XCTAssertTrue(intention.exists)
+            capture(app, "ios-home-open-sections-" + appearance + "-" + textSize)
+            app.terminate()
+        }
+    }
+}
+
+@MainActor
+final class NativePublicationGateUITests: XCTestCase {
+    private func fixture(_ path: String, method: String = "GET") async throws -> [String: Any] {
+        var request = URLRequest(url: try XCTUnwrap(URL(string: "http://127.0.0.1:8913/_test/" + path)))
+        request.httpMethod = method
+        let (data, response) = try await URLSession.shared.data(for: request)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+        let envelope = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        return try XCTUnwrap(envelope["data"] as? [String: Any])
+    }
+
+    private func launchGallery() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
+        app.launchArguments = ["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99029", "-tab", "3", "-askxuan.appearance", "light"]
+        app.launch()
+        let entry = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "DIY 定制")).firstMatch
+        XCTAssertTrue(entry.waitForExistence(timeout: 20)); entry.tap()
+        XCTAssertTrue(app.buttons["我的设计"].firstMatch.waitForExistence(timeout: 10))
+        return app
+    }
+
+    private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
+        for _ in 0..<5 where !element.isHittable { app.swipeUp() }
+        XCTAssertTrue(element.isHittable)
+    }
+
+    private func capture(_ app: XCUIApplication, _ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
+    }
+
+    func testUnpaidAndUnconfirmedBlockedWhileFinalizedOrderCanPublish() async throws {
+        _ = try await fixture("reset", method: "POST")
+        let app = launchGallery()
+        app.buttons["我的设计"].firstMatch.tap()
+        let unpaid = app.buttons["diy-publish-design-9002"]
+        XCTAssertTrue(unpaid.waitForExistence(timeout: 15))
+        reveal(unpaid, in: app); XCTAssertFalse(unpaid.isEnabled)
+        XCTAssertEqual(app.staticTexts["diy-publication-reason-9002"].label, "订单完成真实付款后才可发布，模拟支付不满足发布条件")
+        let unconfirmed = app.buttons["diy-publish-design-9003"]
+        reveal(unconfirmed, in: app); XCTAssertFalse(unconfirmed.isEnabled)
+        XCTAssertEqual(app.staticTexts["diy-publication-reason-9003"].label, "订单已付款，待确认款式、用料和价格后可发布")
+        capture(app, "ios-publication-unpaid-unconfirmed-blocked")
+        let ready = app.buttons["diy-publish-design-9004"]
+        reveal(ready, in: app); XCTAssertTrue(ready.isEnabled); ready.tap()
+        XCTAssertTrue(app.buttons["确认发布"].waitForExistence(timeout: 5)); app.buttons["确认发布"].tap()
+        XCTAssertTrue(app.buttons["diy-unpublish-design-9004"].waitForExistence(timeout: 10))
+        capture(app, "ios-publication-confirmed-order-published")
+        let state = try await fixture("state")
+        let designs = try XCTUnwrap(state["designs"] as? [String: [String: Any]])
+        XCTAssertEqual(designs["9002"]?["status"] as? String, "private")
+        XCTAssertEqual(designs["9003"]?["status"] as? String, "private")
+        XCTAssertEqual(designs["9004"]?["status"] as? String, "public")
+        XCTAssertNotNil(designs["9004"]?["publication"])
+        let mutations = try XCTUnwrap(state["requests"] as? [[String: Any]]).filter { $0["method"] as? String == "PUT" }
+        XCTAssertEqual(mutations.count, 1)
+        XCTAssertEqual(mutations.first?["path"] as? String, "/api/v1/diy/designs/9004/status")
+    }
+
+    func testSavedPrivateDraftLeavesPublicSnapshotAndCopyAttributionUnchanged() async throws {
+        _ = try await fixture("reset", method: "POST")
+        var app = launchGallery()
+        app.buttons["我的设计"].firstMatch.tap()
+        let ownCard = app.buttons["diy-my-design-9001"]
+        XCTAssertTrue(ownCard.waitForExistence(timeout: 15)); ownCard.tap()
+        XCTAssertTrue(app.otherElements["diy-3d-stage"].waitForExistence(timeout: 10))
+        let wood = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "小叶紫檀圆珠，")).firstMatch
+        XCTAssertTrue(wood.waitForExistence(timeout: 5)); wood.tap()
+        XCTAssertTrue(app.buttons["第 2 颗 小叶紫檀圆珠"].waitForExistence(timeout: 5))
+        app.buttons["保存设计"].tap()
+        XCTAssertTrue(app.staticTexts["修改将保存为私有草稿，广场中的已发布定稿保持不变。新款需付款并确认后再发布。"].waitForExistence(timeout: 5))
+        app.alerts.buttons["保存"].tap()
+        XCTAssertTrue(app.staticTexts["草稿已修改"].waitForExistence(timeout: 15))
+        let publish = app.buttons["diy-publish-design-9001"]
+        XCTAssertTrue(publish.exists); XCTAssertFalse(publish.isEnabled)
+        XCTAssertTrue(app.buttons["diy-unpublish-design-9001"].exists)
+        capture(app, "ios-publication-private-draft-preserves-public-work")
+        app.terminate()
+
+        app = launchGallery()
+        let card = app.descendants(matching: .any)["diy-gallery-design-9001"]
+        XCTAssertTrue(card.waitForExistence(timeout: 10)); card.tap()
+        XCTAssertTrue(app.buttons["复制并编辑"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["1 颗"].exists)
+        XCTAssertFalse(app.staticTexts["2 颗"].exists)
+        capture(app, "ios-publication-owner-views-confirmed-snapshot")
+        app.buttons["复制并编辑"].tap()
+        XCTAssertTrue(app.otherElements["diy-3d-stage"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["第 1 颗 小叶紫檀圆珠"].exists)
+        XCTAssertFalse(app.buttons["第 2 颗 小叶紫檀圆珠"].exists)
+        let state = try await fixture("state")
+        let designs = try XCTUnwrap(state["designs"] as? [String: [String: Any]])
+        let source = try XCTUnwrap(designs["9001"])
+        XCTAssertEqual(source["status"] as? String, "public")
+        XCTAssertEqual(source["draftChanged"] as? Bool, true)
+        let copy = try XCTUnwrap(designs.values.first { $0["sourceDesignId"] as? Int == 9001 })
+        XCTAssertEqual(copy["sourcePublicationId"] as? Int, 16101)
+        XCTAssertEqual(copy["status"] as? String, "private")
+        XCTAssertEqual((copy["publicationEligibility"] as? [String: Any])?["canPublish"] as? Bool, false)
+        let requests = try XCTUnwrap(state["requests"] as? [[String: Any]])
+        XCTAssertTrue(requests.contains { ($0["path"] as? String) == "/api/v1/diy/designs/9001?view=published" })
+        capture(app, "ios-publication-copy-retains-confirmed-snapshot")
+    }
+}
+
+final class NativeGrowthNavigationUITests: XCTestCase {
+    private func launch(_ arguments: [String]) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
+        app.launchArguments = ["-askxuan.appearance", "light"] + arguments
+        app.launch()
+        return app
+    }
+
+    private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
+        for _ in 0..<12 where !element.isHittable { app.swipeUp() }
+        XCTAssertTrue(element.isHittable)
+    }
+
+    private func capture(_ app: XCUIApplication, _ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
+    }
+
+    func testFourMainTabsAndRulesInsideBenefitsKeepHistoricalVersions() {
+        let app = launch(["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99029", "-tab", "4"])
+        XCTAssertTrue(app.buttons["profile-growth"].waitForExistence(timeout: 20))
+        app.buttons["profile-growth"].tap()
+        let tabs = app.segmentedControls["growth-primary-tabs"]
+        XCTAssertTrue(tabs.waitForExistence(timeout: 15))
+        XCTAssertEqual(tabs.buttons.count, 4)
+        XCTAssertFalse(app.buttons["成长规则与历史版本"].exists)
+        tabs.buttons["权益"].tap()
+        let rules = app.buttons["growth-rules-disclosure"]
+        reveal(rules, in: app)
+        XCTAssertFalse(app.buttons["growth-rule-acquisition"].exists)
+        rules.tap()
+        let acquisition = app.buttons["growth-rule-acquisition"]
+        XCTAssertTrue(acquisition.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["growth-rule-upgrade"].exists)
+        XCTAssertTrue(app.buttons["growth-rule-discounts"].exists)
+        acquisition.tap()
+        XCTAssertTrue(app.staticTexts["周期任务月上限 300"].waitForExistence(timeout: 5))
+        acquisition.tap()
+        let history = app.buttons["growth-rule-history"]
+        reveal(history, in: app); history.tap()
+        let old = app.buttons["growth-rule-version-local-history-v1"]
+        XCTAssertTrue(old.waitForExistence(timeout: 5))
+        capture(app, "ios-growth-rules-in-benefits-with-history")
+        let next = app.buttons["下一页"]
+        reveal(next, in: app); XCTAssertTrue(next.isEnabled); next.tap()
+        XCTAssertTrue(app.buttons["growth-rule-version-local-history-v0"].waitForExistence(timeout: 10))
+        capture(app, "ios-growth-rule-history-pagination")
+    }
+
+    func testGuestCurrentRulesLinkOpensExpandedBenefitsRules() {
+        let signedIn = launch(["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99029", "-tab", "4"])
+        XCTAssertTrue(signedIn.buttons["profile-growth"].waitForExistence(timeout: 20))
+        let logout = signedIn.buttons["退出登录"]
+        reveal(logout, in: signedIn)
+        logout.tap()
+        XCTAssertTrue(signedIn.buttons["立即登录 / 注册"].waitForExistence(timeout: 10))
+        signedIn.terminate()
+        let app = launch(["-tab", "3"])
+        let product = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "本地验收手串")).firstMatch
+        XCTAssertTrue(product.waitForExistence(timeout: 20)); product.tap()
+        let rulesLink = app.buttons["查看当前规则"]
+        reveal(rulesLink, in: app); rulesLink.tap()
+        XCTAssertTrue(app.navigationBars["等级权益"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["growth-rule-acquisition"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["growth-rule-upgrade"].exists)
+        XCTAssertTrue(app.buttons["growth-rule-discounts"].exists)
+        XCTAssertFalse(app.navigationBars["成长规则与历史版本"].exists)
+        capture(app, "ios-growth-public-rules-link-opens-benefits")
+    }
+}
+
 final class NativePublicSearchUITests: XCTestCase {
     func testEqualHomeCardsAndCompletePublicSearch() {
         let app = XCUIApplication()
@@ -361,20 +633,18 @@ final class DiyStudioUITests: XCTestCase {
         XCTAssertTrue(app.otherElements["diy-3d-stage"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["复制并编辑"].exists)
         app.buttons["保存设计"].tap()
-        XCTAssertTrue(app.staticTexts["保存修改后将转为未发布，可在我的设计中重新发布。"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["修改将保存为私有草稿，广场中的已发布定稿保持不变。新款需付款并确认后再发布。"].waitForExistence(timeout: 5))
         app.buttons["取消"].tap()
         app.buttons["返回"].firstMatch.tap()
         XCTAssertTrue(edit.waitForExistence(timeout: 5))
-        app.buttons["diy-publish-design-9001"].tap()
+        app.buttons["diy-unpublish-design-9001"].tap()
         app.buttons["确认下架"].tap()
         let unpublished = NSPredicate(format: "label == %@", "发布到广场")
         expectation(for: unpublished, evaluatedWith: app.buttons["diy-publish-design-9001"])
         waitForExpectations(timeout: 5)
         app.buttons["diy-publish-design-9001"].tap()
         app.buttons["确认发布"].tap()
-        let published = NSPredicate(format: "label == %@", "下架")
-        expectation(for: published, evaluatedWith: app.buttons["diy-publish-design-9001"])
-        waitForExpectations(timeout: 5)
+        XCTAssertTrue(app.buttons["diy-unpublish-design-9001"].waitForExistence(timeout: 5))
     }
 
     func testMaterialShowcaseAndFitDialog() {

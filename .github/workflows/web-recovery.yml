@@ -1,0 +1,57 @@
+name: Web verified release recovery
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verified-package:
+    if: github.ref == 'refs/heads/master' && vars.ECS_DEPLOY_ENABLED == 'true'
+    environment: production
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: askxuan-dongfang/askxuan-backend
+          ref: 4b3503f450cab91e9886f06002a47127aa1561ad
+          path: .ci-tools
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: 'apps/web-*/package-lock.json'
+      - name: Build admin web components with exact source provenance
+        run: python3 .ci-tools/scripts/ci/release.py web --frontend .
+      - name: Run unified admin and media regressions
+        working-directory: e2e
+        env:
+          CI_ADMIN_ONLY: '1'
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test --config playwright.unified-admin.config.ts --grep 'shop page|legacy|unified identity|unified logout|shop role|platform service'
+          npx playwright test --config playwright.community.config.ts --grep 'admin reviews'
+          npx playwright test --config playwright.ai-settings.config.ts
+          npx playwright test --config playwright.overlay-position.config.ts
+          npx playwright test --config playwright.rewards.config.ts rewards-probabilities.spec.ts --grep admin
+      - name: Retain verified package for operator relay
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PRIVATE_REPOSITORY: ${{ github.event.repository.private }}
+        run: |
+          test "$PRIVATE_REPOSITORY" = true
+          tag="ci-web-relay-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          sha256sum release.tgz > release.sha256
+          gh release create "$tag" release.tgz release.sha256 --draft --target "$GITHUB_SHA" \
+            --title "Verified Web package $GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT" \
+            --notes "Private operator relay after the full admin build and browser checks. Verify source and all manifest hashes, then publish through the existing ECS receiver."

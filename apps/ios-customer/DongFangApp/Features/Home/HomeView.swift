@@ -9,8 +9,8 @@
 import SwiftUI
 
 struct HomeView: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .headline) private var entryTitleLineHeight: CGFloat = 25
     @StateObject private var viewModel = HomeViewModel()
     @EnvironmentObject private var authStore: AuthStore
     @State private var currentBanner: Int = 0
@@ -32,7 +32,7 @@ struct HomeView: View {
                     intentionSection
                     NavigationLink { ServicesView() } label: {
                         Label(L10n.text("查看全部服务"), systemImage: "square.grid.2x2")
-                            .font(AppTypography.body).frame(maxWidth: .infinity, alignment: .leading)
+                            .font(AppTypography.title(15)).frame(maxWidth: .infinity, alignment: .leading)
                             .padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
                     }.buttonStyle(CardPressButtonStyle()).padding(.horizontal, AppSpacing.lg).accessibilityIdentifier("home-services")
                     hotTemplesSection
@@ -155,9 +155,9 @@ struct HomeView: View {
                             .frame(width: geometry.size.width, height: 184).clipped()
                         LinearGradient(colors: [.clear, .black.opacity(0.72)], startPoint: .top, endPoint: .bottom)
                         VStack(alignment: .leading, spacing: 10) {
-                            Text(L10n.text("精选推荐")).font(AppTypography.caption).tracking(2)
+                            Text(L10n.text("精选推荐")).font(AppTypography.title(12, weight: .regular)).tracking(2)
                             Text(L10n.lookup(banner.title)).font(AppTypography.title(25)).lineLimit(2)
-                            Label(L10n.text("查看详情"), systemImage: "arrow.up.right").font(AppTypography.caption)
+                            Label(L10n.text("查看详情"), systemImage: "arrow.up.right").font(AppTypography.title(12, weight: .regular))
                         }.foregroundStyle(.white).padding(20).padding(.bottom, viewModel.banners.count > 1 ? 12 : 0)
                     }.frame(width: geometry.size.width, height: 184).clipShape(RoundedRectangle(cornerRadius: 16))
                     }.frame(height: 184)
@@ -170,8 +170,7 @@ struct HomeView: View {
 
     private func entryCardsSection(width: CGFloat) -> some View {
         let cardWidth = max(0, (width - 50) / 2)
-        return
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+        return LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
             NavigationLink(value: HomeRoute.templeList) { entryCard(icon: "building.columns", title: L10n.text("找寺院"), pattern: .temple, width: cardWidth) }.accessibilityIdentifier("home-temples")
             NavigationLink(value: HomeRoute.masterList) { entryCard(icon: "person.crop.circle", title: L10n.text("找师傅"), pattern: .master, width: cardWidth) }.accessibilityIdentifier("home-masters")
             NavigationLink(value: HomeRoute.diyBracelet) { entryCard(icon: "circle.dotted", title: L10n.text("DIY手串"), pattern: .bracelet, width: cardWidth) }.accessibilityIdentifier("home-diy")
@@ -180,12 +179,13 @@ struct HomeView: View {
     }
 
     private func entryCard(icon: String, title: String, pattern: HomeEntryPattern.Kind, width: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Image(systemName: icon).font(.system(size: 24, weight: .regular)).foregroundStyle(Color.accentDefault).accessibilityHidden(true)
-            Text(L10n.lookup(title)).font(.subheadline.weight(.semibold)).foregroundStyle(Color.textPrimary).fixedSize(horizontal: false, vertical: true)
-        }.frame(maxWidth: .infinity, minHeight: dynamicTypeSize.isAccessibilitySize ? 122 : 72, alignment: .leading)
-            .padding(.horizontal, 16).padding(.vertical, 14)
-            .frame(width: width)
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: icon).font(.system(size: 32, weight: .regular)).foregroundStyle(Color.accentDefault).accessibilityHidden(true)
+            Text(L10n.lookup(title)).font(AppTypography.title(18)).foregroundStyle(Color.textPrimary)
+                .lineLimit(2).minimumScaleFactor(0.85).fixedSize(horizontal: false, vertical: true)
+        }.frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .frame(width: width, height: dynamicTypeSize.isAccessibilitySize ? max(150, entryTitleLineHeight * 2 + 68) : 100)
             .background(alignment: .trailing) {
                 HomeEntryPattern(kind: pattern).stroke(Color.accentDefault.opacity(0.07), lineWidth: 1.5)
                     .frame(width: 112, height: 86).padding(.trailing, -10).allowsHitTesting(false).accessibilityHidden(true)
@@ -198,38 +198,49 @@ struct HomeView: View {
     private var beliefSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(L10n.text("信仰流派")).font(AppTypography.section).foregroundStyle(Color.textPrimary)
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 2), spacing: 1) {
-                ForEach(viewModel.beliefEntries.prefix(4)) { entry in
-                    NavigationLink(value: HomeRoute.templeBelief(entry.id)) { beliefItem(entry) }
-                        .buttonStyle(CardPressButtonStyle())
+            Grid(horizontalSpacing: 0, verticalSpacing: 0) {
+                ForEach(stride(from: 0, to: viewModel.beliefEntries.count, by: 2).map { $0 }, id: \.self) { index in
+                    GridRow {
+                        beliefLink(viewModel.beliefEntries[index])
+                            .gridCellColumns(index + 1 < viewModel.beliefEntries.count ? 1 : 2)
+                        if index + 1 < viewModel.beliefEntries.count {
+                            beliefLink(viewModel.beliefEntries[index + 1])
+                                .overlay(alignment: .leading) { Rectangle().fill(Color.borderDivider).frame(width: 0.5).padding(.vertical, 12) }
+                        }
+                    }
                 }
-            }.background(Color.borderDivider).clipShape(RoundedRectangle(cornerRadius: 16))
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.borderDefault, lineWidth: 1))
+            }.accessibilityIdentifier("home-belief-entries")
         }.padding(.horizontal, 20)
+    }
+
+    private func beliefLink(_ entry: BeliefEntry) -> some View {
+        NavigationLink(value: HomeRoute.templeBelief(entry.id)) { beliefItem(entry) }
+            .buttonStyle(CardPressButtonStyle())
+            .overlay(alignment: .bottom) { Rectangle().fill(Color.borderDivider).frame(height: 0.5) }
+            .accessibilityIdentifier("home-belief-" + entry.id)
     }
 
     private func beliefItem(_ entry: BeliefEntry) -> some View {
         HStack(spacing: 6) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(L10n.lookup(entry.title)).font(AppTypography.title(16)).foregroundStyle(Color.textPrimary)
-                Text(L10n.lookup(entry.subtitle)).font(AppTypography.micro).foregroundStyle(Color.textSecondary).lineLimit(2)
+                Text(L10n.lookup(entry.subtitle)).font(AppTypography.title(11, weight: .regular)).foregroundStyle(Color.textSecondary).lineLimit(2)
             }.frame(maxWidth: .infinity, alignment: .leading)
             Text(L10n.lookup(String(entry.title.prefix(1)))).font(AppTypography.title(16)).foregroundStyle(Color.accentDefault)
                 .frame(width: 26, height: 32).overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.accentDefault.opacity(0.25)))
-        }.padding(12).frame(maxWidth: .infinity, minHeight: 76, alignment: .leading).background(Color.bgSecondary)
+        }.padding(12).frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)
     }
 
     private var intentionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(L10n.text("按心愿办")).font(AppTypography.section).foregroundStyle(Color.textPrimary)
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 4), spacing: 1) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: dynamicTypeSize.isAccessibilitySize ? 2 : 4), spacing: 4) {
                 ForEach(viewModel.intentionEntries) { entry in
                     NavigationLink(value: entry.landingType == "diy" ? HomeRoute.diyBracelet : HomeRoute.intention(entry)) {
                         intentionItem(entry)
                     }.buttonStyle(CardPressButtonStyle()).accessibilityIdentifier("home-intention-" + entry.id)
                 }
-            }.background(Color.borderDivider).clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1))
+            }.accessibilityIdentifier("home-intention-entries")
         }.padding(.horizontal, 20)
     }
 
@@ -238,9 +249,9 @@ struct HomeView: View {
             IntentionLineIcon(code: entry.landingType == "diy" ? "diy" : entry.id)
                 .frame(width: 20, height: 22).foregroundStyle(entry.landingType == "diy" ? Color.brandDefault : Color.accentDefault)
             Text(L10n.lookup(entry.landingType == "diy" ? L10n.text("DIY手串") : entry.title))
-                .font(.system(size: 12, weight: .medium)).lineLimit(1).minimumScaleFactor(0.8)
+                .font(AppTypography.title(12, weight: .regular)).lineLimit(1).minimumScaleFactor(0.8)
         }.foregroundStyle(Color.textPrimary).frame(maxWidth: .infinity, minHeight: 48)
-            .background(entry.landingType == "diy" ? Color.brandDefault.opacity(0.08) : Color.bgSecondary)
+            .overlay(alignment: .bottom) { Rectangle().fill(Color.borderDivider).frame(height: 0.5) }
             .accessibilityElement(children: .combine)
     }
 
@@ -250,7 +261,7 @@ struct HomeView: View {
             NavigationLink(value: HomeRoute.templeList) {
                 HStack {
                     Text(L10n.text("热门寺院"))
-                        .font(AppTypography.reading.weight(.semibold))
+                        .font(AppTypography.section)
                         .foregroundStyle(Color.textPrimary)
                     Spacer()
                     Image(systemName: "chevron.right")
@@ -294,7 +305,7 @@ struct HomeView: View {
             VStack(spacing: 4) {
                 HStack {
                     Text(L10n.lookup(temple.name))
-                        .font(AppTypography.body.weight(.semibold))
+                        .font(AppTypography.title(16))
                         .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
@@ -356,7 +367,7 @@ struct HomeView: View {
             NavigationLink(value: HomeRoute.masterList) {
                 HStack {
                     Text(L10n.text("热门师傅"))
-                        .font(AppTypography.reading.weight(.semibold))
+                        .font(AppTypography.section)
                         .foregroundStyle(Color.textPrimary)
                     Spacer()
                     Image(systemName: "chevron.right")
@@ -387,7 +398,7 @@ struct HomeView: View {
             RemoteAvatar(urlString: master.avatar, size: 56)
 
             Text(L10n.lookup(master.dharmaName))
-                .font(AppTypography.body.weight(.semibold))
+                .font(AppTypography.title(16))
                 .foregroundStyle(Color.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
@@ -857,7 +868,8 @@ struct NativeDiscoveryDestination: View {
     @State private var product: ShopProduct?
     @State private var error: String?
     @State private var loading = false
-    private var parts: [String] { route.split(separator: "/").map(String.init) }
+    private var parts: [String] { (URLComponents(string: route)?.path ?? route).split(separator: "/").map(String.init) }
+    private var routeTab: String? { URLComponents(string: route)?.queryItems?.first(where: { $0.name == "tab" })?.value }
     private var kind: String { parts.count > 1 ? parts[1] : "" }
     private var identifier: String? { parts.count > 2 ? parts[2] : nil }
     var body: some View {
@@ -868,6 +880,9 @@ struct NativeDiscoveryDestination: View {
             case "masters":
                 if let id = identifier { MasterProfileView(masterId: id) } else { MasterListView() }
             case "diy": DiyBraceletView()
+            case "growth":
+                if routeTab == "rules" { GrowthView(initialTab: "rules", publicRead: true) }
+                else { GrowthView(initialTab: routeTab ?? "overview").requireAuth(title: L10n.text("登录后查看我的成长")) }
             case "ai": AiDivinationView().requireAuth(title: L10n.text("登录后开启 AI 问事"))
             case "shop":
                 if identifier == nil { ShopView() }
@@ -1052,7 +1067,9 @@ private struct NativeGlobalSearchDestination: View {
             } else {
                 switch path {
                 case "/c/points": PointsView()
-                case "/c/growth": GrowthView().requireAuth(title: L10n.text("登录后查看我的成长"))
+                case "/c/growth":
+                    if tab == "rules" { GrowthView(initialTab: "rules", publicRead: true) }
+                    else { GrowthView(initialTab: tab ?? "overview").requireAuth(title: L10n.text("登录后查看我的成长")) }
                 case "/c/bookings": OrderListView(initialStatus: "booking").requireAuth(title: L10n.text("登录后查看预约"))
                 case "/c/shop/orders": OrderListView(initialStatus: "shop").requireAuth(title: L10n.text("登录后查看订单"))
                 case "/c/diy/orders": OrderListView(initialStatus: "diy").requireAuth(title: L10n.text("登录后查看定制订单"))

@@ -159,6 +159,10 @@ struct ProductFavoritesResponse: Decodable { let list: [ShopProduct] }
 
 /// 我的设计条目（含最新订单信息）
 struct MyDesignItem: Decodable, Identifiable, Hashable {
+    var publicationEligibility: DiyPublicationEligibility? = nil
+    var publication: DiyPublication? = nil
+    var draftChanged: Bool? = nil
+    var sourcePublicationId: Int64? = nil
     let id: Int64
     let designNo: String?
     let name: String
@@ -173,6 +177,10 @@ struct MyDesignItem: Decodable, Identifiable, Hashable {
 
     /// 是否已下单
     var hasOrder: Bool { !(orderNo?.isEmpty ?? true) }
+    var canPublish: Bool { publicationEligibility?.canPublish == true }
+    var publicationMessage: String {
+        publicationEligibility?.localizedMessage ?? L10n.text("发布资格暂不可用，请刷新后重试")
+    }
 }
 struct CommunityCommentCreateRequest: Encodable { let content: String }
 
@@ -221,6 +229,7 @@ enum Endpoint {
     case diyMyDesigns(page: Int, size: Int)
     case diyDesignSave(DiyDesignSaveRequest)
     case diyDesignById(Int64)
+    case diyPublishedDesignById(Int64)
     case diyDesignCopy(Int64)
     case diyDesignStatus(Int64, DiyDesignStatusRequest)
     case diyMaterials(category: String?, page: Int, size: Int)
@@ -418,7 +427,7 @@ enum Endpoint {
         case .diyDesignSave:            return "diy/designs"
         case .diyDesignCopy(let id): return "diy/designs/\(id)/copy"
         case .diyDesignStatus(let id, _): return "diy/designs/\(id)/status"
-        case .diyDesignById(let id):    return "diy/designs/\(id)"
+        case .diyDesignById(let id), .diyPublishedDesignById(let id): return "diy/designs/\(id)"
         case .diyMaterials:             return "diy/materials"
         case .diyBlessingServices:      return "diy/blessing-services"
         case .diyOrderCreate:           return "diy/orders"
@@ -509,7 +518,7 @@ enum Endpoint {
              .masters, .mastersByBelief, .masterById,
 			 .bookings, .bookingById, .bookingAvailability, .bookingReviewById, .bookingChats, .bookingChatMessages,
              .chats, .chatMessages, .consultationQuote,
-             .diyDesigns, .diyMyDesigns, .diyDesignById, .diyMaterials, .diyBlessingServices, .diyOrders, .diyOrderById, .paymentById,
+             .diyDesigns, .diyMyDesigns, .diyDesignById, .diyPublishedDesignById, .diyMaterials, .diyBlessingServices, .diyOrders, .diyOrderById, .paymentById,
              .aiSkills, .aiModels, .aiSessions, .aiMessages,
              .communityFeed, .communityPostById, .communityComments, .communityMyFollowing,
              .templeFavorites, .productFavorites,
@@ -587,6 +596,8 @@ enum Endpoint {
         case .diyDesigns(let page, let size):
             return [URLQueryItem(name: "page", value: "\(page)"),
                     URLQueryItem(name: "size", value: "\(size)")]
+        case .diyPublishedDesignById:
+            return [URLQueryItem(name: "view", value: "published")]
         case .diyMaterials(let category, let page, let size):
             var items = [URLQueryItem(name: "page", value: "\(page)"),
                          URLQueryItem(name: "size", value: "\(size)")]

@@ -213,11 +213,11 @@ final class DiyViewModel: ObservableObject {
         isLoading = false
     }
 
-    func loadDesign(id: Int64, checkAvailability: Bool = true, persistRestoredDraft: Bool = true) async {
+    func loadDesign(id: Int64, checkAvailability: Bool = true, persistRestoredDraft: Bool = true, published: Bool = false) async {
         isLoading = true
         errorMessage = nil
         do {
-            async let designRequest: DiyDesign = apiClient.request(.diyDesignById(id))
+            async let designRequest: DiyDesign = apiClient.request(published ? .diyPublishedDesignById(id) : .diyDesignById(id))
             async let materialRequest: PageResponse<Material> = apiClient.request(
                 .diyMaterials(category: nil, page: 1, size: 100))
             let (design, materialResponse) = try await (designRequest, materialRequest)
@@ -537,6 +537,11 @@ final class DiyViewModel: ObservableObject {
     }
     func setPublication(_ published: Bool) async {
         guard let design = currentDesign, !isSubmitting else { return }
+        guard !published || design.publicationEligibility?.canPublish == true else {
+            errorMessage = design.publicationEligibility?.localizedMessage ?? L10n.text("发布资格暂不可用，请刷新后重试")
+            return
+        }
+        errorMessage = nil
         isSubmitting = true; defer { isSubmitting = false }
         do {
             currentDesign = try await apiClient.request(.diyDesignStatus(design.id, .init(revision: design.revision ?? 1, status: published ? "public" : "private")))
@@ -564,7 +569,6 @@ final class DiyViewModel: ObservableObject {
             name: designName,
             designData: designData,
             totalPrice: totalPrice,
-            status: "private",
             blessServiceCode: nil
         )
 

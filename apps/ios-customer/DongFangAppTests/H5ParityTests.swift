@@ -19,14 +19,14 @@ struct H5ParityTests {
         model.selectedBeliefCode = ""; model.selectedRegionCode = "mainland"
         #expect(model.filteredTemples.isEmpty)
     }
-    @Test @MainActor func priceFilterUsesEnabledSelectedServiceAndH5Boundaries() throws {
+    @Test @MainActor func priceFilterUsesEnabledStartingPriceAndH5Boundaries() throws {
         let payload = #"{"id":"1","serviceTags":[{"serviceCode":"S001","price":200,"status":"enabled"},{"serviceCode":"S002","price":10,"status":"disabled"}]}"#
         let master = try JSONDecoder().decode(Master.self, from: Data(payload.utf8))
         let model = MasterListViewModel(); model.masters = [master]
-        model.selectedService = ServiceType.from(serviceCode: "S001")!.rawValue
         model.selectedPrice = "200元以下"; #expect(model.filteredMasters.isEmpty)
         model.selectedPrice = "200–500元"; #expect(model.filteredMasters.count == 1)
-        model.selectedPrice = "全部"; model.selectedService = ServiceType.from(serviceCode: "S002")!.rawValue
-        #expect(model.filteredMasters.isEmpty)
+        model.clearFilters()
+        #expect(model.filteredMasters.count == 1)
+        #expect(model.startingPrice(master) == 200)
     }
 }
