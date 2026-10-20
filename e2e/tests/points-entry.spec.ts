@@ -74,7 +74,7 @@ async function assertCoreGrid(page: Page, language: string) {
     const labelStyle = getComputedStyle(element.querySelector('strong')!);
     const style = getComputedStyle(element);
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right,
-      labelFits: label.left >= rect.left && label.right <= rect.right && label.top >= rect.top && label.bottom <= rect.bottom,
+      labelX: label.x, labelFits: label.left >= rect.left && label.right <= rect.right && label.top >= rect.top && label.bottom <= rect.bottom,
       pattern: pattern.innerHTML, opacity: Number(getComputedStyle(pattern).opacity), color: style.color, background: style.backgroundColor,
       iconSize: icon.width, labelSize: parseFloat(labelStyle.fontSize), font: labelStyle.fontFamily };
   }));
@@ -88,7 +88,7 @@ async function assertCoreGrid(page: Page, language: string) {
     expect(card.labelFits).toBeTruthy();
     expect(card.opacity).toBeGreaterThan(0);
     expect(card.opacity).toBeLessThan(0.25);
-    expect(card.background).not.toBe('rgba(0, 0, 0, 0)');
+    expect(card.background).toBe('rgba(0, 0, 0, 0)');
     expect(card.color).toBe(cards[0].color);
     expect(card.iconSize).toBe(32);
     expect(card.labelSize).toBe(18);
@@ -103,6 +103,34 @@ async function assertCoreGrid(page: Page, language: string) {
   expect(cards[0].font).toBe(typography.heading);
   expect(typography.title).toBe(typography.heading);
   expect(typography.description).toBe(typography.heading);
+  const alignment = await page.locator('.customer-home').evaluate(element => {
+    const beliefs = [...element.querySelectorAll('.home-belief-card')];
+    const heading = element.querySelector('.home-discovery-section h2')!.getBoundingClientRect();
+    const wishes = [...element.querySelectorAll('.home-intent')];
+    return {
+      headingX: heading.x,
+      beliefTitles: beliefs.map(belief => belief.querySelector('strong')!.getBoundingClientRect().x),
+      beliefRight: beliefs.map(belief => belief.getBoundingClientRect().right),
+      lastSealRight: beliefs.at(-1)!.querySelector('.home-belief-seal')!.getBoundingClientRect().right,
+      sealVisible: getComputedStyle(beliefs.at(-1)!.querySelector('.home-belief-seal')!).display !== 'none',
+      wishX: wishes[0].getBoundingClientRect().x,
+      verticalBorders: [...beliefs, ...wishes].map(item => ({
+        left: getComputedStyle(item).borderLeftWidth, right: getComputedStyle(item).borderRightWidth,
+      })),
+    };
+  });
+  expect(Math.abs(cards[0].labelX - alignment.headingX)).toBeLessThan(1);
+  expect(Math.abs(cards[0].labelX - alignment.beliefTitles[0])).toBeLessThan(1);
+  expect(Math.abs(cards[1].labelX - alignment.beliefTitles[1])).toBeLessThan(1);
+  expect(Math.abs(cards[0].labelX - alignment.beliefTitles[4])).toBeLessThan(1);
+  expect(Math.abs(cards[0].labelX - alignment.wishX)).toBeLessThan(1);
+  expect(Math.abs(alignment.beliefRight[1] - alignment.beliefRight[4])).toBeLessThan(1);
+  if (alignment.sealVisible) {
+    expect(Math.abs(alignment.lastSealRight - alignment.beliefRight[4])).toBeLessThan(1);
+  }
+  for (const border of alignment.verticalBorders) {
+    expect(border).toEqual({ left: '0px', right: '0px' });
+  }
   for (const section of await page.locator('.home-belief-grid, .home-wishes').all()) {
     await expect(section).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     await expect(section).toHaveCSS('border-top-width', '0px');
