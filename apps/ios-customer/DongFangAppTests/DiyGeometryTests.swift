@@ -22,6 +22,24 @@ struct DiyGeometryTests {
             #expect(profile.anchors["left"]?.count == 3 && profile.anchors["right"]?.count == 3)
         }
     }
+    @Test func dragEnvelopeUsesCurvedMeshInsteadOfRotatedBoxCorners() throws {
+        let sphere = DiyMaterialAppearance.geometry(radius: 1, shape: "round")
+        let vertices = DiyMaterialAppearance.vertices(of: sphere)
+        #expect(vertices.count == sphere.sources(for: .vertex).first?.vectorCount)
+        let projected = vertices.map { CGPoint(x: CGFloat(($0.x + $0.y) / sqrt(2)) * 100, y: CGFloat($0.z) * 100) }
+        let envelope = DiyDragEnvelope(points: projected)
+        #expect(envelope.distance(to: CGPoint(x: 125, y: 0)) > 24)
+        let box = sphere.boundingBox
+        let corners = [box.min.x, box.max.x].flatMap { x in [box.min.y, box.max.y].flatMap { y in [box.min.z, box.max.z].map { z in
+            CGPoint(x: CGFloat((x + y) / sqrt(2)) * 100, y: CGFloat(z) * 100)
+        } } }
+        #expect(DiyDragEnvelope(points: corners).distance(to: CGPoint(x: 125, y: 0)) == 0)
+        for kind in ["pendant_peace", "pendant_lotus", "three_way", "buddha_head", "tassel"] {
+            let mesh = try #require(DiyMaterialAppearance.accessoryGeometry(kind))
+            #expect(DiyMaterialAppearance.vertices(of: mesh).count == mesh.sources(for: .vertex).first?.vectorCount)
+        }
+    }
+
     @Test func barrelAndPendantDimensionsMatchWebFixtures() {
         #expect(DiyGeometry.dimensions(bead(diameter: 12, shape: "barrel", spec: "12×30mm")).pitchMm == 30)
         #expect(DiyGeometry.dimensions(bead(diameter: 6, shape: "disc")).pitchMm == 2.7)

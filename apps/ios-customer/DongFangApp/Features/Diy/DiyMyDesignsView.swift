@@ -3,7 +3,7 @@
 //  DongFangApp
 //
 //  我的设计列表：我保存过的全部设计（草稿/审核中/已公开）以及已下单的设计，
-//  每条含完整设计数据（排布、状态、订单信息），点击进入设计详情。
+//  每条含完整设计数据与发布状态，点击直接进入编辑器。
 //
 
 import SwiftUI
@@ -13,31 +13,25 @@ struct DiyMyDesignsView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var selectedFilter = "all"
+    @StateObject private var editorModel = DiyViewModel()
+    @State private var showEditor = false
+    @State private var publicationDesign: MyDesignItem?
+    @State private var showPublicationConfirm = false
+    @State private var busyDesignId: Int64?
 
     var body: some View {
         VStack(spacing: 0) {
-            DFTopNavBar("我的作品", showsBackButton: true) { EmptyView() } trailing: {
+            DFTopNavBar("我的设计", showsBackButton: true) { EmptyView() } trailing: {
                 NavigationLink { DiyDesignView() } label: {
                     Image(systemName: "plus").frame(width: 44, height: 44)
                 }.accessibilityLabel(L10n.text("开始新设计"))
             }
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(L10n.text("每一串，都是你的心意")).font(AppTypography.title(24)).foregroundStyle(Color.textPrimary)
-                        Text(L10n.text("收藏搭配灵感，随时继续创作。"))
-                            .font(.subheadline).foregroundStyle(Color.textSecondary)
-                        NavigationLink { DiyDesignView() } label: {
-                            Label(L10n.text("开始新设计"), systemImage: "plus")
-                                .font(.subheadline.weight(.semibold)).foregroundStyle(Color.accentLight)
-                                .frame(minHeight: 44)
-                        }.buttonStyle(DiyPressButtonStyle())
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(20).diySurface(highlighted: true)
                     if !designs.isEmpty {
                         Picker(L10n.text("作品筛选"), selection: $selectedFilter) {
                             Text(L10n.text("全部")).tag("all")
-                            Text(L10n.text("已公开")).tag("public")
+                            Text(L10n.text("已发布")).tag("public")
                             Text(L10n.text("已下单")).tag("ordered")
                         }.pickerStyle(.segmented)
                     }
@@ -59,8 +53,20 @@ struct DiyMyDesignsView: View {
                     } else {
                         LazyVStack(spacing: 12) {
                             ForEach(filteredDesigns) { design in
-                                NavigationLink { DiyDetailView(designId: design.id) } label: { designRow(design) }
-                                    .buttonStyle(DiyPressButtonStyle())
+                                VStack(spacing: 0) {
+                                    Button { openEditor(design) } label: { designRow(design) }.buttonStyle(.plain)
+                                        .accessibilityIdentifier("diy-my-design-\(design.id)")
+                                    HStack {
+                                        Button(L10n.text("继续编辑")) { openEditor(design) }
+                                            .accessibilityIdentifier("diy-edit-design-\(design.id)")
+                                        Spacer()
+                                        Button(L10n.lookup(design.status == "public" ? "下架" : "发布到广场")) {
+                                            publicationDesign = design; showPublicationConfirm = true
+                                        }.accessibilityIdentifier("diy-publish-design-\(design.id)")
+                                    }.font(.subheadline).foregroundStyle(Color.accentDefault)
+                                        .frame(minHeight: 44).padding(.horizontal, 16)
+                                }.background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
+                                    .disabled(busyDesignId != nil)
                             }
                         }
                         if let errorMessage {
@@ -76,6 +82,38 @@ struct DiyMyDesignsView: View {
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
         .task { await load() }
+        .sheet(isPresented: $showEditor, onDismiss: { Task { await load() } }) { NavigationStack { DiyDesignView(viewModel: editorModel) } }
+        .confirmationDialog(L10n.lookup(publicationDesign?.status == "public" ? "下架后，仅你可见；已有副本与订单保留。" : "发布后，其他人可以分享、复制搭配和定制。"), isPresented: $showPublicationConfirm, titleVisibility: .visible) {
+            Button(L10n.lookup(publicationDesign?.status == "public" ? "确认下架" : "确认发布")) { updatePublication() }
+        }
+        .alert(L10n.text("提示"), isPresented: Binding(get: { errorMessage != nil && !designs.isEmpty }, set: { if !$0 { errorMessage = nil } })) {
+            Button(L10n.text("好的"), role: .cancel) {}
+        } message: { Text(L10n.lookup(errorMessage ?? "")) }
+
+    }
+
+    private func openEditor(_ design: MyDesignItem) {
+        guard busyDesignId == nil else { return }
+        busyDesignId = design.id
+        Task {
+            await editorModel.loadDesign(id: design.id, checkAvailability: false)
+            busyDesignId = nil
+            if editorModel.currentDesign?.id == design.id && editorModel.isDesignOwner { showEditor = true }
+            else { errorMessage = editorModel.errorMessage ?? L10n.text("暂时无法打开作品") }
+        }
+    }
+    private func updatePublication() {
+        guard let design = publicationDesign, busyDesignId == nil else { return }
+        busyDesignId = design.id
+        Task {
+            await editorModel.loadDesign(id: design.id, checkAvailability: false, persistRestoredDraft: false)
+            if editorModel.currentDesign?.id == design.id && editorModel.isDesignOwner {
+                await editorModel.setPublication(design.status != "public")
+            }
+            let failure = editorModel.errorMessage
+            busyDesignId = nil
+            if let failure { errorMessage = failure } else { await load() }
+        }
     }
 
     private var filteredDesigns: [MyDesignItem] {
@@ -157,8 +195,8 @@ struct DiyMyDesignsView: View {
 
     private func designStatusInfo(_ status: String) -> (String, Color) {
         switch status {
-        case "private":        return ("草稿", Color.textTertiary)
-        case "public":         return ("已公开", Color.stateSuccess)
+        case "private":        return ("未发布", Color.textTertiary)
+        case "public":         return ("已发布", Color.stateSuccess)
         case "pending_review": return ("审核中", Color.stateWarning)
         case "approved":       return ("已通过", Color.stateSuccess)
         case "rejected":       return ("已驳回", Color.stateError)

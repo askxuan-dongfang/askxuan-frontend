@@ -9,7 +9,7 @@ import SwiftUI
 
 struct MasterListView: View {
     @State private var searchVisible = false
-    @State private var isTraditionPresented = false
+    @State private var isDirectoryFilterPresented = false
     @FocusState private var searchFocused: Bool
     @StateObject private var viewModel: MasterListViewModel
     @State private var expandedGroups: Set<String> = ["所属寺院"]
@@ -40,17 +40,20 @@ struct MasterListView: View {
             if searchVisible || !viewModel.searchText.isEmpty {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass").foregroundStyle(Color.textTertiary)
-                    TextField(L10n.text("搜索师傅、宗派或专长"), text: $viewModel.searchText)
+                    TextField(L10n.text("搜索名称、标签、服务或地区"), text: $viewModel.searchText)
                         .focused($searchFocused).submitLabel(.search).autocorrectionDisabled()
+                        .accessibilityLabel(L10n.text("搜索师傅列表"))
+                        .onSubmit { searchFocused = false }
                     if !viewModel.searchText.isEmpty { Button { viewModel.searchText = "" } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel(L10n.text("清除搜索")) }
+                    Button(L10n.text("取消")) { viewModel.searchText = ""; searchVisible = false; searchFocused = false }.buttonStyle(.plain)
                 }.padding(12).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)).padding(.horizontal, 16).padding(.vertical, 6)
             }
             if let error = viewModel.errorMessage {
                 HStack { Text(L10n.lookup(error)).font(AppTypography.caption); Spacer(); Button(L10n.text("重试")) { Task { await viewModel.load() } } }.padding(12)
             }
-            }.directoryFilterDismissArea(isPresented: $isTraditionPresented)
+            }.directoryFilterDismissArea(isPresented: $isDirectoryFilterPresented)
 
-            DirectoryFilterBar(beliefs: viewModel.beliefOptions, belief: $viewModel.selectedBeliefCode, region: $viewModel.selectedRegionCode, tradition: $viewModel.selectedTraditionCode, isTraditionPresented: $isTraditionPresented)
+            DirectoryFilterBar(beliefs: viewModel.beliefOptions, belief: $viewModel.selectedBeliefCode, region: $viewModel.selectedRegionCode, tradition: $viewModel.selectedTraditionCode, isPresented: $isDirectoryFilterPresented)
                 .zIndex(1)
 
             HStack(spacing: 0) {
@@ -73,7 +76,7 @@ struct MasterListView: View {
                 } else {
                     masterListContent
                 }
-            }.directoryFilterDismissArea(isPresented: $isTraditionPresented)
+            }.directoryFilterDismissArea(isPresented: $isDirectoryFilterPresented)
         }
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
@@ -134,15 +137,15 @@ struct MasterListView: View {
             } label: {
                 HStack(spacing: 2) {
                     Text(L10n.lookup(title))
-                        .font(AppTypography.micro.weight(.semibold))
+                        .font(AppTypography.caption.weight(.semibold))
                         .foregroundStyle(isExpanded ? Color.accentDefault : Color.textTertiary)
-                        .lineLimit(1)
+                        .lineLimit(2)
                     Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                         .font(.system(size: 8))
                         .foregroundStyle(isExpanded ? Color.accentDefault : Color.textTertiary)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .padding(.vertical, 4)
             }
             .buttonStyle(.plain)
 
@@ -164,11 +167,12 @@ struct MasterListView: View {
                     .fill(isSelected ? Color.brandDefault : Color.clear)
                     .frame(width: 2)
                 Text(L10n.lookup(title))
-                    .font(AppTypography.micro.weight(isSelected ? .medium : .regular))
+                    .font(AppTypography.caption.weight(isSelected ? .medium : .regular))
                     .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .padding(.horizontal, 3)
+                    .padding(.vertical, 4)
             }
             .background(isSelected ? Color.brandDefault.opacity(0.08) : Color.clear)
         }

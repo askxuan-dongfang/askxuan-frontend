@@ -24,6 +24,8 @@ final class TempleListViewModel: ObservableObject {
     @Published var beliefOptions: [BeliefFilterOption] = []
     @Published var serviceOptions: [ServiceFilterOption] = []
 
+    @Published private var searchCatalog = DirectorySearchCatalog()
+
     private let apiClient: APIClient
     init(initialSect: String? = nil, initialBeliefCode: String? = nil, apiClient: APIClient = .shared) {
         self.apiClient = apiClient
@@ -34,7 +36,7 @@ final class TempleListViewModel: ObservableObject {
         temples.filter { t in
             (selectedRegionCode.isEmpty || t.regionCode == selectedRegionCode) &&
             (selectedTraditionCode.isEmpty || (t.traditionCodes ?? []).contains(selectedTraditionCode)) &&
-            (searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (t.name + " " + t.region).localizedStandardContains(searchText.trimmingCharacters(in: .whitespacesAndNewlines))) &&
+            DirectorySearch.matches(searchText, fields: DirectorySearch.fields(temple: t, catalog: searchCatalog)) &&
             (selectedBeliefCode.isEmpty || t.beliefCode == selectedBeliefCode) &&
             (selectedServiceCode.isEmpty || (t.serviceCodes ?? []).contains(selectedServiceCode))
         }
@@ -49,7 +51,8 @@ final class TempleListViewModel: ObservableObject {
             let response: PageResponse<Temple> = try await apiClient.request(.temples(sect: nil, type: nil, serviceCode: nil, page: page, size: 100))
             let next = response.list.filter { seen.insert($0.id).inserted }
             records.append(contentsOf: next)
-            if next.isEmpty || records.count >= response.total { return records }
+            if records.count >= response.total { return records }
+            if next.isEmpty { throw DirectoryLoadError.incomplete }
             page += 1
         }
     }
@@ -67,12 +70,15 @@ final class TempleListViewModel: ObservableObject {
             async let templeRequest: [Temple] = allRecords()
             async let beliefRequest: BeliefListResponse = apiClient.request(.beliefs)
             async let serviceRequest: ServiceCatalogResponse = apiClient.request(.serviceTypes)
-            let (templeResponse, beliefResponse, serviceResponse) = try await (templeRequest, beliefRequest, serviceRequest)
+            async let tagRequest: DirectoryItems<DirectoryTag> = apiClient.request(.directoryTags)
+            async let regionRequest: DirectoryItems<DirectoryRegion> = apiClient.request(.directoryRegions)
+            let (templeResponse, beliefResponse, serviceResponse, tags, regions) = try await (templeRequest, beliefRequest, serviceRequest, tagRequest, regionRequest)
             guard !Task.isCancelled else { return }
             hasLoaded = true
             temples = templeResponse
             beliefOptions = [BeliefFilterOption(code: "", name: "全部")] + beliefResponse.list.map { BeliefFilterOption(code: $0.code, name: $0.name) }
             serviceOptions = [ServiceFilterOption(code: "", name: "全部")] + serviceResponse.list.map { ServiceFilterOption(code: $0.code, name: $0.name) }
+            searchCatalog = DirectorySearchCatalog(beliefs: beliefOptions, tags: tags.list, services: serviceOptions, regions: regions.list)
         } catch {
             guard !Task.isCancelled else { return }
             if beliefOptions.isEmpty { beliefOptions = [BeliefFilterOption(code: "", name: "全部")] }

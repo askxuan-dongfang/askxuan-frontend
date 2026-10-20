@@ -168,6 +168,23 @@ struct DiyAppearanceProfile: Decodable {
         }
         return SCNGeometry(sources: [.init(vertices: vertices), .init(normals: normals)], elements: [.init(indices: indices, primitiveType: .triangles)])
     }
+    static func vertices(of geometry: SCNGeometry) -> [SIMD3<Float>] {
+        guard let source = geometry.sources(for: .vertex).first, source.usesFloatComponents,
+              source.componentsPerVector >= 3, [4, 8].contains(source.bytesPerComponent) else { return [] }
+        let data = source.data, componentSize = source.bytesPerComponent
+        return data.withUnsafeBytes { bytes in
+            (0..<source.vectorCount).compactMap { index -> SIMD3<Float>? in
+                let offset = source.dataOffset + index * source.dataStride
+                guard offset >= 0, offset + componentSize * 3 <= bytes.count else { return nil }
+                func component(_ axis: Int) -> Float {
+                    let at = offset + axis * componentSize
+                    return componentSize == 4 ? bytes.loadUnaligned(fromByteOffset: at, as: Float.self) : Float(bytes.loadUnaligned(fromByteOffset: at, as: Double.self))
+                }
+                return SIMD3(component(0), component(1), component(2))
+            }
+        }
+    }
+
     static func geometry(radius: CGFloat, shape: String, axialLength: CGFloat? = nil) -> SCNGeometry {
         let r = Float(radius), hole = r * (shape == "pendant" ? 0.3 : 0.13)
         var profile: [(Float, Float)] = []

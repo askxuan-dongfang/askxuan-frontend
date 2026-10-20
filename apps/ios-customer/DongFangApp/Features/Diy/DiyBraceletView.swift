@@ -7,18 +7,18 @@ struct DiyBraceletView: View {
     var body: some View {
         VStack(spacing: 0) {
             DFTopNavBar("东方珠作", showsBackButton: true) { EmptyView() } trailing: {
-                NavigationLink { DiyMyDesignsView().requireAuth(title: L10n.text("登录后查看我的作品"), subtitle: L10n.text("登录后同步和管理你的手串设计")) } label: {
+                NavigationLink { DiyMyDesignsView().requireAuth(title: L10n.text("登录后查看我的设计"), subtitle: L10n.text("登录后同步和管理你的手串设计")) } label: {
                     Image(systemName: "square.stack").frame(width: 44, height: 44)
                 }
-                .accessibilityLabel(L10n.text("我的作品"))
+                .accessibilityLabel(L10n.text("我的设计"))
             }
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 22) {
                         workbench
                         HStack(spacing: 12) {
-                            NavigationLink { DiyMyDesignsView().requireAuth(title: L10n.text("登录后查看我的作品"), subtitle: L10n.text("登录后同步和管理你的手串设计")) } label: {
-                                quickItem(title: L10n.text("我的作品"), subtitle: L10n.text("保存每一次灵感"), icon: "square.stack")
+                            NavigationLink { DiyMyDesignsView().requireAuth(title: L10n.text("登录后查看我的设计"), subtitle: L10n.text("登录后同步和管理你的手串设计")) } label: {
+                                quickItem(title: L10n.text("我的设计"), subtitle: L10n.text("保存每一次灵感"), icon: "square.stack")
                             }
                             Button {
                                 AppMotion.perform(AppMotion.reveal) { proxy.scrollTo("inspiration", anchor: .top) }
@@ -56,61 +56,26 @@ struct DiyBraceletView: View {
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
         .task { if viewModel.designs.isEmpty { await viewModel.loadDesigns() } }
-        .navigationDestination(for: DiyDesign.self) { design in DiyDetailView(designId: design.id) }
     }
 
     private var workbench: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                HStack(spacing: 6) {
-                    Image("brand-atelier")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 22, height: 22)
-                        .accessibilityHidden(true)
-                    Text(L10n.text("东方珠作 · 手串设计室"))
-                        .font(.caption.weight(.medium)).foregroundStyle(Color.accentLight)
-                }
-                Spacer()
-                Text("DIY").font(.caption.weight(.semibold)).tracking(3)
-                    .foregroundStyle(Color.textSecondary)
-            }
-            Text(L10n.text("一颗一念\n串起你的心意"))
-                .font(AppTypography.title(30)).foregroundStyle(Color.textPrimary)
-                .lineSpacing(6).fixedSize(horizontal: false, vertical: true)
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(L10n.text("一颗一念，串起心意"))
+                    .font(AppTypography.title(22)).foregroundStyle(Color.textPrimary)
+                NavigationLink { DiyDesignView() } label: {
+                    Label(L10n.text("开始我的设计"), systemImage: "plus")
+                        .accessibilityIdentifier("diy-start")
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(Color.white)
+                        .padding(.horizontal, 16).frame(minHeight: 44)
+                        .background(Color.brandDefault, in: RoundedRectangle(cornerRadius: 12))
+                }.buttonStyle(DiyPressButtonStyle())
+            }.frame(maxWidth: .infinity, alignment: .leading)
             DiyMiniBracelet(slots: slots(for: viewModel.designs.first), fallbackCount: 14)
-                .frame(height: 222)
-                .accessibilityLabel(L10n.text("手串搭配示意"))
-            HStack(spacing: 0) {
-                journeyStep("01", "挑选材质")
-                journeyStep("02", "自由搭配")
-                journeyStep("03", "保存心意")
-            }
-            NavigationLink { DiyDesignView() } label: {
-                HStack {
-                    Image(systemName: "plus")
-                    Text(L10n.text("开始我的设计")).accessibilityIdentifier("diy-start")
-                    Spacer()
-                    Image(systemName: "arrow.up.right")
-                }
-                .font(.subheadline.weight(.semibold)).foregroundStyle(Color.white)
-                .padding(.horizontal, 18).frame(minHeight: 52)
-                .background(LinearGradient(colors: [.brandLight, .brandDefault], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 16))
-            }
-            .buttonStyle(DiyPressButtonStyle())
-            .padding(.top, 6)
-        }
-        .padding(20)
-        .background(RadialGradient(colors: [Color.bgElevated, Color.bgTertiary, Color.bgSecondary], center: .center, startRadius: 30, endRadius: 350))
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .overlay { RoundedRectangle(cornerRadius: 24).stroke(Color.borderStrong, lineWidth: 1) }
-    }
-
-    private func journeyStep(_ number: String, _ title: String) -> some View {
-        HStack(spacing: 5) {
-            Text(L10n.lookup(number)).appNumericFont(12).foregroundStyle(Color.accentDefault)
-            Text(L10n.lookup(title)).font(.caption).foregroundStyle(Color.textSecondary)
-        }.frame(maxWidth: .infinity)
+                .frame(width: 112, height: 112).accessibilityHidden(true)
+        }.padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("diy-home-intro")
     }
 
     private func quickItem(title: String, subtitle: String, icon: String) -> some View {
@@ -141,7 +106,7 @@ struct DiyBraceletView: View {
             } else {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach(viewModel.designs) { design in
-                        NavigationLink(value: design) { designCard(design) }.buttonStyle(DiyPressButtonStyle())
+                        NavigationLink { DiyDetailView(designId: design.id) } label: { designCard(design) }.buttonStyle(DiyPressButtonStyle()).accessibilityIdentifier("diy-gallery-design-\(design.id)")
                     }
                 }
             }

@@ -10,6 +10,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @StateObject private var viewModel = HomeViewModel()
     @EnvironmentObject private var authStore: AuthStore
     @State private var currentBanner: Int = 0
@@ -21,8 +22,7 @@ struct HomeView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 18) {
                     if !viewModel.banners.isEmpty { bannerSection }
-                    entryCardsSection
-                    PointsHomeEntry().padding(.horizontal, AppSpacing.lg)
+                    entryCardsSection(width: viewportWidth)
                     if viewModel.isLoading && viewModel.beliefEntries.isEmpty { ProgressView(L10n.text("正在加载首页")) }
                     if let error = viewModel.errorMessage {
                         HStack { Text(L10n.lookup(L10n.text("部分内容加载失败：") + error)).font(AppTypography.caption); Spacer(); Button(L10n.text("重试")) { Task { await viewModel.load() } } }.padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)).padding(.horizontal, 20)
@@ -130,13 +130,15 @@ struct HomeView: View {
 
             Spacer()
 
-            NavigationLink(value: HomeRoute.templeList) {
+            NavigationLink { NativeGlobalSearchView() } label: {
                 Image(systemName: "magnifyingglass")
                     .font(AppTypography.reading.weight(.medium))
                     .foregroundStyle(Color.accentDefault)
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(CardPressButtonStyle())
+            .accessibilityLabel(L10n.text("全站搜索"))
+            .accessibilityIdentifier("home-global-search")
         }
         .padding(.horizontal, 20)
         .frame(height: 52)
@@ -166,25 +168,31 @@ struct HomeView: View {
         .frame(height: 184).padding(.horizontal, 20)
     }
 
-    private var entryCardsSection: some View {
-        HStack(spacing: 10) {
-            NavigationLink(value: HomeRoute.templeList) { entryCard(icon: "building.columns", title: L10n.text("找寺院"), detail: "探访与服务") }.accessibilityIdentifier("home-temples")
-            NavigationLink(value: HomeRoute.masterList) { entryCard(icon: "person.crop.circle", title: L10n.text("找师傅"), detail: "咨询与交流") }.accessibilityIdentifier("home-masters")
-        }.buttonStyle(CardPressButtonStyle()).padding(.horizontal, 20)
+    private func entryCardsSection(width: CGFloat) -> some View {
+        let cardWidth = max(0, (width - 50) / 2)
+        return
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+            NavigationLink(value: HomeRoute.templeList) { entryCard(icon: "building.columns", title: L10n.text("找寺院"), pattern: .temple, width: cardWidth) }.accessibilityIdentifier("home-temples")
+            NavigationLink(value: HomeRoute.masterList) { entryCard(icon: "person.crop.circle", title: L10n.text("找师傅"), pattern: .master, width: cardWidth) }.accessibilityIdentifier("home-masters")
+            NavigationLink(value: HomeRoute.diyBracelet) { entryCard(icon: "circle.dotted", title: L10n.text("DIY手串"), pattern: .bracelet, width: cardWidth) }.accessibilityIdentifier("home-diy")
+            NavigationLink { PointsView() } label: { entryCard(icon: "star", title: L10n.text("积分中心"), pattern: .points, width: cardWidth) }.accessibilityIdentifier("home-points")
+        }.buttonStyle(CardPressButtonStyle()).padding(.horizontal, 20).accessibilityIdentifier("home-primary-entries")
     }
 
-    private func entryCard(icon: String, title: String, detail: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon).font(.system(size: 23, weight: .regular)).foregroundStyle(Color.accentDefault)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(L10n.lookup(title)).font(AppTypography.title(18)).foregroundStyle(Color.textPrimary)
-                Text(L10n.lookup(detail)).font(AppTypography.micro).foregroundStyle(Color.textSecondary)
-            }.lineLimit(1).minimumScaleFactor(0.8)
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.system(size: 10)).foregroundStyle(Color.textTertiary)
-        }.padding(.horizontal, 12).padding(.vertical, 14).frame(maxWidth: .infinity, minHeight: 68)
+    private func entryCard(icon: String, title: String, pattern: HomeEntryPattern.Kind, width: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: icon).font(.system(size: 24, weight: .regular)).foregroundStyle(Color.accentDefault).accessibilityHidden(true)
+            Text(L10n.lookup(title)).font(.subheadline.weight(.semibold)).foregroundStyle(Color.textPrimary).fixedSize(horizontal: false, vertical: true)
+        }.frame(maxWidth: .infinity, minHeight: dynamicTypeSize.isAccessibilitySize ? 122 : 72, alignment: .leading)
+            .padding(.horizontal, 16).padding(.vertical, 14)
+            .frame(width: width)
+            .background(alignment: .trailing) {
+                HomeEntryPattern(kind: pattern).stroke(Color.accentDefault.opacity(0.07), lineWidth: 1.5)
+                    .frame(width: 112, height: 86).padding(.trailing, -10).allowsHitTesting(false).accessibilityHidden(true)
+            }
             .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.borderDefault, lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .contentShape(RoundedRectangle(cornerRadius: 16))
     }
 
     private var beliefSection: some View {
@@ -913,5 +921,154 @@ struct NativeMarketingActivityView: View {
         error = nil
         do { activity = try await APIClient.shared.request(.marketingActivity(id)) }
         catch { self.error = error.localizedDescription }
+    }
+}
+
+
+private struct HomeEntryPattern: Shape {
+    enum Kind { case temple, master, bracelet, points }
+    let kind: Kind
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        switch kind {
+        case .temple:
+            path.move(to: CGPoint(x: rect.minX + 8, y: rect.midY - 10))
+            path.addQuadCurve(to: CGPoint(x: rect.midX, y: rect.minY + 9), control: CGPoint(x: rect.midX - 12, y: rect.midY - 14))
+            path.addQuadCurve(to: CGPoint(x: rect.maxX - 8, y: rect.midY - 10), control: CGPoint(x: rect.midX + 12, y: rect.midY - 14))
+            path.move(to: CGPoint(x: 20,y: rect.midY)); path.addLine(to: CGPoint(x: rect.width-20,y: rect.midY))
+            for x in [rect.width*0.3,rect.width*0.5,rect.width*0.7] { path.move(to: CGPoint(x:x,y:rect.midY)); path.addLine(to: CGPoint(x:x,y:rect.maxY-10)) }
+            path.move(to: CGPoint(x: 16,y:rect.maxY-10)); path.addLine(to: CGPoint(x:rect.maxX-16,y:rect.maxY-10))
+        case .master:
+            path.addEllipse(in: CGRect(x:center.x-13,y:center.y-30,width:26,height:26))
+            path.move(to: CGPoint(x:center.x-32,y:rect.maxY-6))
+            path.addCurve(to: CGPoint(x:center.x+32,y:rect.maxY-6), control1: CGPoint(x:center.x-36,y:center.y-8), control2: CGPoint(x:center.x+36,y:center.y-8))
+        case .bracelet:
+            let radius = min(rect.width,rect.height)*0.34
+            path.addEllipse(in: CGRect(x:center.x-radius,y:center.y-radius,width:radius*2,height:radius*2))
+            for i in 0..<10 {
+                let angle = Double(i)*Double.pi/5
+                path.addEllipse(in: CGRect(x:center.x+cos(angle)*radius-5,y:center.y+sin(angle)*radius-5,width:10,height:10))
+            }
+        case .points:
+            for i in 0..<10 {
+                let angle = Double(i)*Double.pi/5-Double.pi/2, radius = i%2 == 0 ? 32.0 : 14.0
+                let point = CGPoint(x:center.x+cos(angle)*radius,y:center.y+sin(angle)*radius)
+                if i == 0 { path.move(to: point) } else { path.addLine(to: point) }
+            }
+            path.closeSubpath()
+            path.addEllipse(in: CGRect(x:center.x-39,y:center.y-39,width:78,height:78))
+        }
+        return path
+    }
+}
+
+struct NativeGlobalSearchView: View {
+    @StateObject private var model = NativeGlobalSearchModel()
+    @State private var text = ""
+    @FocusState private var inputFocused: Bool
+    var body: some View {
+        VStack(spacing: 0) {
+            DFTopNavBar("全站搜索")
+            HStack(spacing: 12) {
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(Color.textSecondary)
+                    TextField(L10n.text("搜索功能、名称、服务或内容"), text: $text)
+                        .focused($inputFocused).submitLabel(.search)
+                        .onSubmit(submit).accessibilityIdentifier("global-search-input")
+                    if !text.isEmpty {
+                        Button { text = ""; model.submit(""); inputFocused = true } label: { Image(systemName: "xmark.circle.fill") }
+                            .accessibilityLabel(L10n.text("清除搜索"))
+                    }
+                }.padding(12).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 14))
+                Button(L10n.text("搜索"), action: submit).frame(minHeight: 44)
+                    .disabled(NativePublicSearch.tokens(text).isEmpty).accessibilityIdentifier("global-search-submit")
+            }.padding(.horizontal, 16).padding(.vertical, 12)
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 22) {
+                    if model.query.isEmpty {
+                        Text(L10n.text("搜索全站功能与公开内容"))
+                            .foregroundStyle(Color.textSecondary).frame(maxWidth: .infinity).padding(.top, 52)
+                    } else {
+                        ForEach(NativeSearchCategory.allCases) { category in
+                            if let section = model.sections[category] { results(category, section: section) }
+                        }
+                    }
+                }.padding(16).padding(.bottom, 24)
+            }.scrollDismissesKeyboard(.interactively)
+        }.background(Color.bgPrimary).toolbar(.hidden, for: .navigationBar)
+            .onDisappear { model.cancel() }
+    }
+    private func submit() { inputFocused = false; model.submit(text) }
+    private func results(_ category: NativeSearchCategory, section: NativeSearchSection) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(L10n.lookup(category.title)).font(.headline)
+                Spacer()
+                if !section.loading, section.error == nil { Text("\(section.results.count)").font(.caption).foregroundStyle(Color.textSecondary) }
+            }
+            if section.loading {
+                HStack { ProgressView(); Text(L10n.text("搜索中…")).foregroundStyle(Color.textSecondary) }.padding(.vertical, 10)
+            } else if let error = section.error {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L10n.text("本类内容加载失败")).foregroundStyle(Color.stateWarning)
+                    Text(L10n.lookup(error)).font(.caption).foregroundStyle(Color.textSecondary)
+                    Button(L10n.text("重试")) { model.retry(category) }.frame(minHeight: 44)
+                        .accessibilityIdentifier("global-retry-" + category.rawValue)
+                }
+            } else if section.results.isEmpty {
+                Text(L10n.text("暂无匹配结果")).font(.subheadline).foregroundStyle(Color.textSecondary).padding(.vertical, 8)
+            } else {
+                ForEach(section.results.prefix(section.visibleCount)) { result in
+                    NavigationLink { NativeGlobalSearchDestination(result: result) } label: {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(verbatim: category == .functions || category == .services ? L10n.lookup(result.title) : result.title)
+                                .font(.subheadline.weight(.semibold)).foregroundStyle(Color.textPrimary).lineLimit(2)
+                            if !result.summary.isEmpty {
+                                Text(verbatim: category == .services ? L10n.lookup(result.summary) : String(result.summary.prefix(120))).font(.caption).foregroundStyle(Color.textSecondary).lineLimit(1)
+                            }
+                        }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 12)
+                    }.buttonStyle(.plain).accessibilityIdentifier("global-result-" + category.rawValue + "-" + result.id)
+                    Divider()
+                }
+                if section.results.count > section.visibleCount {
+                    Button(L10n.text("显示更多")) { model.showMore(category) }.frame(minHeight: 44)
+                        .accessibilityIdentifier("global-more-" + category.rawValue)
+                }
+            }
+        }.accessibilityElement(children: .contain).accessibilityIdentifier("global-category-" + category.rawValue)
+    }
+}
+
+private struct NativeGlobalSearchDestination: View {
+    let result: NativeSearchResult
+    private var path: String { URLComponents(string: result.route)?.path ?? result.route }
+    private var parts: [String] { path.split(separator: "/").map(String.init) }
+    private var tab: String? { URLComponents(string: result.route)?.queryItems?.first(where: { $0.name == "tab" })?.value }
+    var body: some View {
+        Group {
+            if let intention = result.intention {
+                IntentionHubView(entry: IntentionEntry(tag: intention))
+            } else {
+                switch path {
+                case "/c/points": PointsView()
+                case "/c/growth": GrowthView().requireAuth(title: L10n.text("登录后查看我的成长"))
+                case "/c/bookings": OrderListView(initialStatus: "booking").requireAuth(title: L10n.text("登录后查看预约"))
+                case "/c/shop/orders": OrderListView(initialStatus: "shop").requireAuth(title: L10n.text("登录后查看订单"))
+                case "/c/diy/orders": OrderListView(initialStatus: "diy").requireAuth(title: L10n.text("登录后查看定制订单"))
+                case "/c/addresses": AddressListView().requireAuth(title: L10n.text("登录后管理收货地址"))
+                case "/c/favorites": FavoritesView().requireAuth(title: L10n.text("登录后查看收藏"))
+                case "/c/wallet": WalletView().requireAuth(title: L10n.text("登录后查看钱包"))
+                case "/c/chats": VStack(spacing: 0) { DFTopNavBar(tab == "plaza" ? "大师广场" : "对话"); ChatView(initialTab: tab == "plaza" ? 2 : 1) }
+                case "/c/diy" where tab == "mine": DiyMyDesignsView().requireAuth(title: L10n.text("登录后查看我的设计"))
+                default:
+                    if parts.count == 4, parts[1] == "diy", parts[2] == "designs", let id = Int64(parts[3]) {
+                        DiyDetailView(designId: id)
+                    } else if parts.count == 4, parts[1] == "community", parts[2] == "posts" {
+                        CommunityPostDetailView(postId: parts[3])
+                    } else { NativeDiscoveryDestination(route: result.route, title: result.title) }
+                }
+            }
+        }
     }
 }
