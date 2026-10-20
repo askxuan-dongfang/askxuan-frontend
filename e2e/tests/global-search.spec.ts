@@ -1,9 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 
-interface FixtureOptions { failProductsOnce?: boolean; waitForTemples?: Promise<void> }
+interface FixtureOptions { failProductsInitially?: boolean; waitForTemples?: Promise<void> }
 async function setup(page: Page, options: FixtureOptions = {}) {
   const calls: URL[] = [];
-  let failedProducts = false;
+  let productsUnavailable = !!options.failProductsInitially;
   await page.addInitScript(() => {
     localStorage.setItem('askxuan-language', 'zh-Hans');
     localStorage.setItem('askxuan-theme', 'light');
@@ -32,8 +32,7 @@ async function setup(page: Page, options: FixtureOptions = {}) {
     }
     if (path === '/masters') data = { total: 1, list: [{ id: 'M1', dharmaName: '慧觉法师', layName: '张三', templeName: '灵隐寺', position: '法师', regionCode: 'zj', type: '汉传佛教', beliefCode: 'han_buddhism', sect: '', traditionCodes: ['chan'], specialties: ['禅修'], serviceTags: [{ serviceCode: 'S006', status: 'enabled' }] }] };
     if (path === '/products') {
-      if (options.failProductsOnce && !failedProducts) {
-        failedProducts = true;
+      if (productsUnavailable) {
         return route.fulfill({ status: 503, json: { code: 500, message: '商品暂时不可用' } });
       }
       data = { total: 2, list: [{ id: 1, name: '灵隐文创珠', description: '浙江开光手串', tags: ['手串'] }, { id: 2, name: '云海手串', description: '青海天然菩提', tags: ['菩提'] }] };
@@ -42,7 +41,7 @@ async function setup(page: Page, options: FixtureOptions = {}) {
     if (path === '/community/feed') data = { total: 1, list: [{ id: 'POST1', title: '公开修行记录', content: '每日静心，认真生活。', status: 'approved' }] };
     await route.fulfill({ json: { code: 0, data } });
   });
-  return calls;
+  return { calls, recoverProducts: () => { productsUnavailable = false; } };
 }
 
 async function submit(page: Page, text: string) {
@@ -53,7 +52,7 @@ async function submit(page: Page, text: string) {
 const group = (page: Page, name: string) => page.getByRole('region', { name, exact: true });
 
 test('last public directory page is indexed and simplified/traditional whitespace terms are ANDed', async ({ page }) => {
-  const calls = await setup(page);
+  const { calls } = await setup(page);
   await page.goto('/c/search');
   await submit(page, '  靈隱   浙江　開光  ');
   const temples = group(page, '寺院');
@@ -69,7 +68,7 @@ test('last public directory page is indexed and simplified/traditional whitespac
 test('late full catalog response respects the latest search words', async ({ page }) => {
   let release!: () => void;
   const pending = new Promise<void>(resolve => { release = resolve; });
-  const calls = await setup(page, { waitForTemples: pending });
+  const { calls } = await setup(page, { waitForTemples: pending });
   await page.goto('/c/search?q=靈隱');
   await expect.poll(() => calls.some(url => url.pathname.endsWith('/temples'))).toBe(true);
   try {
@@ -83,11 +82,13 @@ test('late full catalog response respects the latest search words', async ({ pag
 });
 
 test('one failed category can retry while other categories remain searchable', async ({ page }) => {
-  await setup(page, { failProductsOnce: true });
+  const fixture = await setup(page, { failProductsInitially: true });
   await page.goto('/c/search?q=開光');
   await expect(group(page, '商品').getByRole('alert')).toContainText('这类内容暂时无法搜索');
   await expect(group(page, '寺院').getByRole('link')).toContainText('灵隐寺');
   await expect(group(page, '师傅').getByRole('link')).toContainText('慧觉法师');
+  // Recovery must not depend on how many initial/aborted requests StrictMode sends.
+  fixture.recoverProducts();
   await group(page, '商品').getByRole('button', { name: '重试', exact: true }).click();
   await expect(group(page, '商品').getByRole('link')).toContainText('灵隐文创珠');
   await expect(group(page, '商品').getByRole('alert')).toHaveCount(0);
@@ -102,7 +103,7 @@ test('the real empty public design protocol is an empty result rather than an er
 });
 
 test('global content loading reads only public endpoints and never narrows the master directory', async ({ page }) => {
-  const calls = await setup(page);
+  const { calls } = await setup(page);
   await page.goto('/c/search?q=禪宗');
   await expect(group(page, '寺院').getByRole('button', { name: /显示更多/ })).toBeVisible();
   await expect(group(page, '师傅').getByRole('link')).toContainText('慧觉法师');
