@@ -43,7 +43,7 @@ struct DiyDetailView: View {
                         VStack(spacing: 16) {
                             Image(systemName: "square.stack").font(.largeTitle)
                             Text(L10n.text("暂时无法打开作品")).font(.headline)
-                            Button(L10n.text("重新加载")) { Task { await viewModel.loadDesign(id: designId, checkAvailability: false, persistRestoredDraft: false) } }.frame(minHeight: 44)
+                            Button(L10n.text("重新加载")) { Task { await viewModel.loadDesign(id: designId, checkAvailability: false, persistRestoredDraft: false, published: true) } }.frame(minHeight: 44)
                         }.foregroundStyle(Color.textSecondary).frame(maxWidth: .infinity, minHeight: 320)
                     } else {
                         previewSection
@@ -58,9 +58,7 @@ struct DiyDetailView: View {
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)
         .task {
-            if viewModel.currentDesign?.id != designId {
-                await viewModel.loadDesign(id: designId, checkAvailability: false, persistRestoredDraft: false)
-            }
+            await viewModel.loadDesign(id: designId, checkAvailability: false, persistRestoredDraft: false, published: true)
         }
         .sheet(isPresented: $showLogin, onDismiss: {
             if auth.isLoggedIn, let action = pendingAction { pendingAction = nil; performAction(action) }
@@ -86,7 +84,7 @@ struct DiyDetailView: View {
                 Text(L10n.text("\(viewModel.beadSlots.count) 颗"))
                 Text(L10n.lookup(String(format: "%.1f cm 手围", Double(viewModel.wristSizeMm) / 10)))
                 Spacer()
-                Text(L10n.lookup(viewModel.totalPriceText)).foregroundStyle(Color.accentLight)
+                Text(L10n.text("材料参考价") + String(format: " ¥%.2f", viewModel.currentDesign?.publication?.materialFee ?? viewModel.totalPrice)).foregroundStyle(Color.accentLight)
             }.font(.caption).foregroundStyle(Color.textSecondary)
         }.padding(.horizontal, 20)
     }

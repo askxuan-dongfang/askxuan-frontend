@@ -139,15 +139,19 @@ struct MasterListView: View {
                     Text(L10n.lookup(title))
                         .font(AppTypography.caption.weight(.semibold))
                         .foregroundStyle(isExpanded ? Color.accentDefault : Color.textTertiary)
-                        .lineLimit(2)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                     Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                         .font(.system(size: 8))
                         .foregroundStyle(isExpanded ? Color.accentDefault : Color.textTertiary)
+                        .frame(width: 8)
                 }
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 4)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("master-filter-group-\(title)")
 
             if isExpanded {
                 ForEach(options, id: \.self) { option in
@@ -317,8 +321,6 @@ struct MasterListView: View {
         case "价格区间": return viewModel.selectedPrice
         case "所属寺院": return viewModel.selectedTemple
         case "职位": return viewModel.selectedLevel
-        case "擅长领域": return viewModel.selectedSpecialty
-        case "可提供服务": return viewModel.selectedService
         default: return "全部"
         }
     }
@@ -328,8 +330,6 @@ struct MasterListView: View {
         case "价格区间": viewModel.selectedPrice = value
         case "所属寺院":   viewModel.selectedTemple = value
         case "职位":       viewModel.selectedLevel = value
-        case "擅长领域":   viewModel.selectedSpecialty = value
-        case "可提供服务": viewModel.selectedService = value
         default: break
         }
     }

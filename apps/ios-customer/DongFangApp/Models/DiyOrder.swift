@@ -11,6 +11,10 @@ import Foundation
 struct DiyDesign: Codable, Identifiable, Hashable {
     var revision: Int64? = nil
     var sourceDesignId: Int64? = nil
+    var sourcePublicationId: Int64? = nil
+    var publicationEligibility: DiyPublicationEligibility? = nil
+    var publication: DiyPublication? = nil
+    var draftChanged: Bool? = nil
     var description: String? = nil
     let id: Int64
     let designNo: String?
@@ -23,9 +27,43 @@ struct DiyDesign: Codable, Identifiable, Hashable {
     let createTime: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, name, status, revision, sourceDesignId, description
+        case id, name, status, revision, sourceDesignId, sourcePublicationId, description
+        case publicationEligibility, publication, draftChanged
         case designNo, userId, designData, totalPrice, blessServiceCode, createTime
     }
+}
+
+/// Publication is authorized by the service after payment and order confirmation.
+/// An existing order number alone does not grant permission to publish.
+struct DiyPublicationEligibility: Codable, Hashable {
+    let canPublish: Bool
+    let reason: String
+    let message: String
+    let orderId: Int64?
+    let orderNo: String?
+    let designRevision: Int64?
+
+    var localizedMessage: String {
+        switch reason {
+        case "ready": return L10n.text("订单已付款且款式、用料和价格已确认，可以发布")
+        case "order_required": return L10n.text("完成设计并下单，付款且确认款式、用料和价格后可发布")
+        case "payment_required": return L10n.text("订单完成真实付款后才可发布，模拟支付不满足发布条件")
+        case "confirmation_required": return L10n.text("订单已付款，待确认款式、用料和价格后可发布")
+        case "design_changed": return L10n.text("草稿已修改，请为当前款式下单并完成付款与定稿确认后发布新定稿")
+        case "order_inactive": return L10n.text("定稿订单已取消、退款或处于售后中，暂不可发布")
+        case "snapshot_unavailable": return L10n.text("订单缺少有效定稿快照，请重新下单并确认当前款式")
+        case "moderation_required": return L10n.text("作品已被管理端下架，请修改草稿后重新确认发布资格")
+        default: return message
+        }
+    }
+}
+
+/// Immutable, confirmed source used by public viewing, copying, and attribution.
+struct DiyPublication: Codable, Hashable {
+    let id: Int64
+    let designRevision: Int64
+    let materialFee: Double
+    let publishedAt: String
 }
 
 /// 可恢复的有序手串设计文档。items 保留给现有服务端下单解析器使用。
@@ -358,7 +396,6 @@ struct DiyDesignSaveRequest: Codable {
     let name: String
     let designData: String
     let totalPrice: Double
-    let status: String
     let blessServiceCode: String?
 }
 

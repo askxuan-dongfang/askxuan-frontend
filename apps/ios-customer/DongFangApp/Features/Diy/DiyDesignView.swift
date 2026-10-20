@@ -127,7 +127,7 @@ struct DiyDesignView: View {
             Button(L10n.text("取消"), role: .cancel) {}
             Button(L10n.text("保存")) { saveDesign() }
         } message: {
-            Text(L10n.lookup(viewModel.currentDesign?.status == "public" ? "保存修改后将转为未发布，可在我的设计中重新发布。" : "保存后可在我的设计中继续编辑或发布到广场。"))
+            Text(L10n.lookup(viewModel.currentDesign?.publication != nil ? "修改将保存为私有草稿，广场中的已发布定稿保持不变。新款需付款并确认后再发布。" : "保存后可继续编辑；订单付款且款式、用料、价格确认后，可发布到广场。"))
         }
         .alert(L10n.text("提示"), isPresented: .init(
             get: { viewModel.errorMessage != nil },

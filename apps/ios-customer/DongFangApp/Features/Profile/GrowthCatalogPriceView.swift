@@ -16,7 +16,7 @@ struct GrowthCatalogPriceView: View {
         Group {
             if items.isEmpty { EmptyView() }
             else if experience { Text(L10n.text("体验商品不参与等级优惠和消费成长")).font(.caption).foregroundStyle(.secondary) }
-            else if !auth.isLoggedIn { VStack(alignment: .leading) { Button(L10n.text("登录查看我的等级价")) { showLogin = true }.frame(minHeight: 44); NavigationLink(L10n.text("查看当前规则")) { GrowthRulesView(publicRead: true) }.frame(minHeight: 44) } }
+            else if !auth.isLoggedIn { VStack(alignment: .leading) { Button(L10n.text("登录查看我的等级价")) { showLogin = true }.frame(minHeight: 44); NavigationLink(L10n.text("查看当前规则")) { GrowthView(initialTab: "rules", publicRead: true) }.frame(minHeight: 44) } }
             else {
                 TimelineView(.periodic(from: .now, by: 1)) { time in
                     VStack(alignment: .leading, spacing: 8) {
