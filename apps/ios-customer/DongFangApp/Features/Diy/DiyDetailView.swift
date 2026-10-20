@@ -2,22 +2,20 @@
 //  DiyDetailView.swift
 //  DongFangApp
 //
-//  DIY 作品详情页：作品预览 + 信息卡 + 材料清单 + 加持状态 + 操作入口。
+//  广场作品详情：只读预览、作者与用料；复制后进入编辑器。
 //
 
 import SwiftUI
 
 struct DiyDetailView: View {
     let designId: Int64
+    @StateObject private var editorModel = DiyViewModel()
 
     @StateObject private var viewModel: DiyViewModel
     @ObservedObject private var auth = AuthStore.shared
     @State private var showLogin = false
     @State private var pendingAction: String?
-    @State private var showOrderPage: Bool = false
     @State private var showEditor = false
-    @State private var showPublishConfirm = false
-    @State private var show3D = false
     @Environment(\.dismiss) private var dismiss
 
     init(designId: Int64, viewModel: DiyViewModel? = nil) {
@@ -45,16 +43,11 @@ struct DiyDetailView: View {
                         VStack(spacing: 16) {
                             Image(systemName: "square.stack").font(.largeTitle)
                             Text(L10n.text("暂时无法打开作品")).font(.headline)
-                            Button(L10n.text("重新加载")) { Task { await viewModel.loadDesign(id: designId) } }.frame(minHeight: 44)
+                            Button(L10n.text("重新加载")) { Task { await viewModel.loadDesign(id: designId, checkAvailability: false, persistRestoredDraft: false) } }.frame(minHeight: 44)
                         }.foregroundStyle(Color.textSecondary).frame(maxWidth: .infinity, minHeight: 320)
                     } else {
                         previewSection
-                        publicationSection
-                        infoSection
-                        GrowthCatalogPriceView(items: viewModel.cartItems.map { .init(itemType: "material", itemId: String($0.material.id), quantity: $0.quantity, spec: $0.material.spec) }).padding(.horizontal, AppSpacing.lg)
                         materialsSection
-                        if let message = viewModel.availabilityMessage { availabilityWarning(message) }
-                        blessingSection
                     }
                 }.padding(.vertical, 16)
             }
@@ -66,121 +59,41 @@ struct DiyDetailView: View {
         .toolbar(.hidden, for: .navigationBar)
         .task {
             if viewModel.currentDesign?.id != designId {
-                await viewModel.loadDesign(id: designId)
-            } else {
-                _ = await viewModel.refreshOrderAvailability(designId: designId, items: nil)
+                await viewModel.loadDesign(id: designId, checkAvailability: false, persistRestoredDraft: false)
             }
         }
         .sheet(isPresented: $showLogin, onDismiss: {
             if auth.isLoggedIn, let action = pendingAction { pendingAction = nil; performAction(action) }
         }) { NavigationStack { LoginView() }.appVisualDefaults() }
         .onChange(of: auth.isLoggedIn) { _, loggedIn in if loggedIn { showLogin = false } }
-        .sheet(isPresented: $showEditor) { NavigationStack { DiyDesignView(viewModel: viewModel) } }
-        .confirmationDialog(L10n.lookup(viewModel.currentDesign?.status == "public" ? L10n.text("下架后，仅你可见；已有副本与订单保留。") : L10n.text("发布后，其他人可以分享、复制搭配和定制。")), isPresented: $showPublishConfirm, titleVisibility: .visible) {
-            Button(L10n.lookup(viewModel.currentDesign?.status == "public" ? L10n.text("确认下架") : L10n.text("确认发布"))) { Task { await viewModel.setPublication(viewModel.currentDesign?.status != "public") } }
-        }
+        .sheet(isPresented: $showEditor) { NavigationStack { DiyDesignView(viewModel: editorModel) } }
         .alert(L10n.text("提示"), isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) { Button(L10n.text("好的"), role: .cancel) {} } message: { Text(L10n.lookup(viewModel.errorMessage ?? "")) }
-        .sheet(isPresented: $showOrderPage) {
-            NavigationStack {
-                DiyOrderView(designId: viewModel.currentDesign?.id ?? designId, viewModel: viewModel, orderSource: viewModel.isDesignOwner ? .cart : .design)
-            }
-        }
     }
 
-    // MARK: - 作品预览
+    // The gallery detail is a viewing surface even for its author.
     private var previewSection: some View {
-        VStack(spacing: 16) {
-            DiyPreviewModePicker(show3D: $show3D).padding(.horizontal, 12).padding(.top, 12)
-            Group {
-                if show3D {
-                    DiyNativeStage3D(slots: viewModel.beadSlots, wrist: Double(viewModel.wristSizeMm), allowance: viewModel.fitAllowanceMm)
-                } else {
-                    DiyMiniBracelet(slots: viewModel.beadSlots, fallbackCount: 0)
-                }
-            }.frame(height: 270)
-            VStack(spacing: 10) {
-                Text(L10n.lookup(designStatusText)).font(.caption.weight(.medium)).foregroundStyle(Color.accentLight)
-                    .padding(.horizontal, 12).padding(.vertical, 5)
-                    .background(Color.accentDefault.opacity(0.12), in: Capsule())
-                Text(L10n.lookup(viewModel.currentDesign?.name ?? L10n.text("我的手串")))
-                    .font(AppTypography.title(26)).foregroundStyle(Color.textPrimary).multilineTextAlignment(.center)
-                Text(L10n.lookup((viewModel.currentDesign?.description?.isEmpty == false ? viewModel.currentDesign?.description : nil) ?? L10n.text("把喜欢的珠子，串成自己的心意。")))
-                    .font(.subheadline).foregroundStyle(Color.textSecondary).multilineTextAlignment(.center).lineSpacing(4)
-                HStack(spacing: 18) {
-                    Label(L10n.text("\(viewModel.beadSlots.count) 颗"), systemImage: "circle.dotted")
-                    Label(L10n.lookup(String(format: "%.1f cm 手围", Double(viewModel.wristSizeMm) / 10)), systemImage: "ruler")
-                }.font(.caption).foregroundStyle(Color.textSecondary)
-                Text(L10n.lookup(viewModel.totalPriceText)).appNumericFont(28, weight: .semibold).foregroundStyle(Color.accentLight)
-                Text(L10n.text("搭配预估 · 以确认订单页为准")).font(.caption).foregroundStyle(Color.textSecondary)
-            }.padding(.horizontal, 20).padding(.bottom, 24)
-        }
-        .background(RadialGradient(colors: [Color.bgElevated, Color.bgSecondary], center: .center, startRadius: 0, endRadius: 330))
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .overlay { RoundedRectangle(cornerRadius: 24).stroke(Color.borderStrong, lineWidth: 1) }
-        .padding(.horizontal, 16)
-    }
-    private var publicationSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                if viewModel.isDesignOwner { Button { showPublishConfirm = true } label: {
-                    Label(L10n.lookup(viewModel.currentDesign?.status == "public" ? L10n.text("管理公开作品") : L10n.text("发布到广场")), systemImage: viewModel.currentDesign?.status == "public" ? "eye" : "sparkles")
-                        .frame(minHeight: 44)
-                }.disabled(viewModel.isSubmitting) }
-                Spacer()
-                if viewModel.currentDesign?.status == "public", let url = URL(string: "/c/diy/\(viewModel.currentDesign?.id ?? designId)", relativeTo: AppConfig.baseURL)?.absoluteURL {
-                    ShareLink(item: url) { Label(L10n.text("分享"), systemImage: "square.and.arrow.up").frame(minHeight: 44) }
-                }
-            }.font(.subheadline).foregroundStyle(Color.accentDefault)
-            if let message = viewModel.successMessage { Text(L10n.lookup(message)).font(.caption).foregroundStyle(Color.stateSuccess) }
-            if let source = viewModel.currentDesign?.sourceDesignId, source > 0 { Text(L10n.text("源自作品 #\(source) 的灵感再创作")).font(.caption).foregroundStyle(Color.textTertiary) }
-            Text(L10n.text("复制后保留珠子顺序，自由替换材料；原作品不会改变。")).font(.caption).foregroundStyle(Color.textSecondary)
-            if let url = URL(string: "/assets/diy/materials-v2/credits.html", relativeTo: AppConfig.baseURL)?.absoluteURL { Link(L10n.text("实拍参考与材质素材来源"), destination: url).font(.caption) }
-        }.padding(16).diySurface().padding(.horizontal, 16)
-    }
-
-    // MARK: - 信息卡
-    private var infoSection: some View {
-        VStack(spacing: 0) {
-            infoRow(label: L10n.text("设计编号"), value: viewModel.currentDesign?.designNo ?? "—")
-            infoRow(label: L10n.text("创建时间"), value: viewModel.currentDesign?.createTime ?? "—")
-            infoRow(label: L10n.text("总价"), value: AppDateFormatter.moneyText(viewModel.currentDesign?.totalPrice ?? 0))
-            infoRow(label: L10n.text("状态"), value: designStatusText, isLast: true)
-        }
-        .background(Color.bgSecondary)
-        .cornerRadius(AppRadius.md)
-        .padding(.horizontal, AppSpacing.lg)
-    }
-
-    private func infoRow(label: String, value: String, isLast: Bool = false) -> some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text(L10n.lookup(label))
-                    .font(AppTypography.supporting)
-                    .foregroundStyle(Color.textTertiary)
-                Spacer()
-                Text(L10n.lookup(value))
-                    .font(AppTypography.body)
-                    .multilineTextAlignment(.trailing)
-                    .foregroundStyle(Color.textPrimary)
+        VStack(alignment: .leading, spacing: 12) {
+            DiyNativeStage3D(slots: viewModel.beadSlots, wrist: Double(viewModel.wristSizeMm), allowance: viewModel.fitAllowanceMm)
+                .frame(height: 310).accessibilityIdentifier("diy-readonly-preview")
+            Text(L10n.lookup(viewModel.currentDesign?.name ?? "我的手串"))
+                .font(AppTypography.title(24)).foregroundStyle(Color.textPrimary)
+            Text(L10n.lookup(authorText)).font(.subheadline).foregroundStyle(Color.textSecondary)
+                .accessibilityIdentifier("diy-design-author")
+            if let description = viewModel.currentDesign?.description, !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Text(description).font(.subheadline).foregroundStyle(Color.textSecondary)
             }
-            .padding(.horizontal, AppSpacing.lg)
-            .padding(.vertical, 14)
-
-            if !isLast {
-                Rectangle().fill(Color.borderDivider).frame(height: 1).padding(.leading, AppSpacing.lg)
-            }
-        }
+            HStack {
+                Text(L10n.text("\(viewModel.beadSlots.count) 颗"))
+                Text(L10n.lookup(String(format: "%.1f cm 手围", Double(viewModel.wristSizeMm) / 10)))
+                Spacer()
+                Text(L10n.lookup(viewModel.totalPriceText)).foregroundStyle(Color.accentLight)
+            }.font(.caption).foregroundStyle(Color.textSecondary)
+        }.padding(.horizontal, 20)
     }
-
-    private var designStatusText: String {
-        switch viewModel.currentDesign?.status ?? "" {
-        case "private":          return "私密作品"
-        case "public":           return "公开作品"
-        case "pending_review":   return "待审核"
-        case "approved":         return "已通过"
-        case "rejected":         return "已拒绝"
-        default:                 return "—"
-        }
+    private var authorText: String {
+        if viewModel.isDesignOwner { return "作者：我" }
+        guard let id = viewModel.currentDesign?.userId, !id.isEmpty else { return "作者信息暂缺" }
+        return "创作者 #\(id)"
     }
 
     // MARK: - 材料清单
@@ -249,85 +162,21 @@ struct DiyDetailView: View {
         .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
     }
 
-    private func availabilityWarning(_ message: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(L10n.text("该作品暂不可直接下单"), systemImage: "exclamationmark.triangle.fill")
-                .font(AppTypography.body.weight(.semibold))
-                .foregroundStyle(Color.stateWarning)
-            Text(L10n.lookup(message))
-                .font(AppTypography.caption)
-                .foregroundStyle(Color.textSecondary)
-            Text(L10n.text("请进入编辑器替换已失效材料。"))
-                .font(AppTypography.caption)
-                .foregroundStyle(Color.textTertiary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(AppSpacing.lg)
-        .background(Color.stateWarning.opacity(0.1))
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.stateWarning.opacity(0.35), lineWidth: 1))
-        .cornerRadius(AppRadius.md)
-        .padding(.horizontal, AppSpacing.lg)
-    }
-
-    // MARK: - 加持信息
-    private var blessingSection: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.sm) {
-            HStack(spacing: 6) {
-                Image(systemName: "sparkles")
-                    .font(AppTypography.body)
-                    .foregroundStyle(Color.accentDefault)
-                Text(L10n.text("法师加持"))
-                    .font(.cardTitle)
-                    .foregroundStyle(Color.textPrimary)
-            }
-
-            HStack(spacing: AppSpacing.md) {
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 24))
-                    .foregroundStyle(Color.stateSuccess)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.text("可享法师开光加持"))
-                        .font(AppTypography.body.weight(.semibold))
-                        .foregroundStyle(Color.textPrimary)
-                    Text(L10n.text("下单时可选择加持服务，由法师诵经开光加持。"))
-                        .font(AppTypography.caption)
-                        .foregroundStyle(Color.textTertiary)
-                        .lineSpacing(3)
-                }
-                Spacer()
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(AppSpacing.lg)
-        .background(Color.bgSecondary)
-        .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
-        .padding(.horizontal, AppSpacing.lg)
-        .padding(.top, AppSpacing.lg)
-    }
-
     private func performAction(_ action: String) {
         guard auth.isLoggedIn else { pendingAction = action; showLogin = true; return }
-        if action == "order" { showOrderPage = true }
-        else if viewModel.isDesignOwner { showEditor = true }
-        else { Task { if await viewModel.copyCurrentDesign() { showEditor = true } } }
+        guard !editorModel.isSubmitting else { return }
+        Task {
+            editorModel.currentDesign = viewModel.currentDesign
+            editorModel.materials = viewModel.materials
+            if await editorModel.copyCurrentDesign() { showEditor = true }
+            else { viewModel.errorMessage = editorModel.errorMessage }
+        }
     }
 
     // MARK: - 底部操作栏
     private var bottomActionBar: some View {
-        HStack(spacing: AppSpacing.md) {
-            DFSecondaryButton(title: viewModel.isDesignOwner ? L10n.text("继续编辑") : L10n.text("复制并编辑"), icon: "pencil") {
-                performAction("edit")
-            }
-            DFPrimaryButton(
-                title: viewModel.isCurrentDesignOrderable ? L10n.text("立即下单") : L10n.text("材料需替换"),
-                icon: "creditcard.fill",
-                isEnabled: viewModel.isCurrentDesignOrderable
-            ) {
-                performAction("order")
-            }
-        }
-        .disabled(viewModel.isSubmitting)
+        DFPrimaryButton(title: L10n.text("复制并编辑"), icon: "square.on.square") { performAction("copy") }
+        .disabled(editorModel.isSubmitting)
         .padding(.horizontal, AppSpacing.lg)
         .padding(.vertical, AppSpacing.md)
         .background(

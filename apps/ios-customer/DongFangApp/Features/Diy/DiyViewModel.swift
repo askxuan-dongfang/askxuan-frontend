@@ -213,7 +213,7 @@ final class DiyViewModel: ObservableObject {
         isLoading = false
     }
 
-    func loadDesign(id: Int64) async {
+    func loadDesign(id: Int64, checkAvailability: Bool = true, persistRestoredDraft: Bool = true) async {
         isLoading = true
         errorMessage = nil
         do {
@@ -227,9 +227,9 @@ final class DiyViewModel: ObservableObject {
             designDescription = design.description ?? ""
             designName = design.name
             if let data = design.designData {
-                restoreDesignData(data)
+                restoreDesignData(data, persist: persistRestoredDraft)
             }
-            _ = await refreshOrderAvailability(designId: id, items: nil)
+            if checkAvailability { _ = await refreshOrderAvailability(designId: id, items: nil) }
         } catch {
             currentDesign = nil
             orderAvailability = nil
@@ -500,14 +500,14 @@ final class DiyViewModel: ObservableObject {
         )
     }
 
-    func restoreDesignData(_ raw: String) {
+    func restoreDesignData(_ raw: String, persist: Bool = true) {
         guard let data = raw.data(using: .utf8) else { return }
         let decoder = JSONDecoder()
         if let document = try? decoder.decode(DiyDesignDocument.self, from: data),
            document.version == DiyDesignDocument.currentVersion {
             fitAllowanceMm = document.fitAllowanceMm
             apply(document)
-            persistDraft(stateText: "已恢复设计")
+            if persist { persistDraft(stateText: "已恢复设计") }
             return
         }
 
@@ -521,7 +521,7 @@ final class DiyViewModel: ObservableObject {
         }
         guard let legacyItems else { return }
         applyLegacyItems(legacyItems)
-        persistDraft(stateText: "旧设计已转换")
+        if persist { persistDraft(stateText: "旧设计已转换") }
     }
 
     var isDesignOwner: Bool { currentDesign?.userId == authStore.userId }

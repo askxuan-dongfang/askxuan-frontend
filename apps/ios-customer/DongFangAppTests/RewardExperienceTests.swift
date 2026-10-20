@@ -190,7 +190,7 @@ private struct RewardWheelMotionFixture: View {
         }
     }
 
-    func testSevenTopicLayoutsAndMotion() async throws {
+    func testSevenTopicLayoutsAndStaticArtwork() async throws {
         let codes = ["bazi", "ziwei", "marriage", "fengshui", "liuyao", "qimen", "tarot"]
         let names = ["八字命理", "紫微斗数", "姻缘合盘", "风水布局", "六爻占卜", "奇门遁甲", "塔罗指引"]
         for width in [320.0,390.0,768.0] {
@@ -204,9 +204,16 @@ private struct RewardWheelMotionFixture: View {
             }.background(Color(red:0.97,green:0.96,blue:0.93)).preferredColorScheme(.light)
             try await render(view, name:"ios-ai-seven-topics-\(Int(width))", width:width, height:900)
         }
-        try await render(AiTopicArtwork(code:"ziwei").padding(35).background(.white),name:"ios-ai-topic-motion",width:390,height:360, motion:true)
+        // cd893596 made these decorative topic motifs static. Test that shipped contract,
+        // including distinguishable topics and stable frames, rather than requiring motion.
+        var topicImages = Set<Data>()
+        for code in codes {
+            let data = try await render(AiTopicArtwork(code: code).padding(35).background(.white), name: "ios-ai-topic-static-" + code, width: 390, height: 360, stable: true)
+            topicImages.insert(data)
+        }
+        XCTAssertEqual(topicImages.count, codes.count, "Each topic must retain a distinct decorative motif")
     }
-    private func render<V:View>(_ view:V,name:String,width:Double,height:Double,motion:Bool=false) async throws {
+    @discardableResult private func render<V:View>(_ view:V,name:String,width:Double,height:Double,stable:Bool=false) async throws -> Data {
         let controller = UIHostingController(rootView:view)
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let window = UIWindow(windowScene:scene);window.frame=CGRect(x:0,y:0,width:width,height:height);window.rootViewController=controller;window.makeKeyAndVisible();controller.view.frame=window.bounds;controller.view.layoutIfNeeded()
@@ -214,13 +221,17 @@ private struct RewardWheelMotionFixture: View {
         let renderer=UIGraphicsImageRenderer(bounds:controller.view.bounds)
         let image=renderer.image { _ in controller.view.drawHierarchy(in:controller.view.bounds,afterScreenUpdates:true) }
         XCTAssertEqual(image.size.width,width,accuracy:1)
+        XCTAssertEqual(image.size.height,height,accuracy:1)
+        let data = try XCTUnwrap(image.pngData())
+        XCTAssertFalse(data.isEmpty)
         let attachment=XCTAttachment(image:image);attachment.name=name;attachment.lifetime = .keepAlways;add(attachment)
-        if motion && !UIAccessibility.isReduceMotionEnabled {
+        if stable {
             try await Task.sleep(for:.milliseconds(550))
             let next=renderer.image { _ in controller.view.drawHierarchy(in:controller.view.bounds,afterScreenUpdates:true) }
-            XCTAssertNotEqual(image.pngData(),next.pngData(),"Topic art should animate between frames")
+            XCTAssertEqual(data,next.pngData(),"Static topic artwork must remain stable between frames")
         }
         window.isHidden=true
+        return data
     }
 }
 

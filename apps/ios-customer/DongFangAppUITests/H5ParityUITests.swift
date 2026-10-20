@@ -66,59 +66,43 @@ final class H5ParityUITests: XCTestCase {
         attachment.lifetime = .keepAlways; add(attachment)
     }
     func testDirectoryFiltersAndNativeBack() {
-        let app = app()
-        let temples = app.buttons["home-temples"]
-        XCTAssertTrue(temples.waitForExistence(timeout: 20)); temples.tap()
-        XCTAssertTrue(app.buttons["全部地区"].waitForExistence(timeout: 15))
-        XCTAssertTrue(app.buttons["大陆"].waitForExistence(timeout: 10)); app.buttons["大陆"].tap()
-        XCTAssertTrue(app.buttons["清除"].waitForExistence(timeout: 5)); app.buttons["清除"].tap()
-        XCTAssertFalse(app.otherElements["directory-traditions"].exists)
-        let regionY = app.buttons["全部地区"].frame.minY
-        app.buttons["directory-belief-han_buddhism"].tap()
-        let chan = app.buttons["directory-tradition-chan"]
-        XCTAssertTrue(chan.waitForExistence(timeout: 10))
-        XCTAssertEqual(app.buttons["全部地区"].frame.minY, regionY, accuracy: 1, "Floating traditions must not move the region row")
-        chan.tap()
-        XCTAssertTrue(chan.waitForNonExistence(timeout: 3))
-        let daoism = app.buttons["directory-belief-daoism"]
-        let beliefStrip = app.scrollViews.containing(.button, identifier: "directory-belief-daoism").firstMatch
-        let visibleStrip = beliefStrip.frame.intersection(app.frame)
-        // iOS 27 may throw while querying isHittable for a clipped horizontal item.
-        // Bring its full frame into the visible strip before exercising the actual tap.
-        for _ in 0..<3 {
-            if visibleStrip.contains(daoism.frame) { break }
-            beliefStrip.swipeLeft()
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
+        app.launchArguments = ["-askxuan.appearance", "light"]
+        app.launch()
+        for (entry, title, searchLabel, match) in [
+            ("home-temples", "找寺院", "搜索寺院列表", "末页台湾祈福禅院"),
+            ("home-masters", "找师傅", "搜索师傅列表", "末页台湾祈福平台师傅")
+        ] {
+            let home = app.buttons[entry]
+            XCTAssertTrue(home.waitForExistence(timeout: 20)); home.tap()
+            let trigger = app.buttons["directory-region-trigger"]
+            XCTAssertTrue(trigger.waitForExistence(timeout: 15))
+            let rowY = trigger.frame.midY
+            let beliefY = app.buttons["directory-belief-han_buddhism"].frame.midY
+            XCTAssertEqual(rowY, beliefY, accuracy: 2)
+            trigger.tap()
+            let taiwan = app.buttons["directory-region-taiwan"]
+            XCTAssertTrue(taiwan.waitForExistence(timeout: 5))
+            XCTAssertEqual(trigger.frame.midY, rowY, accuracy: 1)
+            app.buttons["directory-belief-han_buddhism"].tap()
+            let chan = app.buttons["directory-tradition-chan"]
+            XCTAssertTrue(chan.waitForExistence(timeout: 5))
+            XCTAssertFalse(taiwan.exists, "Only one floating filter can be open")
+            XCTAssertEqual(trigger.frame.midY, rowY, accuracy: 1)
+            chan.tap()
+            XCTAssertTrue(chan.waitForNonExistence(timeout: 5))
+            trigger.tap()
+            XCTAssertTrue(taiwan.waitForExistence(timeout: 5)); taiwan.tap()
+            XCTAssertTrue(taiwan.waitForNonExistence(timeout: 5))
+            app.buttons["搜索"].tap()
+            let search = app.textFields[searchLabel]
+            XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("臺灣 祈福\n")
+            XCTAssertTrue(app.staticTexts[match].waitForExistence(timeout: 10), "Directory search includes complete pages and translated service/region labels")
+            capture(app, "ios-" + entry + "-region-search")
+            app.buttons["返回"].firstMatch.tap()
+            XCTAssertTrue(home.waitForExistence(timeout: 5))
         }
-        guard visibleStrip.contains(daoism.frame), !daoism.frame.isEmpty else {
-            XCTFail("Belief categories must remain reachable by horizontal scrolling")
-            return
-        }
-        daoism.tap()
-        XCTAssertFalse(chan.exists)
-        XCTAssertTrue(app.buttons["directory-tradition-quanzhen"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["全部道教"].isSelected)
-        XCTAssertEqual(app.buttons["全部地区"].frame.minY, regionY, accuracy: 1)
-        capture(app, "ios-temple-directory-parity")
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.75)).tap()
-        XCTAssertTrue(app.buttons["directory-tradition-quanzhen"].waitForNonExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["找寺院"].exists, "Outside dismissal must not activate a covered result")
-        app.buttons["directory-belief-daoism"].tap()
-        XCTAssertTrue(app.buttons["directory-tradition-quanzhen"].waitForExistence(timeout: 3))
-        app.staticTexts["找寺院"].tap()
-        XCTAssertTrue(app.buttons["directory-tradition-quanzhen"].waitForNonExistence(timeout: 3))
-        app.buttons["返回"].firstMatch.tap()
-        XCTAssertTrue(app.buttons["home-masters"].waitForExistence(timeout: 5)); app.buttons["home-masters"].tap()
-        XCTAssertTrue(app.buttons["全部地区"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.buttons["大陆"].waitForExistence(timeout: 10)); app.buttons["大陆"].tap()
-        XCTAssertTrue(app.buttons["清除"].waitForExistence(timeout: 5)); app.buttons["清除"].tap()
-        let masterRegionY = app.buttons["全部地区"].frame.minY
-        app.buttons["directory-belief-han_buddhism"].tap()
-        XCTAssertTrue(chan.waitForExistence(timeout: 10))
-        XCTAssertEqual(app.buttons["全部地区"].frame.minY, masterRegionY, accuracy: 1)
-        capture(app, "ios-master-directory-parity")
-        chan.tap()
-        XCTAssertTrue(chan.waitForNonExistence(timeout: 3))
-        XCTAssertEqual(app.buttons["全部地区"].frame.minY, masterRegionY, accuracy: 1)
     }
     func testShopSearchAndCartShareOneRow() {
         let app = app(["--smoke-token", "local-parity-fixture", "--smoke-user-id", "99027", "-tab", "3"])
@@ -201,44 +185,80 @@ final class ProfileExperienceUITests: XCTestCase {
     }
 }
 
-final class DiyStudioUITests: XCTestCase {
-    func testOpenCanvasFitUsedMaterialsReplacementAndExpandedPreview() {
+final class NativePublicSearchUITests: XCTestCase {
+    func testEqualHomeCardsAndCompletePublicSearch() {
         let app = XCUIApplication()
         app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
-        app.launchArguments = ["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99026", "--parity-diy-studio", "-askxuan.appearance", "light"]
+        app.launchArguments = ["-askxuan.appearance", "light"]
         app.launch()
-        XCTAssertTrue(app.otherElements["diy-3d-stage"].waitForExistence(timeout: 25))
+        let temples = app.buttons["home-temples"], masters = app.buttons["home-masters"]
+        let diy = app.buttons["home-diy"], points = app.buttons["home-points"]
+        XCTAssertTrue(temples.waitForExistence(timeout: 20))
+        for card in [masters, diy, points] { XCTAssertTrue(card.exists); XCTAssertEqual(card.frame.size.width, temples.frame.width, accuracy: 1); XCTAssertEqual(card.frame.size.height, temples.frame.height, accuracy: 1) }
+        XCTAssertEqual(temples.frame.minY, masters.frame.minY, accuracy: 1)
+        XCTAssertEqual(diy.frame.minY, points.frame.minY, accuracy: 1)
+        XCTAssertGreaterThan(diy.frame.minY, temples.frame.maxY)
+        XCTAssertTrue((96...104).contains(temples.frame.height))
+        capture(app, "ios-home-equal-four-cards")
+        app.buttons["home-global-search"].tap()
+        let input = app.textFields["global-search-input"]
+        XCTAssertTrue(input.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["搜索全站功能与公开内容"].exists)
+        input.tap(); input.typeText("臺灣 祈福\n")
+        XCTAssertTrue(app.buttons["global-result-temples-3"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["global-result-masters-3"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["global-result-temples-1"].exists)
+        capture(app, "ios-global-search-traditional-second-page")
+        let retry = app.buttons["global-retry-posts"]
+        for _ in 0..<5 where !retry.isHittable { app.swipeUp() }
+        XCTAssertTrue(retry.exists, "A failed category must expose retry instead of a zero-result count")
+        retry.tap()
+        XCTAssertTrue(retry.waitForNonExistence(timeout: 10))
+        app.buttons["清除搜索"].tap()
+        input.tap(); input.typeText("蓮花\n")
+        let product = app.buttons["global-result-products-9902703"]
+        for _ in 0..<4 where !product.isHittable { app.swipeUp() }
+        XCTAssertTrue(product.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["末页繁体莲花手串"].exists)
+        capture(app, "ios-global-search-product-second-page")
+    }
+    private func capture(_ app: XCUIApplication, _ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot()); attachment.name = name
+        attachment.lifetime = .keepAlways; add(attachment)
+    }
+}
+
+final class DiyStudioUITests: XCTestCase {
+    func testOpenCanvasFitUsedMaterialsAndExpandedPreview() {
+        let app = studioApp(user: "99026")
+        let stage = app.otherElements["diy-3d-stage"]
         let wood = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "小叶紫檀圆珠，")).firstMatch
         XCTAssertTrue(wood.waitForExistence(timeout: 20))
-        // The scene exists before materials and the restored draft finish appearing.
-        // Establish one known bead before verifying a replacement at that slot.
         if app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 颗 ")).firstMatch.exists { clearDraft(app) }
         XCTAssertTrue(app.descendants(matching: .any)["diy-fit-feedback"].exists)
+        XCTAssertGreaterThan(stage.frame.height, 270, "The actual SCNView should occupy the larger upper canvas")
+        XCTAssertFalse(app.buttons["编辑选中珠子"].exists)
         wood.tap()
         XCTAssertTrue(app.buttons["第 1 颗 小叶紫檀圆珠"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 2 颗 ")).firstMatch.exists)
         app.buttons["正在使用"].tap()
         XCTAssertTrue(wood.exists)
         XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "白玉，")).firstMatch.exists)
-        app.buttons["编辑选中珠子"].tap(); app.buttons["替换材料"].tap()
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "选择材料替换：")).firstMatch.waitForExistence(timeout: 5))
-        let search = app.textFields["搜索材质或规格"]
-        search.tap(); search.typeText("白玉\n")
-        let jade = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "白玉，")).firstMatch
-        XCTAssertTrue(jade.waitForExistence(timeout: 5)); jade.tap()
-        XCTAssertTrue(app.buttons["第 1 颗 白玉"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["第 2 颗 白玉"].exists)
-        app.buttons["撤销"].tap()
-        XCTAssertTrue(app.buttons["第 1 颗 小叶紫檀圆珠"].exists)
-        app.buttons["重做"].tap()
-        XCTAssertTrue(app.buttons["第 1 颗 白玉"].exists)
+        let originalHeight = stage.frame.height
         app.buttons["diy-expand-preview"].tap()
-        XCTAssertFalse(search.exists)
-        XCTAssertTrue(app.descendants(matching: .any)["diy-fit-feedback"].exists)
-        let expanded = XCTAttachment(screenshot: app.screenshot()); expanded.name = "ios-open-canvas-expanded"; expanded.lifetime = .keepAlways; add(expanded)
+        XCTAssertFalse(app.textFields["搜索材质或规格"].exists)
+        XCTAssertGreaterThan(stage.frame.height, originalHeight)
+        let expanded = XCTAttachment(screenshot: app.screenshot()); expanded.name = "ios-direct-canvas-expanded"; expanded.lifetime = .keepAlways; add(expanded)
         app.buttons["diy-expand-preview"].tap()
-        XCTAssertTrue(search.exists)
+        XCTAssertTrue(app.textFields["搜索材质或规格"].waitForExistence(timeout: 5))
         clearDraft(app)
+    }
+    private func studioApp(user: String) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
+        app.launchArguments = ["--smoke-token", "local-diy-fixture", "--smoke-user-id", user, "--parity-diy-studio", "-askxuan.appearance", "light"]
+        app.launch()
+        XCTAssertTrue(app.otherElements["diy-3d-stage"].waitForExistence(timeout: 25))
+        return app
     }
 
     private func requestClear(_ app: XCUIApplication) {
@@ -291,13 +311,70 @@ final class DiyStudioUITests: XCTestCase {
         XCTAssertTrue(entry.waitForExistence(timeout: 20)); entry.tap()
         let start = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "开始我的设计")).firstMatch
         XCTAssertTrue(start.waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts["灵感即将相遇"].waitForExistence(timeout: 10))
+        XCTAssertLessThan(app.descendants(matching: .any)["diy-home-intro"].frame.height, 180)
         XCTAssertFalse(app.buttons["重新加载"].exists)
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "ios-original-gallery"; shot.lifetime = .keepAlways; add(shot)
         start.tap()
         XCTAssertTrue(app.otherElements["diy-3d-stage"].waitForExistence(timeout: 10))
         app.buttons["返回"].firstMatch.tap()
         XCTAssertTrue(start.waitForExistence(timeout: 5))
+    }
+
+    func testGalleryOwnWorkIsReadonlyAndCopyCreatesEditor() {
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
+        app.launchArguments = ["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99029", "-tab", "3", "-askxuan.appearance", "light"]
+        app.launch()
+        let entry = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "DIY 定制")).firstMatch
+        XCTAssertTrue(entry.waitForExistence(timeout: 20)); entry.tap()
+        let card = app.descendants(matching: .any)["diy-gallery-design-9001"]
+        XCTAssertTrue(card.waitForExistence(timeout: 10)); card.tap()
+        XCTAssertTrue(app.buttons["复制并编辑"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["作者：我"].exists)
+        XCTAssertFalse(app.buttons["继续编辑"].exists)
+        XCTAssertFalse(app.buttons["管理公开作品"].exists)
+        XCTAssertFalse(app.buttons["立即下单"].exists)
+        let detail = XCTAttachment(screenshot: app.screenshot()); detail.name = "ios-gallery-readonly-own-design"; detail.lifetime = .keepAlways; add(detail)
+        app.buttons["复制并编辑"].tap()
+        XCTAssertTrue(app.otherElements["diy-3d-stage"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["第 1 颗 小叶紫檀圆珠"].exists)
+        app.buttons["返回"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["复制并编辑"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["作者：我"].exists)
+    }
+
+    func testMyDesignsOpenEditorAndManagePublication() {
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
+        app.launchArguments = ["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99029", "-tab", "3", "-askxuan.appearance", "light"]
+        app.launch()
+        let entry = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "DIY 定制")).firstMatch
+        XCTAssertTrue(entry.waitForExistence(timeout: 20)); entry.tap()
+        XCTAssertTrue(app.buttons["我的设计"].firstMatch.waitForExistence(timeout: 10))
+        app.buttons["我的设计"].firstMatch.tap()
+        let ownCard = app.buttons["diy-my-design-9001"]
+        XCTAssertTrue(ownCard.waitForExistence(timeout: 20))
+        let edit = app.buttons["diy-edit-design-9001"]
+        XCTAssertTrue(edit.exists)
+        XCTAssertTrue(app.staticTexts["已发布"].exists)
+        XCTAssertTrue(ownCard.exists); ownCard.tap()
+        XCTAssertTrue(app.otherElements["diy-3d-stage"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["复制并编辑"].exists)
+        app.buttons["保存设计"].tap()
+        XCTAssertTrue(app.staticTexts["保存修改后将转为未发布，可在我的设计中重新发布。"].waitForExistence(timeout: 5))
+        app.buttons["取消"].tap()
+        app.buttons["返回"].firstMatch.tap()
+        XCTAssertTrue(edit.waitForExistence(timeout: 5))
+        app.buttons["diy-publish-design-9001"].tap()
+        app.buttons["确认下架"].tap()
+        let unpublished = NSPredicate(format: "label == %@", "发布到广场")
+        expectation(for: unpublished, evaluatedWith: app.buttons["diy-publish-design-9001"])
+        waitForExpectations(timeout: 5)
+        app.buttons["diy-publish-design-9001"].tap()
+        app.buttons["确认发布"].tap()
+        let published = NSPredicate(format: "label == %@", "下架")
+        expectation(for: published, evaluatedWith: app.buttons["diy-publish-design-9001"])
+        waitForExpectations(timeout: 5)
     }
 
     func testMaterialShowcaseAndFitDialog() {
@@ -323,50 +400,41 @@ final class DiyStudioUITests: XCTestCase {
         XCTAssertTrue(app.buttons["清空设计"].waitForExistence(timeout: 5))
         let fit = XCTAttachment(screenshot: app.screenshot()); fit.name = "ios-fit-settings"; fit.lifetime = .keepAlways; add(fit)
     }
-    func testSingleSceneEditingAndHistory() {
-        let app = XCUIApplication()
-        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
-        app.launchArguments = ["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99022", "--parity-diy-studio", "-askxuan.appearance", "light"]
-        app.launch()
+    func testDirectBeadDragReordersThenDragOutDeletesAndUndoRestores() {
+        let app = studioApp(user: "99022")
         let stage = app.otherElements["diy-3d-stage"]
-        XCTAssertTrue(stage.waitForExistence(timeout: 25))
         let wood = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "小叶紫檀圆珠，")).firstMatch
         XCTAssertTrue(wood.waitForExistence(timeout: 20))
-        if app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 颗 ")).firstMatch.exists {
-            clearDraft(app)
-        }
-        XCTAssertFalse(app.buttons["2D"].exists)
-        XCTAssertFalse(app.buttons["3D"].exists)
+        if app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 颗 ")).firstMatch.exists { clearDraft(app) }
         wood.tap()
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "星月菩提，")).firstMatch.tap()
-        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "凤眼菩提，")).firstMatch.tap()
-        XCTAssertTrue(app.buttons["第 3 颗 凤眼菩提"].waitForExistence(timeout: 5))
-        app.buttons["编辑选中珠子"].tap()
-        app.buttons["向前移动珠子"].tap()
-        XCTAssertTrue(app.buttons["第 2 颗 凤眼菩提"].exists)
-        app.buttons["撤销"].tap()
-        XCTAssertTrue(app.buttons["第 3 颗 凤眼菩提"].exists)
-        app.buttons["重做"].tap()
-        XCTAssertTrue(app.buttons["第 2 颗 凤眼菩提"].exists)
-        app.buttons["第 1 颗 小叶紫檀圆珠"].tap()
-        app.buttons["编辑选中珠子"].tap()
-        app.buttons["复制"].tap()
-        XCTAssertTrue(app.buttons["第 2 颗 小叶紫檀圆珠"].exists)
-        app.buttons["编辑选中珠子"].tap()
-        app.buttons["删除"].tap()
-        XCTAssertTrue(app.buttons["第 2 颗 凤眼菩提"].exists)
-        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "ios-single-3d-studio"; shot.lifetime = .keepAlways; add(shot)
+        let search = app.textFields["搜索材质或规格"]
+        search.tap(); search.typeText("凤眼菩提\n")
+        let phoenix = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "凤眼菩提，")).firstMatch
+        XCTAssertTrue(phoenix.waitForExistence(timeout: 5)); phoenix.tap()
+        app.buttons["清除搜索"].tap()
+        let first = app.buttons["第 1 颗 小叶紫檀圆珠"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["编辑选中珠子"].exists)
         app.buttons["重置 3D 视角"].tap()
-        // Bead accessibility children are virtual rows, not projected mesh frames.
-        // These centers are measured in the fitted SCNView after resetting its camera.
-        // First verify a real hit so an empty-space orbit cannot pass as a bead drag.
-        let woodCenter = stage.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.225))
-        let phoenixCenter = stage.coordinate(withNormalizedOffset: CGVector(dx: 0.685, dy: 0.615))
-        woodCenter.tap()
-        XCTAssertTrue(app.buttons["第 1 颗 小叶紫檀圆珠"].isSelected)
-        woodCenter.press(forDuration: 0.15, thenDragTo: phoenixCenter)
+        // Accessibility frames are the projected real bodies. Prove the real
+        // center hits the bead before using that physical point for a drag.
+        let from = first.coordinate(withNormalizedOffset: CGVector(dx: 0.5,dy: 0.5))
+        from.tap(); XCTAssertTrue(first.isSelected)
+        let target = app.buttons["第 2 颗 星月菩提"].coordinate(withNormalizedOffset: CGVector(dx: 0.5,dy: 0.5))
+        from.press(forDuration: 0.1, thenDragTo: target)
         XCTAssertTrue(app.buttons["第 2 颗 小叶紫檀圆珠"].waitForExistence(timeout: 5))
         app.buttons["撤销"].tap()
-        XCTAssertTrue(app.buttons["第 1 颗 小叶紫檀圆珠"].exists)
+        XCTAssertTrue(first.waitForExistence(timeout: 5))
+        let originalID = first.identifier
+        let outside = stage.coordinate(withNormalizedOffset: CGVector(dx: 0.97,dy: 0.04))
+        first.coordinate(withNormalizedOffset: CGVector(dx: 0.5,dy: 0.5)).press(forDuration: 0.1, thenDragTo: outside)
+        XCTAssertTrue(first.waitForNonExistence(timeout: 5))
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 3 颗 ")).firstMatch.exists)
+        app.buttons["撤销"].tap()
+        XCTAssertTrue(first.waitForExistence(timeout: 5)); XCTAssertEqual(first.identifier, originalID)
+        app.buttons["重做"].tap(); XCTAssertTrue(first.waitForNonExistence(timeout: 5))
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "ios-direct-drag-delete"; shot.lifetime = .keepAlways; add(shot)
+        clearDraft(app)
     }
 }

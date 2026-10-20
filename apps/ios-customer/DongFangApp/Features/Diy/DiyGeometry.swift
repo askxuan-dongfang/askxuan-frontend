@@ -75,3 +75,69 @@ enum DiyGeometry {
         if let first = points.first { points.append(first) }; return points
     }
 }
+
+
+struct DiyDragEnvelope {
+    let hull: [CGPoint]
+    init(points: [CGPoint]) {
+        let finite = points.filter { $0.x.isFinite && $0.y.isFinite }
+        let unique = Set(finite.map { DiyDragPoint(x: $0.x, y: $0.y) })
+        let ordered = unique.sorted { a, b in a.x == b.x ? a.y < b.y : a.x < b.x }
+        let sorted = ordered.map { CGPoint(x: $0.x, y: $0.y) }
+        guard sorted.count > 2 else { hull = sorted; return }
+        func cross(_ a: CGPoint, _ b: CGPoint, _ c: CGPoint) -> CGFloat { (b.x-a.x)*(c.y-a.y) - (b.y-a.y)*(c.x-a.x) }
+        var lower: [CGPoint] = [], upper: [CGPoint] = []
+        for point in sorted {
+            while lower.count >= 2 && cross(lower[lower.count-2], lower[lower.count-1], point) <= 0 { lower.removeLast() }
+            lower.append(point)
+        }
+        for point in sorted.reversed() {
+            while upper.count >= 2 && cross(upper[upper.count-2], upper[upper.count-1], point) <= 0 { upper.removeLast() }
+            upper.append(point)
+        }
+        hull = Array(lower.dropLast()) + Array(upper.dropLast())
+    }
+    func distance(to point: CGPoint) -> CGFloat {
+        guard !hull.isEmpty else { return .infinity }
+        if hull.count == 1 { return hypot(point.x-hull[0].x, point.y-hull[0].y) }
+        var inside = hull.count > 2, nearest = CGFloat.infinity
+        for index in hull.indices {
+            let a = hull[index], b = hull[(index+1) % hull.count], dx = b.x-a.x, dy = b.y-a.y
+            if dx*(point.y-a.y) - dy*(point.x-a.x) < -0.00001 { inside = false }
+            let length = dx*dx+dy*dy
+            let t = length > 0 ? min(1, max(0, ((point.x-a.x)*dx+(point.y-a.y)*dy)/length)) : 0
+            nearest = min(nearest, hypot(point.x-a.x-t*dx, point.y-a.y-t*dy))
+        }
+        return inside ? 0 : nearest
+    }
+    private struct DiyDragPoint: Hashable { let x: CGFloat; let y: CGFloat }
+}
+
+struct DiyBeadDragSession {
+    static let activationDistance: CGFloat = 6
+    static let removalDistance: CGFloat = 24
+    enum Completion: Equatable { case unchanged, move(String, Int), remove(String) }
+    let id: String
+    let initialIndex: Int
+    let pointer: CGPoint
+    let anchor: CGPoint
+    let envelope: DiyDragEnvelope
+    private(set) var targetIndex: Int
+    private(set) var hasMoved = false
+    private(set) var deletionArmed = false
+    init(id: String, initialIndex: Int, pointer: CGPoint, anchor: CGPoint, envelope: DiyDragEnvelope) {
+        self.id = id; self.initialIndex = initialIndex; self.pointer = pointer; self.anchor = anchor; self.envelope = envelope
+        targetIndex = initialIndex
+    }
+    func translatedAnchor(pointer current: CGPoint) -> CGPoint { CGPoint(x: anchor.x + current.x-pointer.x, y: anchor.y + current.y-pointer.y) }
+    mutating func update(pointer current: CGPoint, targetIndex: Int) {
+        hasMoved = hasMoved || hypot(current.x-pointer.x, current.y-pointer.y) >= Self.activationDistance
+        self.targetIndex = targetIndex
+        deletionArmed = hasMoved && envelope.distance(to: translatedAnchor(pointer: current)) > Self.removalDistance
+    }
+    func completion(endedNormally: Bool) -> Completion {
+        guard endedNormally && hasMoved else { return .unchanged }
+        if deletionArmed { return .remove(id) }
+        return targetIndex == initialIndex ? .unchanged : .move(id, targetIndex)
+    }
+}

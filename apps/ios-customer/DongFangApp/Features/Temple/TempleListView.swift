@@ -9,7 +9,7 @@ import SwiftUI
 
 struct TempleListView: View {
     @State private var searchVisible = false
-    @State private var isTraditionPresented = false
+    @State private var isDirectoryFilterPresented = false
     @FocusState private var searchFocused: Bool
     @StateObject private var viewModel: TempleListViewModel
 
@@ -39,22 +39,27 @@ struct TempleListView: View {
             if searchVisible || !viewModel.searchText.isEmpty {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass").foregroundStyle(Color.textTertiary)
-                    TextField(L10n.text("搜索寺院名称、地区"), text: $viewModel.searchText)
+                    TextField(L10n.text("搜索名称、标签、服务或地区"), text: $viewModel.searchText)
                         .focused($searchFocused).submitLabel(.search).autocorrectionDisabled()
+                        .accessibilityLabel(L10n.text("搜索寺院列表"))
+                        .onSubmit { searchFocused = false }
                     if !viewModel.searchText.isEmpty { Button { viewModel.searchText = "" } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel(L10n.text("清除搜索")) }
+                    Button(L10n.text("取消")) { viewModel.searchText = ""; searchVisible = false; searchFocused = false }.buttonStyle(.plain)
                 }.padding(12).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)).padding(.horizontal, 16).padding(.vertical, 6)
             }
             if let error = viewModel.errorMessage {
                 HStack { Text(L10n.lookup(error)).font(AppTypography.caption); Spacer(); Button(L10n.text("重试")) { Task { await viewModel.load() } } }.padding(12)
             }
-            }.directoryFilterDismissArea(isPresented: $isTraditionPresented)
+            }.directoryFilterDismissArea(isPresented: $isDirectoryFilterPresented)
 
-            DirectoryFilterBar(beliefs: viewModel.beliefOptions, belief: $viewModel.selectedBeliefCode, region: $viewModel.selectedRegionCode, tradition: $viewModel.selectedTraditionCode, isTraditionPresented: $isTraditionPresented)
+            DirectoryFilterBar(beliefs: viewModel.beliefOptions, belief: $viewModel.selectedBeliefCode, region: $viewModel.selectedRegionCode, tradition: $viewModel.selectedTraditionCode, isPresented: $isDirectoryFilterPresented)
                 .zIndex(1)
 
             HStack(spacing: 0) {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
+                        Text(L10n.text("服务")).font(AppTypography.caption.weight(.semibold))
+                            .foregroundStyle(Color.textSecondary).frame(maxWidth: .infinity, minHeight: 44)
                         ForEach(viewModel.serviceOptions) { option in
                             filterOption(title: option.name, isSelected: viewModel.selectedServiceCode == option.code) {
                                 viewModel.selectedServiceCode = option.code
@@ -74,7 +79,7 @@ struct TempleListView: View {
                 } else {
                     templeListContent
                 }
-            }.directoryFilterDismissArea(isPresented: $isTraditionPresented)
+            }.directoryFilterDismissArea(isPresented: $isDirectoryFilterPresented)
         }
         .background(Color.bgPrimary)
         .toolbar(.hidden, for: .navigationBar)

@@ -164,6 +164,88 @@ final class DiyEditorTests: XCTestCase {
 import Testing
 
 @MainActor
+struct NativePublicSearchTests {
+    private func page(_ rows: [[String: Any]], total: Int? = nil, number: Int = 1, size: Int = 2) throws -> NativeSearchPage {
+        try JSONDecoder().decode(NativeSearchPage.self, from: JSONSerialization.data(withJSONObject: ["list": rows, "total": total ?? rows.count, "page": number, "size": size]))
+    }
+    @Test func traditionalAndSimplifiedKeywordsMatchAcrossFieldsWithAND() {
+        #expect(NativePublicSearch.matches(" 臺灣  祈福 ", fields: ["台湾", "祈福服务"]))
+        #expect(NativePublicSearch.matches("ＤＩＹ 蓮花", fields: ["diy", "莲花挂件"]))
+        #expect(!NativePublicSearch.matches("台湾 祈福", fields: ["大陆", "祈福"]))
+        #expect(!NativePublicSearch.matches("  ", fields: ["任意内容"]))
+    }
+    @Test func readsEveryCappedPageAndDeduplicatesPublicRecords() async throws {
+        var requested: [Int] = []
+        let records = try await NativePublicSearch.allPages({ .diyDesigns(page: $0, size: 100) }) { endpoint in
+            guard case .diyDesigns(let number, _) = endpoint else { throw NativeSearchFailure.incompletePage }
+            requested.append(number)
+            if number == 1 { return try page([["id": 1, "name": "第一份"], ["id": 2, "name": "第二份"]], total: 3) }
+            return try page([["id": 2, "name": "第二份"], ["id": 3, "name": "末页繁體作品"]], total: 3, number: 2)
+        }
+        #expect(requested == [1, 2])
+        #expect(records.map(\.id) == ["1", "2", "3"])
+        #expect(NativePublicSearch.matches("繁体", fields: records[2].searchableFields))
+    }
+    @Test func incompleteOrRepeatedPagesAreFailuresInsteadOfEmptyResults() async throws {
+        for repeated in [false, true] {
+            do {
+                _ = try await NativePublicSearch.allPages({ .diyDesigns(page: $0, size: 100) }) { endpoint in
+                    guard case .diyDesigns(let number, _) = endpoint else { throw NativeSearchFailure.incompletePage }
+                    return try page(number == 1 || repeated ? [["id": "1", "name": "首屏"]] : [], total: 2, number: number)
+                }
+                Issue.record("Incomplete public indexes must not be reported as complete")
+            } catch { #expect(error is NativeSearchFailure) }
+        }
+    }
+    @Test func acceptsNullEmptyListsButRejectsNullMissingPages() async throws {
+        let empty = try JSONDecoder().decode(NativeSearchPage.self, from: Data(#"{"list":null,"total":0,"page":1,"size":100}"#.utf8))
+        let result = try await NativePublicSearch.allPages({ .diyDesigns(page: $0, size: 100) }) { _ in empty }
+        #expect(result.isEmpty)
+        let incomplete = try JSONDecoder().decode(NativeSearchPage.self, from: Data(#"{"list":null,"total":2,"page":1,"size":100}"#.utf8))
+        do {
+            _ = try await NativePublicSearch.allPages({ .diyDesigns(page: $0, size: 100) }) { _ in incomplete }
+            Issue.record("Null records cannot satisfy a non-zero total")
+        } catch { #expect(error is NativeSearchFailure) }
+    }
+    @Test func keepsFullDescriptionsAndExcludesDisabledServices() throws {
+        let record = try page([["id": "1", "description": String(repeating: "很长的介绍", count: 100) + "末尾关键词", "serviceTags": [["serviceCode": "S001", "status": "enabled"], ["serviceCode": "S002", "status": "disabled"]]]]).list[0]
+        #expect(NativePublicSearch.matches("末尾关键词", fields: record.searchableFields))
+        #expect(record.searchableFields.contains("S001"))
+        #expect(!record.searchableFields.contains("S002"))
+    }
+    @Test func categoryFailuresRetryIndependentlyAndOldSearchCannotOverwriteNew() async throws {
+        var templeCalls = 0
+        var productFailure = true
+        let model = NativeGlobalSearchModel { endpoint in
+            switch endpoint {
+            case .temples:
+                templeCalls += 1
+                let number = templeCalls
+                if number == 1 { try? await Task.sleep(for: .milliseconds(120)) }
+                return try page([["id": String(number), "name": number == 1 ? "旧结果" : "新结果"]])
+            case .products:
+                if productFailure { throw NativeSearchFailure.incompletePage }
+                return try page([["id": "3", "name": "新结果商品"]])
+            default: return try page([])
+            }
+        }
+        model.submit("旧结果")
+        while templeCalls == 0 { await Task.yield() }
+        model.submit("新结果")
+        try await Task.sleep(for: .milliseconds(220))
+        #expect(model.sections[.temples]?.results.first?.title == "新结果")
+        #expect(model.sections[.products]?.error != nil)
+        productFailure = false
+        model.retry(.products)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(model.sections[.products]?.error == nil)
+        #expect(model.sections[.products]?.results.first?.title == "新结果商品")
+        #expect(templeCalls == 2)
+        model.cancel()
+    }
+}
+
+@MainActor
 struct DiyCanvasEditorTests {
     private func material(id: Int64, stock: Int = 100, category: String = "main_bead") -> Material {
         Material(id: id, name: "测试材料", spec: "10mm", unitPrice: Double(id) * 10, unit: "颗", category: category,
@@ -297,5 +379,76 @@ struct ConsecrationContractTests {
         let body = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(request)) as? [String: Any])
         #expect(body["expectedBlessFee"] as? Double == 0)
         #expect(body["blessServiceCode"] == nil)
+    }
+}
+
+
+@MainActor
+struct DiyDirectDragTests {
+    private var envelope: DiyDragEnvelope {
+        DiyDragEnvelope(points: [CGPoint(x: 50, y: 50), CGPoint(x: 250, y: 50), CGPoint(x: 250, y: 250), CGPoint(x: 50, y: 250)])
+    }
+    @Test func hullIncludesInnerOpeningAndAccessoryExtents() {
+        let loop = (0..<64).map { i in CGPoint(x: 150 + 100*cos(Double(i) * .pi / 32), y: 150 + 60*sin(Double(i) * .pi / 32)) }
+        let actual = DiyDragEnvelope(points: loop + [CGPoint(x: 130,y: 270),CGPoint(x: 170,y: 270)])
+        #expect(actual.distance(to: CGPoint(x: 150,y: 150)) == 0)
+        #expect(actual.distance(to: CGPoint(x: 150,y: 265)) == 0)
+        #expect(actual.distance(to: CGPoint(x: 150,y: 294)) == 24)
+        #expect(actual.distance(to: CGPoint(x: 150,y: 294.1)) > 24)
+    }
+    @Test func activationOffsetAndBoundaryAreSharedAcrossClients() {
+        var drag = DiyBeadDragSession(id: "a", initialIndex: 0, pointer: CGPoint(x: 240,y: 150), anchor: CGPoint(x: 250,y: 150), envelope: envelope)
+        drag.update(pointer: CGPoint(x: 245.99,y: 150), targetIndex: 1)
+        #expect(drag.completion(endedNormally: true) == .unchanged)
+        drag.update(pointer: CGPoint(x: 246,y: 150), targetIndex: 1)
+        #expect(drag.completion(endedNormally: true) == .move("a",1))
+        drag.update(pointer: CGPoint(x: 264,y: 150), targetIndex: 1)
+        #expect(!drag.deletionArmed)
+        drag.update(pointer: CGPoint(x: 264.01,y: 150), targetIndex: 1)
+        #expect(drag.deletionArmed)
+        #expect(drag.completion(endedNormally: true) == .remove("a"))
+    }
+    @Test func ReturnInsideAndCancellationNeverDelete() {
+        var drag = DiyBeadDragSession(id: "a", initialIndex: 0, pointer: CGPoint(x: 250,y: 150), anchor: CGPoint(x: 250,y: 150), envelope: envelope)
+        drag.update(pointer: CGPoint(x: 300,y: 150), targetIndex: 1)
+        #expect(drag.deletionArmed)
+        #expect(drag.completion(endedNormally: false) == .unchanged)
+        drag.update(pointer: CGPoint(x: 274,y: 150), targetIndex: 0)
+        #expect(!drag.deletionArmed)
+        #expect(drag.completion(endedNormally: true) == .unchanged)
+        drag.update(pointer: CGPoint(x: 150,y: 150), targetIndex: 1)
+        #expect(!drag.deletionArmed)
+        #expect(drag.completion(endedNormally: true) == .move("a",1))
+    }
+    @Test func viewingAWorkDoesNotReplaceTheEditorsLocalDraft() throws {
+        let suite = "DiyReadonlyTests.\(UUID().uuidString)", store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        let model = DiyViewModel(draftStore: store)
+        let material = Material(id: 1, name: "木珠", spec: "10mm", unitPrice: 10, unit: "颗", category: "main_bead", fiveElements: "木", image: "", stock: 100, status: "on_shelf")
+        model.addBead(material)
+        let original = model.beadSlots.map(\.id)
+        let other = DiyDesignDocument(wristSizeMm: 180, beads: [DiyBeadSlot(material: material, position: 0)], items: [])
+        let raw = try #require(String(data: JSONEncoder().encode(other), encoding: .utf8))
+        model.restoreDesignData(raw, persist: false)
+        #expect(model.wristSizeMm == 180)
+        let restored = DiyViewModel(draftStore: store)
+        #expect(restored.beadSlots.map(\.id) == original)
+        #expect(restored.wristSizeMm == 160)
+    }
+
+    @Test func completedRemovalHasOneUndoAndRestoresIdentity() throws {
+        let suite = "DiyDirectDragTests.\(UUID().uuidString)", store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        let model = DiyViewModel(draftStore: store)
+        let material = Material(id: 1, name: "木珠", spec: "10mm", unitPrice: 10, unit: "颗", category: "main_bead", fiveElements: "木", image: "", stock: 100, status: "on_shelf")
+        model.addBead(material); model.addBead(material)
+        let before = model.beadSlots.map(\.id), id = try #require(before.first)
+        var drag = DiyBeadDragSession(id: id, initialIndex: 0, pointer: CGPoint(x: 250,y: 150), anchor: CGPoint(x: 250,y: 150), envelope: envelope)
+        for x in [260.0,280,300] { drag.update(pointer: CGPoint(x:x,y:150), targetIndex:1) }
+        #expect(model.beadSlots.map(\.id) == before)
+        if case .remove(let removed) = drag.completion(endedNormally: true) { model.removeBead(id: removed) }
+        #expect(model.beadSlots.count == 1)
+        model.undo(); #expect(model.beadSlots.map(\.id) == before)
+        model.redo(); #expect(model.beadSlots.map(\.id) == Array(before.dropFirst()))
     }
 }

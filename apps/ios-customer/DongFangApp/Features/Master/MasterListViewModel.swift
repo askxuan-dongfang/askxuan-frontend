@@ -38,6 +38,8 @@ final class MasterListViewModel: ObservableObject {
         ]
     }
 
+    @Published private var searchCatalog = DirectorySearchCatalog()
+
     private let apiClient: APIClient
     init(initialBeliefCode: String? = nil, apiClient: APIClient = .shared) {
         self.apiClient = apiClient
@@ -48,7 +50,7 @@ final class MasterListViewModel: ObservableObject {
         masters.filter { m in
             (selectedRegionCode.isEmpty || m.regionCode == selectedRegionCode) &&
             (selectedTraditionCode.isEmpty || (m.traditionCodes ?? []).contains(selectedTraditionCode)) &&
-            (searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || ([m.dharmaName, m.templeName, m.sect] + m.specialties).joined(separator: " ").localizedStandardContains(searchText.trimmingCharacters(in: .whitespacesAndNewlines))) &&
+            DirectorySearch.matches(searchText, fields: DirectorySearch.fields(master: m, catalog: searchCatalog)) &&
             (selectedBeliefCode.isEmpty || m.beliefCode == selectedBeliefCode) &&
             matchPrice(m) &&
             matchTemple(m, selectedTemple) &&
@@ -115,7 +117,8 @@ final class MasterListViewModel: ObservableObject {
             let response: PageResponse<Master> = try await apiClient.request(.masters(type: nil, templeId: nil, manageBy: "platform", serviceCode: nil, page: page, size: 100))
             let next = response.list.filter { seen.insert($0.id).inserted }
             records.append(contentsOf: next)
-            if next.isEmpty || records.count >= response.total { return records }
+            if records.count >= response.total { return records }
+            if next.isEmpty { throw DirectoryLoadError.incomplete }
             page += 1
         }
     }
@@ -132,11 +135,15 @@ final class MasterListViewModel: ObservableObject {
         do {
             async let masterRequest: [Master] = allRecords()
             async let beliefRequest: BeliefListResponse = apiClient.request(.beliefs)
-            let (masterResponse, beliefResponse) = try await (masterRequest, beliefRequest)
+            async let serviceRequest: ServiceCatalogResponse = apiClient.request(.serviceTypes)
+            async let tagRequest: DirectoryItems<DirectoryTag> = apiClient.request(.directoryTags)
+            async let regionRequest: DirectoryItems<DirectoryRegion> = apiClient.request(.directoryRegions)
+            let (masterResponse, beliefResponse, services, tags, regions) = try await (masterRequest, beliefRequest, serviceRequest, tagRequest, regionRequest)
             guard !Task.isCancelled else { return }
             hasLoaded = true
             masters = masterResponse
             beliefOptions = [BeliefFilterOption(code: "", name: "全部")] + beliefResponse.list.map { BeliefFilterOption(code: $0.code, name: $0.name) }
+            searchCatalog = DirectorySearchCatalog(beliefs: beliefOptions, tags: tags.list, services: services.list.map { ServiceFilterOption(code: $0.code, name: $0.name) }, regions: regions.list)
         } catch {
             guard !Task.isCancelled else { return }
             if beliefOptions.isEmpty { beliefOptions = [BeliefFilterOption(code: "", name: "全部")] }

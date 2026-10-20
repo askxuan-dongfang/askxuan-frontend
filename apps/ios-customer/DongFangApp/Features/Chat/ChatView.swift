@@ -29,6 +29,10 @@ struct ChatView: View {
 
     private let tabTitles = ["我的收藏", "我的私聊", "大师广场"]
 
+    init(initialTab: Int? = nil) {
+        if let initialTab, (0...2).contains(initialTab) { _selectedTab = State(initialValue: initialTab) }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             topNav
@@ -487,7 +491,7 @@ private struct CommunityPostCard: View {
     }
 }
 
-private struct CommunityPostDetailView: View {
+struct CommunityPostDetailView: View {
     let postId: String
     @State private var post: CommunityPost?
     @State private var comments: [CommunityComment] = []
