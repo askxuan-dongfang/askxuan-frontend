@@ -240,7 +240,7 @@ struct MasterDirectoryRefinementTests {
         return result
     }
 
-    @Test func priceAndTextSearchRemainIndependentOfRemovedFilterGroups() {
+    @Test func priceAndTextSearchRemainIndependentOfServiceSelection() {
         let model = MasterListViewModel()
         let record = master()
         model.masters = [record]
@@ -254,7 +254,7 @@ struct MasterDirectoryRefinementTests {
         #expect(model.filteredMasters.count == 1)
     }
 
-    @Test func serviceAndSpecialtyWordsStaySearchableWithoutTheirSidebarGroups() {
+    @Test func serviceAndSpecialtyWordsStaySearchable() {
         let catalog = DirectorySearchCatalog(services: [
             ServiceFilterOption(code: "S001", name: "祈福"),
             ServiceFilterOption(code: "S002", name: "供灯"),

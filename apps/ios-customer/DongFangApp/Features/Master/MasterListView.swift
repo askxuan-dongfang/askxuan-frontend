@@ -12,7 +12,7 @@ struct MasterListView: View {
     @State private var isDirectoryFilterPresented = false
     @FocusState private var searchFocused: Bool
     @StateObject private var viewModel: MasterListViewModel
-    @State private var expandedGroups: Set<String> = ["所属寺院"]
+    @State private var expandedGroups: Set<String> = ["提供服务"]
 
     init(initialBeliefCode: String? = nil) {
         _viewModel = StateObject(wrappedValue: MasterListViewModel(initialBeliefCode: initialBeliefCode))
@@ -125,7 +125,7 @@ struct MasterListView: View {
 
     // MARK: - 可折叠筛选组
     @ViewBuilder
-    private func filterGroup(title: String, options: [String]) -> some View {
+    private func filterGroup(title: String, options: [ServiceFilterOption]) -> some View {
         let isExpanded = expandedGroups.contains(title)
         VStack(spacing: 0) {
             Button {
@@ -154,17 +154,18 @@ struct MasterListView: View {
             .accessibilityIdentifier("master-filter-group-\(title)")
 
             if isExpanded {
-                ForEach(options, id: \.self) { option in
-                    filterOption(title: option, group: title, isSelected: selectedValue(for: title) == option) {
-                        setSelectedValue(option, for: title)
+                ForEach(options) { option in
+                    filterOption(title: option.name, isSelected: selectedValue(for: title) == option.code) {
+                        setSelectedValue(option.code, for: title)
                     }
+                    .accessibilityIdentifier("master-filter-option-\(title)-\(option.code.isEmpty ? "all" : option.code)")
                 }
             }
         }
     }
 
     // MARK: - 筛选选项
-    private func filterOption(title: String, group: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+    private func filterOption(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 0) {
                 Rectangle()
@@ -181,6 +182,7 @@ struct MasterListView: View {
             .background(isSelected ? Color.brandDefault.opacity(0.08) : Color.clear)
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     // MARK: - 法师卡片（水平布局：头像+信息）
@@ -252,9 +254,10 @@ struct MasterListView: View {
                     Text(L10n.text("可约"))
                         .font(AppTypography.micro)
                         .foregroundStyle(Color.textTertiary)
-                    if let tags = master.serviceTags, !tags.isEmpty {
-                        ForEach(tags.prefix(2), id: \.self) { tag in
-                            Text(L10n.lookup(ServiceType.from(serviceCode: tag.serviceCode)?.rawValue ?? tag.serviceCode))
+                    let services = viewModel.previewServices(master)
+                    if !services.isEmpty {
+                        ForEach(services) { service in
+                            Text(L10n.lookup(service.name))
                                 .font(AppTypography.micro)
                                 .foregroundStyle(Color.stateSuccess)
                                 .padding(.horizontal, 8)
@@ -318,18 +321,16 @@ struct MasterListView: View {
     // MARK: - 筛选值管理（绑定到 ViewModel）
     private func selectedValue(for group: String) -> String {
         switch group {
+        case "提供服务": return viewModel.selectedServiceCode
         case "价格区间": return viewModel.selectedPrice
-        case "所属寺院": return viewModel.selectedTemple
-        case "职位": return viewModel.selectedLevel
         default: return "全部"
         }
     }
 
     private func setSelectedValue(_ value: String, for group: String) {
         switch group {
+        case "提供服务": viewModel.selectedServiceCode = value
         case "价格区间": viewModel.selectedPrice = value
-        case "所属寺院":   viewModel.selectedTemple = value
-        case "职位":       viewModel.selectedLevel = value
         default: break
         }
     }
