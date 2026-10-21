@@ -5,6 +5,7 @@ import type { Temple, TempleDetail, TempleAudit, BeliefProfile, PageResult } fro
 export interface TempleListParams {
   regionCode?: string
   beliefCode?: string
+  traditionCode?: string
   sect?: string
   type?: string
   region?: string

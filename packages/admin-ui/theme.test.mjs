@@ -86,7 +86,7 @@ test('chart theme changes repaint chrome and gradients while preserving data, ca
   })[name] || ''
   const favicon = { href: 'https://example.test/temple/logos/favicon-temple.svg' }
   const meta = { content: '', setAttribute(_key, value) { this.content = value } }
-  const context = vm.createContext({ tokens, ADMIN_THEME_EVENT: 'askxuan:admin-theme-change', document: { documentElement: {} }, getComputedStyle: () => ({ getPropertyValue: variable }), window: { matchMedia: () => media, addEventListener: (name, fn) => windowEvents.set(name, fn), removeEventListener: name => windowEvents.delete(name) } })
+  const context = vm.createContext({ tokens, ADMIN_THEME_EVENT: 'askxuan:admin-theme-change', LANGUAGE_EVENT: 'askxuan:language-change', t: value => value, document: { documentElement: {} }, getComputedStyle: () => ({ getPropertyValue: variable }), window: { matchMedia: () => media, addEventListener: (name, fn) => windowEvents.set(name, fn), removeEventListener: name => windowEvents.delete(name) } })
   const stripped = stripTypeScriptTypes(chartSource.replace(/^import [^\n]*\n/gm, ''), { mode: 'strip' }).replace(/\bexport /g, '')
   vm.runInContext(stripped + '\nthis.repaint = withAdminChartTheme; this.watch = watchAdminChartAppearance;', context)
   const formatter = value => String(value)
@@ -117,7 +117,9 @@ test('chart theme changes repaint chrome and gradients while preserving data, ca
   assert.equal(dark.legend.selected['#C45A3C'], false)
   let current = dark
   const stop = context.watch(() => { current = context.repaint(current) })
-  assert.equal(windowEvents.size, 1)
+  assert.equal(windowEvents.size, 2)
+  assert.ok(windowEvents.has('askxuan:admin-theme-change'))
+  assert.ok(windowEvents.has('askxuan:language-change'))
   assert.equal(mediaEvents.size, 1)
   reduceMotion = true
   mediaEvents.get('change')()

@@ -5,6 +5,7 @@ import type { Master, MasterAudit, PageResult } from '@/types'
 export interface MasterListParams {
   regionCode?: string
   beliefCode?: string
+  traditionCode?: string
   sect?: string
   type?: string
   templeId?: string
@@ -60,6 +61,7 @@ export interface WildMasterCreateParams {
   layName?: string
   position?: string
   beliefCode: string
+  traditionCodes: string[]
   sect: string
   type: string
   specialties?: string[]

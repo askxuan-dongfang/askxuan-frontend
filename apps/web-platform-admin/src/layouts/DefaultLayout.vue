@@ -2,7 +2,7 @@
 import { ElMessageBox } from '@/i18n'
 import { t as uiText } from '../../../../packages/localization/language'
 
-import { agentCenterSections } from '@/views/ai/centerNavigation'
+import { adminWorkspaces, activeWorkspacePath, workspaceForPath, workspaceItemForPath } from '../../../../packages/admin-ui/workspaces'
 import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
 import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import { computed } from 'vue'
@@ -17,102 +17,14 @@ const router = useRouter()
 const auth = useAuthStore()
 const { collapsed, mobile, drawerOpen, sidebarRef, toggleRef, toggleNavigation, closeNavigation } = useAdminNavigation(() => route.fullPath)
 
-const allMenuGroups = [
-  {title:'问事智能体开发中心',icon:'Connection',children:agentCenterSections.map(({path,title})=>({path,title}))},
-  {title:'商城与权益',icon:'Shop',children:[
-    {path:'/commerce',title:'商城运营总览'},
-    {path:'/commerce/dashboard',title:'商城工作台'},
-    {path:'/commerce/products',title:'商品管理'},
-    {path:'/commerce/categories',title:'商品分类'},
-    {path:'/commerce/points-mall',title:'积分商城'},
-    {path:'/commerce/reports',title:'经营报表'}
-  ]},
-  {title:'DIY 与加持服务',icon:'MagicStick',children:[
-    {path:'/commerce/materials',title:'DIY 材料'},
-    {path:'/commerce/services',title:'开光服务'},
-    {path:'/commerce/diy-orders',title:'DIY 订单'},
-    {path:'/commerce/creator-rewards',title:'创作奖励与提现'}
-  ]},
-  {title:'履约与售后',icon:'Van',children:[
-    {path:'/commerce/orders',title:'商城订单'},
-    {path:'/commerce/logistics',title:'物流与运费'},
-    {path:'/commerce/returns',title:'退货售后'}
-  ]},
-  {
-    title: '机构与人员',
-    icon: 'OfficeBuilding',
-    children: [
-      { path: '/temple/list', title: '寺院列表' },
-      { path: '/master/list', title: '法师列表' },
-      { path: '/user/list', title: '用户列表' },
-      { path: '/settings/account', title: '管理账号' }
-    ]
-  },
-  {
-    title: '审核中心',
-    icon: 'Checked',
-    children: [
-      { path: '/onboarding/review', title: '认证与入驻审核' },
-      { path: '/temple/review', title: '寺院审核' },
-      { path: '/master/review', title: '法师审核' },
-      { path: '/audit/comment', title: '评价审核' },
-      { path: '/audit/design', title: '社区/短视频审核' },
-      { path: '/audit/report', title: '举报处理' }
-    ]
-  },
-  {
-    title: '财务中心',
-    icon: 'Money',
-    children: [
-      { path: '/finance/overview', title: '财务概览' },
-      { path: '/finance/temple', title: '寺院结算' },
-      { path: '/finance/master', title: '法师结算' },
-      { path: '/finance/reconcile', title: '对账中心' }
-    ]
-  },
-  {
-    title: '增长运营',
-    icon: 'Promotion',
-    children: [
-      { path: '/marketing/banner', title: '首页活动与广告' },
-      { path: '/marketing/activity', title: '活动管理' },
-      { path: '/marketing/growth', title: '成长体系', roles: ['platform_super'] },
-      { path: '/marketing/rewards', title: '积分活动与奖品' },
-      { path: '/marketing/coupon', title: '优惠券管理' },
-      { path: '/settings/taxonomy', title: '首页分类' },
-      { path: '/settings/regions', title: '地区标签' },
-      { path: '/settings/directory-tags', title: '筛选标签' },
-      {path:'/settings/service-intentions',title:'心愿与服务关联'}
-    ]
-  },
-  {
-    title: '系统治理',
-    icon: 'Setting',
-    children: [
-      { path: '/settings/role', title: '角色权限' },
-      { path: '/settings/dict', title: '数据字典' },
-      { path: '/settings/log', title: '操作日志' },
-      { path: '/settings/backup', title: '数据备份' }
-    ]
-  }
-]
-
-const menuGroups = computed(() => allMenuGroups.map(group => ({ ...group, children: group.children.filter(item => canAccessRoute(router.resolve(item.path), auth.roles)) })).filter(group => group.children.length))
+const menuGroups = computed(() => adminWorkspaces.map(group => ({ ...group, children: group.children.filter(item => canAccessRoute(router.resolve(item.path), auth.roles)) })).filter(group => group.children.length))
 const homePath = computed(() => defaultRoute(auth.roles))
-
-const activeMenu = computed(() => {
-  const path = route.path
-  if (path.startsWith('/ai/connections')) return '/ai/connections'
-  if (path.startsWith('/temple/detail/')) return '/temple/list'
-  if (path.startsWith('/master/detail/') || path === '/master/create') return '/master/list'
-  if (path.startsWith('/user/detail/')) return '/user/list'
-  const shop = path.match(/^\/commerce\/(products|materials|services|orders|diy-orders|returns)\//)
-  if (shop) return `/commerce/${shop[1]}`
-  return path
-})
+const activeMenu = computed(() => activeWorkspacePath(route.path))
+const pageWorkspace = computed(() => workspaceForPath(route.path))
+const pageList = computed(() => workspaceItemForPath(route.path))
 const avatarText = computed(() => (auth.userInfo?.nickname || '管').slice(0, 1))
-const pageTitle = computed(() => (route.meta.title as string) || '平台管理台')
-const pageParent = computed(() => (route.meta.parent as string) || '平台管理台')
+const pageTitle = computed(() => pageList.value?.path === route.path ? pageList.value.title : (route.meta.title as string) || '平台管理台')
+const pageParent = computed(() => pageWorkspace.value?.title || '平台管理台')
 
 
 
@@ -168,17 +80,12 @@ async function onCommand(cmd: string) {
         unique-opened
         class="ax-admin-menu"
       >
-        <el-menu-item :index="homePath">
-          <el-icon><Odometer /></el-icon>
-          <template #title>{{ $t((homePath === '/dashboard' ? $t('平台总览') : $t('今日工作台'))) }}</template>
-        </el-menu-item>
-
         <el-sub-menu v-for="group in menuGroups" :key="group.title" :index="group.title">
           <template #title>
             <el-icon><component :is="group.icon" /></el-icon>
             <span>{{ $t(group.title) }}</span>
           </template>
-          <el-menu-item v-for="item in group.children" :key="item.path" :index="item.path">
+          <el-menu-item v-for="item in group.children" :key="item.path" :index="item.pending ? `pending:${group.title}` : item.path" :disabled="item.pending">
             {{ $t(item.title) }}
           </el-menu-item>
         </el-sub-menu>
@@ -206,7 +113,10 @@ async function onCommand(cmd: string) {
             </el-icon>
           </button>
           <div>
-            <div class="ax-admin-header__eyebrow">{{ $t(pageParent) }}</div>
+            <nav class="ax-admin-header__eyebrow" :aria-label="$t('面包屑')">
+              <span>{{ $t(pageParent) }}</span>
+              <template v-if="pageList && pageList.path !== route.path"> / <router-link :to="pageList.path">{{ $t(pageList.title) }}</router-link></template>
+            </nav>
             <div class="ax-admin-header__title">{{ $t(pageTitle) }}</div>
           </div>
         </div>
@@ -241,6 +151,7 @@ async function onCommand(cmd: string) {
 </template>
 
 <style scoped>
+.ax-admin-header__eyebrow a{color:inherit;text-underline-offset:3px}.ax-admin-menu .el-menu-item.is-disabled{height:auto;min-height:44px;line-height:1.5;white-space:normal;padding-top:12px;padding-bottom:12px;opacity:.7}
 
 
 .ax-admin-user {

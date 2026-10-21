@@ -4,7 +4,6 @@ import { t as uiText } from '../../../../../packages/localization/language'
 
 import { onMounted, reactive, ref } from 'vue'
 
-import { Plus } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { taxonomyApi, type BeliefProfile, type IntentionTag } from '@/api/taxonomy'
 
@@ -40,42 +39,36 @@ async function load() {
   }
 }
 
-function openBelief(row?: BeliefProfile) {
-  editingBelief.value = !!row
-  Object.assign(beliefForm, row ? { ...row } : { code: '', name: '', summary: '', description: '', coverImage: '', icon: 'sparkles', sort: beliefs.value.length * 10 + 10 })
+function openBelief(row: BeliefProfile) {
+  editingBelief.value = true
+  Object.assign(beliefForm, row)
   beliefVisible.value = true
 }
 
 async function saveBelief() {
+  if (!editingBelief.value) return ElMessage.warning(uiText('五类信仰编码固定，请编辑已有标准'))
   if (!beliefForm.code || !beliefForm.name || !beliefForm.description) return ElMessage.warning(uiText('请填写编码、名称和简介'))
   const data = { ...beliefForm }
-  if (editingBelief.value) {
-    const { code, ...body } = data
-    await taxonomyApi.updateBelief(code, body)
-  } else {
-    await taxonomyApi.createBelief(data)
-  }
+  const { code, ...body } = data
+  await taxonomyApi.updateBelief(code, body)
   beliefVisible.value = false
   ElMessage.success(uiText('信仰分类已保存'))
   await load()
 }
 
-function openIntention(row?: IntentionTag) {
-  editingIntention.value = !!row
-  Object.assign(intentionForm, row ? { ...row } : { code: '', name: '', description: '', icon: 'sparkles', landingType: 'aggregate', landingValue: '', actionTitle: '', sort: intentions.value.length * 10 + 10 })
+function openIntention(row: IntentionTag) {
+  editingIntention.value = true
+  Object.assign(intentionForm, row)
   intentionVisible.value = true
 }
 
 async function saveIntention() {
+  if (!editingIntention.value) return ElMessage.warning(uiText('七项心愿编码固定，请编辑已有标准'))
   if (!intentionForm.code || !intentionForm.name) return ElMessage.warning(uiText('请填写编码和名称'))
   if (intentionForm.landingType === 'service' && !intentionForm.landingValue) return ElMessage.warning(uiText('请从固定目录选择服务'))
   const data = { ...intentionForm }
-  if (editingIntention.value) {
-    const { code, ...body } = data
-    await taxonomyApi.updateIntention(code, body)
-  } else {
-    await taxonomyApi.createIntention(data)
-  }
+  const { code, ...body } = data
+  await taxonomyApi.updateIntention(code, body)
   intentionVisible.value = false
   ElMessage.success(uiText('心愿分类已保存'))
   await load()
@@ -96,10 +89,11 @@ onMounted(load)
 
 <template>
   <div class="dfx-page" v-loading="loading">
-    <PageHeader :title='$t("首页分类")' :subtitle='$t("统一维护 C 端信仰入口与心愿入口")' />
+    <PageHeader :title='$t("信仰与心愿标准 / 首页展示")' :subtitle='$t("标准编码唯一维护；展示文案、封面与排序引用同一编码。")' />
+    <p class="standard-scope-note">{{ $t('五类主信仰与七项心愿范围固定，本页只编辑已有标准与首页展示。宗派信俗由完整标准目录维护；身份和擅长是资料选项，不代表资质或实际服务。') }}</p>
 
     <section class="taxonomy-section">
-      <div class="section-head"><div><h2>{{ $t("按信仰找") }}</h2><p>{{ $t("启用的分类按排序展示在 C 端首页，并作为寺院、法师的一级流派。") }}</p></div><el-button type="primary" :icon="Plus" @click="openBelief()">{{ $t("新增信仰") }}</el-button></div>
+      <div class="section-head"><div><h2>{{ $t("按信仰找") }}</h2><p>{{ $t("五类主信仰编码固定；启用状态、排序和展示资料用于首页。") }}</p></div></div>
       <el-table :data="beliefs" border>
         <el-table-column prop="sort" :label='$t("排序")' width="70" />
         <el-table-column prop="name" :label='$t("名称")' min-width="130" />
@@ -112,7 +106,7 @@ onMounted(load)
     </section>
 
     <section class="taxonomy-section">
-      <div class="section-head"><div><h2>{{ $t("按心愿办") }}</h2><p>{{ $t("心愿聚合寺院服务与大师服务，落地方式控制首页点击后的办理路径。") }}</p></div><el-button type="primary" :icon="Plus" @click="openIntention()">{{ $t("新增心愿") }}</el-button></div>
+      <div class="section-head"><div><h2>{{ $t("按心愿办") }}</h2><p>{{ $t("七项标准心愿沿用固定编码；已有历史展示入口原样保留，落地配置不新增标准。") }}</p></div></div>
       <el-table :data="intentions" border>
         <el-table-column prop="sort" :label='$t("排序")' width="70" />
         <el-table-column prop="name" :label='$t("名称")' min-width="120" />
@@ -125,9 +119,9 @@ onMounted(load)
       </el-table>
     </section>
 
-    <el-dialog v-model="beliefVisible" :title="$t((editingBelief ? $t('编辑信仰') : $t('新增信仰')))" width="620px" append-to-body>
+    <el-dialog v-model="beliefVisible" :title="$t('编辑信仰')" width="620px" append-to-body>
       <el-form :model="beliefForm" label-width="92px">
-        <el-form-item :label='$t("编码")' required><el-input v-model="beliefForm.code" :disabled="editingBelief" :placeholder='$t("小写字母、数字、下划线")' /></el-form-item>
+        <el-form-item :label='$t("编码")' required><el-input v-model="beliefForm.code" disabled :placeholder='$t("小写字母、数字、下划线")' /></el-form-item>
         <el-form-item :label='$t("名称")' required><el-input v-model="beliefForm.name" /></el-form-item>
         <el-form-item :label='$t("摘要")'><el-input v-model="beliefForm.summary" /></el-form-item>
         <el-form-item :label='$t("完整简介")' required><el-input v-model="beliefForm.description" type="textarea" :rows="4" /></el-form-item>
@@ -138,9 +132,9 @@ onMounted(load)
       <template #footer><el-button @click="beliefVisible=false" data-quiet-action="cancel">{{ $t("取消") }}</el-button><el-button type="primary" @click="saveBelief">{{ $t("保存") }}</el-button></template>
     </el-dialog>
 
-    <el-dialog v-model="intentionVisible" :title="$t((editingIntention ? $t('编辑心愿') : $t('新增心愿')))" width="620px" append-to-body>
+    <el-dialog v-model="intentionVisible" :title="$t('编辑心愿')" width="620px" append-to-body>
       <el-form :model="intentionForm" label-width="92px">
-        <el-form-item :label='$t("编码")' required><el-input v-model="intentionForm.code" :disabled="editingIntention" :placeholder='$t("小写字母、数字、下划线")' /></el-form-item>
+        <el-form-item :label='$t("编码")' required><el-input v-model="intentionForm.code" disabled :placeholder='$t("小写字母、数字、下划线")' /></el-form-item>
         <el-form-item :label='$t("名称")' required><el-input v-model="intentionForm.name" /></el-form-item>
         <el-form-item :label='$t("说明")'><el-input v-model="intentionForm.description" type="textarea" :rows="3" /></el-form-item>
         <el-form-item label="SF Symbol"><el-input v-model="intentionForm.icon" /></el-form-item>
@@ -159,6 +153,7 @@ onMounted(load)
 </template>
 
 <style scoped>
+.standard-scope-note{font-size:13px;line-height:1.8;color:var(--dfx-text-secondary);margin:0 0 24px}.section-head{flex-wrap:wrap}
 .taxonomy-section { margin-bottom: 24px; }
 .section-head { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:12px; }
 .section-head h2 { margin:0 0 4px; font-size: var(--type-size-nav); }

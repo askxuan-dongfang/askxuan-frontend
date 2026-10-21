@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B2069BEFAF144C19B0E0E521 /* OnboardingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E226C4A357AC47E7A1B60349 /* OnboardingUITests.swift */; };
+		1C21220842CED78F898A03E5 /* OnboardingAffiliation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EA1EAE34FE0E05452C2CFE7 /* OnboardingAffiliation.swift */; };
 		042A2BA3F765166B7BEADEB3 /* Pods_MasterApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 17102278B6A0E3923EB00DE4 /* Pods_MasterApp.framework */; };
 		04BCDFB49DBCAECE88A7C594 /* ChatExperienceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D7F3D7E1327B18F35A9CA02 /* ChatExperienceView.swift */; };
 		064D258A6C237609203C86FE /* ServiceTagsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16FEB8EC982ACD7191E67AB1 /* ServiceTagsView.swift */; };
@@ -87,6 +89,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		E226C4A357AC47E7A1B60349 /* OnboardingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingUITests.swift; sourceTree = "<group>"; };
+		6EA1EAE34FE0E05452C2CFE7 /* OnboardingAffiliation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAffiliation.swift; sourceTree = "<group>"; };
 		056F3DABECB9BBA51678561B /* JourneyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyModels.swift; sourceTree = "<group>"; };
 		0707AD1F306265EB83E9F0DB /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		08FFB5D411A7EA26538BFFFA /* PricingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingView.swift; sourceTree = "<group>"; };
@@ -195,6 +199,7 @@
 			isa = PBXGroup;
 			children = (
 				DB7CCB22E8BFF8458460ADEF /* H5ParityUITests.swift */,
+				E226C4A357AC47E7A1B60349 /* OnboardingUITests.swift */,
 				E5D411EC06631F1746B40192 /* LanguageUITests.swift */,
 			);
 			path = MasterAppUITests;
@@ -300,6 +305,7 @@
 			children = (
 				CECB7504D8D30BE0BD2E3F1B /* LoginView.swift */,
 				4D252E073923435424D957A1 /* MasterOnboardingView.swift */,
+				6EA1EAE34FE0E05452C2CFE7 /* OnboardingAffiliation.swift */,
 				AF1204FC48A5BE263D3D4DEF /* WorkspaceView.swift */,
 			);
 			path = Workspace;
@@ -642,6 +648,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				837C3ABCF5E0A1D28AC05BBF /* H5ParityUITests.swift in Sources */,
+				B2069BEFAF144C19B0E0E521 /* OnboardingUITests.swift in Sources */,
 				AA06E9CB23C05D009224816B /* LanguageUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -692,6 +699,7 @@
 				C9921DF9A1A7F314B89B56DD /* MasterTopNavBar.swift in Sources */,
 				24950F2C669DD0D16017E3CB /* Message.swift in Sources */,
 				523B4322828D696A1A1C58B3 /* MessagesView.swift in Sources */,
+				1C21220842CED78F898A03E5 /* OnboardingAffiliation.swift in Sources */,
 				D0D565E17D40295FC3041F9F /* OpenIMManager.swift in Sources */,
 				BBD51F322A9E511427266A2E /* PricingView.swift in Sources */,
 				4AEE91A845C1A45468C26917 /* PrimaryButton.swift in Sources */,

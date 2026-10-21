@@ -23,6 +23,7 @@ export function createMaster(data: {
   templeName?: string
   position: string
   beliefCode: string
+  traditionCodes: string[]
   sect: string
   type: string
   specialties: string[]
