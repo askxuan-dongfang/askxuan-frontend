@@ -23,7 +23,7 @@ const activeMenu = computed(() => activeWorkspacePath(route.path))
 const pageWorkspace = computed(() => workspaceForPath(route.path))
 const pageList = computed(() => workspaceItemForPath(route.path))
 const avatarText = computed(() => (auth.userInfo?.nickname || '管').slice(0, 1))
-const pageTitle = computed(() => pageList.value?.path === route.path ? pageList.value.title : (route.meta.title as string) || '平台管理台')
+const pageTitle = computed(() => (route.meta.title as string) || '平台管理台')
 const pageParent = computed(() => pageWorkspace.value?.title || '平台管理台')
 
 

@@ -9,7 +9,7 @@ function compile(source,bindings={}){
  const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText
  const exports={};new Function('exports','require',js)(exports,name=>bindings[name]??{});return exports
 }
-const {adminWorkspaces,activeWorkspacePath,workspaceForPath}=compile(read('./workspaces.ts'))
+const {adminWorkspaces,activeWorkspacePath,workspaceForPath,workspaceItemForPath}=compile(read('./workspaces.ts'))
 const {canAccessRoute,defaultRoute}=compile(read('../../apps/web-platform-admin/src/router/access.ts'))
 const {agentCenterSections}=compile(read('../../apps/web-platform-admin/src/views/ai/centerNavigation.ts'))
 const {agentCenterRoutes}=compile(read('../../apps/web-platform-admin/src/router/agentCenter.ts'),{'@/views/ai/centerNavigation':{agentCenterSections}})
@@ -43,4 +43,24 @@ test('navigation consults unchanged route roles: shop cannot acquire platform, A
  assert.ok(shop.includes('/commerce/orders'));assert.ok(!shop.includes('/master/list'));assert.ok(!shop.includes('/ai/agent'));assert.ok(!shop.includes('/commerce/creator-rewards'))
  assert.ok(service.includes('/master/list'));assert.ok(!service.includes('/commerce/orders'));assert.ok(!service.includes('/onboarding/review'));assert.ok(!service.includes('/settings/directory-tags'))
  for(const path of ['/onboarding/review','/ai/agent','/commerce/creator-rewards','/settings/directory-tags'])assert.ok(superuser.includes(path))
+})
+
+test('shell preserves commerce page titles independently of workspace menu labels',()=>{
+ const {reactive,computed}=require('vue')
+ const routeState=reactive({path:'/dashboard',meta:{title:'平台总览'}})
+ const source=read('../../apps/web-platform-admin/src/layouts/DefaultLayout.vue').match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1]
+ const shell=compile(source+'\nexport {pageTitle,pageParent};',{
+  vue:{computed},
+  'vue-router':{useRoute:()=>routeState,useRouter:()=>router},
+  '../../../../packages/admin-ui/navigation':{useAdminNavigation:()=>({})},
+  '../../../../packages/admin-ui/workspaces':{adminWorkspaces,activeWorkspacePath,workspaceForPath,workspaceItemForPath},
+  '@/router/access':{canAccessRoute,defaultRoute},
+  '@/stores/auth':{useAuthStore:()=>({roles:['platform_super'],userInfo:{}})}
+ })
+ for(const route of JSON.parse(read('../../scripts/commerce-routes.json'))){
+  routeState.path=route.path.replace('/:id?','/1').replace('/:id','/1')
+  routeState.meta={title:route.title}
+  assert.equal(shell.pageTitle.value,route.title,route.path)
+  assert.equal(shell.pageParent.value,workspaceForPath(routeState.path).title,route.path)
+ }
 })
