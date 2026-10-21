@@ -19,9 +19,9 @@ onMounted(load)
 </script>
 <template>
  <div class="dfx-page">
-  <PageHeader :title='$t("筛选标签")' :subtitle='$t("寺院与师傅目录的固定筛选选项。切换地区、搜索结果为空时仍保留标签。")'><template #actions><el-button type="primary" @click="open()">{{ $t("新增标签") }}</el-button><el-button @click="load">{{ $t("刷新") }}</el-button></template></PageHeader>
+  <PageHeader :title='$t("筛选标签")' :subtitle='$t("标准宗派信俗与人员资料选项分别维护，目录不随分页或搜索结果变化。")'><template #actions><el-button type="primary" @click="open()">{{ $t("新增标签") }}</el-button><el-button @click="load">{{ $t("刷新") }}</el-button></template></PageHeader>
   <section class="dfx-card" style="padding:20px">
-   <p>{{ $t("宗派 / 信俗可在寺院、师傅详情中多选关联。身份和擅长领域的匹配值对应师傅资料；修改展示名称不会改动匹配值。服务筛选继续使用统一服务目录。") }}</p>
+   <p>{{ $t("标准宗派信俗用于申请、建档和目录筛选；身份和擅长领域来自人员资料，不代表资质或实际服务。修改展示名称不会改动固定匹配值，停用不会删除历史关联。") }}</p>
    <el-radio-group v-model="selected" :aria-label='$t("标签分组")' style="margin-block:16px"><el-radio-button v-for="(name,key) in groups" :key="key" :value="key">{{$t(name)}}</el-radio-button></el-radio-group>
    <p v-if="error" role="alert">{{$t(error)}}</p>
    <el-table :data="filtered" v-loading="loading" :empty-text='$t("暂无标签")'>

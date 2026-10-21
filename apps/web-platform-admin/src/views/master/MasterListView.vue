@@ -8,21 +8,21 @@
 
     <div class="dfx-card filter-bar">
       <el-select v-model="query.regionCode" :placeholder='$t("地区标签")' clearable style="width:140px"><el-option v-for="r in regions" :key="r.code" :label="$t(r.name)" :value="r.code"/></el-select>
-      <el-select v-model="query.beliefCode" :placeholder='$t("一级流派")' clearable style="width: 140px">
+      <el-select v-model="query.beliefCode" :placeholder='$t("主信仰")' clearable style="width: 140px">
         <el-option v-for="item in beliefs" :key="item.code" :label="$t(item.name)" :value="item.code" />
       </el-select>
       <el-input v-model="query.templeId" :placeholder='$t("寺院编码")' clearable style="width: 140px" />
-      <el-select v-model="query.sect" :placeholder='$t("宗派")' clearable style="width: 140px">
-        <el-option v-for="s in sects" :key="s" :label="$t(s)" :value="s" />
+      <el-select :disabled="directoryLoading || !!directoryError" v-model="query.traditionCode" :placeholder='$t("标准宗派 / 信俗")' :aria-label='$t("标准宗派 / 信俗")' clearable style="width: 180px">
+        <el-option v-for="tag in traditions" :key="tag.code" :label="$t(tag.name)" :value="tag.code" />
+        <el-option v-if="query.traditionCode && !traditions.some(tag=>tag.code===query.traditionCode)" :value="query.traditionCode" :label="query.traditionCode" />
       </el-select>
-      <el-select v-model="query.type" :placeholder='$t("类型")' clearable style="width: 120px">
-        <el-option :label='$t("佛教")' value="佛教" />
-        <el-option :label='$t("道教")' value="道教" />
-      </el-select>
+      <el-input v-model="query.sect" :placeholder='$t("历史宗派文字（可选）")' clearable style="width: 180px" />
       <el-button type="primary" @click="router.push('/master/create')">{{ $t("+ 新增独立执业大师") }}</el-button>
             <el-button type="primary" :icon="Search" @click="onSearch">{{ $t("查询") }}</el-button>
       <el-button :icon="RefreshLeft" @click="onReset">{{ $t("重置") }}</el-button>
     </div>
+    <p v-if="directoryError" role="alert" class="directory-source-note">{{ $t(directoryError) }} <el-button link @click="loadDirectory">{{ $t('重新加载') }}</el-button></p>
+    <p class="directory-source-note">{{ $t("筛选使用完整标准目录，不随当前分页或搜索结果减少；宗派文字仅作为补充资料。") }}</p>
 
     <div class="dfx-card table-wrap">
       <DataTable :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
@@ -46,7 +46,8 @@
         </el-table-column>
         <el-table-column :label='$t("所属寺院")' prop="templeName" width="150" />
         <el-table-column :label='$t("职位")' prop="position" width="100" />
-        <el-table-column :label='$t("宗派")' prop="sect" width="90" />
+        <el-table-column :label='$t("标准宗派 / 信俗")' min-width="160"><template #default="{row}"><el-tag v-for="code in row.traditionCodes || []" :key="code" size="small" style="margin:2px 4px 2px 0">{{ $t(traditionName(code)) }}<small v-if="!directoryTags.some(tag=>tag.code===code&&normalizeBelief(tag.beliefCode||'')===normalizeBelief(row.beliefCode))">{{ $t('（历史关联，需核对）') }}</small></el-tag><span v-if="!row.traditionCodes?.length" class="muted">{{ $t('未关联') }}</span></template></el-table-column>
+        <el-table-column :label='$t("宗派补充说明")' prop="sect" min-width="130" />
         <el-table-column :label='$t("类型")' prop="type" width="80" />
         <el-table-column :label='$t("专长")' min-width="160">
           <template #default="{ row }">
@@ -120,7 +121,7 @@ import { t as uiText } from '../../../../../packages/localization/language'
 import { isAdminSessionExpired } from '@/api/client'
 import { useRouter } from 'vue-router'
 const router = useRouter()
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { Search, Refresh, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 
 import ProviderRegionSelect from '@/components/ProviderRegionSelect.vue'
@@ -129,18 +130,21 @@ import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import { getMasterList, updateMasterStatus, updateMasterConsultation, getServiceTypes } from '@/api/master'
-import { taxonomyApi, type BeliefProfile } from '@/api/taxonomy'
+import { beliefOptions as standardBeliefs, normalizeBelief } from '../../../../../packages/admin-ui/affiliation'
+import { getPublicDirectoryTags, type DirectoryTag } from '@/api/directoryTags'
 import type { Master } from '@/types'
 
-const beliefs = ref<BeliefProfile[]>([])
-const sects = ref<string[]>([])
+const beliefs = standardBeliefs
+const directoryTags=ref<DirectoryTag[]>([])
+const directoryLoading=ref(false),directoryError=ref('')
+async function loadDirectory(){directoryLoading.value=true;directoryError.value='';try{directoryTags.value=(await getPublicDirectoryTags()).list||[]}catch(error){directoryError.value='标准宗派目录加载失败，请重试'}finally{directoryLoading.value=false}}
 const serviceNameMap = ref<Record<string, string>>({})
 const loading = ref(false)
 const list = ref<Master[]>([])
 const total = ref(0)
 const regions=ref<RegionTag[]>([])
 onMounted(async()=>{regions.value=(await getRegions()).list||[]})
-const query = reactive({ regionCode:'', beliefCode: '', templeId: '', sect: '', type: '', page: 1, size: 20 })
+const query = reactive({ regionCode:'', beliefCode: '', traditionCode: '', templeId: '', sect: '', type: '', page: 1, size: 20 })
 const consultVisible = ref(false)
 const consultSaving = ref(false)
 const consultMasterId = ref('')
@@ -151,7 +155,6 @@ async function loadData() {
   try {
     const res = await getMasterList(query)
     list.value = res.list || []
-    sects.value = [...new Set(list.value.map((item) => item.sect).filter(Boolean))]
     total.value = res.total || 0
   } catch (e: any) { if (isAdminSessionExpired(e)) return;
     list.value = []
@@ -162,6 +165,9 @@ async function loadData() {
   }
 }
 
+const traditions=computed(()=>directoryTags.value.filter(tag=>tag.group==='tradition'&&(!query.beliefCode||normalizeBelief(tag.beliefCode||'')===query.beliefCode||tag.code===query.traditionCode)))
+function traditionName(code:string){return directoryTags.value.find(tag=>tag.code===code)?.name||code}
+
 function onSearch() {
   query.page = 1
   loadData()
@@ -169,6 +175,7 @@ function onSearch() {
 function onReset() {
   query.regionCode=''
   query.beliefCode = ''
+  query.traditionCode = ''
   query.templeId = ''
   query.sect = ''
   query.type = ''
@@ -208,11 +215,10 @@ async function saveConsult() {
 onMounted(async () => {
   // 筛选器与目录加载失败不阻断法师列表主数据（避免列表页静默空白）
   try {
-    const [beliefResp, catalog] = await Promise.all([
-      taxonomyApi.beliefs().catch(() => ({ list: [] })),
+    const [, catalog] = await Promise.all([
+      loadDirectory(),
       getServiceTypes().catch(() => ({ list: [] }))
     ])
-    beliefs.value = beliefResp.list || []
     serviceNameMap.value = Object.fromEntries((catalog.list || []).map((s) => [s.code, s.name]))
   } catch {
     // ignore
@@ -222,6 +228,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.directory-source-note{margin:-4px 0 16px;color:var(--color-text-tertiary);font-size:12px;line-height:1.7}
 .filter-bar {
   display: flex;
   gap: 12px;

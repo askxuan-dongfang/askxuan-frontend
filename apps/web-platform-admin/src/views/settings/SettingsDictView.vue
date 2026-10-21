@@ -1,6 +1,6 @@
 <template>
   <div class="dfx-page">
-    <PageHeader :title='$t("数据字典")' :subtitle='$t("内容敏感词字典管理")'>
+    <PageHeader :title='$t("敏感词管理")' :subtitle='$t("内容敏感词字典管理")'>
       <template #actions>
         <el-button type="primary" :icon="Plus" @click="openCreate">{{ $t("新增词条") }}</el-button>
         <el-button :icon="Refresh" @click="loadData">{{ $t("刷新") }}</el-button>

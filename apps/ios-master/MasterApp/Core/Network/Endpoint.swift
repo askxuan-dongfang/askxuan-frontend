@@ -30,6 +30,8 @@ enum Endpoint {
     case authRefresh(refreshToken: String)
     /// POST auth/im-token（续签 OpenIM 登录 token，JWT 鉴权）
     case authIMToken
+    /// Public standard directory; applicant credentials are deliberately omitted.
+    case directoryTags
 
     // MARK: - 预约（法师工作台）
     /// GET admin/masters/bookings
@@ -132,6 +134,8 @@ enum Endpoint {
             return "auth/refresh"
         case .authIMToken:
             return "auth/im-token"
+        case .directoryTags:
+            return "beliefs/directory-tags"
         // 预约
         case .masterBookings:
             return "admin/masters/bookings"
@@ -367,7 +371,7 @@ enum Endpoint {
     var usesSessionAuthorization: Bool {
         switch self {
  case .accountAuth: return false
-        case .adminLogin, .authRefresh: return false
+        case .adminLogin, .authRefresh, .directoryTags: return false
         default: return true
         }
     }
@@ -375,7 +379,7 @@ enum Endpoint {
     var shouldAttemptTokenRefresh: Bool {
         switch self {
  case .accountAuth: return false
-        case .adminLogin, .authRefresh:
+        case .adminLogin, .authRefresh, .directoryTags:
             return false
         default:
             return true

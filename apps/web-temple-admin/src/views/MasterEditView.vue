@@ -9,7 +9,8 @@ import { ArrowLeft, Check, Close } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import { getMasterDetail, createMaster, updateMaster } from '@/api/master'
-import { listBeliefs, type BeliefOption } from '@/api/taxonomy'
+import ProviderAffiliation from '../../../../packages/admin-ui/components/ProviderAffiliation.vue'
+import { beliefLabel, normalizeBelief } from '../../../../packages/admin-ui/affiliation'
 import { useAuthStore } from '@/stores/auth'
 import type { Master } from '@/types'
 
@@ -26,7 +27,7 @@ const formRef = ref<FormInstance>()
 const loading = ref(false)
 const saving = ref(false)
 const tagInput = ref('')
-const beliefOptions = ref<BeliefOption[]>([])
+const affiliation = ref<InstanceType<typeof ProviderAffiliation>>()
 
 const form = reactive({
   dharmaName: '',
@@ -34,6 +35,7 @@ const form = reactive({
   position: '',
   beliefCode: '',
   sect: '',
+  traditionCodes: [] as string[],
   type: '佛教',
   specialties: [] as string[],
   avatar: ''
@@ -43,8 +45,8 @@ const rules: FormRules = {
   dharmaName: [{ required: true, message: '请输入法号', trigger: 'blur' }],
   layName: [{ required: true, message: '请输入俗名', trigger: 'blur' }],
   position: [{ required: true, message: '请输入职位', trigger: 'blur' }],
-  beliefCode: [{ required: true, message: '请选择一级流派', trigger: 'change' }],
-  sect: [{ required: true, message: '请选择宗派', trigger: 'change' }]
+  beliefCode: [{ required: true, message: '请选择主信仰', trigger: 'change' }],
+
 }
 
 async function loadMaster() {
@@ -55,7 +57,8 @@ async function loadMaster() {
     form.dharmaName = m.dharmaName
     form.layName = m.layName
     form.position = m.position
-    form.beliefCode = m.beliefCode
+    form.beliefCode = normalizeBelief(m.beliefCode)
+    form.traditionCodes = [...(m.traditionCodes || [])]
     form.sect = m.sect
     form.type = m.type
     form.specialties = m.specialties || []
@@ -77,9 +80,11 @@ function removeTag(t: string) {
 }
 
 async function handleSubmit() {
-  if (!formRef.value) return
+  if (saving.value || !formRef.value) return
+  if (!isEdit.value) { const problem=affiliation.value?.validate(true); if(problem){ElMessage.warning(uiText(problem));return} }
   await formRef.value.validate(async (valid) => {
     if (!valid) return
+    if (!isEdit.value) form.type = beliefLabel(form.beliefCode)
     saving.value = true
     try {
       if (isEdit.value) {
@@ -87,7 +92,6 @@ async function handleSubmit() {
           dharmaName: form.dharmaName,
           layName: form.layName,
           position: form.position,
-          beliefCode: form.beliefCode,
           sect: form.sect,
           specialties: form.specialties,
           avatar: form.avatar
@@ -101,6 +105,7 @@ async function handleSubmit() {
           templeName: auth.templeName,
           position: form.position,
           beliefCode: form.beliefCode,
+          traditionCodes: [...form.traditionCodes],
           sect: form.sect,
           type: form.type,
           specialties: form.specialties,
@@ -116,8 +121,7 @@ async function handleSubmit() {
 }
 
 onMounted(async () => {
-  beliefOptions.value = await listBeliefs()
-  if (!isEdit.value && !form.beliefCode) form.beliefCode = beliefOptions.value[0]?.code || ''
+  if (!isEdit.value && !form.beliefCode) form.beliefCode = 'han_buddhism'
   await loadMaster()
 })
 </script>
@@ -147,24 +151,15 @@ onMounted(async () => {
               <el-input v-model="form.position" :placeholder='$t("如 方丈、监院")' />
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item :label='$t("一级流派")' prop="beliefCode">
-              <el-select v-model="form.beliefCode" style="width: 100%">
-                <el-option v-for="item in beliefOptions" :key="item.code" :label="$t(item.name)" :value="item.code" />
-              </el-select>
+          <el-col :span="24">
+            <el-form-item label-width="0">
+              <ProviderAffiliation ref="affiliation" v-model:belief="form.beliefCode" v-model:codes="form.traditionCodes" :readonly="isEdit" :disabled="saving" />
+              <p v-if="isEdit" class="affiliation-scope-note">{{ $t('已建档法师的主信仰与标准宗派由平台维护；本寺可继续补充资料说明。') }}</p>
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item :label='$t("宗派")' prop="sect">
-              <el-input v-model="form.sect" :placeholder='$t("如 禅宗、全真派、格鲁派")' />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item :label='$t("类型")'>
-              <el-radio-group v-model="form.type" :disabled="isEdit">
-                <el-radio value="佛教">{{ $t("佛教") }}</el-radio>
-                <el-radio value="道教">{{ $t("道教") }}</el-radio>
-              </el-radio-group>
+          <el-col :span="24">
+            <el-form-item :label='$t("宗派补充说明")' prop="sect">
+              <el-input v-model="form.sect" maxlength="32" :placeholder='$t("可选；不作为标准筛选关联")'/>
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -203,6 +198,7 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.affiliation-scope-note{font-size:12px;line-height:1.7;color:var(--color-text-tertiary);margin:12px 0 0}
 .edit-card {
   padding: 22px 24px;
 }

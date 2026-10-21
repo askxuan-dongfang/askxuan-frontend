@@ -56,7 +56,7 @@ const routes: RouteRecordRaw[] = [
         path: 'temple/review',
         name: 'TempleReview',
         component: () => import('@/views/temple/TempleReviewView.vue'),
-        meta: { title: '寺院审核', parent: '寺院管理' }
+        meta: { title: '寺院初审与终审', parent: '寺院管理' }
       },
       // 法师管理
       {
@@ -69,7 +69,7 @@ const routes: RouteRecordRaw[] = [
         path: 'master/review',
         name: 'MasterReview',
         component: () => import('@/views/master/MasterReviewView.vue'),
-        meta: { title: '法师审核', parent: '法师管理' }
+        meta: { title: '法师资质审核', parent: '法师管理' }
       },
       {
         path: 'master/create',
@@ -170,7 +170,7 @@ const routes: RouteRecordRaw[] = [
         path: 'settings/taxonomy',
         name: 'SettingsTaxonomy',
         component: () => import('@/views/settings/SettingsTaxonomyView.vue'),
-        meta: { title: '首页分类', parent: '系统设置' }
+        meta: { title: '信仰与心愿标准 / 首页展示', parent: '系统设置' }
       },
       {
         path: 'settings/role',
@@ -188,7 +188,7 @@ const routes: RouteRecordRaw[] = [
         path: 'settings/dict',
         name: 'SettingsDict',
         component: () => import('@/views/settings/SettingsDictView.vue'),
-        meta: { title: '数据字典', parent: '系统设置' }
+        meta: { title: '敏感词管理', parent: '系统设置' }
       },
       {
         path: 'settings/log',

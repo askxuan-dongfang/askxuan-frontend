@@ -47,6 +47,7 @@ export interface Temple {
   region: string
   type: string
   beliefCode: string
+  traditionCodes?: string[]
   sect: string
   status: string
   address: string
@@ -107,6 +108,7 @@ export interface Master {
   templeName: string
   position: string
   beliefCode: string
+  traditionCodes?: string[]
   sect: string
   type: string
   authStatus: string

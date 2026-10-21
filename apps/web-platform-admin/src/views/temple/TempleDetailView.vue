@@ -29,14 +29,14 @@
             <div class="detail-info__meta">
               <StatusTag :status="detail.temple.status" />
               <el-tag size="small" effect="plain">{{ $t(detail.temple.type) }}</el-tag>
-              <el-tag size="small" effect="plain" type="success">{{ $t(detail.temple.beliefCode) }}</el-tag>
-              <el-tag size="small" effect="plain" type="warning">{{ $t(detail.temple.sect) }}</el-tag>
               <span class="star">★ {{ $t(detail.temple.rating?.toFixed(1)) }}</span>
             </div>
             <div class="detail-info__row"><span class="label">{{ $t("寺院编码：") }}</span>{{ $t(detail.temple.id) }}</div>
             <div class="detail-info__row"><span class="label">{{ $t("所在地区：") }}</span>{{ $t(detail.temple.region) }}</div>
             <div class="detail-info__row"><span class="label">{{ $t("详细地址：") }}</span>{{ detail.temple.address || '-' }}</div>
-            <div class="detail-info__row"><ProviderDirectoryTags kind="temple" :id="detail.temple.id" :name="detail.temple.name" @updated="loadData"/></div>
+            <div class="detail-info__row"><span class="label">{{ $t('宗派补充说明') }}</span>{{ detail.temple.sect || '—' }}</div>
+            <div class="detail-info__row affiliation-summary"><ProviderAffiliation :belief="detail.temple.beliefCode" :codes="detail.temple.traditionCodes || []" readonly :catalog-token="auth.roles.includes('platform_super') ? auth.token : undefined" :catalog-url="auth.roles.includes('platform_super') ? '/api/v1/admin/platform/beliefs/directory-tags' : '/api/v1/beliefs/directory-tags'" /></div>
+            <div class="detail-info__row"><ProviderDirectoryTags kind="temple" :id="detail.temple.id" :name="detail.temple.name" :belief="detail.temple.beliefCode" @updated="loadData"/></div>
             <div class="detail-info__row"><span class="label">{{ $t("简介：") }}</span>{{ $t((detail.temple.description || '-')) }}</div>
           </div>
         </div>
@@ -83,6 +83,8 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { Back } from '@element-plus/icons-vue'
+import { useAuthStore } from '@/stores/auth'
+import ProviderAffiliation from '../../../../../packages/admin-ui/components/ProviderAffiliation.vue'
 import ProviderDirectoryTags from '@/components/ProviderDirectoryTags.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
@@ -90,6 +92,7 @@ import { getTempleDetail } from '@/api/temple'
 import type { TempleDetail } from '@/types'
 
 const route = useRoute()
+const auth = useAuthStore()
 const loading = ref(false)
 const detail = ref<TempleDetail | null>(null)
 const loadError = ref('')
@@ -119,6 +122,7 @@ onMounted(loadData)
 </script>
 
 <style scoped>
+.affiliation-summary{margin:20px 0;max-width:720px}
 .detail-wrap {
   display: flex;
   flex-direction: column;

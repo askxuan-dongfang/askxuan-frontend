@@ -8,19 +8,20 @@
 
     <div class="dfx-card filter-bar">
       <el-select v-model="query.regionCode" :placeholder='$t("地区标签")' clearable style="width:140px"><el-option v-for="r in regions" :key="r.code" :label="$t(r.name)" :value="r.code"/></el-select>
-      <el-select v-model="query.beliefCode" :placeholder='$t("一级流派")' clearable style="width: 140px">
+      <el-select v-model="query.beliefCode" :placeholder='$t("主信仰")' clearable style="width: 140px">
         <el-option v-for="item in beliefOptions" :key="item.code" :label="$t(item.name)" :value="item.code" />
       </el-select>
       <el-input v-model="query.region" :placeholder='$t("城市或省份")' clearable style="width: 140px" />
-      <el-select v-model="query.sect" :placeholder='$t("宗派")' clearable style="width: 140px">
-        <el-option v-for="s in sects" :key="s" :label="$t(s)" :value="s" />
+      <el-select :disabled="directoryLoading || !!directoryError" v-model="query.traditionCode" :placeholder='$t("标准宗派 / 信俗")' :aria-label='$t("标准宗派 / 信俗")' clearable style="width: 180px">
+        <el-option v-for="tag in traditions" :key="tag.code" :label="$t(tag.name)" :value="tag.code" />
+        <el-option v-if="query.traditionCode && !traditions.some(tag=>tag.code===query.traditionCode)" :value="query.traditionCode" :label="query.traditionCode" />
       </el-select>
-      <el-select v-model="query.type" :placeholder='$t("类型")' clearable style="width: 140px">
-        <el-option v-for="t in types" :key="t" :label="$t(t)" :value="t" />
-      </el-select>
+      <el-input v-model="query.sect" :placeholder='$t("历史宗派文字（可选）")' clearable style="width: 180px" />
       <el-button type="primary" :icon="Search" @click="onSearch">{{ $t("查询") }}</el-button>
       <el-button :icon="RefreshLeft" @click="onReset">{{ $t("重置") }}</el-button>
     </div>
+    <p v-if="directoryError" role="alert" class="directory-source-note">{{ $t(directoryError) }} <el-button link @click="loadDirectory">{{ $t('重新加载') }}</el-button></p>
+    <p class="directory-source-note">{{ $t("筛选使用完整标准目录，不随当前分页或搜索结果减少；宗派文字仅作为补充资料。") }}</p>
 
     <div class="dfx-card table-wrap">
       <DataTable :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData">
@@ -39,10 +40,11 @@
         </el-table-column>
         <el-table-column :label='$t("城市或省份")' prop="region" width="110" />
         <el-table-column :label='$t("类型")' prop="type" width="100" />
-        <el-table-column :label='$t("一级流派")' width="110">
+        <el-table-column :label='$t("主信仰")' width="110">
           <template #default="{ row }">{{ $t(beliefName(row.beliefCode)) }}</template>
         </el-table-column>
-        <el-table-column :label='$t("宗派")' prop="sect" width="100" />
+        <el-table-column :label='$t("标准宗派 / 信俗")' min-width="160"><template #default="{row}"><el-tag v-for="code in row.traditionCodes || []" :key="code" size="small" style="margin:2px 4px 2px 0">{{ $t(traditionName(code)) }}<small v-if="!directoryTags.some(tag=>tag.code===code&&normalizeBelief(tag.beliefCode||'')===normalizeBelief(row.beliefCode))">{{ $t('（历史关联，需核对）') }}</small></el-tag><span v-if="!row.traditionCodes?.length" class="muted">{{ $t('未关联') }}</span></template></el-table-column>
+        <el-table-column :label='$t("宗派补充说明")' prop="sect" min-width="130" />
         <el-table-column :label='$t("评分")' width="90">
           <template #default="{ row }">
             <span class="star">★ {{ $t((row.rating?.toFixed(1) || '-')) }}</span>
@@ -92,12 +94,14 @@ import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import { getTempleList, updateTempleStatus, type TempleOperationStatus } from '@/api/temple'
-import { taxonomyApi, type BeliefProfile } from '@/api/taxonomy'
+import { beliefOptions as standardBeliefs, normalizeBelief } from '../../../../../packages/admin-ui/affiliation'
+import { getPublicDirectoryTags, type DirectoryTag } from '@/api/directoryTags'
 import type { Temple } from '@/types'
 
-const sects = computed(() => Array.from(new Set(list.value.map((item) => item.sect).filter(Boolean))).sort())
-const types = computed(() => Array.from(new Set(list.value.map((item) => item.type).filter(Boolean))).sort())
-const beliefOptions = ref<BeliefProfile[]>([])
+const beliefOptions = standardBeliefs
+const directoryTags=ref<DirectoryTag[]>([])
+const directoryLoading=ref(false),directoryError=ref('')
+async function loadDirectory(){directoryLoading.value=true;directoryError.value='';try{directoryTags.value=(await getPublicDirectoryTags()).list||[]}catch(error){directoryError.value='标准宗派目录加载失败，请重试'}finally{directoryLoading.value=false}}
 
 const loading = ref(false)
 const router = useRouter()
@@ -105,9 +109,12 @@ const list = ref<Temple[]>([])
 const total = ref(0)
 const regions=ref<RegionTag[]>([])
 onMounted(async()=>{regions.value=(await getRegions()).list||[]})
-const query = reactive({ regionCode:'', beliefCode: '', region: '', sect: '', type: '', page: 1, size: 20 })
+const query = reactive({ regionCode:'', beliefCode: '', traditionCode: '', region: '', sect: '', type: '', page: 1, size: 20 })
 
-function beliefName(code: string) { return beliefOptions.value.find((item) => item.code === code)?.name || code }
+const traditions=computed(()=>directoryTags.value.filter(tag=>tag.group==='tradition'&&(!query.beliefCode||normalizeBelief(tag.beliefCode||'')===query.beliefCode||tag.code===query.traditionCode)))
+function traditionName(code:string){return directoryTags.value.find(tag=>tag.code===code)?.name||code}
+
+function beliefName(code: string) { return beliefOptions.find((item) => item.code === normalizeBelief(code))?.name || code }
 
 async function loadData() {
   loading.value = true
@@ -120,10 +127,6 @@ async function loadData() {
   }
 }
 
-async function loadBeliefOptions() {
-  const response = await taxonomyApi.beliefs()
-  beliefOptions.value = response.list || []
-}
 
 function onSearch() {
   query.page = 1
@@ -132,6 +135,7 @@ function onSearch() {
 function onReset() {
   query.regionCode=''
   query.beliefCode = ''
+  query.traditionCode = ''
   query.region = ''
   query.sect = ''
   query.type = ''
@@ -151,11 +155,12 @@ async function onStatus(row: Temple, status: TempleOperationStatus) {
 }
 
 onMounted(async () => {
-  await Promise.all([loadBeliefOptions(), loadData()])
+  await Promise.all([loadDirectory(), loadData()])
 })
 </script>
 
 <style scoped>
+.directory-source-note{margin:-4px 0 16px;color:var(--color-text-tertiary);font-size:12px;line-height:1.7}
 .filter-bar {
   display: flex;
   gap: 12px;

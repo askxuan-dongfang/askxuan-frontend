@@ -7,7 +7,8 @@ import { isAdminSessionExpired } from '@/api/client'
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { taxonomyApi } from '@/api/taxonomy'
+import ProviderAffiliation from '../../../../../packages/admin-ui/components/ProviderAffiliation.vue'
+import { beliefOptions as standardBeliefs } from '../../../../../packages/admin-ui/affiliation'
 import PageHeader from '@/components/PageHeader.vue'
 import { createWildMaster } from '@/api/master'
 
@@ -15,11 +16,8 @@ const router = useRouter()
 const saving = ref(false)
 const formRef = ref()
 
-const beliefOptions = ref<{value:string;label:string}[]>([])
-async function loadBeliefs(){
- try{const data=await taxonomyApi.beliefs();beliefOptions.value=data.list.filter(b=>b.status==='enabled').map(b=>({value:b.code,label:b.name}))}
- catch(sessionError) { if (isAdminSessionExpired(sessionError)) return;ElMessage.error(uiText('分类加载失败，请刷新重试'))}
-}
+const affiliation = ref<InstanceType<typeof ProviderAffiliation>>()
+const beliefOptions = standardBeliefs.map(item=>({value:item.code,label:item.name}))
 
 
 const form = reactive({
@@ -28,6 +26,7 @@ const form = reactive({
   position: '',
   beliefCode: 'han_buddhism',
   sect: '',
+  traditionCodes: [] as string[],
   type: '汉传佛教',
   specialtiesText: '',
   consultEnabled: true,
@@ -37,14 +36,17 @@ const form = reactive({
 })
 
 function syncType() {
-  form.type = beliefOptions.value.find(b => b.value === form.beliefCode)?.label || form.type
+  form.type = beliefOptions.find(b => b.value === form.beliefCode)?.label || form.type
 }
 
 async function submit() {
-  if (!form.dharmaName.trim() || !form.sect.trim()) {
-    ElMessage.warning(uiText('请填写法号与宗派'))
+  if(saving.value)return
+  const problem = affiliation.value?.validate(true)
+  if (!form.dharmaName.trim() || problem) {
+    ElMessage.warning(uiText(problem || '请填写法号'))
     return
   }
+  syncType()
   saving.value = true
   try {
     const resp = await createWildMaster({
@@ -53,6 +55,7 @@ async function submit() {
       position: form.position.trim() || undefined,
       beliefCode: form.beliefCode,
       sect: form.sect.trim(),
+      traditionCodes: [...form.traditionCodes],
       type: form.type,
       specialties: form.specialtiesText.split(/[,，]/).map((s) => s.trim()).filter(Boolean),
       consultEnabled: form.consultEnabled,
@@ -63,12 +66,12 @@ async function submit() {
     ElMessage.success((uiText("已创建独立执业大师 ") + String(resp.id) + uiText("，待资质审核通过后上架")))
     router.push('/master/list')
   } catch (e) { if (isAdminSessionExpired(e)) return;
-    ElMessage.error(uiText('创建失败，请稍后重试'))
+    ElMessage.error(e instanceof Error ? e.message : uiText('创建失败，请稍后重试'))
   } finally {
     saving.value = false
   }
 }
-onMounted(loadBeliefs)
+
 </script>
 
 <template>
@@ -79,7 +82,7 @@ onMounted(loadBeliefs)
       </template>
     </PageHeader>
 
-    <div class="df-card" style="max-width: 640px">
+    <div class="df-card" style="max-width: 760px">
       <el-form ref="formRef" :model="form" label-width="120px">
         <el-form-item :label='$t("法号")' required>
           <el-input v-model="form.dharmaName" :placeholder='$t("如：云游道人")' maxlength="32" />
@@ -87,13 +90,11 @@ onMounted(loadBeliefs)
         <el-form-item :label='$t("俗名")'>
           <el-input v-model="form.layName" :placeholder='$t("如：陈道玄")' maxlength="32" />
         </el-form-item>
-        <el-form-item :label='$t("一级流派")' required>
-          <el-select v-model="form.beliefCode" style="width: 100%" @change="syncType">
-            <el-option v-for="b in beliefOptions" :key="b.value" :label="$t(b.label)" :value="b.value" />
-          </el-select>
+        <el-form-item label-width="0">
+          <ProviderAffiliation ref="affiliation" v-model:belief="form.beliefCode" v-model:codes="form.traditionCodes" :disabled="saving" />
         </el-form-item>
-        <el-form-item :label='$t("宗派")' required>
-          <el-input v-model="form.sect" :placeholder='$t("如：正一派")' maxlength="32" />
+        <el-form-item :label='$t("宗派补充说明")'>
+          <el-input v-model="form.sect" :placeholder='$t("可选；不作为标准筛选关联")' maxlength="32" />
         </el-form-item>
         <el-form-item :label='$t("职位")'>
           <el-input v-model="form.position" :placeholder='$t("如：独立道长")' maxlength="32" />
