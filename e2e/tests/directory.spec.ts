@@ -6,7 +6,7 @@ const beliefs = [
 ];
 const tags = [{ code: 'chan', group: 'tradition', name: '禅宗', value: '禅宗', beliefCode: 'han_buddhism', status: 'enabled' }];
 const regions = [{ code: 'zj', name: '浙江省' }, { code: 'bj', name: '北京市' }];
-const services = [{ code: 'S006', name: '开光' }, { code: 'S002', name: '供灯' }];
+const services = [{ code: 'S006', name: '开光' }, { code: 'S002', name: '供灯' }, { code: 'S001', name: '祈福' }, { code: 'S003', name: '上香' }];
 
 async function setup(page: Page, failSecondPage = false, appearance = { language: 'zh-Hans', theme: 'light' }) {
   const calls: URL[] = [];
@@ -33,7 +33,7 @@ async function setup(page: Page, failSecondPage = false, appearance = { language
         const common = { id: String(index + 1), regionCode: target ? 'zj' : 'bj', beliefCode: target ? 'han_buddhism' : 'daoism', traditionCodes: target ? ['chan'] : [], type: target ? '汉传佛教' : '道教', sect: '', rating: 4.8, status: 'enabled' };
         return path === '/temples'
           ? { ...common, name: target ? '灵隐寺' : `普通寺院${index + 1}`, region: target ? '杭州' : '北京', address: '', coverImage: '', serviceCodes: [target ? 'S006' : 'S002'], serviceTags: [target ? '开光' : '供灯'] }
-          : { ...common, dharmaName: target ? '慧觉法师' : `普通师傅${index + 1}`, layName: target ? '张三' : '', templeName: '', position: '独立师傅', specialties: target ? ['禅修'] : [], avatar: '', serviceTags: [{ serviceCode: target ? 'S006' : 'S002', price: 168, status: 'enabled' }] };
+          : { ...common, dharmaName: target ? '慧觉法师' : `普通师傅${index + 1}`, layName: target ? '张三' : '', templeName: '', position: index === 0 ? '自定义称谓' : '独立师傅', specialties: target ? ['禅修'] : [], avatar: '', serviceTags: [...(target ? [{ serviceCode: 'S001', price: 168, status: 'enabled' }, { serviceCode: 'S003', price: 168, status: 'enabled' }] : []), { serviceCode: target ? 'S006' : 'S002', price: 168, status: 'enabled' }, ...(index === 0 ? [{ serviceCode: 'S006', price: 99, status: 'disabled' }] : [])] };
       }).filter(row => !url.searchParams.get('regionCode') || row.regionCode === url.searchParams.get('regionCode'));
       // Deliberately cap the server page at 20 despite the client's size=100 request.
       data = { list: rows.slice((pageNumber - 1) * 20, pageNumber * 20), total: rows.length, page: pageNumber, size: 20 };
@@ -55,6 +55,10 @@ for (const directory of ['temples', 'masters'] as const) {
     await search.fill(directory === 'temples' ? '  靈隱 浙江 開光  ' : '  慧覺 浙江 開光  ');
     await expect(cards).toHaveCount(1);
     await expect(cards).toContainText(directory === 'temples' ? '灵隐寺' : '慧觉法师');
+    if (directory === 'masters') {
+      await page.getByRole('group', { name: '提供服务', exact: true }).getByRole('button', { name: '开光', exact: true }).click();
+      await expect(page).toHaveURL(/serviceCode=S006/);
+    }
     await page.locator('.directory-filters').getByRole('button', { name: '汉传佛教', exact: true }).click();
     await page.locator('.directory-traditions').getByRole('button', { name: '禅宗', exact: true }).click();
     await page.locator('.directory-region-trigger').click();
@@ -115,20 +119,20 @@ for (const directory of ['temples', 'masters'] as const) {
 }
 
 for (const appearance of [{ language: 'zh-Hans', theme: 'light' }, { language: 'zh-Hant', theme: 'dark' }]) {
-  test(`masters: retired URL filters cannot narrow results and remaining headings stay on one line ${appearance.language}`, async ({ page }) => {
+  test(`masters: standard services filter enabled offerings while retired identities cannot narrow results ${appearance.language}`, async ({ page }) => {
     const { calls } = await setup(page, false, appearance);
-    await page.goto('/c/masters?specialty=不存在&serviceCode=unavailable&position=独立师傅&priceRange=0-200');
+    await page.goto('/c/masters?specialty=不存在&serviceCode=unavailable&position=不存在的称谓&priceRange=0-200');
     const cards = page.locator('.directory-results a.card-press');
     await expect(cards).toHaveCount(125);
     await expect.poll(() => new URL(page.url()).searchParams.has('specialty')).toBe(false);
-    expect(new URL(page.url()).searchParams.has('serviceCode')).toBe(false);
-    expect(new URL(page.url()).searchParams.get('position')).toBe('独立师傅');
+    await expect.poll(() => new URL(page.url()).searchParams.has('serviceCode')).toBe(false);
+    expect(new URL(page.url()).searchParams.has('position')).toBe(false);
     expect(new URL(page.url()).searchParams.get('priceRange')).toBe('0-200');
     expect(calls.filter(url => url.pathname.endsWith('/masters')).every(url => !url.searchParams.has('specialty') && !url.searchParams.has('serviceCode'))).toBe(true);
     await expect(page.getByText(/独立师傅 · 含演示资料|獨立師傅 · 含演示資料/)).toHaveCount(0);
     const headings = page.locator('.master-directory-filter-toggle');
     await expect(headings).toHaveCount(2);
-    await expect(headings).toHaveText(appearance.language === 'zh-Hant' ? ['身份類型', '價格區間'] : ['身份类型', '价格区间']);
+    await expect(headings).toHaveText(appearance.language === 'zh-Hant' ? ['提供服務', '價格區間'] : ['提供服务', '价格区间']);
     for (const heading of await headings.all()) {
       await expect(heading).toHaveAttribute('aria-expanded', 'true');
       const layout = await heading.evaluate(element => {
@@ -146,12 +150,29 @@ for (const appearance of [{ language: 'zh-Hans', theme: 'light' }, { language: '
       await expect(heading).toHaveAttribute('aria-expanded', 'false');
       await heading.click();
     }
+    const serviceGroup = page.getByRole('group', { name: appearance.language === 'zh-Hant' ? '提供服務' : '提供服务', exact: true });
+    await serviceGroup.getByRole('button', { name: appearance.language === 'zh-Hant' ? '開光' : '开光', exact: true }).click();
+    await expect(cards).toHaveCount(1);
+    await expect(cards).toContainText('慧觉法师');
+    // The selected service is deliberately the third enabled offering in the fixture.
+    await expect(cards).toContainText(appearance.language === 'zh-Hant' ? '開光' : '开光');
+    expect(new URL(page.url()).searchParams.get('serviceCode')).toBe('S006');
+    expect(new URL(page.url()).searchParams.get('priceRange')).toBe('0-200');
+    await page.reload();
+    await expect(cards).toHaveCount(1);
+    await expect(serviceGroup.getByRole('button', { name: appearance.language === 'zh-Hant' ? '開光' : '开光', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await serviceGroup.getByRole('button', { name: appearance.language === 'zh-Hant' ? '供燈' : '供灯', exact: true }).click();
+    await expect(cards).toHaveCount(124);
+    await expect(cards.getByText('普通师傅1', { exact: true })).toBeVisible();
+    await serviceGroup.getByRole('button', { name: '全部', exact: true }).click();
+    await expect(cards).toHaveCount(125);
+    expect(new URL(page.url()).searchParams.has('serviceCode')).toBe(false);
     await page.getByRole('button', { name: '搜索', exact: true }).click();
     await page.getByRole('searchbox').fill('  禪修 開光  ');
     await expect(cards).toHaveCount(1);
     // Names are user data and stay verbatim; cataloged service labels follow the UI language.
     await expect(cards).toContainText('慧觉法师');
-    await expect(cards).toContainText(appearance.language === 'zh-Hant' ? '開光' : '开光');
+    await expect(cards).toContainText('祈福');
     await expect(cards).toContainText('168');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   });

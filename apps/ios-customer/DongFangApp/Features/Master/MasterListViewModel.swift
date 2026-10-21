@@ -21,16 +21,15 @@ final class MasterListViewModel: ObservableObject {
 
     // 所有筛选状态集中管理
     @Published var selectedBeliefCode: String = ""
-    @Published var selectedTemple: String = "全部"         // 左侧：所属寺院
-    @Published var selectedLevel: String = "全部"          // 左侧：职位
+    @Published var selectedServiceCode: String = ""
 
     @Published var beliefOptions: [BeliefFilterOption] = []
+    @Published private(set) var serviceOptions = [ServiceFilterOption(code: "", name: "全部")]
 
-    var filterGroups: [(title: String, options: [String])] {
+    var filterGroups: [(title: String, options: [ServiceFilterOption])] {
         [
-            ("价格区间", ["全部", "200元以下", "200–500元", "500–1000元", "1000元以上"]),
-            ("所属寺院", ["全部"] + unique(masters.map(\.templeName))),
-            ("职位", ["全部"] + unique(masters.map(\.position)))
+            ("提供服务", serviceOptions),
+            ("价格区间", ["全部", "200元以下", "200–500元", "500–1000元", "1000元以上"].map { ServiceFilterOption(code: $0, name: $0) })
         ]
     }
 
@@ -48,14 +47,15 @@ final class MasterListViewModel: ObservableObject {
             (selectedTraditionCode.isEmpty || (m.traditionCodes ?? []).contains(selectedTraditionCode)) &&
             DirectorySearch.matches(searchText, fields: DirectorySearch.fields(master: m, catalog: searchCatalog)) &&
             (selectedBeliefCode.isEmpty || m.beliefCode == selectedBeliefCode) &&
-            matchPrice(m) &&
-            matchTemple(m, selectedTemple) &&
-            matchLevel(m, selectedLevel)
+            (selectedServiceCode.isEmpty || (m.serviceTags ?? []).contains {
+                $0.serviceCode == selectedServiceCode && ($0.status == nil || $0.status == "" || $0.status == "enabled")
+            }) &&
+            matchPrice(m)
         }
     }
 
     func clearFilters() {
-        selectedRegionCode = ""; selectedTraditionCode = ""; searchText = ""; selectedBeliefCode = ""; selectedTemple = "全部"; selectedLevel = "全部"; selectedPrice = "全部"
+        selectedRegionCode = ""; selectedTraditionCode = ""; searchText = ""; selectedBeliefCode = ""; selectedServiceCode = ""; selectedPrice = "全部"
     }
     private func matchPrice(_ master: Master) -> Bool {
         guard selectedPrice != "全部" else { return true }
@@ -68,18 +68,6 @@ final class MasterListViewModel: ObservableObject {
         }
     }
 
-    // MARK: - 筛选匹配逻辑（与 H5 目录语义一致）
-
-    private func matchTemple(_ m: Master, _ temple: String) -> Bool {
-        if temple == "全部" { return true }
-        return m.templeName == temple
-    }
-
-    private func matchLevel(_ m: Master, _ level: String) -> Bool {
-        if level == "全部" { return true }
-        return m.position == level
-    }
-
     func startingPrice(_ master: Master) -> Double? {
         let prices = (master.serviceTags ?? []).filter {
             $0.status == nil || $0.status == "" || $0.status == "enabled"
@@ -87,6 +75,19 @@ final class MasterListViewModel: ObservableObject {
         if let value = prices.min() { return value }
         if let value = master.startPrice, value > 0 { return value }
         return master.consultEnabled && master.consultFee > 0 ? master.consultFee : nil
+    }
+
+    func previewServices(_ master: Master) -> [ServiceFilterOption] {
+        var tags = (master.serviceTags ?? []).filter {
+            $0.status == nil || $0.status == "" || $0.status == "enabled"
+        }
+        if let selectedIndex = tags.firstIndex(where: { $0.serviceCode == selectedServiceCode }) {
+            tags.insert(tags.remove(at: selectedIndex), at: 0)
+        }
+        return tags.prefix(2).map { tag in
+            serviceOptions.first { $0.code == tag.serviceCode }
+                ?? ServiceFilterOption(code: tag.serviceCode, name: ServiceType.from(serviceCode: tag.serviceCode)?.rawValue ?? tag.serviceCode)
+        }
     }
 
     private func allRecords() async throws -> [Master] {
@@ -124,16 +125,13 @@ final class MasterListViewModel: ObservableObject {
             hasLoaded = true
             masters = masterResponse
             beliefOptions = [BeliefFilterOption(code: "", name: "全部")] + beliefResponse.list.map { BeliefFilterOption(code: $0.code, name: $0.name) }
-            searchCatalog = DirectorySearchCatalog(beliefs: beliefOptions, tags: tags.list, services: services.list.map { ServiceFilterOption(code: $0.code, name: $0.name) }, regions: regions.list)
+            serviceOptions = [ServiceFilterOption(code: "", name: "全部")] + services.list.map { ServiceFilterOption(code: $0.code, name: $0.name) }
+            searchCatalog = DirectorySearchCatalog(beliefs: beliefOptions, tags: tags.list, services: serviceOptions, regions: regions.list)
         } catch {
             guard !Task.isCancelled else { return }
             if beliefOptions.isEmpty { beliefOptions = [BeliefFilterOption(code: "", name: "全部")] }
             self.errorMessage = error.localizedDescription
         }
         isLoading = false
-    }
-
-    private func unique(_ values: [String]) -> [String] {
-        Array(Set(values.filter { !$0.isEmpty })).sorted()
     }
 }

@@ -199,7 +199,7 @@ final class NativeDiscoveryRefinementUITests: XCTestCase {
         attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
     }
 
-    func testMasterGroupsStaySingleLineAndSearchStillFindsServicesAndSpecialties() {
+    func testMasterServiceAndPriceGroupsStaySingleLineAndComposeWithSearch() {
         let app = launch()
         let entry = app.buttons["home-masters"]
         XCTAssertTrue(entry.waitForExistence(timeout: 20)); entry.tap()
@@ -207,8 +207,12 @@ final class NativeDiscoveryRefinementUITests: XCTestCase {
         XCTAssertTrue(price.waitForExistence(timeout: 15))
         XCTAssertFalse(app.buttons["master-filter-group-擅长领域"].exists)
         XCTAssertFalse(app.buttons["master-filter-group-可提供服务"].exists)
+        XCTAssertFalse(app.buttons["master-filter-group-职位"].exists)
+        XCTAssertFalse(app.buttons["master-filter-group-所属寺院"].exists)
         XCTAssertFalse(app.staticTexts["独立师傅 · 含演示资料"].exists)
-        for title in ["价格区间", "所属寺院", "职位"] {
+        let service = app.buttons["master-filter-option-提供服务-S001"]
+        XCTAssertTrue(service.waitForExistence(timeout: 10), "Platform services are expanded by default")
+        for title in ["提供服务", "价格区间"] {
             let group = app.buttons["master-filter-group-" + title]
             let before = group.frame
             XCTAssertEqual(before.height, 52, accuracy: 1)
@@ -216,12 +220,21 @@ final class NativeDiscoveryRefinementUITests: XCTestCase {
             XCTAssertEqual(group.frame.height, before.height, accuracy: 1)
             XCTAssertEqual(group.frame.width, before.width, accuracy: 1)
             XCTAssertEqual(group.frame.minY, before.minY, accuracy: 1)
+            group.tap()
         }
-        capture(app, "ios-master-three-stable-groups")
+        service.tap()
+        XCTAssertTrue(service.isSelected)
+        capture(app, "ios-master-service-price-groups")
         app.buttons["搜索"].tap()
         let input = app.textFields["搜索师傅列表"]
         XCTAssertTrue(input.waitForExistence(timeout: 5))
         input.tap(); input.typeText("禪修 祈福\n")
+        XCTAssertTrue(app.staticTexts["末页台湾祈福平台师傅"].waitForExistence(timeout: 10))
+        price.tap()
+        app.buttons["master-filter-option-价格区间-200元以下"].tap()
+        let clear = app.buttons["清除筛选"]
+        XCTAssertTrue(clear.waitForExistence(timeout: 5)); clear.tap()
+        XCTAssertTrue(app.buttons["master-filter-option-提供服务-all"].isSelected)
         XCTAssertTrue(app.staticTexts["末页台湾祈福平台师傅"].waitForExistence(timeout: 10))
         capture(app, "ios-master-specialty-service-text-search")
     }
