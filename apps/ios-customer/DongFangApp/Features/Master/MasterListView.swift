@@ -202,7 +202,7 @@ struct MasterListView: View {
                     .offset(x: -2, y: -2)
             }
 
-            // 信息区（统一布局：法号+流派 / 归属 / 专长 / 可约服务 / 评分·价格）
+            // 信息区：法号+流派 / 归属 / 真实评分 / 专长 / 可约服务 / 在线状态·价格
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 8) {
                     Text(L10n.lookup(master.dharmaName))
@@ -225,6 +225,8 @@ struct MasterListView: View {
                     .font(AppTypography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)
+
+                masterRating(master)
 
                 // 专长（大师资料字段）
                 HStack(spacing: 6) {
@@ -273,16 +275,8 @@ struct MasterListView: View {
                     }
                 }
 
-                // 评分 + 在线状态 + 起价（统一展示）
+                // 在线状态 + 起价
                 HStack {
-                    HStack(spacing: 3) {
-                        Text(L10n.lookup(String(format: "%.1f", master.rating)))
-                            .font(AppTypography.supporting.weight(.semibold))
-                            .foregroundStyle(Color.accentDefault)
-                        Image(systemName: "star.fill")
-                            .font(AppTypography.micro)
-                            .foregroundStyle(Color.accentDefault)
-                    }
                     Text(L10n.lookup(master.isOnline == true ? L10n.text("在线") : L10n.text("离线")))
                         .font(AppTypography.micro)
                         .foregroundStyle(master.isOnline == true ? Color.stateSuccess : Color.textTertiary)
@@ -300,6 +294,40 @@ struct MasterListView: View {
         .cornerRadius(AppRadius.md)
         .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
         .contentShape(Rectangle())
+    }
+
+    private func masterRating(_ master: Master) -> some View {
+        let state = viewModel.ratingState(for: master)
+        let text: String
+        let hasRating: Bool
+        switch state {
+        case .rated(let average, let count):
+            let averageText = average.formatted(.number.locale(L10n.store.locale).precision(.fractionLength(1)))
+            let countText = count.formatted(.number.locale(L10n.store.locale))
+            text = averageText + " · " + L10n.text("\(countText)条评价")
+            hasRating = true
+        case .unrated:
+            text = L10n.text("暂无评分")
+            hasRating = false
+        case .unavailable:
+            text = L10n.text("评分暂不可用")
+            hasRating = false
+        case .loading:
+            text = "—"
+            hasRating = false
+        }
+        return HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Image(systemName: "star.fill")
+                .foregroundStyle(hasRating ? Color.accentDefault : Color.textTertiary)
+                .accessibilityHidden(true)
+            Text(verbatim: text)
+                .foregroundStyle(Color.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .font(AppTypography.caption)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L10n.text("评分") + " " + text)
+        .accessibilityIdentifier("master-rating-\(master.id)")
     }
 
     /// 卡片起价：优先大师服务标签最低价，回退咨询费

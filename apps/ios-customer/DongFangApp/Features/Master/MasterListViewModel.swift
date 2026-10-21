@@ -34,6 +34,13 @@ final class MasterListViewModel: ObservableObject {
     }
 
     @Published private var searchCatalog = DirectorySearchCatalog()
+    @Published private var ratingsLoadState = RatingsLoadState.loading
+
+    private enum RatingsLoadState {
+        case loading
+        case loaded([String: ReviewRatingSummary])
+        case unavailable
+    }
 
     private let apiClient: APIClient
     init(initialBeliefCode: String? = nil, apiClient: APIClient = .shared) {
@@ -90,6 +97,28 @@ final class MasterListViewModel: ObservableObject {
         }
     }
 
+    func ratingState(for master: Master) -> MasterCardRatingState {
+        switch ratingsLoadState {
+        case .loading: return .loading
+        case .unavailable: return .unavailable
+        case .loaded(let summaries): return summaries[master.id]?.masterCardState ?? .unrated
+        }
+    }
+
+    private func loadRatings() async {
+        ratingsLoadState = .loading
+        do {
+            let summaries: [ReviewRatingSummary] = try await apiClient.request(.reviewRatings)
+            guard !Task.isCancelled else { return }
+            // One public batch covers the directory, independent of filters and pagination.
+            let masters = summaries.filter { $0.kind == "master" }
+            ratingsLoadState = .loaded(Dictionary(masters.map { ($0.code, $0) }, uniquingKeysWith: { _, latest in latest }))
+        } catch {
+            guard !Task.isCancelled else { return }
+            ratingsLoadState = .unavailable
+        }
+    }
+
     private func allRecords() async throws -> [Master] {
         var records: [Master] = []
         var seen = Set<String>()
@@ -114,6 +143,7 @@ final class MasterListViewModel: ObservableObject {
         defer { isLoading = false }
         isLoading = true
         errorMessage = nil
+        async let ratingsRequest: Void = loadRatings()
         do {
             async let masterRequest: [Master] = allRecords()
             async let beliefRequest: BeliefListResponse = apiClient.request(.beliefs)
@@ -132,6 +162,6 @@ final class MasterListViewModel: ObservableObject {
             if beliefOptions.isEmpty { beliefOptions = [BeliefFilterOption(code: "", name: "全部")] }
             self.errorMessage = error.localizedDescription
         }
-        isLoading = false
+        await ratingsRequest
     }
 }
