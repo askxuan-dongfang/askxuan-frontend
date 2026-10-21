@@ -123,6 +123,28 @@ struct Master: Codable, Identifiable, Hashable {
     }
 }
 
+/// Public aggregates from /reviews/ratings; these never fall back to Master.rating.
+struct ReviewRatingSummary: Decodable {
+    let code: String
+    let kind: String
+    let count: Int64
+    let average: Double
+
+    var masterCardState: MasterCardRatingState {
+        guard count >= 0 else { return .unavailable }
+        guard count > 0 else { return .unrated }
+        guard average.isFinite, (1...5).contains(average) else { return .unavailable }
+        return .rated(average: average, count: count)
+    }
+}
+
+enum MasterCardRatingState: Equatable {
+    case loading
+    case unavailable
+    case unrated
+    case rated(average: Double, count: Int64)
+}
+
 extension Master {
     /// 对齐后端统一师傅字典；每位师傅只归属一个寺院。
     static let mockData: [Master] = [

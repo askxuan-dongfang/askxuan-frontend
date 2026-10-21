@@ -336,6 +336,7 @@ enum Endpoint {
     case addressUpdate(id: Int64, AddressUpdateRequest)
     case addressDelete(Int64)
     case reviews(userId: String, page: Int, size: Int)
+    case reviewRatings
     case myCoupons(status: String?, page: Int, size: Int)
 
     case rewardCampaigns(Int, String)
@@ -496,6 +497,7 @@ enum Endpoint {
         case .addressUpdate(let id, _): return "users/addresses/\(id)"
         case .addressDelete(let id):    return "users/addresses/\(id)"
         case .reviews:                  return "reviews"
+        case .reviewRatings:            return "reviews/ratings"
         case .myCoupons:                return "marketing/my-coupons"
         }
     }
@@ -527,7 +529,7 @@ enum Endpoint {
              .products, .productById, .productCategories,
              .shopOrders, .shopOrderById,
              .messages, .unreadCount, .announcements,
-             .userProfile, .addressList, .reviews, .myCoupons:
+             .userProfile, .addressList, .reviews, .reviewRatings, .myCoupons:
             return .GET
         case .shopReturnCreate, .pointsRedeem, .pointsOrderAction, .createBooking, .bookingReviewCreate, .bookingChatSend, .chatSend, .consultationCreate, .consultationPay,
              .diyDesignSave, .diyOrderCreate, .diyOrderAvailability, .diyOrderCreateFromDesign, .paymentCreate,
@@ -747,7 +749,7 @@ enum Endpoint {
     /// Authentication forms never send or invalidate a previous login token.
     var usesSessionAuthorization: Bool {
         switch self {
-        case .directoryRegions, .directoryTags: return false
+        case .directoryRegions, .directoryTags, .reviewRatings: return false
  case .accountAuth: return false
         case .authLogin, .authRegister, .authRefresh: return false
         default: return true

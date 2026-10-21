@@ -8,7 +8,7 @@ const tags = [{ code: 'chan', group: 'tradition', name: '禅宗', value: '禅宗
 const regions = [{ code: 'zj', name: '浙江省' }, { code: 'bj', name: '北京市' }];
 const services = [{ code: 'S006', name: '开光' }, { code: 'S002', name: '供灯' }, { code: 'S001', name: '祈福' }, { code: 'S003', name: '上香' }];
 
-async function setup(page: Page, failSecondPage = false, appearance = { language: 'zh-Hans', theme: 'light' }) {
+async function setup(page: Page, failSecondPage = false, appearance = { language: 'zh-Hans', theme: 'light' }, ratings: { fail?: boolean; pending?: Promise<void> } = {}) {
   const calls: URL[] = [];
   let shouldFail = failSecondPage;
   await page.addInitScript(appearance => {
@@ -23,6 +23,16 @@ async function setup(page: Page, failSecondPage = false, appearance = { language
     if (path === '/beliefs/directory-tags') data = { list: tags };
     if (path === '/regions') data = { list: regions };
     if (path === '/service-types') data = { list: services };
+    if (path === '/reviews/ratings') {
+      if (ratings.pending) await ratings.pending;
+      if (ratings.fail) return route.fulfill({ status: 503, json: { code: 500, message: '评分接口暂时不可用' } });
+      data = [
+        { kind: 'master', code: '1', average: 4.6, count: 1234 },
+        { kind: 'temple', code: '2', average: 5, count: 6 },
+        { kind: 'master', code: '3', average: 0, count: 2 },
+        { kind: 'master', code: '125', average: 4, count: 1 },
+      ];
+    }
     if (path === '/temples' || path === '/masters') {
       const pageNumber = Number(url.searchParams.get('page') || 1);
       if (shouldFail && pageNumber === 2) {
@@ -42,6 +52,61 @@ async function setup(page: Page, failSecondPage = false, appearance = { language
   });
   return { calls, recover: () => { shouldFail = false; } };
 }
+
+for (const appearance of [{ language: 'zh-Hans', theme: 'light' }, { language: 'zh-Hant', theme: 'dark' }]) {
+  test(`masters: cards use one real ratings batch, preserve unrated states and compose with services ${appearance.language}`, async ({ page }) => {
+    const { calls } = await setup(page, false, appearance);
+    await page.goto('/c/masters');
+    const cards = page.locator('.master-result-card');
+    await expect(cards).toHaveCount(125);
+    const rated = cards.filter({ has: page.getByText('普通师傅1', { exact: true }) });
+    await expect(rated.locator('.master-card-rating')).toHaveText(appearance.language === 'zh-Hant' ? '4.6 · 1,234條評價' : '4.6 · 1,234条评价');
+    await expect(rated.locator('.master-card-rating span')).toHaveAttribute('aria-busy', 'false');
+    const unrated = appearance.language === 'zh-Hant' ? '暫無評分' : '暂无评分';
+    for (const name of ['普通师傅2']) {
+      await expect(cards.filter({ has: page.getByText(name, { exact: true }) }).locator('.master-card-rating')).toHaveText(unrated);
+    }
+    await expect(cards.filter({ has: page.getByText('普通师傅3', { exact: true }) }).locator('.master-card-rating')).toHaveText(appearance.language === 'zh-Hant' ? '評分暫不可用' : '评分暂不可用');
+    const geometry = await rated.locator('.master-card-rating').evaluate(element => {
+      const box = element.getBoundingClientRect(), card = element.closest('a')!.getBoundingClientRect();
+      const affiliation = element.previousElementSibling!.getBoundingClientRect();
+      return { withinCard: box.left >= card.left && box.right <= card.right, belowRegion: box.top >= affiliation.bottom - 1, overflow: element.scrollWidth > element.clientWidth + 1 };
+    });
+    expect(geometry).toEqual({ withinCard: true, belowRegion: true, overflow: false });
+    await page.getByRole('group', { name: appearance.language === 'zh-Hant' ? '提供服務' : '提供服务', exact: true }).getByRole('button', { name: appearance.language === 'zh-Hant' ? '開光' : '开光', exact: true }).click();
+    await expect(cards).toHaveCount(1);
+    await expect(cards.locator('.master-card-rating')).toHaveText(appearance.language === 'zh-Hant' ? '4.0 · 1條評價' : '4.0 · 1条评价');
+    expect(calls.filter(url => url.pathname.endsWith('/reviews/ratings'))).toHaveLength(1);
+    await cards.click();
+    await expect(page).toHaveURL(/\/c\/masters\/125$/);
+  });
+}
+
+test('masters: rating failure leaves directory and service filters usable without seed scores', async ({ page }) => {
+  await setup(page, false, { language: 'zh-Hans', theme: 'light' }, { fail: true });
+  await page.goto('/c/masters');
+  const cards = page.locator('.master-result-card');
+  await expect(cards).toHaveCount(125);
+  await expect(cards.first().locator('.master-card-rating')).toHaveText('评分暂不可用');
+  await expect(cards.first()).not.toContainText('4.8');
+  await page.getByRole('group', { name: '提供服务', exact: true }).getByRole('button', { name: '开光', exact: true }).click();
+  await expect(cards).toHaveCount(1);
+  await expect(cards.locator('.master-card-rating')).toHaveText('评分暂不可用');
+});
+
+test('masters: pending ratings show a placeholder before the real result arrives', async ({ page }) => {
+  let release!: () => void;
+  const pending = new Promise<void>(resolve => { release = resolve; });
+  await setup(page, false, { language: 'zh-Hans', theme: 'light' }, { pending });
+  try {
+    await page.goto('/c/masters');
+    const rating = page.locator('.master-card-rating').first();
+    await expect(rating).toHaveText('—');
+    await expect(rating.locator('span')).toHaveAttribute('aria-busy', 'true');
+    release();
+    await expect(rating).toHaveText('4.6 · 1,234条评价');
+  } finally { release(); }
+});
 
 for (const directory of ['temples', 'masters'] as const) {
   test(`${directory}: all pages, simplified/traditional search and selected filters compose`, async ({ page }) => {
