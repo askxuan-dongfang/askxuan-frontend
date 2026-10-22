@@ -229,7 +229,7 @@ struct BookingsView: View {
 
             // 右侧金额和状态
             VStack(alignment: .trailing, spacing: 4) {
-                Text(L10n.lookup(booking.meritMoneyText))
+                Text(L10n.lookup(booking.orderAmountText))
                     .font(AppTypography.body.weight(.semibold))
                     .foregroundStyle(.accentDefault)
                 Text(L10n.lookup(badge.text))

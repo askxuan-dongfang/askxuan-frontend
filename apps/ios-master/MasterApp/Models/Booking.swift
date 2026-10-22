@@ -81,6 +81,8 @@ struct BookingStatusResponse: Decodable {
 
 extension Booking {
     /// 功德金格式化
+    var orderAmountText: String { String(format: "¥%.2f", totalFee ?? (serviceFee ?? 0) + meritMoney) }
+
     var meritMoneyText: String {
         "¥\(String(format: "%.2f", meritMoney))"
     }

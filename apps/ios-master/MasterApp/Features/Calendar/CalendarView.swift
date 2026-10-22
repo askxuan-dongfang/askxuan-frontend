@@ -11,6 +11,7 @@ import SwiftUI
 /// 法师日程（master-service MasterSchedule）
 struct MasterSchedule: Identifiable, Decodable {
     let id: Int64
+    let revision: Int64
     let masterCode: String
     let date: String
     let timeSlots: [String]
@@ -28,6 +29,8 @@ final class CalendarViewModel: ObservableObject {
     @Published var successMessage: String? = nil
     @Published var selectedSlots: Set<String> = []
 
+    @Published private(set) var ready = false
+    private var loadGeneration = 0
     private let apiClient: APIClient
     private let calendar = Calendar(identifier: .gregorian)
 
@@ -51,28 +54,37 @@ final class CalendarViewModel: ObservableObject {
     }
 
     func load() async {
+        loadGeneration += 1
+        let generation = loadGeneration
+        let requestedDate = selectedDateString
+        ready = false
         isLoading = true
         errorMessage = nil
         successMessage = nil
         do {
             let resp: ScheduleListResponse = try await apiClient.request(
-                .masterSchedules(date: selectedDateString, page: 1, size: 50)
+                .masterSchedules(date: requestedDate, page: 1, size: 50)
             )
+            guard generation == loadGeneration, requestedDate == selectedDateString else { return }
+            ready = true
             schedules = resp.list
             selectedSlots = Set(resp.list.flatMap { $0.timeSlots })
         } catch let error as APIError {
+            guard generation == loadGeneration else { return }
             errorMessage = error.errorDescription
             schedules = []
             selectedSlots = []
         } catch {
+            guard generation == loadGeneration else { return }
             errorMessage = "加载失败：\(error.localizedDescription)"
             schedules = []
             selectedSlots = []
         }
-        isLoading = false
+        if generation == loadGeneration { isLoading = false }
     }
 
     func selectDate(_ date: Date) async {
+        guard !isSaving else { return }
         selectedDate = date
         await load()
     }
@@ -86,19 +98,22 @@ final class CalendarViewModel: ObservableObject {
     }
 
     func save(restDay: Bool = false) async {
+        guard ready, !isSaving else { return }
         isSaving = true
         errorMessage = nil
         successMessage = nil
         let slots = restDay ? [] : availableSlots.filter { selectedSlots.contains($0) }
         do {
             let _: ScheduleUpdateResponse = try await apiClient.request(
-                .masterScheduleUpdate(date: selectedDateString, timeSlots: slots, status: "available")
+                .masterScheduleUpdate(date: selectedDateString, timeSlots: slots, status: slots.isEmpty ? "off" : "available", revision: schedules.first?.revision ?? 0)
             )
             await load()
             successMessage = restDay ? "已设为休息日" : "日程已保存"
         } catch let error as APIError {
+            ready = false
             errorMessage = error.errorDescription
         } catch {
+            ready = false
             errorMessage = "保存失败：\(error.localizedDescription)"
         }
         isSaving = false
@@ -300,7 +315,7 @@ struct CalendarView: View {
                     .buttonStyle(.borderedProminent)
                     .tint(.brandDefault)
                 }
-                .disabled(viewModel.isSaving)
+                .disabled(viewModel.isSaving || viewModel.isLoading || !viewModel.ready)
 
                 if let success = viewModel.successMessage {
                     Text(L10n.lookup(success)).font(AppTypography.caption).foregroundStyle(.stateSuccess)

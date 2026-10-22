@@ -138,7 +138,7 @@ onMounted(load)
         </el-table-column>
         <el-table-column :label='$t("操作")' width="100" fixed="right">
           <template #default="{ row }">
-            <span v-if="row.masterReply">{{ $t("已回复") }}</span><el-button v-else link type="primary" size="small" :icon="ChatLineSquare" @click="openReply(row as Review)">{{ $t("回复") }}</el-button>
+            <span v-if="row.masterReply">{{ $t("已回复") }}</span><el-button v-else-if="auth.can('temple.reviews.write')" link type="primary" size="small" :icon="ChatLineSquare" @click="openReply(row as Review)">{{ $t("回复") }}</el-button>
           </template>
         </el-table-column>
       </DataTable>

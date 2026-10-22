@@ -1,18 +1,23 @@
 <script setup lang="ts">
 import { withAdminChartTheme, watchAdminChartAppearance } from '../../../../packages/admin-ui/chart-theme'
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { Refresh, Calendar, Wallet, DataAnalysis, CircleCheck } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
+import SettlementReport from '@/components/SettlementReport.vue'
+import { downloadCSV } from '@/utils/csv'
 import StatCard from '@/components/StatCard.vue'
 import { getTempleReport } from '@/api/report'
 import { formatMoney } from '@/utils/format'
 import type { TempleReportResp } from '@/types'
 import { useAuthStore } from '@/stores/auth'
 
+const tab = ref('bookings')
 const loading = ref(false)
+let generation = 0
 const report = ref<TempleReportResp | null>(null)
 const loadError = ref('')
+const appliedRange = ref<string[]>([])
 const dateRange = ref<[string, string] | []>([])
 const auth = useAuthStore()
 
@@ -24,6 +29,7 @@ let pieChart: echarts.ECharts | null = null
 let barChart: echarts.ECharts | null = null
 
 async function load() {
+  const run = ++generation
   loading.value = true
   loadError.value = ''
   try {
@@ -33,18 +39,22 @@ async function load() {
       params.endTime = dateRange.value[1]
     }
     const nextReport = await getTempleReport(params)
+    if (run !== generation) return
+    if (!Number.isSafeInteger(nextReport?.revenueStats?.contractCents)) throw new Error('报表口径尚未更新，请稍后重试')
     if (!nextReport?.revenueStats || !Array.isArray(nextReport.bookingTrend) || !Array.isArray(nextReport.serviceDistribution) || !Array.isArray(nextReport.masterRanking)) {
       throw new Error('报表服务返回的数据结构不完整')
     }
+    appliedRange.value = [params.startTime || '', params.endTime || '']
     report.value = nextReport
     await nextTick()
     renderCharts()
   } catch (error) {
+    if (run !== generation) return
     report.value = null
     loadError.value = error instanceof Error ? error.message : '报表加载失败'
     disposeCharts()
   } finally {
-    loading.value = false
+    if (run === generation) loading.value = false
   }
 }
 
@@ -56,16 +66,16 @@ function renderCharts() {
     const trend = report.value.bookingTrend || []
     trendChart.setOption(withAdminChartTheme({
       tooltip: { trigger: 'axis' },
-      legend: { data: ['预约数', '功德金'], right: 0, top: 0 },
+      legend: { data: ['有效预约数', '预约合同金额'], right: 0, top: 0 },
       grid: { left: 48, right: 56, top: 36, bottom: 32 },
       xAxis: { type: 'category', data: trend.map((t) => t.date), axisLine: { lineStyle: { color: '#E8E0D8' } } },
       yAxis: [
-        { type: 'value', name: '预约数', splitLine: { lineStyle: { color: '#F0E9E1' } } },
-        { type: 'value', name: '功德金', position: 'right', splitLine: { show: false } }
+        { type: 'value', name: '有效预约数', splitLine: { lineStyle: { color: '#F0E9E1' } } },
+        { type: 'value', name: '预约合同金额', position: 'right', splitLine: { show: false } }
       ],
       series: [
-        { name: '预约数', type: 'bar', data: trend.map((t) => t.bookings), itemStyle: { color: '#C45A3C', borderRadius: [4, 4, 0, 0] } },
-        { name: '功德金', type: 'line', yAxisIndex: 1, smooth: true, data: trend.map((t) => t.revenue), itemStyle: { color: '#C8A96E' }, lineStyle: { width: 2 } }
+        { name: '有效预约数', type: 'bar', data: trend.map((t) => t.bookings), itemStyle: { color: '#C45A3C', borderRadius: [4, 4, 0, 0] } },
+        { name: '预约合同金额', type: 'line', yAxisIndex: 1, smooth: true, data: trend.map((t) => t.contractCents / 100), itemStyle: { color: '#C8A96E' }, lineStyle: { width: 2 } }
       ]
     }))
   }
@@ -101,15 +111,29 @@ function renderCharts() {
       yAxis: { type: 'category', data: rank.map((m) => m.masterName), axisLine: { lineStyle: { color: '#E8E0D8' } } },
       series: [
         {
-          name: '功德金',
+          name: '法师执行费合同金额',
           type: 'bar',
-          data: rank.map((m) => m.revenue),
+          data: rank.map((m) => m.masterCents / 100),
           itemStyle: { color: '#C8A96E', borderRadius: [0, 4, 4, 0] },
           label: { show: true, position: 'right', formatter: (p: any) => formatMoney(p.value), color: '#6A5A4A', fontSize: 'var(--type-size-micro)' }
         }
       ]
     }))
   }
+}
+
+function exportReport() {
+  if (!report.value) return
+  const r = report.value
+  downloadCSV('寺院预约统计.csv', [
+    ['寺院', auth.templeName], ['口径', '已支付且未取消预约的合同金额，非用户实付或银行到账'],
+    ['开始日期', appliedRange.value[0] || '全部'], ['结束日期', appliedRange.value[1] || '全部'],
+    ['预约数', r.revenueStats.bookingCount], ['预约合同总额（元）', (r.revenueStats.contractCents / 100).toFixed(2)],
+    ['寺院服务费与随喜（元）', (r.revenueStats.templeCents / 100).toFixed(2)],
+    ['法师执行费（元）', (r.revenueStats.masterCents / 100).toFixed(2)],
+    [], ['创建日期', '有效预约数', '合同金额（元）'],
+    ...r.bookingTrend.map(x => [x.date, x.bookings, (x.contractCents / 100).toFixed(2)])
+  ])
 }
 
 function onResize() {
@@ -127,12 +151,15 @@ function disposeCharts() {
   barChart = null
 }
 
+watch(tab, async () => { disposeCharts(); await nextTick(); if(tab.value==='bookings') renderCharts() })
+
 onMounted(() => {
   stopChartAppearance = watchAdminChartAppearance(refreshChartAppearance)
   load()
   window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => {
+  generation++
   stopChartAppearance?.()
   window.removeEventListener('resize', onResize)
   disposeCharts()
@@ -149,7 +176,14 @@ function refreshChartAppearance() {
 
 <template>
   <div class="df-page" v-loading="loading">
-    <PageHeader :title='$t("数据报表")' :subtitle='$t("寺院运营数据可视化")'>
+    <PageHeader :title="$t('经营统计')" :subtitle="$t('预约合同与寺院结算分别核对')">
+      <el-button v-if="tab==='bookings'" :disabled="!report || loading" @click="exportReport">{{ $t('导出当前统计') }}</el-button>
+    </PageHeader>
+    <el-tabs v-model="tab"><el-tab-pane :label="$t('预约合同')" name="bookings"/><el-tab-pane :label="$t('寺院结算')" name="settlements"/></el-tabs>
+    <SettlementReport v-if="tab==='settlements'"/>
+    <template v-else>
+    <el-alert :closable="false" type="info" :title="$t('按预约创建日期统计已支付且未取消的预约合同，含演示订单；寺院金额包含寺院服务费和随喜，法师执行费单列。优惠后的用户实付、平台补贴和银行到账需分别核对。')"/>
+    <div class="report-filters">
       <el-date-picker
         v-model="dateRange"
         type="daterange"
@@ -160,7 +194,7 @@ function refreshChartAppearance() {
         style="width: 280px"
       />
       <el-button :icon="Refresh" type="primary" @click="load">{{ $t("查询") }}</el-button>
-    </PageHeader>
+    </div>
 
     <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
       <div class="ax-page-feedback__copy"><div class="ax-page-feedback__title">{{ $t("寺院报表加载失败") }}</div><div class="ax-page-feedback__description">{{ $t(loadError) }}{{ $t("。页面不会用 0 代替缺失经营数据。") }}</div></div>
@@ -168,15 +202,16 @@ function refreshChartAppearance() {
     </div>
 
     <div class="stat-grid" v-if="report">
-      <StatCard :title='$t("累计功德金")' :value="formatMoney(report.revenueStats.totalRevenue)" :icon="Wallet" tone="accent" />
-      <StatCard :title='$t("预约总数")' :value="report.revenueStats.bookingCount" :icon="Calendar" tone="brand" :suffix='$t("单")' />
-      <StatCard :title='$t("客单功德")' :value="formatMoney(report.revenueStats.avgBookingValue)" :icon="DataAnalysis" tone="success" />
-      <StatCard :title='$t("已完成数")' :value="report.revenueStats.completedCount" :icon="CircleCheck" tone="warning" :suffix='$t("单")' />
+      <StatCard :title="$t('预约合同总额')" :value="formatMoney(report.revenueStats.contractCents / 100)" :icon="Wallet" tone="accent" />
+      <StatCard :title="$t('有效预约数')" :value="report.revenueStats.bookingCount" :icon="Calendar" tone="brand" :suffix='$t("单")' />
+      <StatCard :title="$t('寺院服务费与随喜')" :value="formatMoney(report.revenueStats.templeCents / 100)" :icon="DataAnalysis" tone="success" />
+      <StatCard :title="$t('法师执行费')" :value="formatMoney(report.revenueStats.masterCents / 100)" :icon="Wallet" />
+      <StatCard :title='$t("已完成数")'  :value="report.revenueStats.completedCount" :icon="CircleCheck" tone="warning" :suffix='$t("单")' />
     </div>
 
     <div v-if="report" class="desktop-report-charts">
     <div class="df-card chart-card big-chart">
-      <div class="chart-title">{{ $t("预约与功德金趋势") }}</div>
+      <div class="chart-title">{{ $t("预约合同趋势") }}</div>
       <div ref="trendRef" class="chart-box"></div>
     </div>
 
@@ -186,7 +221,7 @@ function refreshChartAppearance() {
         <div ref="pieRef" class="chart-box small"></div>
       </div>
       <div class="df-card chart-card">
-        <div class="chart-title">{{ $t("法师功德金排行") }}</div>
+        <div class="chart-title">{{ $t("法师执行费合同金额") }}</div>
         <div ref="barRef" class="chart-box small"></div>
       </div>
     </div>
@@ -201,10 +236,12 @@ function refreshChartAppearance() {
       </div>
     </div>
     <div v-else-if="!loading && !loadError" class="df-card report-empty">{{ $t("当前范围暂无可展示报表") }}</div>
+    </template>
   </div>
 </template>
 
 <style scoped>
+.report-filters{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

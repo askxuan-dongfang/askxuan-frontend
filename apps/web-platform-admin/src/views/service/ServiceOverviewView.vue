@@ -68,8 +68,8 @@
             <template v-if="detail.kind === 'bookings'">
               <dt>{{ $t('服务') }}</dt><dd>{{ detail.data.serviceName }} <small>{{ detail.data.serviceId }}</small></dd>
               <dt>{{ $t('预约时间') }}</dt><dd>{{ detail.data.bookingDate }} {{ detail.data.timeSlot }}</dd>
-              <dt>{{ $t('服务费') }}</dt><dd>{{ formatMoney(detail.data.serviceFee) }}</dd>
-              <dt>{{ $t('功德金') }}</dt><dd>{{ formatMoney(detail.data.meritMoney) }}</dd>
+              <dt>{{ $t('法师执行费') }}</dt><dd>{{ formatMoney(detail.data.serviceFee) }}</dd>
+              <dt>{{ $t('寺院服务费与随喜') }}</dt><dd>{{ formatMoney(detail.data.meritMoney) }}</dd>
             </template>
             <template v-else>
               <dt>{{ $t('生效时间') }}</dt><dd>{{ detail.data.validFrom ? formatDate(detail.data.validFrom) : $t('尚未生效') }}</dd>

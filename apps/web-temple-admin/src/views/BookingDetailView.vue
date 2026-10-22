@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
+const auth=useAuthStore()
 import { ElMessage, ElMessageBox } from '@/i18n'
 import { t as uiText } from '../../../../packages/localization/language'
 
@@ -137,12 +139,11 @@ onMounted(load)
             <el-descriptions-item :label='$t("法师")'>{{ booking.masterName || $t('全院执行') }}</el-descriptions-item>
             <el-descriptions-item :label='$t("预约日期")'>{{ $t(booking.bookingDate) }}</el-descriptions-item>
             <el-descriptions-item :label='$t("时段")'>{{ $t(booking.timeSlot) }}</el-descriptions-item>
-            <el-descriptions-item :label='$t("功德金")'>
+            <el-descriptions-item :label='$t("寺院服务费与随喜")'>
               <span class="price">{{ $t(formatMoney(booking.meritMoney)) }}</span>
-              <el-tag v-if="booking.meritMoneyTier" size="small" effect="plain" class="ml-2">{{ $t(booking.meritMoneyTier) }}</el-tag>
             </el-descriptions-item>
-			<el-descriptions-item :label='$t("服务费")'><span class="price">{{ $t(formatMoney(booking.serviceFee)) }}</span></el-descriptions-item>
-			<el-descriptions-item :label='$t("合计")'><span class="price">{{ $t(formatMoney(booking.totalFee)) }}</span></el-descriptions-item>
+			<el-descriptions-item :label='$t("法师执行费")'><span class="price">{{ $t(formatMoney(booking.serviceFee)) }}</span></el-descriptions-item>
+			<el-descriptions-item :label='$t("预约合同总额")'><span class="price">{{ $t(formatMoney(booking.totalFee)) }}</span></el-descriptions-item>
 			<el-descriptions-item :label='$t("支付状态")'>
 			  <el-tag :type="booking.paymentStatus === 'success' ? 'success' : 'warning'">{{ $t(booking.paymentStatus) }}</el-tag>
 			</el-descriptions-item>
@@ -181,7 +182,7 @@ onMounted(load)
               <div class="reply-label">{{ $t("法师回复：") }}</div>
               <div class="reply-text">{{ review.masterReply }}</div>
             </div>
-            <div class="reply-block" v-else>
+            <div class="reply-block" v-else-if="auth.can('temple.reviews.write')">
               <div class="reply-label">{{ $t("回复评价：") }}</div>
               <el-input v-model="replyText" type="textarea" :rows="3" :placeholder='$t("请输入回复内容")' />
               <div class="reply-action">

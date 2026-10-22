@@ -1,5 +1,43 @@
 import XCTest
 
+@MainActor final class TempleOperationsUITests: XCTestCase {
+    func testSharedCalendarWithRealServices() async throws {
+        guard let token = ProcessInfo.processInfo.environment["TEMPLE_OPS_MASTER_TOKEN"] else {
+            throw XCTSkip("Requires the isolated temple operations runtime")
+        }
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:63400/api/v1"
+        app.launchArguments = ["--smoke-token", token, "-tab", "0", "-askxuan.appearance", "light"]
+        app.launch()
+        let entry = app.buttons["设置日程"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 20))
+        for _ in 0..<4 where !entry.isHittable { app.swipeUp() }
+        entry.tap()
+        XCTAssertTrue(app.navigationBars["日程日历"].waitForExistence(timeout: 10))
+        let rest = app.buttons["设置休息日"]
+        XCTAssertTrue(rest.waitForExistence(timeout: 15))
+        for _ in 0..<4 where !rest.isHittable { app.swipeUp() }
+        rest.tap()
+        XCTAssertTrue(app.staticTexts["已设为休息日"].waitForExistence(timeout: 15))
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
+        let url = try XCTUnwrap(URL(string: "http://127.0.0.1:63400/api/v1/admin/masters/schedules?date=" + formatter.string(from: Date())))
+        var request = URLRequest(url: url)
+        request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
+        request.setValue("master", forHTTPHeaderField: "X-Client-Type")
+        let (data, response) = try await URLSession.shared.data(for: request)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+        let envelope = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let result = try XCTUnwrap(envelope["data"] as? [String: Any])
+        let rows = try XCTUnwrap(result["list"] as? [[String: Any]])
+        XCTAssertEqual(rows.first?["status"] as? String, "off")
+        XCTAssertTrue((rows.first?["revision"] as? Int ?? 0) > 0)
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "master-shared-calendar-real-services"; shot.lifetime = .keepAlways; add(shot)
+    }
+}
+
 final class H5ParityUITests: XCTestCase {
     func testProfileContentStudioMatchesH5Entrypoint() {
         let app = XCUIApplication()

@@ -102,9 +102,9 @@ onMounted(load)
             <div class="muted">{{ $t(row.timeSlot) }}</div>
           </template>
         </el-table-column>
-        <el-table-column :label='$t("功德金")' width="110">
+        <el-table-column :label='$t("合同总额")' width="110">
           <template #default="{ row }">
-            <span class="price">{{ $t(formatMoney(row.meritMoney)) }}</span>
+            <span class="price">{{ $t(formatMoney(row.totalFee)) }}</span>
           </template>
         </el-table-column>
         <el-table-column :label='$t("状态")' width="100">
@@ -127,7 +127,7 @@ onMounted(load)
             <StatusTag :status="item.status" kind="booking" />
           </span>
           <span class="mobile-task-card__meta">{{ item.masterName || $t('待分配法师') }} · {{ $t(item.bookingDate) }} {{ $t(item.timeSlot) }}</span>
-          <span class="mobile-task-card__foot"><span>{{ $t(item.id) }}</span><b>{{ $t(formatMoney(item.meritMoney)) }}</b></span>
+          <span class="mobile-task-card__foot"><span>{{ $t(item.id) }}</span><b>{{ $t(formatMoney(item.totalFee)) }}</b></span>
         </button>
         <div v-if="!loading && !list.length && !loadError" class="mobile-task-empty">{{ $t("当前筛选下暂无预约") }}</div>
         <div v-if="total > query.size" class="mobile-task-pager">

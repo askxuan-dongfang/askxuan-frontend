@@ -101,8 +101,9 @@ struct BookingDetailView: View {
                         infoRow("服务", booking.serviceName)
                         infoRow("寺院", booking.templeName)
                         infoRow("时段", "\(booking.bookingDate)  \(booking.timeSlot)")
-                        infoRow("功德金", booking.meritMoneyText)
-                        infoRow("档位", booking.meritMoneyTier)
+                        infoRow("法师执行费", String(format: "¥%.2f", booking.serviceFee ?? 0))
+                        infoRow("寺院服务费与随喜", String(format: "¥%.2f", booking.meritMoney))
+                        infoRow("预约合同总额", booking.orderAmountText)
                     }
 
                     // 信众信息

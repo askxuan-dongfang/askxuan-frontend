@@ -40,26 +40,27 @@ async function loadAll() {
   pendingBlessingCount.value = '—'
   masterCount.value = '—'
   const templeId = auth.templeId
+  const permitted = (permission: string, action: () => Promise<unknown>) => auth.can(permission) ? action() : Promise.resolve()
   const results = await Promise.allSettled([
-    listBookings({ templeId, page: 1, size: 6 }).then((r) => (recentBookings.value = r.list || [])),
-    listBookings({ templeId, status: 'pending', page: 1, size: 6 }).then(
+    permitted('temple.bookings.read', () => listBookings({ templeId, page: 1, size: 6 }).then((r) => (recentBookings.value = r.list || []))),
+    permitted('temple.bookings.read', () => listBookings({ templeId, status: 'pending', page: 1, size: 6 }).then(
       (r) => {
         pendingBookings.value = r.list || []
         pendingCount.value = r.total || 0
       }
-    ),
-    listMasters({ templeId, page: 1, size: 1 }).then((r) => (masterCount.value = r.total || 0)),
-    listBlessingTasks({ status: 'dispatched', page: 1, size: 5 }).then(
+    )),
+    permitted('temple.people.read', () => listMasters({ templeId, page: 1, size: 1 }).then((r) => (masterCount.value = r.total || 0))),
+    permitted('temple.blessings.read', () => listBlessingTasks({ status: 'dispatched', page: 1, size: 5 }).then(
       (r) => {
         pendingBlessings.value = r.list || []
         pendingBlessingCount.value = r.total || 0
       }
-    ),
-    getTempleReport({ templeId }).then((r) => {
+    )),
+    permitted('temple.finance.read', () => getTempleReport({ templeId }).then((r) => {
       if (
         !r?.revenueStats ||
         !Number.isFinite(r.revenueStats.bookingCount) ||
-        !Number.isFinite(r.revenueStats.totalRevenue) ||
+        !Number.isSafeInteger(r.revenueStats.templeCents) ||
         !Array.isArray(r.bookingTrend) ||
         !Array.isArray(r.serviceDistribution) ||
         !Array.isArray(r.masterRanking)
@@ -67,7 +68,7 @@ async function loadAll() {
         throw new Error('经营报表返回的数据结构不完整')
       }
       report.value = r
-    })
+    }))
   ])
   const names = ['最近预约', '待确认预约', '在册法师', '待分配加持', '经营报表']
   failedModules.value = results.flatMap((result, index) => result.status === 'rejected' ? [names[index]] : [])
@@ -87,7 +88,7 @@ function goBooking(id: string) {
     <PageHeader :title='$t("工作台")' :subtitle='$t("欢迎回来，愿法务兴隆、寺运昌隆")'>
       <el-button :icon="Loading" :loading="loading" @click="loadAll">{{ $t("刷新") }}</el-button>
     </PageHeader>
-    <JourneySummary/>
+    <JourneySummary v-if="auth.can('temple.bookings.read')"/>
 
     <div v-if="loadIssueCount" class="ax-page-feedback" :class="{ 'is-error': loadIssueCount === 5 }" role="status">
       <div class="ax-page-feedback__copy">
@@ -98,48 +99,48 @@ function goBooking(id: string) {
     </div>
 
     <div class="ax-task-grid">
-      <router-link class="ax-task-card" to="/bookings?status=pending">
+      <router-link class="ax-task-card" v-if="auth.can('temple.bookings.read')" to="/bookings?status=pending">
         <span class="ax-task-card__icon"><el-icon><Bell /></el-icon></span>
         <span class="ax-task-card__copy"><span class="ax-task-card__label">{{ $t("待确认预约") }}</span><span class="ax-task-card__meta">{{ $t("进入已筛选任务列表") }}</span></span>
         <strong class="ax-task-card__value">{{ $t(pendingCount) }}</strong>
       </router-link>
-      <router-link class="ax-task-card" to="/blessing-tasks?status=dispatched">
+      <router-link class="ax-task-card" v-if="auth.can('temple.blessings.read')" to="/blessing-tasks?status=dispatched">
         <span class="ax-task-card__icon"><el-icon><Calendar /></el-icon></span>
         <span class="ax-task-card__copy"><span class="ax-task-card__label">{{ $t("待分配加持") }}</span><span class="ax-task-card__meta">{{ $t("优先分配执行法师") }}</span></span>
         <strong class="ax-task-card__value">{{ $t(pendingBlessingCount) }}</strong>
       </router-link>
-      <router-link class="ax-task-card" to="/reviews">
+      <router-link class="ax-task-card" v-if="auth.can('temple.reviews.read')" to="/reviews">
         <span class="ax-task-card__icon"><el-icon><ArrowRight /></el-icon></span>
         <span class="ax-task-card__copy"><span class="ax-task-card__label">{{ $t("评价回复") }}</span><span class="ax-task-card__meta">{{ $t("查看待回复与历史评价") }}</span></span>
         <strong class="ax-task-card__value">{{ $t("查看") }}</strong>
       </router-link>
-      <router-link class="ax-task-card" to="/report">
+      <router-link class="ax-task-card" v-if="auth.can('temple.finance.read')" to="/report">
         <span class="ax-task-card__icon"><el-icon><Wallet /></el-icon></span>
-        <span class="ax-task-card__copy"><span class="ax-task-card__label">{{ $t("经营报表") }}</span><span class="ax-task-card__meta">{{ $t("按真实结算口径查看") }}</span></span>
+        <span class="ax-task-card__copy"><span class="ax-task-card__label">{{ $t("经营报表") }}</span><span class="ax-task-card__meta">{{ $t("预约合同与结算分开查看") }}</span></span>
         <strong class="ax-task-card__value">{{ $t("查看") }}</strong>
       </router-link>
     </div>
 
     <!-- 统计卡片 -->
     <div class="stat-grid">
-      <StatCard :title='$t("待确认预约")' :value="pendingCount" :icon="Bell" tone="warning" :suffix='$t("单")' />
-      <StatCard
+      <StatCard v-if="auth.can('temple.bookings.read')" :title='$t("待确认预约")' :value="pendingCount" :icon="Bell" tone="warning" :suffix='$t("单")' />
+      <StatCard v-if="auth.can('temple.finance.read')"
         :title='$t("累计预约")'
         :value="report?.revenueStats?.bookingCount ?? '—'"
         :icon="Calendar"
         tone="brand"
         :suffix="report?.revenueStats ? '单' : ''"
       />
-      <StatCard
-        :title='$t("累计功德金")'
-        :value="report?.revenueStats ? formatMoney(report.revenueStats.totalRevenue) : '—'"
+      <StatCard v-if="auth.can('temple.finance.read')"
+        :title='$t("寺院服务费与随喜")'
+        :value="report?.revenueStats ? formatMoney(report.revenueStats.templeCents / 100) : '—'"
         :icon="Wallet"
         tone="accent"
       />
-      <StatCard :title='$t("在册法师")' :value="masterCount" :icon="UserFilled" tone="success" :suffix='$t("位")' />
+      <StatCard v-if="auth.can('temple.people.read')" :title='$t("在册法师")' :value="masterCount" :icon="UserFilled" tone="success" :suffix='$t("位")' />
     </div>
 
-    <div class="dash-grid">
+    <div class="dash-grid" v-if="auth.can('temple.bookings.read')">
       <!-- 最近预约 -->
       <div class="df-card dash-card">
         <div class="card-head">

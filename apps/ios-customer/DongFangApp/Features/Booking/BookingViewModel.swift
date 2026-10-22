@@ -31,6 +31,7 @@ final class BookingViewModel: ObservableObject {
     // MARK: - 状态
     @Published var isLoading: Bool = false
     @Published var isSubmitting: Bool = false
+    @Published var isLoadingAvailability: Bool = false
     @Published var errorMessage: String? = nil
 	@Published var submittedBooking: CreateBookingResponse? = nil
     @Published var showSuccess: Bool = false
@@ -43,6 +44,7 @@ final class BookingViewModel: ObservableObject {
 
     private let apiClient: APIClient
     private let authStore: AuthStore
+    private var availabilityGeneration = 0
 
     init(master: Master?,
          templeId: String,
@@ -81,7 +83,7 @@ final class BookingViewModel: ObservableObject {
     }
 
     var canSubmit: Bool {
-		!isSubmitting && selectedService != nil && selectedSlot != nil
+		!isSubmitting && !isLoadingAvailability && selectedService != nil && selectedSlot != nil
     }
 
 	var selectedService: TempleServiceInfo? { services.first { $0.serviceCode == selectedServiceId } }
@@ -123,16 +125,27 @@ final class BookingViewModel: ObservableObject {
 	}
 
 	func refreshAvailability() async {
-		guard !selectedServiceId.isEmpty else { availableSlots = []; return }
+		availabilityGeneration += 1
+		let generation = availabilityGeneration
+		let serviceID = selectedServiceId
+		let date = AppDateFormatter.day.string(from: selectedDate)
+		availableSlots = []
+		selectedSlotCode = ""
+		availabilityServiceFee = nil
+		guard !serviceID.isEmpty else { isLoadingAvailability = false; return }
+		isLoadingAvailability = true
+		defer { if generation == availabilityGeneration { isLoadingAvailability = false } }
 		do {
-			let date = AppDateFormatter.day.string(from: selectedDate)
-			let response: BookingAvailabilityResponse = try await apiClient.request(.bookingAvailability(templeId: templeId, serviceId: selectedServiceId, date: date))
+			let response: BookingAvailabilityResponse = try await apiClient.request(.bookingAvailability(templeId: templeId, serviceId: serviceID, date: date, masterId: master?.id ?? ""))
+			guard generation == availabilityGeneration, serviceID == selectedServiceId,
+			      date == AppDateFormatter.day.string(from: selectedDate) else { return }
 			availabilityServiceFee = response.serviceFee
 			availableSlots = response.slots
 			if !availableSlots.contains(where: { $0.slotCode == selectedSlotCode && $0.available }) {
 				selectedSlotCode = availableSlots.first(where: { $0.available })?.slotCode ?? ""
 			}
 		} catch {
+			guard generation == availabilityGeneration else { return }
 			availableSlots = []
 			selectedSlotCode = ""
 			errorMessage = error.localizedDescription

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
+const auth=useAuthStore()
 import { ElMessage } from '@/i18n'
 import { t as uiText } from '../../../../packages/localization/language'
 
@@ -83,12 +85,12 @@ onMounted(async () => {
 <template>
   <div class="df-page" v-loading="loading">
     <PageHeader :title='$t("寺院信息")' :subtitle='$t("维护寺院基础资料与封面")'>
-      <el-button type="primary" :icon="Check" :loading="saving" @click="handleSave">{{ $t("保存修改") }}</el-button>
+      <el-button v-if="auth.can('temple.profile.write')" type="primary" :icon="Check" :loading="saving" @click="handleSave">{{ $t("保存修改") }}</el-button>
     </PageHeader>
 
     <div class="info-grid">
       <div class="df-card info-form">
-        <el-form ref="formRef" :model="form" label-width="92px" label-position="right">
+        <el-form :disabled="!auth.can('temple.profile.write')" ref="formRef" :model="form" label-width="92px" label-position="right">
           <el-form-item :label='$t("寺院名称")' prop="name" required>
             <el-input v-model="form.name" :placeholder='$t("请输入寺院名称")' />
           </el-form-item>
@@ -131,7 +133,7 @@ onMounted(async () => {
 
       <div class="df-card info-cover">
         <div class="cover-title"><el-icon><Picture /></el-icon>{{ $t(" 封面图片") }}</div>
-        <ImageUploader v-model="form.coverImage" hint="建议尺寸 1200×675，将展示在 C 端寺院详情页" />
+        <ImageUploader v-if="auth.can('temple.profile.write')" v-model="form.coverImage" hint="建议尺寸 1200×675，将展示在 C 端寺院详情页" />
         <div v-if="form.coverImage" class="cover-preview-label">{{ $t("当前封面预览：") }}</div>
         <img v-if="form.coverImage" :src="form.coverImage" class="cover-preview" alt="cover" />
       </div>

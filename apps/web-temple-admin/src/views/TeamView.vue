@@ -1,0 +1,23 @@
+<script setup lang="ts">
+import { onMounted, ref, reactive } from 'vue'
+import client from '@/api/client'
+import PageHeader from '@/components/PageHeader.vue'
+import { ElMessage } from '@/i18n'
+type Member={id:number;account:string;name:string;role:string;status:string;revision:number;platformDisabled:boolean}
+const roles=[{code:'temple_reception',name:'寺院接待',description:'预约接待、履约与异常跟进；可查看排班'}, {code:'temple_operations',name:'寺院运营',description:'资料、法师档案、服务、排班、履约、加持及评价运营'}, {code:'temple_finance',name:'寺院财务只读',description:'预约合同统计与寺院结算查看、导出'}]
+const rows=ref<Member[]>([]),loading=ref(false),error=ref(''),visible=ref(false),saving=ref(false)
+const form=reactive({id:0,revision:0,platformDisabled:false,account:'',password:'',name:'',role:'temple_reception',status:'enabled'})
+async function load(){loading.value=true;error.value='';try{rows.value=(await client.get<{list:Member[]}>('/auth/temple/team')).list}catch(e){error.value=e instanceof Error?e.message:'成员加载失败'}finally{loading.value=false}}
+function edit(row?:Member){Object.assign(form,row||{id:0,revision:0,platformDisabled:false,account:'',name:'',role:'temple_reception',status:'enabled'},{password:''});visible.value=true}
+async function save(){if(saving.value)return;if(!form.name.trim()||(!form.id&&!form.account.trim())||(!form.id&&form.password.length<12)||(form.password&&form.password.length<12)){ElMessage.warning('请填写姓名、账号及至少12位初始密码');return}saving.value=true;try{const {id,revision,account,password,name,role,status}=form;await client[id?'put':'post']('/auth/temple/team',{id,revision,account,password,name,role,status});form.password='';visible.value=false;ElMessage.success('成员已保存，岗位或状态变更后原会话失效');await load()}catch{}finally{saving.value=false}}
+onMounted(load)
+</script>
+<template><div class="df-page"><PageHeader :title="$t('岗位与成员')" :subtitle="$t('成员仅可访问本寺院，停用与岗位变更后原会话立即失效')"><el-button type="primary" @click="edit()">{{$t('新增成员')}}</el-button></PageHeader>
+<el-alert type="info" :closable="false" :title="$t('寺院管理员由总管理平台维护。岗位成员不能管理账号、跨寺院操作或发起打款。')"/>
+<div class="roles"><article class="df-card" v-for="role in roles" :key="role.code"><b>{{$t(role.name)}}</b><p>{{$t(role.description)}}</p></article></div>
+<div v-if="error" role="alert"><p>{{$t(error)}}</p><el-button @click="load">{{$t('重新加载')}}</el-button></div>
+<el-table v-else :data="rows" v-loading="loading"><el-table-column prop="name" :label="$t('姓名')" min-width="110"/><el-table-column prop="account" :label="$t('登录账号')" min-width="160"/><el-table-column :label="$t('岗位')" min-width="130"><template #default="{row}">{{$t(roles.find(r=>r.code===row.role)?.name||row.role)}}</template></el-table-column><el-table-column :label="$t('状态')" width="90"><template #default="{row}"><el-tag :type="row.status==='enabled'?'success':'info'">{{$t(row.platformDisabled?'平台停用':row.status==='enabled'?'启用':'停用')}}</el-tag></template></el-table-column><el-table-column :label="$t('操作')" width="80"><template #default="{row}"><el-button link type="primary" @click="edit(row as Member)">{{$t('编辑')}}</el-button></template></el-table-column></el-table>
+<el-dialog v-model="visible" :title="$t(form.id?'编辑成员':'新增成员')" width="min(520px, 94vw)" :close-on-click-modal="!saving" :close-on-press-escape="!saving" :show-close="!saving" @closed="form.password=''">
+<el-alert v-if="form.platformDisabled" :closable="false" type="warning" :title="$t('账号已由平台停用，请联系平台管理员恢复')"/><el-form label-position="top"><el-form-item :label="$t('姓名')" required><el-input v-model="form.name" maxlength="64"/></el-form-item><el-form-item :label="$t('登录账号')" required><el-input v-model="form.account" :disabled="!!form.id" maxlength="64" autocomplete="off"/></el-form-item><el-form-item :label="$t(form.id?'重设密码（留空保留原密码）':'初始密码（至少12位）')"><el-input v-model="form.password" type="password" show-password maxlength="128" autocomplete="new-password"/></el-form-item><el-form-item :label="$t('岗位')"><el-select v-model="form.role"><el-option v-for="role in roles" :key="role.code" :value="role.code" :label="$t(role.name)"/></el-select></el-form-item><el-form-item :label="$t('状态')"><el-radio-group v-model="form.status"><el-radio value="enabled" :disabled="form.platformDisabled">{{$t('启用')}}</el-radio><el-radio value="disabled">{{$t('停用')}}</el-radio></el-radio-group></el-form-item></el-form>
+<template #footer><el-button :disabled="saving" @click="visible=false">{{$t('取消')}}</el-button><el-button type="primary" :loading="saving" @click="save">{{$t('保存')}}</el-button></template></el-dialog></div></template>
+<style scoped>.roles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:20px 0}.roles article{padding:20px}.roles p{color:var(--admin-text-secondary);line-height:1.7}@media(max-width:767px){.roles{grid-template-columns:1fr}}</style>
