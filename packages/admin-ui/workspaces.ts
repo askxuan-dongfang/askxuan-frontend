@@ -61,6 +61,7 @@ export function activeWorkspacePath(path: string): string {
   if (path.startsWith('/temple/detail/')) return '/temple/list'
   if (path.startsWith('/master/detail/') || path === '/master/create') return '/master/list'
   if (path.startsWith('/user/detail/')) return '/user/list'
+  if (path.startsWith('/settings/accounts/')) return '/settings/account'
   const shop = path.match(/^\/commerce\/(products|materials|services|orders|diy-orders|returns)\//)
   return shop ? `/commerce/${shop[1]}` : path
 }

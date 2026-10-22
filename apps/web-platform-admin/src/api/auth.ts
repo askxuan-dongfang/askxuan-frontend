@@ -1,6 +1,6 @@
 // 认证服务 API
 import client from './client'
-import type { LoginResp, Role, Permission, AdminAccount, PageResult, AdminAccount as AccountItem } from '@/types'
+import type { LoginResp, Role, Permission, AdminAccountDetail, PageResult, AdminAccount as AccountItem } from '@/types'
 
 export interface AdminLoginParams {
  captchaId:string
@@ -15,8 +15,16 @@ export function adminLogin(params: AdminLoginParams) {
 }
 
 /** 管理台账号列表 */
-export function getAdminAccounts(params: { keyword?: string; status?: string; page?: number; size?: number }) {
+export function getAdminAccounts(params: { keyword?: string; status?: string; roleId?: number; templeId?: string; masterId?: string; shopId?: number; page?: number; size?: number }) {
   return client.get<PageResult<AccountItem>>('/admin/auth/accounts', { params })
+}
+
+export function getAdminAccountDetail(id: number) {
+  return client.get<AdminAccountDetail>(`/admin/auth/accounts/${id}`)
+}
+
+export function revokeAdminAccountSessions(id: number) {
+  return client.post<{ id: number; success: boolean }>(`/admin/auth/accounts/${id}/revoke-sessions`)
 }
 
 export interface AdminAccountPayload {
@@ -41,7 +49,7 @@ export function updateAdminAccount(id: number, params: Omit<AdminAccountPayload,
 
 /** 启用或停用管理台账号 */
 export function updateAdminAccountStatus(id: number, status: 'enabled' | 'disabled') {
-  return client.put<{ id: number; status: string }>(`/admin/auth/accounts/${id}/status`, { status })
+  return client.put<{ id: number; status: string; platformDisabled: boolean }>(`/admin/auth/accounts/${id}/status`, { status })
 }
 
 /** 角色列表 */

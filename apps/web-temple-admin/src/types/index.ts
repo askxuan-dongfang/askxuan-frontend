@@ -50,6 +50,11 @@ export interface Temple {
   traditionCodes?: string[]
   sect: string
   status: string
+  authStatus?: 'certified' | 'pending' | 'legacy_unknown'
+  platformStatus?: 'normal' | 'banned'
+  shelfStatus?: 'on_shelf' | 'off_shelf'
+  recommended?: boolean
+  stateVersion?: number
   address: string
   coverImage: string
   rating: number

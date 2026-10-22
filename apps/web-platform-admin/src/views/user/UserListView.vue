@@ -15,6 +15,8 @@
       <el-button type="primary" :icon="Search" @click="onSearch">{{ $t("查询") }}</el-button>
       <el-button :icon="RefreshLeft" @click="onReset">{{ $t("重置") }}</el-button>
     </div>
+    <p class="stats-note">{{ $t('订单数为真实渠道已付款订单，消费为实付减成功退款；不含模拟付款、体验订单和测试余额。') }}</p>
+    <div v-if="loadError" class="ax-page-feedback is-error" role="alert"><div class="ax-page-feedback__copy"><strong>{{ $t('用户与消费统计加载失败') }}</strong><p>{{ $t('统计不可用时不会显示为零，请重新加载。') }}</p></div><el-button @click="loadData">{{ $t('重新加载') }}</el-button></div>
 
     <div class="dfx-card table-wrap">
       <DataTable :data="list" :loading="loading" :total="total" v-model:page="query.page" v-model:size="query.size" @change="loadData" show-index>
@@ -33,8 +35,8 @@
           <template #default="{ row }">{{ maskMobile(row.mobile) }}</template>
         </el-table-column>
         <el-table-column :label='$t("地区")' prop="region" width="120" />
-        <el-table-column :label='$t("订单数")' prop="totalOrders" width="100" align="center" />
-        <el-table-column :label='$t("消费总额")' width="140" align="right">
+        <el-table-column :label='$t("已付订单")' prop="totalOrders" width="110" align="center" />
+        <el-table-column :label='$t("净消费")' width="140" align="right">
           <template #default="{ row }">{{ $t(formatMoney(row.totalSpent)) }}</template>
         </el-table-column>
         <el-table-column :label='$t("状态")' width="100">
@@ -70,16 +72,20 @@ import { formatDate, formatMoney, maskMobile } from '@/utils/format'
 import type { AdminUserItem } from '@/types'
 
 const loading = ref(false)
+const loadError = ref(false)
 const list = ref<AdminUserItem[]>([])
 const total = ref(0)
 const query = reactive({ keyword: '', status: '', page: 1, size: 20 })
 
 async function loadData() {
   loading.value = true
+  loadError.value = false
   try {
     const res = await getUserList(query)
     list.value = res.list || []
     total.value = res.total || 0
+  } catch {
+    list.value = []; total.value = 0; loadError.value = true
   } finally {
     loading.value = false
   }
@@ -96,7 +102,7 @@ function onReset() {
 }
 
 async function onStatus(row: AdminUserItem, status: string) {
-  await ElMessageBox.confirm((uiText("确认") + String((status === 'banned' ? uiText('封禁') : uiText('解封'))) + uiText("用户「") + String(row.nickname) + uiText("」？")), uiText('提示'), {
+  await ElMessageBox.confirm((uiText("确认") + String((status === 'banned' ? uiText('封禁') : uiText('解封'))) + uiText("用户「") + String(row.nickname) + uiText("」？") + uiText(status === 'banned' ? '封禁后旧会话立即失效，订单和资产保留。' : '解封后需要重新登录，旧会话不会恢复。')), uiText('提示'), {
     type: status === 'banned' ? 'warning' : 'info'
   })
   await updateUserStatus(row.userId, status)
@@ -118,6 +124,7 @@ onMounted(loadData)
 .table-wrap {
   padding: 16px;
 }
+.stats-note{color:var(--color-text-secondary);line-height:1.8;margin:0 0 16px}
 .user-cell {
   display: flex;
   align-items: center;

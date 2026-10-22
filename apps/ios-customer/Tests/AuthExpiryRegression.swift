@@ -221,6 +221,14 @@ func cancelled(_ result: Result<Value, Error>) -> Bool {
         let delayed = Task { await request(refreshed) }; await started.wait(); store.advanceToken("fresh"); await release.release()
         try check("delayed 401 safely retries same-login refreshed token", (try? await delayed.value.get().value) == "ok" && store.expirationCount == 0)
 
+        store.signIn(refresh: "refresh"); let revokedStarted = Gate(); let revokedRelease = Gate(); let revokedCounts = Counts()
+        StubProtocol.respond = { _ in _ = await revokedCounts.add("requests"); await revokedStarted.release(); await revokedRelease.wait(); return .failure(40105) }
+        let revokedClient = client(); let revokedTask = Task { await request(revokedClient) }; await revokedStarted.wait()
+        store.advanceToken("fresh"); await revokedRelease.release()
+        let revokedResult = await revokedTask.value
+        let revokedRequestCount = await revokedCounts.get("requests")
+        try check("revocation cannot retry or preserve a renewed token from the same login", unauthorized(revokedResult) && store.expirationCount == 1 && revokedRequestCount == 1)
+
         store.signIn(refresh: "refresh")
         StubProtocol.respond = { req in if req.url!.path.hasSuffix("refresh") { throw URLError(.notConnectedToInternet) }; return .failure(40103) }
         _ = await request(client())
@@ -267,6 +275,11 @@ func cancelled(_ result: Result<Value, Error>) -> Bool {
         try check("embedded session expiry refreshes host credentials once", embedded.accessToken == "fresh" && store.expirationCount == 0)
         do { _ = try await bridge.recoverEmbeddedSession(embedded, allowsRefresh: false) } catch { }
         try check("second embedded expiry goes directly to login", store.expirationCount == 1)
+        store.signIn(refresh: "refresh"); let revokedBridgeCounts = Counts()
+        StubProtocol.respond = { _ in _ = await revokedBridgeCounts.add("requests"); return .fresh }
+        do { _ = try await bridge.recoverEmbeddedSession(store.requestSession, allowsRefresh: true, terminalRevocation: true) } catch { }
+        let revokedBridgeRequestCount = await revokedBridgeCounts.get("requests")
+        try check("embedded terminal revocation never refreshes the native host", store.expirationCount == 1 && revokedBridgeRequestCount == 0)
         store.signIn(refresh: "refresh"); let oldEmbedded = store.requestSession; store.signIn("new-login")
         do { _ = try await client().recoverEmbeddedSession(oldEmbedded, allowsRefresh: true) } catch { }
         try check("stale WebView expiry cannot clear new login", store.expirationCount == 0 && store.requestSession.accessToken == "new-login")
