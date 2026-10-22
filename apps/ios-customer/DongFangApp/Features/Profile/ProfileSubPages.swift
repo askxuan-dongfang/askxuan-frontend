@@ -298,8 +298,9 @@ struct CustomerBookingDetailView: View {
                     if booking.status == "pending_payment" { Section { Button(L10n.text("继续支付")) { Task { do { _ = try await CashCheckout.pay("booking", bookingId); await load() } catch { errorMessage = error.localizedDescription } } } } }
                     Section(L10n.text("服务进度与回执")) { JourneyRecordPanel(bookingId: bookingId) { _ in Task { await load() } } }
                     Section(L10n.text("费用与备注")) {
-                        detailRow("订单金额", booking.orderAmountText)
-                        detailRow("功德金", booking.meritMoneyText)
+                        detailRow("预约合同总额", booking.orderAmountText)
+                        detailRow("法师执行费", String(format: "¥%.2f", booking.serviceFee ?? 0))
+                        detailRow("寺院服务费与随喜", String(format: "¥%.2f", booking.meritMoney))
                         GrowthOrderPriceView(kind: "booking", number: booking.id)
                         if !booking.note.isEmpty {
                             Text(booking.note).foregroundStyle(Color.textSecondary)
