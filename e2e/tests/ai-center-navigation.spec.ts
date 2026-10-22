@@ -1,11 +1,10 @@
 import { test, expect, type Page } from '@playwright/test'
+import { seedPlatformAdmin, fulfillPlatformAdminAccess } from '../fixtures/platform-admin-access'
 async function setup(page: Page, role = 'platform_super') {
-  await page.addInitScript(role => {
-    localStorage.setItem('df_platform_admin_token', 'e30.' + btoa(JSON.stringify({ userId: 1, roles: [role], clientId: 'platform-admin', exp: 4000000000 })) + '.fixture')
-    localStorage.setItem('df_platform_admin_user', JSON.stringify({ userId: 1, nickname: '导航验收' }))
-  }, role)
+  const identity = await seedPlatformAdmin(page, role, '导航验收')
   const calls: string[] = []
   await page.route('**/api/v1/**', async route => {
+    if (await fulfillPlatformAdminAccess(route, identity)) return
     const path = new URL(route.request().url()).pathname; calls.push(path)
     let data: any = { list: [], total: 0 }
     if (path.endsWith('/ai/admin/agent')) data = { runtimeMode: 'harness', revision: 1, draftSaved: true, activeVersion: 1, draft: { name: '问事助手', instruction: '测试职责', model: '', maxOutputTokens: 8192, skills: [{ code: 'general', enabled: true, prompt: '', useTool: false }], evaluation: [] }, catalog: [{ code: 'general', name: '日常问事', description: '测试', version: '1', inputSchema: { fields: [] }, toolName: '', toolAvailable: false }], versions: [], audit: [], tested: true, liveEnabled: true, persistentRecovery: true, rollout: { versionId: 1, stableVersion: 1, percentage: 100, revision: 1 } }
