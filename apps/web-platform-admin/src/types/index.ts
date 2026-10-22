@@ -38,6 +38,7 @@ export interface LoginResp {
 }
 
 export interface AdminAccount {
+  platformDisabled?: boolean
   id: number
   account: string
   name: string

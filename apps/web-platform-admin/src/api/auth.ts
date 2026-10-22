@@ -49,7 +49,7 @@ export function updateAdminAccount(id: number, params: Omit<AdminAccountPayload,
 
 /** 启用或停用管理台账号 */
 export function updateAdminAccountStatus(id: number, status: 'enabled' | 'disabled') {
-  return client.put<{ id: number; status: string }>(`/admin/auth/accounts/${id}/status`, { status })
+  return client.put<{ id: number; status: string; platformDisabled: boolean }>(`/admin/auth/accounts/${id}/status`, { status })
 }
 
 /** 角色列表 */

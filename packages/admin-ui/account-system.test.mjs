@@ -57,3 +57,24 @@ test('late account detail responses cannot replace another account and failed re
   reads[2].reject(new Error('unavailable')); await retry
   assert.equal(state.detail.value, null); assert.equal(state.error.value, 'unavailable')
 })
+
+test('platform controls cannot activate a pending or temple-revoked account', async () => {
+  const script = read('../../apps/web-platform-admin/src/views/settings/SettingsAccountDetailView.vue').match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1]
+  const updates = []
+  const current = { account: { id: 77, status: 'disabled', platformDisabled: false }, identity: { activationStatus: 'pending' }, bindings: [], blockedReasons: [] }
+  const state = compile(script + '\nexport {changeStatus,detail};', {
+    vue: { ...vue, watch() {} }, 'vue-router': { useRoute: () => ({ params: { id: '77' } }) },
+    '@/api/auth': { updateAdminAccountStatus: async (id, status) => updates.push({ id, status }), getAdminAccountDetail: async () => current },
+    '@/api/client': { isAdminSessionExpired: () => false },
+    '@/i18n': { ElMessageBox: { confirm: async () => {} }, ElMessage: { success() {} } },
+    '../../../../../packages/localization/language': { t: value => value }
+  })
+  state.detail.value = current
+  await state.changeStatus()
+  assert.deepEqual(updates[0], { id: 77, status: 'disabled' })
+  current.account.platformDisabled = true
+  state.detail.value = current
+  await state.changeStatus()
+  assert.deepEqual(updates[1], { id: 77, status: 'enabled' })
+  assert.equal(state.detail.value.identity.activationStatus, 'pending')
+})

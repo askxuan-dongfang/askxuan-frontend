@@ -41,7 +41,7 @@
           <template #default="{ row }">
             <el-tag :type="row.status === 'enabled' ? 'success' : 'info'">
               {{ $t((row.status === 'enabled' ? $t('已启用') : $t('已停用'))) }}
-            </el-tag>
+            </el-tag><el-tag v-if="row.platformDisabled" type="warning" size="small">{{ $t("平台停用") }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column :label='$t("最近登录")' width="180">
@@ -51,8 +51,8 @@
           <template #default="{ row }">
             <el-button link type="primary" @click="$router.push('/settings/accounts/' + row.id)">{{ $t('详情') }}</el-button>
             <el-button link type="primary" @click="openEdit(row)">{{ $t("编辑") }}</el-button>
-            <el-button link :type="row.status === 'enabled' ? 'warning' : 'success'" @click="toggleStatus(row)">
-              {{ $t((row.status === 'enabled' ? $t('停用') : $t('启用'))) }}
+            <el-button link :type="row.platformDisabled ? 'success' : 'warning'" @click="toggleStatus(row)">
+              {{ $t((row.platformDisabled ? $t('解除平台停用') : $t('平台停用'))) }}
             </el-button>
           </template>
         </el-table-column>
@@ -68,7 +68,7 @@
               <span class="mobile-actions">
                 <el-button @click="$router.push('/settings/accounts/' + row.id)">{{ $t('详情') }}</el-button>
                 <el-button type="primary" @click="openEdit(row)">{{ $t("编辑") }}</el-button>
-                <el-button :type="row.status === 'enabled' ? 'warning' : 'success'" plain @click="toggleStatus(row)">{{ $t((row.status === 'enabled' ? $t('停用') : $t('启用'))) }}</el-button>
+                <el-button :type="row.platformDisabled ? 'success' : 'warning'" plain @click="toggleStatus(row)">{{ $t((row.platformDisabled ? $t('解除平台停用') : $t('平台停用'))) }}</el-button>
               </span>
             </div>
           </article>
@@ -216,8 +216,8 @@ async function submit() {
 }
 
 async function toggleStatus(row: AdminAccount) {
-  const status = row.status === 'enabled' ? 'disabled' : 'enabled'
-  await ElMessageBox.confirm((uiText("确认") + String((status === 'enabled' ? uiText('启用') : uiText('停用'))) + uiText("账号「") + String(row.account) + uiText("」？")), uiText('账号状态'), { type: 'warning' })
+  const status = row.platformDisabled ? 'enabled' : 'disabled'
+  await ElMessageBox.confirm((uiText("确认") + String((status === 'enabled' ? uiText('解除平台停用') : uiText('平台停用'))) + uiText("账号「") + String(row.account) + uiText("」？")), uiText('账号状态'), { type: 'warning' })
   await updateAdminAccountStatus(row.id, status)
   ElMessage.success(uiText('账号状态已更新'))
   loadData()
