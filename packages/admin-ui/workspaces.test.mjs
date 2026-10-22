@@ -37,7 +37,7 @@ test('task workspaces preserve existing targets and separate operations, finance
  assert.equal(workspaceForPath('/services/overview').title,'服务与履约')
 })
 test('hidden details and all AI connections retain list breadcrumbs',()=>{
- for(const [path,list]of [['/master/create','/master/list'],['/master/detail/m1','/master/list'],['/temple/detail/t1','/temple/list'],['/user/detail/u1','/user/list'],['/commerce/materials/edit/m1','/commerce/materials'],['/commerce/diy-orders/d1','/commerce/diy-orders'],['/ai/connections/legacy','/ai/connections']]){
+ for(const [path,list]of [['/settings/accounts/12','/settings/account'],['/master/create','/master/list'],['/master/detail/m1','/master/list'],['/temple/detail/t1','/temple/list'],['/user/detail/u1','/user/list'],['/commerce/materials/edit/m1','/commerce/materials'],['/commerce/diy-orders/d1','/commerce/diy-orders'],['/ai/connections/legacy','/ai/connections']]){
   assert.equal(activeWorkspacePath(path),list);assert.ok(workspaceForPath(path))
  }
 })

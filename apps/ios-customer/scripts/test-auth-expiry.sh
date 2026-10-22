@@ -11,6 +11,7 @@ for role in customer master; do
   network="$frontend_root/apps/ios-$role/$app/Core/Network"
   xcrun swiftc -swift-version 5 -module-cache-path "$output_dir/module-cache" "${flags[@]}" \
     "$network/APIResponse.swift" "$network/APIClient.swift" \
+    "$frontend_root/packages/localization/native/AppLanguage.swift" \
     "$frontend_root/apps/ios-customer/Tests/AuthExpiryRegression.swift" \
     -o "$output_dir/$role-auth-regression"
   "$output_dir/$role-auth-regression" > "$output_dir/$role-auth-results.json"

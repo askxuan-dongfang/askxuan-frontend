@@ -27,12 +27,12 @@ test('custom direct URLs match menu policy, and empty grants have a safe landing
 })
 test('write grants cannot open standards, onboarding or sensitive shared-prefix modules',()=>{
  const role=['catalog_editor'],s={...snapshot,permissions:['platform.products.read','platform.products.write','platform.masters.read','platform.masters.write','platform.temples.read','platform.temples.write','platform.finance.read','platform.finance.write','super.security']}
- for(const path of ['/settings/account','/settings/role','/settings/taxonomy','/settings/regions','/settings/directory-tags','/onboarding/review','/master/create','/master/review','/temple/review','/finance/payout-sandbox','/services/overview','/ai/agent','/audit/comment','/audit/design'])assert.equal(access.canAccessRoute(router.resolve(path),role,s),false,path)
+ for(const path of ['/settings/account','/settings/accounts/12','/settings/role','/settings/taxonomy','/settings/regions','/settings/directory-tags','/onboarding/review','/master/create','/master/review','/temple/review','/finance/payout-sandbox','/services/overview','/ai/agent','/audit/comment','/audit/design'])assert.equal(access.canAccessRoute(router.resolve(path),role,s),false,path)
  assert.equal(access.canAccessRoute(router.resolve('/master/list'),role,s),true);assert.equal(access.canAccessRoute(router.resolve('/commerce/products/edit/1'),role,s),true)
  assert.equal(access.canAccessRoute(router.resolve('/master/list'),['shop_admin'],s),false)
 })
 function component(path,expose,api={}){const script=read(path).match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1];return compile(script+'\nexport {'+expose+'};',{
- vue:{...vue,onMounted(){}},'@/i18n':{ElMessage:{warning(){},success(){}},ElMessageBox:{}},'../../../../../packages/localization/language':{t:v=>v},'@/api/auth':api
+ vue:{...vue,onMounted(){}},'@/i18n':{ElMessage:{warning(){},success(){}},ElMessageBox:{}},'../../../../../packages/localization/language':{t:v=>v},'@/api/auth':api,'vue-router':{useRoute:()=>({query:{}}),useRouter:()=>({})}
 })}
 test('role matrix preserves CAS-conflicting drafts and reloads the authoritative revision',async()=>{
  let revision=4,saved=0

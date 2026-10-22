@@ -59,6 +59,16 @@ test('concurrent failed or timed-out renewals share one refresh and one login na
   }
 })
 
+test('server revocation signs out immediately without using a retained refresh token', async () => {
+  const env = setup({ refreshToken: 'refresh', refresh: async () => ({ accessToken: 'must-not-be-used' }) })
+  const snapshot = env.guard.capture('/admin/bookings')
+  const results = await Promise.all(Array.from({ length: 5 }, () => recover(env, snapshot, 40105)))
+  assert.equal(results[0].kind, 'expired')
+  assert.equal(env.events.refresh, 0)
+  assert.equal(env.events.expired, 1)
+  assert.equal(env.values.has(`${prefix}_token`), false)
+})
+
 test('successful renewal preserves the session, rotates credentials and replays late failures without another refresh', async () => {
   const env = setup({ refreshToken: 'refresh', refresh: async () => ({ accessToken: 'new-token', refreshToken: 'new-refresh' }) })
   const snapshot = env.guard.capture('/admin/bookings')

@@ -132,13 +132,13 @@ final class APIClient {
         }
     }
 
-    /// H5 has already rejected this WebView's token. Refresh once before reloading its bootstrap.
-    func recoverEmbeddedSession(_ context: AuthRequestSession, allowsRefresh: Bool) async throws -> AuthRequestSession {
+    /// Recover an expired embedded token once; server revocation always ends the captured login.
+    func recoverEmbeddedSession(_ context: AuthRequestSession, allowsRefresh: Bool, terminalRevocation: Bool = false) async throws -> AuthRequestSession {
         var initialAttempt = true
         return try await withSessionRecovery(context, allowsRefresh: allowsRefresh) { current in
             if initialAttempt {
                 initialAttempt = false
-                throw AuthenticationFailure(code: 40102, message: L10n.text("登录已过期，请重新登录"))
+                throw AuthenticationFailure(code: terminalRevocation ? 40105 : 40102, message: L10n.text("登录已过期，请重新登录"))
             }
             return current
         }
@@ -157,6 +157,7 @@ final class APIClient {
                 throw APIError.serverError(failure.code, failure.message)
             }
             let current = try await currentLogin(context)
+            if !failure.canRefresh { return try await expire(current) }
             var retry: AuthRequestSession?
             if current.accessToken != context.accessToken {
                 retry = current

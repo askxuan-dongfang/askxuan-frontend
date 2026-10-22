@@ -13,6 +13,7 @@ import { beliefOptions as standardBeliefs, normalizeBelief } from '../../../../.
 import { getDirectoryTags, getPublicDirectoryTags, type DirectoryTag } from '@/api/directoryTags'
 import ProviderDirectoryTags from '@/components/ProviderDirectoryTags.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import SubjectAccounts from '@/components/SubjectAccounts.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import {
@@ -202,6 +203,7 @@ onMounted(() => { void loadDetail() })
       <el-button :loading="serviceLoading" @click="loadServiceConfig">{{ $t('重新加载') }}</el-button>
     </div>
     <!-- 查看态 -->
+    <SubjectAccounts v-if="master && !editing" kind="master" :id="master.id" />
     <div v-if="master && !editing && auth.roles.includes('platform_super')" class="df-card" style="max-width: 760px">
       <div class="master-head">
         <el-avatar :size="64" :src="master.avatar">{{ $t(master.dharmaName.slice(0, 1)) }}</el-avatar>

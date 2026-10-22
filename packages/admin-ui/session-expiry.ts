@@ -1,7 +1,7 @@
 /** Shared administration-session invalidation. No HTTP or framework dependency. */
 export const ADMIN_SESSION_EXPIRED_EVENT = 'askxuan:admin-session-expired'
 export const ADMIN_SESSION_REFRESHED_EVENT = 'askxuan:admin-session-refreshed'
-const sessionCodes = new Set([40101, 40102, 40103])
+const sessionCodes = new Set([40101, 40102, 40103, 40105])
 
 export class AdminSessionExpiredError extends Error {
   constructor() {
@@ -76,6 +76,8 @@ export function createAdminSessionGuard(options: SessionOptions) {
   const recover = async (request: AdminRequestSession | null | undefined, url: string | undefined, status: unknown, code: unknown, retried: boolean): Promise<Recovery> => {
     if (!request || isAuthenticationEndpoint(url) || !isSessionFailure(status, code)) return { kind: 'unhandled' }
     if (isStale(request)) return { kind: 'stale' }
+    // A server-revoked session cannot be repaired with its old refresh token.
+    if (Number(code) === 40105) return expire({ ...request, token: read('token') })
     if (wasRefreshed(request)) return retried ? { kind: 'stale' } : { kind: 'retry', token: read('token') }
     if (retried) return expire(request)
     const refreshToken = read('refresh_token')

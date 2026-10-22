@@ -27,7 +27,7 @@
           <div class="detail-info">
             <h2 class="detail-info__name dfx-serif">{{ $t(detail.temple.name) }}</h2>
             <div class="detail-info__meta">
-              <StatusTag :status="detail.temple.status" />
+              <TempleStateControl :temple="detail.temple" :editable="auth.roles.includes('platform_super') || auth.access?.permissions.includes('platform.temples.write')" @updated="loadData" />
               <el-tag size="small" effect="plain">{{ $t(detail.temple.type) }}</el-tag>
               <span class="star">★ {{ $t(detail.temple.rating?.toFixed(1)) }}</span>
             </div>
@@ -42,6 +42,7 @@
         </div>
 
         <!-- 图册 -->
+        <SubjectAccounts kind="temple" :id="detail.temple.id" />
         <div class="dfx-card detail-section">
           <div class="section-title">{{ $t("寺院图册（") }}{{ $t(detail.images.length) }}）</div>
           <div v-if="detail.images.length" class="gallery">
@@ -87,6 +88,8 @@ import { useAuthStore } from '@/stores/auth'
 import ProviderAffiliation from '../../../../../packages/admin-ui/components/ProviderAffiliation.vue'
 import ProviderDirectoryTags from '@/components/ProviderDirectoryTags.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import SubjectAccounts from '@/components/SubjectAccounts.vue'
+import TempleStateControl from '@/components/TempleStateControl.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import { getTempleDetail } from '@/api/temple'
 import type { TempleDetail } from '@/types'
