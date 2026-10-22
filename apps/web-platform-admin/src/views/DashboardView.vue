@@ -33,7 +33,7 @@
       <StatCard :label='$t("平台总收入（元）")' :value="stats.totalIncome" icon="Money" icon-color="#C8A96E" prefix="¥" />
       <StatCard :label='$t("平台抽成（元）")' :value="stats.commissionIncome" icon="Coin" icon-color="#D4A843" prefix="¥" />
       <StatCard :label='$t("入驻寺院")' :value="stats.templeCount" icon="OfficeBuilding" icon-color="#C45A3C" :suffix='$t(" 家")' />
-      <StatCard :label='$t("认证法师")' :value="stats.masterCount" icon="Avatar" icon-color="#B5453A" :suffix='$t(" 位")' />
+      <StatCard :label='$t("师傅资料")' :value="stats.masterCount" icon="Avatar" icon-color="#B5453A" :suffix='$t(" 位")' />
       <StatCard :label='$t("注册用户")' :value="stats.userCount" icon="User" icon-color="#5B8C5A" :suffix='$t(" 人")' />
       <StatCard :label='$t("待审核数")' :value="stats.pendingCount" icon="Bell" icon-color="#D4735A" :suffix='$t(" 项")' />
     </div>

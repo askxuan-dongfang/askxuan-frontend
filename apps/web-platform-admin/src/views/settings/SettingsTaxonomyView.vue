@@ -2,11 +2,13 @@
 import { ElMessage } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
 
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 
 import PageHeader from '@/components/PageHeader.vue'
 import { taxonomyApi, type BeliefProfile, type IntentionTag } from '@/api/taxonomy'
 
+const props = withDefaults(defineProps<{ mode?: 'standard' | 'display' }>(), { mode: 'standard' })
+const displayMode = computed(() => props.mode === 'display')
 const loading = ref(false)
 const beliefs = ref<BeliefProfile[]>([])
 const intentions = ref<IntentionTag[]>([])
@@ -89,8 +91,29 @@ onMounted(load)
 
 <template>
   <div class="dfx-page" v-loading="loading">
-    <PageHeader :title='$t("信仰与心愿标准 / 首页展示")' :subtitle='$t("标准编码唯一维护；展示文案、封面与排序引用同一编码。")' />
-    <p class="standard-scope-note">{{ $t('五类主信仰与七项心愿范围固定，本页只编辑已有标准与首页展示。宗派信俗由完整标准目录维护；身份和擅长是资料选项，不代表资质或实际服务。') }}</p>
+    <PageHeader :title="$t(displayMode ? '首页分类展示' : '信仰与心愿标准')" :subtitle="$t(displayMode ? '编辑已有分类的文案、封面、排序和落地目标，各端引用同一编码。' : '只读查看五类主信仰与七项心愿的标准目录。')" />
+    <p class="standard-scope-note">{{ $t(displayMode ? '展示名称与基础目录共用，修改后同步影响各端展示；编码和分类范围固定，不会创建另一套标准。' : '标准编码与分类范围固定。宗派信俗由独立标准目录维护；身份和擅长是资料选项，不代表资质或实际服务。首页展示配置请进入运营中心。') }}</p>
+
+    <template v-if="!displayMode">
+      <section class="taxonomy-section">
+        <div class="section-head"><h2>{{ $t('五类主信仰') }}</h2></div>
+        <el-table :data="beliefs">
+          <el-table-column prop="code" :label="$t('标准编码')" min-width="160" />
+          <el-table-column prop="name" :label="$t('名称')" min-width="120" />
+          <el-table-column prop="description" :label="$t('说明')" min-width="260" show-overflow-tooltip />
+        </el-table>
+      </section>
+      <section class="taxonomy-section">
+        <div class="section-head"><h2>{{ $t('七项心愿') }}</h2></div>
+        <el-table :data="intentions">
+          <el-table-column prop="code" :label="$t('标准编码')" min-width="160" />
+          <el-table-column prop="name" :label="$t('名称')" min-width="120" />
+          <el-table-column prop="description" :label="$t('说明')" min-width="260" show-overflow-tooltip />
+        </el-table>
+      </section>
+    </template>
+
+    <template v-else>
 
     <section class="taxonomy-section">
       <div class="section-head"><div><h2>{{ $t("按信仰找") }}</h2><p>{{ $t("五类主信仰编码固定；启用状态、排序和展示资料用于首页。") }}</p></div></div>
@@ -149,6 +172,7 @@ onMounted(load)
       </el-form>
       <template #footer><el-button @click="intentionVisible=false" data-quiet-action="cancel">{{ $t("取消") }}</el-button><el-button type="primary" @click="saveIntention">{{ $t("保存") }}</el-button></template>
     </el-dialog>
+    </template>
   </div>
 </template>
 

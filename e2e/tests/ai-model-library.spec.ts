@@ -1,10 +1,8 @@
 import { test, expect, type Page } from '@playwright/test'
+import { seedPlatformAdmin, fulfillPlatformAdminAccess } from '../fixtures/platform-admin-access'
 
 async function setup(page: Page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('df_platform_admin_token', 'e30.' + btoa(JSON.stringify({userId:1,roles:['platform_super'],clientId:'platform-admin',exp:4000000000})) + '.fixture')
-    localStorage.setItem('df_platform_admin_user', JSON.stringify({userId:1,nickname:'模型库验收'}))
-  })
+  const identity = await seedPlatformAdmin(page, 'platform_super', '模型库验收')
   const list = [
     {id:'ark-code-latest',name:'方舟套餐',model:'ark-code-latest',kind:'language',source:'legacy',provider:'volcengine',baseUrl:'https://ark.cn-beijing.volces.com/api/plan/v3',bindings:{chat:'ark-code-latest',document:'chat:ark-code-latest'}},
     {id:'embed',name:'向量模型',model:'bge-small',kind:'Embedding',source:'builtin',dimension:512,bindings:{embedding:'embed'}},
@@ -13,6 +11,7 @@ async function setup(page: Page) {
   let uses = {chat:'',vision:'',embedding:'embed',rerank:'rank',document:''}, revision = 3
   const calls: {path:string;method:string;body:any}[] = []
   await page.route('**/api/v1/**', async route => {
+    if (await fulfillPlatformAdminAccess(route, identity)) return
     const req=route.request(), path=new URL(req.url()).pathname, body=req.postData()?req.postDataJSON():null
     calls.push({path,method:req.method(),body})
     let data:any={list:[],total:0}

@@ -2,8 +2,9 @@ import { subscribeAdminSession, startAdminSession } from '../../../../packages/a
 // 认证状态管理
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { adminLogin, type AdminLoginParams } from '@/api/auth'
+import { adminLogin, getAdminAccess, type AdminAccess, type AdminLoginParams } from '@/api/auth'
 import { jwtRoles, jwtClientId } from '@/utils/jwt'
+import {createAuthorizationBootstrap} from '@/utils/adminAccess'
 import type { UserInfo } from '@/types'
 
 const TOKEN_KEY = 'df_platform_admin_token'
@@ -24,6 +25,10 @@ export const useAuthStore = defineStore('auth', () => {
     })()
   )
 
+  const access = ref<AdminAccess | null>(null)
+  const authorization = createAuthorizationBootstrap(getAdminAccess, value => { access.value = value })
+  const ensureAccess = () => authorization.ensure()
+
   const isLogin = computed(() => !!token.value)
   /** 从 JWT payload 解码出的角色列表（RBAC 守卫用） */
   const roles = computed(() => jwtRoles(token.value))
@@ -32,6 +37,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login(params: AdminLoginParams) {
     const res = await adminLogin(params)
+    authorization.invalidate()
     startAdminSession('df_platform_admin')
     token.value = res.accessToken
     refreshToken.value = res.refreshToken
@@ -39,10 +45,12 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem(TOKEN_KEY, res.accessToken)
     localStorage.setItem(REFRESH_KEY, res.refreshToken)
     localStorage.setItem(USER_KEY, JSON.stringify(res.userInfo))
+    await ensureAccess()
     return res
   }
 
   function logout() {
+    authorization.invalidate()
     const previous=token.value;
     if(previous)void fetch('/api/v1/auth/logout',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+previous},body:JSON.stringify({accessToken:previous})}).catch(()=>{});
 
@@ -58,9 +66,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   subscribeAdminSession('df_platform_admin', logout, () => {
+    access.value = null
     token.value = localStorage.getItem('df_platform_admin_token') || ''
     refreshToken.value = localStorage.getItem('df_platform_admin_refresh_token') || ''
   })
 
-  return { token, refreshToken, userInfo, isLogin, roles, clientId, login, logout }
+  return { token, refreshToken, userInfo, isLogin, roles, clientId, access, ensureAccess, login, logout }
 })

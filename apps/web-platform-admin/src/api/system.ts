@@ -17,9 +17,12 @@ export {
 // 数据字典：复用 audit-service 敏感词管理
 export { getSensitiveWords, createSensitiveWord, deleteSensitiveWord } from './audit'
 
-// 操作日志：复用 audit-service 审核队列（全量记录）
-export function getOperationLogs(params: { bizType?: string; status?: string; page?: number; size?: number }) {
-  return client.get<PageResult<AuditQueue>>('/admin/audit/queue', { params })
+export interface AdminOperation {
+ requestId:string;actorId:number;actorRoles:string[];action:string;method:string;routeTemplate:string;targetType:string;targetId:string;result:string;httpStatus:number;businessCode:number;durationMs:number;startedAt:string;finishedAt:string
+}
+// Real administrative writes, separate from the moderation queue.
+export function getOperationLogs(params: { actorId?: number; action?: string; method?: string; targetType?: string; result?: string; startTime?: string; endTime?: string; page?: number; size?: number }) {
+  return client.get<PageResult<AdminOperation>>('/admin/audit/operations', { params })
 }
 
 export type { Role, Permission, SensitiveWord, AuditQueue }

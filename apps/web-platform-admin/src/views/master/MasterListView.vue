@@ -17,7 +17,7 @@
         <el-option v-if="query.traditionCode && !traditions.some(tag=>tag.code===query.traditionCode)" :value="query.traditionCode" :label="query.traditionCode" />
       </el-select>
       <el-input v-model="query.sect" :placeholder='$t("历史宗派文字（可选）")' clearable style="width: 180px" />
-      <el-button type="primary" @click="router.push('/master/create')">{{ $t("+ 新增独立执业大师") }}</el-button>
+      <el-button v-if="useAuthStore().roles.includes('platform_super')" type="primary" @click="router.push('/master/create')">{{ $t("+ 新增独立执业大师") }}</el-button>
             <el-button type="primary" :icon="Search" @click="onSearch">{{ $t("查询") }}</el-button>
       <el-button :icon="RefreshLeft" @click="onReset">{{ $t("重置") }}</el-button>
     </div>
@@ -80,12 +80,12 @@
 		<el-table-column :label='$t("平台状态")' width="100">
 		  <template #default="{ row }"><StatusTag :status="row.platformStatus" /></template>
 		</el-table-column>
-        <el-table-column :label='$t("地区标签")' min-width="165"><template #default="{row}"><span>{{$t((row.regionName || $t('未设置')))}}</span><ProviderRegionSelect kind="master" :id="row.id" :name="row.dharmaName" :code="row.regionCode" :inherited="row.regionInherited" :temple-bound="row.manageBy==='temple'" @updated="loadData"/></template></el-table-column>
+        <el-table-column :label='$t("地区标签")' min-width="165"><template #default="{row}"><span>{{$t((row.regionName || $t('未设置')))}}</span><ProviderRegionSelect v-if="useAuthStore().roles.includes('platform_super')" kind="master" :id="row.id" :name="row.dharmaName" :code="row.regionCode" :inherited="row.regionInherited" :temple-bound="row.manageBy==='temple'" @updated="loadData"/></template></el-table-column>
         <el-table-column :label='$t("操作")' width="280" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="router.push(`/master/detail/${row.id}`)">{{ $t("详情/编辑") }}</el-button>
-            <el-button link type="primary" @click="openConsult(row)">{{ $t("咨询配置") }}</el-button>
-            <el-dropdown @command="(cmd: string) => onStatus(row, cmd)">
+            <el-button v-if="useAuthStore().roles.includes('platform_super') || useAuthStore().access?.permissions.includes('platform.masters.write')" link type="primary" @click="openConsult(row)">{{ $t("咨询配置") }}</el-button>
+            <el-dropdown v-if="useAuthStore().roles.includes('platform_super') || useAuthStore().access?.permissions.includes('platform.masters.write')" @command="(cmd: string) => onStatus(row, cmd)">
               <el-button link type="warning">{{ $t("状态") }}<el-icon><ArrowDown /></el-icon></el-button>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -121,11 +121,12 @@ import { t as uiText } from '../../../../../packages/localization/language'
 import { isAdminSessionExpired } from '@/api/client'
 import { useRouter } from 'vue-router'
 const router = useRouter()
+import {useAuthStore} from '@/stores/auth'
 import { ref, reactive, onMounted, computed } from 'vue'
 import { Search, Refresh, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 
 import ProviderRegionSelect from '@/components/ProviderRegionSelect.vue'
-import {getRegions,type RegionTag} from '@/api/regions'
+import {getRegions,getPublicRegions,type RegionTag} from '@/api/regions'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
@@ -143,7 +144,7 @@ const loading = ref(false)
 const list = ref<Master[]>([])
 const total = ref(0)
 const regions=ref<RegionTag[]>([])
-onMounted(async()=>{regions.value=(await getRegions()).list||[]})
+onMounted(async()=>{regions.value=(await (useAuthStore().roles.includes('platform_super')?getRegions():getPublicRegions())).list||[]})
 const query = reactive({ regionCode:'', beliefCode: '', traditionCode: '', templeId: '', sect: '', type: '', page: 1, size: 20 })
 const consultVisible = ref(false)
 const consultSaving = ref(false)

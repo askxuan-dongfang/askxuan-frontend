@@ -58,12 +58,12 @@
             <StatusTag :status="row.status" />
           </template>
         </el-table-column>
-        <el-table-column :label='$t("地区标签")' min-width="165"><template #default="{row}"><span>{{$t((row.regionName || $t('未设置')))}}</span><ProviderRegionSelect kind="temple" :id="row.id" :name="row.name" :code="row.regionCode" :inherited="row.regionInherited" :temple-bound="row.manageBy==='temple'" @updated="loadData"/></template></el-table-column>
+        <el-table-column :label='$t("地区标签")' min-width="165"><template #default="{row}"><span>{{$t((row.regionName || $t('未设置')))}}</span><ProviderRegionSelect v-if="useAuthStore().roles.includes('platform_super')" kind="temple" :id="row.id" :name="row.name" :code="row.regionCode" :inherited="row.regionInherited" :temple-bound="row.manageBy==='temple'" @updated="loadData"/></template></el-table-column>
         <el-table-column :label='$t("操作")' width="250" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="$router.push(`/temple/detail/${row.id}`)">{{ $t("详情") }}</el-button>
-            <el-button v-if="row.status === '待审核'" link type="success" @click="goToReview(row)">{{ $t("去审核") }}</el-button>
-            <el-dropdown v-else @command="(cmd: TempleOperationStatus) => onStatus(row, cmd)">
+            <el-button v-if="row.status === '待审核' && useAuthStore().roles.includes('platform_super')" link type="success" @click="goToReview(row)">{{ $t("去审核") }}</el-button>
+            <el-dropdown v-if="row.status !== '待审核' && (useAuthStore().roles.includes('platform_super') || useAuthStore().access?.permissions.includes('platform.temples.write'))" @command="(cmd: TempleOperationStatus) => onStatus(row, cmd)">
               <el-button link type="warning">{{ $t("状态") }}<el-icon><ArrowDown /></el-icon></el-button>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -84,12 +84,13 @@
 import { ElMessage, ElMessageBox } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
 
+import {useAuthStore} from '@/stores/auth'
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search, Refresh, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 
 import ProviderRegionSelect from '@/components/ProviderRegionSelect.vue'
-import {getRegions,type RegionTag} from '@/api/regions'
+import {getRegions,getPublicRegions,type RegionTag} from '@/api/regions'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
@@ -108,7 +109,7 @@ const router = useRouter()
 const list = ref<Temple[]>([])
 const total = ref(0)
 const regions=ref<RegionTag[]>([])
-onMounted(async()=>{regions.value=(await getRegions()).list||[]})
+onMounted(async()=>{regions.value=(await (useAuthStore().roles.includes('platform_super')?getRegions():getPublicRegions())).list||[]})
 const query = reactive({ regionCode:'', beliefCode: '', traditionCode: '', region: '', sect: '', type: '', page: 1, size: 20 })
 
 const traditions=computed(()=>directoryTags.value.filter(tag=>tag.group==='tradition'&&(!query.beliefCode||normalizeBelief(tag.beliefCode||'')===query.beliefCode||tag.code===query.traditionCode)))

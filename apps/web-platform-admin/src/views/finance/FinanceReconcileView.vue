@@ -1,13 +1,15 @@
 <template>
   <div class="dfx-page">
-    <PageHeader :title='$t("对账中心")' :subtitle='$t("提现审核 / 打款处理 / 对账报表")'>
+    <PageHeader :title='$t("提现审核与收支汇总")' :subtitle='$t("提现审核 / 收支汇总")'>
       <template #actions>
         <el-button :icon="Refresh" @click="loadData">{{ $t("刷新") }}</el-button>
       </template>
     </PageHeader>
 
+    <el-alert :title='$t("真实打款通道尚未接入")' :description='$t("当前仅支持提现审核。审核通过不会发起转账或将提现标记为成功。")' type="info" :closable="false" show-icon class="capability-note" />
+
     <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
-      <div class="ax-page-feedback__copy"><div class="ax-page-feedback__title">{{ $t((activeTab === 'withdrawal' ? $t('提现审核队列加载失败') : $t('对账报表加载失败'))) }}</div><div class="ax-page-feedback__description">{{ $t("资金数据状态未知，请重新加载，避免重复审核或打款。") }}</div></div>
+      <div class="ax-page-feedback__copy"><div class="ax-page-feedback__title">{{ $t((activeTab === 'withdrawal' ? $t('提现审核队列加载失败') : $t('收支汇总加载失败'))) }}</div><div class="ax-page-feedback__description">{{ $t("资金数据状态未知，请重新加载后再审核。") }}</div></div>
       <el-button :loading="loading" @click="loadData">{{ $t("重新加载") }}</el-button>
     </div>
 
@@ -52,7 +54,7 @@
                   <el-button link type="success" @click="auditW(row, 'approve')">{{ $t("通过") }}</el-button>
                   <el-button link type="danger" @click="auditW(row, 'reject')">{{ $t("驳回") }}</el-button>
                 </template>
-                <el-button v-else-if="row.status === 'approved'" link type="primary" @click="processW(row)">{{ $t("打款") }}</el-button>
+                <el-button v-else-if="row.status === 'approved'" link disabled>{{ $t("打款未接入") }}</el-button>
                 <span v-else class="muted">-</span>
               </template>
             </el-table-column>
@@ -65,7 +67,7 @@
                 <div class="mobile-task-card__foot">
                   <span>{{ $t(formatDate(row.createTime)) }} · <b>{{ $t(formatMoney(row.amount)) }}</b></span>
                   <span class="mobile-actions" v-if="row.status === 'pending'"><el-button type="success" @click="auditW(row, 'approve')">{{ $t("通过") }}</el-button><el-button type="danger" plain @click="auditW(row, 'reject')">{{ $t("驳回") }}</el-button></span>
-                  <el-button v-else-if="row.status === 'approved'" type="primary" @click="processW(row)">{{ $t("确认打款") }}</el-button>
+                  <el-button v-else-if="row.status === 'approved'" disabled>{{ $t("打款未接入") }}</el-button>
                   <b v-else>{{ $t("已处理") }}</b>
                 </div>
               </article>
@@ -73,7 +75,7 @@
           </MobileTaskList>
         </el-tab-pane>
 
-        <el-tab-pane :label='$t("对账报表")' name="report">
+        <el-tab-pane :label='$t("收支汇总")' name="report">
           <div class="filter-bar">
             <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 320px" />
             <el-button type="primary" :icon="Search" @click="loadReport">{{ $t("生成报表") }}</el-button>
@@ -84,7 +86,7 @@
             <StatCard :label='$t("总提现")' :value="report.totalWithdrawal" icon="CreditCard" icon-color="#B5453A" prefix="¥" />
             <StatCard :label='$t("订单数")' :value="report.orderCount" icon="List" icon-color="#5B8C5A" :suffix='$t(" 单")' />
           </div>
-          <el-empty v-else :description='$t("请选择日期范围生成对账报表")' />
+          <el-empty v-else :description='$t("请选择日期范围生成收支汇总")' />
         </el-tab-pane>
       </el-tabs>
     </div>
@@ -103,7 +105,7 @@ import DataTable from '@/components/DataTable.vue'
 import MobileTaskList from '@/components/MobileTaskList.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import StatCard from '@/components/StatCard.vue'
-import { getWithdrawals, auditWithdrawal, processWithdrawal, getFinanceReports } from '@/api/finance'
+import { getWithdrawals, auditWithdrawal, getFinanceReports } from '@/api/finance'
 import { formatDate, formatMoney, maskBankCard } from '@/utils/format'
 import type { Withdrawal, FinanceReport } from '@/types'
 
@@ -144,7 +146,7 @@ function onWSearch() {
 async function auditW(row: Withdrawal, action: 'approve' | 'reject') {
   if (action === 'approve') {
     await ElMessageBox.confirm(
-      (uiText("确认通过提现单「") + String(row.withdrawalNo) + uiText("」？金额 ") + String(formatMoney(row.amount)) + uiText("，通过后将进入打款处理队列。")),
+      (uiText("确认通过提现单「") + String(row.withdrawalNo) + uiText("」？金额 ") + String(formatMoney(row.amount)) + uiText("。当前未接入打款通道，审核通过不会发起转账。")),
       uiText('提现审核确认'),
       { type: 'warning', confirmButtonText: uiText('确认通过'), cancelButtonText: uiText('返回核对') }
     )
@@ -159,17 +161,6 @@ async function auditW(row: Withdrawal, action: 'approve' | 'reject') {
   if (action === 'reject' && remark === null) return
   await auditWithdrawal(row.id, { action, remark: remark || undefined })
   ElMessage.success(uiText('操作成功'))
-  loadWithdrawals()
-}
-
-async function processW(row: Withdrawal) {
-  await ElMessageBox.confirm(
-    (uiText("确认对提现单「") + String(row.withdrawalNo) + uiText("」执行打款？金额 ") + String(formatMoney(row.amount)) + uiText("，提交后资金状态进入处理流程，不能在本页面撤回。")),
-    uiText('打款确认'),
-    { type: 'warning', confirmButtonText: uiText('确认打款'), cancelButtonText: uiText('返回核对') }
-  )
-  await processWithdrawal(row.id)
-  ElMessage.success(uiText('打款处理已提交'))
   loadWithdrawals()
 }
 
@@ -200,6 +191,9 @@ onMounted(loadWithdrawals)
 <style scoped>
 .table-wrap {
   padding: 16px;
+}
+.capability-note {
+  margin-bottom: 16px;
 }
 .filter-bar {
   display: flex;

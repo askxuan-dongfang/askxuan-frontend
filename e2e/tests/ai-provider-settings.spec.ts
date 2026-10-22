@@ -1,10 +1,12 @@
 import { test, expect, type Page } from '@playwright/test';
+import { seedPlatformAdmin, fulfillPlatformAdminAccess } from '../fixtures/platform-admin-access';
 const initial = { provider:'deepseek',baseUrl:'https://api.deepseek.com',defaultModel:'deepseek-flash',visionModel:'deepseek-flash',enabledModels:[],thinkingEnabled:true,reasoningEffort:'low',maxOutputTokens:2048,revision:0,hasApiKey:true,writable:true,source:'environment',history:[] };
 async function setup(page:Page, options:{role?:string;failSave?:boolean;failTest?:boolean;writable?:boolean}={}) {
  const role=options.role || 'platform_super';
- await page.addInitScript(role=>{const token='e30.'+btoa(JSON.stringify({userId:1,roles:[role],clientId:'platform-admin',exp:4000000000}))+'.fixture';localStorage.setItem('df_platform_admin_token',token);localStorage.setItem('df_platform_admin_user',JSON.stringify({userId:1,nickname:'配置验收'}));},role);
+ const identity = await seedPlatformAdmin(page, role, '配置验收');
  let saved:any={...initial,writable:options.writable??true};const calls:{method:string;path:string;body:any}[]=[];
  await page.route('**/api/v1/**',async route=>{
+  if (await fulfillPlatformAdminAccess(route, identity)) return;
   const req=route.request(),path=new URL(req.url()).pathname;const body=req.postData()?req.postDataJSON():null;calls.push({method:req.method(),path,body});let data:any={list:[],total:0};
   if(path.endsWith('/ai/admin/provider/test')){if(options.failTest)return route.fulfill({json:{code:40001,message:'连接测试失败，请检查地址、密钥和服务状态'}});data=body.provider==='volcengine'?{list:[{id:body.defaultModel,name:body.defaultModel,supportsVision:false,description:'套餐模型'}],defaultModel:body.defaultModel}:{list:[{id:'deepseek-flash',name:'DeepSeek Flash',supportsVision:true,description:'文字与图片'},{id:'deepseek-v4-pro',name:'DeepSeek V4 Pro',supportsVision:false,description:'文字对话'}],defaultModel:'deepseek-flash'};}
   else if(path.endsWith('/ai/admin/provider')){
@@ -27,11 +29,11 @@ test('secret replacement, connection probe and reviewed save',async({page})=>{
  await page.getByRole('button',{name:'保存并生效',exact:true}).click();await expect(page.getByRole('dialog',{name:'保存并生效'})).toBeVisible();await page.getByRole('button',{name:'确认生效',exact:true}).click();
  await expect(page.locator('.ai-active-card')).toContainText('v1');await expect(key).toHaveValue('');await expect(page.locator('.ai-history')).toContainText('密钥');
  const write=calls.find(c=>c.method==='PUT')!;expect(write.body.apiKey).toBe('fixture-replacement-key');expect(write.body.maxOutputTokens).toBe(4096);expect(write.body.revision).toBe(0);
- await page.screenshot({path:'artifacts/ai-settings/desktop.png',fullPage:true});await page.reload();await expect(page.locator('.ai-active-card')).toContainText('v1');await expect(key).toHaveValue('');
+ await page.screenshot({path:test.info().outputPath('desktop.png'),fullPage:true});await page.reload();await expect(page.locator('.ai-active-card')).toContainText('v1');await expect(key).toHaveValue('');
 });
 test('mobile form and action bar remain within viewport',async({page})=>{
  await page.setViewportSize({width:390,height:900});await setup(page);await page.goto('/ai/connections/legacy');await expect(page.locator('.ai-active-card')).toBeVisible();
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();await page.getByRole('button',{name:'保存并生效',exact:true}).scrollIntoViewIfNeeded();await expect(page.getByRole('button',{name:'保存并生效',exact:true})).toBeVisible();await page.screenshot({path:'artifacts/ai-settings/mobile.png',fullPage:true});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();await page.getByRole('button',{name:'保存并生效',exact:true}).scrollIntoViewIfNeeded();await expect(page.getByRole('button',{name:'保存并生效',exact:true})).toBeVisible();await page.screenshot({path:test.info().outputPath('mobile.png'),fullPage:true});
 });
 test('failed probe and stale save never show applied state',async({page})=>{
  const calls=await setup(page,{failSave:true,failTest:true});await page.goto('/ai/connections/legacy');await page.getByLabel('API Key',{exact:true}).fill('fixture-draft-key');

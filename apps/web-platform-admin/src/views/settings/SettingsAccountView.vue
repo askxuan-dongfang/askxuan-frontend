@@ -169,7 +169,7 @@ function bindingText(row: AdminAccount) {
   if (row.masterId) return `${masterName(row.masterId)}（${row.masterId}）`
   if (row.templeId) return `${templeName(row.templeId)}（${row.templeId}）`
   if (row.shopId) return `商铺 ${row.shopId}`
-  return '全平台'
+  return roles.value.find(role => role.id === row.roleId)?.editable ? '按角色分配的平台权限' : '全平台'
 }
 function clearBindings() { dialog.form.templeId = ''; dialog.form.masterId = ''; dialog.form.shopId = 0 }
 function openCreate() { dialog.isEdit = false; dialog.editId = 0; Object.assign(dialog.form, emptyForm()); dialog.visible = true }
@@ -209,16 +209,20 @@ async function toggleStatus(row: AdminAccount) {
   loadData()
 }
 
+async function loadAllBindings<T extends {id:string}>(fetchPage:(page:number)=>Promise<{list:T[];total:number}>):Promise<T[]> {
+ const items:T[]=[];const seen=new Set<string>()
+ for(let page=1;;page++){const result=await fetchPage(page);const rows=result.list||[];for(const row of rows){if(seen.has(row.id))throw new Error('主体目录分页重复，请重试');seen.add(row.id);items.push(row)}if(items.length>=result.total)return items;if(!rows.length)throw new Error('主体目录分页不完整，请重试')}
+}
 async function loadDependencies() {
   dependencyError.value = false
   const [roleResult, templeResult, masterResult] = await Promise.allSettled([
     getRoles(),
-    getTempleList({ page: 1, size: 100 }),
-    getMasterList({ page: 1, size: 100 })
+    loadAllBindings((page) => getTempleList({page,size:100})),
+    loadAllBindings((page) => getMasterList({page,size:100}))
   ])
   if (roleResult.status === 'fulfilled') roles.value = roleResult.value
-  if (templeResult.status === 'fulfilled') temples.value = templeResult.value.list || []
-  if (masterResult.status === 'fulfilled') masters.value = masterResult.value.list || []
+  if (templeResult.status === 'fulfilled') temples.value = templeResult.value
+  if (masterResult.status === 'fulfilled') masters.value = masterResult.value
   dependencyError.value = [roleResult, templeResult, masterResult].some((result) => result.status === 'rejected')
 }
 

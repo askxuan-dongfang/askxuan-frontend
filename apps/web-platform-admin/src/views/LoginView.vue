@@ -13,7 +13,7 @@ import {defaultRoute} from '@/router/access'
 const router=useRouter();const route=useRoute();const auth=useAuthStore()
 onMounted(()=>{if(route.query.denied==='1')ElMessage.warning(uiText('该账号没有本管理台权限，请使用对应角色账号登录'))})
 async function login(account:string,password:string,proof:{captchaId:string;captchaCode:string}){await auth.login({account,password,...proof})}
-function complete(){const next=typeof route.query.redirect==='string'?route.query.redirect:'';router.replace(next.startsWith('/')&&!next.startsWith('//')&&!next.includes(String.fromCharCode(92))&&!next.startsWith('/login')?next:defaultRoute(auth.roles))}
+function complete(){const next=typeof route.query.redirect==='string'?route.query.redirect:'';router.replace(next.startsWith('/')&&!next.startsWith('//')&&!next.includes(String.fromCharCode(92))&&!next.startsWith('/login')?next:defaultRoute(auth.roles,auth.access))}
 </script>
 <template>
   <div class="login">

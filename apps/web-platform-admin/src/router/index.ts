@@ -9,6 +9,7 @@ import { agentCenterRoutes } from './agentCenter'
 import { commerceRoutes } from '@/commerce/routes'
 import { canAccessRoute, defaultRoute } from './access'
 import { useAuthStore } from '@/stores/auth'
+import {StaleAuthorizationError} from '@/utils/adminAccess'
 
 const Layout = () => import('@/layouts/DefaultLayout.vue')
 
@@ -22,10 +23,14 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     component: Layout,
-    redirect: () => defaultRoute(useAuthStore().roles),
+    redirect: () => defaultRoute(useAuthStore().roles, useAuthStore().access),
     // 统一入口按每个子路由授权，商城角色不继承平台权限。
-    meta: { roles: ['platform_super', 'platform_service', 'shop_admin'] },
+    meta: { platformShell: true, roles: ['platform_super', 'platform_service', 'shop_admin'] },
     children: [
+      {path:'access-denied',name:'AccessDenied',component:()=>import('@/views/AccessDeniedView.vue'),meta:{title:'功能权限',hidden:true,emptyAccess:true}},
+      {path:'services/overview',name:'ServiceOverview',component:()=>import('@/views/service/ServiceOverviewView.vue'),meta:{title:'服务与履约监管',roles:['platform_super'],superOnly:true}},
+      {path:'finance/payout-sandbox',name:'PayoutSandbox',component:()=>import('@/views/finance/PayoutSandboxView.vue'),meta:{title:'模拟打款测试',roles:['platform_super'],superOnly:true}},
+      {path:'marketing/home-display',name:'HomeDisplay',component:()=>import('@/views/settings/SettingsTaxonomyView.vue'),props:{mode:'display'},meta:{title:'首页分类展示',roles:['platform_super'],superOnly:true}},
       {path:'marketing/growth',name:'Growth',component:()=>import('@/views/GrowthView.vue'),meta:{title:'成长体系',parent:'运营管理',roles:['platform_super']}},
       {path:'onboarding/review',name:'onboarding-review',component:()=>import('@/views/OnboardingReviewView.vue'),meta:{title:'认证与入驻审核',roles:['platform_super']}},
       ...commerceRoutes,
@@ -138,7 +143,7 @@ const routes: RouteRecordRaw[] = [
         path: 'finance/reconcile',
         name: 'FinanceReconcile',
         component: () => import('@/views/finance/FinanceReconcileView.vue'),
-        meta: { title: '对账中心', parent: '财务管理' }
+        meta: { title: '提现审核与收支汇总', parent: '财务管理' }
       },
       {path:'marketing/rewards',name:'Rewards',component:()=>import('@/views/marketing/RewardsView.vue'),meta:{title:'积分活动与奖品',parent:'营销管理',roles:['platform_super']}},
       // 营销管理
@@ -170,7 +175,8 @@ const routes: RouteRecordRaw[] = [
         path: 'settings/taxonomy',
         name: 'SettingsTaxonomy',
         component: () => import('@/views/settings/SettingsTaxonomyView.vue'),
-        meta: { title: '信仰与心愿标准 / 首页展示', parent: '系统设置' }
+        props: {mode:'standard'},
+ meta: { title: '信仰与心愿标准', parent: '系统设置',roles:['platform_super'],superOnly:true }
       },
       {
         path: 'settings/role',
@@ -213,39 +219,49 @@ for (const route of routes[1].children || []) {
   route.meta.roles ||= ['platform_super', 'platform_service']
 }
 
+// The front-end catalog mirrors delegatable APIs; absent entries remain fixed-role only.
+const routePermissions: Record<string, string[]> = {
+ TempleList:['platform.temples.read'],TempleDetail:['platform.temples.read'],
+ MasterList:['platform.masters.read'],MasterDetail:['platform.masters.read'],
+ UserList:['platform.users.read'],UserDetail:['platform.users.read'],ContentReport:['platform.moderation.read'],
+ FinanceOverview:['platform.finance.read'],FinanceTemple:['platform.finance.read'],FinanceMaster:['platform.finance.read'],FinanceReconcile:['platform.finance.read'],
+ MarketingBanner:['platform.marketing.read'],MarketingActivity:['platform.marketing.read'],MarketingCoupon:['platform.marketing.read'],Rewards:['platform.marketing.read'],SettingsDict:['platform.moderation.read'],SettingsLog:['platform.operations.read'],
+ ShopProductList:['platform.products.read'],ShopProductEdit:['platform.products.read','platform.products.write'],ShopCategoryManage:['platform.products.read'],
+ ShopMaterialList:['platform.diy.read'],ShopMaterialEdit:['platform.diy.read','platform.diy.write'],ShopServiceList:['platform.diy.read'],ShopServiceEdit:['platform.diy.read','platform.diy.write'],
+ ShopOrderList:['platform.orders.read'],ShopOrderDetail:['platform.orders.read'],ShopDiyOrderList:['platform.diy.read'],ShopDiyOrderDetail:['platform.diy.read'],ShopLogistics:['platform.logistics.read'],
+ ShopReturnList:['platform.orders.read'],ShopReturnDetail:['platform.orders.read'],ShopReport:['platform.orders.read'],ShopPointsMall:['platform.points.read']
+}
+const superOnlyNames=['Growth','onboarding-review','CreatorRewards','ServiceIntentions','SettingsDirectoryTags','SettingsRegions','SettingsRole','SettingsAccount','SettingsBackup','SettingsTaxonomy','HomeDisplay','ServiceOverview','PayoutSandbox','TempleReview','MasterReview','MasterCreate','ContentComment','ContentDesign']
+for (const route of routes[1].children || []) {
+ route.meta ||= {}
+ if(route.name && routePermissions[String(route.name)]) route.meta.permissions=routePermissions[String(route.name)]
+ if(superOnlyNames.includes(String(route.name))) {route.meta.superOnly=true;route.meta.roles=['platform_super']}
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior: () => ({ top: 0 })
 })
 
-// 路由守卫：未登录跳 /login
-router.beforeEach((to, _from, next) => {
+// Live bootstrap never trusts locally cached permissions. Backend version checks also protect each API.
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
   document.title = `${localizeTitle(to.meta.title || '')} · ${localizeTitle('问玄东方统一运营管理台')}`
-  if (to.meta.public) {
-    if (to.name === 'Login' && auth.isLogin) {
-      next(defaultRoute(auth.roles))
-    } else {
-      next()
-    }
-    return
+  if (!auth.isLogin) return to.meta.public ? true : {path:'/login',query:{redirect:to.fullPath}}
+  const capturedToken=auth.token
+  try { await auth.ensureAccess() } catch (error) {
+    if(error instanceof StaleAuthorizationError || auth.token!==capturedToken) return false
+    auth.logout(); return to.meta.public ? true : {path:'/login'}
   }
-  if (!auth.isLogin) {
-    next({ path: '/login', query: { redirect: to.fullPath } })
-    return
-  }
-  if (!canAccessRoute(to, auth.roles)) {
+  if (to.meta.public) return to.name==='Login' ? defaultRoute(auth.roles,auth.access) : true
+  if (!canAccessRoute(to,auth.roles,auth.access)) {
     ElMessage.error(uiText('当前账号无此功能权限'))
-    if (auth.roles.some(role => ['platform_super', 'platform_service', 'shop_admin'].includes(role))) {
-      next(defaultRoute(auth.roles))
-    } else {
-      auth.logout()
-      next({ path: '/login', query: { denied: '1' } })
-    }
-    return
+    const landing=defaultRoute(auth.roles,auth.access)
+    if(landing!==to.path && canAccessRoute(router.resolve(landing),auth.roles,auth.access)) return landing
+    auth.logout();return {path:'/login',query:{denied:'1'}}
   }
-  next()
+  return true
 })
 
 export default router
