@@ -10,7 +10,8 @@ export const adminWorkspaces: AdminWorkspace[] = [
     { path: '/temple/list', title: '寺院列表' }, { path: '/master/list', title: '法师列表' }, { path: '/user/list', title: '用户列表' }
   ] },
   { title: '服务与履约', icon: 'Van', children: [
-    { path: '/services/overview', title: '服务与履约监管' }
+    { path: '/services/overview', title: '服务与履约监管' },
+    { path: '/services/temple-exceptions', title: '寺院异常监管' }
   ] },
   { title: '商城与 DIY', icon: 'Shop', children: [
     { path: '/commerce', title: '商城与 DIY 监管' }, { path: '/commerce/products', title: '商品管理' },

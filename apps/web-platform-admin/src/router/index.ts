@@ -28,6 +28,7 @@ const routes: RouteRecordRaw[] = [
     meta: { platformShell: true, roles: ['platform_super', 'platform_service', 'shop_admin'] },
     children: [
       {path:'access-denied',name:'AccessDenied',component:()=>import('@/views/AccessDeniedView.vue'),meta:{title:'功能权限',hidden:true,emptyAccess:true}},
+      {path:'services/temple-exceptions',name:'TempleExceptions',component:()=>import('@/views/ExceptionsView.vue'),meta:{title:'寺院异常监管',roles:['platform_super'],superOnly:true}},
       {path:'services/overview',name:'ServiceOverview',component:()=>import('@/views/service/ServiceOverviewView.vue'),meta:{title:'服务与履约监管',roles:['platform_super'],superOnly:true}},
       {path:'finance/payout-sandbox',name:'PayoutSandbox',component:()=>import('@/views/finance/PayoutSandboxView.vue'),meta:{title:'模拟打款测试',roles:['platform_super'],superOnly:true}},
       {path:'marketing/home-display',name:'HomeDisplay',component:()=>import('@/views/settings/SettingsTaxonomyView.vue'),props:{mode:'display'},meta:{title:'首页分类展示',roles:['platform_super'],superOnly:true}},

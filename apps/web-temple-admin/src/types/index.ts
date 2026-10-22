@@ -197,12 +197,18 @@ export interface BlessingTask {
 
 // ============ 寺院报表 ============
 export interface BookingTrendPoint {
+  contractCents: number
+  templeCents: number
+  masterCents: number
   date: string
   bookings: number
   revenue: number
 }
 
 export interface TempleRevenueStats {
+  contractCents: number
+  templeCents: number
+  masterCents: number
   totalRevenue: number
   bookingCount: number
   avgBookingValue: number
@@ -216,6 +222,9 @@ export interface ServiceDistItem {
 }
 
 export interface MasterRankItem {
+  contractCents: number
+  templeCents: number
+  masterCents: number
   masterCode: string
   masterName: string
   bookingCount: number

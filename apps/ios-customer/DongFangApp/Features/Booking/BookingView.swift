@@ -279,7 +279,7 @@ struct BookingView: View {
 							Text(L10n.lookup(slot.label))
                                 .font(AppTypography.supporting.weight(.medium))
                                 .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary)
-							Text(L10n.text("\(slot.timeRange) · 余\(slot.remaining)"))
+							Text(slot.available ? L10n.text("\(slot.timeRange) · 余\(slot.remaining)") : L10n.lookup(slot.timeRange) + " · " + L10n.text("不可预约"))
                                 .font(AppTypography.micro)
                                 .foregroundStyle(isSelected ? Color.brandDefault : Color.textTertiary)
                         }
@@ -297,7 +297,9 @@ struct BookingView: View {
 					.opacity(slot.available ? 1 : 0.45)
                 }
             }
-			if viewModel.availableSlots.isEmpty {
+			if viewModel.isLoadingAvailability {
+				ProgressView(L10n.text("正在加载可预约时段"))
+			} else if viewModel.availableSlots.isEmpty {
 				Text(L10n.text("当日暂无可预约时段"))
 					.font(AppTypography.supporting)
 					.foregroundStyle(Color.textTertiary)

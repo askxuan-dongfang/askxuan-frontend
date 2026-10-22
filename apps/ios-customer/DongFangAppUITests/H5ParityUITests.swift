@@ -1,5 +1,27 @@
 import XCTest
 
+@MainActor final class TempleOperationsUITests: XCTestCase {
+    func testReceiptHistoryFromRealCrossPlatformBooking() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let token = env["TEMPLE_OPS_CUSTOMER_TOKEN"], let booking = env["TEMPLE_OPS_BOOKING"] else {
+            throw XCTSkip("Requires the isolated temple operations runtime")
+        }
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:63400/api/v1"
+        app.launchEnvironment["ASKXUAN_JOURNEY_BOOKING"] = booking
+        app.launchArguments = ["--smoke-token", token, "--smoke-user-id", "891022", "-askxuan.appearance", "light"]
+        app.launch()
+        XCTAssertTrue(app.navigationBars["我的服务记录"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["已评价"].firstMatch.waitForExistence(timeout: 20))
+        let receipt = app.staticTexts["已补充完整说明，提交第二版测试回执。"]
+        for _ in 0..<8 where !receipt.isHittable { app.swipeUp() }
+        XCTAssertTrue(receipt.exists)
+        XCTAssertTrue(app.staticTexts["回执 2"].exists)
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "customer-cross-platform-receipt-history"; shot.lifetime = .keepAlways; add(shot)
+    }
+}
+
 @MainActor final class PointsHubUITests: XCTestCase {
     func testHomeEntryThreeModesAndRepeatWins() async throws {
         var reset = URLRequest(url: URL(string: "http://127.0.0.1:8914/fixture/reset")!)

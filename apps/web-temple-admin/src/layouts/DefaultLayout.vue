@@ -5,6 +5,7 @@ import { t as uiText } from '../../../../packages/localization/language'
 import BrandLogo from '../../../../packages/admin-ui/components/BrandLogo.vue'
 import AppearanceSelector from '../../../../packages/admin-ui/components/AppearanceSelector.vue'
 import { computed } from 'vue'
+import { templeMenu, activeTempleMenu } from '@/navigation'
 import { useAdminNavigation } from '../../../../packages/admin-ui/navigation'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -29,13 +30,9 @@ const router = useRouter()
 const auth = useAuthStore()
 const { collapsed, mobile, drawerOpen, sidebarRef, toggleRef, toggleNavigation, closeNavigation } = useAdminNavigation(() => route.fullPath)
 
-const activeMenu = computed(() => {
-  if (route.path.startsWith('/masters/')) return '/masters'
-  if (route.path.startsWith('/services/')) return '/services'
-  if (route.path.startsWith('/bookings/')) return '/bookings'
-  if (route.path.startsWith('/blessing-tasks/')) return '/blessing-tasks'
-  return route.path
-})
+const icons = { Odometer, OfficeBuilding, User, Calendar, ChatDotRound, TrendCharts, Setting }
+const menus = computed(() => templeMenu.map(group => ({ ...group, children: group.children.filter(item => !item.permission || auth.can(item.permission)) })).filter(group => group.children.length))
+const activeMenu = computed(() => activeTempleMenu(route.path))
 const pageTitle = computed(() => (route.meta.title as string) || '寺院管理台')
 
 
@@ -88,51 +85,15 @@ async function handleLogout() {
         active-text-color="#F5E0D6"
         unique-opened
       >
-        <el-menu-item index="/dashboard">
-          <el-icon><Odometer /></el-icon>
-          <template #title>{{ $t("今日工作台") }}</template>
-        </el-menu-item>
-
-        <el-sub-menu index="temple-profile">
-          <template #title>
-            <el-icon><OfficeBuilding /></el-icon>
-            <span>{{ $t("寺院主页") }}</span>
-          </template>
-          <el-menu-item index="/temple-info">{{ $t("基本信息") }}</el-menu-item>
-          <el-menu-item index="/temple-gallery">{{ $t("寺院图册") }}</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="people-services">
-          <template #title>
-            <el-icon><User /></el-icon>
-            <span>{{ $t("人员与服务") }}</span>
-          </template>
-          <el-menu-item index="/masters">{{ $t("法师管理") }}</el-menu-item>
-          <el-menu-item index="/services">{{ $t("服务管理") }}</el-menu-item>
-        </el-sub-menu>
-
-        <el-menu-item index="/fulfillment">
-          <el-icon><Calendar /></el-icon>
-          <template #title>{{ $t("履约工作台") }}</template>
-        </el-menu-item>
-        <el-menu-item index="/blessing-tasks">
-          <el-icon><MagicStick /></el-icon>
-          <template #title>{{ $t("加持任务") }}</template>
-        </el-menu-item>
-        <el-menu-item index="/reviews">
-          <el-icon><ChatDotRound /></el-icon>
-          <template #title>{{ $t("评价互动") }}</template>
-        </el-menu-item>
-        <el-menu-item index="/growth"><el-icon><OfficeBuilding /></el-icon><template #title>{{ $t("成长优惠参与") }}</template></el-menu-item>
-        <el-menu-item index="/wallet"><el-icon><OfficeBuilding /></el-icon><template #title>{{ $t("寺院钱包") }}</template></el-menu-item>
-        <el-menu-item index="/report">
-          <el-icon><TrendCharts /></el-icon>
-          <template #title>{{ $t("经营报表") }}</template>
-        </el-menu-item>
-        <el-menu-item index="/settings">
-          <el-icon><Setting /></el-icon>
-          <template #title>{{ $t("设置") }}</template>
-        </el-menu-item>
+        <template v-for="group in menus" :key="group.id">
+          <el-menu-item v-if="group.id === 'today'" index="/dashboard">
+            <el-icon><Odometer /></el-icon><template #title>{{ $t(group.label) }}</template>
+          </el-menu-item>
+          <el-sub-menu v-else :index="group.id">
+            <template #title><el-icon><component :is="icons[group.icon as keyof typeof icons]" /></el-icon><span>{{ $t(group.label) }}</span></template>
+            <el-menu-item v-for="item in group.children" :key="item.path" :index="item.path">{{ $t(item.label) }}</el-menu-item>
+          </el-sub-menu>
+        </template>
       </el-menu>
 
       <div class="ax-admin-sidebar__footer">

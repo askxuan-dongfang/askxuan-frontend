@@ -210,7 +210,7 @@ enum Endpoint {
     case bookings(userId: String?, status: String?, page: Int, size: Int)
     case bookingById(String)
     case createBooking(CreateBookingRequest)
-	case bookingAvailability(templeId: String, serviceId: String, date: String)
+	case bookingAvailability(templeId: String, serviceId: String, date: String, masterId: String)
     case updateBookingStatus(id: String, status: String)
     case bookingReviewCreate(id: String, BookingReviewCreateRequest)
     case bookingReviewById(String)
@@ -591,8 +591,8 @@ enum Endpoint {
 					URLQueryItem(name: "size", value: "\(size)")]
 		case .consultationQuote(let masterId):
 			return [URLQueryItem(name: "masterId", value: masterId)]
-		case .bookingAvailability(let templeId, let serviceId, let date):
-			return [URLQueryItem(name: "templeId", value: templeId),
+		case .bookingAvailability(let templeId, let serviceId, let date, let masterId):
+			return [URLQueryItem(name: "masterId", value: masterId), URLQueryItem(name: "templeId", value: templeId),
 					URLQueryItem(name: "serviceId", value: serviceId),
 					URLQueryItem(name: "date", value: date)]
         case .diyDesigns(let page, let size):

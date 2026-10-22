@@ -1,6 +1,7 @@
 import { subscribeAdminSession, startAdminSession } from '../../../../packages/admin-ui/session-expiry'
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import client from '@/api/client'
 import { adminLogin } from '@/api/auth'
 import { jwtRoles, jwtClientId } from '@/utils/jwt'
 import type { UserInfo } from '@/types'
@@ -18,6 +19,10 @@ export const useAuthStore = defineStore('auth', () => {
   const templeId = ref<string>(localStorage.getItem(TEMPLE_ID_KEY) || '')
   const templeName = ref<string>(localStorage.getItem(TEMPLE_NAME_KEY) || '')
 
+  const permissions = ref<string[]>([])
+  const workspaceVerified = ref(false)
+  let verifiedToken = ''
+  let pendingWorkspace: Promise<void> | null = null
   const isLogin = computed(() => !!token.value)
   /** 从 JWT payload 解码出的角色列表（RBAC 守卫用） */
   const roles = computed(() => jwtRoles(token.value))
@@ -62,13 +67,31 @@ export const useAuthStore = defineStore('auth', () => {
     return resp
   }
 
-  function setTemple(id: string, name: string) {
-    templeId.value = id
-    templeName.value = name
-    persist()
+  function can(permission: string) {
+    return workspaceVerified.value && (roles.value.includes('temple_admin') || roles.value.includes('platform_super') || permissions.value.includes(permission))
+  }
+
+  async function syncWorkspace() {
+    if (workspaceVerified.value && verifiedToken === token.value) return
+    if (pendingWorkspace) return pendingWorkspace
+    workspaceVerified.value = false
+    pendingWorkspace = (async () => {
+      const access = await client.get<{ templeCode: string; templeName: string; permissions: string[] }>('/auth/access')
+      if (!access.templeCode) throw new Error('账号未绑定寺院，请联系平台管理员')
+      templeId.value = access.templeCode
+      templeName.value = access.templeName || access.templeCode
+      permissions.value = access.permissions || []
+      verifiedToken = token.value
+      workspaceVerified.value = true
+      persist()
+    })().finally(() => { pendingWorkspace = null })
+    return pendingWorkspace
   }
 
   function logout() {
+    workspaceVerified.value = false
+    permissions.value = []
+    verifiedToken = ''
     const previous=token.value;
     if(previous)void fetch('/api/v1/auth/logout',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+previous},body:JSON.stringify({accessToken:previous})}).catch(()=>{});
 
@@ -82,8 +105,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   subscribeAdminSession('df_temple_admin', logout, () => {
+    workspaceVerified.value = false
+    permissions.value = []
+    verifiedToken = ''
     token.value = localStorage.getItem('df_temple_admin_token') || ''
     refreshToken.value = localStorage.getItem('df_temple_admin_refresh_token') || ''
+    // Refresh permissions for the visible page, even when the route has not changed.
+    void syncWorkspace().catch(logout)
   })
 
   return {
@@ -97,6 +125,9 @@ export const useAuthStore = defineStore('auth', () => {
     clientId,
     login,
     logout,
-    setTemple
+    syncWorkspace,
+    workspaceVerified,
+    permissions,
+    can
   }
 })

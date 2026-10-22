@@ -1,0 +1,30 @@
+<script setup lang="ts">
+import {ref,onMounted} from 'vue'
+import client from '@/api/client'
+import PageHeader from '@/components/PageHeader.vue'
+const platform=true
+const endpoint=platform?'/admin/platform/temple-exceptions':'/admin/temples/exceptions'
+type Row={id:string;templeCode:string;sourceKind:string;sourceId:string;title:string;reason:string;status:string;followup:string;updatedAt:string}
+type Note={id:number;operatorId:number;operatorRole:string;action:string;content:string;createdAt:string}
+const reasons:Record<string,string>={refund_pending:'退款处理中',receipt_revision:'回执待补充',overdue:'服务逾期',schedule_conflict:'排班与已有预约冲突',blessing_rejected:'法师退回加持任务',blessing_unassigned:'加持任务待分配'}
+const actions:Record<string,string>={unhandled:'待跟进',following:'跟进中',escalated:'已提请平台协助'}
+const rows=ref<Row[]>([]),total=ref(0),page=ref(1),templeCode=ref(''),loading=ref(false),error=ref(''),selected=ref<Pick<Row,'id'|'sourceId'>|null>(null),notes=ref<Note[]>([]),noteError=ref(''),notesLoading=ref(false),visible=ref(false)
+const recordKind=ref('booking'),recordId=ref('')
+let generation=0,noteGeneration=0
+async function load(){const seq=++generation;loading.value=true;error.value='';try{const r=await client.get<{list:Row[];total:number}>(endpoint,{params:{page:page.value,...(platform&&templeCode.value?{templeCode:templeCode.value}:{})}});if(seq===generation){rows.value=r.list;total.value=r.total}}catch(e){if(seq===generation)error.value=e instanceof Error?e.message:'异常列表加载失败'}finally{if(seq===generation)loading.value=false}}
+async function show(row:Pick<Row,'id'|'sourceId'>){selected.value=row;visible.value=true;await loadNotes()}
+async function loadNotes(){if(!selected.value)return;const seq=++noteGeneration;notesLoading.value=true;notes.value=[];noteError.value='';try{const r=await client.get<{list:Note[]}>(endpoint+'/'+encodeURIComponent(selected.value.id));if(seq===noteGeneration)notes.value=r.list}catch(e){if(seq===noteGeneration)noteError.value=e instanceof Error?e.message:'跟进记录加载失败'}finally{if(seq===noteGeneration)notesLoading.value=false}}
+onMounted(load)
+</script>
+<template><div class="df-page"><PageHeader :title="$t(platform?'寺院异常监管':'异常跟进')" :subtitle="$t('从订单真实状态生成待办，跟进记录与业务处理分别留存')"><el-button :loading="loading" @click="load">{{$t('刷新')}}</el-button></PageHeader>
+<el-alert :closable="false" type="info" :title="$t('保存跟进记录不会取消订单、执行退款或标记履约完成。问题处理后会随订单状态自动退出待办；历史跟进记录保留。')"/>
+<div v-if="platform" class="filters"><el-input v-model="templeCode" :placeholder="$t('寺院编码，留空查看全部')" clearable/><el-button @click="page=1;load()">{{$t('查询')}}</el-button></div>
+<form class="history-search" @submit.prevent="show({id:recordKind+':'+recordId.trim(),sourceId:recordId.trim()})"><el-select v-model="recordKind" :aria-label="$t('原单类型')"><el-option :label="$t('预约服务')" value="booking"/><el-option :label="$t('加持任务')" value="blessing"/></el-select><el-input v-model="recordId" maxlength="64" :placeholder="$t('预约单号或任务编号')" :aria-label="$t('预约单号或任务编号')"/><el-button native-type="submit" :disabled="!recordId.trim()">{{$t('查询历史跟进')}}</el-button></form>
+<div v-if="error" role="alert"><p>{{$t(error)}}</p><el-button @click="load">{{$t('重新加载')}}</el-button></div>
+<div v-else v-loading="loading" class="cards"><article v-for="row in rows" :key="row.id" class="df-card"><div class="row-head"><h3>{{$t(row.title)}}</h3><el-tag type="warning">{{$t(reasons[row.reason]||row.reason)}}</el-tag></div><p>{{row.templeCode}} · {{row.sourceId}} · {{$t(actions[row.followup]||row.followup)}}</p><div class="row-head"><small>{{row.updatedAt}}</small><div class="buttons"><router-link v-if="!platform&&row.sourceKind==='booking'" :to="'/bookings/'+encodeURIComponent(row.sourceId)">{{$t('处理原订单')}}</router-link><router-link v-else-if="!platform" to="/blessing-tasks?status=rejected">{{$t('查看加持任务')}}</router-link><router-link v-else-if="row.sourceKind==='booking'" :to="'/services/overview?kind=bookings&order='+encodeURIComponent(row.sourceId)">{{$t('查看服务记录')}}</router-link><el-button @click="show(row)">{{$t('跟进记录')}}</el-button></div></div></article><el-empty v-if="!loading&&!rows.length" :description="$t('当前没有待跟进异常')"/></div>
+<el-pagination v-if="total>20" v-model:current-page="page" :page-size="20" :total="total" layout="prev,pager,next,total" @current-change="load"/>
+<el-dialog v-model="visible" :title="$t('跟进记录')" width="min(640px,94vw)" ><p>{{selected?.sourceId}}</p><p v-if="noteError" role="alert">{{$t(noteError)}} <el-button @click="loadNotes">{{$t('重新加载')}}</el-button></p><div v-loading="notesLoading"><article class="note" v-for="note in notes" :key="note.id"><b>{{$t(actions[note.action])}}</b><small> · {{note.createdAt}} · #{{note.operatorId}}</small><p>{{note.content}}</p></article><el-empty v-if="!notesLoading&&!notes.length&&!noteError" :description="$t('尚无跟进记录')"/></div>
+</el-dialog></div></template>
+<style scoped>.cards{display:grid;gap:12px;margin:20px 0}.cards>article{padding:20px}.row-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}h3{font-size:var(--type-size-reading);margin:0}p,small{color:var(--el-text-color-secondary)}.buttons{display:flex;gap:16px;align-items:center}a{color:var(--el-color-primary)}.note{padding:12px 0;border-bottom:1px solid var(--el-border-color)}.note p{white-space:pre-wrap;overflow-wrap:anywhere}.filters{display:flex;gap:12px;margin-top:20px;max-width:460px}
+.history-search{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}.history-search>.el-select{width:150px}.history-search>.el-input{width:min(100%,340px)}
+</style>

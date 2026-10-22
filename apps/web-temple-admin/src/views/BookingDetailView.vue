@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
+const auth=useAuthStore()
 import { ElMessage, ElMessageBox } from '@/i18n'
 import { t as uiText } from '../../../../packages/localization/language'
 
@@ -181,7 +183,7 @@ onMounted(load)
               <div class="reply-label">{{ $t("法师回复：") }}</div>
               <div class="reply-text">{{ review.masterReply }}</div>
             </div>
-            <div class="reply-block" v-else>
+            <div class="reply-block" v-else-if="auth.can('temple.reviews.write')">
               <div class="reply-label">{{ $t("回复评价：") }}</div>
               <el-input v-model="replyText" type="textarea" :rows="3" :placeholder='$t("请输入回复内容")' />
               <div class="reply-action">

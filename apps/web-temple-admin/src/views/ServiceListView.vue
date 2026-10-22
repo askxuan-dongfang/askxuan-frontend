@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
+const auth=useAuthStore()
 import { ElMessage, ElMessageBox } from '@/i18n'
 import { t as uiText } from '../../../../packages/localization/language'
 
@@ -57,7 +59,7 @@ onMounted(load)
   <div class="df-page">
     <PageHeader :title='$t("服务管理")' :subtitle='$t("管理本寺法事服务项目与上下架")'>
       <el-button :icon="Refresh" @click="load">{{ $t("刷新") }}</el-button>
-      <el-button type="primary" :icon="Plus" @click="goEdit()">{{ $t("新增服务") }}</el-button>
+      <el-button v-if="auth.can('temple.services.write')" type="primary" :icon="Plus" @click="goEdit()">{{ $t("新增服务") }}</el-button>
     </PageHeader>
 
     <div class="df-card list-card">
@@ -97,8 +99,8 @@ onMounted(load)
         </el-table-column>
         <el-table-column :label='$t("操作")' width="150" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" :icon="Edit" @click="goEdit(row.id)">{{ $t("编辑") }}</el-button>
-            <el-dropdown trigger="click" @command="(cmd: string) => toggleStatus(row as TempleService, cmd)">
+            <el-button v-if="auth.can('temple.services.write')" link type="primary" size="small" :icon="Edit" @click="goEdit(row.id)">{{ $t("编辑") }}</el-button>
+            <el-dropdown v-if="auth.can('temple.services.write')" trigger="click" @command="(cmd: string) => toggleStatus(row as TempleService, cmd)">
               <el-button link type="primary" size="small">{{ $t(" 上下架") }}<el-icon class="el-icon--right"><ArrowDown /></el-icon>
               </el-button>
               <template #dropdown>

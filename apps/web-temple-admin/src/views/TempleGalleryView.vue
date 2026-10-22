@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
+const auth=useAuthStore()
 import { ElMessage, ElMessageBox } from '@/i18n'
 import { t as uiText } from '../../../../packages/localization/language'
 
@@ -73,7 +75,7 @@ onMounted(loadData)
   <div class="df-page">
     <PageHeader :title='$t("寺院图册")' :subtitle='$t("维护 C 端寺院详情展示的头图与详情图片")'>
       <el-button :icon="Refresh" @click="loadData">{{ $t("刷新") }}</el-button>
-      <el-button type="primary" :icon="Plus" @click="openCreate">{{ $t("上传图片") }}</el-button>
+      <el-button v-if="auth.can('temple.profile.write')" type="primary" :icon="Plus" @click="openCreate">{{ $t("上传图片") }}</el-button>
     </PageHeader>
 
     <div class="df-card gallery-panel" v-loading="loading">
@@ -87,7 +89,7 @@ onMounted(loadData)
               <el-tag size="small" effect="plain">{{ $t((typeLabels[image.type] || image.type)) }}</el-tag>
               <span class="sort">{{ $t("排序 ") }}{{ $t(image.sort) }}</span>
             </div>
-            <el-button circle plain type="danger" :icon="Delete" :title='$t("删除图片")' @click="remove(image)" />
+            <el-button v-if="auth.can('temple.profile.write')" circle plain type="danger" :icon="Delete" :title='$t("删除图片")' @click="remove(image)" />
           </div>
         </article>
       </div>

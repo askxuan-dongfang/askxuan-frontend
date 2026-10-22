@@ -69,7 +69,7 @@ enum Endpoint {
     /// GET admin/masters/schedules
     case masterSchedules(date: String?, page: Int, size: Int)
     /// PUT admin/masters/schedules
-    case masterScheduleUpdate(date: String, timeSlots: [String], status: String)
+    case masterScheduleUpdate(date: String, timeSlots: [String], status: String, revision: Int64)
 
     // MARK: - 收益
     /// GET admin/masters/earnings/summary
@@ -338,8 +338,8 @@ enum Endpoint {
             return AnyEncodable(request)
         case .blessingTaskComplete(_, let urls):
             return AnyEncodable(CertificateBody(certificateUrls: urls))
-        case .masterScheduleUpdate(let date, let timeSlots, let status):
-            return AnyEncodable(ScheduleUpdateBody(date: date, timeSlots: timeSlots, status: status))
+        case .masterScheduleUpdate(let date, let timeSlots, let status, let revision):
+            return AnyEncodable(ScheduleUpdateBody(revision: revision, date: date, timeSlots: timeSlots, status: status))
         case .masterServiceTagsUpdate(let req):
             return AnyEncodable(req)
         case .masterProfileUpdate(let req):
@@ -574,6 +574,7 @@ struct CertificateBody: Encodable {
 
 /// 日程更新请求体（date / timeSlots / status）
 struct ScheduleUpdateBody: Encodable {
+    let revision: Int64
     let date: String
     let timeSlots: [String]
     let status: String

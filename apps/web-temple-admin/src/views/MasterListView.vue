@@ -69,9 +69,9 @@ onMounted(load)
 <template>
   <div class="df-page">
     <PageHeader :title='$t("法师管理")' :subtitle='$t("维护本寺法师信息与上下架状态")'>
-      <el-button @click="router.push('/masters/accounts')">{{ $t("账号分配") }}</el-button>
+      <el-button v-if="auth.can('temple.team.manage')" @click="router.push('/masters/accounts')">{{ $t("账号分配") }}</el-button>
       <el-button :icon="Refresh" @click="load">{{ $t("刷新") }}</el-button>
-      <el-button type="primary" :icon="Plus" @click="goEdit()">{{ $t("新增法师") }}</el-button>
+      <el-button v-if="auth.can('temple.people.write')" type="primary" :icon="Plus" @click="goEdit()">{{ $t("新增法师") }}</el-button>
     </PageHeader>
 
     <div class="df-card list-card">
@@ -129,8 +129,8 @@ onMounted(load)
         </el-table-column>
         <el-table-column :label='$t("操作")' width="150" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" :icon="Edit" @click="goEdit(row.id)">{{ $t("编辑") }}</el-button>
-            <el-dropdown trigger="click" @command="(cmd: string) => toggleStatus(row.id, cmd)">
+            <el-button v-if="auth.can('temple.people.write')" link type="primary" size="small" :icon="Edit" @click="goEdit(row.id)">{{ $t("编辑") }}</el-button>
+            <el-dropdown v-if="auth.can('temple.people.write')" trigger="click" @command="(cmd: string) => toggleStatus(row.id, cmd)">
               <el-button link type="primary" size="small">{{ $t(" 状态") }}<el-icon class="el-icon--right"><ArrowDown /></el-icon>
               </el-button>
               <template #dropdown>
