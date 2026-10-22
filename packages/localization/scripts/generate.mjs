@@ -16,12 +16,16 @@ function walk(dir){for(const f of fs.readdirSync(dir,{withFileTypes:true})){if([
  parse(script,p);
  }}}
 function parse(s,p='file.ts'){const source=ts.createSourceFile(p,s,ts.ScriptTarget.Latest,true,p.endsWith('tsx')?ts.ScriptKind.TSX:ts.ScriptKind.TS);function visit(n){if(ts.isStringLiteral(n)||ts.isNoSubstitutionTemplateLiteral(n)||n.kind===ts.SyntaxKind.TemplateHead||n.kind===ts.SyntaxKind.TemplateMiddle||n.kind===ts.SyntaxKind.TemplateTail)add(n.text);if(ts.isJsxText(n))add(n.text.replace(/\s+/g,' '));ts.forEachChild(n,visit)}visit(source)}
-for(const dir of ['apps/web-h5/src','apps/web-platform-admin/src','apps/web-temple-admin/src','packages/admin-ui','packages/domain-status','packages/growth'])walk(root+'/'+dir);
-for(const s of ['语言','跟随系统','跟随系统时自动选择简体或繁体中文，其他系统语言使用简体中文。'])add(s);
-const dictionary=Object.fromEntries([...phrases].sort().map(s=>[s,convert(s)]).filter(([a,b])=>a!==b));
+for(const dir of ['apps/web-h5/src','apps/web-platform-admin/src','apps/web-temple-admin/src','packages/admin-ui','packages/domain-status','packages/growth'])if(fs.existsSync(root+'/'+dir))walk(root+'/'+dir);
+for(const s of ['语言','跟随系统','跟随系统时自动选择简体或繁体中文，其他系统语言使用简体中文。','真实打款通道尚未接入，未发起打款，提现状态未改变','真实物流同步尚未接入，物流轨迹和订单状态未改变'])add(s);
+// H5 is a separate checkout and may be absent in an admin-only worktree.
+// Retain its catalog entries rather than pruning translations from missing apps.
+const catalogPath=root+'/packages/localization/zh-Hant.json';
+const dictionary={...JSON.parse(fs.readFileSync(catalogPath,'utf8')),...Object.fromEntries([...phrases].sort().map(s=>[s,convert(s)]).filter(([a,b])=>a!==b))};
 // Product terms are reviewed explicitly; preserve established meaning across scripts.
 Object.assign(dictionary,{'后台':'後台','运营后台':'運營後台','寺院后台':'寺院後台','问玄管理台':'問玄管理台','语言':'語言','跟随系统':'跟隨系統'});
-const out=JSON.stringify(dictionary,null,2)+'\n';
-fs.writeFileSync(root+'/packages/localization/zh-Hant.json',out);
-for(const f of ['language.ts','zh-Hant.json'])fs.copyFileSync(root+'/packages/localization/'+f,root+'/apps/web-h5/src/i18n/'+f);
+const out=JSON.stringify(Object.fromEntries(Object.entries(dictionary).sort(([a],[b])=>a<b?-1:a>b?1:0)),null,2)+'\n';
+fs.writeFileSync(catalogPath,out);
+const h5Mirror=root+'/apps/web-h5/src/i18n';
+if(fs.existsSync(h5Mirror))for(const f of ['language.ts','zh-Hant.json'])fs.copyFileSync(root+'/packages/localization/'+f,h5Mirror+'/'+f);
 console.log({phrases:phrases.size,translations:Object.keys(dictionary).length,bytes:Buffer.byteLength(out)});

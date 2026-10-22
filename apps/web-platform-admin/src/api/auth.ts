@@ -65,3 +65,12 @@ export function getPermissions() {
 }
 
 export type { AccountItem }
+
+export interface AdminAccess {
+ userId: number; roles: string[]; clientId: string; roleId: number
+ accountVersion: number; roleVersion: number; authzScope: string; permissions: string[]
+}
+export function getAdminAccess() { return client.get<AdminAccess>('/auth/access') }
+export interface RolePermissions { roleId: number; revision: number; permissionCodes: string[]; editable: boolean }
+export function getRolePermissions(id: number) { return client.get<RolePermissions>(`/admin/auth/roles/${id}/permissions`) }
+export function setRolePermissions(id: number, revision: number, permissionCodes: string[]) { return client.put<RolePermissions>(`/admin/auth/roles/${id}/permissions`, { revision, permissionCodes }) }

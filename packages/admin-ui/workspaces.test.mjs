@@ -20,8 +20,8 @@ const js=ts.transpileModule(definitions,{compilerOptions:{target:ts.ScriptTarget
 const routes=new Function('commerceRoutes','agentCenterRoutes','defaultRoute','useAuthStore','Layout',js+'\nreturn routes')(commerceRoutes,agentCenterRoutes,defaultRoute,()=>({roles:['platform_super']}),{})
 const router=createRouter({history:createMemoryHistory(),routes})
 const visible=roles=>adminWorkspaces.flatMap(group=>group.children.filter(item=>!item.pending&&canAccessRoute(router.resolve(item.path),roles)).map(item=>item.path))
-test('nine workspaces retain every existing navigation target and add no production route',()=>{
- assert.deepEqual(adminWorkspaces.map(g=>g.title),['工作台','机构与人员','服务与履约','商城与 DIY','审核与治理','财务与权益','内容与 AI','基础标准','系统与权限'])
+test('task workspaces preserve existing targets and separate operations, finance and AI',()=>{
+ assert.deepEqual(adminWorkspaces.map(g=>g.title),['工作台','机构与人员','服务与履约','商城与 DIY','审核与治理','财务中心','运营中心','AI 中心','基础标准','系统与权限'])
  const targets=adminWorkspaces.flatMap(group=>group.children.filter(item=>!item.pending).map(item=>item.path))
  assert.equal(new Set(targets).size,targets.length)
  for(const path of targets)assert.equal(router.resolve(path).matched.at(-1)?.path,path,`Missing route ${path}`)
@@ -30,7 +30,11 @@ test('nine workspaces retain every existing navigation target and add no product
   if(['/ai','/ai/operations'].includes(path))continue
   assert.ok(workspaceForPath(path),`Unmapped existing platform route ${path}`)
  }
- assert.equal(adminWorkspaces.flatMap(g=>g.children).filter(i=>i.pending).length,1)
+ assert.equal(adminWorkspaces.flatMap(g=>g.children).filter(i=>i.pending).length,0)
+ assert.equal(workspaceForPath('/marketing/home-display').title,'运营中心')
+ assert.equal(workspaceForPath('/settings/taxonomy').title,'基础标准')
+ assert.equal(workspaceForPath('/finance/reconcile').title,'财务中心')
+ assert.equal(workspaceForPath('/services/overview').title,'服务与履约')
 })
 test('hidden details and all AI connections retain list breadcrumbs',()=>{
  for(const [path,list]of [['/master/create','/master/list'],['/master/detail/m1','/master/list'],['/temple/detail/t1','/temple/list'],['/user/detail/u1','/user/list'],['/commerce/materials/edit/m1','/commerce/materials'],['/commerce/diy-orders/d1','/commerce/diy-orders'],['/ai/connections/legacy','/ai/connections']]){

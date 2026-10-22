@@ -89,7 +89,7 @@
         <p><span>{{ $t("举报原因：") }}</span>{{ dialog.row?.reason }}</p>
       </div>
       <el-alert
-        :title="$t((dialog.handleResult === 'handled' ? $t('确认处理会执行对应内容下架或账号封禁，并改变前台可见性或账号状态。') : $t('驳回举报后对象保持当前状态，本次举报将关闭并保留处理记录。')))"
+        :title="$t((dialog.handleResult === 'handled' ? $t('本操作仅将举报工单标记为已处理。内容下架或账号封禁请在对应管理页面执行。') : $t('驳回举报后对象保持当前状态，本次举报将关闭并保留处理记录。')))"
         type="warning"
         :closable="false"
         show-icon
@@ -97,12 +97,9 @@
       <el-form label-position="top">
         <el-form-item :label='$t("处理结果")'>
           <el-radio-group v-model="dialog.handleResult">
-            <el-radio value="handled">{{ $t("已处理（下架/封禁）") }}</el-radio>
+            <el-radio value="handled">{{ $t("工单已处理") }}</el-radio>
             <el-radio value="rejected">{{ $t("驳回举报") }}</el-radio>
           </el-radio-group>
-        </el-form-item>
-        <el-form-item :label='$t("处理备注")'>
-          <el-input v-model="dialog.remark" type="textarea" :rows="3" :placeholder='$t("请输入处理备注")' />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -141,7 +138,6 @@ const dialog = reactive({
   loading: false,
   row: null as Report | null,
   handleResult: 'handled' as 'handled' | 'rejected',
-  remark: ''
 })
 
 function targetText(t?: string) {
@@ -174,7 +170,6 @@ function onSearch() {
 function open(row: Report) {
   dialog.row = row
   dialog.handleResult = 'handled'
-  dialog.remark = ''
   dialog.visible = true
 }
 
@@ -184,8 +179,7 @@ async function confirm() {
   try {
     await handleAuditReport(dialog.row.id, {
       handlerId: String(auth.userInfo?.userId || '0'),
-      handleResult: dialog.handleResult,
-      remark: dialog.remark
+      handleResult: dialog.handleResult
     })
     ElMessage.success(uiText('处理成功'))
     dialog.visible = false

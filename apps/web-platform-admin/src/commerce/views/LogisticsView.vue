@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from '@/i18n'
+import { ElMessage } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
 
 // 物流管理 - 快递公司 / 运费模板 / 物流追踪（Tab 切换）
@@ -234,20 +234,6 @@ async function handleTrackQuery() {
   }
 }
 
-async function handleBatchSync() {
-  try {
-    await ElMessageBox.confirm(uiText('确认批量同步所有非终态物流记录？'), uiText('提示'), {
-      confirmButtonText: uiText('同步'),
-      cancelButtonText: uiText('取消'),
-      type: 'warning'
-    })
-    const res = await logisticsApi.tracksBatchSync()
-    ElMessage.success((uiText("同步完成：成功 ") + String(res.success) + uiText(" / 失败 ") + String(res.failed) + uiText(" / 共 ") + String(res.total) + uiText("")))
-  } catch {
-    // 取消
-  }
-}
-
 onMounted(() => {
   loadExpress()
 })
@@ -257,9 +243,11 @@ onMounted(() => {
   <div class="page-wrap">
     <PageHeader :title='$t("物流管理")' :subtitle='$t("快递公司 / 运费模板 / 物流追踪")'>
       <template #extra>
-        <el-button type="primary" plain @click="handleBatchSync">{{ $t("批量同步物流") }}</el-button>
+        <el-button plain disabled>{{ $t("物流同步未接入") }}</el-button>
       </template>
     </PageHeader>
+
+    <el-alert :title='$t("真实物流同步尚未接入")' :description='$t("目前仅查询已保存的物流轨迹，查询不会推进运输或签收状态。")' type="info" :closable="false" show-icon style="margin-bottom: 16px" />
 
     <div class="df-card">
       <el-tabs v-model="activeTab" @tab-change="(name: any) => name === 'freight' && loadFreight()">

@@ -52,6 +52,9 @@ export interface AdminAccount {
 }
 
 export interface Role {
+  authzScope: string
+  authzVersion: number
+  editable: boolean
   id: number
   name: string
   code: string
@@ -60,6 +63,7 @@ export interface Role {
 }
 
 export interface Permission {
+  assignable: boolean
   id: number
   code: string
   name: string

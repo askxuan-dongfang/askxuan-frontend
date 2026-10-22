@@ -64,6 +64,7 @@ instance.interceptors.response.use(
       ElMessage.error((res.message || uiText('请求失败')))
       return Promise.reject(new Error(res.message || '请求失败'))
     }
+    if (response.headers['x-admin-audit-pending'] === 'true') ElMessage.warning(uiText('操作已提交，审计结果同步中，请勿重复提交'))
     return res.data as any
   },
   async (error) => {

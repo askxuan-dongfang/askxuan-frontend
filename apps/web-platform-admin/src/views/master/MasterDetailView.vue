@@ -100,7 +100,7 @@ async function loadDetail() {
 }
 
 function startEdit() {
-  if (!master.value) return
+  if (!master.value || !auth.roles.includes('platform_super')) return
   form.value = {
     dharmaName: master.value.dharmaName,
     layName: master.value.layName,
@@ -188,7 +188,7 @@ onMounted(() => { void loadDetail() })
     <PageHeader :title='$t("法师详情")' :subtitle='$t("法师资料、可提供服务查看与平台编辑（寺院与独立执业两类大师）")'>
       <template #actions>
         <el-button @click="router.push('/master/list')">{{ $t("返回列表") }}</el-button>
-        <el-button v-if="master && !editing" type="primary" @click="startEdit">{{ $t("编辑资料") }}</el-button>
+        <el-button v-if="master && !editing && auth.roles.includes('platform_super')" type="primary" @click="startEdit">{{ $t("编辑资料") }}</el-button>
       </template>
     </PageHeader>
 
@@ -202,7 +202,7 @@ onMounted(() => { void loadDetail() })
       <el-button :loading="serviceLoading" @click="loadServiceConfig">{{ $t('重新加载') }}</el-button>
     </div>
     <!-- 查看态 -->
-    <div v-if="master && !editing" class="df-card" style="max-width: 760px">
+    <div v-if="master && !editing && auth.roles.includes('platform_super')" class="df-card" style="max-width: 760px">
       <div class="master-head">
         <el-avatar :size="64" :src="master.avatar">{{ $t(master.dharmaName.slice(0, 1)) }}</el-avatar>
         <div class="master-head__info">
