@@ -14,7 +14,8 @@ class H(SimpleHTTPRequestHandler):
   p=urlparse(self.path).path
   if p.startswith('/api/'):
    data={'list':[],'items':[],'total':0,'permissions':[],'roles':[]}
-   if p.endswith('/products/categories'):data={'list':[{'id':9,'name':'本地验收分类','parentId':0,'level':1,'sort':1}],'total':1}
+   if p.endswith('/auth/access'):data={**data,'templeCode':'TEST','templeName':'本地测试寺院'}
+   elif p.endswith('/products/categories'):data={'list':[{'id':9,'name':'本地验收分类','parentId':0,'level':1,'sort':1}],'total':1}
    elif p.endswith('/temples/images'):data={'list':[{'id':9,'type':'detail','sort':1,'url':'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22/%3E'}]}
    elif p.endswith('/marketing/coupons'):data={'list':[coupon],'total':1}
    elif '/reports' in p or p.endswith('/report'):data={**data,'totalSales':0,'totalOrders':0,'avgOrderValue':0,'refundRate':0,'salesTrend':[],'topProducts':[],'revenueStats':{},'bookingTrend':[],'serviceDistribution':[],'masterRanking':[]}

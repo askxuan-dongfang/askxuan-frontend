@@ -187,6 +187,8 @@ async function mockAdminApi(page: Page, resolveData?: (url: URL) => Record<strin
       preferenceTags: [],
       permissions: [],
       roles: [],
+      templeCode: 'T001',
+      templeName: '灵隐寺',
       totalIncome: 0,
       commissionIncome: 0,
       templeIncome: 0,
