@@ -13,9 +13,11 @@
         <el-option :label='$t("已启用")' value="enabled" />
         <el-option :label='$t("已停用")' value="disabled" />
       </el-select>
+      <el-select v-model="query.roleId" :placeholder="$t('角色')" clearable style="width:160px"><el-option v-for="role in roles" :key="role.id" :label="$t(role.name)" :value="role.id" /></el-select>
       <el-button type="primary" :icon="Search" @click="onSearch">{{ $t("查询") }}</el-button>
       <el-button :icon="RefreshLeft" @click="onReset">{{ $t("重置") }}</el-button>
     </div>
+    <p v-if="query.templeId || query.masterId" class="scope-note">{{ $t('当前仅查看此业务主体关联账号') }}：{{ query.templeId || query.masterId }} <el-button link @click="clearSubjectFilter">{{ $t('查看全部账号') }}</el-button></p>
 
     <div v-if="loadError || dependencyError" class="ax-page-feedback" :class="{ 'is-error': loadError }" role="alert">
       <div class="ax-page-feedback__copy">
@@ -45,8 +47,9 @@
         <el-table-column :label='$t("最近登录")' width="180">
           <template #default="{ row }">{{ $t((row.lastLoginTime ? formatDate(row.lastLoginTime) : $t('尚未登录'))) }}</template>
         </el-table-column>
-        <el-table-column :label='$t("操作")' width="150" fixed="right">
+        <el-table-column :label='$t("操作")' width="210" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" @click="$router.push('/settings/accounts/' + row.id)">{{ $t('详情') }}</el-button>
             <el-button link type="primary" @click="openEdit(row)">{{ $t("编辑") }}</el-button>
             <el-button link :type="row.status === 'enabled' ? 'warning' : 'success'" @click="toggleStatus(row)">
               {{ $t((row.status === 'enabled' ? $t('停用') : $t('启用'))) }}
@@ -63,6 +66,7 @@
             <div class="mobile-task-card__foot">
               <span>{{ $t("账号 #") }}{{ $t(row.id) }}</span>
               <span class="mobile-actions">
+                <el-button @click="$router.push('/settings/accounts/' + row.id)">{{ $t('详情') }}</el-button>
                 <el-button type="primary" @click="openEdit(row)">{{ $t("编辑") }}</el-button>
                 <el-button :type="row.status === 'enabled' ? 'warning' : 'success'" plain @click="toggleStatus(row)">{{ $t((row.status === 'enabled' ? $t('停用') : $t('启用'))) }}</el-button>
               </span>
@@ -120,7 +124,8 @@
 import { ElMessage, ElMessageBox } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
 
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import { Plus, Refresh, RefreshLeft, Search } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
@@ -141,7 +146,8 @@ const total = ref(0)
 const roles = ref<Role[]>([])
 const temples = ref<Temple[]>([])
 const masters = ref<Master[]>([])
-const query = reactive({ keyword: '', status: '', page: 1, size: 20 })
+const route = useRoute(), router = useRouter()
+const query = reactive({ keyword: '', status: '', roleId: undefined as number | undefined, templeId: '', masterId: '', page: 1, size: 20 })
 const emptyForm = () => ({ account: '', password: '', name: '', roleId: 2, templeId: '', masterId: '', shopId: 0 })
 const dialog = reactive({ visible: false, loading: false, isEdit: false, editId: 0, form: emptyForm() })
 const selectedRoleCode = computed(() => roles.value.find((role) => role.id === dialog.form.roleId)?.code || '')
@@ -161,7 +167,15 @@ async function loadData() {
 }
 
 function onSearch() { query.page = 1; loadData() }
-function onReset() { query.keyword = ''; query.status = ''; onSearch() }
+function onReset() { query.keyword = ''; query.status = ''; query.roleId = undefined; onSearch() }
+function readRouteFilters() {
+  query.keyword = typeof route.query.keyword === 'string' ? route.query.keyword : ''
+  query.templeId = typeof route.query.templeId === 'string' ? route.query.templeId : ''
+  query.masterId = typeof route.query.masterId === 'string' ? route.query.masterId : ''
+  query.page = 1
+}
+function clearSubjectFilter() { router.replace({ path: '/settings/account' }) }
+watch(() => route.query, () => { readRouteFilters(); loadData() })
 function roleName(id: number) { return roles.value.find((role) => role.id === id)?.name || `角色 ${id}` }
 function templeName(id?: string) { return temples.value.find((temple) => temple.id === id)?.name || id || '' }
 function masterName(id?: string) { return masters.value.find((master) => master.id === id)?.dharmaName || id || '' }
@@ -231,6 +245,7 @@ async function loadPage() {
 }
 
 onMounted(async () => {
+  readRouteFilters()
   await loadDependencies()
   await loadData()
 })
@@ -241,4 +256,5 @@ onMounted(async () => {
 .table-wrap { padding: 16px; }
 .mobile-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .mobile-actions :deep(.el-button + .el-button) { margin-left: 0; }
+.scope-note{color:var(--color-text-secondary);margin-bottom:16px}
 </style>

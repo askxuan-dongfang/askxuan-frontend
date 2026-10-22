@@ -14,7 +14,7 @@
     "test:architecture": "node ../../scripts/check-admin-architecture.mjs",
     "test:compat": "node --test src/compat/legacy-shop.test.mjs",
     "test:affiliation": "node --test ../../packages/admin-ui/affiliation.test.mjs ../../packages/admin-ui/workspaces.test.mjs ../../packages/admin-ui/profile-segments.test.mjs ../../packages/admin-ui/provider-forms.test.mjs",
-    "test:permissions": "node --test ../../packages/admin-ui/platform-permissions.test.mjs"
+    "test:permissions": "node --test ../../packages/admin-ui/platform-permissions.test.mjs ../../packages/admin-ui/account-system.test.mjs"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",

@@ -160,8 +160,14 @@ private struct ConversationWebView: UIViewRepresentable {
             if current.isAuthenticated, current.accessToken == parent.token { sessionContext = current }
         }
 
-        private func recoverSession() {
-            guard !recoveringSession, let context = sessionContext else { return }
+        private func recoverSession(terminalRevocation: Bool = false) {
+            guard let context = sessionContext else { return }
+            if terminalRevocation {
+                attemptedSessionRecovery = true
+                Task { _ = try? await APIClient.shared.recoverEmbeddedSession(context, allowsRefresh: false, terminalRevocation: true) }
+                return
+            }
+            guard !recoveringSession else { return }
             recoveringSession = true
             let allowsRefresh = !attemptedSessionRecovery
             attemptedSessionRecovery = true
@@ -226,7 +232,7 @@ private struct ConversationWebView: UIViewRepresentable {
                   frameURL.host == ConversationWebView.origin.host,
                   frameURL.port == ConversationWebView.origin.port,
                   let body = message.body as? [String: String], let action = body["action"] else { return }
-            if action == "session-expired" { recoverSession(); return }
+            if action == "session-expired" { recoverSession(terminalRevocation: body["reason"] == "revoked"); return }
             if action == "close" { parent.onClose() }
             if action == "download", let id = body["attachmentId"], UUID(uuidString: id) != nil {
                 let name = (body["name"] ?? "附件") as NSString

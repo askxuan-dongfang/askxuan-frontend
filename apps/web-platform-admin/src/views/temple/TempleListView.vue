@@ -53,9 +53,9 @@
         <el-table-column :label='$t("上架服务")' width="100" align="center">
           <template #default="{ row }">{{ $t(row.serviceCount) }}</template>
         </el-table-column>
-        <el-table-column :label='$t("状态")' width="110">
+        <el-table-column :label='$t("认证与运营状态")' min-width="220">
           <template #default="{ row }">
-            <StatusTag :status="row.status" />
+            <TempleStateControl :temple="row" :editable="useAuthStore().roles.includes('platform_super') || useAuthStore().access?.permissions.includes('platform.temples.write')" @updated="loadData" />
           </template>
         </el-table-column>
         <el-table-column :label='$t("地区标签")' min-width="165"><template #default="{row}"><span>{{$t((row.regionName || $t('未设置')))}}</span><ProviderRegionSelect v-if="useAuthStore().roles.includes('platform_super')" kind="temple" :id="row.id" :name="row.name" :code="row.regionCode" :inherited="row.regionInherited" :temple-bound="row.manageBy==='temple'" @updated="loadData"/></template></el-table-column>
@@ -63,16 +63,6 @@
           <template #default="{ row }">
             <el-button link type="primary" @click="$router.push(`/temple/detail/${row.id}`)">{{ $t("详情") }}</el-button>
             <el-button v-if="row.status === '待审核' && useAuthStore().roles.includes('platform_super')" link type="success" @click="goToReview(row)">{{ $t("去审核") }}</el-button>
-            <el-dropdown v-if="row.status !== '待审核' && (useAuthStore().roles.includes('platform_super') || useAuthStore().access?.permissions.includes('platform.temples.write'))" @command="(cmd: TempleOperationStatus) => onStatus(row, cmd)">
-              <el-button link type="warning">{{ $t("状态") }}<el-icon><ArrowDown /></el-icon></el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="normal">{{ $t("设为正常") }}</el-dropdown-item>
-                  <el-dropdown-item command="recommended">{{ $t("设为推荐") }}</el-dropdown-item>
-                  <el-dropdown-item command="banned">{{ $t("封禁寺院") }}</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
           </template>
         </el-table-column>
       </DataTable>
@@ -94,7 +84,8 @@ import {getRegions,getPublicRegions,type RegionTag} from '@/api/regions'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
 import StatusTag from '@/components/StatusTag.vue'
-import { getTempleList, updateTempleStatus, type TempleOperationStatus } from '@/api/temple'
+import { getTempleList } from '@/api/temple'
+import TempleStateControl from '@/components/TempleStateControl.vue'
 import { beliefOptions as standardBeliefs, normalizeBelief } from '../../../../../packages/admin-ui/affiliation'
 import { getPublicDirectoryTags, type DirectoryTag } from '@/api/directoryTags'
 import type { Temple } from '@/types'
@@ -145,14 +136,6 @@ function onReset() {
 
 function goToReview(row: Temple) {
   router.push({ path: '/temple/review', query: { templeCode: row.id } })
-}
-
-async function onStatus(row: Temple, status: TempleOperationStatus) {
-  const actionText = { normal: '设为正常', recommended: '设为推荐', banned: '封禁' }[status] || status
-  await ElMessageBox.confirm((uiText("确认将「") + String(row.name) + uiText("」") + String(actionText) + uiText("？")), uiText('提示'), { type: status === 'banned' ? 'warning' : 'info' })
-  await updateTempleStatus(row.id, status)
-  ElMessage.success(uiText('状态已更新'))
-  loadData()
 }
 
 onMounted(async () => {

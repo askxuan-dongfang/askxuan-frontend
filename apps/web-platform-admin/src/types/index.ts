@@ -49,6 +49,37 @@ export interface AdminAccount {
   status: string
   lastLoginTime?: string
   createTime: string
+  roleCode?: string
+  authzScope?: string
+  authzVersion?: number
+}
+
+export interface AccountIdentity {
+  email: string
+  emailVerified: boolean
+  verifiedAt?: string
+  credentialState: 'verified_email' | 'legacy_password' | 'pending_activation' | 'unavailable'
+  activationStatus?: 'none' | 'pending' | 'activated' | 'revoked'
+  invitationEmail?: string
+  canResetPassword: boolean
+}
+
+export interface AccountBinding {
+  type: 'temple' | 'master' | 'shop'
+  id: string
+  name: string
+  status: string
+  authStatus?: string
+  shelfStatus?: string
+  platformStatus?: string
+}
+
+export interface AdminAccountDetail {
+  account: AdminAccount
+  identity: AccountIdentity
+  bindings: AccountBinding[]
+  loginAllowed: boolean
+  blockedReasons: string[]
 }
 
 export interface Role {
@@ -79,6 +110,8 @@ export interface AdminUserItem {
   avatar: string
   region: string
   status: string
+  statsScope: string
+  statsUpdatedAt: string
   totalOrders: number
   totalSpent: number
   createTime: string
@@ -102,6 +135,9 @@ export interface AdminUserDetailResp {
   totalSpent: number
   lastActiveTime: string
   status: string
+  identity: AccountIdentity
+  statsScope: string
+  statsUpdatedAt: string
 }
 
 // ========== Temple ==========
@@ -117,6 +153,11 @@ export interface Temple {
   traditionCodes?: string[]
   sect: string
   status: string
+  authStatus?: 'certified' | 'pending' | 'legacy_unknown'
+  platformStatus?: 'normal' | 'banned'
+  shelfStatus?: 'on_shelf' | 'off_shelf'
+  recommended?: boolean
+  stateVersion?: number
   address: string
   coverImage: string
   rating: number

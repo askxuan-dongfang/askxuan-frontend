@@ -47,6 +47,8 @@ const STATUS_DICTIONARY: Record<StatusDomain, Record<string, StatusMeta>> = {
     first_pass: meta('初审通过', 'success'),
     final_pass: meta('终审通过', 'success'),
     verified: meta('已认证', 'success'),
+    certified: meta('已认证', 'success'),
+    legacy_unknown: meta('历史认证待核对', 'warning'),
     '已认证': meta('已认证', 'success'),
     on_shelf: meta('已上架', 'success'),
     '上架': meta('已上架', 'success'),

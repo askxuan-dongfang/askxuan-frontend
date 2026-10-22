@@ -57,6 +57,16 @@ export function updateTempleStatus(id: string, status: TempleOperationStatus) {
   return client.put<{ id: string; status: string }>(`/admin/platform/temples/${id}/status`, { status })
 }
 
+export interface TempleStateChange {
+  version: number
+  platformStatus?: 'normal' | 'banned'
+  shelfStatus?: 'on_shelf' | 'off_shelf'
+  recommended?: boolean
+}
+export function updateTempleState(id: string, change: TempleStateChange) {
+  return client.put<Temple>(`/admin/platform/temples/${id}/state`, change)
+}
+
 export function getBelief(code: string) {
   return client.get<BeliefProfile>(`/beliefs/${code}`)
 }

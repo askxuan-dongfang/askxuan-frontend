@@ -109,10 +109,10 @@ onMounted(async () => {
           <el-form-item :label='$t("类型")'>
             <el-input v-model="form.type" :placeholder='$t("如 汉传佛教、道教")' />
           </el-form-item>
-          <el-form-item :label='$t("运营状态")'>
-            <StatusTag v-if="temple" :status="temple.status" kind="temple" />
-            <span v-else>-</span>
-          </el-form-item>
+          <el-form-item :label='$t("认证状态")'><StatusTag v-if="temple?.authStatus" :status="temple.authStatus" :label="temple.authStatus === 'pending' ? '待审核' : temple.authStatus === 'certified' ? '已认证' : '历史认证待核对'"/><span v-else>{{ $t('状态资料待同步，请刷新') }}</span></el-form-item>
+          <el-form-item :label='$t("上架状态")'><StatusTag v-if="temple?.shelfStatus" :status="temple.shelfStatus"/><span v-else>—</span></el-form-item>
+          <el-form-item :label='$t("平台状态")'><StatusTag v-if="temple?.platformStatus" :status="temple.platformStatus"/><span v-else>—</span></el-form-item>
+          <p v-if="temple?.shelfStatus === 'off_shelf'" class="temple-state-note">{{ $t('寺院已下架，信众端不接受新预约；您仍可在后台处理已有订单。状态由平台管理，修改资料不会自动上架。') }}</p>
           <el-form-item :label='$t("寺院评分")'>
             <el-rate :model-value="temple?.rating ?? 0" disabled show-score />
           </el-form-item>
