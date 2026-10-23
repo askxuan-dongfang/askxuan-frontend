@@ -14,8 +14,12 @@ import XCTest
         return app
     }
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
-        for _ in 0..<16 where !element.isHittable { app.swipeUp() }
-        XCTAssertTrue(element.isHittable)
+        for _ in 0..<16 {
+            // Xcode can fail hit testing when a lazy list row is clipped at the screen edge.
+            if element.exists && !element.frame.isEmpty && app.frame.contains(element.frame) && element.isHittable { return }
+            app.swipeUp()
+        }
+        XCTFail("Element did not become fully visible after scrolling")
     }
     private func capture(_ app: XCUIApplication, _ name: String) {
         let shot = XCTAttachment(screenshot: app.screenshot())
