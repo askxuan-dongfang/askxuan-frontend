@@ -1,24 +1,86 @@
 import XCTest
 
 @MainActor final class TempleOperationsUITests: XCTestCase {
-    func testReceiptHistoryFromRealCrossPlatformBooking() throws {
-        let env = ProcessInfo.processInfo.environment
-        guard let token = env["TEMPLE_OPS_CUSTOMER_TOKEN"], let booking = env["TEMPLE_OPS_BOOKING"] else {
-            throw XCTSkip("Requires the isolated temple operations runtime")
-        }
+    override func setUp() { continueAfterFailure = false }
+    private var env: [String: String] { ProcessInfo.processInfo.environment }
+    private func required(_ key: String) throws -> String { try XCTUnwrap(env[key], "Requires isolated temple runtime: " + key) }
+    private func launch() throws -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:63400/api/v1"
-        app.launchEnvironment["ASKXUAN_JOURNEY_BOOKING"] = booking
-        app.launchArguments = ["--smoke-token", token, "--smoke-user-id", "891022", "-askxuan.appearance", "light"]
+        app.launchEnvironment["ASKXUAN_JOURNEY_BOOKING"] = try required("TEMPLE_OPS_BOOKING")
+        app.launchArguments = ["--smoke-token", try required("TEMPLE_OPS_CUSTOMER_TOKEN"), "--smoke-user-id", "891022", "-askxuan.language", "zh-Hans", "-askxuan.appearance", "light"]
         app.launch()
-        XCTAssertTrue(app.navigationBars["我的服务记录"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.navigationBars["我的服务记录"].waitForExistence(timeout: 20))
+        return app
+    }
+    private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
+        for _ in 0..<16 where !element.isHittable { app.swipeUp() }
+        XCTAssertTrue(element.isHittable)
+    }
+    private func capture(_ app: XCUIApplication, _ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name; shot.lifetime = .keepAlways; add(shot)
+    }
+    private func progress() async throws -> [String: Any] {
+        let url = try XCTUnwrap(URL(string: "http://127.0.0.1:63400/api/v1/bookings/" + (try required("TEMPLE_OPS_BOOKING")) + "/fulfillment"))
+        var request = URLRequest(url: url)
+        request.setValue("Bearer " + (try required("TEMPLE_OPS_CUSTOMER_TOKEN")), forHTTPHeaderField: "Authorization")
+        request.setValue("customer", forHTTPHeaderField: "X-Client-Type")
+        let (data, response) = try await URLSession.shared.data(for: request)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+        let envelope = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(envelope["code"] as? Int, 0)
+        return try XCTUnwrap(envelope["data"] as? [String: Any])
+    }
+    func testReceiptHistoryFromRealCrossPlatformBooking() throws {
+        let app = try launch()
         XCTAssertTrue(app.staticTexts["已评价"].firstMatch.waitForExistence(timeout: 20))
         let receipt = app.staticTexts["已补充完整说明，提交第二版测试回执。"]
-        for _ in 0..<8 where !receipt.isHittable { app.swipeUp() }
-        XCTAssertTrue(receipt.exists)
+        reveal(receipt, in: app)
         XCTAssertTrue(app.staticTexts["回执 2"].exists)
-        let shot = XCTAttachment(screenshot: app.screenshot())
-        shot.name = "customer-cross-platform-receipt-history"; shot.lifetime = .keepAlways; add(shot)
+        capture(app, "customer-cross-platform-receipt-history")
+    }
+    func testRequestReceiptRevisionFromNativeUI() async throws {
+        let app = try launch()
+        let media = app.buttons["查看图片 · 现场记录.png"]
+        reveal(media, in: app); media.tap()
+        XCTAssertTrue(app.images["现场记录.png"].waitForExistence(timeout: 15))
+        capture(app, "customer-native-receipt-image")
+        let accept = app.buttons["journey.accept"]; reveal(accept, in: app)
+        XCTAssertFalse(accept.isEnabled)
+        let expand = app.buttons["需要补充回执"]; reveal(expand, in: app); expand.tap()
+        let reason = app.descendants(matching: .any).matching(identifier: "请描述需要补充的内容（至少 5 字）").firstMatch
+        reveal(reason, in: app); reason.tap(); reason.typeText("请补充原生验收的现场说明")
+        let submit = app.buttons["要求补充回执"]; reveal(submit, in: app); submit.tap()
+        let gone = NSPredicate(format: "exists == false")
+        let removed = expectation(for: gone, evaluatedWith: submit)
+        await fulfillment(of: [removed], timeout: 15)
+        let result = try await progress()
+        XCTAssertEqual(result["status"] as? String, "in_progress")
+        capture(app, "customer-native-request-revision")
+    }
+    func testAcceptReceiptFromNativeUI() async throws {
+        let app = try launch()
+        let accept = app.buttons["journey.accept"]; reveal(accept, in: app)
+        XCTAssertFalse(accept.isEnabled)
+        let reviewed = app.switches["journey.reviewed"]; reveal(reviewed, in: app); reviewed.tap()
+        XCTAssertTrue(accept.isEnabled); accept.tap()
+        XCTAssertTrue(app.staticTexts["这份心意，已有记录"].waitForExistence(timeout: 15))
+        capture(app, "customer-native-receipt-accepted")
+        app.buttons["留存这份记录"].tap()
+        let result = try await progress()
+        XCTAssertEqual(result["status"] as? String, "completed")
+        XCTAssertEqual((result["receipts"] as? [[String: Any]])?.count, 2)
+    }
+    func testContractAmountsFromRealServices() throws {
+        let app = try launch()
+        app.buttons["订单详情"].tap()
+        XCTAssertTrue(app.navigationBars["预约详情"].waitForExistence(timeout: 15))
+        reveal(app.staticTexts["预约合同总额"], in: app)
+        for (label, amount) in [("预约合同总额", "¥120.75"), ("法师执行费", "¥20.25"), ("寺院服务费与随喜", "¥100.50")] {
+            XCTAssertTrue(app.cells.containing(.staticText, identifier: label).staticTexts[amount].exists)
+        }
+        capture(app, "customer-native-contract-amounts")
     }
 }
 

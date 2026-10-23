@@ -152,7 +152,14 @@ struct CalendarView: View {
         }
         .background(Color.bgPrimary)
         .navigationTitle(L10n.text("日程日历"))
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(L10n.text("日程日历")).font(AppTypography.navigation).foregroundStyle(Color.textPrimary)
+                    .accessibilityIdentifier("calendar.title")
+            }
+        }
 
         .task { await viewModel.load() }
         .refreshable { await viewModel.load() }
@@ -173,6 +180,8 @@ struct CalendarView: View {
                 Image(systemName: "arrow.clockwise.circle")
                     .foregroundStyle(.accentDefault)
             }
+            .accessibilityLabel(L10n.text("刷新日程"))
+            .accessibilityIdentifier("calendar.reload")
         }
         .padding(.top, AppSpacing.sm)
     }
@@ -228,6 +237,7 @@ struct CalendarView: View {
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(CardPressButtonStyle())
+        .accessibilityIdentifier("calendar.day.\(DFDateFormatter.day.string(from: date))")
     }
 
     private func daysInMonth() -> [Date] {
@@ -268,6 +278,14 @@ struct CalendarView: View {
                 LoadingView(message: L10n.text("加载日程..."))
                     .frame(maxWidth: .infinity)
             } else {
+                Text(L10n.text("与寺院端共用排班。调整仅影响新预约，已有订单仍需履约。"))
+                    .font(AppTypography.caption).foregroundStyle(.textSecondary)
+                if viewModel.ready && viewModel.timeSlots.isEmpty {
+                    Text(L10n.lookup(viewModel.schedules.isEmpty ? "尚未设置日期排班，当前沿用服务时段" : "当日未设置可用时段"))
+                        .font(AppTypography.caption).foregroundStyle(.textSecondary)
+                }
+                Text(L10n.text("时段勾选保存后生效；明确停约请设置休息日。"))
+                    .font(AppTypography.caption).foregroundStyle(.textSecondary)
                 ForEach(viewModel.availableSlots, id: \.self) { slot in
                     Button {
                         viewModel.toggle(slot)
@@ -280,7 +298,7 @@ struct CalendarView: View {
                                     .font(AppTypography.body)
                                     .foregroundStyle(.textPrimary)
                                 Spacer()
-                                Text(L10n.lookup(viewModel.selectedSlots.contains(slot) ? L10n.text("可预约") : L10n.text("休息")))
+                                Text(L10n.lookup(viewModel.selectedSlots.contains(slot) ? "已选择" : "未选择"))
                                     .font(.micro)
                                     .foregroundStyle(viewModel.selectedSlots.contains(slot) ? Color.stateSuccess : Color.textTertiary)
                                 Image(systemName: viewModel.selectedSlots.contains(slot) ? "checkmark.circle.fill" : "circle")
@@ -291,6 +309,8 @@ struct CalendarView: View {
                         }
                     }
                     .buttonStyle(CardPressButtonStyle())
+                    .accessibilityIdentifier("calendar.slot.\(slot)")
+                    .disabled(viewModel.isSaving || !viewModel.ready)
                     .accessibilityAddTraits(viewModel.selectedSlots.contains(slot) ? .isSelected : [])
                 }
 

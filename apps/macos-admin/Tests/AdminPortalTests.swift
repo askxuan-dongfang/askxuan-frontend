@@ -4,6 +4,12 @@ import Foundation
 
 struct AdminPortalTests {
     let origin = URL(string: "https://101.96.228.71")!
+    @Test func productionOriginIsEmbeddedInApp() throws {
+        let raw = try #require(Bundle.main.object(forInfoDictionaryKey: "ASKXUAN_WEB_BASE_URL") as? String)
+        let url = try #require(URL(string: raw))
+        #expect(url.scheme == "https")
+        #expect(url.host != nil)
+    }
     @Test func rolesAndStorageAreSeparated() {
         #expect(AdminPortal.platform.storeID != AdminPortal.temple.storeID)
         #expect(AdminPortal.matching(URL(string: "https://101.96.228.71/temple/orders?status=pending")!, origin: origin) == .temple)
