@@ -92,7 +92,7 @@
             <el-option v-for="role in roles" :key="role.id" :label="$t(role.name)" :value="role.id" />
           </el-select>
         </el-form-item>
-        <el-form-item v-if="['temple_admin','temple_reception','temple_operations','temple_finance'].includes(selectedRoleCode)" :label='$t("所属寺院")'>
+        <el-form-item v-if="selectedRoleCode === 'temple_admin'" :label='$t("所属寺院")'>
           <el-select v-model="dialog.form.templeId" filterable style="width: 100%" :placeholder='$t("请选择寺院")'>
             <el-option v-for="temple in temples" :key="temple.id" :label="$t(($t('') + String(temple.name) + $t('（') + String(temple.id) + $t('）')))" :value="temple.id" />
           </el-select>
@@ -196,7 +196,7 @@ function openEdit(row: AdminAccount) {
 
 function validForm() {
   if (!dialog.form.name || !dialog.form.roleId || (!dialog.isEdit && (!dialog.form.account || !dialog.form.password))) return false
-  if (['temple_admin','temple_reception','temple_operations','temple_finance'].includes(selectedRoleCode.value) && !dialog.form.templeId) return false
+  if (selectedRoleCode.value === 'temple_admin' && !dialog.form.templeId) return false
   if (selectedRoleCode.value === 'master' && !dialog.form.masterId) return false
   if (selectedRoleCode.value === 'shop_admin' && !dialog.form.shopId) return false
   return true

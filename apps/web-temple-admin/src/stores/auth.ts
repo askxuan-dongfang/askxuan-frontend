@@ -19,7 +19,6 @@ export const useAuthStore = defineStore('auth', () => {
   const templeId = ref<string>(localStorage.getItem(TEMPLE_ID_KEY) || '')
   const templeName = ref<string>(localStorage.getItem(TEMPLE_NAME_KEY) || '')
 
-  const permissions = ref<string[]>([])
   const workspaceVerified = ref(false)
   let verifiedToken = ''
   let pendingWorkspace: Promise<void> | null = null
@@ -67,8 +66,8 @@ export const useAuthStore = defineStore('auth', () => {
     return resp
   }
 
-  function can(permission: string) {
-    return workspaceVerified.value && (roles.value.includes('temple_admin') || roles.value.includes('platform_super') || permissions.value.includes(permission))
+  function can(_permission: string) {
+    return workspaceVerified.value && (roles.value.includes('temple_admin') || roles.value.includes('platform_super'))
   }
 
   async function syncWorkspace() {
@@ -76,11 +75,10 @@ export const useAuthStore = defineStore('auth', () => {
     if (pendingWorkspace) return pendingWorkspace
     workspaceVerified.value = false
     pendingWorkspace = (async () => {
-      const access = await client.get<{ templeCode: string; templeName: string; permissions: string[] }>('/auth/access')
+      const access = await client.get<{ templeCode: string; templeName: string }>('/auth/access')
       if (!access.templeCode) throw new Error('账号未绑定寺院，请联系平台管理员')
       templeId.value = access.templeCode
       templeName.value = access.templeName || access.templeCode
-      permissions.value = access.permissions || []
       verifiedToken = token.value
       workspaceVerified.value = true
       persist()
@@ -90,7 +88,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   function logout() {
     workspaceVerified.value = false
-    permissions.value = []
     verifiedToken = ''
     const previous=token.value;
     if(previous)void fetch('/api/v1/auth/logout',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+previous},body:JSON.stringify({accessToken:previous})}).catch(()=>{});
@@ -106,7 +103,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   subscribeAdminSession('df_temple_admin', logout, () => {
     workspaceVerified.value = false
-    permissions.value = []
     verifiedToken = ''
     token.value = localStorage.getItem('df_temple_admin_token') || ''
     refreshToken.value = localStorage.getItem('df_temple_admin_refresh_token') || ''
@@ -127,7 +123,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     syncWorkspace,
     workspaceVerified,
-    permissions,
     can
   }
 })

@@ -28,8 +28,7 @@ export const templeMenu: TempleMenuGroup[] = [
     { path: '/report', label: '经营统计', permission: 'temple.finance.read' }
   ] },
   { id: 'settings', label: '系统设置', icon: 'Setting', children: [
-    { path: '/settings', label: '机构与账号' },
-    { path: '/team', label: '岗位与成员', permission: 'temple.team.manage' }
+    { path: '/settings', label: '机构与账号' }
   ] }
 ]
 
