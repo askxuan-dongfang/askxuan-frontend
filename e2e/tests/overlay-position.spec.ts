@@ -1,5 +1,44 @@
 import { test, expect } from '@playwright/test'
 
+for (const width of [390, 1440]) {
+ test(`temple administrator uses one workspace without staff management at ${width}px`, async ({page}) => {
+  await page.setViewportSize({width,height:900})
+  await page.addInitScript(() => {
+   const token='e30.'+btoa(JSON.stringify({userId:9901,roles:['temple_admin'],clientId:'temple-admin',exp:Math.floor(Date.now()/1000)+3600}))+'.fixture'
+   localStorage.setItem('df_temple_admin_token',token)
+   localStorage.setItem('df_temple_admin_user',JSON.stringify({userId:9901,templeId:'TEST',templeName:'本地测试寺院'}))
+  })
+  const staffRequests:string[]=[]
+  page.on('request',request=>{if(request.url().includes('/auth/temple/team'))staffRequests.push(request.url())})
+  await page.route('**/api/v1/admin/temples/masters?**', route=>route.fulfill({json:{code:0,data:{list:[{id:'MASTER_TEST',dharmaName:'测试法师'}],total:1}}}))
+  await page.goto('http://127.0.0.1:5388/temple/team')
+  await expect(page).toHaveURL(/\/temple\/settings$/)
+  await expect(page.locator('main')).toContainText('机构与账号')
+  await expect(page.locator('body')).not.toContainText('岗位与成员')
+  await expect(page.locator('body')).not.toContainText('管理岗位与成员')
+  await page.goto('http://127.0.0.1:5388/temple/schedules')
+  await expect(page.getByRole('button',{name:'保存排班',exact:true})).toBeVisible()
+  await page.goto('http://127.0.0.1:5388/temple/masters/accounts')
+  await expect(page.locator('main')).toContainText('账号分配')
+  expect(staffRequests).toEqual([])
+ })
+}
+
+for (const role of ['temple_reception','temple_operations','temple_finance']) {
+ test(`retired temple role ${role} cannot enter the administrator workspace`, async ({page}) => {
+  await page.addInitScript(role => {
+   const token='e30.'+btoa(JSON.stringify({userId:9901,roles:[role],clientId:'temple-admin',exp:Math.floor(Date.now()/1000)+3600}))+'.fixture'
+   localStorage.setItem('df_temple_admin_token',token)
+   localStorage.setItem('df_temple_admin_user',JSON.stringify({userId:9901,templeId:'TEST'}))
+  },role)
+  await page.route('**/api/v1/auth/access', route=>route.fulfill({json:{code:0,data:{templeCode:'TEST',templeName:'本地测试寺院',permissions:['temple.team.manage','temple.profile.read']}}}))
+  await page.goto('http://127.0.0.1:5388/temple/settings')
+  await expect(page).toHaveURL(/\/temple\/login/)
+  await expect(page.locator('input[autocomplete="username"]')).toBeVisible()
+  expect(await page.evaluate(()=>localStorage.getItem('df_temple_admin_token'))).toBeNull()
+ })
+}
+
 // Static production bundles with isolated API fixtures; never submit a form.
 for (const viewport of [{width:390,height:640},{width:768,height:900},{width:1440,height:900},{width:812,height:375}]) {
  for (const target of [

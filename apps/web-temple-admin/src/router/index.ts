@@ -20,12 +20,12 @@ const routes: RouteRecordRaw[] = [
     component: DefaultLayout,
     redirect: '/dashboard',
     // RBAC：仅寺庙管理员（及平台超管）可进入本管理台
-    meta: { roles: ['temple_admin', 'temple_reception', 'temple_operations', 'temple_finance', 'platform_super'] },
+    meta: { roles: ['temple_admin', 'platform_super'] },
     children: [
       {path:'exceptions',component:()=>import('@/views/ExceptionsView.vue'),meta:{title:'异常跟进'}},
       {path:'schedules',component:()=>import('@/views/SchedulesView.vue'),meta:{title:'排班日历'}},
-      {path:'team',component:()=>import('@/views/TeamView.vue'),meta:{title:'岗位与成员'}},
-      {path:'growth',name:'growth',component:()=>import('@/views/GrowthView.vue'),meta:{title:'成长优惠参与',roles:['temple_admin','temple_operations']}},
+      {path:'team',redirect:'/settings'},
+      {path:'growth',name:'growth',component:()=>import('@/views/GrowthView.vue'),meta:{title:'成长优惠参与',roles:['temple_admin']}},
       {path:'wallet',name:'wallet',component:()=>import('@/views/WalletView.vue'),meta:{title:'结算记录'}},
       {path:'fulfillment',name:'fulfillment',component:()=>import('@/views/JourneyWorkView.vue'),meta:{title:'履约工作台'}},
       {path:'masters/accounts',name:'master-accounts',component:()=>import('@/views/ManagedAccountsView.vue'),meta:{title:'大师账号分配'}},
@@ -155,7 +155,7 @@ router.beforeEach(async (to) => {
   let permission = templeMenu.flatMap(group=>group.children).find(item=>item.path===activeTempleMenu(to.path))?.permission
   if (to.path.startsWith('/masters/edit')) permission='temple.people.write'
   if (to.path.startsWith('/services/edit')) permission='temple.services.write'
-  if (permission && !auth.can(permission)) { ElMessage.warning(uiText('当前岗位无此操作权限')); return {path:'/dashboard'} }
+  if (permission && !auth.can(permission)) { ElMessage.warning(uiText('暂无访问权限')); return {path:'/dashboard'} }
   return true
 })
 
