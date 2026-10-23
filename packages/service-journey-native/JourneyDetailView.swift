@@ -330,6 +330,7 @@ struct JourneyComposer: View {
         ) {
           Label(L10n.text("照片／视频"), systemImage: "photo")
         }.disabled(busy || files.count >= 8)
+          .accessibilityIdentifier(finalReceipt ? "journey.receipt.photo" : "journey.progress.photo")
         Button(L10n.text("选取文件")) { importing = true }.disabled(busy || files.count >= 8)
       }.font(.subheadline)
       Text(L10n.text("JPG、PNG、WebP、MP4、WebM · 最多 8 个，每个 20 MB")).font(.caption2).foregroundStyle(

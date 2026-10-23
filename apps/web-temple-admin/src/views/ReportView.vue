@@ -67,7 +67,7 @@ function renderCharts() {
     trendChart.setOption(withAdminChartTheme({
       tooltip: { trigger: 'axis' },
       legend: { data: ['有效预约数', '预约合同金额'], right: 0, top: 0 },
-      grid: { left: 48, right: 56, top: 36, bottom: 32 },
+      grid: { left: 48, right: 56, top: 60, bottom: 32 },
       xAxis: { type: 'category', data: trend.map((t) => t.date), axisLine: { lineStyle: { color: '#E8E0D8' } } },
       yAxis: [
         { type: 'value', name: '有效预约数', splitLine: { lineStyle: { color: '#F0E9E1' } } },

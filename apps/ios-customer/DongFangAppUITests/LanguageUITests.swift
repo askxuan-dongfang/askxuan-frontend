@@ -11,7 +11,7 @@ final class LanguageUITests: XCTestCase {
         XCTAssertTrue(account.waitForExistence(timeout: 10)); account.tap(); account.typeText("language-draft@example.test")
         let language = app.buttons["语言"]
         XCTAssertTrue(language.waitForExistence(timeout: 5)); language.tap()
-        let traditional = app.staticTexts["繁體中文"]
+        let traditional = app.buttons["繁體中文"]
         XCTAssertTrue(traditional.waitForExistence(timeout: 5)); traditional.tap()
         XCTAssertTrue(app.navigationBars["語言"].waitForExistence(timeout: 5))
         app.navigationBars.buttons.firstMatch.tap()
