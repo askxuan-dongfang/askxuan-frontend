@@ -31,8 +31,6 @@ async function logout() {
         <el-descriptions-item :label="$t('姓名')">{{ auth.userInfo?.nickname || '—' }}</el-descriptions-item>
         <el-descriptions-item :label="$t('登录账号')">{{ auth.userInfo?.mobile || '—' }}</el-descriptions-item>
       </el-descriptions>
-      <p>{{ $t('岗位变更或账号停用后，旧会话将失效。账号恢复后需重新登录。') }}</p>
-      <el-button v-if="auth.can('temple.team.manage')" @click="router.push('/team')">{{ $t('管理岗位与成员') }}</el-button>
       <el-button type="danger" plain @click="logout">{{ $t('退出登录') }}</el-button>
     </div>
   </div>
