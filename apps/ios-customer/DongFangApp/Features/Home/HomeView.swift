@@ -3,7 +3,7 @@
 //  DongFangApp
 //
 //  首页：
-//  品牌名「问玄东方」+ 搜索 + Banner轮播 + 四个核心入口 + 信仰/心愿入口 + 热门寺院 + 热门师傅。
+//  广告 + 找寺庙 / 找师傅 + 心愿横滑 + DIY 与广场 + 积分 + 热门推荐。
 //
 
 import SwiftUI
@@ -16,8 +16,8 @@ struct HomeView: View {
     @EnvironmentObject private var authStore: AuthStore
     @State private var currentBanner: Int = 0
 
-    private let pageInset: CGFloat = 20
-    private let columnSpacing: CGFloat = 24
+    private let pageInset: CGFloat = 16
+    private let columnSpacing: CGFloat = 12
     private let sectionSpacing: CGFloat = 28
     private let sectionTitleSpacing: CGFloat = 12
 
@@ -29,20 +29,15 @@ struct HomeView: View {
                 VStack(spacing: sectionSpacing) {
                     if !viewModel.banners.isEmpty { bannerSection }
                     entryCardsSection(width: viewportWidth)
-                    if viewModel.isLoading && viewModel.beliefEntries.isEmpty { ProgressView(L10n.text("正在加载首页")) }
+                    if viewModel.isLoading && viewModel.intentionEntries.isEmpty { ProgressView(L10n.text("正在加载首页")) }
                     if let error = viewModel.errorMessage {
-                        HStack { Text(L10n.lookup(L10n.text("部分内容加载失败：") + error)).font(AppTypography.caption); Spacer(); Button(L10n.text("重试")) { Task { await viewModel.load() } } }.padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)).padding(.horizontal, 20)
+                        HStack { Text(L10n.lookup(L10n.text("部分内容加载失败：") + error)).font(AppTypography.caption); Spacer(); Button(L10n.text("重试")) { Task { await viewModel.load() } } }.padding(16).appCardSurface(cornerRadius: 12).padding(.horizontal, pageInset)
                     }
-                    if authStore.isLoggedIn { JourneyEntryView(home: true).padding(.horizontal, pageInset) }
-                    beliefSection(width: viewportWidth)
-                    intentionSection(width: viewportWidth)
-                    NavigationLink { ServicesView() } label: {
-                        Label(L10n.text("查看全部服务"), systemImage: "square.grid.2x2")
-                            .font(AppTypography.title(15)).frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(16).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
-                    }.buttonStyle(CardPressButtonStyle()).padding(.horizontal, pageInset).accessibilityIdentifier("home-services")
-                    hotTemplesSection
-                    hotMastersSection
+                    intentionSection
+                    diySection
+                    pointsSection
+                    hotTemplesSection(width: viewportWidth)
+                    hotMastersSection(width: viewportWidth)
                     Color.clear.frame(height: AppSpacing.navBottom + 32)
                 }
                 .padding(.top, AppSpacing.sm)
@@ -65,11 +60,7 @@ struct HomeView: View {
                     }
             }
         }
-        .task {
-            if viewModel.hotTemples.isEmpty {
-                await viewModel.load()
-            }
-        }
+        .task { await viewModel.load() }
         .refreshable { await viewModel.load() }
         .navigationDestination(for: HomePromotion.self) { NativePromotionDestination(promotion: $0) }
         .navigationDestination(for: Temple.self) { temple in
@@ -146,7 +137,7 @@ struct HomeView: View {
             .accessibilityLabel(L10n.text("全站搜索"))
             .accessibilityIdentifier("home-global-search")
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, pageInset)
         .frame(height: 52)
     }
 
@@ -165,320 +156,359 @@ struct HomeView: View {
                             Text(L10n.lookup(banner.title)).font(AppTypography.title(25)).lineLimit(2)
                             Label(L10n.text("查看详情"), systemImage: "arrow.up.right").font(AppTypography.title(12, weight: .regular))
                         }.foregroundStyle(.white).padding(20).padding(.bottom, viewModel.banners.count > 1 ? 12 : 0)
-                    }.frame(width: geometry.size.width, height: 184).clipShape(RoundedRectangle(cornerRadius: 16))
+                    }.frame(width: geometry.size.width, height: 184).clipShape(RoundedRectangle(cornerRadius: 12))
                     }.frame(height: 184)
                 }.buttonStyle(CardPressButtonStyle()).tag(index)
             }
         }
         .tabViewStyle(.page(indexDisplayMode: viewModel.banners.count > 1 ? .automatic : .never))
-        .frame(height: 184).padding(.horizontal, 20)
+        .frame(height: 184).padding(.horizontal, pageInset)
     }
 
     private func entryCardsSection(width: CGFloat) -> some View {
         let cardWidth = columnWidth(in: width)
-        return LazyVGrid(columns: [GridItem(.flexible(), spacing: columnSpacing), GridItem(.flexible(), spacing: columnSpacing)], spacing: 12) {
-            NavigationLink(value: HomeRoute.templeList) { entryCard(icon: "building.columns", title: L10n.text("找寺院"), pattern: .temple, width: cardWidth) }.accessibilityIdentifier("home-temples")
-            NavigationLink(value: HomeRoute.masterList) { entryCard(icon: "person.crop.circle", title: L10n.text("找师傅"), pattern: .master, width: cardWidth) }.accessibilityIdentifier("home-masters")
-            NavigationLink(value: HomeRoute.diyBracelet) { entryCard(icon: "circle.dotted", title: L10n.text("DIY手串"), pattern: .bracelet, width: cardWidth) }.accessibilityIdentifier("home-diy")
-            NavigationLink { PointsView() } label: { entryCard(icon: "star", title: L10n.text("积分中心"), pattern: .points, width: cardWidth) }.accessibilityIdentifier("home-points")
-        }.buttonStyle(CardPressButtonStyle()).padding(.horizontal, pageInset).accessibilityIdentifier("home-primary-entries")
+        return HStack(spacing: columnSpacing) {
+            NavigationLink(value: HomeRoute.templeList) {
+                entryCard(icon: "building.columns", title: "找寺庙", detail: "访寺院，了解文化与服务", pattern: .temple, width: cardWidth)
+            }.accessibilityIdentifier("home-temples")
+            NavigationLink(value: HomeRoute.masterList) {
+                entryCard(icon: "person.crop.circle", title: "找师傅", detail: "按心愿，寻找合适的师傅", pattern: .master, width: cardWidth)
+            }.accessibilityIdentifier("home-masters")
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .buttonStyle(CardPressButtonStyle())
+        .padding(.horizontal, pageInset)
     }
 
-    private func entryCard(icon: String, title: String, pattern: HomeEntryPattern.Kind, width: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Image(systemName: icon).font(.system(size: 32, weight: .regular)).foregroundStyle(Color.brandDefault).accessibilityHidden(true)
+    private func entryCard(icon: String, title: String, detail: String, pattern: HomeEntryPattern.Kind, width: CGFloat) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 34, weight: .regular))
+                .foregroundStyle(Color.brandDefault).accessibilityHidden(true)
             Text(L10n.lookup(title)).font(AppTypography.title(18)).foregroundStyle(Color.textPrimary)
-                .lineLimit(2).minimumScaleFactor(0.85).fixedSize(horizontal: false, vertical: true)
-        }.frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 16)
-            .frame(width: width, height: dynamicTypeSize.isAccessibilitySize ? max(156, entryTitleLineHeight * 2 + 74) : 104)
-            .background(alignment: .trailing) {
-                HomeEntryPattern(kind: pattern).stroke(Color.accentDefault.opacity(colorScheme == .dark ? 0.12 : 0.07), lineWidth: 1.5)
-                    .frame(width: min(112, width), height: 86).allowsHitTesting(false).accessibilityHidden(true)
-            }
-            .contentShape(Rectangle())
+            Text(L10n.lookup(detail)).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 12)
+        .frame(width: width)
+        .frame(minHeight: dynamicTypeSize.isAccessibilitySize ? max(184, entryTitleLineHeight * 3 + 84) : 164, maxHeight: .infinity)
+        .background(alignment: .trailing) {
+            HomeEntryPattern(kind: pattern)
+                .stroke(Color.accentDefault.opacity(colorScheme == .dark ? 0.12 : 0.07), lineWidth: 1.5)
+                .frame(width: min(132, width), height: 116).allowsHitTesting(false).accessibilityHidden(true)
+        }
+        .appCardSurface(cornerRadius: 12)
+        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .accessibilityElement(children: .combine)
     }
 
     private func columnWidth(in viewportWidth: CGFloat) -> CGFloat {
         max(0, (viewportWidth - pageInset * 2 - columnSpacing) / 2)
     }
 
-    private func beliefSection(width: CGFloat) -> some View {
-        let contentWidth = max(0, width - pageInset * 2)
-        let columns = width >= 1024 ? 5 : 2
-        let itemWidth = columns == 2 ? columnWidth(in: width) : max(0, (contentWidth - columnSpacing * CGFloat(columns - 1)) / CGFloat(columns))
-        return VStack(alignment: .leading, spacing: sectionTitleSpacing) {
-            Text(L10n.text("信仰类别")).font(AppTypography.section).foregroundStyle(Color.textPrimary)
-            VStack(spacing: 0) {
-                ForEach(stride(from: 0, to: viewModel.beliefEntries.count, by: columns).map { $0 }, id: \.self) { index in
-                    if index > 0 { Rectangle().fill(Color.borderDivider).frame(height: 0.5) }
-                    HStack(alignment: .top, spacing: columnSpacing) {
-                        ForEach(index..<min(index + columns, viewModel.beliefEntries.count), id: \.self) { position in
-                            beliefLink(viewModel.beliefEntries[position])
-                                .frame(width: index + 1 < viewModel.beliefEntries.count ? itemWidth : contentWidth, alignment: .leading)
-                        }
-                    }.frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }.accessibilityIdentifier("home-belief-entries")
-        }.padding(.horizontal, pageInset)
-    }
-
-    private func beliefLink(_ entry: BeliefEntry) -> some View {
-        NavigationLink(value: HomeRoute.templeBelief(entry.id)) { beliefItem(entry) }
-            .buttonStyle(CardPressButtonStyle())
-            .accessibilityIdentifier("home-belief-" + entry.id)
-    }
-
-    private func beliefItem(_ entry: BeliefEntry) -> some View {
-        HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L10n.lookup(entry.title)).font(AppTypography.title(16)).foregroundStyle(Color.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(L10n.lookup(entry.subtitle)).font(AppTypography.title(12, weight: .regular)).foregroundStyle(Color.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }.frame(maxWidth: .infinity, alignment: .leading)
-            Text(L10n.lookup(String(entry.title.prefix(1)))).font(AppTypography.title(24, weight: .regular)).foregroundStyle(Color.accentDefault.opacity(0.65))
-                .frame(minWidth: 24).accessibilityHidden(true)
-        }.padding(.vertical, 14).frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
-            .contentShape(Rectangle())
-    }
-
-    private func intentionSection(width: CGFloat) -> some View {
-        let columns = dynamicTypeSize.isAccessibilitySize ? 2 : width >= 1024 ? 6 : 3
-        return VStack(alignment: .leading, spacing: sectionTitleSpacing) {
+    private var intentionSection: some View {
+        VStack(alignment: .leading, spacing: sectionTitleSpacing) {
             Text(L10n.text("按心愿办")).font(AppTypography.section).foregroundStyle(Color.textPrimary)
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .leading), count: columns), spacing: 4) {
-                ForEach(viewModel.intentionEntries) { entry in
-                    NavigationLink(value: entry.landingType == "diy" ? HomeRoute.diyBracelet : HomeRoute.intention(entry)) {
-                        intentionItem(entry)
-                    }.buttonStyle(CardPressButtonStyle()).accessibilityIdentifier("home-intention-" + entry.id)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: columnSpacing) {
+                    ForEach(viewModel.intentionEntries) { entry in
+                        NavigationLink(value: HomeRoute.intention(entry)) { intentionItem(entry) }
+                            .buttonStyle(CardPressButtonStyle())
+                            .accessibilityIdentifier("home-intention-" + entry.id)
+                    }
                 }
-            }.accessibilityIdentifier("home-intention-entries")
-        }.padding(.horizontal, pageInset)
+            }
+            .accessibilityIdentifier("home-intention-entries")
+        }
+        .padding(.horizontal, pageInset)
     }
 
     private func intentionItem(_ entry: IntentionEntry) -> some View {
-        HStack(spacing: 8) {
-            IntentionLineIcon(code: entry.landingType == "diy" ? "diy" : entry.id)
-                .frame(width: 22, height: 22).foregroundStyle(entry.landingType == "diy" ? Color.brandDefault : Color.accentDefault)
-            Text(L10n.lookup(entry.landingType == "diy" ? L10n.text("DIY手串") : entry.title))
-                .font(AppTypography.title(14, weight: .regular)).fixedSize(horizontal: false, vertical: true)
-        }.foregroundStyle(Color.textPrimary).padding(.vertical, 12).frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-            .overlay(alignment: .bottom) { Rectangle().fill(Color.borderDivider).frame(height: 0.5) }
-            .contentShape(Rectangle())
-            .accessibilityElement(children: .combine)
+        VStack(spacing: 10) {
+            IntentionLineIcon(code: entry.id)
+                .frame(width: 26, height: 26).foregroundStyle(Color.accentDefault)
+            Text(L10n.lookup(entry.title)).font(AppTypography.title(14, weight: .regular))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .foregroundStyle(Color.textPrimary)
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 8).padding(.vertical, 12)
+        .frame(width: dynamicTypeSize.isAccessibilitySize ? 116 : 76)
+        .frame(minHeight: 88)
+        .appCardSurface(cornerRadius: 12)
+        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .accessibilityElement(children: .combine)
     }
 
-    // MARK: - 热门寺院（横滑，标题可点击进完整列表）
-    private var hotTemplesSection: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.md) {
-            NavigationLink(value: HomeRoute.templeList) {
-                HStack {
-                    Text(L10n.text("热门寺院"))
-                        .font(AppTypography.section)
-                        .foregroundStyle(Color.textPrimary)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(AppTypography.caption.weight(.semibold))
-                        .foregroundStyle(Color.accentDefault)
+    private var showsDesignExamples: Bool {
+        !viewModel.isLoadingDesigns && viewModel.featuredDesigns.isEmpty
+    }
+
+    private var diySection: some View {
+        VStack(alignment: .leading, spacing: sectionTitleSpacing) {
+            Text(L10n.text("DIY 手串")).font(AppTypography.section).foregroundStyle(Color.textPrimary)
+            NavigationLink { DiyDesignView() } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "circle.dotted")
+                        .font(.system(size: 36)).foregroundStyle(Color.accentDefault).accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 8) {
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 10) {
+                                Text(L10n.text("开始设计")).font(AppTypography.title(18))
+                                creatorRewardLabel
+                            }
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(L10n.text("开始设计")).font(AppTypography.title(18))
+                                creatorRewardLabel
+                            }
+                        }
+                        Text(L10n.text("发布原创设计，被采用成交可获奖励"))
+                            .font(AppTypography.caption).foregroundStyle(Color.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Image(systemName: "chevron.right").font(AppTypography.body).foregroundStyle(Color.accentDefault)
+                        .accessibilityHidden(true)
                 }
-                .padding(.horizontal, 20)
+                .foregroundStyle(Color.textPrimary)
+                .padding(16).frame(maxWidth: .infinity, minHeight: 104, alignment: .leading)
+                .background(LinearGradient(colors: [Color.brandDefault.opacity(0.10), Color.accentDefault.opacity(0.05)], startPoint: .leading, endPoint: .trailing))
+                .appCardSurface(cornerRadius: 12)
+                .contentShape(RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(CardPressButtonStyle())
+            .accessibilityIdentifier("home-diy")
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(L10n.text("广场精选")).font(AppTypography.body).foregroundStyle(Color.textPrimary)
+                if showsDesignExamples {
+                    Text(L10n.text("示例")).font(AppTypography.micro).foregroundStyle(Color.textSecondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.top, 4)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: AppSpacing.md) {
+                HStack(spacing: columnSpacing) {
+                    if viewModel.isLoadingDesigns && viewModel.featuredDesigns.isEmpty {
+                        ForEach(0..<4) { _ in
+                            RoundedRectangle(cornerRadius: 12).fill(Color.bgTertiary)
+                                .frame(width: 104, height: 104).accessibilityHidden(true)
+                        }
+                    }
+                    ForEach(viewModel.featuredDesigns) { design in
+                        NavigationLink { DiyDetailView(designId: design.id) } label: {
+                            designPreview(slots: DiyDesignPreview.slots(from: design.designData))
+                        }
+                        .buttonStyle(CardPressButtonStyle())
+                        .accessibilityLabel(Text(verbatim: design.name))
+                        .accessibilityIdentifier("home-diy-design-\(design.id)")
+                    }
+                    if showsDesignExamples {
+                        ForEach(HomeDesignExample.samples) { example in
+                            designPreview(slots: example.slots)
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityHidden(false)
+                                .accessibilityLabel(Text(L10n.text("设计案例") + " · " + L10n.lookup(example.name)))
+                                .accessibilityIdentifier("home-diy-example-" + example.id)
+                        }
+                    }
+                    NavigationLink { DiyBraceletView(initialSection: .plaza) } label: {
+                        VStack(spacing: 10) {
+                            Image(systemName: "chevron.right").font(AppTypography.card).accessibilityHidden(true)
+                            Text(L10n.text("逛设计广场")).font(AppTypography.caption)
+                                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                        }
+                        .foregroundStyle(Color.accentDefault)
+                        .padding(8)
+                        .frame(width: dynamicTypeSize.isAccessibilitySize ? 160 : 104)
+                        .frame(minHeight: 104)
+                        .appCardSurface(cornerRadius: 12)
+                    }
+                    .buttonStyle(CardPressButtonStyle())
+                    .accessibilityIdentifier("home-diy-plaza")
+                }
+            }
+            .accessibilityIdentifier("home-diy-designs")
+
+            if viewModel.isLoadingDesigns {
+                Text(L10n.text("正在加载广场作品…")).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
+            }
+            if viewModel.designsErrorMessage != nil {
+                HStack {
+                    Text(L10n.text("广场作品暂时无法加载")).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
+                    Spacer(minLength: 8)
+                    Button(L10n.text("重新加载")) { Task { await viewModel.loadFeaturedDesigns() } }
+                        .font(AppTypography.caption).frame(minHeight: 44)
+                }
+            }
+        }
+        .padding(.horizontal, pageInset)
+    }
+
+    private var creatorRewardLabel: some View {
+        Label(L10n.text("创作返利"), systemImage: "sparkles")
+            .font(AppTypography.caption).foregroundStyle(Color.brandDefault)
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .background(Color.brandDefault.opacity(0.10), in: RoundedRectangle(cornerRadius: 4))
+    }
+
+    private func designPreview(slots: [DiyBeadSlot]) -> some View {
+        DiyMiniBracelet(slots: slots, fallbackCount: 0)
+            .frame(width: 104, height: 104)
+            .appCardSurface(cornerRadius: 12)
+    }
+
+    private var pointsSection: some View {
+        VStack(alignment: .leading, spacing: sectionTitleSpacing) {
+            Text(L10n.text("积分中心")).font(AppTypography.section).foregroundStyle(Color.textPrimary)
+            HStack(spacing: columnSpacing) {
+                // Display names follow the explicitly confirmed homepage mapping.
+                pointsEntry(title: "商城", detail: "积分转盘", icon: "circle.dotted", mode: 0, identifier: "home-points-wheel")
+                pointsEntry(title: "转盘", detail: "积分商城", icon: "bag", mode: 1, identifier: "home-points-mall")
+                pointsEntry(title: "乐购", detail: "奖池", icon: "star", mode: 2, identifier: "home-points-pool")
+            }
+        }
+        .padding(.horizontal, pageInset)
+    }
+
+    private func pointsEntry(title: String, detail: String, icon: String, mode: Int, identifier: String) -> some View {
+        NavigationLink { PointsView(initialMode: mode).requireAuth(title: L10n.text("登录后使用积分中心")) } label: {
+            VStack(spacing: 10) {
+                Image(systemName: icon).font(.system(size: 28)).foregroundStyle(Color.accentDefault).accessibilityHidden(true)
+                Text(L10n.lookup(title)).font(AppTypography.card).foregroundStyle(Color.textPrimary)
+                Text(L10n.lookup(detail)).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 8).padding(.vertical, 16)
+            .frame(maxWidth: .infinity, minHeight: 138)
+            .appCardSurface(cornerRadius: 12)
+            .contentShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(CardPressButtonStyle())
+        .accessibilityIdentifier(identifier)
+    }
+
+    // MARK: - 热门推荐，使用相同栏宽、留白与卡片边框
+    private func hotTemplesSection(width: CGFloat) -> some View {
+        let cardWidth = columnWidth(in: width)
+        return VStack(alignment: .leading, spacing: sectionTitleSpacing) {
+            NavigationLink(value: HomeRoute.templeList) { recommendationHeading("热门寺院") }
+                .buttonStyle(CardPressButtonStyle())
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: columnSpacing) {
                     if viewModel.isLoading && viewModel.hotTemples.isEmpty {
-                        ForEach(0..<3) { _ in DFLoadingCard().frame(width: 168) }
+                        ForEach(0..<3) { _ in DFLoadingCard().frame(width: cardWidth) }
                     }
                     ForEach(viewModel.hotTemples) { temple in
-                        NavigationLink(value: temple) { templeCard(temple) }
+                        NavigationLink(value: temple) { templeCard(temple, width: cardWidth) }
                             .buttonStyle(CardPressButtonStyle())
                     }
                 }
-                .padding(.horizontal, 20)
             }
         }
+        .padding(.horizontal, pageInset)
     }
 
-    private func templeCard(_ temple: Temple) -> some View {
+    private func templeCard(_ temple: Temple, width: CGFloat) -> some View {
         VStack(spacing: 0) {
             ZStack(alignment: .topLeading) {
                 RemoteImage(urlString: temple.coverImage, placeholderIcon: "building.columns")
-                    .frame(width: 168, height: 100)
-                    .clipped()
+                    .frame(width: width, height: width * 0.62).clipped()
                 Text(L10n.lookup(temple.type))
-                    .font(AppTypography.micro.weight(.medium))
-                    .foregroundStyle(.white)
+                    .font(AppTypography.micro.weight(.medium)).foregroundStyle(.white)
                     .padding(.horizontal, 8).padding(.vertical, 2)
-                    .background(templeTypeColor(temple.type).opacity(0.85))
-                    .clipShape(Capsule())
-                    .padding(8)
+                    .background(Color.brandDefault.opacity(0.85), in: Capsule()).padding(8)
             }
-
-            VStack(spacing: 4) {
-                HStack {
-                    Text(L10n.lookup(temple.name))
-                        .font(AppTypography.title(16))
-                        .foregroundStyle(Color.textPrimary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
-                    Spacer()
-                    Text("★ \(temple.ratingText)")
-                        .font(AppTypography.micro.weight(.medium))
-                        .foregroundStyle(Color.accentDefault)
-                }
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 4) {
-                    Image(systemName: "mappin.circle.fill")
-                        .font(AppTypography.micro)
-                        .foregroundStyle(Color.textTertiary)
-                    Text(L10n.lookup(temple.region))
-                        .font(AppTypography.micro)
-                        .foregroundStyle(Color.textTertiary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
-                    Spacer()
+                    Text(verbatim: temple.name).font(AppTypography.title(16)).foregroundStyle(Color.textPrimary)
+                        .lineLimit(1).minimumScaleFactor(0.85)
+                    Spacer(minLength: 0)
+                    Text("★ \(temple.ratingText)").font(AppTypography.micro).foregroundStyle(Color.accentDefault)
                 }
-                if !temple.serviceTagsText.isEmpty || temple.serviceCountText != nil {
-                    HStack {
-                        if !temple.serviceTagsText.isEmpty {
-                            Text(L10n.lookup(temple.serviceTagsText))
-                                .font(AppTypography.micro)
-                                .foregroundStyle(Color.textSecondary)
-                                .lineLimit(2)
-                        }
-                        Spacer()
-                        if let countText = temple.serviceCountText {
-                            Text(L10n.lookup(countText))
-                                .font(AppTypography.micro.weight(.medium))
-                                .foregroundStyle(Color.brandDefault)
-                        }
+                Label(temple.region, systemImage: "mappin.circle")
+                    .font(AppTypography.micro).foregroundStyle(Color.textSecondary).lineLimit(1)
+                HStack(spacing: 4) {
+                    Text(verbatim: temple.serviceTagsText).font(AppTypography.micro)
+                        .foregroundStyle(Color.textSecondary).lineLimit(1)
+                    Spacer(minLength: 0)
+                    if let countText = temple.serviceCountText {
+                        Text(L10n.lookup(countText)).font(AppTypography.micro).foregroundStyle(Color.brandDefault)
+                            .lineLimit(1).minimumScaleFactor(0.85)
                     }
-                    .padding(.top, 4)
-                    .overlay(
-                        Rectangle().fill(Color.borderDivider).frame(height: 1),
-                        alignment: .top
-                    )
                 }
+                .padding(.top, 6)
+                .overlay(alignment: .top) { Rectangle().fill(Color.borderDivider).frame(height: 1) }
             }
-            .padding(10)
+            .padding(12).frame(maxWidth: .infinity, minHeight: 102, alignment: .topLeading)
         }
-        .frame(width: 168)
-        .appCardSurface(cornerRadius: 12)
+        .frame(width: width).appCardSurface(cornerRadius: 12)
     }
 
-    /// 寺院类型标签颜色：道教用紫色，其他用品牌色
-    private func templeTypeColor(_ type: String) -> Color {
-        if type.contains("道") {
-            return Color(red: 158/255, green: 143/255, blue: 178/255)
-        }
-        return Color.brandDefault
-    }
-
-    // MARK: - 热门师傅（横滑，标题可点击进完整列表）
-    private var hotMastersSection: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.md) {
-            NavigationLink(value: HomeRoute.masterList) {
-                HStack {
-                    Text(L10n.text("热门师傅"))
-                        .font(AppTypography.section)
-                        .foregroundStyle(Color.textPrimary)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(AppTypography.caption.weight(.semibold))
-                        .foregroundStyle(Color.accentDefault)
-                }
-                .padding(.horizontal, 20)
-            }
-            .buttonStyle(CardPressButtonStyle())
-
+    private func hotMastersSection(width: CGFloat) -> some View {
+        let cardWidth = columnWidth(in: width)
+        return VStack(alignment: .leading, spacing: sectionTitleSpacing) {
+            NavigationLink(value: HomeRoute.masterList) { recommendationHeading("热门师傅") }
+                .buttonStyle(CardPressButtonStyle())
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: AppSpacing.md) {
+                HStack(alignment: .top, spacing: columnSpacing) {
                     if viewModel.isLoading && viewModel.hotMasters.isEmpty {
-                        ForEach(0..<3) { _ in DFLoadingCard(avatar: true).frame(width: 188) }
+                        ForEach(0..<3) { _ in DFLoadingCard(avatar: true).frame(width: cardWidth) }
                     }
                     ForEach(viewModel.hotMasters) { master in
-                        NavigationLink(value: master) { masterCard(master) }
+                        NavigationLink(value: master) { masterCard(master, width: cardWidth) }
                             .buttonStyle(CardPressButtonStyle())
                     }
                 }
-                .padding(.horizontal, 20)
             }
         }
+        .padding(.horizontal, pageInset)
     }
 
-    private func masterCard(_ master: Master) -> some View {
-        VStack(spacing: 4) {
-            RemoteAvatar(urlString: master.avatar, size: 56)
-
-            Text(L10n.lookup(master.dharmaName))
-                .font(AppTypography.title(16))
-                .foregroundStyle(Color.textPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-
-            // 宗派标签 + 寺院
-            HStack(spacing: 4) {
-                if !master.sect.isEmpty {
-                    Text(L10n.lookup(master.sect))
-                        .font(AppTypography.micro)
-                        .foregroundStyle(Color.accentDefault)
-                        .padding(.horizontal, 6).padding(.vertical, 1)
-                        .overlay(Capsule().stroke(Color.accentDefault.opacity(0.25), lineWidth: 1))
+    private func masterCard(_ master: Master, width: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            RemoteImage(urlString: master.avatar, placeholderIcon: "person.crop.rectangle")
+                .frame(width: width, height: width * 0.62).clipped()
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 4) {
+                    Text(verbatim: master.dharmaName).font(AppTypography.title(16)).foregroundStyle(Color.textPrimary)
+                        .lineLimit(1).minimumScaleFactor(0.85)
+                    Spacer(minLength: 0)
+                    Text("★ " + master.ratingText).font(AppTypography.micro).foregroundStyle(Color.accentDefault)
                 }
-                Text(master.templeName)
-                    .font(AppTypography.micro)
-                    .foregroundStyle(Color.textTertiary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-            }
-
-            // 专长标签
-            Text(L10n.lookup(master.specialtiesText))
-                .font(AppTypography.micro)
-                .foregroundStyle(Color.textSecondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-
-            // 评分
-            HStack(spacing: 2) {
-                Image(systemName: "star.fill")
-                    .font(AppTypography.micro)
-                    .foregroundStyle(Color.accentDefault)
-                Text(L10n.lookup(master.ratingText))
-                    .font(AppTypography.micro.weight(.medium))
-                    .foregroundStyle(Color.accentDefault)
-            }
-
-            // 底部：专长 + 价格
-            if !master.specialtiesText.isEmpty || master.startPriceText != nil {
-                HStack {
-                    if !master.specialtiesText.isEmpty {
-                        Text(L10n.lookup(master.specialtiesText))
-                            .font(AppTypography.micro)
-                            .foregroundStyle(Color.textSecondary)
-                            .lineLimit(2)
-                    }
-                    Spacer()
+                Text(verbatim: [master.sect, master.templeName].filter { !$0.isEmpty }.joined(separator: " · "))
+                    .font(AppTypography.micro).foregroundStyle(Color.textSecondary).lineLimit(1)
+                HStack(spacing: 4) {
+                    Text(verbatim: master.specialtiesText).font(AppTypography.micro)
+                        .foregroundStyle(Color.textSecondary).lineLimit(1)
+                    Spacer(minLength: 0)
                     if let price = master.startPriceText {
-                        Text(L10n.lookup(price))
-                            .font(AppTypography.micro.weight(.semibold))
-                            .foregroundStyle(Color.brandDefault)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
+                        Text(L10n.lookup(price)).font(AppTypography.micro).foregroundStyle(Color.brandDefault)
+                            .lineLimit(1).minimumScaleFactor(0.85)
                     }
                 }
-                .padding(.top, 4)
-                .overlay(
-                    Rectangle().fill(Color.borderDivider).frame(height: 1),
-                    alignment: .top
-                )
+                .padding(.top, 6)
+                .overlay(alignment: .top) { Rectangle().fill(Color.borderDivider).frame(height: 1) }
             }
+            .padding(12).frame(maxWidth: .infinity, minHeight: 102, alignment: .topLeading)
         }
-        .frame(width: 168)
-        .padding(.vertical, 12)
-        .padding(.horizontal, 10)
-        .appCardSurface(cornerRadius: 12)
+        .frame(width: width).appCardSurface(cornerRadius: 12)
+    }
+
+    private func recommendationHeading(_ title: String) -> some View {
+        HStack {
+            Text(L10n.lookup(title)).font(AppTypography.section).foregroundStyle(Color.textPrimary)
+            Spacer()
+            HStack(spacing: 2) {
+                Text(L10n.text("更多"))
+                Image(systemName: "chevron.right").accessibilityHidden(true)
+            }.font(AppTypography.caption).foregroundStyle(Color.accentDefault)
+        }
+        .frame(minHeight: 28)
+        .contentShape(Rectangle())
     }
 
     // MARK: - 服务路由
@@ -804,6 +834,32 @@ private struct BeliefTopicView: View {
             }
             content()
         }.padding(.horizontal, 20)
+    }
+}
+
+/// Display-only colour studies; these carry no publication or order identity.
+private struct HomeDesignExample: Identifiable {
+    let id: String
+    let name: String
+    let slots: [DiyBeadSlot]
+
+    static let samples: [HomeDesignExample] = [
+        make(id: "wood", name: "木色留白", color: "694834", texture: "wood_grain", type: "wood", accent: "E4D8BE", accentTexture: "bodhi", accentType: "seed"),
+        make(id: "jade", name: "青玉映金", color: "83A89A", texture: "jade_cloud", type: "jade", accent: "B99760", accentTexture: "metal", accentType: "metal"),
+        make(id: "rose", name: "粉晶晨光", color: "D8B2B4", texture: "crystal", type: "crystal", accent: "E4D8BE", accentTexture: "bodhi", accentType: "seed"),
+        make(id: "obsidian", name: "墨曜微光", color: "292B2C", texture: "obsidian", type: "gemstone", accent: "B99760", accentTexture: "metal", accentType: "metal"),
+    ]
+
+    private static func make(id: String, name: String, color: String, texture: String, type: String, accent: String, accentTexture: String, accentType: String) -> HomeDesignExample {
+        let slots = (0..<18).map { position in
+            let isAccent = position % 6 == 0
+            let material = Material(id: 0, name: "", spec: "10mm", unitPrice: 0, unit: "颗", category: "main_bead",
+                materialType: isAccent ? accentType : type, shape: "round", diameterMm: 10,
+                colorHex: isAccent ? accent : color, textureKey: isAccent ? accentTexture : texture, finish: "polished",
+                image: "", stock: 0, status: "example")
+            return DiyBeadSlot(material: material, position: position, slotId: "home-example-\(id)-\(position)")
+        }
+        return HomeDesignExample(id: id, name: name, slots: slots)
     }
 }
 

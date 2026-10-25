@@ -17,7 +17,6 @@ function complete(){if(auth.roles.includes('temple_applicant')){router.replace('
 </script>
 <template>
   <div class="login-page">
-    <AppearanceSelector class="ax-appearance-login" />
     <div class="login-bg"></div>
     <div class="login-card df-card">
       <div class="login-brand">
@@ -34,6 +33,7 @@ function complete(){if(auth.roles.includes('temple_applicant')){router.replace('
 
     </div>
     <div class="login-footer">{{ $t("© 问玄东方 · 寺院管理台 P02") }}</div>
+    <footer class="login-preferences"><AppearanceSelector class="ax-appearance-login" /></footer>
   </div>
 </template>
 <style scoped>
@@ -41,8 +41,11 @@ function complete(){if(auth.roles.includes('temple_applicant')){router.replace('
   position: relative;
   min-height: 100dvh;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 24px;
+  box-sizing: border-box;
+  padding: max(40px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px));
   overflow-x: hidden;
   background: var(--admin-bg);
 }
@@ -68,9 +71,9 @@ function complete(){if(auth.roles.includes('temple_applicant')){router.replace('
 .login-card {
   position: relative;
   z-index: 1;
-  width: min(400px, calc(100vw - 48px));
+  width: min(400px, 100%);
   box-sizing: border-box;
-  margin: 40px 0;
+  margin: auto 0;
   padding: 36px 32px 28px;
   border-radius: 16px;
 }
@@ -124,10 +127,15 @@ function complete(){if(auth.roles.includes('temple_applicant')){router.replace('
   color: var(--admin-primary);
 }
 .login-footer {
-  position: absolute;
-  bottom: 20px;
+  position: relative;
   color: var(--admin-text-secondary);
   font-size: var(--type-size-caption);
+  text-align: center;
   z-index: 1;
+}
+.login-preferences {
+  position: relative;
+  z-index: 1;
+  width: min(400px, 100%);
 }
 </style>

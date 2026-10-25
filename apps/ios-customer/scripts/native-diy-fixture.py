@@ -144,7 +144,7 @@ if __name__ == "__main__":
     CATALOG = json.loads(Path(args.catalog).read_text())["data"]
     base.DATA["intentions/tags"] = base.page([
         {"code": code, "name": name, "description": "本地验收心愿", "icon": "", "landingType": "service", "landingValue": "S001", "actionTitle": "查看服务", "sort": index, "status": "enabled"}
-        for index, (code, name) in enumerate([("peace", "求平安"), ("wealth", "求财运"), ("love", "求姻缘"), ("study", "求学业")])
+        for index, (code, name) in enumerate([("peace", "求平安"), ("wealth", "求财运"), ("love", "求姻缘"), ("career", "求事业"), ("study", "求学业"), ("taisui", "化太岁"), ("rite", "做法事")])
     ])
     rule_config = {"levels": base.LEVELS, "tasks": [{"kind": "note", "award": 5, "used": 0, "limit": 1, "available": True, "period": "day"}], "monthlyGrowthLimit": 300, "monthlyDiscountLimitCents": 10000, "goodsDiscountCapCents": 2000, "serviceDiscountCapCents": 3000, "observationDays": 7, "couponDays": 30}
     active_rule = {"version": "local-current-v2", "summary": "本地当前规则验收", "effectiveAt": 1792454400, "createdAt": 1792454400, "status": "current", "config": rule_config}

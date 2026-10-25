@@ -58,8 +58,11 @@ private struct IdentityUser: Decodable {
 }
 
 struct LoginView: View {
+  private enum InputField: Hashable { case account, email, username, password, captcha, emailCode }
   @EnvironmentObject private var authStore: AuthStore
   @Environment(\.dismiss) private var dismiss
+  @AppStorage(AppTheme.storageKey) private var themeValue = AppTheme.system.rawValue
+  @FocusState private var focusedField: InputField?
   @State private var mode = "login"
   @State private var account = ""
   @State private var email = ""
@@ -79,9 +82,9 @@ struct LoginView: View {
   private let master = true
   private var proof: [String: String] { ["captchaId": captcha?.id ?? "", "captchaCode": human] }
   var body: some View {
+    GeometryReader { geometry in
     ScrollView {
       VStack(alignment: .leading, spacing: 20) {
-        HStack { Spacer(); NavigationLink { LanguageSettingsView() } label: { Label(L10n.text("语言"), systemImage: "character.bubble") } }
         Image("brand-logo").resizable().scaledToFit().frame(width: 52, height: 52)
           .accessibilityHidden(true)
         Text(L10n.lookup(L10n.text("问玄东方 · ") + (master ? L10n.text("师傅工作台") : L10n.text("与美好相遇")))).font(.subheadline).foregroundStyle(
@@ -97,16 +100,21 @@ struct LoginView: View {
         Group {
           if mode == "login" {
             TextField(L10n.text("邮箱／用户名"), text: $account).textContentType(.username)
+              .focused($focusedField, equals: .account)
           } else {
             TextField(L10n.text("邮箱"), text: $email).keyboardType(.emailAddress).textContentType(.emailAddress)
+              .focused($focusedField, equals: .email)
           }
           if mode == "register" {
             TextField(L10n.text("用户名（4–32 位字母、数字或下划线）"), text: $username).textContentType(.username)
+              .focused($focusedField, equals: .username)
           }
           SecureField(L10n.lookup(mode == "reset" ? L10n.text("新密码（至少 12 个字符）") : L10n.text("密码")), text: $password).textContentType(
             mode == "login" ? .password : .newPassword)
+            .focused($focusedField, equals: .password)
           HStack {
             TextField(L10n.text("图片验证码"), text: $human).keyboardType(.numberPad).accessibilityLabel(L10n.text("图片验证码"))
+              .focused($focusedField, equals: .captcha)
             Button {
               Task { await reloadCaptcha() }
             } label: {
@@ -122,6 +130,7 @@ struct LoginView: View {
           if mode != "login" {
             HStack {
               TextField(L10n.text("邮箱验证码"), text: $code).keyboardType(.numberPad).textContentType(.oneTimeCode)
+                .focused($focusedField, equals: .emailCode)
               TimelineView(.periodic(from: .now, by: 1)) { context in
                 let seconds = max(0, Int(ceil(retryAt.timeIntervalSince(context.date))))
                 Button(L10n.lookup(seconds > 0 ? L10n.text("\(seconds) 秒后重发") : L10n.text("发送验证码"))) { Task { await sendCode() } }
@@ -159,15 +168,24 @@ struct LoginView: View {
           }.frame(minHeight: 44)
         }.buttonStyle(.borderedProminent).disabled(
           busy || captcha == nil || (mode != "login" && options?.emailEnabled != true))
+          .accessibilityIdentifier("login-submit")
         Button(L10n.lookup(mode == "login" ? L10n.text("忘记密码") : L10n.text("返回登录"))) { mode = mode == "login" ? "reset" : "login" }
           .frame(minHeight: 44).disabled(busy)
+          .accessibilityIdentifier("login-recovery")
         Button(L10n.text("寺院分配账号激活")) { mode = "activate" }.disabled(busy)
+          .accessibilityIdentifier("login-activation")
         Text(L10n.text("独立大师注册后申请平台认证；纳管大师使用寺院分配邮箱激活账号。")).font(.caption).foregroundStyle(.secondary)
-      }.padding(24).frame(maxWidth: 480).frame(maxWidth: .infinity)
+        Spacer(minLength: 12)
+        loginPreferences
+      }.padding(24).frame(maxWidth: 480)
+        .frame(minHeight: geometry.size.height, alignment: .top)
+        .frame(maxWidth: .infinity)
+    }.scrollDismissesKeyboard(.immediately)
     }.background(Color.bgPrimary).task {
       await loadOptions()
       await reloadCaptcha()
     }
+    .onDisappear { focusedField = nil }
     .onChange(of: mode) { _, _ in
       password = ""
       code = ""
@@ -186,6 +204,31 @@ struct LoginView: View {
         }.navigationTitle(L10n.lookup(legal ?? L10n.text("账户说明"))).toolbar { Button(L10n.text("完成")) { legal = nil } }
       }.appSheetSurface()
     }
+  }
+  private var loginPreferences: some View {
+    VStack(spacing: 12) {
+      Divider().overlay(Color.borderDivider)
+      NavigationLink { LanguageSettingsView() } label: {
+        HStack(spacing: 12) {
+          Label(L10n.text("语言"), systemImage: "character.bubble")
+          Spacer()
+          Text(verbatim: L10n.store.preference.title)
+          Image(systemName: "chevron.right").font(.caption)
+        }.frame(minHeight: 44)
+      }.accessibilityIdentifier("login-language")
+      NavigationLink { AppearanceSettingsView() } label: {
+        HStack(spacing: 12) {
+          Label(L10n.text("外观"), systemImage: "circle.lefthalf.filled")
+          Spacer()
+          Text(L10n.lookup((AppTheme(rawValue: themeValue) ?? .system).title))
+          Image(systemName: "chevron.right").font(.caption)
+        }.frame(minHeight: 44)
+      }.accessibilityIdentifier("login-appearance")
+    }
+    .font(AppTypography.body)
+    .foregroundStyle(Color.textSecondary)
+    .accessibilityElement(children: .contain)
+    .accessibilityIdentifier("login-preferences")
   }
   private func loadOptions() async {
     do {

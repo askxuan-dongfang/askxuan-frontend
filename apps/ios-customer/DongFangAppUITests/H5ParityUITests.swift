@@ -100,7 +100,7 @@ import XCTest
         app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8914/api/v1"
         app.launchArguments = ["--smoke-token", "local-points-fixture", "--smoke-user-id", "99026", "-tab", "0", "-askxuan.appearance", "light"]
         app.launch()
-        let entry = app.buttons["home-points"]
+        let entry = app.buttons["home-points-wheel"]
         XCTAssertTrue(entry.waitForExistence(timeout: 20))
         for _ in 0..<3 where !entry.isHittable { app.swipeUp() }
         capture(app, "ios-home-points-entry")
@@ -277,7 +277,7 @@ final class NativeDiscoveryRefinementUITests: XCTestCase {
     private func launch(_ arguments: [String] = [], appearance: String = "light") -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
-        app.launchArguments = ["-askxuan.appearance", appearance] + arguments
+        app.launchArguments = ["-askxuan.language", "zh-Hans", "-askxuan.appearance", appearance, "-tab", "0"] + arguments
         app.launch()
         return app
     }
@@ -356,27 +356,81 @@ final class NativeDiscoveryRefinementUITests: XCTestCase {
             ("dark", "UICTContentSizeCategoryAccessibilityXXXL")
         ] {
             let app = launch(["-UIPreferredContentSizeCategoryName", textSize], appearance: appearance)
-            let cards = ["home-temples", "home-masters", "home-diy", "home-points"].map { app.buttons[$0] }
+            let cards = ["home-temples", "home-masters"].map { app.buttons[$0] }
             XCTAssertTrue(cards[0].waitForExistence(timeout: 20))
             let frames = cards.map(\.frame)
             for frame in frames {
                 XCTAssertEqual(frame.width, frames[0].width, accuracy: 1)
                 XCTAssertEqual(frame.height, frames[0].height, accuracy: 1)
-                XCTAssertGreaterThanOrEqual(frame.height, 100)
+                XCTAssertGreaterThanOrEqual(frame.height, 140)
                 XCTAssertGreaterThanOrEqual(frame.minX, 0)
                 XCTAssertLessThanOrEqual(frame.maxX, app.frame.width)
             }
             XCTAssertEqual(frames[0].minY, frames[1].minY, accuracy: 1)
-            XCTAssertEqual(frames[2].minY, frames[3].minY, accuracy: 1)
-            XCTAssertGreaterThan(frames[2].minY, frames[0].maxY)
+            XCTAssertLessThan(frames[0].maxX, frames[1].minX, "寺庙在左，师傅在右")
+            XCTAssertFalse(app.staticTexts["信仰类别"].exists)
+            XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "home-belief-")).firstMatch.exists)
             capture(app, "ios-home-refined-" + appearance + "-" + textSize)
-            for _ in 0..<3 where !app.buttons["home-belief-folk"].isHittable { app.swipeUp() }
-            XCTAssertTrue(app.buttons["home-belief-folk"].exists, "All five public belief entries remain available")
-            let intention = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "home-intention-")).firstMatch
-            XCTAssertTrue(intention.exists)
+            let firstWish = app.buttons["home-intention-peace"]
+            XCTAssertTrue(firstWish.waitForExistence(timeout: 10))
+            reveal(firstWish, in: app)
+            let wishes = app.scrollViews["home-intention-entries"]
+            XCTAssertTrue(wishes.exists)
+            let lastWish = app.buttons["home-intention-rite"]
+            for _ in 0..<6 where !lastWish.isHittable { wishes.swipeLeft() }
+            XCTAssertTrue(lastWish.isHittable, "可横向滑动到第七项做法事")
+            XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "home-intention-")).count, 7)
+            XCTAssertFalse(app.buttons["home-intention-diy"].exists)
+            let diy = app.buttons["home-diy"]
+            reveal(diy, in: app)
+            XCTAssertGreaterThan(diy.frame.minY, lastWish.frame.maxY)
             capture(app, "ios-home-open-sections-" + appearance + "-" + textSize)
             app.terminate()
         }
+    }
+
+    func testHomePlazaTailAndPointsLinksOpenTheirOwnDestinations() {
+        // Synthetic localhost catalogue only; this does not publish designs or spend points.
+        let app = launch(["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99029"])
+        let firstDesign = app.buttons["home-diy-design-9001"]
+        XCTAssertTrue(firstDesign.waitForExistence(timeout: 20))
+        reveal(firstDesign, in: app)
+        let designs = app.scrollViews["home-diy-designs"]
+        XCTAssertTrue(designs.exists)
+        let plaza = app.buttons["home-diy-plaza"]
+        XCTAssertEqual(app.buttons.matching(identifier: "home-diy-plaza").count, 1)
+        for _ in 0..<6 where !plaza.isHittable { designs.swipeLeft() }
+        XCTAssertTrue(plaza.isHittable, "设计推荐末尾可进入完整广场")
+        XCTAssertGreaterThan(plaza.frame.minX, firstDesign.frame.maxX)
+        plaza.tap()
+        XCTAssertTrue(app.staticTexts["设计广场"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["diy-gallery-design-9001"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.descendants(matching: .any)["diy-home-intro"].exists, "广场入口直接展示作品")
+        app.buttons["返回"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["home-diy"].waitForExistence(timeout: 5), "从设计广场返回首页")
+
+        for (identifier, title, selectedMode) in [
+            ("home-points-wheel", "商城", "积分转盘"),
+            ("home-points-mall", "转盘", "积分商城"),
+            ("home-points-pool", "乐购", "奖池")
+        ] {
+            let entry = app.buttons[identifier]
+            XCTAssertTrue(entry.waitForExistence(timeout: 10))
+            reveal(entry, in: app)
+            XCTAssertTrue(entry.label.contains(title))
+            entry.tap()
+            let modes = app.segmentedControls["points-modes"]
+            XCTAssertTrue(modes.waitForExistence(timeout: 10))
+            XCTAssertTrue(modes.buttons[selectedMode].isSelected, "\(title) 应直接打开\(selectedMode)")
+            capture(app, "ios-home-" + identifier + "-destination")
+            app.navigationBars.buttons.firstMatch.tap()
+            XCTAssertTrue(app.buttons["home-diy"].waitForExistence(timeout: 5), "从积分中心返回首页")
+        }
+    }
+
+    private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
+        for _ in 0..<6 where !element.isHittable { app.swipeUp() }
+        XCTAssertTrue(element.isHittable)
     }
 }
 
@@ -559,20 +613,19 @@ final class NativeGrowthNavigationUITests: XCTestCase {
 }
 
 final class NativePublicSearchUITests: XCTestCase {
-    func testEqualHomeCardsAndCompletePublicSearch() {
+    func testHomeDirectoryEntriesAndCompletePublicSearch() {
         let app = XCUIApplication()
         app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
-        app.launchArguments = ["-askxuan.appearance", "light"]
+        app.launchArguments = ["-askxuan.language", "zh-Hans", "-askxuan.appearance", "light", "-tab", "0"]
         app.launch()
         let temples = app.buttons["home-temples"], masters = app.buttons["home-masters"]
-        let diy = app.buttons["home-diy"], points = app.buttons["home-points"]
         XCTAssertTrue(temples.waitForExistence(timeout: 20))
-        for card in [masters, diy, points] { XCTAssertTrue(card.exists); XCTAssertEqual(card.frame.size.width, temples.frame.width, accuracy: 1); XCTAssertEqual(card.frame.size.height, temples.frame.height, accuracy: 1) }
+        XCTAssertTrue(masters.exists)
+        XCTAssertEqual(masters.frame.width, temples.frame.width, accuracy: 1)
+        XCTAssertEqual(masters.frame.height, temples.frame.height, accuracy: 1)
         XCTAssertEqual(temples.frame.minY, masters.frame.minY, accuracy: 1)
-        XCTAssertEqual(diy.frame.minY, points.frame.minY, accuracy: 1)
-        XCTAssertGreaterThan(diy.frame.minY, temples.frame.maxY)
-        XCTAssertTrue((96...104).contains(temples.frame.height))
-        capture(app, "ios-home-equal-four-cards")
+        XCTAssertLessThan(temples.frame.maxX, masters.frame.minX)
+        capture(app, "ios-home-two-directory-entries")
         app.buttons["home-global-search"].tap()
         let input = app.textFields["global-search-input"]
         XCTAssertTrue(input.waitForExistence(timeout: 10))

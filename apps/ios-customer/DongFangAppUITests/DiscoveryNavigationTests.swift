@@ -3,7 +3,10 @@ import XCTest
 final class DiscoveryNavigationTests: XCTestCase {
     private func openApp(appearance: String = "light") -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-askxuan.appearance", appearance, "-tab", "0"]
+        if let apiURL = ProcessInfo.processInfo.environment["ASKXUAN_DIRECTORY_TEST_API_URL"] {
+            app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = apiURL
+        }
+        app.launchArguments = ["-askxuan.language", "zh-Hans", "-askxuan.appearance", appearance, "-tab", "0"]
         app.launch()
         return app
     }
@@ -36,16 +39,16 @@ final class DiscoveryNavigationTests: XCTestCase {
     }
     func testGuestCanEnterDiyEditor() {
         let app = openApp(appearance: "dark")
-        let diy = app.buttons["home-intention-diy"]
+        let diy = app.buttons["home-diy"]
         XCTAssertTrue(diy.waitForExistence(timeout: 25))
-        if !diy.isHittable { app.swipeUp() }
-        capture(app, "home-dark")
+        for _ in 0..<5 where !diy.isHittable { app.swipeUp() }
+        XCTAssertTrue(diy.isHittable)
         diy.tap()
-        let start = app.staticTexts["diy-start"]
-        XCTAssertTrue(start.waitForExistence(timeout: 10))
-        if !start.isHittable { app.swipeUp() }
-        start.tap()
-        XCTAssertTrue(app.buttons["diy-mode-2d"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["东方珠作"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.otherElements["diy-3d-stage"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.textFields["搜索材质或规格"].exists)
+        let material = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "小叶紫檀圆珠，")).firstMatch
+        XCTAssertTrue(material.waitForExistence(timeout: 20), "首页入口直接打开可选材料的设计编辑器")
         capture(app, "diy-editor-guest")
     }
     func testRootTabsRetainNativeNavigation() {

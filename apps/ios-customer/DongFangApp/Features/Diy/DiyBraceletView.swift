@@ -1,12 +1,17 @@
 import SwiftUI
 
 struct DiyBraceletView: View {
+    enum InitialSection { case workbench, plaza }
+
     @StateObject private var viewModel = DiyViewModel()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private let initialSection: InitialSection
+
+    init(initialSection: InitialSection = .workbench) { self.initialSection = initialSection }
 
     var body: some View {
         VStack(spacing: 0) {
-            DFTopNavBar("东方珠作", showsBackButton: true) { EmptyView() } trailing: {
+            DFTopNavBar(initialSection == .plaza ? "设计广场" : "东方珠作", showsBackButton: true) { EmptyView() } trailing: {
                 NavigationLink { DiyMyDesignsView().requireAuth(title: L10n.text("登录后查看我的设计"), subtitle: L10n.text("登录后同步和管理你的手串设计")) } label: {
                     Image(systemName: "square.stack").frame(width: 44, height: 44)
                 }
@@ -15,18 +20,20 @@ struct DiyBraceletView: View {
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 22) {
-                        workbench
-                        HStack(spacing: 12) {
-                            NavigationLink { DiyMyDesignsView().requireAuth(title: L10n.text("登录后查看我的设计"), subtitle: L10n.text("登录后同步和管理你的手串设计")) } label: {
-                                quickItem(title: L10n.text("我的设计"), subtitle: L10n.text("保存每一次灵感"), icon: "square.stack")
+                        if initialSection == .workbench {
+                            workbench
+                            HStack(spacing: 12) {
+                                NavigationLink { DiyMyDesignsView().requireAuth(title: L10n.text("登录后查看我的设计"), subtitle: L10n.text("登录后同步和管理你的手串设计")) } label: {
+                                    quickItem(title: L10n.text("我的设计"), subtitle: L10n.text("保存每一次灵感"), icon: "square.stack")
+                                }
+                                Button {
+                                    AppMotion.perform(AppMotion.reveal) { proxy.scrollTo("inspiration", anchor: .top) }
+                                } label: {
+                                    quickItem(title: L10n.text("灵感广场"), subtitle: L10n.text("发现心仪的搭配"), icon: "sparkles")
+                                }
                             }
-                            Button {
-                                AppMotion.perform(AppMotion.reveal) { proxy.scrollTo("inspiration", anchor: .top) }
-                            } label: {
-                                quickItem(title: L10n.text("灵感广场"), subtitle: L10n.text("发现心仪的搭配"), icon: "sparkles")
-                            }
+                            .buttonStyle(DiyPressButtonStyle())
                         }
-                        .buttonStyle(DiyPressButtonStyle())
                         inspirationSection.id("inspiration")
                         if let error = viewModel.errorMessage {
                             VStack(spacing: 10) {

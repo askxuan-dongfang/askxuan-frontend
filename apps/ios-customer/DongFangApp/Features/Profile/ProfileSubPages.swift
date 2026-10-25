@@ -1187,9 +1187,10 @@ struct PointsRulesSheet: View {
 struct PointsView: View {
     @EnvironmentObject private var auth: AuthStore
     @State private var balance: Int64?
-    @State private var mode = 0
+    @State private var mode: Int
     @State private var showRules = false
     @State private var history: Int?
+    init(initialMode: Int = 0) { _mode = State(initialValue: (0...2).contains(initialMode) ? initialMode : 0) }
     var body: some View {
         VStack(spacing: 0) {
             PointsWalletCard(balance: balance) { showRules = true }.padding(.horizontal, 16).padding(.top, 12)

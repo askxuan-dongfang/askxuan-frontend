@@ -2,8 +2,7 @@
 //  HomeViewModel.swift
 //  DongFangApp
 //
-//  首页 ViewModel：加载热门寺院 / 热门法师，提供信仰与意图聚合入口。
-//  Banner 使用本地应用资源。
+//  首页 ViewModel：加载广告、心愿、公开设计以及热门寺院 / 师傅。
 //
 
 import SwiftUI
@@ -17,10 +16,13 @@ final class HomeViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
 
-    @Published var beliefEntries: [BeliefEntry] = []
     @Published var intentionEntries: [IntentionEntry] = []
+    @Published private(set) var featuredDesigns: [DiyDesign] = []
+    @Published private(set) var isLoadingDesigns = true
+    @Published private(set) var designsErrorMessage: String?
 
     private let apiClient: APIClient
+    private var designsGeneration = UUID()
 
     init(apiClient: APIClient = .shared) {
         self.apiClient = apiClient
@@ -33,10 +35,10 @@ final class HomeViewModel: ObservableObject {
         async let promotionsResult: [HomePromotion] = fetchPromotions()
         async let templesResult: Result<[Temple], Error> = fetchTemples()
         async let mastersResult: Result<[Master], Error> = fetchMasters()
-        async let beliefsResult: Result<[BeliefEntry], Error> = fetchBeliefs()
         async let intentionsResult: Result<[IntentionEntry], Error> = fetchIntentions()
+        async let designsLoad: Void = loadFeaturedDesigns()
 
-        let (templesRes, mastersRes, beliefsRes, intentionsRes) = await (templesResult, mastersResult, beliefsResult, intentionsResult)
+        let (templesRes, mastersRes, intentionsRes) = await (templesResult, mastersResult, intentionsResult)
 
         switch templesRes {
         case .success(let list):
@@ -54,22 +56,33 @@ final class HomeViewModel: ObservableObject {
             if self.errorMessage == nil { self.errorMessage = error.localizedDescription }
         }
 
-        switch beliefsRes {
-        case .success(let list): beliefEntries = list
-        case .failure(let error):
-            beliefEntries = []
-            if errorMessage == nil { errorMessage = error.localizedDescription }
-        }
-
         switch intentionsRes {
-        case .success(let list): intentionEntries = Array((list.filter { $0.landingType == "diy" } + list.filter { $0.landingType != "diy" }).prefix(8))
+        case .success(let list): intentionEntries = list.filter { $0.landingType != "diy" }
         case .failure(let error):
             intentionEntries = []
             if errorMessage == nil { errorMessage = error.localizedDescription }
         }
 
         banners = await promotionsResult
+        await designsLoad
         isLoading = false
+    }
+
+    func loadFeaturedDesigns() async {
+        let generation = UUID()
+        designsGeneration = generation
+        isLoadingDesigns = true
+        designsErrorMessage = nil
+        do {
+            let response: PageResponse<DiyDesign> = try await apiClient.request(.diyDesigns(page: 1, size: 20))
+            guard designsGeneration == generation else { return }
+            featuredDesigns = Array(response.list.filter { $0.status == "public" }.prefix(4))
+        } catch {
+            guard designsGeneration == generation else { return }
+            featuredDesigns = []
+            designsErrorMessage = error.localizedDescription
+        }
+        isLoadingDesigns = false
     }
 
     private func fetchPromotions() async -> [HomePromotion] {
@@ -94,15 +107,6 @@ final class HomeViewModel: ObservableObject {
             let resp: PageResponse<Master> = try await apiClient.request(
                 .masters(type: nil, templeId: nil, manageBy: "platform", serviceCode: nil, page: 1, size: 6))
             return .success(resp.list)
-        } catch {
-            return .failure(error)
-        }
-    }
-
-    private func fetchBeliefs() async -> Result<[BeliefEntry], Error> {
-        do {
-            let response: BeliefListResponse = try await apiClient.request(.beliefs)
-            return .success(response.list.map(BeliefEntry.init))
         } catch {
             return .failure(error)
         }

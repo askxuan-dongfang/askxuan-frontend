@@ -17,7 +17,6 @@ function complete(){const next=typeof route.query.redirect==='string'?route.quer
 </script>
 <template>
   <div class="login">
-    <AppearanceSelector class="ax-appearance-login" />
     <div class="login__bg">
       <div class="login__orb login__orb--1"></div>
       <div class="login__orb login__orb--2"></div>
@@ -33,14 +32,18 @@ function complete(){const next=typeof route.query.redirect==='string'?route.quer
 
       <AccountLogin :login="login" @success="complete" />
     </div>
+    <footer class="login__preferences"><AppearanceSelector class="ax-appearance-login" /></footer>
   </div>
 </template>
 <style scoped>
 .login {
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 24px;
+  box-sizing: border-box;
+  padding: max(40px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px));
   min-height: 100dvh;
   overflow-x: hidden;
   background: var(--color-bg-primary);
@@ -80,9 +83,9 @@ function complete(){const next=typeof route.query.redirect==='string'?route.quer
 .login__panel {
   position: relative;
   z-index: 1;
-  width: min(400px, calc(100vw - 48px));
+  width: min(400px, 100%);
   box-sizing: border-box;
-  margin: 40px 0;
+  margin: auto 0;
   padding: 44px 40px 36px;
   background: rgba(var(--admin-surface-rgb), 0.92);
   backdrop-filter: blur(12px);
@@ -126,5 +129,10 @@ function complete(){const next=typeof route.query.redirect==='string'?route.quer
   text-align: center;
   font-size: var(--type-size-caption);
   color: var(--color-text-tertiary);
+}
+.login__preferences {
+  position: relative;
+  z-index: 1;
+  width: min(400px, 100%);
 }
 </style>

@@ -1202,7 +1202,7 @@ code, pre { font-family: var(--font-mono); }
 .ax-appearance>svg{flex:none;color:var(--admin-accent)}
 .ax-appearance select{min-width:72px;min-height:34px;max-width:104px;padding:4px 18px 4px 3px;border:0;border-radius:6px;background:var(--admin-surface);color:var(--admin-text);font:inherit;cursor:pointer;color-scheme:inherit}
 .ax-appearance select:focus-visible{outline:2px solid var(--admin-primary);outline-offset:1px}
-.ax-appearance-login{position:fixed;top:20px;right:24px;z-index:5}
+.ax-appearance-login{position:relative;z-index:1;width:100%}
 .el-loading-mask{background:var(--el-mask-color)}
 .el-popper.is-dark,.el-popper.is-dark>.el-popper__arrow::before{color:var(--admin-text);background:var(--admin-surface-hover);border-color:var(--admin-border-strong)}
 .el-menu--popup{background:var(--admin-surface)}
@@ -1210,7 +1210,7 @@ code, pre { font-family: var(--font-mono); }
 .el-menu--popup .el-menu-item:hover,.el-menu--popup .el-sub-menu__title:hover{color:var(--admin-primary);background:var(--admin-surface-hover)}
 .el-menu--popup .el-menu-item.is-active{color:var(--admin-primary)}
 .el-button--primary:not(.is-link):not(.is-text):not(.is-plain){color:var(--color-text-on-brand,#fff)}
-@media(max-width:767px){.ax-appearance>span{display:none}.ax-appearance{gap:4px;padding-left:7px}.ax-appearance-login{top:14px;right:14px}}
+@media(max-width:767px){.ax-appearance>span{display:none}.ax-appearance{gap:4px;padding-left:7px}}
 
 /* Quiet paper surfaces, warm metal details, and clear interactive hierarchy. */
 html:root {
@@ -1365,7 +1365,10 @@ select:focus-visible { outline: 2px solid var(--admin-primary); outline-offset: 
   .el-dialog__headerbtn, .el-message-box__headerbtn, .el-drawer__close-btn { min-width: 44px; min-height: 44px; }
 }
 
-.ax-preferences{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}.ax-preferences.ax-appearance-login{max-width:calc(100vw - 28px);justify-content:flex-end}
+.ax-preferences{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}.ax-preferences.ax-appearance-login{max-width:100%;justify-content:center}
+.ax-appearance-login .ax-appearance{flex:1 1 180px;justify-content:space-between;min-width:0}
+.ax-appearance-login .ax-appearance>span{display:inline}
+.ax-appearance-login .ax-appearance select{min-height:44px}
 
 /* Header preferences share a dedicated row on narrow screens. Keep both native
    selects and the account menu available without growing outside the header. */
