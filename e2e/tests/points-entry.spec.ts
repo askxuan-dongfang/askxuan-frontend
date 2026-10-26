@@ -1,7 +1,15 @@
 import { test, expect, type Page } from '@playwright/test';
 
 type SessionFixture = { token?: string | null; userId?: number | null; role?: string; language?: string; theme?: string };
-const pointsEntry = (page: Page) => page.locator('.home-core-points');
+const pointModes = [
+  { tab: 'wheel', label: '商城', traditionalLabel: '商城', detail: '积分转盘', traditionalDetail: '積分轉盤' },
+  { tab: 'mall', label: '转盘', traditionalLabel: '轉盤', detail: '积分商城', traditionalDetail: '積分商城' },
+  { tab: 'pool', label: '乐购', traditionalLabel: '樂購', detail: '奖池', traditionalDetail: '獎池' },
+] as const;
+type PointTab = typeof pointModes[number]['tab'];
+const pointsEntry = (page: Page, tab: PointTab = 'wheel') => page.locator(`.home-points-card[href="/c/points?tab=${tab}"]`);
+const pointsTarget = (tab: PointTab) => `/c/points?tab=${tab}`;
+const loginTarget = (tab: PointTab) => '/c/login?redirect=' + encodeURIComponent(pointsTarget(tab));
 const isPointsAccount = (url: string) => new URL(url).pathname === '/api/v1/points';
 
 async function setup(page: Page, options: SessionFixture = {}) {
@@ -14,6 +22,9 @@ async function setup(page: Page, options: SessionFixture = {}) {
       localStorage.setItem('h5-auth', JSON.stringify({ state: { token: options.token, role: options.role || 'customer', userId: options.userId === undefined ? 99026 : options.userId }, version: 0 }));
     }
   }, options);
+  await page.route('**/fixture-home-banner.svg', route => route.fulfill({
+    contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="240"><rect width="600" height="240" fill="#674b37"/></svg>',
+  }));
   await page.route('**/api/v1/**', async route => {
     const path = new URL(route.request().url()).pathname;
     let data: unknown = [];
@@ -30,10 +41,12 @@ async function setup(page: Page, options: SessionFixture = {}) {
       { code: 'wealth', name: '求财运', landingType: 'aggregate' },
       { code: 'love', name: '求姻缘', landingType: 'aggregate' },
       { code: 'career', name: '事业发展', landingType: 'aggregate' },
-      { code: 'health', name: '身体健康', landingType: 'aggregate' },
-      { code: 'wisdom', name: '开启智慧', landingType: 'aggregate' },
+      { code: 'study', name: '求学业', landingType: 'aggregate' },
+      { code: 'taisui', name: '化太岁', landingType: 'aggregate' },
       { code: 'rite', name: '仪式服务', landingType: 'service' },
     ] };
+    if (path.endsWith('/marketing/banners')) data = { total: 1, list: [{ id: 1, title: '首页活动', placement: 'customer_home', imageUrl: '/fixture-home-banner.svg', linkType: 'diy', linkValue: '', sort: 1, status: 'enabled', startTime: '', endTime: '' }] };
+    if (path.endsWith('/diy/designs')) data = { total: 0, list: [], page: 1, size: 20 };
     if (path.endsWith('/auth/options')) data = { emailEnabled: true, agreementVersion: 'test' };
     if (path.endsWith('/auth/captcha')) data = { id: 'local-fixture', image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E', expiresIn: 300 };
     if (path.endsWith('/auth/login')) data = { accessToken: 'local-only', refreshToken: 'local-refresh', userInfo: { userId: 99026, nickname: '测试' } };
@@ -50,18 +63,19 @@ async function login(page: Page) {
   await page.locator('.account-submit').click();
 }
 
-async function assertCoreGrid(page: Page, language: string) {
+async function assertHomeLayout(page: Page, language: string) {
+  const traditional = language === 'zh-Hant';
   const entries = page.locator('.home-core-entries > .home-core-entry');
-  await expect(entries).toHaveCount(4);
-  await expect(entries.locator('strong')).toHaveText(language === 'zh-Hant'
-    ? ['找寺院', '找師傅', 'DIY手串', '積分中心']
-    : ['找寺院', '找师傅', 'DIY手串', '积分中心']);
-  await expect(entries.locator('small, p')).toHaveCount(0);
-  await expect(page.locator('.home-points-entry, .home-points-balance, .home-directory')).toHaveCount(0);
-  await expect(entries.locator('.home-core-icon > svg')).toHaveCount(4);
+  await expect(entries).toHaveCount(2);
+  await expect(entries.locator('strong')).toHaveText(traditional ? ['找寺廟', '找師傅'] : ['找寺庙', '找师傅']);
+  await expect(entries.nth(0)).toHaveAttribute('href', '/c/temples');
+  await expect(entries.nth(1)).toHaveAttribute('href', '/c/masters');
+  await expect(entries.locator('.home-core-copy > span')).toHaveCount(2);
+  await expect(page.locator('.home-belief-card, .home-belief-grid, .home-points-entry, .home-points-balance, .home-directory')).toHaveCount(0);
+  await expect(entries.locator('.home-core-icon > svg')).toHaveCount(2);
   const patterns = entries.locator('svg.home-core-pattern');
-  await expect(patterns).toHaveCount(4);
-  for (let index = 0; index < 4; index++) {
+  await expect(patterns).toHaveCount(2);
+  for (let index = 0; index < 2; index++) {
     await expect(patterns.nth(index)).toHaveAttribute('aria-hidden', 'true');
     await expect(patterns.nth(index)).toHaveAttribute('focusable', 'false');
     await expect(patterns.nth(index)).toHaveCSS('pointer-events', 'none');
@@ -69,104 +83,182 @@ async function assertCoreGrid(page: Page, language: string) {
   const cards = await entries.evaluateAll(elements => elements.map(element => {
     const rect = element.getBoundingClientRect();
     const label = element.querySelector('strong')!.getBoundingClientRect();
-    const pattern = element.querySelector('svg.home-core-pattern')!;
     const icon = element.querySelector('.home-core-icon > svg')!.getBoundingClientRect();
-    const labelStyle = getComputedStyle(element.querySelector('strong')!);
+    const pattern = element.querySelector('svg.home-core-pattern')!;
     const style = getComputedStyle(element);
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right,
-      labelX: label.x, labelFits: label.left >= rect.left && label.right <= rect.right && label.top >= rect.top && label.bottom <= rect.bottom,
+      labelCenter: label.x + label.width / 2, iconCenter: icon.x + icon.width / 2,
+      labelFits: label.left >= rect.left && label.right <= rect.right && label.top >= rect.top && label.bottom <= rect.bottom,
       pattern: pattern.innerHTML, opacity: Number(getComputedStyle(pattern).opacity), color: style.color, background: style.backgroundColor,
-      iconSize: icon.width, labelSize: parseFloat(labelStyle.fontSize), font: labelStyle.fontFamily };
+      iconSize: icon.width, font: getComputedStyle(element.querySelector('strong')!).fontFamily };
   }));
-  expect(new Set(cards.map(card => card.pattern)).size).toBe(4);
+  expect(new Set(cards.map(card => card.pattern)).size).toBe(2);
   for (const card of cards) {
     expect(Math.abs(card.width - cards[0].width)).toBeLessThan(1);
     expect(Math.abs(card.height - cards[0].height)).toBeLessThan(1);
-    expect(card.height).toBeGreaterThanOrEqual(96);
+    expect(card.height).toBeGreaterThanOrEqual(page.viewportSize()!.width < 360 ? 156 : 164);
     expect(card.x).toBeGreaterThanOrEqual(0);
     expect(card.right).toBeLessThanOrEqual(page.viewportSize()!.width);
     expect(card.labelFits).toBeTruthy();
+    expect(Math.abs(card.labelCenter - (card.x + card.width / 2))).toBeLessThan(1);
+    expect(Math.abs(card.iconCenter - (card.x + card.width / 2))).toBeLessThan(1);
     expect(card.opacity).toBeGreaterThan(0);
     expect(card.opacity).toBeLessThan(0.25);
-    expect(card.background).toBe('rgba(0, 0, 0, 0)');
+    expect(card.background).not.toBe('rgba(0, 0, 0, 0)');
     expect(card.color).toBe(cards[0].color);
-    expect(card.iconSize).toBe(32);
-    expect(card.labelSize).toBe(18);
-  }
-  await expect(page.locator('.home-belief-copy strong')).toHaveCount(5);
-  await expect(page.locator('.home-belief-grid, .home-wishes')).toHaveCount(2);
-  const typography = await page.locator('.home-discovery-section').first().evaluate(element => ({
-    heading: getComputedStyle(element.querySelector('h2')!).fontFamily,
-    title: getComputedStyle(element.querySelector('.home-belief-copy strong')!).fontFamily,
-    description: getComputedStyle(element.querySelector('.home-belief-copy > span')!).fontFamily,
-  }));
-  expect(cards[0].font).toBe(typography.heading);
-  expect(typography.title).toBe(typography.heading);
-  expect(typography.description).toBe(typography.heading);
-  const alignment = await page.locator('.customer-home').evaluate(element => {
-    const beliefs = [...element.querySelectorAll('.home-belief-card')];
-    const heading = element.querySelector('.home-discovery-section h2')!.getBoundingClientRect();
-    const wishes = [...element.querySelectorAll('.home-intent')];
-    return {
-      headingX: heading.x,
-      beliefTitles: beliefs.map(belief => belief.querySelector('strong')!.getBoundingClientRect().x),
-      beliefRight: beliefs.map(belief => belief.getBoundingClientRect().right),
-      lastSealRight: beliefs.at(-1)!.querySelector('.home-belief-seal')!.getBoundingClientRect().right,
-      sealVisible: getComputedStyle(beliefs.at(-1)!.querySelector('.home-belief-seal')!).display !== 'none',
-      wishX: wishes[0].getBoundingClientRect().x,
-      verticalBorders: [...beliefs, ...wishes].map(item => ({
-        left: getComputedStyle(item).borderLeftWidth, right: getComputedStyle(item).borderRightWidth,
-      })),
-    };
-  });
-  expect(Math.abs(cards[0].labelX - alignment.headingX)).toBeLessThan(1);
-  expect(Math.abs(cards[0].labelX - alignment.beliefTitles[0])).toBeLessThan(1);
-  expect(Math.abs(cards[1].labelX - alignment.beliefTitles[1])).toBeLessThan(1);
-  expect(Math.abs(cards[0].labelX - alignment.beliefTitles[4])).toBeLessThan(1);
-  expect(Math.abs(cards[0].labelX - alignment.wishX)).toBeLessThan(1);
-  expect(Math.abs(alignment.beliefRight[1] - alignment.beliefRight[4])).toBeLessThan(1);
-  if (alignment.sealVisible) {
-    expect(Math.abs(alignment.lastSealRight - alignment.beliefRight[4])).toBeLessThan(1);
-  }
-  for (const border of alignment.verticalBorders) {
-    expect(border).toEqual({ left: '0px', right: '0px' });
-  }
-  for (const section of await page.locator('.home-belief-grid, .home-wishes').all()) {
-    await expect(section).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-    await expect(section).toHaveCSS('border-top-width', '0px');
-    await expect(section).toHaveCSS('border-radius', '0px');
-  }
-  for (const entry of await page.locator('.home-intent, .home-ritual-entry').all()) {
-    expect(await entry.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBeTruthy();
+    expect(card.iconSize).toBe(36);
   }
   expect(Math.abs(cards[0].y - cards[1].y)).toBeLessThan(1);
-  expect(Math.abs(cards[2].y - cards[3].y)).toBeLessThan(1);
-  expect(Math.abs(cards[0].x - cards[2].x)).toBeLessThan(1);
-  expect(Math.abs(cards[1].x - cards[3].x)).toBeLessThan(1);
-  expect(cards[1].x).toBeGreaterThan(cards[0].right);
-  expect(cards[2].y).toBeGreaterThan(cards[0].y + cards[0].height);
+  expect(cards[1].x - cards[0].right).toBeCloseTo(12, 0);
+
+  const wishes = page.locator('.home-wishes > .home-intent');
+  await expect(wishes).toHaveCount(7);
+  expect(await wishes.evaluateAll(elements => elements.map(element => element.getAttribute('href')))).toEqual(
+    ['peace', 'wealth', 'love', 'career', 'study', 'taisui', 'rite'].map(code => '/c/intentions/' + code));
+  await expect(page.locator('.home-wishes')).toHaveCSS('overflow-x', 'auto');
+  const wishRail = await page.locator('.home-wishes').evaluate(element => {
+    const cards = [...element.children].map(child => child.getBoundingClientRect());
+    return { display: getComputedStyle(element).display, firstTop: cards[0].top, lastTop: cards.at(-1)!.top, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
+  });
+  expect(wishRail.display).toBe('flex');
+  expect(wishRail.firstTop).toBeCloseTo(wishRail.lastTop, 0);
+  // Narrow screens expose the remaining wishes by scrolling; wide screens may fit all seven.
+  if (page.viewportSize()!.width < 768) expect(wishRail.scrollWidth).toBeGreaterThan(wishRail.clientWidth);
+
+  const diy = page.locator('.home-diy-entry');
+  await expect(diy).toHaveAttribute('href', '/c/diy/editor');
+  await expect(diy.locator('strong')).toHaveText(traditional ? '開始設計' : '开始设计');
+  await expect(diy.locator('.home-diy-reward')).toHaveText(traditional ? '創作返利' : '创作返利');
+  await expect(page.locator('.home-designs')).toHaveAttribute('aria-busy', 'false');
+  await expect(page.locator('.home-design-example')).toHaveCount(4);
+  await expect(page.locator('.home-plaza-example-label')).toHaveText('示例');
+  await expect(page.locator('.home-plaza-heading a')).toHaveCount(0);
+  const more = page.locator('.home-design-more');
+  await expect(more).toHaveCount(1);
+  await expect(more).toHaveAttribute('href', '/c/diy?tab=plaza');
+  await expect(more).toHaveText(traditional ? '逛設計廣場' : '逛设计广场');
+  await expect(page.locator('.home-designs > :last-child')).toHaveClass(/home-design-more/);
+  for (const preview of await page.locator('.home-design-example').all()) {
+    await expect(preview).not.toHaveAttribute('href');
+    expect(await preview.innerText()).toBe('');
+    const rect = (await preview.boundingBox())!;
+    expect(rect.width).toBeCloseTo(104, 0);
+    expect(rect.height).toBeCloseTo(104, 0);
+  }
+
+  const pointCards = page.locator('.home-points-grid > .home-points-card');
+  await expect(pointCards).toHaveCount(3);
+  for (const [index, mode] of pointModes.entries()) {
+    await expect(pointCards.nth(index)).toHaveAttribute('href', pointsTarget(mode.tab));
+    await expect(pointCards.nth(index)).toHaveAttribute('aria-label', `${traditional ? mode.traditionalLabel : mode.label} · ${traditional ? mode.traditionalDetail : mode.detail}`);
+    await expect(pointCards.nth(index).locator('strong')).toHaveText(traditional ? mode.traditionalLabel : mode.label);
+  }
+
+  await expect(page.locator('.home-promotions-window')).toBeVisible();
+  const layout = await page.locator('.customer-home').evaluate(element => {
+    const sections = [...element.querySelectorAll(':scope > .home-discovery-section')];
+    const core = element.querySelector('.home-core-entries')!.getBoundingClientRect();
+    const banner = element.querySelector('.home-promotions-window')!.getBoundingClientRect();
+    const wishes = element.querySelector('.home-wishes')!.getBoundingClientRect();
+    const diy = element.querySelector('.home-diy-entry')!.getBoundingClientRect();
+    const points = element.querySelector('.home-points-grid')!.getBoundingClientRect();
+    return {
+      ids: sections.map(section => section.getAttribute('aria-labelledby')),
+      bounds: [banner, ...sections.map(section => section.getBoundingClientRect()), wishes, diy, points].map(rect => ({ left: rect.left, right: rect.right })),
+      left: core.left, right: core.right, bannerBottom: banner.bottom, coreTop: core.top,
+      headingFont: getComputedStyle(sections[0].querySelector('h2')!).fontFamily,
+      surfaces: [...element.querySelectorAll('.home-core-entry, .home-intent, .home-diy-entry, .home-design, .home-design-more, .home-points-card')].map(item => {
+        const style = getComputedStyle(item);
+        return { radius: style.borderRadius, left: style.borderLeftWidth, right: style.borderRightWidth };
+      }),
+    };
+  });
+  expect(layout.ids).toEqual(['home-intents-title', 'home-diy-title', 'home-points-title', 'home-temples-title', 'home-masters-title']);
+  expect(layout.bannerBottom).toBeLessThanOrEqual(layout.coreTop);
+  for (const bounds of layout.bounds) {
+    expect(Math.abs(bounds.left - layout.left)).toBeLessThan(1);
+    expect(Math.abs(bounds.right - layout.right)).toBeLessThan(1);
+  }
+  expect(cards[0].font).toBe(layout.headingFont);
+  for (const surface of layout.surfaces) expect(surface).toEqual({ radius: '12px', left: '1px', right: '1px' });
+  for (const entry of await wishes.all()) expect(await entry.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBeTruthy();
+  await more.scrollIntoViewIfNeeded();
+  const designRail = await page.locator('.home-designs').evaluate(element => {
+    const rail = element.getBoundingClientRect(), first = element.firstElementChild!.getBoundingClientRect(), last = element.lastElementChild!.getBoundingClientRect();
+    return { display: getComputedStyle(element).display, scrollLeft: element.scrollLeft, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth, firstTop: first.top, lastTop: last.top, tailLeft: last.left, tailRight: last.right, left: rail.left, right: rail.right };
+  });
+  expect(designRail.display).toBe('flex');
+  expect(designRail.firstTop).toBeCloseTo(designRail.lastTop, 0);
+  expect(designRail.tailLeft).toBeGreaterThanOrEqual(designRail.left - 1);
+  expect(designRail.tailRight).toBeLessThanOrEqual(designRail.right + 1);
+  if (designRail.scrollWidth > designRail.clientWidth + 1) expect(designRail.scrollLeft).toBeGreaterThan(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 }
 
-for (const theme of ['light', 'dark']) for (const language of ['zh-Hans', 'zh-Hant']) for (const width of [320, 390, 509]) {
-  test(`four equal patterned entries and guest redirect ${theme} ${language} ${width}`, async ({ page }) => {
+for (const theme of ['light', 'dark']) for (const language of ['zh-Hans', 'zh-Hant']) for (const width of [320, 390, 509, 768]) {
+  test(`confirmed homepage structure and guest redirect ${theme} ${language} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 954 });
     await setup(page, { theme, language });
     let accountRequests = 0;
     page.on('request', request => { if (isPointsAccount(request.url())) accountRequests++; });
     await page.goto('/c');
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
-    await assertCoreGrid(page, language);
-    const entry = pointsEntry(page);
-    await expect(entry).toHaveAttribute('aria-label', language === 'zh-Hans' ? '登录查看积分中心' : '登錄查看積分中心');
-    await expect(entry).toHaveAttribute('href', '/c/login?redirect=%2Fc%2Fpoints');
+    await assertHomeLayout(page, language);
     expect(accountRequests).toBe(0);
-    await entry.click();
-    await expect(page).toHaveURL(/\/c\/login\?redirect=%2Fc%2Fpoints$/);
+    await pointsEntry(page).click();
+    await expect(page).toHaveURL(new RegExp('/c/login\\?redirect=' + encodeURIComponent(pointsTarget('wheel')) + '$'));
     await expect(page.locator('.account-submit')).toBeVisible();
     expect(accountRequests).toBe(0);
   });
 }
+
+function designFixture(id: number, status = 'public') {
+  return { id, name: `公开作品${id}`, status, userId: '99026', designData: JSON.stringify({ version: 1, wristSizeMm: 160,
+    beads: Array.from({ length: 18 }, (_, position) => ({ position, materialId: 1, materialName: '紫檀', spec: '10mm', unitPrice: 1, subtype: 'main_bead', diameterMm: 10, colorHex: '694834', materialType: 'wood', textureKey: 'wood_grain', shape: 'round' })) }) };
+}
+
+test('homepage previews only four public designs without metadata and keeps one plaza destination', async ({ page }) => {
+  await setup(page);
+  const list = [designFixture(9000, 'private'), ...[9001, 9002, 9003, 9004, 9005].map(id => designFixture(id)), designFixture(9006, 'withdrawn')];
+  await page.route('**/api/v1/diy/designs**', route => route.fulfill({ json: { code: 0, data: { total: list.length, list } } }));
+  await page.goto('/c');
+  const designs = page.locator('.home-designs > a.home-design');
+  await expect(designs).toHaveCount(4);
+  expect(await designs.evaluateAll(elements => elements.map(element => element.getAttribute('href')))).toEqual([9001, 9002, 9003, 9004].map(id => '/c/diy/' + id));
+  await expect(page.locator('.home-design-example, .home-plaza-example-label')).toHaveCount(0);
+  await expect(designs.locator('strong, small, p')).toHaveCount(0);
+  for (const [index, design] of (await designs.all()).entries()) {
+    await expect(design).toHaveAttribute('aria-label', `查看作品：公开作品${9001 + index}`);
+    expect(await design.innerText()).toBe('');
+    const rect = (await design.boundingBox())!;
+    expect(rect.width).toBeCloseTo(104, 0);
+    expect(rect.height).toBeCloseTo(104, 0);
+  }
+  const tail = page.locator('.home-design-more');
+  await expect(tail).toHaveCount(1);
+  await expect(page.locator('.home-diy-section a[href="/c/diy?tab=plaza"]')).toHaveCount(1);
+  await tail.click();
+  await expect(page).toHaveURL(/\/c\/diy\?tab=plaza$/);
+});
+
+test('homepage design failure keeps explicitly marked static examples and retries public data', async ({ page }) => {
+  await setup(page);
+  let failed = true;
+  await page.route('**/api/v1/diy/designs**', route => route.fulfill(failed
+    ? { status: 503, json: { code: 500, message: '暂时不可用' } }
+    : { json: { code: 0, data: { total: 1, list: [designFixture(9001)] } } }));
+  await page.goto('/c');
+  const gallery = page.locator('.home-diy-section');
+  await expect(gallery.getByRole('alert')).toContainText('广场作品暂时无法加载');
+  await expect(gallery.locator('.home-plaza-example-label')).toHaveText('示例');
+  await expect(gallery.locator('article.home-design-example')).toHaveCount(4);
+  await expect(gallery.locator('.home-design-example a, a.home-design')).toHaveCount(0);
+  failed = false;
+  await gallery.getByRole('button', { name: '重新加载', exact: true }).click();
+  await expect(gallery.locator('a.home-design')).toHaveCount(1);
+  await expect(gallery.locator('.home-design-example, .home-plaza-example-label')).toHaveCount(0);
+  await expect(gallery.getByRole('alert')).toHaveCount(0);
+});
 
 for (const outcome of [0, 871, 'failed'] as const) {
   test(`points center distinguishes pending and ${outcome}`, async ({ page }) => {
@@ -202,33 +294,37 @@ for (const outcome of [0, 871, 'failed'] as const) {
   });
 }
 
-test('signed-in customer goes directly from the home entry to points', async ({ page }) => {
-  await setup(page, { token: 'local-only' });
-  let accountRequests = 0;
-  page.on('request', request => { if (isPointsAccount(request.url())) accountRequests++; });
-  await page.goto('/c');
-  await expect(pointsEntry(page)).toHaveAttribute('href', '/c/points');
-  await expect(pointsEntry(page)).toHaveAttribute('aria-label', '进入积分中心');
-  expect(accountRequests).toBe(0);
-  await pointsEntry(page).click();
-  await expect(page).toHaveURL(/\/c\/points$/);
-  await expect(page.locator('.points-account-value')).toHaveText('0');
-  expect(accountRequests).toBeGreaterThan(0);
-});
+for (const mode of pointModes) {
+  test(`signed-in ${mode.label} entry opens ${mode.detail}`, async ({ page }) => {
+    await setup(page, { token: 'local-only' });
+    let accountRequests = 0;
+    page.on('request', request => { if (isPointsAccount(request.url())) accountRequests++; });
+    await page.goto('/c');
+    await expect(pointsEntry(page, mode.tab)).toHaveAttribute('href', pointsTarget(mode.tab));
+    expect(accountRequests).toBe(0);
+    await pointsEntry(page, mode.tab).click();
+    await expect(page).toHaveURL(new RegExp('/c/points\\?tab=' + mode.tab + '$'));
+    await expect(page.getByRole('tab', { name: mode.detail, exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('.points-account-value')).toHaveText('0');
+    expect(accountRequests).toBeGreaterThan(0);
+  });
 
-test('guest home points entry returns to the center after login', async ({ page }) => {
-  await setup(page);
-  let accountRequests = 0;
-  page.on('request', request => { if (isPointsAccount(request.url())) accountRequests++; });
-  await page.goto('/c');
-  await pointsEntry(page).click();
-  await expect(page).toHaveURL(/\/c\/login\?redirect=%2Fc%2Fpoints$/);
-  expect(accountRequests).toBe(0);
-  await login(page);
-  await expect(page).toHaveURL(/\/c\/points$/);
-  await expect(page.locator('.points-account-value')).toHaveText('0');
-  expect(accountRequests).toBeGreaterThan(0);
-});
+  test(`guest ${mode.label} entry preserves ${mode.detail} after login`, async ({ page }) => {
+    await setup(page);
+    let accountRequests = 0;
+    page.on('request', request => { if (isPointsAccount(request.url())) accountRequests++; });
+    await page.goto('/c');
+    await pointsEntry(page, mode.tab).click();
+    await expect(page).toHaveURL(new RegExp('/c/login\\?redirect=' + encodeURIComponent(pointsTarget(mode.tab)) + '$'));
+    await expect(page.locator('.account-submit')).toBeVisible();
+    expect(accountRequests).toBe(0);
+    await login(page);
+    await expect(page).toHaveURL(new RegExp('/c/points\\?tab=' + mode.tab + '$'));
+    await expect(page.getByRole('tab', { name: mode.detail, exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('.points-account-value')).toHaveText('0');
+    expect(accountRequests).toBeGreaterThan(0);
+  });
+}
 
 test('guest login returns to the selected points record without requesting an account first', async ({ page }) => {
   await setup(page);
@@ -259,45 +355,35 @@ for (const fixture of [
   });
 }
 
-test('mounted home entry follows account and guest changes without reading a balance', async ({ page }) => {
+test('home destinations remain stable through account changes and the points page guards guests', async ({ page }) => {
   await setup(page, { token: 'old-account' });
   let accountRequests = 0;
   page.on('request', request => { if (isPointsAccount(request.url())) accountRequests++; });
   await page.goto('/c');
-  const entry = pointsEntry(page);
-  await expect(entry).toHaveAttribute('href', '/c/points');
-  await page.evaluate(async () => {
-    // Vite test server module, sharing the mounted application's store.
-    const { useAuthStore } = await import('/src/stores/auth.ts');
-    localStorage.setItem('h5_token', 'new-account');
-    useAuthStore.setState({ userId: 99027, token: 'new-account', role: 'customer' });
-  });
-  await expect(entry).toHaveAttribute('href', '/c/points');
-  await expect(entry).toHaveAttribute('aria-label', '进入积分中心');
-  await page.evaluate(async () => {
-    const { useAuthStore } = await import('/src/stores/auth.ts');
-    useAuthStore.setState({ userId: undefined });
-  });
-  await expect(entry).toHaveAttribute('href', '/c/login?redirect=%2Fc%2Fpoints');
-  await page.evaluate(async () => {
-    const { useAuthStore } = await import('/src/stores/auth.ts');
-    useAuthStore.setState({ userId: 99027, role: 'master' });
-  });
-  await expect(entry).toHaveAttribute('href', '/c/login?redirect=%2Fc%2Fpoints');
-  await page.evaluate(async () => {
-    const { useAuthStore } = await import('/src/stores/auth.ts');
-    useAuthStore.setState({ role: 'customer' });
-  });
-  await expect(entry).toHaveAttribute('href', '/c/points');
-  await page.evaluate(async () => {
-    const { useAuthStore } = await import('/src/stores/auth.ts');
-    localStorage.removeItem('h5_token');
-    useAuthStore.setState({ token: null, userId: undefined, role: null });
-  });
-  await expect(entry).toHaveAttribute('href', '/c/login?redirect=%2Fc%2Fpoints');
-  await expect(entry).toHaveAttribute('aria-label', '登录查看积分中心');
-  await expect(entry.locator('strong')).toHaveText('积分中心');
+  for (const mode of pointModes) await expect(pointsEntry(page, mode.tab)).toHaveAttribute('href', pointsTarget(mode.tab));
+  for (const identity of [
+    { token: 'new-account', userId: 99027, role: 'customer' },
+    { token: 'new-account', userId: undefined, role: 'customer' },
+    { token: 'new-account', userId: 99027, role: 'master' },
+    { token: 'new-account', userId: 99027, role: 'customer' },
+    { token: null, userId: undefined, role: null },
+  ]) {
+    await page.evaluate(async identity => {
+      const { useAuthStore } = await import('/src/stores/auth.ts');
+      if (identity.token) localStorage.setItem('h5_token', identity.token);
+      else localStorage.removeItem('h5_token');
+      useAuthStore.setState(identity);
+    }, identity);
+    for (const mode of pointModes) {
+      await expect(pointsEntry(page, mode.tab)).toHaveAttribute('href', pointsTarget(mode.tab));
+      await expect(pointsEntry(page, mode.tab)).toHaveAttribute('aria-label', `${mode.label} · ${mode.detail}`);
+    }
+    expect(accountRequests).toBe(0);
+  }
   await expect(page).toHaveURL(/\/c$/);
+  await pointsEntry(page, 'mall').click();
+  await expect(page.locator('.account-submit')).toBeVisible();
+  expect(new URL(page.url()).pathname + new URL(page.url()).search).toBe(loginTarget('mall'));
   expect(accountRequests).toBe(0);
 });
 
