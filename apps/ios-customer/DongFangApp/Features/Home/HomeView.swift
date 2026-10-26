@@ -241,10 +241,6 @@ struct HomeView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var showsDesignExamples: Bool {
-        !viewModel.isLoadingDesigns && viewModel.featuredDesigns.isEmpty
-    }
-
     private var diySection: some View {
         VStack(alignment: .leading, spacing: sectionTitleSpacing) {
             Text(L10n.text("DIY 手串")).font(AppTypography.section).foregroundStyle(Color.textPrimary)
@@ -282,9 +278,6 @@ struct HomeView: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(L10n.text("广场精选")).font(AppTypography.body).foregroundStyle(Color.textPrimary)
-                if showsDesignExamples {
-                    Text(L10n.text("示例")).font(AppTypography.micro).foregroundStyle(Color.textSecondary)
-                }
                 Spacer(minLength: 0)
             }
             .padding(.top, 4)
@@ -304,15 +297,6 @@ struct HomeView: View {
                         .buttonStyle(CardPressButtonStyle())
                         .accessibilityLabel(Text(verbatim: design.name))
                         .accessibilityIdentifier("home-diy-design-\(design.id)")
-                    }
-                    if showsDesignExamples {
-                        ForEach(HomeDesignExample.samples) { example in
-                            designPreview(slots: example.slots)
-                                .accessibilityElement(children: .ignore)
-                                .accessibilityHidden(false)
-                                .accessibilityLabel(Text(L10n.text("设计案例") + " · " + L10n.lookup(example.name)))
-                                .accessibilityIdentifier("home-diy-example-" + example.id)
-                        }
                     }
                     NavigationLink { DiyBraceletView(initialSection: .plaza) } label: {
                         VStack(spacing: 10) {
@@ -834,32 +818,6 @@ private struct BeliefTopicView: View {
             }
             content()
         }.padding(.horizontal, 20)
-    }
-}
-
-/// Display-only colour studies; these carry no publication or order identity.
-private struct HomeDesignExample: Identifiable {
-    let id: String
-    let name: String
-    let slots: [DiyBeadSlot]
-
-    static let samples: [HomeDesignExample] = [
-        make(id: "wood", name: "木色留白", color: "694834", texture: "wood_grain", type: "wood", accent: "E4D8BE", accentTexture: "bodhi", accentType: "seed"),
-        make(id: "jade", name: "青玉映金", color: "83A89A", texture: "jade_cloud", type: "jade", accent: "B99760", accentTexture: "metal", accentType: "metal"),
-        make(id: "rose", name: "粉晶晨光", color: "D8B2B4", texture: "crystal", type: "crystal", accent: "E4D8BE", accentTexture: "bodhi", accentType: "seed"),
-        make(id: "obsidian", name: "墨曜微光", color: "292B2C", texture: "obsidian", type: "gemstone", accent: "B99760", accentTexture: "metal", accentType: "metal"),
-    ]
-
-    private static func make(id: String, name: String, color: String, texture: String, type: String, accent: String, accentTexture: String, accentType: String) -> HomeDesignExample {
-        let slots = (0..<18).map { position in
-            let isAccent = position % 6 == 0
-            let material = Material(id: 0, name: "", spec: "10mm", unitPrice: 0, unit: "颗", category: "main_bead",
-                materialType: isAccent ? accentType : type, shape: "round", diameterMm: 10,
-                colorHex: isAccent ? accent : color, textureKey: isAccent ? accentTexture : texture, finish: "polished",
-                image: "", stock: 0, status: "example")
-            return DiyBeadSlot(material: material, position: position, slotId: "home-example-\(id)-\(position)")
-        }
-        return HomeDesignExample(id: id, name: name, slots: slots)
     }
 }
 

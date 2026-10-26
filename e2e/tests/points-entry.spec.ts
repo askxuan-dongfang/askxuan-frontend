@@ -130,21 +130,18 @@ async function assertHomeLayout(page: Page, language: string) {
   await expect(diy.locator('strong')).toHaveText(traditional ? '開始設計' : '开始设计');
   await expect(diy.locator('.home-diy-reward')).toHaveText(traditional ? '創作返利' : '创作返利');
   await expect(page.locator('.home-designs')).toHaveAttribute('aria-busy', 'false');
-  await expect(page.locator('.home-design-example')).toHaveCount(4);
-  await expect(page.locator('.home-plaza-example-label')).toHaveText('示例');
+  await expect(page.locator('.home-design, .home-design-example, .home-plaza-example-label')).toHaveCount(0);
+  await expect(page.locator('.home-plaza-heading h3')).toHaveText(traditional ? '廣場精選' : '广场精选');
   await expect(page.locator('.home-plaza-heading a')).toHaveCount(0);
   const more = page.locator('.home-design-more');
   await expect(more).toHaveCount(1);
   await expect(more).toHaveAttribute('href', '/c/diy?tab=plaza');
   await expect(more).toHaveText(traditional ? '逛設計廣場' : '逛设计广场');
+  await expect(page.locator('.home-designs > *')).toHaveCount(1);
   await expect(page.locator('.home-designs > :last-child')).toHaveClass(/home-design-more/);
-  for (const preview of await page.locator('.home-design-example').all()) {
-    await expect(preview).not.toHaveAttribute('href');
-    expect(await preview.innerText()).toBe('');
-    const rect = (await preview.boundingBox())!;
-    expect(rect.width).toBeCloseTo(104, 0);
-    expect(rect.height).toBeCloseTo(104, 0);
-  }
+  const moreRect = (await more.boundingBox())!;
+  expect(moreRect.width).toBeCloseTo(104, 0);
+  expect(moreRect.height).toBeCloseTo(104, 0);
 
   const pointCards = page.locator('.home-points-grid > .home-points-card');
   await expect(pointCards).toHaveCount(3);
@@ -191,7 +188,8 @@ async function assertHomeLayout(page: Page, language: string) {
   expect(designRail.firstTop).toBeCloseTo(designRail.lastTop, 0);
   expect(designRail.tailLeft).toBeGreaterThanOrEqual(designRail.left - 1);
   expect(designRail.tailRight).toBeLessThanOrEqual(designRail.right + 1);
-  if (designRail.scrollWidth > designRail.clientWidth + 1) expect(designRail.scrollLeft).toBeGreaterThan(0);
+  expect(designRail.scrollWidth).toBeLessThanOrEqual(designRail.clientWidth + 1);
+  expect(designRail.scrollLeft).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 }
 
@@ -241,7 +239,7 @@ test('homepage previews only four public designs without metadata and keeps one 
   await expect(page).toHaveURL(/\/c\/diy\?tab=plaza$/);
 });
 
-test('homepage design failure keeps explicitly marked static examples and retries public data', async ({ page }) => {
+test('homepage design failure shows no sample designs and retries public data', async ({ page }) => {
   await setup(page);
   let failed = true;
   await page.route('**/api/v1/diy/designs**', route => route.fulfill(failed
@@ -250,9 +248,10 @@ test('homepage design failure keeps explicitly marked static examples and retrie
   await page.goto('/c');
   const gallery = page.locator('.home-diy-section');
   await expect(gallery.getByRole('alert')).toContainText('广场作品暂时无法加载');
-  await expect(gallery.locator('.home-plaza-example-label')).toHaveText('示例');
-  await expect(gallery.locator('article.home-design-example')).toHaveCount(4);
-  await expect(gallery.locator('.home-design-example a, a.home-design')).toHaveCount(0);
+  await expect(gallery.locator('.home-design, .home-design-example, .home-plaza-example-label')).toHaveCount(0);
+  await expect(gallery.locator('.home-plaza-heading h3')).toHaveText('广场精选');
+  await expect(gallery.locator('.home-designs > *')).toHaveCount(1);
+  await expect(gallery.locator('.home-design-more')).toHaveAttribute('href', '/c/diy?tab=plaza');
   failed = false;
   await gallery.getByRole('button', { name: '重新加载', exact: true }).click();
   await expect(gallery.locator('a.home-design')).toHaveCount(1);
