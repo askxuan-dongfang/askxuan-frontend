@@ -941,7 +941,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
             camera.position = SCNVector3(Double(cameraTarget.x) + sin(yaw) * cos(pitch) * distance,
                                          Double(cameraTarget.y) + sin(pitch) * distance,
                                          Double(cameraTarget.z) + cos(yaw) * cos(pitch) * distance)
-            camera.look(at: cameraTarget)
+            camera.look(at: cameraTarget, up: SCNVector3(0, 1, 0), localFront: SCNVector3(0, 0, -1))
             updateAccessibility()
         }
         private func bodyWorldPoints(_ node: SCNNode, presentation: Bool = false) -> [SIMD3<Float>] {
