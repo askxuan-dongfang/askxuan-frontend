@@ -1125,17 +1125,13 @@ struct DiyNativeStage3D: UIViewRepresentable {
                 var node: SCNNode? = hit.node
                 while let item = node { if let name = item.name, nodes[name] != nil { return name }; node = item.parent }
             }
-            // A finger targets an area larger than a small bead. Use projected
-            // centers as a bounded fallback; never claim an unrelated floor hit.
-            let nearest = nodes.min { left, right in
-                let a = view.projectPoint(left.value.presentation.worldPosition), b = view.projectPoint(right.value.presentation.worldPosition)
-                return hypot(CGFloat(a.x) - point.x, CGFloat(a.y) - point.y) < hypot(CGFloat(b.x) - point.x, CGFloat(b.y) - point.y)
+            // Thin tassel strands may fall between rays. Keep the same bounded
+            // finger tolerance around the actual projected mesh, including a
+            // long body's tip, rather than only around its distant mount.
+            let bodies = nodes.map { id, node in
+                (id: id, points: bodyWorldPoints(node, presentation: true).map(project))
             }
-            if let nearest {
-                let center = view.projectPoint(nearest.value.presentation.worldPosition)
-                if hypot(CGFloat(center.x) - point.x, CGFloat(center.y) - point.y) <= 18 { return nearest.key }
-            }
-            return nil
+            return DiyProjectedHit.nearest(to: point, bodies: bodies)
         }
         @objc private func tap(_ recognizer: UITapGestureRecognizer) { if let id = bead(at: recognizer.location(in: view)) { owner?.onSelect?(id) } }
         @objc private func pan(_ recognizer: DiyDirectDragGestureRecognizer) {

@@ -210,6 +210,20 @@ enum DiyPresentation {
 }
 
 
+enum DiyProjectedHit {
+    static func nearest(to point: CGPoint, bodies: [(id: String, points: [CGPoint])], tolerance: CGFloat = 18) -> String? {
+        var nearestID: String?, nearestDistance = CGFloat.infinity
+        for body in bodies {
+            for vertex in body.points {
+                let distance = hypot(vertex.x - point.x, vertex.y - point.y)
+                if distance < nearestDistance { nearestID = body.id; nearestDistance = distance }
+            }
+        }
+        return nearestDistance <= tolerance ? nearestID : nil
+    }
+}
+
+
 struct DiyDragEnvelope {
     let hull: [CGPoint]
     init(points: [CGPoint]) {

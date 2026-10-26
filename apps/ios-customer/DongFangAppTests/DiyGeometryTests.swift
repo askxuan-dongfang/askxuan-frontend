@@ -132,4 +132,18 @@ struct DiyGeometryTests {
         #expect(abs(pendant.connectorMm - 18 * 0.35) < 0.00001)
         #expect(DiyGeometry.cordPoints(slots: solo, layout: soloLayout, rotation: soloRotation).allSatisfy { $0.x.isFinite && $0.z.isFinite })
     }
+    @Test func thinBodyHitToleranceReachesStrandGapsButLeavesDistantCanvasFree() {
+        // The mount is at y=100, while actual long tassel strands reach y=230.
+        // Picking the body must not depend on distance to that remote mount.
+        let strands = [(id: "tassel", points: [CGPoint(x: 96, y: 230), CGPoint(x: 104, y: 230)])]
+        #expect(DiyProjectedHit.nearest(to: CGPoint(x: 100, y: 232), bodies: strands) == "tassel")
+        #expect(DiyProjectedHit.nearest(to: CGPoint(x: 122, y: 230), bodies: strands) == "tassel")
+        #expect(DiyProjectedHit.nearest(to: CGPoint(x: 122.01, y: 230), bodies: strands) == nil)
+        #expect(DiyProjectedHit.nearest(to: CGPoint(x: 160, y: 230), bodies: strands) == nil)
+        #expect(DiyProjectedHit.nearest(to: CGPoint(x: 100, y: 100), bodies: strands) == nil)
+        let other = (id: "bead", points: [CGPoint(x: 130, y: 230)])
+        #expect(DiyProjectedHit.nearest(to: CGPoint(x: 116, y: 230), bodies: strands + [other]) == "tassel")
+        #expect(DiyProjectedHit.nearest(to: CGPoint(x: 128, y: 230), bodies: strands + [other]) == "bead")
+    }
+
 }
