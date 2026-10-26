@@ -20,7 +20,7 @@ struct HomeView: View {
     private let columnSpacing: CGFloat = 12
     private let sectionSpacing: CGFloat = 28
     private let sectionTitleSpacing: CGFloat = 12
-    private let contentCardMinHeight: CGFloat = 116
+    private let contentCardMinHeight: CGFloat = 88
 
     var body: some View {
         GeometryReader { geometry in
@@ -199,7 +199,7 @@ struct HomeView: View {
                 .stroke(Color.accentDefault.opacity(colorScheme == .dark ? 0.12 : 0.07), lineWidth: 1.5)
                 .frame(width: min(132, width), height: 116).allowsHitTesting(false).accessibilityHidden(true)
         }
-        .appCardSurface(cornerRadius: 12)
+        .modifier(HomeCardSurface())
         .contentShape(RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .combine)
     }
@@ -229,9 +229,9 @@ struct HomeView: View {
     }
 
     private func intentionItem(_ entry: IntentionEntry, width: CGFloat) -> some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 6) {
             IntentionLineIcon(code: entry.id)
-                .frame(width: 26, height: 26).foregroundStyle(Color.accentDefault)
+                .frame(width: 24, height: 24).foregroundStyle(Color.accentDefault)
             Text(L10n.lookup(entry.title)).font(AppTypography.title(14, weight: .regular))
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -240,7 +240,7 @@ struct HomeView: View {
         .padding(.horizontal, 8).padding(.vertical, 12)
         .frame(width: width)
         .frame(minHeight: contentCardMinHeight, maxHeight: .infinity)
-        .appCardSurface(cornerRadius: 12)
+        .modifier(HomeCardSurface())
         .contentShape(RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .combine)
     }
@@ -251,8 +251,8 @@ struct HomeView: View {
             NavigationLink { DiyDesignView() } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "circle.dotted")
-                        .font(.system(size: 36)).foregroundStyle(Color.accentDefault).accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 8) {
+                        .font(.system(size: 32)).foregroundStyle(Color.accentDefault).accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 6) {
                         ViewThatFits(in: .horizontal) {
                             HStack(spacing: 10) {
                                 Text(L10n.text("开始设计")).font(AppTypography.title(18))
@@ -272,9 +272,10 @@ struct HomeView: View {
                         .accessibilityHidden(true)
                 }
                 .foregroundStyle(Color.textPrimary)
-                .padding(16).frame(maxWidth: .infinity, minHeight: contentCardMinHeight, alignment: .leading)
+                .padding(.horizontal, 14).padding(.vertical, 12)
+                .frame(maxWidth: .infinity, minHeight: contentCardMinHeight, alignment: .leading)
                 .background(LinearGradient(colors: [Color.brandDefault.opacity(0.10), Color.accentDefault.opacity(0.05)], startPoint: .leading, endPoint: .trailing))
-                .appCardSurface(cornerRadius: 12)
+                .modifier(HomeCardSurface())
                 .contentShape(RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(CardPressButtonStyle())
@@ -307,7 +308,7 @@ struct HomeView: View {
                             .padding(8)
                             .frame(width: dynamicTypeSize.isAccessibilitySize ? 160 : 104)
                             .frame(minHeight: 104)
-                            .appCardSurface(cornerRadius: 12)
+                            .modifier(HomeCardSurface())
                         }
                         .buttonStyle(CardPressButtonStyle())
                         .accessibilityIdentifier("home-diy-plaza")
@@ -329,7 +330,7 @@ struct HomeView: View {
     private func designPreview(slots: [DiyBeadSlot]) -> some View {
         DiyMiniBracelet(slots: slots, fallbackCount: 0)
             .frame(width: 104, height: 104)
-            .appCardSurface(cornerRadius: 12)
+            .modifier(HomeCardSurface())
     }
 
     private var pointsSection: some View {
@@ -348,23 +349,23 @@ struct HomeView: View {
 
     private func pointsEntry(title: String, detail: String, icon: String, mode: Int, identifier: String) -> some View {
         NavigationLink { PointsView(initialMode: mode).requireAuth(title: L10n.text("登录后使用积分中心")) } label: {
-            VStack(spacing: 8) {
-                Image(systemName: icon).font(.system(size: 28)).foregroundStyle(Color.accentDefault).accessibilityHidden(true)
-                Text(L10n.lookup(title)).font(AppTypography.card).foregroundStyle(Color.textPrimary)
-                Text(L10n.lookup(detail)).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
+            VStack(spacing: 4) {
+                Image(systemName: icon).font(.system(size: 24)).foregroundStyle(Color.accentDefault).accessibilityHidden(true)
+                Text(L10n.lookup(title)).font(AppTypography.title(16)).foregroundStyle(Color.textPrimary)
+                Text(L10n.lookup(detail)).font(AppTypography.micro).foregroundStyle(Color.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .multilineTextAlignment(.center)
-            .padding(.horizontal, 8).padding(.vertical, 10)
+            .padding(.horizontal, 8).padding(.vertical, 7)
             .frame(maxWidth: .infinity, minHeight: contentCardMinHeight, maxHeight: .infinity)
-            .appCardSurface(cornerRadius: 12)
+            .modifier(HomeCardSurface())
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(CardPressButtonStyle())
         .accessibilityIdentifier(identifier)
     }
 
-    // MARK: - 热门推荐，使用相同栏宽、留白与卡片边框
+    // MARK: - 热门推荐，使用相同栏宽、留白与圆角背景
     private func hotTemplesSection(width: CGFloat) -> some View {
         let cardWidth = columnWidth(in: width)
         return VStack(alignment: .leading, spacing: sectionTitleSpacing) {
@@ -418,7 +419,7 @@ struct HomeView: View {
             }
             .padding(12).frame(maxWidth: .infinity, minHeight: 102, alignment: .topLeading)
         }
-        .frame(width: width).appCardSurface(cornerRadius: 12)
+        .frame(width: width).modifier(HomeCardSurface())
     }
 
     private func hotMastersSection(width: CGFloat) -> some View {
@@ -468,7 +469,7 @@ struct HomeView: View {
             }
             .padding(12).frame(maxWidth: .infinity, minHeight: 102, alignment: .topLeading)
         }
-        .frame(width: width).appCardSurface(cornerRadius: 12)
+        .frame(width: width).modifier(HomeCardSurface())
     }
 
     private func recommendationHeading(_ title: String) -> some View {
@@ -499,6 +500,18 @@ struct HomeView: View {
             ServiceContainerView(serviceType: type)
         case .diy:          DiyBraceletView()
         }
+    }
+}
+
+private struct HomeCardSurface: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        content
+            .background(Color.bgSecondary, in: shape)
+            .clipShape(shape)
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.1 : 0.025), radius: 6, x: 0, y: 2)
     }
 }
 

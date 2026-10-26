@@ -174,7 +174,7 @@ async function assertHomeLayout(page: Page, language: string) {
     expect(Math.abs(bounds.right - layout.right)).toBeLessThan(1);
   }
   expect(cards[0].font).toBe(layout.headingFont);
-  for (const surface of layout.surfaces) expect(surface).toEqual({ radius: '12px', left: '1px', right: '1px' });
+  for (const surface of layout.surfaces) expect(surface).toEqual({ radius: '12px', left: '0px', right: '0px' });
   for (const entry of await wishes.all()) expect(await entry.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBeTruthy();
   const utilityLayout = await page.locator('.customer-home').evaluate(element => {
     const wishes = element.querySelector('.home-wishes')!.getBoundingClientRect();
@@ -193,7 +193,7 @@ async function assertHomeLayout(page: Page, language: string) {
       diyToPoints: pointsSection.top - diy.bottom,
     };
   });
-  for (const height of utilityLayout.heights) expect(height).toBeCloseTo(116, 0);
+  for (const height of utilityLayout.heights) expect(height).toBeCloseTo(88, 0);
   for (const gap of utilityLayout.gaps) expect(gap).toBeCloseTo(12, 0);
   for (const gap of utilityLayout.headingGaps) expect(gap).toBeCloseTo(12, 0);
   for (const width of utilityLayout.pointWidths) expect(width).toBeCloseTo(utilityLayout.pointWidths[0], 0);

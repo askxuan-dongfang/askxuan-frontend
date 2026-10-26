@@ -360,13 +360,13 @@ final class NativeDiscoveryRefinementUITests: XCTestCase {
             XCTAssertTrue(wishScroll.exists)
             if usesAccessibilityText {
                 XCTAssertGreaterThanOrEqual(wishes[0].frame.width, 116)
-                XCTAssertGreaterThan(wishes[0].frame.height, 116, "辅助大字号允许心愿卡随完整文字增高")
+                XCTAssertGreaterThan(wishes[0].frame.height, 88, "辅助大字号允许心愿卡随完整文字增高")
             } else {
                 for wish in wishes {
                     XCTAssertTrue(wish.isHittable, "常规字号首屏完整显示四张心愿卡")
                     XCTAssertGreaterThanOrEqual(wish.frame.minX, wishScroll.frame.minX)
                     XCTAssertLessThanOrEqual(wish.frame.maxX, wishScroll.frame.maxX + 1)
-                    XCTAssertEqual(wish.frame.height, 116, accuracy: 1)
+                    XCTAssertEqual(wish.frame.height, 88, accuracy: 1)
                     XCTAssertEqual(wish.frame.width, wishes[0].frame.width, accuracy: 1)
                 }
                 for index in 1..<wishes.count {
@@ -378,9 +378,9 @@ final class NativeDiscoveryRefinementUITests: XCTestCase {
             let diy = app.buttons["home-diy"]
             reveal(diy, in: app)
             if usesAccessibilityText {
-                XCTAssertGreaterThan(diy.frame.height, 116, "辅助大字号下设计入口保留完整说明")
+                XCTAssertGreaterThan(diy.frame.height, 88, "辅助大字号下设计入口保留完整说明")
             } else {
-                XCTAssertEqual(diy.frame.height, 116, accuracy: 1)
+                XCTAssertEqual(diy.frame.height, 88, accuracy: 1)
             }
 
             let points = ["wheel", "mall", "pool"].map { app.buttons["home-points-" + $0] }
@@ -394,9 +394,9 @@ final class NativeDiscoveryRefinementUITests: XCTestCase {
                 XCTAssertEqual(point.frame.width, points[0].frame.width, accuracy: 1)
                 XCTAssertEqual(point.frame.height, points[0].frame.height, accuracy: 1)
                 if usesAccessibilityText {
-                    XCTAssertGreaterThan(point.frame.height, 116, "积分卡在辅助字号下共同增高")
+                    XCTAssertGreaterThan(point.frame.height, 88, "积分卡在辅助字号下共同增高")
                 } else {
-                    XCTAssertEqual(point.frame.height, 116, accuracy: 1)
+                    XCTAssertEqual(point.frame.height, 88, accuracy: 1)
                 }
             }
             for index in 1..<points.count {
