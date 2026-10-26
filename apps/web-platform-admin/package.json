@@ -23,11 +23,13 @@
     "echarts": "^5.5.0",
     "element-plus": "^2.7.2",
     "pinia": "^2.1.7",
+    "three": "0.185.1",
     "vue": "^3.4.27",
     "vue-router": "^4.3.2"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
+    "@types/three": "0.185.0",
     "@vitejs/plugin-vue": "^5.0.4",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",

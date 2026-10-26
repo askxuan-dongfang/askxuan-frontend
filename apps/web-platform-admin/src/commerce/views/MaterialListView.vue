@@ -9,14 +9,13 @@ import { useRouter } from 'vue-router'
 import DiyDesignManager from '@/commerce/components/DiyDesignManager.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
-import { materialApi, type MaterialListParams } from '@/commerce/api/material'
+import { materialApi, type MaterialListParams, type StudioMaterial } from '@/commerce/api/material'
 import { formatMoney, materialCategoryLabel } from '@/commerce/utils/format'
-import type { Material } from '@/commerce/types'
 
 const router = useRouter()
 const showDesigns = ref(false)
 const loading = ref(false)
-const list = ref<Material[]>([])
+const list = ref<StudioMaterial[]>([])
 const total = ref(0)
 
 const query = reactive<MaterialListParams>({
@@ -40,6 +39,15 @@ const elementLabel: Record<string, string> = { metal: '金', wood: '木', water:
 const materialTypeLabel: Record<string, string> = {
   crystal: '水晶', jade: '玉石', gemstone: '宝石', wood: '木质', seed: '菩提籽',
   organic: '有机宝石', metal: '金属', ceramic: '陶瓷', glass: '琉璃', textile: '织物', cord: '绳线'
+}
+
+function partLabel(row: StudioMaterial) {
+  try {
+    const studio = JSON.parse(row.renderAssets || '{}').studio
+    if (studio?.part === 'hanging') return studio.motion === 'flexible' ? '动态挂件 · 柔性' : '动态挂件 · 刚性'
+    if (studio?.part === 'bead') return '普通串珠'
+  } catch { return '待配置' }
+  return row.category === 'tassel' ? '动态挂件 · 柔性' : row.category === 'pendant' ? '动态挂件 · 刚性' : '普通串珠'
 }
 
 async function loadList() {
@@ -165,6 +173,7 @@ onMounted(() => {
         <el-table-column :label='$t("分类")' width="100">
           <template #default="{ row }">{{ $t(materialCategoryLabel(row.category)) }}</template>
         </el-table-column>
+        <el-table-column :label='$t("使用品类")' width="150"><template #default="{ row }">{{ $t(partLabel(row)) }}</template></el-table-column>
         <el-table-column :label='$t("五行")' width="70">
           <template #default="{ row }">{{ $t(((elementLabel[row.fiveElements] || row.fiveElements) || '—')) }}</template>
         </el-table-column>

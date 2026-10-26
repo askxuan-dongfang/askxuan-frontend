@@ -43,6 +43,7 @@ jobs:
           npx playwright test --config playwright.ai-settings.config.ts
           npx playwright test --config playwright.overlay-position.config.ts
           npx playwright test --config playwright.rewards.config.ts rewards-probabilities.spec.ts --grep admin
+          npx playwright test --config playwright.material-authoring.config.ts
       - name: Retain verified package for operator relay
         env:
           GH_TOKEN: ${{ github.token }}

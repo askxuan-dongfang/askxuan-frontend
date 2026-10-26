@@ -362,3 +362,66 @@ test('pendant and tassel replacement preserves the slot and correct rendered dim
   expect(fixture.errors).toEqual([]);
   expect(fixture.writes).toEqual([]);
 });
+
+function authoredModelFixture() {
+  const positions = new Float32Array([-1,-1,-1, 1,-1,-1, 1,1,-1, -1,1,-1, -1,-1,1, 1,-1,1, 1,1,1, -1,1,1]);
+  const indices = new Uint16Array([0,2,1,0,3,2,4,5,6,4,6,7,0,1,5,0,5,4,3,7,6,3,6,2,0,4,7,0,7,3,1,2,6,1,6,5]);
+  const binary = Buffer.concat([Buffer.from(positions.buffer),Buffer.from(indices.buffer)]);
+  const document = { asset:{version:'2.0'}, scene:0, scenes:[{nodes:[0,1]}], nodes:[{mesh:0,translation:[-1.1,0,0]},{mesh:1,translation:[1.1,0,0]}],
+    meshes:[0,1].map(material=>({primitives:[{attributes:{POSITION:0},indices:1,material}]})),
+    materials:[{pbrMetallicRoughness:{baseColorFactor:[1,.1,.1,1],metallicFactor:0}},{pbrMetallicRoughness:{baseColorFactor:[.1,.1,1,1],metallicFactor:0}}],
+    buffers:[{byteLength:binary.length}],bufferViews:[{buffer:0,byteOffset:0,byteLength:positions.byteLength,target:34962},{buffer:0,byteOffset:positions.byteLength,byteLength:indices.byteLength,target:34963}],
+    accessors:[{bufferView:0,componentType:5126,count:8,type:'VEC3',min:[-1,-1,-1],max:[1,1,1]},{bufferView:1,componentType:5123,count:indices.length,type:'SCALAR'}] };
+  const json=Buffer.from(JSON.stringify(document)), padded=Buffer.alloc(Math.ceil(json.length/4)*4,32);json.copy(padded);
+  const header=Buffer.alloc(12),jh=Buffer.alloc(8),bh=Buffer.alloc(8);
+  header.writeUInt32LE(0x46546c67,0);header.writeUInt32LE(2,4);header.writeUInt32LE(28+padded.length+binary.length,8);
+  jh.writeUInt32LE(padded.length,0);jh.writeUInt32LE(0x4e4f534a,4);bh.writeUInt32LE(binary.length,0);bh.writeUInt32LE(0x004e4942,4);
+  return Buffer.concat([header,jh,padded,bh,binary]);
+}
+
+test('authored part categories, dimensions and multi-material generated models drive the real bracelet', async ({page},testInfo)=>{
+  test.setTimeout(120_000);
+  const fixture=await setup(page);
+  const base={version:1,part:'bead',motion:'fixed',source:'template',templateId:'round',dimensionsMm:[8,8,8],rotation:[0,0,0],mount:[0,0,0],connectorMm:0,rigidFraction:.3,photos:[],previewConfirmed:true};
+  const catalog=[
+    {...materials[0],id:101,name:'名称含流苏的普通珠',category:'tassel',shape:'tassel',renderAssets:JSON.stringify({studio:base})},
+    {...materials[0],id:102,name:'生成的刚性挂件',renderAssets:JSON.stringify({studio:{...base,part:'hanging',motion:'rigid',source:'generated',templateId:'custom',dimensionsMm:[14,7,24],rotation:[0,90,0],mount:[0,0,-.5],connectorMm:2,model:{jobId:'fixture',glbUrl:'/test-model.glb',usdzUrl:'/test-model.usdz'}}})},
+    {...materials[0],id:103,name:'模板柔性挂件',renderAssets:JSON.stringify({studio:{...base,part:'hanging',motion:'flexible',templateId:'tassel_knot',dimensionsMm:[12,5,36],mount:[0,0,-.5],connectorMm:2,rigidFraction:.55}})},
+  ];
+  await page.route('**/api/v1/diy/materials?*',route=>route.fulfill({json:{code:0,data:{list:catalog,total:catalog.length}}}));
+  await page.route('**/test-model.glb',route=>route.fulfill({body:authoredModelFixture(),contentType:'model/gltf-binary'}));
+  await page.goto('/c/diy/editor');
+  await page.getByRole('button',{name:'普通串珠',exact:true}).click();
+  await expect(page.locator('.studio-materials>button')).toHaveCount(1);
+  await page.getByRole('button',{name:'添加名称含流苏的普通珠',exact:true}).click();
+  await page.getByRole('button',{name:'动态挂件',exact:true}).click();
+  await expect(page.locator('.studio-materials>button')).toHaveCount(2);
+  await page.getByRole('button',{name:'添加生成的刚性挂件',exact:true}).click();
+  await page.getByRole('button',{name:'添加模板柔性挂件',exact:true}).click();
+  await expect(page.locator('.studio-stage-top small')).toHaveText('3 / 60 颗');
+  const inspect=()=>page.evaluate(async()=>{
+    const modulePath='/node_modules/.vite/deps/@react-three_fiber.js';
+    const {_roots}=await import(modulePath),canvas=document.querySelector('.studio-viewport canvas');
+    const state=canvas&&_roots.get(canvas)?.store.getState();
+    if(!state)return null;
+    const result={models:[] as any[],bodies:[] as any[],cordHeight:0};
+    state.scene.traverse((object:any)=>{
+      if(object.userData.gravityBodies)result.bodies=object.userData.gravityBodies.map((b:any)=>({flexible:!!b.spec.flexible,connector:b.spec.connectorLength,bodyLength:b.spec.bodyLength}));
+      if(object.isMesh&&object.userData.slotId&&object.userData.materialProfile)result.models.push({slot:object.userData.slotId,materials:Array.isArray(object.material)?object.material.map((m:any)=>m.color?.toArray()):[],vertices:object.geometry.getAttribute('position').count});
+      if(object.userData.braceletCord){const p=object.geometry.getAttribute('position');for(let i=0;i<p.count;i++)result.cordHeight=Math.max(result.cordHeight,Math.abs(p.getY(i)));}
+    });
+    return result;
+  });
+  await expect.poll(async()=> (await inspect())?.models.length,{timeout:30_000}).toBe(3);
+  const scene=await inspect();
+  expect(scene!.bodies).toHaveLength(2);
+  expect(scene!.bodies.map(x=>x.flexible).sort()).toEqual([false,true]);
+  expect(scene!.cordHeight).toBeLessThan(.009);
+  const generated=scene!.models.find(x=>x.materials.length===2);
+  expect(generated).toBeTruthy();
+  expect(generated.materials[0][0]).toBeCloseTo(1,3);
+  expect(generated.materials[1][2]).toBeCloseTo(1,3);
+  await expect(page.locator('.diy-3d-fallback')).toHaveCount(0);
+  expect(fixture.errors).toEqual([]);expect(fixture.writes).toEqual([]);
+  await testInfo.attach('authored-actual-scene',{body:JSON.stringify(scene,null,2),contentType:'application/json'});
+});

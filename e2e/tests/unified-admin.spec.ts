@@ -228,7 +228,7 @@ for(const kind of ['categories','materials'])test(`write: ${kind} creation prese
   expect(saved).toMatchObject({name:'迁移分类',parentId:0})
  }else {
   await page.getByRole('textbox',{name:/材料名称/}).fill('迁移材料')
-  await page.getByRole('button',{name:'保存',exact:true}).click();await expect(page).toHaveURL(origin+'/admin/commerce/'+kind)
+  await page.getByRole('button',{name:'保存草稿',exact:true}).click();await expect(page).toHaveURL(origin+'/admin/commerce/'+kind)
   expect(saved).toMatchObject({name:'迁移材料',unit:'颗',category:'main_bead'})
  }
 })
