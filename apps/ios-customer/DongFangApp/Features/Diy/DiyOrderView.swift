@@ -123,7 +123,6 @@ struct DiyOrderView: View {
             )
         )
         .clipShape(RoundedRectangle(cornerRadius: 24))
-        .overlay { RoundedRectangle(cornerRadius: 24).stroke(Color.borderStrong, lineWidth: 1) }
         .padding(.horizontal, AppSpacing.lg)
     }
 
@@ -217,7 +216,6 @@ struct DiyOrderView: View {
                 .padding(AppSpacing.md)
                 .background(Color.bgSecondary)
                 .cornerRadius(AppRadius.md)
-                .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
                 .padding(.horizontal, AppSpacing.lg)
             } else {
                 NavigationLink {
@@ -235,7 +233,6 @@ struct DiyOrderView: View {
                     .padding(AppSpacing.md)
                     .background(Color.bgSecondary)
                     .cornerRadius(AppRadius.md)
-                    .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
                 }
                 .buttonStyle(DiyPressButtonStyle())
                 .padding(.horizontal, AppSpacing.lg)
@@ -294,7 +291,7 @@ struct DiyOrderView: View {
             .cornerRadius(AppRadius.md)
             .overlay(
                 RoundedRectangle(cornerRadius: AppRadius.md)
-                    .stroke(selectedBlessingService == nil ? Color.brandDefault : Color.borderDefault, lineWidth: 1)
+                    .stroke(selectedBlessingService == nil ? Color.brandDefault : Color.clear, lineWidth: 1)
             )
             .contentShape(Rectangle())
             .onTapGesture {
@@ -328,7 +325,7 @@ struct DiyOrderView: View {
                 .background(isSelected ? Color.brandDefault.opacity(0.08) : Color.bgSecondary)
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
                 .overlay(RoundedRectangle(cornerRadius: AppRadius.md)
-                    .stroke(isSelected ? Color.brandDefault : Color.borderDefault, lineWidth: 1))
+                    .stroke(isSelected ? Color.brandDefault : Color.clear, lineWidth: 1))
                 .contentShape(Rectangle())
                 .onTapGesture { selectedBlessingService = service }
                 .padding(.horizontal, AppSpacing.lg)
@@ -646,7 +643,7 @@ private struct DiyPaymentFlowView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(SecondaryActionButtonStyle())
             } else {
                 Button {
                     Task {
@@ -676,7 +673,7 @@ private struct DiyPaymentFlowView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 44)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(SecondaryActionButtonStyle())
         }
     }
 

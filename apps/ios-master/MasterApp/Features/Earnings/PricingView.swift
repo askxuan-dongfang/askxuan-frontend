@@ -175,10 +175,6 @@ struct PricingView: View {
                                 : AnyShapeStyle(Color.bgSecondary)
                             )
                             .cornerRadius(AppRadius.md)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AppRadius.md)
-                                    .stroke(selected ? Color.clear : Color.borderDefault, lineWidth: 1)
-                            )
                     }
                     .buttonStyle(CardPressButtonStyle())
                 }

@@ -115,7 +115,7 @@ function complete(){if(auth.roles.includes('temple_applicant')){router.replace('
   margin-top: 18px;
   padding: 10px 12px;
   background: var(--admin-surface-muted);
-  border: 1px dashed var(--admin-border-strong);
+  border: 0;
   border-radius: 8px;
   font-size: var(--type-size-caption);
   color: var(--admin-text-secondary);

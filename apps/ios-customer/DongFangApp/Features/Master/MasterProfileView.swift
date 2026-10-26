@@ -237,7 +237,6 @@ struct MasterProfileView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.bgSecondary)
             .cornerRadius(AppRadius.lg)
-            .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
             .padding(.horizontal, AppSpacing.lg)
             .padding(.top, AppSpacing.md)
 
@@ -257,7 +256,6 @@ struct MasterProfileView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.bgSecondary)
             .cornerRadius(AppRadius.lg)
-            .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
             .padding(.horizontal, AppSpacing.lg)
         }
     }
@@ -428,7 +426,7 @@ struct MasterProfileView: View {
             .padding(AppSpacing.md)
             .background(Color.bgSecondary)
             .cornerRadius(AppRadius.lg)
-            .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(isSelected ? Color.brandDefault : Color.borderDefault, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(isSelected ? Color.brandDefault : Color.clear, lineWidth: 1))
             .padding(.horizontal, AppSpacing.lg)
         }
         .buttonStyle(.plain)
@@ -476,7 +474,6 @@ struct MasterProfileView: View {
                         .padding(AppSpacing.md)
                         .background(Color.bgSecondary)
                         .cornerRadius(AppRadius.lg)
-                        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
                         .padding(.horizontal, AppSpacing.lg)
                     }
                     .buttonStyle(.plain)

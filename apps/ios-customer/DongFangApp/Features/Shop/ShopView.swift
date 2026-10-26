@@ -93,7 +93,7 @@ struct ShopView: View {
                                         .matchedGeometryEffect(id: "category", in: categorySelection)
                                 }
                             }
-                            .overlay(Capsule().stroke(viewModel.selectedCategoryId == cat.id ? Color.accentDefault : Color.borderDefault))
+                            .overlay(Capsule().stroke(viewModel.selectedCategoryId == cat.id ? Color.accentDefault : Color.clear))
                             .contentShape(Capsule())
                     }.accessibilityAddTraits(viewModel.selectedCategoryId == cat.id ? .isSelected : [])
                 }
@@ -198,7 +198,7 @@ struct ShopProductDetailView: View {
 
                 if let images = viewModel.product.images, images.count > 1 {
                     ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: 10) { ForEach(images.sorted(by: { $0.sort < $1.sort })) { image in
-                        Button { selectedImage = image.imageUrl } label: { RemoteImage(urlString: image.imageUrl, contentMode: .fit).frame(width: 68, height: 68).clipShape(RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(selectedImage == image.imageUrl ? Color.accentDefault : Color.borderDefault)) }.accessibilityLabel(L10n.text("查看商品图片 \(image.sort + 1)"))
+                        Button { selectedImage = image.imageUrl } label: { RemoteImage(urlString: image.imageUrl, contentMode: .fit).frame(width: 68, height: 68).clipShape(RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(selectedImage == image.imageUrl ? Color.accentDefault : Color.clear)) }.accessibilityLabel(L10n.text("查看商品图片 \(image.sort + 1)"))
                     } }.padding(.horizontal, AppSpacing.lg) }
                 }
                 VStack(alignment: .leading, spacing: AppSpacing.md) {
@@ -482,7 +482,6 @@ struct ShopCartView: View {
         }
         .padding(AppSpacing.md).background(Color.bgSecondary)
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
     }
 
     private func imageAsset(_ item: ShopCartItem) -> String {
@@ -614,7 +613,6 @@ struct ShopCheckoutView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(AppSpacing.md).background(Color.bgSecondary)
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
     }
 }
 
@@ -717,7 +715,6 @@ struct ShopOrderListView: View {
             }
         }
         .padding(AppSpacing.md).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
     }
 }
 
@@ -785,7 +782,7 @@ private func experienceNotice() -> some View {
     VStack(alignment: .leading, spacing: 6) {
         Label(L10n.text("体验商品 · 模拟流程"), systemImage: "sparkles").font(AppTypography.body.weight(.semibold)).foregroundStyle(Color.accentDefault)
         Text(L10n.text("不实际扣款或发货，不发放消费积分。物流和售后记录仅供体验。")).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
-    }.frame(maxWidth: .infinity, alignment: .leading).padding(14).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 12)).overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault))
+    }.frame(maxWidth: .infinity, alignment: .leading).padding(14).background(Color.bgSecondary).clipShape(RoundedRectangle(cornerRadius: 12))
 }
 
 #Preview {

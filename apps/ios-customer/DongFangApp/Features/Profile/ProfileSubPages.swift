@@ -93,7 +93,7 @@ struct OrderListView: View {
                         .padding(.vertical, AppSpacing.sm)
                         .background(selectedTab == tab.key ? Color.bgTertiary : Color.bgSecondary)
                         .overlay(
-                            Capsule().stroke(Color.borderDefault, lineWidth: 1)
+                            Capsule().stroke(selectedTab == tab.key ? Color.borderDefault : Color.clear, lineWidth: 1)
                         )
                         .clipShape(Capsule())
                         .contentShape(Capsule())
@@ -131,7 +131,7 @@ struct OrderListView: View {
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 38)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(SecondaryActionButtonStyle())
                         .tint(Color.accentDefault)
                     }
                 }
@@ -229,7 +229,6 @@ struct OrderListView: View {
         }
         .padding(18)
         .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.borderDefault, lineWidth: 1))
     }
 
     @MainActor
@@ -1004,7 +1003,6 @@ struct ReviewListView: View {
                     .padding(AppSpacing.md)
                     .background(Color.bgSecondary)
                     .cornerRadius(AppRadius.lg)
-                    .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
                 }
                 Spacer(minLength: AppSpacing.xl)
             }
@@ -1102,7 +1100,6 @@ struct CouponView: View {
                     }
                     .background(Color.bgSecondary)
                     .cornerRadius(AppRadius.lg)
-                    .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
                 }
                 Spacer(minLength: AppSpacing.xl)
             }
@@ -1168,7 +1165,6 @@ struct PointsWalletCard: View {
             if (balance ?? 0) < 0 { Text(L10n.text("退款扣回后余额不足，后续获得的积分先补足余额。")).font(.caption2).foregroundStyle(palette.muted) }
         }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
             .background(palette.card, in: RoundedRectangle(cornerRadius: 20))
-            .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.accentDefault.opacity(0.35), lineWidth: 1))
     }
 }
 struct PointsRulesSheet: View {
@@ -1428,7 +1424,6 @@ struct HelpView: View {
                     .padding(AppSpacing.md)
                     .background(Color.bgSecondary)
                     .cornerRadius(AppRadius.lg)
-                    .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
                 }
                 Spacer(minLength: AppSpacing.xl)
             }
@@ -1554,7 +1549,6 @@ struct ProfileEditView: View {
         }
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
     }
 
     private var maskedMobile: String {
@@ -1657,7 +1651,6 @@ struct NotificationSettingsView: View {
         }
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
     }
 
     private func toggleRow(icon: String, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
@@ -1730,7 +1723,6 @@ struct SecurityView: View {
                 }
                 .background(Color.bgSecondary)
                 .cornerRadius(AppRadius.lg)
-                .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
 
                 Text(L10n.text("如遇账号异常，请联系客服：400-000-0000"))
                     .font(AppTypography.caption)
@@ -1813,7 +1805,6 @@ struct AboutView: View {
                 }
                 .background(Color.bgSecondary)
                 .cornerRadius(AppRadius.lg)
-                .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
 
                 Text(L10n.text("© 2026 问玄东方 保留所有权利"))
                     .font(AppTypography.micro)

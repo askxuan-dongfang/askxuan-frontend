@@ -255,7 +255,6 @@ struct ProfileView: View {
         }
         .padding(.horizontal, 16)
         .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.borderDefault, lineWidth: 1))
         .padding(.horizontal, AppSpacing.lg).padding(.top, 16)
     }
 
@@ -324,7 +323,6 @@ struct ProfileView: View {
             .padding(.horizontal, 8)
             .background(Color.bgSecondary)
             .cornerRadius(AppRadius.lg)
-            .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
         }
         .padding(.horizontal, AppSpacing.lg)
         .padding(.top, 20)
@@ -365,7 +363,6 @@ struct ProfileView: View {
         }
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
         .padding(.horizontal, AppSpacing.lg)
         .padding(.top, 20)
     }
@@ -421,7 +418,6 @@ struct ProfileView: View {
         }
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
         .padding(.horizontal, AppSpacing.lg)
         .padding(.top, 20)
     }

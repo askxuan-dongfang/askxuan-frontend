@@ -565,14 +565,13 @@ a:focus-visible,
   gap: 12px;
   color: var(--admin-text);
   background: var(--admin-surface);
-  border: 1px solid var(--admin-card-border);
+  border: 0;
   border-radius: 12px;
   box-shadow: var(--admin-shadow-sm);
-  transition: border-color var(--admin-transition), box-shadow var(--admin-transition), transform var(--admin-transition);
+  transition: box-shadow var(--admin-transition), transform var(--admin-transition);
 }
 
 .ax-task-card:hover {
-  border-color: var(--admin-border-strong);
   box-shadow: var(--admin-shadow-md);
   transform: translateY(-1px);
 }
@@ -683,13 +682,12 @@ a:focus-visible,
   min-width: 0;
   max-width: 100%;
   background: var(--admin-surface);
-  border-color: var(--admin-card-border);
+  border: 0;
   box-shadow: var(--admin-shadow-sm);
 }
 
 .df-card,
 .dfx-card {
-  border: 1px solid var(--admin-card-border);
   border-radius: 12px;
 }
 
@@ -1016,7 +1014,7 @@ a:focus-visible,
     color: var(--admin-text);
     text-align: left;
     background: var(--admin-surface);
-    border: 1px solid var(--admin-border);
+    border: 0;
     border-radius: 10px;
   }
 
@@ -1249,7 +1247,7 @@ html:root {
   min-height: 44px;
   margin: 6px 10px 0;
   padding: 0 10px;
-  border: 1px solid rgba(var(--admin-accent-rgb), .16);
+  border: 0;
   border-radius: 9px;
   color: var(--admin-sidebar-text);
   background: transparent;
@@ -1289,7 +1287,15 @@ select:focus-visible { outline: 2px solid var(--admin-primary); outline-offset: 
   box-shadow: 0 0 0 1px var(--admin-danger) inset, 0 0 0 3px color-mix(in srgb, var(--admin-danger) 12%, transparent) !important;
 }
 .el-form-item__error { padding-top: 5px; font-size: var(--type-size-caption); line-height: 1.4; }
+/* Ordinary actions use their fill; input and selected-control borders are separate. */
+.el-button:not([aria-pressed="true"]):not([aria-selected="true"]) { border-width: 0; }
 .el-button:not(.is-link):not(.is-text) { border-radius: 9px; }
+.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--info):not(.el-button--warning):not(.el-button--danger):not(.is-link):not(.is-text) {
+  --el-button-bg-color: var(--admin-surface-muted);
+  --el-button-hover-bg-color: var(--admin-surface-hover);
+  --el-button-disabled-bg-color: var(--admin-surface-muted);
+}
+.el-button-group > .el-button + .el-button { margin-left: 1px; }
 .el-button--primary:not(.is-link):not(.is-text):not(.is-plain):not(.is-disabled) {
   box-shadow: 0 1px 2px rgba(var(--admin-shadow-rgb), .06);
 }
@@ -1319,7 +1325,7 @@ select:focus-visible { outline: 2px solid var(--admin-primary); outline-offset: 
 }
 
 .el-dialog, .el-message-box {
-  border: 1px solid color-mix(in srgb, var(--admin-accent) 18%, var(--admin-border));
+  border: 0;
   border-radius: 16px;
   box-shadow: var(--admin-overlay-shadow);
 }
@@ -1351,9 +1357,7 @@ select:focus-visible { outline: 2px solid var(--admin-primary); outline-offset: 
 .el-loading-spinner .el-loading-text { color: var(--admin-primary); font-size: var(--type-size-caption); }
 .el-pagination button, .el-pagination .el-pager li { border-radius: 7px !important; }
 .el-pagination .el-pager li.is-active { box-shadow: 0 2px 4px rgba(var(--admin-primary-rgb), .16); }
-.filter-card:focus-within { border-color: color-mix(in srgb, var(--admin-primary) 32%, var(--admin-border)); }
 @media (hover: hover) and (pointer: fine) {
-  .ax-task-card:hover { border-color: color-mix(in srgb, var(--admin-accent) 45%, var(--admin-border)); }
   .el-button--primary:not(.is-link):not(.is-text):not(.is-disabled):not(.is-loading):hover {
     box-shadow: 0 3px 8px rgba(var(--admin-shadow-rgb), .08);
   }

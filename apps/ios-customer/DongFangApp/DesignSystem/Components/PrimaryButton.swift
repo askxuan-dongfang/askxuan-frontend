@@ -54,7 +54,7 @@ struct DFPrimaryButton: View {
     }
 }
 
-/// 次按钮：描边琉璃金 + 透明背景 + 金色文字
+/// 次按钮：柔和背景 + 金色文字，保留完整点击区域
 struct DFSecondaryButton: View {
     let title: String
     var icon: String? = nil
@@ -78,15 +78,30 @@ struct DFSecondaryButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .frame(minHeight: 48)
-            .background(Color.clear)
+            .background(Color.bgTertiary)
             .cornerRadius(AppRadius.lg)
-            .overlay(
-                RoundedRectangle(cornerRadius: AppRadius.lg)
-                    .stroke(Color.accentDefault.opacity(0.25), lineWidth: 1)
-            )
             .opacity(isEnabled ? 1.0 : 0.5)
         }
         .buttonStyle(CardPressButtonStyle())
         .disabled(!isEnabled)
+    }
+}
+
+/// A secondary action uses a quiet fill while its tint and state remain visible.
+struct SecondaryActionButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        let pressed = isEnabled && configuration.isPressed
+        configuration.label
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(minHeight: 44)
+            .foregroundStyle(configuration.role == .destructive ? AnyShapeStyle(Color.stateError) : AnyShapeStyle(.tint))
+            .background(Color.bgTertiary, in: RoundedRectangle(cornerRadius: AppRadius.md))
+            .opacity(isEnabled ? (pressed ? 0.82 : 1) : 0.5)
+            .scaleEffect(pressed && !reduceMotion ? 0.985 : 1)
+            .animation(reduceMotion ? nil : AppMotion.press, value: pressed)
     }
 }

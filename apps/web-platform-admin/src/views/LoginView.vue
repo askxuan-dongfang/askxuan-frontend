@@ -89,7 +89,7 @@ function complete(){const next=typeof route.query.redirect==='string'?route.quer
   padding: 44px 40px 36px;
   background: rgba(var(--admin-surface-rgb), 0.92);
   backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border-strong);
+  border: 0;
   border-radius: var(--radius-xl);
   box-shadow: 0 20px 60px rgba(var(--admin-shadow-rgb), 0.16);
 }

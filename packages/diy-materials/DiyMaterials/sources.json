@@ -176,7 +176,7 @@
       },
       {
         "path": "geometry-catalog.json",
-        "sha256": "290d5a5cb16674fd1e3382a3bfbe4b8707c6ddff5a1976653f83b6581b5eb8af"
+        "sha256": "c787314000d90a4e788e71fd7b6d034822da1dc1eda53d09a4f31983782b70ff"
       },
       {
         "path": "geometry-pendant_generic.json",
@@ -225,6 +225,14 @@
       {
         "path": "geometry-tassel.png",
         "sha256": "00f4491aa7452458d2812c000125b9339de422c6c3173c6560e28932a449c3ee"
+      },
+      {
+        "path": "geometry-tassel_knot.json",
+        "sha256": "3f27f3e1a0fef199265f3bd5307acb30f68fa8f0381bb506e3464572c2ca828c"
+      },
+      {
+        "path": "geometry-tassel_knot.png",
+        "sha256": "0bf42ee37f9be7fee712f507582e6c49fc83d1d56e8123ff81d94ecae59e5e4d"
       },
       {
         "path": "geometry-three_way.json",

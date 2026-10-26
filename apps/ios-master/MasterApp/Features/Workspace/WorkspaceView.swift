@@ -196,7 +196,6 @@ struct WorkspaceView: View {
             }
             .padding(AppSpacing.lg)
             .background(Color.bgSecondary)
-            .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault))
             .cornerRadius(AppRadius.md)
         }
         .buttonStyle(CardPressButtonStyle())
@@ -272,7 +271,6 @@ struct WorkspaceView: View {
                     .frame(width: 48, height: 48)
                     .background(Color.bgSecondary)
                     .cornerRadius(AppRadius.md)
-                    .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault))
                 Text(L10n.lookup(action.label))
                     .font(.micro)
                     .foregroundStyle(.textSecondary)
@@ -390,10 +388,6 @@ struct WorkspaceView: View {
         .padding(14)
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.lg)
-        .overlay(
-            RoundedRectangle(cornerRadius: AppRadius.lg)
-                .stroke(Color.borderDefault, lineWidth: 1)
-        )
         .padding(.horizontal, AppSpacing.pageHorizontal)
         .padding(.top, 10)
     }
@@ -454,10 +448,6 @@ struct WorkspaceView: View {
                 .padding(AppSpacing.md)
                 .background(Color.bgSecondary)
                 .cornerRadius(10)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.borderDefault, lineWidth: 1)
-                )
                 .padding(.horizontal, AppSpacing.pageHorizontal)
             }
             .buttonStyle(CardPressButtonStyle())
@@ -728,7 +718,7 @@ struct MediaStudioView: View {
                                 Button(L10n.text("下架"), role: .destructive) { Task { await viewModel.changeStatus(post, status: "off_shelf") } }
                             }
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(SecondaryActionButtonStyle())
                     }
                     .padding(.vertical, 4)
                 }

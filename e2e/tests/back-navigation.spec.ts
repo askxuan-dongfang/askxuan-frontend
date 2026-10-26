@@ -60,6 +60,51 @@ for (const viewport of [{width:320,height:568},{width:390,height:844},{width:844
 });
 async function mine(page:Page){await page.goto('/c/diy?tab=mine');await expect(page.getByText('已发布',{exact:true})).toBeVisible();await page.getByRole('link',{name:'编辑设计：返回测试手串',exact:true}).click();await expect(page).toHaveURL(/\/c\/diy\/editor\?design=1$/);}
 async function viewer(page:Page){await page.goto('/c/diy?tab=plaza');await page.getByRole('link',{name:'查看作品：返回测试手串',exact:true}).click();await expect(page).toHaveURL(/\/c\/diy\/1$/);}
+for (const entry of ['direct', 'plaza'] as const) test(`DIY preview fills viewport and keeps tools together after ${entry} entry`, async ({page}) => {
+ await page.setViewportSize({width:489,height:954});const writes=await setup(page);
+ if(entry==='plaza'){
+  await page.goto('/c/diy?tab=plaza');
+  await page.getByRole('link',{name:'开始设计',exact:false}).click();
+ }else await page.goto('/c/diy/editor');
+ await expect(page).toHaveURL(/\/c\/diy\/editor$/);
+ const viewport=page.locator('.studio-viewport');
+ const expand=page.getByRole('button',{name:'扩大预览',exact:true});
+ await expect(viewport.locator('.diy-3d-toolbar')).toBeVisible();
+ await page.evaluate(()=>document.fonts.ready);
+ const geometry=()=>viewport.evaluate(element=>{
+  const box=element.getBoundingClientRect();
+  const preview=element.querySelector('.diy-3d-inline')!.getBoundingClientRect();
+  const canvas=element.querySelector('.diy-3d-canvas-area')!.getBoundingClientRect();
+  const tools=[element.querySelector('.diy-3d-toolbar button')!,element.querySelector('.studio-expand-preview')!,element.querySelector('.studio-history button')!].map(button=>button.getBoundingClientRect());
+  return {height:box.height,fillError:Math.max(Math.abs(preview.top-box.top),Math.abs(preview.bottom-box.bottom),Math.abs(preview.left-box.left),Math.abs(preview.right-box.right)),canvasGap:preview.bottom-canvas.bottom,toolBottomGaps:tools.map(tool=>Math.abs(tool.bottom-box.bottom)),widthFits:document.documentElement.scrollWidth<=innerWidth};
+ });
+ const assertGeometry=async()=>{
+  await expect.poll(async()=>{
+   const result=await geometry();
+   return result.fillError<1&&Math.abs(result.canvasGap-44)<1&&result.toolBottomGaps.every(gap=>gap<1)&&result.widthFits;
+  }).toBe(true);
+  return geometry();
+ };
+ const initial=await assertGeometry();
+ await page.getByRole('button',{name:'添加测试木珠',exact:true}).click();
+ await expect(page.locator('.studio-stage-top small')).toHaveText('1 / 60 颗');
+ await viewport.focus();await viewport.press('ArrowRight');
+ await expect(page.locator('.studio-accessible-selection')).toHaveText('第 1 颗 测试木珠');
+ await expand.click();
+ const collapse=page.getByRole('button',{name:'收起预览',exact:true});
+ await expect(collapse).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('.studio-library')).toBeHidden();
+ expect((await assertGeometry()).height).toBeGreaterThan(initial.height);
+ await collapse.click();
+ await expect(expand).toHaveAttribute('aria-pressed','false');
+ await expect(page.locator('.studio-library')).toBeVisible();
+ expect((await assertGeometry()).height).toBeCloseTo(initial.height,0);
+ await viewport.focus();await viewport.press('Delete');
+ await expect(page.locator('.studio-stage-top small')).toHaveText('0 / 60 颗');
+ await viewport.locator('.studio-history').getByRole('button',{name:'撤销',exact:true}).click();
+ await expect(page.locator('.studio-stage-top small')).toHaveText('1 / 60 颗');
+ expect(writes).toEqual([]);
+});
 for(const width of [390,1280])test(`my design opens editor directly and Back restores my list ${width}`,async({page})=>{
  await page.setViewportSize({width,height:844});await setup(page);await mine(page);
  await expect(page.getByRole('button',{name:'保存设计',exact:true})).toBeVisible();

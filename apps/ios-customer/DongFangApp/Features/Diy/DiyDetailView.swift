@@ -16,6 +16,7 @@ struct DiyDetailView: View {
     @State private var showLogin = false
     @State private var pendingAction: String?
     @State private var showEditor = false
+    @State private var previewPresentation: DiyPresentationMode?
     @Environment(\.dismiss) private var dismiss
 
     init(designId: Int64, viewModel: DiyViewModel? = nil) {
@@ -71,8 +72,12 @@ struct DiyDetailView: View {
     // The gallery detail is a viewing surface even for its author.
     private var previewSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            DiyNativeStage3D(slots: viewModel.beadSlots, wrist: Double(viewModel.wristSizeMm), allowance: viewModel.fitAllowanceMm)
+            DiyNativeStage3D(slots: viewModel.beadSlots, wrist: Double(viewModel.wristSizeMm), allowance: viewModel.fitAllowanceMm, presentationMode: previewPresentation)
                 .frame(height: 310).accessibilityIdentifier("diy-readonly-preview")
+            HStack {
+                Spacer()
+                DiyPresentationControl(mode: DiyPresentation.mode(selection: previewPresentation, slots: viewModel.beadSlots)) { previewPresentation = $0 }
+            }
             Text(L10n.lookup(viewModel.currentDesign?.name ?? "我的手串"))
                 .font(AppTypography.title(24)).foregroundStyle(Color.textPrimary)
             Text(L10n.lookup(authorText)).font(.subheadline).foregroundStyle(Color.textSecondary)
@@ -157,7 +162,6 @@ struct DiyDetailView: View {
         .padding(AppSpacing.md)
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.md)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
     }
 
     private func performAction(_ action: String) {

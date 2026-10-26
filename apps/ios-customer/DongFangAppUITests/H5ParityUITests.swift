@@ -237,7 +237,7 @@ final class ProfileExperienceUITests: XCTestCase {
     func testGrowthValueInAlignedAccountStats() {
         let app = XCUIApplication()
         app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = ProcessInfo.processInfo.environment["ASKXUAN_DIRECTORY_TEST_API_URL"] ?? "http://127.0.0.1:5399/api/v1"
-        app.launchArguments = ["--smoke-token", "local-parity-fixture", "--smoke-user-id", "99027", "-tab", "4", "-askxuan.appearance", "light"]
+        app.launchArguments = ["--smoke-token", "local-parity-fixture", "--smoke-user-id", "99027", "-tab", "4", "-askxuan.language", "zh-Hans", "-askxuan.appearance", "light"]
         app.launch()
         let growth = app.buttons["profile-growth"], points = app.buttons["profile-points"], coupons = app.buttons["profile-coupons"]
         XCTAssertTrue(growth.waitForExistence(timeout: 20))
@@ -739,10 +739,22 @@ final class DiyStudioUITests: XCTestCase {
     private func studioApp(user: String) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8913/api/v1"
-        app.launchArguments = ["--smoke-token", "local-diy-fixture", "--smoke-user-id", user, "--parity-diy-studio", "-askxuan.appearance", "light"]
+        app.launchArguments = ["--smoke-token", "local-diy-fixture", "--smoke-user-id", user, "--parity-diy-studio", "-askxuan.appearance", "light", "-askxuan.language", "zh-Hans"]
         app.launch()
         XCTAssertTrue(app.otherElements["diy-3d-stage"].waitForExistence(timeout: 25))
         return app
+    }
+
+    private func searchMaterial(_ name: String, in app: XCUIApplication) {
+        let field = app.textFields["搜索材质或规格"]
+        field.tap()
+        let introduction = app.otherElements["UIContinuousPathIntroductionView"]
+        if introduction.exists {
+            let button = introduction.buttons["Continue"]
+            XCTAssertTrue(button.waitForExistence(timeout: 5)); button.tap()
+            XCTAssertTrue(introduction.waitForNonExistence(timeout: 5))
+        }
+        field.typeText(name + "\n")
     }
 
     private func requestClear(_ app: XCUIApplication) {
@@ -882,6 +894,44 @@ final class DiyStudioUITests: XCTestCase {
         XCTAssertTrue(app.buttons["清空设计"].waitForExistence(timeout: 5))
         let fit = XCTAttachment(screenshot: app.screenshot()); fit.name = "ios-fit-settings"; fit.lifetime = .keepAlways; add(fit)
     }
+    func testHangingKnotModeSelectionAndDragOutUndo() {
+        executionTimeAllowance = 180
+        let app = studioApp(user: "99031")
+        let stage = app.otherElements["diy-3d-stage"]
+        let wood = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "小叶紫檀圆珠，")).firstMatch
+        XCTAssertTrue(wood.waitForExistence(timeout: 20))
+        if app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 颗 ")).firstMatch.exists { clearDraft(app) }
+        wood.tap(); wood.tap(); wood.tap()
+        searchMaterial("中国结流苏", in: app)
+        let material = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "中国结流苏，")).firstMatch
+        XCTAssertTrue(material.waitForExistence(timeout: 5)); material.tap()
+        let knot = app.buttons["第 4 颗 中国结流苏"]
+        XCTAssertTrue(knot.waitForExistence(timeout: 5))
+        let mode = app.buttons["diy-presentation-mode"]
+        XCTAssertEqual(mode.value as? String, "悬挂")
+        let fit = app.descendants(matching: .any)["diy-fit-feedback"].label
+        // A real hit on the long body must select the accessory, with no torus.
+        knot.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.65)).tap()
+        XCTAssertTrue(knot.isSelected)
+        let selected = XCTAttachment(screenshot: app.screenshot()); selected.name = "ios-hanging-knot-selected"; selected.lifetime = .keepAlways; add(selected)
+        mode.tap(); app.buttons["diy-presentation-flat"].tap()
+        XCTAssertEqual(mode.value as? String, "平放")
+        XCTAssertEqual(app.descendants(matching: .any)["diy-fit-feedback"].label, fit)
+        mode.tap(); app.buttons["diy-presentation-hanging"].tap()
+        XCTAssertEqual(mode.value as? String, "悬挂")
+        let oldID = knot.identifier
+        let outside = stage.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.04))
+        knot.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.65)).press(forDuration: 0.1, thenDragTo: outside)
+        XCTAssertTrue(knot.waitForNonExistence(timeout: 5))
+        app.buttons["撤销"].tap()
+        XCTAssertTrue(knot.waitForExistence(timeout: 5)); XCTAssertEqual(knot.identifier, oldID)
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "ios-hanging-knot-restored"; shot.lifetime = .keepAlways; add(shot)
+        app.buttons["保存设计"].tap()
+        XCTAssertTrue(app.textFields["设计名称"].waitForExistence(timeout: 5))
+        app.buttons["取消"].tap()
+        clearDraft(app)
+    }
+
     func testDirectBeadDragReordersThenDragOutDeletesAndUndoRestores() {
         let app = studioApp(user: "99022")
         let stage = app.otherElements["diy-3d-stage"]
@@ -890,8 +940,7 @@ final class DiyStudioUITests: XCTestCase {
         if app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 颗 ")).firstMatch.exists { clearDraft(app) }
         wood.tap()
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "星月菩提，")).firstMatch.tap()
-        let search = app.textFields["搜索材质或规格"]
-        search.tap(); search.typeText("凤眼菩提\n")
+        searchMaterial("凤眼菩提", in: app)
         let phoenix = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "凤眼菩提，")).firstMatch
         XCTAssertTrue(phoenix.waitForExistence(timeout: 5)); phoenix.tap()
         app.buttons["清除搜索"].tap()

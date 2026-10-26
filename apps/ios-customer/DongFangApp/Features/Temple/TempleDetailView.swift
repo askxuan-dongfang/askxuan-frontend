@@ -88,7 +88,6 @@ struct TempleDetailView: View {
                         .background(Color.bgPrimary.opacity(0.6))
                         .background(.ultraThinMaterial)
                         .clipShape(Circle())
-                        .overlay(Circle().stroke(Color.borderDefault, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
             }
@@ -319,7 +318,6 @@ struct TempleDetailView: View {
         .padding(AppSpacing.lg)
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.md)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
     }
 
     private var mastersPanel: some View {

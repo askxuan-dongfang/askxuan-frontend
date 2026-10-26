@@ -475,7 +475,7 @@ watch(() => route.params.id, loadDetail, { immediate: true });
   display: flex;
   gap: 10px;
   align-items: center;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 14px;
   background: var(--admin-surface);
   padding: 16px;
@@ -542,7 +542,7 @@ watch(() => route.params.id, loadDetail, { immediate: true });
 }
 .store-preview-product {
   max-width: 200px;
-  border: 1px solid var(--admin-border-strong);
+  border: 0;
   border-radius: 17px;
   overflow: hidden;
   background: var(--admin-surface);

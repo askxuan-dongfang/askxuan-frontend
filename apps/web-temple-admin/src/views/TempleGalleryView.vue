@@ -125,7 +125,7 @@ onMounted(loadData)
 <style scoped>
 .gallery-panel { padding: 20px; }
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-.gallery-item { overflow: hidden; border: 1px solid var(--admin-border-strong); border-radius: 8px; background: var(--admin-surface); }
+.gallery-item { overflow: hidden; border: 0; border-radius: 8px; background: var(--admin-surface); }
 .gallery-image, .gallery-fallback { display: flex; width: 100%; height: 180px; align-items: center; justify-content: center; }
 .gallery-fallback { color: var(--admin-text-secondary); background: var(--admin-bg); font-size: var(--type-size-label); }
 .gallery-meta { display: flex; min-height: 52px; padding: 8px 10px; align-items: center; justify-content: space-between; }

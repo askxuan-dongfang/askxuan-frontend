@@ -288,7 +288,7 @@ function refreshChartAppearance() {
   gap: 12px;
   padding: 16px;
   background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border);
+  border: 0;
   border-radius: var(--radius-md);
   text-decoration: none;
   transition: border-color var(--admin-transition), transform var(--admin-transition);

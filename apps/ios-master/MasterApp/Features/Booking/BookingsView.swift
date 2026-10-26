@@ -245,10 +245,6 @@ struct BookingsView: View {
         .padding(.vertical, 14)
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.lg)
-        .overlay(
-            RoundedRectangle(cornerRadius: AppRadius.lg)
-                .stroke(Color.borderDefault, lineWidth: 1)
-        )
         .padding(.horizontal, AppSpacing.pageHorizontal)
         .padding(.top, 10)
     }

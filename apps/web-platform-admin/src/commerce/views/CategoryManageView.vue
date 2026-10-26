@@ -218,7 +218,7 @@ onMounted(() => {
 <style scoped>
 .category-navigation-preview {
   padding: 24px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 18px;
   margin-bottom: 22px;
   background: linear-gradient(120deg, var(--admin-surface), var(--admin-surface-muted));
@@ -238,7 +238,7 @@ onMounted(() => {
   margin-top: 18px;
 }
 .category-navigation-preview nav span {
-  border: 1px solid var(--admin-border-strong);
+  border: 0;
   border-radius: 22px;
   padding: 10px 16px;
   background: var(--admin-surface);

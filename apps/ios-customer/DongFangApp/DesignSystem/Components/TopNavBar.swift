@@ -79,7 +79,6 @@ struct DFBackButton: View {
                 .foregroundStyle(Color.accentDefault)
                 .frame(width: 44, height: 44)
                 .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault, lineWidth: 1))
                 .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(BackPressButtonStyle())

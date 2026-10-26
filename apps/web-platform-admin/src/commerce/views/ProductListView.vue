@@ -370,7 +370,7 @@ onMounted(() => {
   margin: 0 0 22px;
 }
 .catalog-overview > div {
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 16px;
   padding: 20px;
   background: var(--admin-surface);
@@ -410,7 +410,7 @@ onMounted(() => {
   padding: 22px;
 }
 .catalog-preview-grid > article {
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 17px;
   overflow: hidden;
   background: var(--admin-surface);

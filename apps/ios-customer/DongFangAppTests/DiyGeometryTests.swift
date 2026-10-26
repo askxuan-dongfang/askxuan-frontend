@@ -1,5 +1,6 @@
 import Foundation
 import SceneKit
+import simd
 import Testing
 @testable import DongFangApp
 
@@ -12,7 +13,7 @@ struct DiyGeometryTests {
         return DiyBeadSlot(material: material, position: 0, slotId: "stable-\(id)")
     }
     @Test func everySharedAccessoryLoadsItsMeshAndMatchingThumbnail() throws {
-        for kind in ["three_way","buddha_head","pendant_lotus","pendant_gourd","pendant_peace","pendant_woodfish","pendant_generic","tassel"] {
+        for kind in ["three_way","buddha_head","pendant_lotus","pendant_gourd","pendant_peace","pendant_woodfish","pendant_generic","tassel","tassel_knot"] {
             let profile = try #require(DiyGeometry.profile(kind)), geometry = try #require(DiyMaterialAppearance.accessoryGeometry(kind))
             let image = try #require(DiyMaterialAppearance.accessoryThumbnail(kind))
             #expect((geometry.sources(for: .vertex).first?.vectorCount ?? 0) > 500)
@@ -63,5 +64,72 @@ struct DiyGeometryTests {
                 #expect(points.contains { $0.y == slot.diameterMm / 2 })
             }
         }
+    }
+    @Test func hangingKeepsGravityIndependentOfSlotAndLeavesPhysicalFitUnchanged() throws {
+        let slots = [bead(diameter: 10, shape: "round"), bead(diameter: 18, shape: "pendant", id: 42)]
+        let layout = DiyPhysicalLayout(slots: slots)
+        #expect(DiyPresentation.mode(selection: nil, slots: slots) == .hanging)
+        #expect(DiyPresentation.mode(selection: nil, slots: [slots[0]]) == .flat)
+        #expect(DiyPresentation.mode(selection: .flat, slots: slots) == .flat)
+        #expect(DiyPresentation.mode(selection: .hanging, slots: [slots[0]]) == .hanging)
+        for angle in stride(from: 0.0, to: 2 * .pi, by: 0.3) {
+            for kind in ["pendant_peace", "tassel", "tassel_knot"] {
+                let down = DiyPresentation.orientation(angle: angle, kind: kind, mode: .hanging).act(SIMD3<Float>(0, 0, 1))
+                #expect(simd_distance(down, SIMD3(0, -1, 0)) < 0.00001)
+            }
+        }
+        let points = DiyGeometry.cordPoints(slots: slots, layout: layout).map { DiyPresentation.point($0, mode: .hanging) }
+        #expect(points.allSatisfy { $0.z == 0 })
+        #expect(DiyPhysicalLayout(slots: slots).innerMm == layout.innerMm)
+        for name in ["中国结流苏", "中國結流蘇"] {
+            #expect(DiyGeometry.kind(shape: "tassel", category: "tassel", materialId: 44, name: name) == "tassel_knot")
+        }
+        let profile = try #require(DiyGeometry.profile("tassel_knot"))
+        #expect(profile.anchors["mount"]?[2] == profile.minZ)
+        #expect(profile.connectorRatio == 0.12)
+    }
+    @Test func hangingSwingSettlesAndHonorsReducedMotionAndDragging() {
+        let active = DiyPresentation.swing(elapsed: 0.1, identity: "stable-44", reducedMotion: false)
+        #expect(simd_length(active) > 0)
+        for time in stride(from: 0.0, to: 3.1, by: 0.01) {
+            #expect(simd_length(DiyPresentation.swing(elapsed: time, identity: "stable-44", reducedMotion: false)) <= Float(DiyPresentation.swingBound))
+        }
+        #expect(DiyPresentation.swing(elapsed: 2.8, identity: "stable-44", reducedMotion: false) == .zero)
+        #expect(DiyPresentation.swing(elapsed: 0.1, identity: "stable-44", reducedMotion: true) == .zero)
+        #expect(DiyPresentation.swing(elapsed: 0.1, identity: "stable-44", reducedMotion: false, dragging: true) == .zero)
+    }
+    @Test func sparseCordPreservesOpeningAndVerticalTubeHasFiniteVertices() {
+        let slots = [bead(diameter: 10, shape: "round")], layout = DiyPhysicalLayout(slots: [bead(diameter: 10, shape: "round")])
+        let points = DiyGeometry.cordPoints(slots: slots, layout: layout)
+        #expect(points.allSatisfy { hypot($0.x, $0.z) > layout.radius * 0.95 })
+        let paths: [[SIMD3<Double>]] = [[.zero, .zero, SIMD3(0, -5, 0)], points.map { DiyPresentation.point($0, mode: .hanging) }]
+        for path in paths {
+            let tube = DiyMaterialAppearance.cordGeometry(points: path, scale: 0.1)
+            let vertices = DiyMaterialAppearance.vertices(of: tube)
+            #expect(!vertices.isEmpty)
+            #expect(vertices.allSatisfy { $0.x.isFinite && $0.y.isFinite && $0.z.isFinite })
+            #expect(tube.elements.allSatisfy { $0.primitiveCount > 0 })
+        }
+    }
+
+    @Test func naturalHangingCentersAccessoriesDownAndKeepsConnectorsVertical() throws {
+        let slots = [bead(diameter: 12, shape: "round"), bead(diameter: 18, shape: "pendant", id: 42), bead(diameter: 18, shape: "pendant", id: 43)]
+        let layout = DiyPhysicalLayout(slots: slots)
+        let rotation = DiyPresentation.initialHangingRotation(slots: slots, angles: layout.angles)
+        let x = [1, 2].reduce(0.0) { $0 + cos(layout.angles[$1] + rotation) }
+        let y = [1, 2].reduce(0.0) { $0 + sin(layout.angles[$1] + rotation) }
+        #expect(abs(x) < 0.00001 && y > 0)
+        let placements = DiyPresentation.hangingPlacements(slots: slots, layout: layout, rotation: rotation)
+        #expect(placements[0] == nil)
+        for placement in placements.compactMap({ $0 }) {
+            #expect(placement.connectorMm >= placement.standOffMm)
+            #expect(placement.standOffMm >= 0)
+        }
+        let solo = [slots[0], slots[1]], soloLayout = DiyPhysicalLayout(slots: [slots[0], slots[1]])
+        let soloRotation = DiyPresentation.initialHangingRotation(slots: solo, angles: soloLayout.angles)
+        let pendant = try #require(DiyPresentation.hangingPlacements(slots: solo, layout: soloLayout, rotation: soloRotation)[1])
+        #expect(pendant.standOffMm == 0)
+        #expect(abs(pendant.connectorMm - 18 * 0.35) < 0.00001)
+        #expect(DiyGeometry.cordPoints(slots: solo, layout: soloLayout, rotation: soloRotation).allSatisfy { $0.x.isFinite && $0.z.isFinite })
     }
 }

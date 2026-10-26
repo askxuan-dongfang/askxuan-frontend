@@ -361,7 +361,6 @@ struct AppearanceSettingsView: View {
                     }
                 }
                 .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: AppRadius.lg))
-                .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
                 NavigationLink { LanguageSettingsView() } label: {
                     HStack { Label(L10n.text("语言"), systemImage: "character.bubble"); Spacer(); Text(verbatim: L10n.store.preference.title); Image(systemName: "chevron.right") }
                         .font(AppTypography.body).padding(16)

@@ -199,7 +199,7 @@ struct HomeView: View {
                 .stroke(Color.accentDefault.opacity(colorScheme == .dark ? 0.12 : 0.07), lineWidth: 1.5)
                 .frame(width: min(132, width), height: 116).allowsHitTesting(false).accessibilityHidden(true)
         }
-        .modifier(HomeCardSurface())
+        .appCardSurface(cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .combine)
     }
@@ -240,7 +240,7 @@ struct HomeView: View {
         .padding(.horizontal, 8).padding(.vertical, 12)
         .frame(width: width)
         .frame(minHeight: contentCardMinHeight, maxHeight: .infinity)
-        .modifier(HomeCardSurface())
+        .appCardSurface(cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .combine)
     }
@@ -275,7 +275,7 @@ struct HomeView: View {
                 .padding(.horizontal, 14).padding(.vertical, 12)
                 .frame(maxWidth: .infinity, minHeight: contentCardMinHeight, alignment: .leading)
                 .background(LinearGradient(colors: [Color.brandDefault.opacity(0.10), Color.accentDefault.opacity(0.05)], startPoint: .leading, endPoint: .trailing))
-                .modifier(HomeCardSurface())
+                .appCardSurface(cornerRadius: 12)
                 .contentShape(RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(CardPressButtonStyle())
@@ -308,7 +308,7 @@ struct HomeView: View {
                             .padding(8)
                             .frame(width: dynamicTypeSize.isAccessibilitySize ? 160 : 104)
                             .frame(minHeight: 104)
-                            .modifier(HomeCardSurface())
+                            .appCardSurface(cornerRadius: 12)
                         }
                         .buttonStyle(CardPressButtonStyle())
                         .accessibilityIdentifier("home-diy-plaza")
@@ -330,7 +330,7 @@ struct HomeView: View {
     private func designPreview(slots: [DiyBeadSlot]) -> some View {
         DiyMiniBracelet(slots: slots, fallbackCount: 0)
             .frame(width: 104, height: 104)
-            .modifier(HomeCardSurface())
+            .appCardSurface(cornerRadius: 12)
     }
 
     private var pointsSection: some View {
@@ -358,7 +358,7 @@ struct HomeView: View {
             .multilineTextAlignment(.center)
             .padding(.horizontal, 8).padding(.vertical, 7)
             .frame(maxWidth: .infinity, minHeight: contentCardMinHeight, maxHeight: .infinity)
-            .modifier(HomeCardSurface())
+            .appCardSurface(cornerRadius: 12)
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(CardPressButtonStyle())
@@ -419,7 +419,7 @@ struct HomeView: View {
             }
             .padding(12).frame(maxWidth: .infinity, minHeight: 102, alignment: .topLeading)
         }
-        .frame(width: width).modifier(HomeCardSurface())
+        .frame(width: width).appCardSurface(cornerRadius: 12)
     }
 
     private func hotMastersSection(width: CGFloat) -> some View {
@@ -469,7 +469,7 @@ struct HomeView: View {
             }
             .padding(12).frame(maxWidth: .infinity, minHeight: 102, alignment: .topLeading)
         }
-        .frame(width: width).modifier(HomeCardSurface())
+        .frame(width: width).appCardSurface(cornerRadius: 12)
     }
 
     private func recommendationHeading(_ title: String) -> some View {
@@ -500,18 +500,6 @@ struct HomeView: View {
             ServiceContainerView(serviceType: type)
         case .diy:          DiyBraceletView()
         }
-    }
-}
-
-private struct HomeCardSurface: ViewModifier {
-    @Environment(\.colorScheme) private var colorScheme
-
-    func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
-        content
-            .background(Color.bgSecondary, in: shape)
-            .clipShape(shape)
-            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.1 : 0.025), radius: 6, x: 0, y: 2)
     }
 }
 
@@ -636,7 +624,6 @@ private struct IntentionHubView: View {
         }
         .padding(16)
         .background(Color.bgSecondary)
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.borderDefault, lineWidth: 1))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .padding(.horizontal, 20)
     }
@@ -677,7 +664,6 @@ private struct IntentionHubView: View {
             Image(systemName: "chevron.right").font(AppTypography.caption).foregroundStyle(Color.textTertiary)
         }
         .padding(10).background(Color.bgSecondary)
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.borderDefault, lineWidth: 1))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 

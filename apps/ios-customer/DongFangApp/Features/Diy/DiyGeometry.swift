@@ -1,12 +1,14 @@
 import Foundation
+import simd
 
 // Shared catalog coordinates: X follows the cord, Y is up, Z faces outward.
 // Procedural preview assets are dimensional illustrations, not merchant scans.
 enum DiyGeometry {
     struct Profile: Decodable {
-        let pitchRatio, spacingRatio, radialRatio, minY, maxY, minZ, maxZ: Double
+        let pitchRatio, spacingRatio, radialRatio, minX, maxX, minY, maxY, minZ, maxZ: Double
         let file, thumbnail: String
         let anchors: [String: [Double]]
+        let connectorRatio: Double?
     }
     private struct Catalog: Decodable {
         struct Variant: Decodable { let matches: [String]; let kind: String }
@@ -25,11 +27,12 @@ enum DiyGeometry {
     }()
     static func kind(shape: String?, category: String?, materialId: Int64, name: String? = nil) -> String? {
         guard let kind = ["three_way", "buddha_head", "pendant", "tassel"].first(where: { shape == $0 || category == $0 }) else { return nil }
-        if kind == "pendant" {
+        if kind == "pendant" || kind == "tassel" {
+            let fallback = kind == "pendant" ? "pendant_generic" : "tassel"
             if let name, !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return catalog?.nameVariants.first(where: { variant in variant.matches.contains(where: { name.contains($0) }) })?.kind ?? "pendant_generic"
+                return catalog?.nameVariants.first(where: { variant in variant.matches.contains(where: { name.contains($0) }) })?.kind ?? fallback
             }
-            return catalog?.byMaterialId[String(materialId)] ?? "pendant_generic"
+            return catalog?.byMaterialId[String(materialId)] ?? fallback
         }
         return kind
     }
@@ -52,27 +55,157 @@ enum DiyGeometry {
         let hash = identity.utf8.reduce(UInt32(0)) { ($0 &* 31) &+ UInt32($1) }
         return Float(hash) / Float(UInt32.max) * 2 * .pi
     }
-    static func cordPoints(slots: [DiyBeadSlot], layout: DiyPhysicalLayout) -> [SIMD3<Double>] {
+    static func cordPoints(slots: [DiyBeadSlot], layout: DiyPhysicalLayout, rotation: Double = 0) -> [SIMD3<Double>] {
+        let angles = layout.angles.map { $0 + rotation }
         if slots.isEmpty { return (0...128).map { let angle = Double($0 % 128) / 128 * 2 * .pi; return SIMD3(cos(angle) * layout.radius, 0.4, sin(angle) * layout.radius) } }
         let physical = slots.map(dimensions)
+        func attachment(_ index: Int, side: String) -> SIMD3<Double> {
+            let size = physical[index], angle = angles[index]
+            let local = size.kind.flatMap(profile)?.anchors[side]
+            let anchor: SIMD3<Double>
+            if let local, local.count == 3 { anchor = SIMD3(local[0], local[1], local[2]) * size.diameterMm }
+            else { anchor = SIMD3(side == "left" ? -size.pitchMm / 2 : size.pitchMm / 2, 0, 0) }
+            return SIMD3(cos(angle) * layout.radius + sin(angle) * anchor.x + cos(angle) * anchor.z,
+                         size.centerHeightMm + anchor.y,
+                         sin(angle) * layout.radius - cos(angle) * anchor.x + sin(angle) * anchor.z)
+        }
         var points: [SIMD3<Double>] = []
-        for i in slots.indices {
-            let next = (i + 1) % slots.count, angle = layout.angles[i], nextAngle = layout.angles[next]
-            let x = cos(angle) * layout.radius, z = sin(angle) * layout.radius
-            let half = physical[i].pitchMm / 2, nextHalf = physical[next].pitchMm / 2
-            let start = SIMD3(x - sin(angle) * half, physical[i].centerHeightMm, z + cos(angle) * half)
-            let end = SIMD3(cos(nextAngle) * layout.radius + sin(nextAngle) * nextHalf, physical[next].centerHeightMm, sin(nextAngle) * layout.radius - cos(nextAngle) * nextHalf)
-            points.append(SIMD3(x + sin(angle) * half, physical[i].centerHeightMm, z - cos(angle) * half)); points.append(start)
+        for index in slots.indices {
+            let next = (index + 1) % slots.count
+            let start = attachment(index, side: "left"), end = attachment(next, side: "right")
+            points.append(attachment(index, side: "right")); points.append(start)
             let from = atan2(start.z, start.x); var to = atan2(end.z, end.x)
             while to <= from { to += 2 * .pi }
             if to - from > .pi * 1.5 && slots.count > 1 { to -= 2 * .pi }
-            let steps = max(2, Int(ceil(abs(to - from) / 0.1))), r1 = hypot(start.x, start.z), r2 = hypot(end.x, end.z)
-            for step in 1..<steps {
-                let t = Double(step) / Double(steps), a = from + (to - from) * t, r = r1 + (r2 - r1) * t
-                points.append(SIMD3(cos(a) * r, start.y + (end.y - start.y) * t, sin(a) * r))
+            // Match the shared H5 cubic arcs: tangent-continuous bore exits,
+            // split into quarter arcs so sparse bracelets never cut the opening.
+            let segments = max(1, Int(ceil(abs(to - from) / (.pi / 2))))
+            let r1 = hypot(start.x, start.z), r2 = hypot(end.x, end.z)
+            func arcPoint(_ t: Double) -> SIMD3<Double> {
+                let angle = from + (to - from) * t, radius = r1 + (r2 - r1) * t
+                return SIMD3(cos(angle) * radius, start.y + (end.y - start.y) * t * t * (3 - 2 * t), sin(angle) * radius)
+            }
+            for segment in 0..<segments {
+                let t0 = Double(segment) / Double(segments), t1 = Double(segment + 1) / Double(segments)
+                let a0 = from + (to - from) * t0, a1 = from + (to - from) * t1
+                let p0 = segment == 0 ? start : arcPoint(t0), p3 = segment + 1 == segments ? end : arcPoint(t1)
+                let angle0 = segment == 0 ? angles[index] : a0
+                let angle1 = segment + 1 == segments ? angles[next] : a1
+                let handle = 4.0 / 3 * tan((a1 - a0) / 4) * (hypot(p0.x, p0.z) + hypot(p3.x, p3.z)) / 2
+                let p1 = p0 + SIMD3(-sin(angle0) * handle, 0, cos(angle0) * handle)
+                let p2 = p3 - SIMD3(-sin(angle1) * handle, 0, cos(angle1) * handle)
+                let samples = max(4, Int(ceil(abs(a1 - a0) / 0.07)))
+                for sample in 1...samples {
+                    let t = Double(sample) / Double(samples), u = 1 - t
+                    let first = p0 * (u * u * u), second = p1 * (3 * u * u * t)
+                    let third = p2 * (3 * u * t * t), fourth = p3 * (t * t * t)
+                    points.append(first + second + third + fourth)
+                }
             }
         }
-        if let first = points.first { points.append(first) }; return points
+        if let first = points.first, points.last != first { points.append(first) }
+        return points
+    }
+}
+
+
+enum DiyPresentationMode: String, CaseIterable {
+    case flat, hanging
+    var title: String { self == .hanging ? "悬挂" : "平放" }
+}
+
+enum DiyPresentation {
+    static let settlingDuration = 2.8
+    static let swingBound = 0.025
+    static func initialHangingRotation(slots: [DiyBeadSlot], angles: [Double]) -> Double {
+        let hanging = angles.indices.filter { isSuspended(DiyGeometry.dimensions(slots[$0]).kind) }.map { angles[$0] }
+        guard let first = hanging.first else { return 0 }
+        let x = hanging.reduce(0) { $0 + cos($1) }, y = hanging.reduce(0) { $0 + sin($1) }
+        return .pi / 2 - (hypot(x, y) < 0.000001 ? first : atan2(y, x))
+    }
+    static func isSuspended(_ kind: String?) -> Bool {
+        kind?.hasPrefix("pendant") == true || kind?.hasPrefix("tassel") == true
+    }
+    static func mode(selection: DiyPresentationMode?, slots: [DiyBeadSlot]) -> DiyPresentationMode {
+        selection ?? (slots.contains { isSuspended(DiyGeometry.dimensions($0).kind) } ? .hanging : .flat)
+    }
+    static func point(_ point: SIMD3<Double>, mode: DiyPresentationMode) -> SIMD3<Double> {
+        // Display-only rotation; the physical fit and pricing layout are untouched.
+        mode == .hanging ? SIMD3(point.x, -point.z, 0) : point
+    }
+    static func orientation(angle: Double, kind: String?, mode: DiyPresentationMode) -> simd_quatf {
+        let turn = simd_quatf(angle: Float(.pi / 2 - angle), axis: SIMD3(0, 1, 0))
+        guard mode == .hanging else { return turn }
+        let upright = simd_quatf(angle: .pi / 2, axis: SIMD3(1, 0, 0))
+        return isSuspended(kind) ? upright : upright * turn
+    }
+    struct HangingPlacement {
+        let standOffMm, connectorMm, sweepMm: Double
+        let bounds: CGRect
+    }
+    static func hangingPlacements(slots: [DiyBeadSlot], layout: DiyPhysicalLayout, rotation: Double = 0) -> [HangingPlacement?] {
+        let sizes = slots.map(DiyGeometry.dimensions), angles = layout.angles.map { $0 + rotation }
+        var mainBodies: [(bounds: CGRect, depth: Double, circleRadius: Double)] = []
+        for index in sizes.indices where !isSuspended(sizes[index].kind) {
+            let size = sizes[index], angle = angles[index]
+            let radial = max(abs(size.minZ), abs(size.maxZ)), axial = size.pitchMm / 2
+            let halfX = abs(sin(angle)) * axial + abs(cos(angle)) * radial
+            let halfY = abs(cos(angle)) * axial + abs(sin(angle)) * radial
+            mainBodies.append((CGRect(x: cos(angle) * layout.radius - halfX, y: -sin(angle) * layout.radius - halfY,
+                                      width: halfX * 2, height: halfY * 2), size.centerHeightMm,
+                               size.kind == nil && (slots[index].shape == "round" || slots[index].shape == nil) ? size.radialMm / 2 : 0))
+        }
+        var candidates: [(index: Int, connector: Double, sweep: Double, bounds: CGRect, mountY: Double)] = []
+        for index in sizes.indices {
+            let size = sizes[index]
+            guard isSuspended(size.kind), let kind = size.kind, let profile = DiyGeometry.profile(kind) else { continue }
+            let mount = profile.anchors["mount"] ?? [0, 0, 0]
+            let mountX = mount.count == 3 ? mount[0] : 0, mountY = mount.count == 3 ? mount[1] : 0, mountZ = mount.count == 3 ? mount[2] : 0
+            let bodyLength = max(abs(size.minZ - mountZ * size.diameterMm), abs(size.maxZ - mountZ * size.diameterMm))
+            let connector = max(profile.connectorRatio ?? 0.12, 0.35) * size.diameterMm
+            let width = max(abs(profile.minX - mountX), abs(profile.maxX - mountX)) * size.diameterMm
+            let sweep = max(abs(profile.minY - mountY), abs(profile.maxY - mountY)) * size.diameterMm + sin(swingBound) * (bodyLength + width)
+            let x = cos(angles[index]) * layout.radius, y = -sin(angles[index]) * layout.radius
+            let halfWidth = width + sin(swingBound) * (bodyLength + sweep), verticalSweep = sin(swingBound) * (width + sweep)
+            let bounds = CGRect(x: x - halfWidth, y: y - connector - bodyLength - verticalSweep,
+                                width: halfWidth * 2, height: bodyLength + verticalSweep * 2)
+            candidates.append((index, connector, sweep, bounds, y - connector))
+        }
+        candidates.sort { $0.mountY == $1.mountY ? $0.index < $1.index : $0.mountY < $1.mountY }
+        func overlaps(_ a: CGRect, _ b: CGRect) -> Bool {
+            a.minX <= b.maxX && a.maxX >= b.minX && a.minY <= b.maxY && a.maxY >= b.minY
+        }
+        var placed: [HangingPlacement] = [], result = [HangingPlacement?](repeating: nil, count: slots.count)
+        for candidate in candidates {
+            var connector = candidate.connector, standOff = 0.0, bounds = candidate.bounds
+            for _ in 0..<3 {
+                let nearDepth = mainBodies.filter { body in
+                    if body.circleRadius > 0 {
+                        let dx = max(bounds.minX - body.bounds.midX, 0, body.bounds.midX - bounds.maxX)
+                        let dy = max(bounds.minY - body.bounds.midY, 0, body.bounds.midY - bounds.maxY)
+                        return hypot(dx, dy) <= body.circleRadius
+                    }
+                    return overlaps(bounds, body.bounds)
+                }.map(\.depth).max() ?? 0
+                standOff = nearDepth > 0 ? nearDepth + candidate.sweep + 0.6 : 0
+                for other in placed where overlaps(bounds, other.bounds) {
+                    standOff = max(standOff, other.standOffMm + other.sweepMm + candidate.sweep + 0.6)
+                }
+                // The short connector reads as hanging cord, not a horizontal bar.
+                if connector >= standOff { break }
+                let drop = standOff - connector
+                connector += drop; bounds.origin.y -= drop
+            }
+            let placement = HangingPlacement(standOffMm: standOff, connectorMm: connector, sweepMm: candidate.sweep, bounds: bounds)
+            placed.append(placement); result[candidate.index] = placement
+        }
+        return result
+    }
+    static func swing(elapsed: Double, identity: String, reducedMotion: Bool, dragging: Bool = false) -> SIMD2<Float> {
+        guard !reducedMotion, !dragging, elapsed >= 0, elapsed < settlingDuration else { return .zero }
+        let phase = Double(DiyGeometry.textureTurn(identity))
+        let amplitude = 0.04 * exp(-3.2 * elapsed) * sin(8.8 * elapsed)
+        return SIMD2(Float(cos(phase) * amplitude), Float(sin(phase) * amplitude))
     }
 }
 

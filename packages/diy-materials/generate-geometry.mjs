@@ -119,10 +119,19 @@ function pendant(kind) {
   }
   return b.mesh();
 }
-function tassel() {
+function tassel(knot = false) {
   const b=builder(); b.bail();
-  for(let i=0;i<5;i++) b.tube(t=>[.115*Math.sin(t*2*Math.PI),.075*Math.cos(t*2*Math.PI),.2+i*.022],.022,24,6);
-  for(let i=0;i<15;i++) {const spread=(i-7)/7; b.tube(t=>[spread*(.07+.19*t)+.012*Math.sin(t*Math.PI*2+i),-.015+.035*Math.sin(i*2.4)*(1-t),.29+t*(.68+.06*Math.cos(i))],.012,14,5);}
+  const offset = knot ? .62 : 0;
+  if (knot) {
+    // Two interlaced closed cord loops, separated in depth at their crossings.
+    for (const turn of [0, Math.PI / 2]) b.tube(t => {
+      const a = t * Math.PI * 2, x = .32 * Math.sin(a), z = .24 * Math.sin(2 * a);
+      return [x * Math.cos(turn) - z * Math.sin(turn), .055 * Math.cos(2 * a + turn), .46 + x * Math.sin(turn) + z * Math.cos(turn)];
+    }, .045, 96, 8);
+    b.tube(t => [0, 0, .1 + t * .73], .035, 20, 8);
+  }
+  for(let i=0;i<5;i++) b.tube(t=>[.115*Math.sin(t*2*Math.PI),.075*Math.cos(t*2*Math.PI),.2+offset+i*.022],.022,24,6);
+  for(let i=0;i<15;i++) {const spread=(i-7)/7; b.tube(t=>[spread*(.07+.19*t)+.012*Math.sin(t*Math.PI*2+i),-.015+.035*Math.sin(i*2.4)*(1-t),.29+offset+t*(.68+.06*Math.cos(i))],.012,14,5);}
   return b.mesh();
 }
 function motherMesh() {
@@ -169,12 +178,14 @@ const models = {
   pendant_woodfish: {mesh:pendant('woodfish'),pitchRatio:.1,radialRatio:.12,minY:-.2,maxY:.224,minZ:-.145,maxZ:.96},
   pendant_generic: {mesh:pendant('generic'),pitchRatio:.1,radialRatio:.12,minY:-.145,maxY:.145,minZ:-.145,maxZ:1},
   tassel: {mesh:tassel(),pitchRatio:.1,radialRatio:.12,minY:-.145,maxY:.145,minZ:-.145,maxZ:1.05},
+  tassel_knot: {mesh:tassel(true),pitchRatio:.1,radialRatio:.12,minY:-.145,maxY:.145,minZ:-.145,maxZ:1.67},
 };
-const catalog = {version:1,units:'nominal-diameter',axes:{cord:'x',up:'y',outward:'z'},byMaterialId:{'11':'pendant_lotus','41':'pendant_gourd','42':'pendant_peace','43':'pendant_woodfish'},nameVariants:[{matches:['莲花','蓮花'],kind:'pendant_lotus'},{matches:['葫芦','葫蘆'],kind:'pendant_gourd'},{matches:['平安扣'],kind:'pendant_peace'},{matches:['木鱼','木魚'],kind:'pendant_woodfish'}],models:{}};
+const catalog = {version:1,units:'nominal-diameter',axes:{cord:'x',up:'y',outward:'z'},byMaterialId:{'11':'pendant_lotus','41':'pendant_gourd','42':'pendant_peace','43':'pendant_woodfish'},nameVariants:[{matches:['莲花','蓮花'],kind:'pendant_lotus'},{matches:['葫芦','葫蘆'],kind:'pendant_gourd'},{matches:['平安扣'],kind:'pendant_peace'},{matches:['木鱼','木魚'],kind:'pendant_woodfish'},{matches:['中国结','中國結'],kind:'tassel_knot'}],models:{}};
 for (const [name,{mesh,...metadata}] of Object.entries(models)) {
   const file=`geometry-${name}.json`; await writeFile(root+file,JSON.stringify({version:1,...mesh})+'\n');
   const image=`geometry-${name}.png`;await writeFile(root+image,thumbnail(mesh));
-  catalog.models[name]={...metadata,spacingRatio:name.startsWith('pendant')?.9:name==='tassel'?.56:1,file,thumbnail:image,anchors:{left:[-metadata.pitchRatio/2,0,0],right:[metadata.pitchRatio/2,0,0],...(name==='three_way'||name==='buddha_head'?{outward:[0,0,metadata.maxZ]}:{})}};
+  const xs=mesh.positions.filter((_,index)=>index%3===0);
+  catalog.models[name]={...metadata,minX:Math.min(...xs),maxX:Math.max(...xs),spacingRatio:name.startsWith('pendant')?.9:name.startsWith('tassel')?.56:1,file,thumbnail:image,...(name.startsWith('pendant')||name.startsWith('tassel')?{connectorRatio:.12}:{}),anchors:{...(name.startsWith('pendant')||name.startsWith('tassel')?{mount:[0,0,metadata.minZ]}:{}),left:[-metadata.pitchRatio/2,0,0],right:[metadata.pitchRatio/2,0,0],...(name==='three_way'||name==='buddha_head'?{outward:[0,0,metadata.maxZ]}:{})}};
   console.log(`${name}: ${mesh.positions.length/3} vertices, ${mesh.indices.length/3} triangles`);
 }
 await writeFile(root+'geometry-catalog.json',JSON.stringify(catalog,null,2)+'\n');

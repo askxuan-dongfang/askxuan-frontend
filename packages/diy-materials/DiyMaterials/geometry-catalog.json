@@ -39,6 +39,13 @@
         "木魚"
       ],
       "kind": "pendant_woodfish"
+    },
+    {
+      "matches": [
+        "中国结",
+        "中國結"
+      ],
+      "kind": "tassel_knot"
     }
   ],
   "models": {
@@ -49,6 +56,8 @@
       "maxY": 0.39,
       "minZ": -0.43,
       "maxZ": 0.65,
+      "minX": -0.500134,
+      "maxX": 0.50027,
       "spacingRatio": 1,
       "file": "geometry-three_way.json",
       "thumbnail": "geometry-three_way.png",
@@ -77,6 +86,8 @@
       "maxY": 0.43,
       "minZ": -0.47,
       "maxZ": 0.87,
+      "minX": -0.490516,
+      "maxX": 0.489758,
       "spacingRatio": 1,
       "file": "geometry-buddha_head.json",
       "thumbnail": "geometry-buddha_head.png",
@@ -105,10 +116,18 @@
       "maxY": 0.145,
       "minZ": -0.145,
       "maxZ": 0.98,
+      "minX": -0.416,
+      "maxX": 0.416,
       "spacingRatio": 0.9,
       "file": "geometry-pendant_lotus.json",
       "thumbnail": "geometry-pendant_lotus.png",
+      "connectorRatio": 0.12,
       "anchors": {
+        "mount": [
+          0,
+          0,
+          -0.145
+        ],
         "left": [
           -0.05,
           0,
@@ -128,10 +147,18 @@
       "maxY": 0.175,
       "minZ": -0.145,
       "maxZ": 1,
+      "minX": -0.32,
+      "maxX": 0.32,
       "spacingRatio": 0.9,
       "file": "geometry-pendant_gourd.json",
       "thumbnail": "geometry-pendant_gourd.png",
+      "connectorRatio": 0.12,
       "anchors": {
+        "mount": [
+          0,
+          0,
+          -0.145
+        ],
         "left": [
           -0.05,
           0,
@@ -151,10 +178,18 @@
       "maxY": 0.145,
       "minZ": -0.145,
       "maxZ": 1.035,
+      "minX": -0.485,
+      "maxX": 0.485,
       "spacingRatio": 0.9,
       "file": "geometry-pendant_peace.json",
       "thumbnail": "geometry-pendant_peace.png",
+      "connectorRatio": 0.12,
       "anchors": {
+        "mount": [
+          0,
+          0,
+          -0.145
+        ],
         "left": [
           -0.05,
           0,
@@ -174,10 +209,18 @@
       "maxY": 0.224,
       "minZ": -0.145,
       "maxZ": 0.96,
+      "minX": -0.42,
+      "maxX": 0.42,
       "spacingRatio": 0.9,
       "file": "geometry-pendant_woodfish.json",
       "thumbnail": "geometry-pendant_woodfish.png",
+      "connectorRatio": 0.12,
       "anchors": {
+        "mount": [
+          0,
+          0,
+          -0.145
+        ],
         "left": [
           -0.05,
           0,
@@ -197,10 +240,18 @@
       "maxY": 0.145,
       "minZ": -0.145,
       "maxZ": 1,
+      "minX": -0.33,
+      "maxX": 0.33,
       "spacingRatio": 0.9,
       "file": "geometry-pendant_generic.json",
       "thumbnail": "geometry-pendant_generic.png",
+      "connectorRatio": 0.12,
       "anchors": {
+        "mount": [
+          0,
+          0,
+          -0.145
+        ],
         "left": [
           -0.05,
           0,
@@ -220,10 +271,49 @@
       "maxY": 0.145,
       "minZ": -0.145,
       "maxZ": 1.05,
+      "minX": -0.271859,
+      "maxX": 0.281287,
       "spacingRatio": 0.56,
       "file": "geometry-tassel.json",
       "thumbnail": "geometry-tassel.png",
+      "connectorRatio": 0.12,
       "anchors": {
+        "mount": [
+          0,
+          0,
+          -0.145
+        ],
+        "left": [
+          -0.05,
+          0,
+          0
+        ],
+        "right": [
+          0.05,
+          0,
+          0
+        ]
+      }
+    },
+    "tassel_knot": {
+      "pitchRatio": 0.1,
+      "radialRatio": 0.12,
+      "minY": -0.145,
+      "maxY": 0.145,
+      "minZ": -0.145,
+      "maxZ": 1.67,
+      "minX": -0.365,
+      "maxX": 0.365,
+      "spacingRatio": 0.56,
+      "file": "geometry-tassel_knot.json",
+      "thumbnail": "geometry-tassel_knot.png",
+      "connectorRatio": 0.12,
+      "anchors": {
+        "mount": [
+          0,
+          0,
+          -0.145
+        ],
         "left": [
           -0.05,
           0,

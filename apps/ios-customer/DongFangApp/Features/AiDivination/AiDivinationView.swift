@@ -576,7 +576,7 @@ struct AiDivinationView: View {
                     }
                     if viewModel.models.isEmpty && !viewModel.modelsLoading {
                         Button(L10n.text("重新加载模型")) { Task { await viewModel.loadModels() } }
-                            .buttonStyle(.bordered).frame(maxWidth: .infinity)
+                            .buttonStyle(SecondaryActionButtonStyle()).frame(maxWidth: .infinity)
                     }
                 }.padding(20)
             }
@@ -667,7 +667,7 @@ struct AiDivinationView: View {
                 }
                 if message.role == "assistant" {
                     if message.status == "awaiting_input", let value = message.agent?.clarification {
-                        Button(L10n.text("补充资料并继续")) { clarificationSession = message.sessionId; clarification = value }.buttonStyle(.bordered).disabled(viewModel.isSending)
+                        Button(L10n.text("补充资料并继续")) { clarificationSession = message.sessionId; clarification = value }.buttonStyle(SecondaryActionButtonStyle()).disabled(viewModel.isSending)
                     }
                     if message.status == "pending" { Button(L10n.text("停止生成")) { Task { await viewModel.stop(message) } }.font(.caption) }
                     if message.agent != nil { AiTraceView(message: message) }
@@ -682,12 +682,6 @@ struct AiDivinationView: View {
             .padding(.vertical, 11)
             .background(message.role == "user" ? Color.brandDefault : Color.bgSecondary)
             .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay {
-                if message.role == "assistant" {
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.borderDefault, lineWidth: 1)
-                }
-            }
 
             if message.role == "assistant" { Spacer(minLength: 36) }
         }

@@ -241,7 +241,7 @@ extension View {
     func diySurface(highlighted: Bool = false) -> some View {
         background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 20))
             .clipShape(RoundedRectangle(cornerRadius: 20))
-            .overlay { RoundedRectangle(cornerRadius: 20).stroke(highlighted ? Color.accentDefault.opacity(0.5) : Color.borderDefault, lineWidth: 1) }
+            .overlay { RoundedRectangle(cornerRadius: 20).stroke(highlighted ? Color.accentDefault.opacity(0.5) : Color.clear, lineWidth: 1) }
     }
 }
 

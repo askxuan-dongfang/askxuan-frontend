@@ -180,7 +180,7 @@ struct AiReportWorkspace: View {
         }.padding(.vertical, 23)
     }
     private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 16, content: content).padding(22).frame(maxWidth: .infinity, alignment: .leading).background(Color.bgSecondary.opacity(0.9)).clipShape(RoundedRectangle(cornerRadius: 20)).overlay(RoundedRectangle(cornerRadius: 20).stroke(accent.opacity(0.10)))
+        VStack(alignment: .leading, spacing: 16, content: content).padding(22).frame(maxWidth: .infinity, alignment: .leading).background(Color.bgSecondary.opacity(0.9)).clipShape(RoundedRectangle(cornerRadius: 20))
     }
     private func chapters(_ list: [String]) -> some View {
         ForEach(Array(list.enumerated()), id: \.offset) { index, title in HStack(spacing: 16) { Text(L10n.lookup(String(format: "%02d", index + 1))).font(AppTypography.title(14)).opacity(0.5); Text(L10n.lookup(title)).font(AppTypography.body); Spacer() }.padding(.vertical, 5) }
@@ -325,7 +325,6 @@ struct AiReportLibrary: View {
                             }.buttonStyle(.plain)
                         }
                     }.background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 16))
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.borderDefault, lineWidth: 1))
                 }
                 if busy { ProgressView() } else if more && !reports.isEmpty { Button(L10n.text("加载更多")) { Task { await load() } } }
             }.padding(16).frame(maxWidth: 880)
@@ -425,7 +424,6 @@ struct AiTopicTile: View {
             Spacer(minLength: 0)
         }.padding(16).frame(maxWidth: .infinity, minHeight: 155, alignment: .topLeading)
             .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.borderDefault))
     }
 }
 

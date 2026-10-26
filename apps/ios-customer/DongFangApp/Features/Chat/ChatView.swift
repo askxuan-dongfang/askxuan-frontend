@@ -535,7 +535,7 @@ struct CommunityPostDetailView: View {
                             Label(L10n.lookup(following ? L10n.text("已关注") : L10n.text("关注大师")), systemImage: following ? "person.crop.circle.badge.checkmark" : "person.crop.circle.badge.plus")
                         }
                     }
-                    .buttonStyle(.bordered).disabled(busy)
+                    .buttonStyle(SecondaryActionButtonStyle()).disabled(busy)
 
                     Divider()
                     Text(L10n.text("评论 · \(commentsTotal)")).font(.headline)

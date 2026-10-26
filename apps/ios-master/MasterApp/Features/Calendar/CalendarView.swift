@@ -320,7 +320,7 @@ struct CalendarView: View {
                     } label: {
                         Text(L10n.text("设置休息日")).frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(SecondaryActionButtonStyle())
                     .tint(.textSecondary)
 
                     Button {

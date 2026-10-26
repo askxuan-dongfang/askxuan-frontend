@@ -292,7 +292,6 @@ struct MasterListView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.md)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
         .contentShape(Rectangle())
     }
 

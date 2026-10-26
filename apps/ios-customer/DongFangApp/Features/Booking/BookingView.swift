@@ -146,7 +146,6 @@ struct BookingView: View {
         .padding(16)
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
         .padding(.horizontal, AppSpacing.lg)
     }
 
@@ -218,7 +217,7 @@ struct BookingView: View {
             .cornerRadius(AppRadius.md)
             .overlay(
                 RoundedRectangle(cornerRadius: AppRadius.md)
-                    .stroke(isSelected ? Color.brandDefault : Color.borderDefault, lineWidth: isSelected ? 2 : 1)
+                    .stroke(isSelected ? Color.brandDefault : Color.clear, lineWidth: isSelected ? 2 : 1)
             )
         }
         .buttonStyle(.plain)
@@ -289,7 +288,7 @@ struct BookingView: View {
                         .cornerRadius(AppRadius.md)
                         .overlay(
                             RoundedRectangle(cornerRadius: AppRadius.md)
-                                .stroke(isSelected ? Color.brandDefault : Color.borderDefault, lineWidth: 1)
+                                .stroke(isSelected ? Color.brandDefault : Color.clear, lineWidth: 1)
                         )
                     }
                     .buttonStyle(.plain)
@@ -356,7 +355,7 @@ struct BookingView: View {
                             .cornerRadius(AppRadius.md)
                             .overlay(
                                 RoundedRectangle(cornerRadius: AppRadius.md)
-                                    .stroke(isSelected ? Color.brandDefault : Color.borderDefault, lineWidth: 1)
+                                    .stroke(isSelected ? Color.brandDefault : Color.clear, lineWidth: 1)
                             )
                     }
                     .buttonStyle(.plain)
@@ -428,7 +427,6 @@ struct BookingView: View {
         .padding(16)
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.md)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
         .padding(.horizontal, AppSpacing.lg)
         .padding(.top, 16)
     }

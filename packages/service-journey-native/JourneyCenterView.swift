@@ -6,7 +6,6 @@ struct JourneyCard<Content: View>: View {
     VStack(alignment: .leading, spacing: 14) { content }
       .frame(maxWidth: .infinity, alignment: .leading).padding(18)
       .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 18))
-      .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.accentDefault.opacity(0.18)))
   }
 }
 struct JourneySteps: View {
@@ -142,7 +141,7 @@ struct JourneyCenterView: View {
                 Button(L10n.lookup(title)) {
                   filter = value
                   page = 1
-                }.buttonStyle(.bordered).tint(
+                }.buttonStyle(SecondaryActionButtonStyle()).tint(
                   filter == value ? Color.brandDefault : Color.textSecondary
                 )
                 .accessibilityAddTraits(filter == value ? .isSelected : [])

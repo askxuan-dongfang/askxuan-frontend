@@ -139,7 +139,7 @@ final class H5ParityUITests: XCTestCase {
         let payload = Data(#"{"roles":["master"],"masterId":1,"userId":10001,"nickname":"Local Test"}"#.utf8)
             .base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
         let fixtureToken = "eyJhbGciOiJub25lIn0.\(payload).fixture"
-        app.launchArguments = ["--smoke-token", fixtureToken, "-tab", "3", "-askxuan.appearance", "dark"]
+        app.launchArguments = ["--smoke-token", fixtureToken, "-tab", "3", "-askxuan.language", "zh-Hans", "-askxuan.appearance", "dark"]
         app.launch()
         XCTAssertTrue(app.staticTexts["本地验收师傅"].waitForExistence(timeout: 20))
         let content = app.buttons["内容与直播"]

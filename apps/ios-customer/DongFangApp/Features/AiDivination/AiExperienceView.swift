@@ -44,7 +44,7 @@ struct AiExperienceView: View {
                         Button { Task { await save() } } label: {
                             Label(L10n.lookup(savedUnchanged ? L10n.text("已保存到手记") : L10n.text("保存到我的手记")), systemImage: savedUnchanged ? "checkmark.circle" : "bookmark")
                                 .frame(maxWidth: .infinity).padding(10)
-                        }.buttonStyle(.bordered).disabled(busy || stale || note.count > 1000 || savedUnchanged).accessibilityIdentifier("ai-experience-save")
+                        }.buttonStyle(SecondaryActionButtonStyle()).disabled(busy || stale || note.count > 1000 || savedUnchanged).accessibilityIdentifier("ai-experience-save")
                         if let saved { NavigationLink("查看已保存手记") { AiSavedNoteView(id: saved.id) } }
                     }
                 }

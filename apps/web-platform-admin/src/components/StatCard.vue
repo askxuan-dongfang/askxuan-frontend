@@ -91,7 +91,7 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
   padding: var(--admin-card-padding);
   overflow: hidden;
   background: var(--color-bg-secondary, var(--card-bg, #fff));
-  border: 1px solid var(--color-border-divider, var(--admin-border, var(--border, #e8e0d8)));
+  border: 0;
   border-radius: var(--radius-lg, 12px);
   box-shadow: var(--shadow-sm, 0 4px 16px rgba(70, 45, 32, 0.06));
   transition: border-color var(--admin-transition), box-shadow var(--admin-transition);
@@ -112,7 +112,7 @@ function trendDirection(): 'up' | 'down' | 'neutral' {
   height: 40px;
   border-radius: 10px;
   flex: 0 0 40px;
-  border: 1px solid color-mix(in srgb, var(--stat-tone) 10%, transparent);
+  border: 0;
 }
 .aui-stat-card__body {
   min-width: 0;

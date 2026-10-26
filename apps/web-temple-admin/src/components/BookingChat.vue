@@ -116,7 +116,7 @@ h2 { font-family: var(--font-serif); font-size: var(--type-size-control); margin
 .muted, .message-meta { color: var(--admin-text-secondary); font-size: var(--type-size-label); }
 .chat-history { max-height: 360px; overflow: auto; margin: 12px 0; }
 article { padding: 10px 12px; margin: 8px 12% 8px 0; border-radius: 10px; background: var(--admin-surface-muted); }
-article.own { margin: 8px 0 8px 12%; border: 1px solid var(--admin-border-strong); }
+article.own { margin: 8px 0 8px 12%; border: 0; }
 article p { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 form label { display: block; margin-bottom: 8px; }
 .send-action { display: flex; justify-content: flex-end; margin-top: 10px; }

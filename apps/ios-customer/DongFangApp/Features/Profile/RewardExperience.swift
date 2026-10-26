@@ -621,7 +621,7 @@ struct RewardWheelExperience: View {
                     .frame(maxWidth: 360).aspectRatio(1, contentMode: .fit).padding(.vertical, 8)
                 Text(L10n.text("可用 \(detail.pointsBalance) 积分")).font(AppTypography.caption).foregroundStyle(.secondary)
                 if blocked && !busy { Text(L10n.lookup(hasError ? L10n.text("加载失败，请重试") : actionLabel)).font(AppTypography.caption).foregroundStyle(.secondary) }
-            }.padding(18).frame(maxWidth: .infinity).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 22)).overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.accentDefault.opacity(0.16), lineWidth: 1))
+            }.padding(18).frame(maxWidth: .infinity).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 22))
             if let mine = detail.mine { Button(L10n.text("上次：\(mine.outcomeText) · 查看结果"), action: onResult).font(.caption).tint(Color.accentDefault) }
             HStack {
                 Button(L10n.text("抽奖记录")) { showRecords = true }.frame(maxWidth: .infinity)
@@ -712,7 +712,7 @@ private struct RewardWheelInfoSheet: View {
     }
 }
 private extension View {
-    func rewardPanel() -> some View { padding(18).frame(maxWidth: .infinity).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.accentDefault.opacity(0.16), lineWidth: 1)) }
+    func rewardPanel() -> some View { padding(18).frame(maxWidth: .infinity).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 18)) }
 }
 struct RewardResultSheet: View {
     let entry: RewardEntry
@@ -741,7 +741,7 @@ struct RewardResultSheet: View {
                 if let prizeName { if entry.outcome == "won" { Text(L10n.lookup(prizeName)).font(.headline).foregroundStyle(Color.accentDefault) } } else { Text(L10n.lookup(entry.code)).font(.system(.subheadline, design: .monospaced)).foregroundStyle(Color.accentDefault) }
                 Text(L10n.text("已扣 \(entry.pointsSpent) 积分")).font(AppTypography.caption)
                 if let onAgain { Button(L10n.text("再转一次 · \(entry.pointsSpent) 积分")) { dismiss(); onAgain() }.buttonStyle(.borderedProminent).tint(Color.accentDefault) }
-                Button(L10n.text("关闭")) { dismiss() }.buttonStyle(.bordered).controlSize(.large).tint(Color.accentDefault)
+                Button(L10n.text("关闭")) { dismiss() }.buttonStyle(SecondaryActionButtonStyle()).controlSize(.large).tint(Color.accentDefault)
             }.padding(24).frame(maxWidth: .infinity)
             }
         }.onAppear { withAnimation(reduceMotion ? nil : .spring(duration: 0.5)) { appear = true } }

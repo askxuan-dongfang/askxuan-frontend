@@ -222,7 +222,6 @@ struct TempleListView: View {
         }
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.md)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.md).stroke(Color.borderDefault, lineWidth: 1))
         .contentShape(Rectangle())
     }
 

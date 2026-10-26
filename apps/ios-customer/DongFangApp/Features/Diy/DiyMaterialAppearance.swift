@@ -148,21 +148,45 @@ struct DiyAppearanceProfile: Decodable {
         guard let image = UIImage(contentsOfFile: url.path) else { return nil }
         images.setObject(image, forKey: key, cost: 160 * 160 * 4); return image
     }
-    static func cordGeometry(points: [SIMD3<Double>], scale: Double) -> SCNGeometry {
+    static func cordGeometry(points input: [SIMD3<Double>], scale: Double) -> SCNGeometry {
+        // Duplicate bore/arc junctions and vertical hanging segments need a
+        // non-degenerate tube frame, including the closing ring seam.
+        var points: [SIMD3<Double>] = []
+        for point in input where point.x.isFinite && point.y.isFinite && point.z.isFinite {
+            if let previous = points.last, simd_length_squared(point - previous) < 0.00000001 { continue }
+            points.append(point)
+        }
+        guard points.count >= 2 else { return SCNGeometry() }
+        let closed = simd_length_squared(points[0] - points[points.count - 1]) < 0.00000001
         var vertices: [SCNVector3] = [], normals: [SCNVector3] = [], indices: [Int32] = []
         let sides = 6
+        var previousNormal: SIMD3<Float>?
+        var firstNormal: SIMD3<Float>?
         for index in points.indices {
-            let before = points[max(0, index-1)], after = points[min(points.count-1, index+1)]
-            let direction = after - before, tangent = simd_normalize(SIMD3<Float>(Float(direction.x), Float(direction.y), Float(direction.z)))
-            let normal = simd_normalize(simd_cross(tangent, SIMD3<Float>(0,1,0))), binormal = simd_cross(tangent, normal)
+            let before = points[index == 0 && closed ? points.count - 2 : max(0, index - 1)]
+            let after = points[index == points.count - 1 && closed ? 1 : min(points.count - 1, index + 1)]
+            var direction = after - before
+            if simd_length_squared(direction) < 0.00000001 {
+                direction = index + 1 < points.count ? points[index + 1] - points[index] : points[index] - points[index - 1]
+            }
+            let tangent = simd_normalize(SIMD3<Float>(Float(direction.x), Float(direction.y), Float(direction.z)))
+            let reference: SIMD3<Float> = abs(tangent.y) < 0.9 ? SIMD3(0, 1, 0) : SIMD3(1, 0, 0)
+            var normal = simd_normalize(simd_cross(tangent, reference))
+            if let previousNormal {
+                let transported = previousNormal - tangent * simd_dot(previousNormal, tangent)
+                if simd_length_squared(transported) > 0.000001 { normal = simd_normalize(transported) }
+            }
+            if index == 0 { firstNormal = normal }
+            if closed && index == points.count - 1, let firstNormal { normal = firstNormal }
+            previousNormal = normal
+            let binormal = simd_cross(tangent, normal)
             for side in 0..<sides {
                 let angle = Float(side) / Float(sides) * 2 * .pi, n = cos(angle) * normal + sin(angle) * binormal
-                let p = points[index] * scale
-                let radius = Float(0.4 * scale)
+                let p = points[index] * scale, radius = Float(0.4 * scale)
                 vertices.append(SCNVector3(Float(p.x) + n.x * radius, Float(p.y) + n.y * radius, Float(p.z) + n.z * radius)); normals.append(SCNVector3(n))
-                if index < points.count-1 {
-                    let a = Int32(index*sides+side), b = Int32(index*sides+(side+1)%sides), c = a + Int32(sides), d = b + Int32(sides)
-                    indices.append(contentsOf: [a,b,c,b,d,c])
+                if index < points.count - 1 {
+                    let a = Int32(index * sides + side), b = Int32(index * sides + (side + 1) % sides), c = a + Int32(sides), d = b + Int32(sides)
+                    indices.append(contentsOf: [a, b, c, b, d, c])
                 }
             }
         }

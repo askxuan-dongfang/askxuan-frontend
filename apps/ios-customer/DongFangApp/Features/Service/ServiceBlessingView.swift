@@ -136,7 +136,6 @@ struct ServiceContainerView: View {
         .padding(AppSpacing.lg)
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
         .padding(.horizontal, AppSpacing.lg)
         .padding(.top, AppSpacing.lg)
     }
@@ -214,7 +213,6 @@ struct ServiceContainerView: View {
         .padding(AppSpacing.md)
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
         .padding(.horizontal, AppSpacing.lg)
     }
 
@@ -299,7 +297,7 @@ struct ServiceContainerView: View {
             .padding(.vertical, AppSpacing.sm)
             .background(isSelected ? Color.brandDefault.opacity(0.12) : Color.bgSecondary)
             .cornerRadius(AppRadius.lg)
-            .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(isSelected ? Color.brandDefault : Color.borderDefault, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(isSelected ? Color.brandDefault : Color.clear, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
@@ -326,7 +324,6 @@ struct ServiceContainerView: View {
         .padding(AppSpacing.lg)
         .background(Color.bgSecondary)
         .cornerRadius(AppRadius.lg)
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.lg).stroke(Color.borderDefault, lineWidth: 1))
         .padding(.horizontal, AppSpacing.lg)
         .padding(.top, AppSpacing.lg)
     }
