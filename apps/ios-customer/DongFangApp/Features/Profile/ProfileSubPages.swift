@@ -1140,7 +1140,7 @@ struct CouponView: View {
 struct PointsAccount: Decodable { let balance: Int64 }
 struct PointsEntry: Decodable, Identifiable {
     let id: Int64; let kind: String; let delta: Int64; let balanceAfter: Int64; let referenceNo: String; let createdAt: String
-    var title: String { ["earn":"消费获得", "refund":"退款扣回", "redeem":"兑换商品", "return":"取消兑换退回", "reward_pool":"奖池参与", "reward_wheel":"转盘抽奖"][kind] ?? kind }
+    var title: String { ["earn":"消费获得", "refund":"退款扣回", "redeem":"兑换商品", "return":"取消兑换退回", "reward_pool":"奖池参与", "reward_wheel":"转盘抽奖", "ai_report_retired_refund":"AI报告积分退回", "ai_report_retired_rollback":"AI报告积分退回撤销"][kind] ?? kind }
 }
 struct PointsProduct: Decodable, Identifiable {
     let id: Int64; let name: String; let category: String; let description: String; let image: String; let pointsPrice: Int64; let stock: Int64
