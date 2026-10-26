@@ -129,12 +129,12 @@ private struct RewardWheelMotionFixture: View {
     private func session(_ id: Int64) -> AiConversation {
         AiConversation(id: id, sessionNo: "test-\(id)", userId: "fixture", skillCode: "general", selectionMode: "explicit", skillVersion: "1", title: "验收会话", status: "active", createdAt: "", updatedAt: "")
     }
-    func testDeleteRequestHasNoJSONBodyAndPurchaseKeepsPayload() throws {
+    func testDeleteRequestHasNoJSONBodyAndReportCreationKeepsPayload() throws {
         let deletion = try APIClient.shared.buildRequest(.aiSessionDelete(42))
         XCTAssertEqual(deletion.httpMethod, "DELETE"); XCTAssertTrue(deletion.url?.path.hasSuffix("ai/sessions/42") == true)
         XCTAssertNil(deletion.httpBody); XCTAssertNil(deletion.value(forHTTPHeaderField: "Content-Type"))
-        let purchase = try APIClient.shared.buildRequest(.aiReportUnlock(.init(reportId: 42, expectedPoints: 10)))
-        XCTAssertEqual(purchase.value(forHTTPHeaderField: "Content-Type"), "application/json"); XCTAssertNotNil(purchase.httpBody)
+        let creation = try APIClient.shared.buildRequest(.aiReportCreate(.init(skillCode: "bazi", question: "本地测试", inputs: [:], requestKey: "LOCAL-REPORT")))
+        XCTAssertEqual(creation.value(forHTTPHeaderField: "Content-Type"), "application/json"); XCTAssertNotNil(creation.httpBody)
     }
     func testDeletingCurrentClearsConversationAndDraft() async {
         var requested: [Int64] = []
@@ -198,7 +198,7 @@ private struct RewardWheelMotionFixture: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("一事一解，自有章法").font(.system(.title2, design: .serif))
                     LazyVGrid(columns: [GridItem(.flexible()),GridItem(.flexible())], spacing: 12) {
-                        ForEach(Array(codes.enumerated()), id: \.offset) { index, code in AiTopicTile(topic: AiTopic(code:code,title:names[index],subtitle:"专题解读",priceCents:990,pointsPrice:10,chapters:[],version:"1")) }
+                        ForEach(Array(codes.enumerated()), id: \.offset) { index, code in AiTopicTile(topic: AiTopic(code:code,title:names[index],subtitle:"专题解读",priceCents:990,chapters:[],version:"1")) }
                     }
                 }.padding(18)
             }.background(Color(red:0.97,green:0.96,blue:0.93)).preferredColorScheme(.light)

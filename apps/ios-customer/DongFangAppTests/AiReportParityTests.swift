@@ -37,6 +37,25 @@ final class AiReportContractTests: XCTestCase {
         let locked = try JSONDecoder().decode(AiReport.self, from: Data(json.dropLast().appending(",\"document\":{\"version\":0,\"runtime\":\"\",\"modelCalls\":0,\"toolCalls\":0,\"blocks\":null}}").utf8))
         XCTAssertNil(locked.document?.blocks)
     }
+    func testWalletPricesDecodeWithoutPointsAndPreserveConfiguredCents() throws {
+        for cents in [990, 1290, 10001] {
+            let topicJSON = "{\"code\":\"bazi\",\"title\":\"专题\",\"subtitle\":\"摘要\",\"priceCents\":\(cents),\"chapters\":[],\"version\":\"1\"}"
+            let topic = try JSONDecoder().decode(AiTopic.self, from: Data(topicJSON.utf8))
+            XCTAssertEqual(topic.priceCents, Int64(cents))
+            let reportJSON = "{\"id\":1,\"reportNo\":\"LOCAL\",\"skillCode\":\"bazi\",\"title\":\"专题\",\"version\":\"1\",\"question\":\"\",\"chapters\":[],\"priceCents\":\(cents),\"status\":\"ready\",\"summary\":\"免费摘要\",\"content\":\"\",\"errorMessage\":\"\",\"unlocked\":false,\"createdAt\":\"\"}"
+            let report = try JSONDecoder().decode(AiReport.self, from: Data(reportJSON.utf8))
+            XCTAssertEqual(report.priceCents, Int64(cents))
+            XCTAssertFalse(report.unlocked)
+            XCTAssertEqual(CashAPI.money(report.priceCents), String(format: "%.2f", Double(cents) / 100))
+        }
+    }
+    func testReportCheckoutUsesConfiguredWalletLedgerAndRejectsNonDebitingMock() throws {
+        let data = Data(#"{"amountCents":990,"availableCents":2000,"balanceEnabled":true,"mockEnabled":true,"experience":false,"mode":"demo","balanceChannel":"demo_balance"}"#.utf8)
+        let quote = try JSONDecoder().decode(CashQuote.self, from: data)
+        XCTAssertEqual(quote.walletChannel, "demo_balance")
+        XCTAssertFalse(quote.allowsMock(for: "ai_report"))
+        XCTAssertTrue(quote.allowsMock(for: "shop_order"))
+    }
     func testTraceAndCancelContractsRemainAuthenticated() {
         XCTAssertEqual(Endpoint.aiTrace(12, 34).path, "ai/sessions/12/messages/34/trace")
         XCTAssertEqual(Endpoint.aiCancelMessage(12, 34).path, "ai/sessions/12/messages/34/cancel")
@@ -65,7 +84,7 @@ final class AiReportContractTests: XCTestCase {
     }
     func testPDFExportsUnlockedFullReportAndRejectsLockedContent() throws {
         let sample = try XCTUnwrap(AiReportCatalog.examples.first { $0.code == "bazi" })
-        let report = AiReport(id: 900001, reportNo: "LOCAL-SYNTHETIC", skillCode: sample.code, title: sample.title, version: "1", question: "合成测试", chapters: [], priceCents: 0, pointsPrice: 0, status: "ready", summary: sample.summary, content: sample.content, errorMessage: "", unlocked: true, createdAt: "2026-09-29", document: sample.document)
+        let report = AiReport(id: 900001, reportNo: "LOCAL-SYNTHETIC", skillCode: sample.code, title: sample.title, version: "1", question: "合成测试", chapters: [], priceCents: 0, status: "ready", summary: sample.summary, content: sample.content, errorMessage: "", unlocked: true, createdAt: "2026-09-29", document: sample.document)
         let url = try AiReportPDF.export(report)
         defer { try? FileManager.default.removeItem(at: url) }
         let pdf = try XCTUnwrap(PDFDocument(url: url))
@@ -73,7 +92,7 @@ final class AiReportContractTests: XCTestCase {
         XCTAssertTrue(pdf.string?.contains("LOCAL-SYNTHETIC") == true)
         XCTAssertGreaterThan(try Data(contentsOf: url).count, 10000)
         let attachment = XCTAttachment(contentsOfFile: url); attachment.name = "report-full-chart-export.pdf"; attachment.lifetime = .keepAlways; add(attachment)
-        let locked = AiReport(id: 900002, reportNo: "LOCKED", skillCode: "bazi", title: "锁定", version: "1", question: "", chapters: [], priceCents: 1, pointsPrice: 1, status: "ready", summary: "摘要", content: "", errorMessage: "", unlocked: false, createdAt: "")
+        let locked = AiReport(id: 900002, reportNo: "LOCKED", skillCode: "bazi", title: "锁定", version: "1", question: "", chapters: [], priceCents: 1, status: "ready", summary: "摘要", content: "", errorMessage: "", unlocked: false, createdAt: "")
         XCTAssertThrowsError(try AiReportPDF.export(locked))
     }
 }
@@ -82,10 +101,10 @@ final class AiReportContractTests: XCTestCase {
 import Testing
 struct ReportListPresentationTests {
     @Test func usesSummaryAndHidesGeneratedPrompt() {
-        let report = AiReport(id: 1, reportNo: "LOCAL", skillCode: "bazi", title: "八字排盘", version: "1", question: "请围绕八字排盘生成一份完整专题报告，梳理主要依据与可行建议。", chapters: [], priceCents: 0, pointsPrice: 0, status: "ready", summary: "## 摘要\n**实际内容**", content: "", errorMessage: "", unlocked: false, createdAt: "2026-10-15")
+        let report = AiReport(id: 1, reportNo: "LOCAL", skillCode: "bazi", title: "八字排盘", version: "1", question: "请围绕八字排盘生成一份完整专题报告，梳理主要依据与可行建议。", chapters: [], priceCents: 0, status: "ready", summary: "## 摘要\n**实际内容**", content: "", errorMessage: "", unlocked: false, createdAt: "2026-10-15")
         #expect(report.listPreview == "摘要 实际内容")
         #expect(report.listStatus == "已生成")
-        let empty = AiReport(id: 2, reportNo: "LOCAL", skillCode: "bazi", title: "八字排盘", version: "1", question: report.question, chapters: [], priceCents: 0, pointsPrice: 0, status: "ready", summary: "", content: "", errorMessage: "", unlocked: false, createdAt: "2026-10-15")
+        let empty = AiReport(id: 2, reportNo: "LOCAL", skillCode: "bazi", title: "八字排盘", version: "1", question: report.question, chapters: [], priceCents: 0, status: "ready", summary: "", content: "", errorMessage: "", unlocked: false, createdAt: "2026-10-15")
         #expect(empty.listPreview == "打开查看报告内容")
         #expect(empty.listStatus == "查看报告")
     }

@@ -7,6 +7,7 @@ export const agentCenterRoutes: RouteRecordRaw[] = [
     component: () => import('@/views/ai/AgentOperationsView.vue'),
     meta: { ...meta, title: item.title, agentSection: 'section' in item ? item.section : undefined, description: item.description },
   })),
+  { path: 'report-pricing', component: () => import('@/views/ai/ReportPricingView.vue'), meta: { ...meta, title: '报告定价' } },
   { path: 'knowledge', component: () => import('@/views/ai/KnowledgeCenterView.vue'), meta: { ...meta, title: '知识中心' } },
   { path: 'connections', component: () => import('@/views/ai/ConnectionsView.vue'), redirect: '/ai/connections/models', meta: { ...meta, title: '模型与连接' }, children: [
     { path: 'models', component: () => import('@/views/ai/ModelLibraryView.vue'), meta: { ...meta, title: '模型库' } },

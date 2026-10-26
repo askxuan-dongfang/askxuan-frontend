@@ -147,7 +147,7 @@ struct AiReportExample: Decodable, Identifiable {
     let code: String; let title: String; let summary: String; let content: String
     var document: AiReportDocument?
     var id: String { code }
-    var topic: AiTopic { AiTopic(code: code, title: title, subtitle: AiReportCatalog.subtitle(code), priceCents: 0, pointsPrice: 0, chapters: [], version: "example") }
+    var topic: AiTopic { AiTopic(code: code, title: title, subtitle: AiReportCatalog.subtitle(code), priceCents: 0, chapters: [], version: "example") }
 }
 enum AiReportCatalog {
     static let order = ["bazi","ziwei","marriage","face_palm","naming","liuyao","dream","fengshui","date_select","fortune","qimen","tarot"]

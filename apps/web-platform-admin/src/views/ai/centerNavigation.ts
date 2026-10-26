@@ -4,6 +4,7 @@ export const agentCenterSections = [
   { path: '/ai/connections', title: '模型与连接', description: '管理大模型、联网搜索与知识模型的服务连接' },
   { path: '/ai/knowledge', title: '知识中心', description: '管理文档、检索、Wiki 和实体知识图谱' },
   { path: '/ai/tools', title: '技能与工具', section: 'skills', description: '为问事助手添加、移除或启停现有技能与 MCP 工具' },
+  { path: '/ai/report-pricing', title: '报告定价', description: '按专题设置完整报告的钱包支付价格' },
   { path: '/ai/debug', title: '调试工作台', section: 'debug', description: '验证回答与 Harness 工具执行过程' },
   { path: '/ai/evaluations', title: '质量评测', section: 'evaluation', description: '通过测试用例检查当前草稿的回答质量' },
   { path: '/ai/releases', title: '版本与发布', section: 'versions', description: '管理已发布版本、灰度范围与回滚' },

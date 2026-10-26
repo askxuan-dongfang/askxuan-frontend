@@ -1,5 +1,56 @@
 import {test,expect,type Page} from '@playwright/test';
 import {emptyCreatorWallet} from '../fixtures/creator-wallet';
+
+// AI reports share the cashier, and must never fall back to points or mock payment.
+async function aiReportWallet(page:Page,options:{available?:number;demo?:boolean;disabled?:boolean;failure?:number}={}) {
+ await page.addInitScript(()=>{localStorage.setItem('h5_token','report-wallet-fixture');localStorage.setItem('h5-auth',JSON.stringify({state:{token:'report-wallet-fixture',role:'customer',userId:91001},version:0}));});
+ const state={paid:false,payments:[] as any[],pointsCalls:0};
+ const report={id:801,reportNo:'AR-WALLET-801',skillCode:'bazi',title:'八字命理',version:'1',question:'',chapters:['完整分析'],priceCents:1990,status:'ready',summary:'余额解锁前可阅读摘要',createdAt:'2026-10-26'};
+ await page.route('**/api/v1/**',async route=>{
+  const path=new URL(route.request().url()).pathname;let data:any={list:[],total:0};
+  if(path.includes('/points')||path.endsWith('/payments/ai-report'))state.pointsCalls++;
+  if(path.endsWith('/ai/reports/801'))data={...report,unlocked:state.paid,content:state.paid?'## 完整分析\n已通过钱包支付的完整内容。':''};
+  else if(path.endsWith('/payments/checkout/quote'))data={amountCents:1990,availableCents:options.available??5000,balanceEnabled:!options.disabled,mockEnabled:true,experience:false,mode:options.demo?'demo':'cash',balanceChannel:options.demo?'demo_balance':'balance'};
+  else if(path.endsWith('/payments/checkout')){
+   state.payments.push(route.request().postDataJSON());
+   if(options.failure)return route.fulfill({json:{code:options.failure,message:options.failure===40901?'钱包余额不足':'金额已变化，请重新获取报价'}});
+   state.paid=true;data={id:801,paymentNo:'PAY-WALLET-801',status:'success',channel:options.demo?'demo_balance':'balance'};
+  }
+  await route.fulfill({json:{code:0,data}});
+ });
+ await page.goto('/c/ai/reports/801');await expect(page.getByText('余额解锁前可阅读摘要')).toBeVisible();return state;
+}
+test('AI report custom price uses wallet only and unlocks once after confirmation',async({page})=>{
+ const state=await aiReportWallet(page);await expect(page.locator('.ai-price')).toContainText('¥19.90');await expect(page.locator('.ai-report-workspace')).not.toContainText('积分');
+ await page.getByRole('button',{name:'使用钱包余额解锁',exact:true}).click();const dialog=page.getByRole('dialog',{name:'确认解锁完整报告'});
+ await expect(dialog.getByRole('radio',{name:/演示支付/})).toHaveCount(0);expect(state.payments).toHaveLength(0);
+ await dialog.getByRole('button',{name:'关闭收银台'}).click();await expect(dialog).toHaveCount(0);expect(state.payments).toHaveLength(0);
+ await page.getByRole('button',{name:'使用钱包余额解锁',exact:true}).click();await dialog.getByRole('button',{name:'确认支付 ¥19.90 并解锁'}).click();
+ await expect(page.getByText('已通过钱包支付的完整内容。')).toBeVisible();expect(state.payments).toEqual([{orderType:'ai_report',orderNo:'AR-WALLET-801',expectedCents:1990,channel:'balance'}]);
+ await page.reload();await expect(page.getByText('已通过钱包支付的完整内容。')).toBeVisible();expect(state.payments).toHaveLength(1);expect(state.pointsCalls).toBe(0);
+});
+test('AI report insufficient balance keeps the summary and links to the wallet',async({page})=>{
+ const state=await aiReportWallet(page,{available:500});await page.getByRole('button',{name:'使用钱包余额解锁',exact:true}).click();
+ await expect(page.getByText('余额不足，还差 ¥14.90，摘要已为您保留。')).toBeVisible();await expect(page.getByRole('button',{name:'确认支付 ¥19.90 并解锁'})).toBeDisabled();
+ await expect(page.getByRole('link',{name:'去钱包充值'})).toHaveAttribute('href','/c/wallet');expect(state.payments).toHaveLength(0);expect(state.pointsCalls).toBe(0);
+});
+test('AI report uses the current demo wallet with an explicit simulated balance deduction',async({page})=>{
+ const state=await aiReportWallet(page,{demo:true});await page.getByRole('button',{name:'使用钱包余额解锁',exact:true}).click();
+ await expect(page.getByRole('radio',{name:/模拟余额支付/})).toBeChecked();await expect(page.getByRole('radio',{name:/演示支付/})).toHaveCount(0);
+ await expect(page.getByText('本次扣减测试余额，不收取真实费用。订单退款将退回测试余额。')).toBeVisible();expect(state.payments).toHaveLength(0);
+ await page.getByRole('button',{name:'确认模拟支付 ¥19.90 并解锁'}).click();await expect(page.getByText('已通过钱包支付的完整内容。')).toBeVisible();
+ expect(state.payments).toEqual([{orderType:'ai_report',orderNo:'AR-WALLET-801',expectedCents:1990,channel:'demo_balance'}]);expect(state.pointsCalls).toBe(0);
+});
+test('AI report cannot fall back to mock when wallet payments are unavailable',async({page})=>{
+ const state=await aiReportWallet(page,{disabled:true});await page.getByRole('button',{name:'使用钱包余额解锁',exact:true}).click();
+ await expect(page.getByRole('button',{name:'确认支付 ¥19.90 并解锁'})).toBeDisabled();await expect(page.getByRole('radio',{name:/演示支付/})).toHaveCount(0);expect(state.payments).toHaveLength(0);
+});
+for(const code of [40901,40902])test(`AI report payment race ${code} preserves the locked report`,async({page})=>{
+ const state=await aiReportWallet(page,{failure:code});await page.getByRole('button',{name:'使用钱包余额解锁',exact:true}).click();await page.getByRole('button',{name:'确认支付 ¥19.90 并解锁'}).click();
+ await expect(page.getByRole('dialog').getByRole('alert')).toContainText(code===40901?'钱包余额不足':'金额已变化');await expect(page.getByRole('button',{name:'确认支付 ¥19.90 并解锁'})).toBeDisabled();
+ if(code===40901)await expect(page.getByRole('link',{name:'去钱包充值'})).toBeVisible();else await expect(page.getByText('请关闭收银台后重新打开，核对最新报价。')).toBeVisible();
+ expect(state.paid).toBe(false);expect(state.payments).toHaveLength(1);expect(state.pointsCalls).toBe(0);
+});
 async function setup(page:Page,role='customer'){
  await page.addInitScript(role=>{localStorage.setItem('h5_token','wallet-fixture');localStorage.setItem('h5-auth',JSON.stringify({state:{token:'wallet-fixture',role,userId:91001},version:0}));},role);
  const state={fail:false,cashFail:false,cashMalformed:false,quoteMalformed:false,calls:0,payCalls:0,paid:false,availableCents:10000,creatorData:emptyCreatorWallet() as unknown};

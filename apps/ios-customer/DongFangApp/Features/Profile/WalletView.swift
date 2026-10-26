@@ -129,6 +129,10 @@ struct CashQuote: Decodable {
     let payment: CashPayment?
     let amountCents: Int64; let availableCents: Int64
     let balanceEnabled: Bool; let mockEnabled: Bool; let experience: Bool
+
+    // Reports debit the current wallet ledger; the non-debiting mock channel is excluded.
+    var walletChannel: String { balanceChannel ?? "balance" }
+    func allowsMock(for orderType: String) -> Bool { orderType != "ai_report" && mockEnabled }
 }
 struct CashPayment: Decodable { let id: Int64; let paymentNo: String; let status: String; let channel: String }
 struct CashBalance: Decodable {
@@ -180,11 +184,16 @@ enum CashAPI {
 private struct NativeCashier: View {
     @State var quote: CashQuote; let kind: String; let no: String; let owner: AuthRequestSession
     let finish: (Result<PaymentCreateResult, Error>) -> Void
-    @State private var channel = "balance"
+    @State private var channel: String
+    init(quote: CashQuote, kind: String, no: String, owner: AuthRequestSession, finish: @escaping (Result<PaymentCreateResult, Error>) -> Void) {
+        self._quote = State(initialValue: quote)
+        self._channel = State(initialValue: quote.walletChannel)
+        self.kind = kind; self.no = no; self.owner = owner; self.finish = finish
+    }
     @State private var busy = false
     @State private var error: String?
     var demo: Bool { quote.mode == "demo" }
-    var balanceChannel: String { quote.balanceChannel ?? "balance" }
+    var balanceChannel: String { quote.walletChannel }
     @State private var selectedOffer: GrowthOffer?
     @State private var stale = false
     var offer: GrowthOffer? { selectedOffer ?? quote.pricing?.snapshot.selected }
@@ -211,11 +220,11 @@ private struct NativeCashier: View {
                 Section(L10n.text("支付方式")) {
                     Button { channel = balanceChannel } label: { HStack { Label(L10n.lookup(demo ? L10n.text("模拟余额支付") : L10n.text("钱包余额")), systemImage: "wallet.bifold"); Spacer(); if channel == balanceChannel { Image(systemName: "checkmark.circle.fill") } } }.disabled(busy || !canBalance)
                     Text(L10n.lookup(quote.experience && !demo ? L10n.text("体验订单不能使用真实余额") : L10n.text("可用 ¥\(CashAPI.money(quote.availableCents))\(quote.balanceEnabled ? (canBalance ? "" : L10n.text(" · 余额不足")) : L10n.text(" · 暂未开通"))"))).font(.caption).foregroundStyle(.secondary)
-                    if quote.mockEnabled { Button { channel = "mock" } label: { HStack { Text(L10n.text("演示支付，不扣真实资金")); Spacer(); if channel == "mock" { Image(systemName: "checkmark.circle.fill") } } }.disabled(busy) }
+                    if quote.allowsMock(for: kind) { Button { channel = "mock" } label: { HStack { Text(L10n.text("演示支付，不扣真实资金")); Spacer(); if channel == "mock" { Image(systemName: "checkmark.circle.fill") } } }.disabled(busy) }
                 }
                 if let error { Section { Text(L10n.lookup(error)).foregroundStyle(.red);if stale {Button(L10n.text("重新获取报价")){Task{await refreshQuote()}}.disabled(busy)} } }
                 Section {
-                    Button(L10n.lookup(busy ? L10n.text("正在确认…") : channel == "mock" ? L10n.text("确认演示支付") : L10n.text("\(demo ? L10n.text("模拟支付") : L10n.text("确认支付")) ¥\(CashAPI.money(amount))"))) { Task { await pay() } }.disabled(busy || stale || (channel == balanceChannel && !canBalance))
+                    Button(L10n.lookup(busy ? L10n.text("正在确认…") : channel == "mock" ? L10n.text("确认演示支付") : L10n.text("\(demo ? L10n.text("模拟支付") : L10n.text("确认支付")) ¥\(CashAPI.money(amount))"))) { Task { await pay() } }.disabled(busy || stale || (channel == balanceChannel && !canBalance)).accessibilityIdentifier("cashier-confirm")
                     NavigationLink("查看钱包与充值") { CashBalanceView().onDisappear { Task { await refreshQuote() } } }.disabled(busy)
                 } footer: { Text(L10n.lookup(demo ? L10n.text("扣减测试余额，不收取真实费用。退款退回测试余额。") : L10n.text("余额支付的退款退回钱包，充值款可申请原路退回。"))) }
             }.navigationTitle(L10n.text("确认支付")).navigationBarTitleDisplayMode(.inline)
@@ -230,7 +239,7 @@ private struct NativeCashier: View {
                 guard AuthStore.shared.requestSession == owner else {throw CancellationError()}
                 quote = refreshed
                 selectedOffer = refreshed.pricing?.snapshot.selected;stale=false;error=nil
-                channel = canBalance ? balanceChannel : quote.mockEnabled ? "mock" : balanceChannel
+                channel = canBalance ? balanceChannel : quote.allowsMock(for: kind) ? "mock" : balanceChannel
             } catch { self.error = error.localizedDescription }
     }
 
@@ -246,7 +255,7 @@ private struct NativeCashier: View {
             guard p.status == "success" else { throw APIError.serverError(409, "支付结果待确认，请刷新订单") }
             await GrowthSync.shared.refresh()
             finish(.success(PaymentCreateResult(id: p.id, paymentNo: p.paymentNo, payUrl: nil)))
-        } catch { if case APIError.serverError(40941, _) = error {stale=true}; self.error = error.localizedDescription }
+        } catch { if case APIError.serverError(let code, _) = error, [40901, 40902, 40903, 40941].contains(code) {stale=true}; self.error = error.localizedDescription }
     }
 }
 struct CashBalanceView: View {

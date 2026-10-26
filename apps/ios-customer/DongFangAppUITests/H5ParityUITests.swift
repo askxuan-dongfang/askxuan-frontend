@@ -1005,3 +1005,97 @@ final class DiyStudioUITests: XCTestCase {
         clearDraft(app)
     }
 }
+
+@MainActor final class AiReportWalletUITests: XCTestCase {
+    override func setUp() { continueAfterFailure = false }
+    private func fixture(_ path: String, body: [String: Any]? = nil) async throws -> [String: Any] {
+        var request = URLRequest(url: URL(string: "http://127.0.0.1:8926/fixture/" + path)!)
+        if let body { request.httpMethod = "POST"; request.httpBody = try JSONSerialization.data(withJSONObject: body); request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+        return try XCTUnwrap((JSONSerialization.jsonObject(with: data) as? [String: Any])?["data"] as? [String: Any])
+    }
+    private func launchReport() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8926/api/v1"
+        app.launchArguments = ["--smoke-token", "local-ai-wallet-fixture", "--smoke-user-id", "99026", "-tab", "2", "-askxuan.language", "zh-Hans", "-askxuan.appearance", "light"]
+        app.launch()
+        let library = app.segmentedControls.buttons["我的报告"]
+        XCTAssertTrue(library.waitForExistence(timeout: 20)); library.tap()
+        let report = app.staticTexts["本地钱包报告"].firstMatch
+        XCTAssertTrue(report.waitForExistence(timeout: 10)); report.tap()
+        XCTAssertTrue(app.staticTexts["免费摘要始终保留"].waitForExistence(timeout: 10))
+        return app
+    }
+    private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
+        for _ in 0..<8 {
+            if element.exists && element.isHittable && app.frame.contains(element.frame) { return }
+            app.swipeUp()
+        }
+        XCTFail("Expected visible control: " + element.identifier)
+    }
+    private func checkout(_ app: XCUIApplication) {
+        let pay = app.buttons["ai-report-wallet-pay"]
+        reveal(pay, in: app); pay.tap()
+        XCTAssertTrue(app.buttons["cashier-confirm"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["演示支付，不扣真实资金"].exists)
+        XCTAssertFalse(app.staticTexts["积分"].exists)
+    }
+    private func capture(_ app: XCUIApplication, _ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot()); attachment.name = name
+        attachment.lifetime = .keepAlways; add(attachment)
+    }
+    func testDefaultDemoWalletPriceRecoversStaleQuoteAndUnlocksOnce() async throws {
+        _ = try await fixture("reset", body: ["price": 990, "balance": 5000, "stale": true, "mode": "demo"])
+        let app = launchReport()
+        XCTAssertTrue(app.staticTexts["¥9.90"].waitForExistence(timeout: 10))
+        checkout(app)
+        XCTAssertTrue(app.buttons["模拟余额支付"].exists)
+        let confirm = app.buttons["cashier-confirm"]
+        reveal(confirm, in: app); XCTAssertTrue(confirm.isEnabled); confirm.tap()
+        let refresh = app.buttons["重新获取报价"]
+        reveal(refresh, in: app); XCTAssertTrue(refresh.waitForExistence(timeout: 10))
+        XCTAssertFalse(confirm.isEnabled)
+        capture(app, "ios-ai-wallet-stale-quote")
+        refresh.tap()
+        let enabled = NSPredicate(format: "enabled == true")
+        await fulfillment(of: [expectation(for: enabled, evaluatedWith: confirm)], timeout: 10)
+        reveal(confirm, in: app); confirm.tap()
+        XCTAssertTrue(app.staticTexts["完整分析 · 已解锁"].waitForExistence(timeout: 10))
+        capture(app, "ios-ai-wallet-unlocked")
+        let state = try await fixture("state")
+        XCTAssertEqual(state["charges"] as? Int, 1)
+        XCTAssertEqual(state["balance"] as? Int, 4010)
+        let payments = try XCTUnwrap(state["payments"] as? [[String: Any]])
+        XCTAssertEqual(payments.count, 2)
+        XCTAssertTrue(payments.allSatisfy { $0["channel"] as? String == "demo_balance" && $0["expectedCents"] as? Int == 990 })
+        XCTAssertFalse((state["requests"] as? [String] ?? []).contains("/api/v1/payments/ai-report"))
+        app.terminate()
+        let reopened = launchReport()
+        XCTAssertTrue(reopened.staticTexts["完整分析 · 已解锁"].waitForExistence(timeout: 10))
+        XCTAssertFalse(reopened.buttons["ai-report-wallet-pay"].exists)
+        let finalState = try await fixture("state")
+        XCTAssertEqual(finalState["charges"] as? Int, 1)
+    }
+    func testConfiguredPriceInsufficientBalanceAndWalletReturn() async throws {
+        _ = try await fixture("reset", body: ["price": 1290, "balance": 500])
+        let app = launchReport()
+        XCTAssertTrue(app.staticTexts["¥12.90"].waitForExistence(timeout: 10))
+        checkout(app)
+        let confirm = app.buttons["cashier-confirm"]
+        XCTAssertFalse(confirm.isEnabled)
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS '余额不足'")).firstMatch.exists)
+        capture(app, "ios-ai-wallet-insufficient")
+        let wallet = app.buttons["查看钱包与充值"]
+        reveal(wallet, in: app); wallet.tap()
+        XCTAssertTrue(app.navigationBars["钱包余额"].waitForExistence(timeout: 10))
+        _ = try await fixture("balance", body: ["balance": 3000])
+        app.navigationBars.buttons.firstMatch.tap()
+        await fulfillment(of: [expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: confirm)], timeout: 10)
+        reveal(confirm, in: app); confirm.tap()
+        XCTAssertTrue(app.staticTexts["完整分析 · 已解锁"].waitForExistence(timeout: 10))
+        let state = try await fixture("state")
+        XCTAssertEqual(state["balance"] as? Int, 1710)
+        XCTAssertEqual(state["charges"] as? Int, 1)
+    }
+}

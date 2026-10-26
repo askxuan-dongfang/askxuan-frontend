@@ -4,14 +4,14 @@ import PhotosUI
 struct AiTopic: Decodable, Identifiable {
     var id: String { code }
     let code: String; let title: String; let subtitle: String
-    let priceCents: Int64; let pointsPrice: Int64; let chapters: [String]; let version: String
+    let priceCents: Int64; let chapters: [String]; let version: String
     var ready: Bool? = nil
     var executionNote: String? = nil
     var seal: String { ["bazi":"命","ziwei":"星","marriage":"缘","fengshui":"居","liuyao":"卦","qimen":"局","tarot":"心","naming":"名","dream":"梦","date_select":"日","fortune":"今","face_palm":"相"][code] ?? "问" }
 }
 struct AiReport: Decodable, Identifiable {
     let id: Int64; let reportNo: String; let skillCode: String; let title: String; let version: String
-    let question: String; let chapters: [String]; let priceCents: Int64; let pointsPrice: Int64
+    let question: String; let chapters: [String]; let priceCents: Int64
     let status: String; let summary: String; let content: String; let errorMessage: String
     let unlocked: Bool; let createdAt: String
     var document: AiReportDocument? = nil
@@ -58,10 +58,7 @@ extension AiReport {
 }
 
 struct AiReportCreateRequest: Encodable { let skillCode: String; let question: String; let inputs: [String:String]; let requestKey: String; var attachments: [AiImageAttachment]? = nil }
-struct AiReportUnlockRequest: Encodable { let reportId: Int64; let expectedPoints: Int64 }
 private struct ReportConversationResult: Decodable { let sessionId: Int64 }
-private struct ReportUnlockResult: Decodable { let unlocked: Bool }
-private struct ReportBalance: Decodable { let balance: Int64 }
 private let reportGreen = Color.textPrimary
 private let reportPaper = Color.bgPrimary
 
@@ -93,7 +90,7 @@ struct AiTopicEntrances: View {
                     }
                 }.padding(.top, 8)
             }
-            Text(L10n.lookup(auth.isLoggedIn ? L10n.text("免费生成摘要 · 完整解读按专题使用积分") : L10n.text("示例可直接阅读 · 登录后生成个人报告")))
+            Text(L10n.lookup(auth.isLoggedIn ? L10n.text("免费生成摘要 · 完整解读使用钱包余额支付") : L10n.text("示例可直接阅读 · 登录后生成个人报告")))
                 .font(.caption).foregroundStyle(.secondary)
         }.foregroundStyle(Color.textPrimary).task(id: auth.isLoggedIn) { await load() }
     }
@@ -115,11 +112,9 @@ struct AiReportWorkspace: View {
     @State private var question = ""
     @State private var requestKey = UUID().uuidString
     @State private var report: AiReport?
-    @State private var balance: Int64?
     @State private var busy = false
     @State private var loading = true
     @State private var error = ""
-    @State private var confirm = false
     @State private var step = 0
     @State private var submittedRequest: AiReportCreateRequest?
     @State private var largeType = false
@@ -148,7 +143,7 @@ struct AiReportWorkspace: View {
         }.background(reportPaper).foregroundStyle(Color.textPrimary)
         .navigationTitle(L10n.text("问玄 · 专题")).toolbar(.visible, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
-        .task { await load(); await refreshBalance() }
+        .task { await load() }
         .task(id: selectedPhoto) {
             guard let selectedPhoto else { return }
             photoLoading = true; defer { photoLoading = false }
@@ -164,10 +159,7 @@ struct AiReportWorkspace: View {
                 catch { if !Task.isCancelled { self.error = error.localizedDescription }; return }
             }
         }
-        .confirmationDialog(L10n.text("确认购买完整报告？"), isPresented: $confirm, titleVisibility: .visible) {
-            if let report { Button(L10n.text("使用 \(report.pointsPrice) 积分解锁")) { Task { await unlock(report) } }.disabled(busy || balance == nil || (balance ?? 0) < report.pointsPrice) }
-            Button(L10n.text("取消"), role: .cancel) {}
-        } message: { if let report, let balance { Text(L10n.text("当前余额 \(balance) 积分，解锁后剩余 \(balance - report.pointsPrice) 积分。购买后可重复阅读。")) } }
+
     }
     private func hero(_ title: String, subtitle: String) -> some View {
         HStack(spacing: 5) {
@@ -194,7 +186,7 @@ struct AiReportWorkspace: View {
         if let sample = AiReportCatalog.examples.first(where: { $0.code == topic.code }) {
             NavigationLink("先看示例 · 图表与完整阅读结构", value: AiNativeRoute.example(sample.code))
         }
-        HStack { Text(L10n.text("摘要免费")); Text("·"); Text(L10n.text("完整解读 \(topic.pointsPrice) 积分")) }.font(AppTypography.micro).foregroundStyle(accent).padding(.bottom, 5)
+        HStack { Text(L10n.text("摘要免费")); Text("·"); Text(L10n.text("完整解读 ¥\(CashAPI.money(topic.priceCents)) / 份")) }.font(AppTypography.micro).foregroundStyle(accent).padding(.bottom, 5)
         card {
             HStack(spacing: 12) {
                 Label(L10n.text("补充资料"), systemImage: step == 1 ? "checkmark.circle.fill" : "1.circle.fill").opacity(step == 0 ? 1 : 0.6)
@@ -220,7 +212,7 @@ struct AiReportWorkspace: View {
                 Text("\(question.count) / 1500").font(.caption2).foregroundStyle(question.count > 1500 ? .red : .secondary).frame(maxWidth: .infinity, alignment: .trailing)
                 if !(skill?.inputSchema.fields.isEmpty ?? true) { Button(L10n.text("← 修改资料")) { step = 0 }.font(.footnote).disabled(busy || submittedRequest != nil) }
                 primary(submittedRequest == nil ? "生成免费摘要 →" : "重试提交") { Task { await create(topic) } }.disabled(skill == nil || !fieldsReady || !questionReady)
-                Text(L10n.lookup(submittedRequest == nil ? L10n.text("生成摘要不扣积分，阅读后再决定是否解锁。") : L10n.text("若提交超时，重试会查询同一次请求，也可前往我的报告查看。"))).font(.footnote).foregroundStyle(.secondary)
+                Text(L10n.lookup(submittedRequest == nil ? L10n.text("生成摘要不扣款，阅读后再决定是否购买完整报告。") : L10n.text("若提交超时，重试会查询同一次请求，也可前往我的报告查看。"))).font(.footnote).foregroundStyle(.secondary)
             }
         }
         card { DisclosureGroup(L10n.text("这份解读，将为您梳理哪些线索？")) { VStack(alignment: .leading, spacing: 12) { chapters(topic.chapters); Text(L10n.text("传统文化参考，不承诺预测结果。主题图形用于视觉表达，不代表您的排盘或抽牌结果。")).font(.footnote).foregroundStyle(.secondary) }.padding(.top, 14) }.font(.subheadline).tint(accent) }
@@ -228,7 +220,7 @@ struct AiReportWorkspace: View {
     @ViewBuilder private func reportBody(_ r: AiReport, proxy: ScrollViewProxy) -> some View {
         hero(r.title, subtitle: r.visibleQuestion)
         if r.status == "generating" {
-            card { AiTopicArtwork(code: r.skillCode).frame(height: 150).frame(maxWidth: .infinity); ProgressView(L10n.text("报告生成中 · 尚未扣除积分")).font(.footnote); Text(L10n.text("正在整理您的专题报告")).font(.headline); Text(L10n.lookup(["checking":"正在核对您填写的资料。", "calculating":"正在排盘并整理计算结果。", "writing":"正在组织分章解读、比较表与行动建议。"][r.generationStage ?? ""] ?? L10n.text("任务已开始，完成后自动展示。"))).font(.subheadline); Text(L10n.text("您可以离开，稍后在我的报告查看。当前尚未扣款；超过五分钟可恢复生成。")).font(.subheadline); primary("检查并恢复生成") { Task { await retry(r) } } }
+            card { AiTopicArtwork(code: r.skillCode).frame(height: 150).frame(maxWidth: .infinity); ProgressView(L10n.text("报告生成中 · 尚未扣款")).font(.footnote); Text(L10n.text("正在整理您的专题报告")).font(.headline); Text(L10n.lookup(["checking":"正在核对您填写的资料。", "calculating":"正在排盘并整理计算结果。", "writing":"正在组织分章解读、比较表与行动建议。"][r.generationStage ?? ""] ?? L10n.text("任务已开始，完成后自动展示。"))).font(.subheadline); Text(L10n.text("您可以离开，稍后在我的报告查看。当前尚未扣款；超过五分钟可恢复生成。")).font(.subheadline); primary("检查并恢复生成") { Task { await retry(r) } } }
         } else if r.status == "failed" {
             card { Text(L10n.text("这次生成未能完成")).font(.headline); Text(L10n.lookup(r.errorMessage)); primary("免费重试") { Task { await retry(r) } } }
         } else {
@@ -248,10 +240,21 @@ struct AiReportWorkspace: View {
                     if let pdfURL { ShareLink(item: pdfURL) { Label(L10n.text("保存或分享 PDF"), systemImage: "square.and.arrow.up") } }
  ShareLink(item: r.title + "\n\n" + r.content) { Label(L10n.text("保存或分享报告"), systemImage: "square.and.arrow.up") }; primary("围绕这份报告继续问事 →") { Task { await followup(r) } }; Text(L10n.text("自动带入报告内容，聊天按账户正常额度使用。")).font(.footnote).foregroundStyle(.secondary) }
             } else {
-                card { GrowthCatalogPriceView(items: [.init(itemType: "ai_report_order", itemId: r.reportNo)]); Button(L10n.text("钱包余额支付 ¥\(CashAPI.money(r.priceCents))")) { Task { await unlockCash(r) } }.disabled(busy); Text(L10n.text("把线索，展开成完整答案")).font(AppTypography.section); chapters(r.chapters); HStack(alignment: .firstTextBaseline) { Text("\(r.pointsPrice)").font(AppTypography.title(36)); Text(L10n.text("积分")); Spacer(); Text(L10n.text("一次购买 · 随时回看")).font(AppTypography.caption) }; Text(L10n.lookup(L10n.text("可用积分：") + (balance.map(String.init) ?? L10n.text("暂未获取")) + L10n.text("。也可使用钱包余额购买。"))).font(.footnote).foregroundStyle(.secondary); if let balance {
-                    if balance >= r.pointsPrice { primary("解锁完整报告") { confirm = true } }
-                    else { Text(L10n.text("还差 \(r.pointsPrice - balance) 积分，摘要已为您保留。")).font(.footnote).padding(14).frame(maxWidth: .infinity).background(accent.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 10)) }
-                } else { Button(L10n.text("重新获取积分余额")) { Task { await refreshBalance() } } } }
+                card {
+                    Text(L10n.text("把线索，展开成完整答案")).font(AppTypography.section)
+                    chapters(r.chapters)
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("¥" + CashAPI.money(r.priceCents)).font(AppTypography.title(36)).monospacedDigit()
+                        Text(L10n.text("/ 份")).font(AppTypography.caption)
+                        Spacer()
+                        Text(L10n.text("一次购买 · 随时回看")).font(AppTypography.caption)
+                    }
+                    GrowthCatalogPriceView(items: [.init(itemType: "ai_report_order", itemId: r.reportNo)])
+                    primary("钱包余额支付 · 解锁完整报告") { Task { await unlockCash(r) } }
+                        .accessibilityIdentifier("ai-report-wallet-pay")
+                    Text(L10n.text("确认支付前可查看钱包余额与实际支付金额；余额不足时可前往充值。"))
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
             }
         }
     }
@@ -259,10 +262,6 @@ struct AiReportWorkspace: View {
         loading = true; defer { loading = false }
         do { if let reportID { report = try await APIClient.shared.request(.aiReport(reportID)) }; if let topic { let response: AiSkillListResponse = try await APIClient.shared.request(.aiSkills); skill = response.list.first { $0.code == topic.code }; if inputs.isEmpty { inputs = Dictionary(uniqueKeysWithValues: (skill?.inputSchema.fields ?? []).compactMap { field in guard let value = field.defaultValue, field.options?.contains(where: { $0.value == value }) == true else { return nil }; return (field.key, value) }) }; if skill?.inputSchema.fields.isEmpty == true { step = 1 } } }
         catch { self.error = error.localizedDescription }
-    }
-    private func refreshBalance() async {
-        do { let b: ReportBalance = try await APIClient.shared.request(.pointsAccount); balance = b.balance }
-        catch { balance = nil }
     }
     private func create(_ topic: AiTopic) async {
         guard !busy, skill != nil, topic.ready != false, fieldsReady, questionReady, topic.code != "face_palm" || (photoData != nil && !photoLoading) else { return }; busy = true; error = ""; defer { busy = false }
@@ -281,13 +280,10 @@ struct AiReportWorkspace: View {
         do { let result: ReportConversationResult = try await APIClient.shared.request(.aiReportConversation(r.id)); NotificationCenter.default.post(name: Notification.Name("AskXuanReportConversation"), object: result.sessionId, userInfo: ["reportId":r.id]); dismiss() } catch { self.error = error.localizedDescription }
     }
     private func unlockCash(_ r: AiReport) async {
-        guard !busy else { return }; busy = true; defer { busy = false }
+        guard !busy else { return }; busy = true; error = ""; defer { busy = false }
         do { _ = try await CashCheckout.pay("ai_report", r.reportNo); report = try await APIClient.shared.request(.aiReport(r.id)) } catch { self.error = error.localizedDescription }
     }
-    private func unlock(_ r: AiReport) async {
-        guard !busy else { return }; busy = true; error = ""; defer { busy = false }
-        do { let _: ReportUnlockResult = try await APIClient.shared.request(.aiReportUnlock(.init(reportId: r.id, expectedPoints: r.pointsPrice))); report = try await APIClient.shared.request(.aiReport(r.id)); await refreshBalance() } catch { self.error = error.localizedDescription }
-    }
+
 }
 struct AiReportLibrary: View {
     var showsDismissButton = true
