@@ -387,6 +387,29 @@ struct DiyCanvasEditorTests {
         #expect(restored.beadSlots[26].materialId == jade.id)
     }
 
+    @Test func studioCategoryOverridesLegacyClassificationWithoutChangingOrderSubtype() throws {
+        let suite = "DiyStudioCategoryTests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        let model = DiyViewModel(draftStore: store)
+        var fixed = material(id: 1, category: "pendant")
+        var moving = material(id: 2, category: "buddha_head")
+        fixed.renderAssets = #"{"studio":{"version":1,"part":"bead","motion":"fixed","source":"template","templateId":"round","dimensionsMm":[10,10,10],"rotation":[0,0,0],"mount":[0,0,0],"connectorMm":0,"rigidFraction":0.4,"photos":[],"previewConfirmed":true}}"#
+        moving.renderAssets = #"{"studio":{"version":1,"part":"hanging","motion":"rigid","source":"template","templateId":"buddha_head","dimensionsMm":[10,10,10],"rotation":[0,0,0],"mount":[0,0,-0.5],"connectorMm":3,"rigidFraction":0.4,"photos":[],"previewConfirmed":true}}"#
+        let legacy = material(id: 3, category: "tassel"), cord = material(id: 4, category: "cord")
+        model.materials = [fixed, moving, legacy, cord]
+        #expect(model.categories.map(\.code) == ["used", "all", "bead", "hanging", "cord"])
+        model.selectCategory("bead")
+        #expect(model.filteredMaterials.map(\.id) == [1])
+        model.selectCategory("hanging")
+        #expect(model.filteredMaterials.map(\.id) == [2, 3])
+        model.selectCategory("cord")
+        #expect(model.filteredMaterials.map(\.id) == [4])
+        model.addBead(fixed); model.addBead(moving)
+        #expect(model.beadSlots.map(\.subtype) == ["pendant", "buddha_head"])
+        #expect(model.designDocument().items.map(\.subtype) == ["pendant", "buddha_head"])
+    }
+
     @Test func usedCategoryFollowsUndoAndIncludesCord() throws {
         let suite = "DiyCanvasUsedTests.\(UUID().uuidString)"
         let store = try #require(UserDefaults(suiteName: suite))

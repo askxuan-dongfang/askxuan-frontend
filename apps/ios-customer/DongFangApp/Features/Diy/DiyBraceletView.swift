@@ -207,7 +207,7 @@ struct DiyMiniBracelet: View {
                     let slot = slots.indices.contains(index) ? slots[index] : nil
                     let angle = slots.isEmpty ? -Double.pi / 2 + Double(index) / Double(max(count, 1)) * Double.pi * 2 : physical.angles[index]
                     let size = slots.isEmpty ? CGFloat(20) : CGFloat((slot?.diameterMm ?? 10) / physical.radius) * radiusX
-                    DiyMaterialBead(name: slot?.materialName ?? "", category: slot?.subtype ?? "main_bead", size: size, isSelected: false, shape: slot?.shape ?? "round", colorHex: slot?.colorHex ?? fallbackColors[index % fallbackColors.count], textureKey: slot?.textureKey, finish: slot?.finish, translucency: slot?.translucency ?? 0, renderAssets: slot?.renderAssets, materialId: slot?.materialId ?? 0, materialType: slot?.materialType)
+                    DiyMaterialBead(name: slot?.materialName ?? "", category: slot?.subtype ?? "main_bead", size: size, isSelected: false, shape: slot?.shape ?? "round", colorHex: slot?.colorHex ?? fallbackColors[index % fallbackColors.count], textureKey: slot?.textureKey, finish: slot?.finish, translucency: slot?.translucency ?? 0, renderAssets: slot?.renderAssets, materialId: slot?.materialId ?? 0, materialType: slot?.materialType, imageURL: slot?.image)
                         .frame(width: size, height: size)
                         .shadow(color: Color.black.opacity(0.45), radius: 4, y: 3)
                         .position(x: center.x + cos(angle) * radiusX, y: center.y + sin(angle) * radiusY)

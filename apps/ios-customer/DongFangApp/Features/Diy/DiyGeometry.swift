@@ -37,19 +37,45 @@ enum DiyGeometry {
         return kind
     }
     static func profile(_ kind: String) -> Profile? { catalog?.models[kind] }
+    static func studio(_ bead: DiyBeadSlot) -> DiyMaterialStudio? {
+        guard let studio = DiyRenderAssets.parse(bead.renderAssets)?.studio, studio.isValid else { return nil }
+        return studio
+    }
+    static func isSuspended(_ bead: DiyBeadSlot) -> Bool {
+        if let studio = studio(bead) { return studio.part == "hanging" }
+        return DiyGravity.isSuspended(dimensions(bead).kind)
+    }
+    static func profile(_ bead: DiyBeadSlot) -> Profile? {
+        guard let studio = studio(bead) else { return dimensions(bead).kind.flatMap(profile) }
+        let diameter = studio.dimensionsMm.max() ?? 10
+        let size = studio.dimensionsMm.map { $0 / diameter }
+        return Profile(pitchRatio: studio.part == "hanging" ? 2 / diameter : size[0],
+                       spacingRatio: studio.part == "hanging" ? 2 / diameter : size[0],
+                       radialRatio: studio.part == "hanging" ? 2 / diameter : max(size[1], size[2]),
+                       minX: -size[0] / 2, maxX: size[0] / 2, minY: -size[1] / 2, maxY: size[1] / 2,
+                       minZ: -size[2] / 2, maxZ: size[2] / 2, file: "", thumbnail: "",
+                       anchors: ["mount": zip(studio.mount, size).map { $0.0 * $0.1 }], connectorRatio: studio.connectorMm / diameter)
+    }
     static func dimensions(_ bead: DiyBeadSlot) -> Dimensions {
+        if let studio = studio(bead) {
+            let dimensions = studio.dimensionsMm, suspended = studio.part == "hanging"
+            return .init(diameterMm: dimensions.max() ?? 10, pitchMm: suspended ? 2 : dimensions[0],
+                         spacingMm: suspended ? 2 : dimensions[0], radialMm: suspended ? 2 : max(dimensions[1], dimensions[2]),
+                         centerHeightMm: 0, minZ: -dimensions[2] / 2, maxZ: dimensions[2] / 2,
+                         kind: studio.templateId)
+        }
         let diameter = bead.diameterMm.isFinite ? max(2, min(40, bead.diameterMm)) : 10
         let kind = kind(shape: bead.shape, category: bead.subtype, materialId: bead.materialId, name: bead.materialName)
         if let kind, let model = profile(kind) {
             return .init(diameterMm: diameter, pitchMm: max(2, diameter * model.pitchRatio), spacingMm: diameter * model.spacingRatio,
-                         radialMm: diameter * model.radialRatio, centerHeightMm: -model.minY * diameter, minZ: model.minZ * diameter, maxZ: model.maxZ * diameter, kind: kind)
+                         radialMm: diameter * model.radialRatio, centerHeightMm: 0, minZ: model.minZ * diameter, maxZ: model.maxZ * diameter, kind: kind)
         }
         var pitch = diameter * (bead.shape == "disc" ? 0.45 : bead.shape == "barrel" ? 1.15 : 1)
         if bead.shape == "barrel", let expression = try? NSRegularExpression(pattern: #"(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)"#, options: .caseInsensitive),
            let match = expression.firstMatch(in: bead.spec, range: NSRange(bead.spec.startIndex..., in: bead.spec)),
            let range = Range(match.range(at: 2), in: bead.spec), let length = Double(bead.spec[range]) { pitch = max(2, min(80, length)) }
         let radial = diameter * (bead.shape == "barrel" ? 0.85 : 1)
-        return .init(diameterMm: diameter, pitchMm: pitch, spacingMm: pitch, radialMm: radial, centerHeightMm: radial / 2, minZ: -radial / 2, maxZ: radial / 2, kind: nil)
+        return .init(diameterMm: diameter, pitchMm: pitch, spacingMm: pitch, radialMm: radial, centerHeightMm: 0, minZ: -radial / 2, maxZ: radial / 2, kind: nil)
     }
     static func textureTurn(_ identity: String) -> Float {
         let hash = identity.utf8.reduce(UInt32(0)) { ($0 &* 31) &+ UInt32($1) }
@@ -57,16 +83,16 @@ enum DiyGeometry {
     }
     static func cordPoints(slots: [DiyBeadSlot], layout: DiyPhysicalLayout, rotation: Double = 0) -> [SIMD3<Double>] {
         let angles = layout.angles.map { $0 + rotation }
-        if slots.isEmpty { return (0...128).map { let angle = Double($0 % 128) / 128 * 2 * .pi; return SIMD3(cos(angle) * layout.radius, 0.4, sin(angle) * layout.radius) } }
+        if slots.isEmpty { return (0...128).map { let angle = Double($0 % 128) / 128 * 2 * .pi; return SIMD3(cos(angle) * layout.radius, 0, sin(angle) * layout.radius) } }
         let physical = slots.map(dimensions)
         func attachment(_ index: Int, side: String) -> SIMD3<Double> {
             let size = physical[index], angle = angles[index]
-            let local = size.kind.flatMap(profile)?.anchors[side]
+            let local = studio(slots[index]) == nil ? size.kind.flatMap(profile)?.anchors[side] : nil
             let anchor: SIMD3<Double>
             if let local, local.count == 3 { anchor = SIMD3(local[0], local[1], local[2]) * size.diameterMm }
             else { anchor = SIMD3(side == "left" ? -size.pitchMm / 2 : size.pitchMm / 2, 0, 0) }
             return SIMD3(cos(angle) * layout.radius + sin(angle) * anchor.x + cos(angle) * anchor.z,
-                         size.centerHeightMm + anchor.y,
+                         0,
                          sin(angle) * layout.radius - cos(angle) * anchor.x + sin(angle) * anchor.z)
         }
         var points: [SIMD3<Double>] = []
@@ -112,7 +138,7 @@ enum DiyGeometry {
 enum DiyGravity {
     static let step = 1.0 / 120
     static func initialOrientation(slots: [DiyBeadSlot] = [], angles: [Double] = []) -> simd_quatf {
-        let attachments = angles.indices.filter { $0 < slots.count && isSuspended(DiyGeometry.dimensions(slots[$0]).kind) }.map { angles[$0] }
+        let attachments = angles.indices.filter { $0 < slots.count && DiyGeometry.isSuspended(slots[$0]) }.map { angles[$0] }
         let x = attachments.reduce(0) { $0 + cos($1) }, y = attachments.reduce(0) { $0 + sin($1) }
         let rotation = attachments.isEmpty ? 0 : Double.pi / 2 - (hypot(x, y) < 0.000001 ? attachments[0] : atan2(y, x))
         return simd_quatf(angle: 1.15, axis: SIMD3(1, 0, 0)) * simd_quatf(angle: Float(-rotation), axis: SIMD3(0, 1, 0))
@@ -122,14 +148,18 @@ enum DiyGravity {
         return slots.reduce(1.65) { result, slot in
             let size = DiyGeometry.dimensions(slot), diameter = size.diameterMm * scale
             let center = hypot(1.65, size.centerHeightMm * scale)
-            guard let kind = size.kind, let profile = DiyGeometry.profile(kind) else {
+            guard let profile = DiyGeometry.profile(slot) else {
                 return max(result, center + hypot(size.radialMm, size.pitchMm) * scale / 2)
             }
-            let x = max(abs(profile.minX), abs(profile.maxX)), y = max(abs(profile.minY), abs(profile.maxY))
-            if isSuspended(kind) {
-                let body = profile.maxZ - (profile.anchors["mount"]?.last ?? profile.minZ)
-                return max(result, center + max(0.025, diameter * (profile.connectorRatio ?? 0.12)) + diameter * (body + hypot(x, y)))
+            if DiyGeometry.isSuspended(slot) {
+                let mount = profile.anchors["mount"] ?? [0, 0, profile.minZ]
+                let x = max(abs(profile.minX - mount[0]), abs(profile.maxX - mount[0]))
+                let y = max(abs(profile.minY - mount[1]), abs(profile.maxY - mount[1]))
+                let z = max(abs(profile.minZ - mount[2]), abs(profile.maxZ - mount[2]))
+                let connector = DiyGeometry.studio(slot).map { $0.connectorMm * scale } ?? max(0.025, diameter * (profile.connectorRatio ?? 0.12))
+                return max(result, center + connector + diameter * (z + hypot(x, y)))
             }
+            let x = max(abs(profile.minX), abs(profile.maxX)), y = max(abs(profile.minY), abs(profile.maxY))
             let z = max(abs(profile.minZ), abs(profile.maxZ))
             return max(result, center + sqrt(x*x + y*y + z*z) * diameter)
         }
@@ -172,7 +202,7 @@ enum DiyGravity {
         init(id: String, anchor: SIMD3<Double>, connector: Double, bodyLength: Double, radius: Double, flexible: Bool, headFraction: Double = 0.35) {
             self.id = id; self.anchor = anchor; self.flexible = flexible
             precondition(anchor.x.isFinite && anchor.y.isFinite && anchor.z.isFinite && connector.isFinite && connector > 0 && bodyLength.isFinite && bodyLength > 0 && radius.isFinite && radius > 0)
-            let body = bodyLength, tether = connector, headFraction = min(0.8, max(0.15, headFraction))
+            let body = bodyLength, tether = connector, headFraction = min(0.9, max(0.1, headFraction))
             lengths = flexible ? [tether, body * headFraction] + Array(repeating: body * (1 - headFraction) / 3, count: 3) : [tether, body / 2, body / 2]
             radii = flexible ? [0, radius * 0.18, radius * 0.42, radius * 0.62, radius * 0.78, radius * 0.55] : [0, radius * 0.18, radius, radius * 0.35]
             var positions = [anchor]

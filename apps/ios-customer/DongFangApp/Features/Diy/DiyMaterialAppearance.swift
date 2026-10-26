@@ -148,6 +148,104 @@ struct DiyAppearanceProfile: Decodable {
         guard let image = UIImage(contentsOfFile: url.path) else { return nil }
         images.setObject(image, forKey: key, cost: 160 * 160 * 4); return image
     }
+    static func studioGeometry(_ studio: DiyMaterialStudio, imported: SCNGeometry? = nil) -> SCNGeometry? {
+        guard studio.isValid else { return nil }
+        let primitive = ["round", "disc", "barrel", "faceted"].contains(studio.templateId)
+        let source = studio.source == "generated" ? imported
+            : primitive ? geometry(radius: 0.5, shape: studio.templateId, axialLength: 1) : accessoryGeometry(studio.templateId)
+        guard let source else { return nil }
+        let baseRotation = primitive ? simd_quatf(angle: -.pi / 2, axis: SIMD3(0, 0, 1)) : simd_quatf(angle: 0, axis: SIMD3(0, 1, 0))
+        let radians = studio.rotation.map { Float($0 * .pi / 180) }
+        let rotation = simd_quatf(angle: radians[0], axis: SIMD3(1, 0, 0))
+            * simd_quatf(angle: radians[1], axis: SIMD3(0, 1, 0))
+            * simd_quatf(angle: radians[2], axis: SIMD3(0, 0, 1)) * baseRotation
+        let points = vertices(of: source).map(rotation.act)
+        guard let first = points.first, points.allSatisfy({ $0.x.isFinite && $0.y.isFinite && $0.z.isFinite }) else { return nil }
+        let lower = points.reduce(first, simd_min), upper = points.reduce(first, simd_max)
+        let extent = upper - lower, center = (upper + lower) / 2
+        guard extent.x > 0.000001, extent.y > 0.000001, extent.z > 0.000001 else { return nil }
+        let diameter = Float(studio.dimensionsMm.max() ?? 10)
+        let dimensions = SIMD3<Float>(studio.dimensionsMm.map(Float.init)) / diameter
+        let scale = dimensions / extent
+        let transformed = points.map { SCNVector3(($0 - center) * scale) }
+        let normals = vertices(of: source, semantic: .normal).map { normal -> SCNVector3 in
+            let n = rotation.act(normal) / scale
+            return SCNVector3(simd_length_squared(n) > 0.000001 ? simd_normalize(n) : SIMD3(0, 1, 0))
+        }
+        let sources = [SCNGeometrySource(vertices: transformed), SCNGeometrySource(normals: normals)]
+            + source.sources.filter { $0.semantic != .vertex && $0.semantic != .normal }
+        let result = SCNGeometry(sources: sources, elements: source.elements)
+        result.materials = source.materials.compactMap { $0.copy() as? SCNMaterial }
+        return result
+    }
+
+    // Bake the imported hierarchy once so gravity, hit testing and bounds use
+    // the same vertices while preserving each USDZ material and its textures.
+    static func importedGeometry(_ root: SCNNode) -> SCNGeometry? {
+        var vertices: [SCNVector3] = [], normals: [SCNVector3] = [], uv: [CGPoint] = []
+        var elements: [SCNGeometryElement] = [], materials: [SCNMaterial] = []
+        var valid = true
+        func append(_ node: SCNNode) {
+            guard valid, let geometry = node.geometry else { return }
+            let points = self.vertices(of: geometry), inputNormals = self.vertices(of: geometry, semantic: .normal)
+            guard !points.isEmpty, points.count + vertices.count <= 150_000, node.skinner == nil, node.morpher == nil else { valid = false; return }
+            let transform = node.simdWorldTransform
+            let linear = simd_float3x3(SIMD3(transform.columns.0.x, transform.columns.0.y, transform.columns.0.z),
+                                      SIMD3(transform.columns.1.x, transform.columns.1.y, transform.columns.1.z),
+                                      SIMD3(transform.columns.2.x, transform.columns.2.y, transform.columns.2.z))
+            guard abs(simd_determinant(linear)) > 0.00000001 else { valid = false; return }
+            let normalTransform = simd_transpose(simd_inverse(linear)), offset = Int32(vertices.count)
+            var localNormals = inputNormals.count == points.count ? inputNormals : Array(repeating: SIMD3<Float>.zero, count: points.count)
+            for (index, element) in geometry.elements.enumerated() {
+                guard element.primitiveType == .triangles, element.primitiveCount <= 100_000,
+                      [1, 2, 4].contains(element.bytesPerIndex), element.data.count >= element.primitiveCount * 3 * element.bytesPerIndex else { valid = false; return }
+                let indices: [Int32] = element.data.withUnsafeBytes { data in
+                    (0..<element.primitiveCount * 3).map { i in
+                        let byte = i * element.bytesPerIndex
+                        switch element.bytesPerIndex {
+                        case 1: return Int32(data.loadUnaligned(fromByteOffset: byte, as: UInt8.self))
+                        case 2: return Int32(data.loadUnaligned(fromByteOffset: byte, as: UInt16.self))
+                        default: return Int32(bitPattern: data.loadUnaligned(fromByteOffset: byte, as: UInt32.self))
+                        }
+                    }
+                }
+                guard indices.allSatisfy({ $0 >= 0 && Int($0) < points.count }) else { valid = false; return }
+                if inputNormals.count != points.count {
+                    for i in stride(from: 0, to: indices.count, by: 3) {
+                        let a = Int(indices[i]), b = Int(indices[i + 1]), c = Int(indices[i + 2])
+                        let normal = simd_cross(points[b] - points[a], points[c] - points[a])
+                        localNormals[a] += normal; localNormals[b] += normal; localNormals[c] += normal
+                    }
+                }
+                elements.append(SCNGeometryElement(indices: indices.map { $0 + offset }, primitiveType: .triangles))
+                materials.append(geometry.materials.isEmpty ? SCNMaterial() : geometry.materials[index % geometry.materials.count])
+            }
+            for (index, point) in points.enumerated() {
+                let world = transform * SIMD4(point, 1), normal = normalTransform * localNormals[index]
+                guard world.x.isFinite, world.y.isFinite, world.z.isFinite else { valid = false; return }
+                vertices.append(SCNVector3(world.x, world.y, world.z))
+                normals.append(SCNVector3(simd_length_squared(normal) > 0.000001 ? simd_normalize(normal) : SIMD3(0, 1, 0)))
+            }
+            if let source = geometry.sources(for: .texcoord).first, source.usesFloatComponents,
+               source.componentsPerVector >= 2, source.vectorCount == points.count, [4, 8].contains(source.bytesPerComponent) {
+                let values: [CGPoint] = source.data.withUnsafeBytes { bytes in
+                    (0..<source.vectorCount).map { i in
+                        let offset = source.dataOffset + i * source.dataStride
+                        guard offset >= 0, offset + source.bytesPerComponent * 2 <= bytes.count else { return .zero }
+                        if source.bytesPerComponent == 4 { return CGPoint(x: CGFloat(bytes.loadUnaligned(fromByteOffset: offset, as: Float.self)), y: CGFloat(bytes.loadUnaligned(fromByteOffset: offset + 4, as: Float.self))) }
+                        return CGPoint(x: bytes.loadUnaligned(fromByteOffset: offset, as: Double.self), y: bytes.loadUnaligned(fromByteOffset: offset + 8, as: Double.self))
+                    }
+                }
+                uv.append(contentsOf: values)
+            } else { uv.append(contentsOf: Array(repeating: .zero, count: points.count)) }
+        }
+        append(root)
+        root.enumerateChildNodes { node, _ in append(node) }
+        guard valid, !vertices.isEmpty, !elements.isEmpty else { return nil }
+        let result = SCNGeometry(sources: [.init(vertices: vertices), .init(normals: normals), .init(textureCoordinates: uv)], elements: elements)
+        result.materials = materials
+        return result
+    }
     static func cordGeometry(points input: [SIMD3<Double>], scale: Double) -> SCNGeometry {
         // Duplicate bore/arc junctions and vertical hanging segments need a
         // non-degenerate tube frame, including the closing ring seam.

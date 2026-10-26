@@ -127,6 +127,7 @@
 		FBED17C9B0B66EA3C423E230 /* AvatarEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A9EF044DDA26E5E131FD91 /* AvatarEditor.swift */; };
 		FD62D7B13DCFE5C4B52992F0 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FF6AD3EC1893B3135324CFB /* RemoteImage.swift */; };
 		FFEE9B5B39F0A06B9B340B4C /* DiyMaterials in Resources */ = {isa = PBXBuildFile; fileRef = 2DCEA99133E0607C585B4624 /* DiyMaterials */; };
+		C4C67E870CAF59824201791B /* MaterialStudio.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 8B99083698B7D39E10BDB105 /* MaterialStudio.usdz */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -276,6 +277,7 @@
 		FB598B67C7D0B2F9D42CD48A /* TagPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagPill.swift; sourceTree = "<group>"; };
 		FD7269C4129DA61804182781 /* JourneyDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyDetailView.swift; sourceTree = "<group>"; };
 		FF6CCC3F8E95729B8206401B /* ProfileCompletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileCompletionView.swift; sourceTree = "<group>"; };
+		8B99083698B7D39E10BDB105 /* MaterialStudio.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = MaterialStudio.usdz; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -362,6 +364,7 @@
 		34B14828F46AA518999A56FE /* DongFangAppTests */ = {
 			isa = PBXGroup;
 			children = (
+				48440CD985DC69F65C89BB04 /* Fixtures */,
 				74027B490BEC48BCB2396CE2 /* AiExperienceTests.swift */,
 				13EC808621986B172C0EF82F /* AiReportParityTests.swift */,
 				A1CAF6EB22243DA0583289CD /* DiyEditorTests.swift */,
@@ -731,6 +734,14 @@
 			path = Auth;
 			sourceTree = "<group>";
 		};
+		48440CD985DC69F65C89BB04 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				8B99083698B7D39E10BDB105 /* MaterialStudio.usdz */,
+			);
+			path = Fixtures;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -775,6 +786,7 @@
 			buildPhases = (
 				EEB1E7E9AE9747B01B004190 /* [CP] Check Pods Manifest.lock */,
 				CE46390B74454125FB7DE15A /* Sources */,
+				A182FF80DFC2B0595EB36B2A /* Resources */,
 				57F866D96C4C7B2E01ADE2A4 /* Frameworks */,
 			);
 			buildRules = (
@@ -841,6 +853,14 @@
 				6DA54A9C04C98C2B6AD2D69B /* OFL.txt in Resources */,
 				6CA609D1CB58F92A18F31257 /* README.md in Resources */,
 				48823B7C26E9734F4C18607E /* zh-Hant.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A182FF80DFC2B0595EB36B2A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C4C67E870CAF59824201791B /* MaterialStudio.usdz in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

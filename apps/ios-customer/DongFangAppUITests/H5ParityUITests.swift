@@ -713,6 +713,42 @@ final class NativePublicSearchUITests: XCTestCase {
 }
 
 final class DiyStudioUITests: XCTestCase {
+    func testGeneratedModelLoadsAndRotates() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["ASKXUAN_JOURNEY_API_URL"] = "http://127.0.0.1:8927/api/v1"
+        app.launchArguments = ["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99032", "--parity-diy-studio", "-askxuan.appearance", "light", "-askxuan.language", "zh-Hans"]
+        app.launch()
+        let stage = app.otherElements["diy-3d-stage"]
+        XCTAssertTrue(stage.waitForExistence(timeout: 25))
+        if app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 颗 ")).firstMatch.exists { clearDraft(app) }
+        app.buttons["普通串珠"].tap()
+        let fixed = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "固定孔位珠，")).firstMatch
+        XCTAssertTrue(fixed.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "建模验证挂件，")).firstMatch.exists)
+        for _ in 0..<3 { fixed.tap() }
+        app.buttons["动态挂件"].tap()
+        let material = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "建模验证挂件，")).firstMatch
+        XCTAssertTrue(material.waitForExistence(timeout: 5)); material.tap()
+        let ornament = app.buttons["第 4 颗 建模验证挂件"]
+        // Accessibility bounds are built from the downloaded real mesh, never a placeholder.
+        XCTAssertTrue(ornament.waitForExistence(timeout: 30))
+        XCTAssertGreaterThan(ornament.frame.width, 5)
+        let bodyFrame = ornament.frame
+        XCTAssertTrue(bodyFrame.minX.isFinite && bodyFrame.minY.isFinite && bodyFrame.maxX.isFinite && bodyFrame.maxY.isFinite)
+        let loaded = XCTAttachment(screenshot: app.screenshot()); loaded.name = "ios-generated-usdz-loaded"; loaded.lifetime = .keepAlways; add(loaded)
+        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: bodyFrame.midX, dy: bodyFrame.midY)).tap()
+        XCTAssertTrue(ornament.isSelected)
+        let before = ornament.frame
+        let fit = app.descendants(matching: .any)["diy-fit-feedback"].label
+        stage.coordinate(withNormalizedOffset: CGVector(dx: 0.10, dy: 0.1)).press(forDuration: 0.1,
+            thenDragTo: stage.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.20)))
+        XCTAssertNotEqual(ornament.frame, before)
+        XCTAssertEqual(app.descendants(matching: .any)["diy-fit-feedback"].label, fit)
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "ios-generated-usdz-real-body"; shot.lifetime = .keepAlways; add(shot)
+        clearDraft(app)
+    }
+
     func testOpenCanvasFitUsedMaterialsAndExpandedPreview() {
         let app = studioApp(user: "99026")
         let stage = app.otherElements["diy-3d-stage"]

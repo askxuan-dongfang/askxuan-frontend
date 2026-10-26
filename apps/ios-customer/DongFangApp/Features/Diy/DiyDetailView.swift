@@ -132,7 +132,7 @@ struct DiyDetailView: View {
             DiyMaterialBead(name: item.material.name, category: item.material.category, size: 38, isSelected: false,
                             shape: item.material.shape ?? "round", colorHex: item.material.colorHex,
                             textureKey: item.material.textureKey, finish: item.material.finish,
-                            translucency: item.material.translucency ?? 0, renderAssets: item.material.renderAssets, materialId: item.material.id, materialType: item.material.materialType)
+                            translucency: item.material.translucency ?? 0, renderAssets: item.material.renderAssets, materialId: item.material.id, materialType: item.material.materialType, imageURL: item.material.image)
                 .frame(width: 44, height: 44).accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {

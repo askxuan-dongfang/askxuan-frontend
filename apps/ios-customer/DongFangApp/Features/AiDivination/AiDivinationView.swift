@@ -742,11 +742,7 @@ struct AiDivinationView: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
                     .background(Color.bgSecondary)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.borderDefault, lineWidth: 1)
-                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     .onSubmit { sendMessage() }
 
                 Button {

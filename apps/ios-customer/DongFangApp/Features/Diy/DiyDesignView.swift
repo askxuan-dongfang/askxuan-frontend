@@ -7,6 +7,7 @@ import SwiftUI
 import UIKit
 import SceneKit
 import simd
+import CryptoKit
 
 struct DiyDesignView: View {
     @StateObject private var viewModel: DiyViewModel
@@ -398,7 +399,7 @@ struct DiyDesignView: View {
                         colorHex: material.colorHex,
                         textureKey: material.textureKey,
                         finish: material.finish,
-                        translucency: material.translucency ?? 0, renderAssets: material.renderAssets, materialId: material.id, materialType: material.materialType
+                        translucency: material.translucency ?? 0, renderAssets: material.renderAssets, materialId: material.id, materialType: material.materialType, imageURL: material.image
                     )
                     if count > 0 {
                         Text("×\(count)")
@@ -460,7 +461,7 @@ struct DiyDesignView: View {
                     colorHex: material.colorHex,
                     textureKey: material.textureKey,
                     finish: material.finish,
-                    translucency: material.translucency ?? 0, renderAssets: material.renderAssets, materialId: material.id, materialType: material.materialType
+                    translucency: material.translucency ?? 0, renderAssets: material.renderAssets, materialId: material.id, materialType: material.materialType, imageURL: material.image
                 )
                 Text(L10n.lookup(material.name))
                     .font(AppTypography.micro.weight(.medium))
@@ -532,16 +533,32 @@ struct DiyMaterialBead: View {
     var renderAssets: String? = nil
     var materialId: Int64 = 0
     var materialType: String? = nil
+    var imageURL: String? = nil
 
     private var palette: DiyBeadPalette { .resolve(name: name, category: category, colorHex: colorHex) }
-    private var isDiscSpacer: Bool {
-        shape == "disc" || (category == "spacer" && name.contains("隔片"))
+    private var studio: DiyMaterialStudio? { DiyRenderAssets.parse(renderAssets)?.studio }
+    private var generated: Bool { studio?.isValid == true && studio?.source == "generated" }
+    private var photoURL: URL? {
+        let assets = DiyRenderAssets.parse(renderAssets)
+        return ((studio?.photos ?? []) + [imageURL, assets?.beadImageUrl].compactMap { $0 }).compactMap(DiyRenderAssets.url).first
     }
-    private var accessory: String? { DiyGeometry.kind(shape: shape, category: category, materialId: materialId, name: name) }
+    private var isDiscSpacer: Bool {
+        if let studio, studio.isValid { return studio.templateId == "disc" }
+        return shape == "disc" || (category == "spacer" && name.contains("隔片"))
+    }
+    private var accessory: String? {
+        if let studio, studio.isValid { return DiyGeometry.profile(studio.templateId) == nil ? nil : studio.templateId }
+        return DiyGeometry.kind(shape: shape, category: category, materialId: materialId, name: name)
+    }
 
     var body: some View {
         Group {
-            if let accessory, let mask = DiyMaterialAppearance.accessoryThumbnail(accessory) {
+            if generated {
+                AsyncImage(url: photoURL) { phase in
+                    if let image = phase.image { image.resizable().scaledToFit() }
+                    else { Image(systemName: "cube.transparent").font(.system(size: size * 0.65)).foregroundStyle(Color.textTertiary) }
+                }
+            } else if let accessory, let mask = DiyMaterialAppearance.accessoryThumbnail(accessory) {
                 ZStack {
                     palette.base
                     if let reference = DiyMaterialAppearance.image(id: materialId, texture: textureKey, type: materialType, finish: finish, color: colorHex) {
@@ -566,7 +583,7 @@ struct DiyMaterialBead: View {
                             .strokeBorder(rimGradient, lineWidth: isSelected ? 2 : 0.8)
                             .frame(width: size * 0.52, height: size)
                     }
-            } else if shape == "barrel" {
+            } else if (studio?.isValid == true ? studio?.templateId : shape) == "barrel" {
                 RoundedRectangle(cornerRadius: size * 0.26)
                     .fill(baseGradient)
                     .frame(width: size * 1.14, height: size * 0.86)
@@ -588,10 +605,10 @@ struct DiyMaterialBead: View {
             }
         }
         .frame(width: size, height: size)
-        .opacity(max(0.62, 1 - translucency * 0.18))
-        .saturation(finish == "matte" || finish == "natural" ? 0.78 : 1)
+        .opacity(generated ? 1 : max(0.62, 1 - translucency * 0.18))
+        .saturation(!generated && (finish == "matte" || finish == "natural") ? 0.78 : 1)
         .overlay {
-            if accessory == nil { Ellipse()
+            if !generated, accessory == nil { Ellipse()
                 .fill(Color.white.opacity(0.38))
                 .frame(width: size * 0.24, height: size * 0.1)
                 .blur(radius: 1.1)
@@ -599,10 +616,10 @@ struct DiyMaterialBead: View {
                 .allowsHitTesting(false) }
         }
         .overlay {
-            if accessory == nil, !(DiyRenderAssets.parse(renderAssets)?.beadImageUrl.map { !$0.hasPrefix("/assets/diy/sources/") } ?? false), let reference = DiyMaterialAppearance.image(id: materialId, texture: textureKey, type: materialType, finish: finish, color: colorHex) {
+            if !generated, accessory == nil, !(DiyRenderAssets.parse(renderAssets)?.beadImageUrl.map { !$0.hasPrefix("/assets/diy/sources/") } ?? false), let reference = DiyMaterialAppearance.image(id: materialId, texture: textureKey, type: materialType, finish: finish, color: colorHex) {
                 Image(uiImage: reference).resizable().scaledToFill().frame(width: isDiscSpacer ? size * 0.52 : size, height: size).clipShape(Ellipse())
                     .overlay { Circle().fill(RadialGradient(colors: [.white.opacity(0.18), .clear, .black.opacity(0.35)], center: .init(x: 0.3, y: 0.22), startRadius: 0, endRadius: size * 0.8)) }
-            } else if let assets = DiyRenderAssets.parse(renderAssets), let raw = assets.beadImageUrl, !raw.hasPrefix("/assets/diy/sources/"), let url = DiyRenderAssets.url(raw) {
+            } else if !generated, let assets = DiyRenderAssets.parse(renderAssets), let raw = assets.beadImageUrl, !raw.hasPrefix("/assets/diy/sources/"), let url = DiyRenderAssets.url(raw) {
                 AsyncImage(url: url) { phase in
                     if let image = phase.image {
                         if let c = assets.imageCrop, c.width > 0, c.height > 0 {
@@ -810,10 +827,15 @@ struct DiyNativeStage3D: UIViewRepresentable {
         private let scene = SCNScene(), camera = SCNNode(), cord = SCNNode()
         private var nodes: [String: SCNNode] = [:], signatures: [String: Int] = [:]
         private var bodyVertices: [String: [SIMD3<Float>]] = [:]
+        private var accessibilityBeads: [String: DiyBeadAccessibilityElement] = [:]
         private var owner: DiyNativeStage3D?
         private var textures = NSCache<NSString, UIImage>()
         private var requests: [URL: URLSessionDataTask] = [:]
         private var textureWaiters: [URL: [SCNMaterialProperty]] = [:]
+        private var modelRequests: [URL: Task<Void, Never>] = [:]
+        private var models: [URL: SCNGeometry] = [:]
+        private var failedModels = Set<URL>()
+        private let modelStatus = UIButton(type: .system)
         private var resetVersion = 0
         private var orientation = DiyGravity.initialOrientation()
         private var gestureOrientation = DiyGravity.initialOrientation()
@@ -859,7 +881,17 @@ struct DiyNativeStage3D: UIViewRepresentable {
                 scene.lightingEnvironment.contents = environment; scene.lightingEnvironment.intensity = 0.4
             }
             scene.rootNode.addChildNode(cord)
+            modelStatus.translatesAutoresizingMaskIntoConstraints = false
+            modelStatus.titleLabel?.font = .preferredFont(forTextStyle: .caption1)
+            modelStatus.setTitleColor(UIColor(Color.textSecondary), for: .normal)
+            modelStatus.backgroundColor = UIColor(Color.bgSecondary).withAlphaComponent(0.92)
+            modelStatus.isHidden = true; modelStatus.addTarget(self, action: #selector(retryModels), for: .touchUpInside)
+            view.addSubview(modelStatus)
+            NSLayoutConstraint.activate([modelStatus.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                                         modelStatus.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -8),
+                                         modelStatus.heightAnchor.constraint(greaterThanOrEqualToConstant: 44)])
             let tap = UITapGestureRecognizer(target: self, action: #selector(tap(_:)))
+            tap.cancelsTouchesInView = false
             let pan = DiyDirectDragGestureRecognizer(target: self, action: #selector(pan(_:)))
             let pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinch(_:)))
             tap.require(toFail: pan)
@@ -928,12 +960,18 @@ struct DiyNativeStage3D: UIViewRepresentable {
         }
         func updateAccessibility() {
             guard let view, let owner, drag == nil else { return }
+            let ids = Set(owner.slots.map(\.id))
+            accessibilityBeads = accessibilityBeads.filter { ids.contains($0.key) }
             view.accessibilityElements = owner.slots.enumerated().compactMap { index, bead -> UIAccessibilityElement? in
                 guard let node = nodes[bead.id] else { return nil }
                 let projected = bodyWorldPoints(node).map(project)
+                guard projected.allSatisfy({ $0.x.isFinite && $0.y.isFinite }) else { return nil }
                 guard let minX = projected.map(\.x).min(), let maxX = projected.map(\.x).max(),
                       let minY = projected.map(\.y).min(), let maxY = projected.map(\.y).max() else { return nil }
-                let element = DiyBeadAccessibilityElement(accessibilityContainer: view)
+                // Keep the element identity while physics updates its real mesh bounds.
+                // Replacing it each frame invalidates VoiceOver and UI automation references.
+                let element = accessibilityBeads[bead.id] ?? DiyBeadAccessibilityElement(accessibilityContainer: view)
+                accessibilityBeads[bead.id] = element
                 element.accessibilityLabel = L10n.text("第 \(index + 1) 颗 \(bead.materialName)")
                 element.accessibilityIdentifier = "diy-bead-\(bead.id)"
                 element.accessibilityTraits = owner.onSelect == nil ? [.image] : bead.id == owner.selectedId ? [.button, .selected] : [.button]
@@ -976,23 +1014,26 @@ struct DiyNativeStage3D: UIViewRepresentable {
                 let node: SCNNode
                 if let existing = nodes[bead.id] { node = existing }
                 else { node = SCNNode(); node.name = bead.id; nodes[bead.id] = node; scene.rootNode.addChildNode(node) }
-                let physical = DiyGeometry.dimensions(bead), suspended = DiyGravity.isSuspended(physical.kind)
+                let physical = DiyGeometry.dimensions(bead), suspended = DiyGeometry.isSuspended(bead), studio = DiyGeometry.studio(bead)
                 let angle = layout.angles[index]
                 let localAnchor = SIMD3(Float(cos(angle) * 1.65), Float(physical.centerHeightMm * scale), Float(sin(angle) * 1.65))
                 let worldAnchor = orientation.act(localAnchor)
                 node.simdPosition = worldAnchor
-                node.simdOrientation = suspended ? simd_quatf() : orientation * simd_quatf(angle: Float(.pi / 2 - angle), axis: SIMD3(0, 1, 0))
+                node.simdOrientation = suspended ? simd_quatf(angle: 0, axis: SIMD3(0, 1, 0)) : orientation * simd_quatf(angle: Float(.pi / 2 - angle), axis: SIMD3(0, 1, 0))
                 let geometrySignature = bead.hashValue ^ layout.radius.hashValue
                 if signatures[bead.id] != geometrySignature {
                     signatures[bead.id] = geometrySignature
-                    let accessory = physical.kind.flatMap { DiyMaterialAppearance.accessoryGeometry($0) }
-                    let geometry = accessory ?? DiyMaterialAppearance.geometry(radius: CGFloat(physical.diameterMm * scale / 2), shape: bead.shape ?? "round", axialLength: CGFloat(physical.pitchMm * scale))
+                    let accessory = studio == nil ? physical.kind.flatMap { DiyMaterialAppearance.accessoryGeometry($0) } : nil
+                    let geometry: SCNGeometry
+                    if let studio { geometry = studioGeometry(studio) ?? SCNGeometry() }
+                    else { geometry = accessory ?? DiyMaterialAppearance.geometry(radius: CGFloat(physical.diameterMm * scale / 2), shape: bead.shape ?? "round", axialLength: CGFloat(physical.pitchMm * scale)) }
                     let material = SCNMaterial(); material.lightingModel = .physicallyBased
                     material.diffuse.contents = texture(bead); DiyMaterialAppearance.apply(bead, to: material)
-                    geometry.materials = [material]; node.geometry = nil; node.childNodes.forEach { $0.removeFromParentNode() }
+                    if studio?.source != "generated" { geometry.materials = [material] }
+                    node.geometry = nil; node.childNodes.forEach { $0.removeFromParentNode() }
                     let body = SCNNode(geometry: geometry); body.name = "body"
                     if !suspended {
-                        if accessory != nil { let diameter = Float(physical.diameterMm * scale); body.scale = SCNVector3(diameter, diameter, diameter) }
+                        if accessory != nil || studio != nil { let diameter = Float(physical.diameterMm * scale); body.scale = SCNVector3(diameter, diameter, diameter) }
                         else { body.simdOrientation = simd_quatf(angle: DiyGeometry.textureTurn(bead.id), axis: SIMD3(1, 0, 0)) * simd_quatf(angle: -.pi / 2, axis: SIMD3(0, 0, 1)) }
                     } else {
                         templates[bead.id] = geometry
@@ -1002,7 +1043,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
                     }
                     node.addChildNode(body); bodyVertices[bead.id] = DiyMaterialAppearance.vertices(of: geometry)
                     let assets = DiyRenderAssets.parse(bead.renderAssets)
-                    for (raw, property) in [(assets?.albedoMapUrl, material.diffuse), (assets?.normalMapUrl, material.normal), (assets?.roughnessMapUrl, material.roughness)] {
+                    for (raw, property) in studio?.source == "generated" ? [] : [(assets?.albedoMapUrl, material.diffuse), (assets?.normalMapUrl, material.normal), (assets?.roughnessMapUrl, material.roughness)] {
                         if let raw, !raw.hasPrefix("/assets/diy/textures/wood/"), let url = DiyRenderAssets.url(raw) { load(url, into: property) }
                     }
                     if let outlineGeometry = geometry.copy() as? SCNGeometry {
@@ -1014,13 +1055,16 @@ struct DiyNativeStage3D: UIViewRepresentable {
                         outlineGeometry.materials = [highlight]; body.addChildNode(outline)
                     }
                 }
-                if suspended, let kind = physical.kind, let profile = DiyGeometry.profile(kind) {
+                if suspended, let profile = DiyGeometry.profile(bead) {
                     let anchor = SIMD3<Double>(worldAnchor), diameter = physical.diameterMm * scale
                     let mountZ = profile.anchors["mount"]?.last ?? profile.minZ
                     let chain = DiyGravity.Chain(id: bead.id, anchor: anchor,
-                        connector: max(0.025, diameter * (profile.connectorRatio ?? 0.12)), bodyLength: diameter * (profile.maxZ - mountZ),
-                        radius: max(0.025, diameter * max(abs(profile.minX), abs(profile.maxX))), flexible: kind.hasPrefix("tassel"), headFraction: kind == "tassel_knot" ? 0.55 : 0.3)
-                    if let old = dynamics.chains.firstIndex(where: { $0.id == bead.id }), dynamics.chains[old].lengths == chain.lengths {
+                        connector: studio.map { $0.connectorMm * scale } ?? max(0.025, diameter * (profile.connectorRatio ?? 0.12)), bodyLength: diameter * (profile.maxZ - mountZ),
+                        radius: max(0.025, diameter * max(abs(profile.minX), abs(profile.maxX))),
+                        flexible: studio.map { $0.motion == "flexible" } ?? (physical.kind?.hasPrefix("tassel") == true),
+                        headFraction: studio?.rigidFraction ?? (physical.kind == "tassel_knot" ? 0.55 : 0.3))
+                    if let old = dynamics.chains.firstIndex(where: { $0.id == bead.id }), dynamics.chains[old].lengths == chain.lengths,
+                       dynamics.chains[old].radii == chain.radii, dynamics.chains[old].flexible == chain.flexible {
                         if drag != nil {
                             let delta = anchor - dynamics.chains[old].anchor
                             dynamics.chains[old].points = dynamics.chains[old].points.map { $0 + delta }
@@ -1031,6 +1075,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
                         dynamics.chains.removeAll { $0.id == bead.id }; dynamics.chains.append(chain)
                     }
                 } else {
+                    dynamics.chains.removeAll { $0.id == bead.id }
                     colliders.append(.init(center: SIMD3<Double>(worldAnchor), radius: physical.radialMm * scale * 0.5))
                 }
                 let selected = bead.id == owner.selectedId
@@ -1044,6 +1089,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
             applyDynamics(slots: slots, scale: scale)
             if drag == nil && (changed || !dynamics.settled) { startSettling() }
             updateAccessibility()
+            updateModelStatus()
         }
         private func applyDynamics(slots: [DiyBeadSlot], scale: Double, delta: Double = 0) {
             twisting = false
@@ -1051,7 +1097,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
                 guard let bead = slots.first(where: { $0.id == chain.id }), let node = nodes[chain.id],
                       let template = templates[chain.id], let vertices = templateVertices[chain.id], let normals = templateNormals[chain.id],
                       let body = node.childNode(withName: "body", recursively: false),
-                      let kind = DiyGeometry.dimensions(bead).kind, let profile = DiyGeometry.profile(kind) else { continue }
+                      let profile = DiyGeometry.profile(bead), !vertices.isEmpty else { continue }
                 let diameter = Float(DiyGeometry.dimensions(bead).diameterMm * scale)
                 let mount = profile.anchors["mount"] ?? [0, 0, profile.minZ]
                 let anchor = chain.anchor
@@ -1073,7 +1119,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
                 positions.reserveCapacity(vertices.count); deformedNormals.reserveCapacity(vertices.count)
                 let mountX = Float(mount[0]), mountY = Float(mount[1]), mountZ = Float(mount[2])
                 for (index, vertex) in vertices.enumerated() {
-                    let z = max(0, (vertex.z - mountZ) * diameter)
+                    let z = (vertex.z - mountZ) * diameter
                     let segment = segments.first(where: { z <= $0.upper }) ?? segments[segments.count - 1]
                     let center = segment.start + segment.tangent * (z - segment.lower)
                     positions.append(SCNVector3(center + segment.right * ((vertex.x - mountX) * diameter) + segment.up * ((vertex.y - mountY) * diameter)))
@@ -1205,6 +1251,75 @@ struct DiyNativeStage3D: UIViewRepresentable {
             }
             distance = min(16, max(2.8, gestureDistance / Double(recognizer.scale))); updateCamera()
         }
+        private func studioGeometry(_ studio: DiyMaterialStudio) -> SCNGeometry? {
+            guard studio.source == "generated" else { return DiyMaterialAppearance.studioGeometry(studio) }
+            guard let url = DiyRenderAssets.url(studio.model?.usdzUrl) else { return nil }
+            if let geometry = models[url] { return DiyMaterialAppearance.studioGeometry(studio, imported: geometry) }
+            guard modelRequests[url] == nil, !failedModels.contains(url), modelRequests.count < 2 else { return nil }
+            modelRequests[url] = Task { [weak self] in
+                guard let self else { return }
+                var cachedURL: URL?
+                do {
+                    let directory = try FileManager.default.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("DiyModels", isDirectory: true)
+                    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                    let key = SHA256.hash(data: Data(url.absoluteString.utf8)).map { String(format: "%02x", $0) }.joined()
+                    let file = directory.appendingPathComponent(key + ".usdz")
+                    cachedURL = file
+                    if !FileManager.default.fileExists(atPath: file.path) {
+                        var request = URLRequest(url: url); request.timeoutInterval = 30
+                        let (temporary, response) = try await URLSession.shared.download(for: request)
+                        defer { try? FileManager.default.removeItem(at: temporary) }
+                        try Task.checkCancellation()
+                        let bytes = try temporary.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+                        guard (response as? HTTPURLResponse)?.statusCode == 200, (1...32 * 1024 * 1024).contains(bytes) else { throw URLError(.cannotDecodeContentData) }
+                        try FileManager.default.moveItem(at: temporary, to: file)
+                    }
+                    try Task.checkCancellation()
+                    let imported = try SCNScene(url: file, options: [.checkConsistency: true])
+                    guard let geometry = DiyMaterialAppearance.importedGeometry(imported.rootNode) else {
+                        try? FileManager.default.removeItem(at: file)
+                        throw URLError(.cannotDecodeContentData)
+                    }
+                    guard self.owner != nil else { return }
+                    self.models[url] = geometry
+                    let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
+                    if files.count > 16 {
+                        let older = files.filter { $0 != file }.sorted { a, b in
+                            ((try? a.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast)
+                                < ((try? b.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast)
+                        }
+                        for old in older.prefix(files.count - 16) { try? FileManager.default.removeItem(at: old) }
+                    }
+                } catch {
+                    if !Task.isCancelled {
+                        if let cachedURL { try? FileManager.default.removeItem(at: cachedURL) }
+                        self.failedModels.insert(url)
+                    }
+                }
+                self.modelRequests.removeValue(forKey: url)
+                guard let owner = self.owner else { return }
+                for slot in owner.slots where DiyGeometry.studio(slot)?.source == "generated" { self.signatures.removeValue(forKey: slot.id) }
+                if self.drag == nil { self.render(owner.slots, animated: false) }
+                else { self.updateModelStatus() }
+            }
+            return nil
+        }
+        private func updateModelStatus() {
+            let urls = Set(owner?.slots.compactMap { DiyRenderAssets.url(DiyGeometry.studio($0)?.model?.usdzUrl) } ?? [])
+            models = models.filter { urls.contains($0.key) }
+            for url in Array(modelRequests.keys) where !urls.contains(url) { modelRequests[url]?.cancel() }
+            failedModels.formIntersection(urls)
+            let failed = !failedModels.isEmpty, loading = !modelRequests.isEmpty
+            modelStatus.isHidden = !failed && !loading
+            modelStatus.isEnabled = failed
+            modelStatus.setTitle(L10n.lookup(failed ? "材料模型加载失败，轻点重试" : "正在加载材料模型…"), for: .normal)
+        }
+        @objc private func retryModels() {
+            failedModels.removeAll()
+            guard let owner else { return }
+            for slot in owner.slots where DiyGeometry.studio(slot)?.source == "generated" { signatures.removeValue(forKey: slot.id) }
+            render(owner.slots, animated: false)
+        }
         private func load(_ url: URL, into property: SCNMaterialProperty) {
             if let image = textures.object(forKey: url.absoluteString as NSString) { property.contents = image; return }
             textureWaiters[url, default: []].append(property)
@@ -1223,7 +1338,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
         private func texture(_ bead: DiyBeadSlot) -> UIImage {
             DiyMaterialAppearance.fallbackImage(color: bead.colorHex, texture: bead.textureKey, type: bead.materialType) ?? UIImage()
         }
-        func dispose() { NotificationCenter.default.removeObserver(self); stopSettling(); requests.values.forEach { $0.cancel() }; requests.removeAll(); textureWaiters.removeAll(); textures.removeAllObjects(); bodyVertices.removeAll(); templates.removeAll(); templateVertices.removeAll(); templateNormals.removeAll(); owner = nil }
+        func dispose() { NotificationCenter.default.removeObserver(self); stopSettling(); requests.values.forEach { $0.cancel() }; requests.removeAll(); textureWaiters.removeAll(); textures.removeAllObjects(); modelRequests.values.forEach { $0.cancel() }; modelRequests.removeAll(); models.removeAll(); failedModels.removeAll(); accessibilityBeads.removeAll(); bodyVertices.removeAll(); templates.removeAll(); templateVertices.removeAll(); templateNormals.removeAll(); owner = nil }
     }
 }
 

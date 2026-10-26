@@ -459,7 +459,33 @@ struct DiyOrderLogistics:Codable,Hashable {let expressCompany:String;let trackin
 
 struct DiyDesignStatusRequest: Codable { let revision: Int64; let status: String }
 struct DiyImageCrop: Codable, Hashable { let x, y, width, height, imageWidth, imageHeight: Double }
+struct DiyMaterialStudio: Codable, Hashable {
+    struct Model: Codable, Hashable {
+        let jobId, glbUrl, usdzUrl: String
+    }
+    let version: Int
+    let part, motion, source, templateId: String
+    let dimensionsMm, rotation, mount: [Double]
+    let connectorMm, rigidFraction: Double
+    let photos: [String]
+    let model: Model?
+    let previewConfirmed: Bool
+
+    var isValid: Bool {
+        version == 1 && ((part == "bead" && motion == "fixed") || (part == "hanging" && ["rigid", "flexible"].contains(motion)))
+            && ["template", "generated"].contains(source)
+            && dimensionsMm.count == 3 && dimensionsMm.allSatisfy { $0.isFinite && (0.5...120).contains($0) }
+            && rotation.count == 3 && rotation.allSatisfy { $0.isFinite && (-180...180).contains($0) }
+            && mount.count == 3 && mount.allSatisfy { $0.isFinite && (-0.5...0.5).contains($0) }
+            && (part != "hanging" || mount[2] < 0.5)
+            && connectorMm.isFinite && (part == "bead" ? connectorMm == 0 : (1...30).contains(connectorMm))
+            && rigidFraction.isFinite && (0.1...0.9).contains(rigidFraction) && photos.count <= 4
+            && (source == "template" || (templateId == "custom" && model != nil))
+    }
+}
+
 struct DiyRenderAssets: Codable, Hashable {
+    var studio: DiyMaterialStudio? = nil
     var imageCrop: DiyImageCrop?
     var attribution: String?
     var beadImageUrl: String?
@@ -472,7 +498,7 @@ struct DiyRenderAssets: Codable, Hashable {
         return try? JSONDecoder().decode(Self.self, from: data)
     }
     static func url(_ raw: String?) -> URL? {
-        guard let raw, !raw.isEmpty, !raw.hasPrefix("//"), !raw.contains("\\") else { return nil }
+        guard let raw, !raw.isEmpty, !raw.hasPrefix("//"), !raw.contains("\\"), !raw.contains("\r"), !raw.contains("\n") else { return nil }
         if raw.hasPrefix("/") { return URL(string: raw, relativeTo: AppConfig.baseURL)?.absoluteURL }
         guard let url = URL(string: raw), url.scheme == "https", url.user == nil else { return nil }
         return url
