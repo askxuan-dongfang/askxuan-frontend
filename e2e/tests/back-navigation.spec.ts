@@ -221,7 +221,10 @@ test('editor checkout browser Back keeps saved design and keyboard bead editing'
  await back(page).click();await expect(page).toHaveURL(/tab=mine$/);
 });
 test('repeated back clicks do not skip the originating my-design list',async({page})=>{
- await setup(page);await mine(page);await back(page).evaluate((button:HTMLButtonElement)=>{button.click();button.click();button.click();});
+ await setup(page);await mine(page);
+ // History updates before the lazy editor mounts; the old plaza header has the same selector.
+ await expect(page.getByRole('button',{name:'保存设计',exact:true})).toBeEnabled();
+ await back(page).evaluate((button:HTMLButtonElement)=>{button.click();button.click();button.click();});
  await expect(page).toHaveURL(/\/c\/diy\?tab=mine$/);expect(await index(page)).toBe(0);
 });
 test('profile survives an unavailable growth snapshot and BackLink preserves history',async({page})=>{
