@@ -65,44 +65,117 @@ struct DiyGeometryTests {
             }
         }
     }
-    @Test func hangingKeepsGravityIndependentOfSlotAndLeavesPhysicalFitUnchanged() throws {
+    @Test func gravityUsesShortMountsAndLeavesPhysicalFitUnchanged() throws {
         let slots = [bead(diameter: 10, shape: "round"), bead(diameter: 18, shape: "pendant", id: 42)]
         let layout = DiyPhysicalLayout(slots: slots)
-        #expect(DiyPresentation.mode(selection: nil, slots: slots) == .hanging)
-        #expect(DiyPresentation.mode(selection: nil, slots: [slots[0]]) == .flat)
-        #expect(DiyPresentation.mode(selection: .flat, slots: slots) == .flat)
-        #expect(DiyPresentation.mode(selection: .hanging, slots: [slots[0]]) == .hanging)
-        for angle in stride(from: 0.0, to: 2 * .pi, by: 0.3) {
-            for kind in ["pendant_peace", "tassel", "tassel_knot"] {
-                let down = DiyPresentation.orientation(angle: angle, kind: kind, mode: .hanging).act(SIMD3<Float>(0, 0, 1))
-                #expect(simd_distance(down, SIMD3(0, -1, 0)) < 0.00001)
-            }
-        }
-        let points = DiyGeometry.cordPoints(slots: slots, layout: layout).map { DiyPresentation.point($0, mode: .hanging) }
-        #expect(points.allSatisfy { $0.z == 0 })
-        #expect(DiyPhysicalLayout(slots: slots).innerMm == layout.innerMm)
         for name in ["中国结流苏", "中國結流蘇"] {
             #expect(DiyGeometry.kind(shape: "tassel", category: "tassel", materialId: 44, name: name) == "tassel_knot")
         }
         let profile = try #require(DiyGeometry.profile("tassel_knot"))
         #expect(profile.anchors["mount"]?[2] == profile.minZ)
         #expect(profile.connectorRatio == 0.12)
+        #expect(DiyPhysicalLayout(slots: slots).innerMm == layout.innerMm)
     }
-    @Test func hangingSwingSettlesAndHonorsReducedMotionAndDragging() {
-        let active = DiyPresentation.swing(elapsed: 0.1, identity: "stable-44", reducedMotion: false)
-        #expect(simd_length(active) > 0)
-        for time in stride(from: 0.0, to: 3.1, by: 0.01) {
-            #expect(simd_length(DiyPresentation.swing(elapsed: time, identity: "stable-44", reducedMotion: false)) <= Float(DiyPresentation.swingBound))
+    @Test func gravityKeepsEightShortConnectorsDuringArbitraryRotation() {
+        var simulation = DiyGravity.Simulation()
+        let anchors = (0..<8).map { index in SIMD3<Double>(cos(Double(index) * 0.16) * 1.65, -1.3, sin(Double(index) * 0.16) * 0.2) }
+        simulation.chains = anchors.enumerated().map { index, anchor in
+            DiyGravity.Chain(id: "part-\(index)", anchor: anchor, connector: 0.08, bodyLength: index < 3 ? 0.55 : 1.1, radius: 0.15, flexible: index >= 3)
         }
-        #expect(DiyPresentation.swing(elapsed: 2.8, identity: "stable-44", reducedMotion: false) == .zero)
-        #expect(DiyPresentation.swing(elapsed: 0.1, identity: "stable-44", reducedMotion: true) == .zero)
-        #expect(DiyPresentation.swing(elapsed: 0.1, identity: "stable-44", reducedMotion: false, dragging: true) == .zero)
+        for frame in 0..<150 {
+            let turn = simd_quatd(angle: sin(Double(frame) / 45) * 1.8, axis: simd_normalize(SIMD3(1, 0.4, 0.2)))
+            for index in anchors.indices { simulation.chains[index].anchor = turn.act(anchors[index]) }
+            simulation.wake(); simulation.advance(delta: 1.0 / 60, colliders: [])
+            for chain in simulation.chains {
+                #expect(abs(simd_distance(chain.points[0], chain.points[1]) - 0.08) < 0.000001)
+                #expect(chain.points.allSatisfy { $0.x.isFinite && $0.y.isFinite && $0.z.isFinite })
+                if !chain.flexible { #expect(abs(simd_distance(chain.points[1], chain.points[3]) - chain.bodyLength) < 0.000001) }
+            }
+        }
+    }
+    @Test func tasselBendsWithInertiaThenSettlesTowardWorldGravity() {
+        var simulation = DiyGravity.Simulation()
+        simulation.chains = [.init(id: "tassel", anchor: .zero, connector: 0.08, bodyLength: 1.2, radius: 0.12, flexible: true)]
+        simulation.chains[0].anchor = SIMD3(0.6, 0.3, 0.25)
+        simulation.advance(delta: 1.0 / 60, colliders: [])
+        let moving = simulation.chains[0]
+        #expect(abs(moving.points.last!.x - moving.anchor.x) > 0.1)
+        let head = DiyGravity.direction(moving.points[2] - moving.points[1]), tail = DiyGravity.direction(moving.points[5] - moving.points[4])
+        #expect(simd_length(simd_cross(head, tail)) > 0.01)
+        for _ in 0..<1200 { simulation.advance(delta: 1.0 / 60, colliders: []) }
+        let resting = simulation.chains[0]
+        #expect(simulation.settled)
+        #expect(abs(resting.points.last!.x - resting.anchor.x) < 0.015)
+        #expect(abs(resting.points.last!.z - resting.anchor.z) < 0.015)
+        #expect(resting.points.last!.y < resting.anchor.y - 1.2)
+    }
+    @Test func gravityContactPushesBodiesApartWithoutLengtheningTethers() {
+        var simulation = DiyGravity.Simulation()
+        simulation.chains = [-0.08, 0.08].enumerated().map { index, x in
+            DiyGravity.Chain(id: "pendant-\(index)", anchor: SIMD3(x, 0, 0), connector: 0.08, bodyLength: 0.6, radius: 0.12, flexible: false)
+        }
+        for _ in 0..<300 { simulation.advance(delta: 1.0 / 60, colliders: [.init(center: SIMD3(-0.1, -0.4, 0), radius: 0.18)]) }
+        for chain in simulation.chains {
+            #expect(abs(simd_distance(chain.points[0], chain.points[1]) - 0.08) < 0.000001)
+        }
+        #expect(simd_distance(simulation.chains[0].points[2], simulation.chains[1].points[2]) > 0.20)
+    }
+    @Test func fixedStepsAreFrameRateIndependentAndReducedMotionSettles() {
+        let chain = DiyGravity.Chain(id: "tassel", anchor: .zero, connector: 0.08, bodyLength: 1.2, radius: 0.12, flexible: true)
+        var fast = DiyGravity.Simulation(), slow = DiyGravity.Simulation()
+        fast.chains = [chain]; slow.chains = [chain]
+        fast.chains[0].anchor.x = 0.4; slow.chains[0].anchor.x = 0.4
+        for _ in 0..<60 { fast.advance(delta: 1.0 / 60, colliders: []) }
+        for _ in 0..<30 { slow.advance(delta: 1.0 / 30, colliders: []) }
+        #expect(zip(fast.chains[0].points, slow.chains[0].points).allSatisfy { pair in simd_distance(pair.0, pair.1) < 0.000001 })
+        var previousError = abs(fast.chains[0].points.last!.x - fast.chains[0].anchor.x)
+        for _ in 0..<180 {
+            fast.advance(delta: 1.0 / 60, colliders: [], reducedMotion: true)
+            let chain = fast.chains[0], error = abs(fast.chains[0].points.last!.x - fast.chains[0].anchor.x)
+            // Match the solver sleep precision while rejecting visible rebound or equilibrium crossing.
+            #expect(error <= previousError + 0.00008)
+            #expect(chain.points.last!.x >= chain.anchor.x)
+            #expect(chain.points.allSatisfy { $0.x.isFinite && $0.y.isFinite && $0.z.isFinite })
+            for index in chain.lengths.indices { #expect(abs(simd_distance(chain.points[index], chain.points[index + 1]) - chain.lengths[index]) < 0.000001) }
+            previousError = error
+        }
+        #expect(fast.settled)
+        let points = fast.chains[0].points
+        fast.advance(delta: .nan, colliders: [])
+        #expect(fast.chains[0].points == points)
+    }
+    @Test func framingContainsLargeAccessoriesAcrossEveryOrientation() {
+        let slots = [bead(diameter: 40, shape: "round"), bead(diameter: 40, shape: "tassel", id: 13), bead(diameter: 40, shape: "pendant", id: 42)]
+        let layout = DiyPhysicalLayout(slots: slots), bound = DiyGravity.framingRadius(slots: slots, layout: layout)
+        let scale = 1.65 / layout.radius
+        for (index, slot) in slots.enumerated() {
+            let size = DiyGeometry.dimensions(slot), anchor = SIMD3(cos(layout.angles[index]) * 1.65, size.centerHeightMm * scale, sin(layout.angles[index]) * 1.65)
+            for angle in stride(from: 0.0, to: 2 * Double.pi, by: 0.1) {
+                let turn = simd_quatd(angle: angle, axis: simd_normalize(SIMD3(1, 0.3, 0.7)))
+                if let kind = size.kind, let profile = DiyGeometry.profile(kind) {
+                    let length = size.diameterMm * scale * ((profile.connectorRatio ?? 0.12) + profile.maxZ - (profile.anchors["mount"]?.last ?? profile.minZ))
+                    #expect(simd_length(turn.act(anchor) + SIMD3(0, -length, 0)) < bound)
+                } else { #expect(simd_length(turn.act(anchor)) + size.radialMm * scale / 2 < bound) }
+            }
+        }
+    }
+    @Test func pendantFacingFollowsYawWithDampingAndPreservesGravityAxis() {
+        let down = SIMD3<Float>(0, -1, 0), front = SIMD3<Float>(0, 0, 1), side = SIMD3<Float>(1, 0, 0)
+        let first = DiyGravity.facing(previous: front, direction: down, target: side, delta: 1.0 / 30, reducedMotion: false)
+        #expect(first.normal.x > 0 && first.normal.z > 0)
+        #expect(abs(simd_dot(first.normal, down)) < 0.000001)
+        var normal = first.normal
+        for _ in 0..<60 { normal = DiyGravity.facing(previous: normal, direction: down, target: side, delta: 1.0 / 30, reducedMotion: false).normal }
+        #expect(simd_distance(normal, side) < 0.001)
+        let singular = DiyGravity.facing(previous: front, direction: down, target: down, delta: 1.0 / 30, reducedMotion: false)
+        #expect(singular.normal == front)
+        #expect(DiyGravity.facing(previous: front, direction: down, target: side, delta: 1.0 / 30, reducedMotion: true).remaining == 0)
     }
     @Test func sparseCordPreservesOpeningAndVerticalTubeHasFiniteVertices() {
         let slots = [bead(diameter: 10, shape: "round")], layout = DiyPhysicalLayout(slots: [bead(diameter: 10, shape: "round")])
         let points = DiyGeometry.cordPoints(slots: slots, layout: layout)
         #expect(points.allSatisfy { hypot($0.x, $0.z) > layout.radius * 0.95 })
-        let paths: [[SIMD3<Double>]] = [[.zero, .zero, SIMD3(0, -5, 0)], points.map { DiyPresentation.point($0, mode: .hanging) }]
+        let paths: [[SIMD3<Double>]] = [[.zero, .zero, SIMD3(0, -5, 0)], points.map { SIMD3($0.x, -$0.z, $0.y) }]
         for path in paths {
             let tube = DiyMaterialAppearance.cordGeometry(points: path, scale: 0.1)
             let vertices = DiyMaterialAppearance.vertices(of: tube)
@@ -112,26 +185,6 @@ struct DiyGeometryTests {
         }
     }
 
-    @Test func naturalHangingCentersAccessoriesDownAndKeepsConnectorsVertical() throws {
-        let slots = [bead(diameter: 12, shape: "round"), bead(diameter: 18, shape: "pendant", id: 42), bead(diameter: 18, shape: "pendant", id: 43)]
-        let layout = DiyPhysicalLayout(slots: slots)
-        let rotation = DiyPresentation.initialHangingRotation(slots: slots, angles: layout.angles)
-        let x = [1, 2].reduce(0.0) { $0 + cos(layout.angles[$1] + rotation) }
-        let y = [1, 2].reduce(0.0) { $0 + sin(layout.angles[$1] + rotation) }
-        #expect(abs(x) < 0.00001 && y > 0)
-        let placements = DiyPresentation.hangingPlacements(slots: slots, layout: layout, rotation: rotation)
-        #expect(placements[0] == nil)
-        for placement in placements.compactMap({ $0 }) {
-            #expect(placement.connectorMm >= placement.standOffMm)
-            #expect(placement.standOffMm >= 0)
-        }
-        let solo = [slots[0], slots[1]], soloLayout = DiyPhysicalLayout(slots: [slots[0], slots[1]])
-        let soloRotation = DiyPresentation.initialHangingRotation(slots: solo, angles: soloLayout.angles)
-        let pendant = try #require(DiyPresentation.hangingPlacements(slots: solo, layout: soloLayout, rotation: soloRotation)[1])
-        #expect(pendant.standOffMm == 0)
-        #expect(abs(pendant.connectorMm - 18 * 0.35) < 0.00001)
-        #expect(DiyGeometry.cordPoints(slots: solo, layout: soloLayout, rotation: soloRotation).allSatisfy { $0.x.isFinite && $0.z.isFinite })
-    }
     @Test func thinBodyHitToleranceReachesStrandGapsButLeavesDistantCanvasFree() {
         // The mount is at y=100, while actual long tassel strands reach y=230.
         // Picking the body must not depend on distance to that remote mount.

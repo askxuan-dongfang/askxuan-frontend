@@ -894,7 +894,7 @@ final class DiyStudioUITests: XCTestCase {
         XCTAssertTrue(app.buttons["清空设计"].waitForExistence(timeout: 5))
         let fit = XCTAttachment(screenshot: app.screenshot()); fit.name = "ios-fit-settings"; fit.lifetime = .keepAlways; add(fit)
     }
-    func testHangingKnotModeSelectionAndDragOutUndo() {
+    func testGravityKnotFreeRotationAndDragOutUndo() {
         executionTimeAllowance = 180
         let app = studioApp(user: "99031")
         let stage = app.otherElements["diy-3d-stage"]
@@ -907,18 +907,18 @@ final class DiyStudioUITests: XCTestCase {
         XCTAssertTrue(material.waitForExistence(timeout: 5)); material.tap()
         let knot = app.buttons["第 4 颗 中国结流苏"]
         XCTAssertTrue(knot.waitForExistence(timeout: 5))
-        let mode = app.buttons["diy-presentation-mode"]
-        XCTAssertEqual(mode.value as? String, "悬挂")
+        XCTAssertFalse(app.buttons["diy-presentation-mode"].exists)
         let fit = app.descendants(matching: .any)["diy-fit-feedback"].label
         // A real hit on the long body must select the accessory, with no torus.
         knot.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.65)).tap()
         XCTAssertTrue(knot.isSelected)
         let selected = XCTAttachment(screenshot: app.screenshot()); selected.name = "ios-hanging-knot-selected"; selected.lifetime = .keepAlways; add(selected)
-        mode.tap(); app.buttons["diy-presentation-flat"].tap()
-        XCTAssertEqual(mode.value as? String, "平放")
+        let before = knot.frame
+        stage.coordinate(withNormalizedOffset: CGVector(dx: 0.12, dy: 0.10)).press(forDuration: 0.1,
+            thenDragTo: stage.coordinate(withNormalizedOffset: CGVector(dx: 0.62, dy: 0.18)))
+        XCTAssertNotEqual(knot.frame, before)
         XCTAssertEqual(app.descendants(matching: .any)["diy-fit-feedback"].label, fit)
-        mode.tap(); app.buttons["diy-presentation-hanging"].tap()
-        XCTAssertEqual(mode.value as? String, "悬挂")
+        app.buttons["重置 3D 视角"].tap()
         let oldID = knot.identifier
         let outside = stage.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.04))
         knot.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.65)).press(forDuration: 0.1, thenDragTo: outside)

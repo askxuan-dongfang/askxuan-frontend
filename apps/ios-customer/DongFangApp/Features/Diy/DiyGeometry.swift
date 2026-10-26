@@ -109,104 +109,201 @@ enum DiyGeometry {
 }
 
 
-enum DiyPresentationMode: String, CaseIterable {
-    case flat, hanging
-    var title: String { self == .hanging ? "悬挂" : "平放" }
-}
-
-enum DiyPresentation {
-    static let settlingDuration = 2.8
-    static let swingBound = 0.025
-    static func initialHangingRotation(slots: [DiyBeadSlot], angles: [Double]) -> Double {
-        let hanging = angles.indices.filter { isSuspended(DiyGeometry.dimensions(slots[$0]).kind) }.map { angles[$0] }
-        guard let first = hanging.first else { return 0 }
-        let x = hanging.reduce(0) { $0 + cos($1) }, y = hanging.reduce(0) { $0 + sin($1) }
-        return .pi / 2 - (hypot(x, y) < 0.000001 ? first : atan2(y, x))
+enum DiyGravity {
+    static let step = 1.0 / 120
+    static func initialOrientation(slots: [DiyBeadSlot] = [], angles: [Double] = []) -> simd_quatf {
+        let attachments = angles.indices.filter { $0 < slots.count && isSuspended(DiyGeometry.dimensions(slots[$0]).kind) }.map { angles[$0] }
+        let x = attachments.reduce(0) { $0 + cos($1) }, y = attachments.reduce(0) { $0 + sin($1) }
+        let rotation = attachments.isEmpty ? 0 : Double.pi / 2 - (hypot(x, y) < 0.000001 ? attachments[0] : atan2(y, x))
+        return simd_quatf(angle: 1.15, axis: SIMD3(1, 0, 0)) * simd_quatf(angle: Float(-rotation), axis: SIMD3(0, 1, 0))
+    }
+    static func framingRadius(slots: [DiyBeadSlot], layout: DiyPhysicalLayout) -> Double {
+        let scale = 1.65 / layout.radius
+        return slots.reduce(1.65) { result, slot in
+            let size = DiyGeometry.dimensions(slot), diameter = size.diameterMm * scale
+            let center = hypot(1.65, size.centerHeightMm * scale)
+            guard let kind = size.kind, let profile = DiyGeometry.profile(kind) else {
+                return max(result, center + hypot(size.radialMm, size.pitchMm) * scale / 2)
+            }
+            let x = max(abs(profile.minX), abs(profile.maxX)), y = max(abs(profile.minY), abs(profile.maxY))
+            if isSuspended(kind) {
+                let body = profile.maxZ - (profile.anchors["mount"]?.last ?? profile.minZ)
+                return max(result, center + max(0.025, diameter * (profile.connectorRatio ?? 0.12)) + diameter * (body + hypot(x, y)))
+            }
+            let z = max(abs(profile.minZ), abs(profile.maxZ))
+            return max(result, center + sqrt(x*x + y*y + z*z) * diameter)
+        }
+    }
+    static func transportedFacing(_ facing: SIMD3<Float>, direction: SIMD3<Float>) -> SIMD3<Float> {
+        let projected = facing - direction * simd_dot(facing, direction)
+        if simd_length_squared(projected) > 0.000001 { return simd_normalize(projected) }
+        let reference = abs(direction.z) < 0.9 ? SIMD3<Float>(0, 0, 1) : SIMD3<Float>(1, 0, 0)
+        return simd_normalize(reference - direction * simd_dot(reference, direction))
+    }
+    static func facing(previous: SIMD3<Float>, direction: SIMD3<Float>, target: SIMD3<Float>, delta: Double, reducedMotion: Bool) -> (normal: SIMD3<Float>, remaining: Float) {
+        let current = transportedFacing(previous, direction: direction)
+        let projected = target - direction * simd_dot(target, direction)
+        guard simd_length_squared(projected) >= 0.01 else { return (current, 0) }
+        let goal = simd_normalize(projected)
+        let angle = atan2(simd_dot(direction, simd_cross(current, goal)), simd_dot(current, goal))
+        if abs(angle) <= 0.001 { return (goal, 0) }
+        let fraction: Float = reducedMotion ? 1 : Float(1 - exp(-6 * max(0, min(delta, 0.05))))
+        return (simd_quatf(angle: angle * fraction, axis: direction).act(current), abs(angle * (1 - fraction)))
     }
     static func isSuspended(_ kind: String?) -> Bool {
         kind?.hasPrefix("pendant") == true || kind?.hasPrefix("tassel") == true
     }
-    static func mode(selection: DiyPresentationMode?, slots: [DiyBeadSlot]) -> DiyPresentationMode {
-        selection ?? (slots.contains { isSuspended(DiyGeometry.dimensions($0).kind) } ? .hanging : .flat)
+    static func direction(_ vector: SIMD3<Double>, fallback: SIMD3<Double> = SIMD3(0, -1, 0)) -> SIMD3<Double> {
+        let length = simd_length(vector)
+        return length > 0.0000001 ? vector / length : fallback
     }
-    static func point(_ point: SIMD3<Double>, mode: DiyPresentationMode) -> SIMD3<Double> {
-        // Display-only rotation; the physical fit and pricing layout are untouched.
-        mode == .hanging ? SIMD3(point.x, -point.z, 0) : point
+    struct Collider {
+        let center: SIMD3<Double>
+        let radius: Double
     }
-    static func orientation(angle: Double, kind: String?, mode: DiyPresentationMode) -> simd_quatf {
-        let turn = simd_quatf(angle: Float(.pi / 2 - angle), axis: SIMD3(0, 1, 0))
-        guard mode == .hanging else { return turn }
-        let upright = simd_quatf(angle: .pi / 2, axis: SIMD3(1, 0, 0))
-        return isSuspended(kind) ? upright : upright * turn
-    }
-    struct HangingPlacement {
-        let standOffMm, connectorMm, sweepMm: Double
-        let bounds: CGRect
-    }
-    static func hangingPlacements(slots: [DiyBeadSlot], layout: DiyPhysicalLayout, rotation: Double = 0) -> [HangingPlacement?] {
-        let sizes = slots.map(DiyGeometry.dimensions), angles = layout.angles.map { $0 + rotation }
-        var mainBodies: [(bounds: CGRect, depth: Double, circleRadius: Double)] = []
-        for index in sizes.indices where !isSuspended(sizes[index].kind) {
-            let size = sizes[index], angle = angles[index]
-            let radial = max(abs(size.minZ), abs(size.maxZ)), axial = size.pitchMm / 2
-            let halfX = abs(sin(angle)) * axial + abs(cos(angle)) * radial
-            let halfY = abs(cos(angle)) * axial + abs(sin(angle)) * radial
-            mainBodies.append((CGRect(x: cos(angle) * layout.radius - halfX, y: -sin(angle) * layout.radius - halfY,
-                                      width: halfX * 2, height: halfY * 2), size.centerHeightMm,
-                               size.kind == nil && (slots[index].shape == "round" || slots[index].shape == nil) ? size.radialMm / 2 : 0))
+    struct Chain {
+        let id: String
+        let lengths: [Double]
+        let radii: [Double]
+        let flexible: Bool
+        var points: [SIMD3<Double>]
+        var previous: [SIMD3<Double>]
+        var anchor: SIMD3<Double>
+        init(id: String, anchor: SIMD3<Double>, connector: Double, bodyLength: Double, radius: Double, flexible: Bool, headFraction: Double = 0.35) {
+            self.id = id; self.anchor = anchor; self.flexible = flexible
+            precondition(anchor.x.isFinite && anchor.y.isFinite && anchor.z.isFinite && connector.isFinite && connector > 0 && bodyLength.isFinite && bodyLength > 0 && radius.isFinite && radius > 0)
+            let body = bodyLength, tether = connector, headFraction = min(0.8, max(0.15, headFraction))
+            lengths = flexible ? [tether, body * headFraction] + Array(repeating: body * (1 - headFraction) / 3, count: 3) : [tether, body / 2, body / 2]
+            radii = flexible ? [0, radius * 0.18, radius * 0.42, radius * 0.62, radius * 0.78, radius * 0.55] : [0, radius * 0.18, radius, radius * 0.35]
+            var positions = [anchor]
+            for length in lengths { positions.append(positions.last! + SIMD3(0, -length, 0)) }
+            points = positions; previous = positions
         }
-        var candidates: [(index: Int, connector: Double, sweep: Double, bounds: CGRect, mountY: Double)] = []
-        for index in sizes.indices {
-            let size = sizes[index]
-            guard isSuspended(size.kind), let kind = size.kind, let profile = DiyGeometry.profile(kind) else { continue }
-            let mount = profile.anchors["mount"] ?? [0, 0, 0]
-            let mountX = mount.count == 3 ? mount[0] : 0, mountY = mount.count == 3 ? mount[1] : 0, mountZ = mount.count == 3 ? mount[2] : 0
-            let bodyLength = max(abs(size.minZ - mountZ * size.diameterMm), abs(size.maxZ - mountZ * size.diameterMm))
-            let connector = max(profile.connectorRatio ?? 0.12, 0.35) * size.diameterMm
-            let width = max(abs(profile.minX - mountX), abs(profile.maxX - mountX)) * size.diameterMm
-            let sweep = max(abs(profile.minY - mountY), abs(profile.maxY - mountY)) * size.diameterMm + sin(swingBound) * (bodyLength + width)
-            let x = cos(angles[index]) * layout.radius, y = -sin(angles[index]) * layout.radius
-            let halfWidth = width + sin(swingBound) * (bodyLength + sweep), verticalSweep = sin(swingBound) * (width + sweep)
-            let bounds = CGRect(x: x - halfWidth, y: y - connector - bodyLength - verticalSweep,
-                                width: halfWidth * 2, height: bodyLength + verticalSweep * 2)
-            candidates.append((index, connector, sweep, bounds, y - connector))
+        var bodyLength: Double { lengths.dropFirst().reduce(0, +) }
+        mutating func constrain(_ a: Int, _ b: Int, length: Double) {
+            let delta = points[b] - points[a], actual = simd_length(delta)
+            guard actual > 0.0000001 else { points[b] = points[a] + SIMD3(0, -length, 0); return }
+            let correction = delta * ((actual - length) / actual)
+            if a == 0 { points[b] -= correction }
+            else { points[a] += correction * 0.5; points[b] -= correction * 0.5 }
         }
-        candidates.sort { $0.mountY == $1.mountY ? $0.index < $1.index : $0.mountY < $1.mountY }
-        func overlaps(_ a: CGRect, _ b: CGRect) -> Bool {
-            a.minX <= b.maxX && a.maxX >= b.minX && a.minY <= b.maxY && a.maxY >= b.minY
-        }
-        var placed: [HangingPlacement] = [], result = [HangingPlacement?](repeating: nil, count: slots.count)
-        for candidate in candidates {
-            var connector = candidate.connector, standOff = 0.0, bounds = candidate.bounds
-            for _ in 0..<3 {
-                let nearDepth = mainBodies.filter { body in
-                    if body.circleRadius > 0 {
-                        let dx = max(bounds.minX - body.bounds.midX, 0, body.bounds.midX - bounds.maxX)
-                        let dy = max(bounds.minY - body.bounds.midY, 0, body.bounds.midY - bounds.maxY)
-                        return hypot(dx, dy) <= body.circleRadius
-                    }
-                    return overlaps(bounds, body.bounds)
-                }.map(\.depth).max() ?? 0
-                standOff = nearDepth > 0 ? nearDepth + candidate.sweep + 0.6 : 0
-                for other in placed where overlaps(bounds, other.bounds) {
-                    standOff = max(standOff, other.standOffMm + other.sweepMm + candidate.sweep + 0.6)
-                }
-                // The short connector reads as hanging cord, not a horizontal bar.
-                if connector >= standOff { break }
-                let drop = standOff - connector
-                connector += drop; bounds.origin.y -= drop
+        mutating func constrainLengths() {
+            points[0] = anchor
+            if flexible {
+                for index in lengths.indices.reversed() { constrain(index, index + 1, length: lengths[index]) }
+                constrain(0, 1, length: lengths[0])
+            } else {
+                constrain(0, 1, length: lengths[0])
+                points[3] = points[1] + DiyGravity.direction(points[3] - points[1]) * bodyLength
+                points[2] = (points[1] + points[3]) * 0.5
             }
-            let placement = HangingPlacement(standOffMm: standOff, connectorMm: connector, sweepMm: candidate.sweep, bounds: bounds)
-            placed.append(placement); result[candidate.index] = placement
         }
-        return result
+        mutating func push(_ point: Int, delta: SIMD3<Double>) {
+            if flexible { points[point] += delta }
+            else { for index in 1..<points.count { points[index] += delta } }
+        }
     }
-    static func swing(elapsed: Double, identity: String, reducedMotion: Bool, dragging: Bool = false) -> SIMD2<Float> {
-        guard !reducedMotion, !dragging, elapsed >= 0, elapsed < settlingDuration else { return .zero }
-        let phase = Double(DiyGeometry.textureTurn(identity))
-        let amplitude = 0.04 * exp(-3.2 * elapsed) * sin(8.8 * elapsed)
-        return SIMD2(Float(cos(phase) * amplitude), Float(sin(phase) * amplitude))
+    struct Simulation {
+        var chains: [Chain] = []
+        private var accumulator = 0.0
+        private var quietSteps = 0
+        private var lastColliders: [Collider] = []
+        private(set) var settled = false
+        mutating func wake() { quietSteps = 0; settled = false }
+        private func separation(_ a: SIMD3<Double>, _ b: SIMD3<Double>, gap: Double, shared: Bool, fallback: Double = 1) -> SIMD3<Double>? {
+            let delta = a - b, squared = simd_length_squared(delta)
+            guard squared < gap * gap else { return nil }
+            let length = sqrt(squared), normal = length > 0.0000001 ? delta / length : SIMD3(0, 0, fallback)
+            return normal * ((gap - length) * (shared ? 0.5 : 1))
+        }
+        private mutating func integrate(colliders: [Collider], damping: Double) {
+            for chain in chains.indices {
+                for point in 1..<chains[chain].points.count {
+                    let position = chains[chain].points[point]
+                    let velocity = (position - chains[chain].previous[point]) * damping
+                    chains[chain].previous[point] = position
+                    chains[chain].points[point] = position + velocity + SIMD3(0, -18 * DiyGravity.step * DiyGravity.step, 0)
+                }
+            }
+            for _ in 0..<12 {
+                let bounds = chains.map { chain -> (min: SIMD3<Double>, max: SIMD3<Double>) in
+                    var low = SIMD3<Double>(repeating: .infinity), high = SIMD3<Double>(repeating: -.infinity)
+                    for index in 1..<chain.points.count {
+                        let radius = SIMD3<Double>(repeating: chain.radii[index])
+                        low = simd_min(low, chain.points[index] - radius); high = simd_max(high, chain.points[index] + radius)
+                    }
+                    return (low, high)
+                }
+                // shortcut: sphere samples approximate decorative contact; use authored mesh colliders if clasp interlocking becomes an editing requirement.
+                for chain in chains.indices {
+                    for point in 1..<chains[chain].points.count {
+                        for collider in colliders {
+                            if let delta = separation(chains[chain].points[point], collider.center, gap: chains[chain].radii[point] + collider.radius, shared: false) {
+                                chains[chain].push(point, delta: delta)
+                            }
+                        }
+                        for other in 0..<chain {
+                            let firstBounds = bounds[chain], secondBounds = bounds[other]
+                            if firstBounds.max.x < secondBounds.min.x || firstBounds.min.x > secondBounds.max.x
+                                || firstBounds.max.y < secondBounds.min.y || firstBounds.min.y > secondBounds.max.y
+                                || firstBounds.max.z < secondBounds.min.z || firstBounds.min.z > secondBounds.max.z { continue }
+                            for second in 1..<chains[other].points.count {
+                                let gap = chains[chain].radii[point] + chains[other].radii[second]
+                                if let delta = separation(chains[chain].points[point], chains[other].points[second], gap: gap, shared: true, fallback: (chain + point + second) % 2 == 1 ? 1 : -1) {
+                                    chains[chain].push(point, delta: delta); chains[other].push(second, delta: -delta)
+                                }
+                            }
+                        }
+                    }
+                }
+                for index in chains.indices { chains[index].constrainLengths() }
+            }
+            for index in chains.indices where chains[index].flexible {
+                for point in 1..<chains[index].points.count {
+                    chains[index].points[point] = chains[index].points[point - 1] + DiyGravity.direction(chains[index].points[point] - chains[index].points[point - 1]) * chains[index].lengths[point - 1]
+                }
+            }
+            var movement = 0.0
+            for chain in chains {
+                for point in 1..<chain.points.count { movement = max(movement, simd_distance(chain.points[point], chain.previous[point])) }
+            }
+            quietSteps = movement < 0.00008 ? quietSteps + 1 : 0
+            settled = quietSteps >= 40
+            if settled {
+                accumulator = 0
+                for index in chains.indices { chains[index].previous = chains[index].points }
+            }
+        }
+        mutating func advance(delta: Double, colliders: [Collider], reducedMotion: Bool = false) {
+            guard delta.isFinite, delta >= 0 else { return }
+            let moved = chains.contains { simd_distance($0.anchor, $0.points[0]) > 0.0000001 }
+                || colliders.count != lastColliders.count
+                || zip(colliders, lastColliders).contains { pair in simd_distance(pair.0.center, pair.1.center) > 0.0000001 || pair.0.radius != pair.1.radius }
+            if moved {
+                wake(); lastColliders = colliders
+                for index in chains.indices { chains[index].points[0] = chains[index].anchor }
+            }
+            guard !settled else { return }
+            if delta == 0 {
+                if moved { for _ in 0..<12 { for index in chains.indices { chains[index].constrainLengths() } } }
+                return
+            }
+            if reducedMotion {
+                for _ in 0..<8 {
+                    integrate(colliders: colliders, damping: 0.5)
+                    if settled { break }
+                }
+                return
+            }
+            accumulator += min(delta, 1.0 / 15)
+            var steps = 0
+            while accumulator >= DiyGravity.step && steps < 8 && !settled {
+                accumulator -= DiyGravity.step; steps += 1
+                integrate(colliders: colliders, damping: exp(-4 * DiyGravity.step))
+            }
+        }
     }
+
 }
 
 

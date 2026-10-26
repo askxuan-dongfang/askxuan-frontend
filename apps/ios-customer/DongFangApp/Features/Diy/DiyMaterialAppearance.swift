@@ -192,8 +192,8 @@ struct DiyAppearanceProfile: Decodable {
         }
         return SCNGeometry(sources: [.init(vertices: vertices), .init(normals: normals)], elements: [.init(indices: indices, primitiveType: .triangles)])
     }
-    static func vertices(of geometry: SCNGeometry) -> [SIMD3<Float>] {
-        guard let source = geometry.sources(for: .vertex).first, source.usesFloatComponents,
+    static func vertices(of geometry: SCNGeometry, semantic: SCNGeometrySource.Semantic = .vertex) -> [SIMD3<Float>] {
+        guard let source = geometry.sources(for: semantic).first, source.usesFloatComponents,
               source.componentsPerVector >= 3, [4, 8].contains(source.bytesPerComponent) else { return [] }
         let data = source.data, componentSize = source.bytesPerComponent
         return data.withUnsafeBytes { bytes in

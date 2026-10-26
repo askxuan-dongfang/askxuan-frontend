@@ -22,7 +22,6 @@ struct DiyDesignView: View {
     @State private var showMyDesigns = false
     @State private var resetView = 0
     @State private var darkSurface = false
-    @State private var previewPresentation: DiyPresentationMode?
     @State private var elementFilter = "all"
     @State private var previewExpanded = false
     @State private var replacingBeadId: String?
@@ -205,7 +204,7 @@ struct DiyDesignView: View {
                     replacingBeadId = id
                     materialSearch = ""; elementFilter = "all"; viewModel.selectCategory("all"); previewExpanded = false
                 }, onDuplicate: { id in viewModel.selectBead(id); viewModel.duplicateSelectedBead() },
-                resetVersion: resetView, darkSurface: darkSurface, cordColor: viewModel.selectedCord?.colorHex, presentationMode: previewPresentation)
+                resetVersion: resetView, darkSurface: darkSurface, cordColor: viewModel.selectedCord?.colorHex)
                 .accessibilityIdentifier("diy-3d-stage")
                 .overlay {
                     if viewModel.beadSlots.isEmpty {
@@ -231,7 +230,6 @@ struct DiyDesignView: View {
                 }.accessibilityLabel(L10n.lookup(previewExpanded ? "收起预览" : "扩大预览")).accessibilityIdentifier("diy-expand-preview")
                 Button(L10n.text("复位")) { resetView += 1 }.frame(minWidth: 44, minHeight: 44).accessibilityLabel(L10n.text("重置 3D 视角"))
                 Button(L10n.lookup(darkSurface ? "浅色" : "深色")) { darkSurface.toggle() }.frame(minWidth: 44, minHeight: 44).accessibilityLabel(L10n.text("切换台面颜色"))
-                DiyPresentationControl(mode: DiyPresentation.mode(selection: previewPresentation, slots: viewModel.beadSlots)) { previewPresentation = $0 }
                 Spacer(minLength: 0)
                 historyButtons
             }.font(.caption).buttonStyle(.plain).foregroundStyle(Color.textSecondary)
@@ -771,27 +769,6 @@ private struct DiyBeadPalette {
         .preferredColorScheme(.dark)
 }
 
-struct DiyPresentationControl: View {
-    let mode: DiyPresentationMode
-    let onSelect: (DiyPresentationMode) -> Void
-    var body: some View {
-        Menu {
-            ForEach(DiyPresentationMode.allCases, id: \.self) { item in
-                Button { onSelect(item) } label: {
-                    if item == mode { Label(L10n.lookup(item.title), systemImage: "checkmark") }
-                    else { Text(L10n.lookup(item.title)) }
-                }.accessibilityIdentifier("diy-presentation-\(item.rawValue)")
-            }
-        } label: {
-            HStack(spacing: 3) {
-                Text(L10n.lookup(mode.title))
-                Image(systemName: "chevron.down").font(.system(size: 8, weight: .semibold))
-            }.frame(minWidth: 56, minHeight: 44)
-        }.font(.caption).foregroundStyle(Color.textSecondary)
-            .accessibilityIdentifier("diy-presentation-mode").accessibilityValue(L10n.lookup(mode.title))
-    }
-}
-
 struct DiyNativeStage3D: UIViewRepresentable {
     let slots: [DiyBeadSlot]
     var wrist: Double = 160
@@ -806,14 +783,13 @@ struct DiyNativeStage3D: UIViewRepresentable {
     var resetVersion = 0
     var darkSurface = false
     var cordColor: String?
-    var presentationMode: DiyPresentationMode?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func makeCoordinator() -> Coordinator { Coordinator() }
     func makeUIView(context: Context) -> SCNView {
         let view = DiyStageSceneView()
         let coordinator = context.coordinator
-        view.onLayout = { [weak coordinator] in coordinator?.fitCamera(); coordinator?.updateAccessibility() }
+        view.onLayout = { [weak coordinator] in coordinator?.fitCamera(); coordinator?.updateAccessibility(); coordinator?.resumeDynamics() }
         view.allowsCameraControl = false
         view.autoenablesDefaultLighting = false
         view.antialiasingMode = .multisampling4X
@@ -839,8 +815,9 @@ struct DiyNativeStage3D: UIViewRepresentable {
         private var requests: [URL: URLSessionDataTask] = [:]
         private var textureWaiters: [URL: [SCNMaterialProperty]] = [:]
         private var resetVersion = 0
-        private var yaw = 0.0, pitch = 1.05, distance = 5.3
-        private var gestureYaw = 0.0, gesturePitch = 1.05, gestureDistance = 5.3
+        private var orientation = DiyGravity.initialOrientation()
+        private var gestureOrientation = DiyGravity.initialOrientation()
+        private var distance = 5.3, gestureDistance = 5.3
         private var cordSignature: Int?
         private var lastFitSignature: Int?
         private var fittedDistance = 5.3
@@ -850,20 +827,22 @@ struct DiyNativeStage3D: UIViewRepresentable {
         private var dragDepth: Float = 0
         private var startAnchors: [CGPoint] = []
         private var deleteFeedback = false
-        private var presentationMode: DiyPresentationMode = .flat
-        private var hangingRotation = 0.0
-        private var displayRotation: Double { presentationMode == .hanging ? hangingRotation : 0 }
+        private var dynamics = DiyGravity.Simulation()
+        private var templates: [String: SCNGeometry] = [:]
+        private var templateVertices: [String: [SIMD3<Float>]] = [:]
+        private var templateNormals: [String: [SIMD3<Float>]] = [:]
+        private var colliders: [DiyGravity.Collider] = []
         private var movementSignature: Int?
-        private var swingStart = 0.0
+        private var lastFrame = 0.0
         private var settlingLink: CADisplayLink?
-        private lazy var contactShadow: UIImage = UIGraphicsImageRenderer(size: CGSize(width: 128, height: 128)).image { context in
-            let colors = [UIColor.black.withAlphaComponent(0.24).cgColor, UIColor.black.withAlphaComponent(0).cgColor] as CFArray
-            guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 1]) else { return }
-            context.cgContext.drawRadialGradient(gradient, startCenter: CGPoint(x: 64, y: 64), startRadius: 0, endCenter: CGPoint(x: 64, y: 64), endRadius: 64, options: [])
-        }
+        private var manipulating = false
+        private var orientedInitialDesign = false
+        private var facings: [String: SIMD3<Float>] = [:]
+        private var twisting = false
 
         func configure(_ view: SCNView) {
             self.view = view; view.scene = scene
+            NotificationCenter.default.addObserver(self, selector: #selector(resumeDynamics), name: UIApplication.didBecomeActiveNotification, object: nil)
             camera.camera = SCNCamera(); camera.camera?.fieldOfView = 44; camera.camera?.projectionDirection = .vertical
             camera.camera?.wantsHDR = true; camera.camera?.wantsExposureAdaptation = false
             camera.camera?.exposureOffset = -0.7; camera.camera?.bloomIntensity = 0
@@ -888,22 +867,14 @@ struct DiyNativeStage3D: UIViewRepresentable {
         }
         func update(_ owner: DiyNativeStage3D, view: SCNView) {
             self.owner = owner
-            let nextMode = DiyPresentation.mode(selection: owner.presentationMode, slots: owner.slots)
-            if nextMode != presentationMode {
-                finishDrag(endedNormally: false)
-                stopSettling()
-                presentationMode = nextMode
-                if nextMode == .hanging {
-                    let layout = DiyPhysicalLayout(slots: owner.slots, wrist: owner.wrist, allowance: owner.allowance)
-                    hangingRotation = DiyPresentation.initialHangingRotation(slots: owner.slots, angles: layout.angles)
-                }
-                yaw = nextMode == .hanging ? 0.3 : 0
-                pitch = nextMode == .hanging ? 0.16 : 1.05
-                lastFitSignature = nil
-            }
-            view.accessibilityValue = L10n.lookup(presentationMode.title)
+            view.accessibilityValue = L10n.lookup("自由旋转，挂件随重力摆动")
             view.accessibilityHint = L10n.lookup(owner.onMove == nil ? "拖动空白处旋转，双指缩放" : "拖动珠子换位，拖出手串删除，拖动空白处旋转，双指缩放")
-            if resetVersion != owner.resetVersion { resetVersion = owner.resetVersion; yaw = presentationMode == .hanging ? 0.3 : 0; pitch = presentationMode == .hanging ? 0.16 : 1.05; lastFitSignature = nil; distance = 5.3; updateCamera() }
+            if resetVersion != owner.resetVersion || (!orientedInitialDesign && !owner.slots.isEmpty) {
+                resetVersion = owner.resetVersion; orientedInitialDesign = !owner.slots.isEmpty
+                let layout = DiyPhysicalLayout(slots: owner.slots, wrist: owner.wrist, allowance: owner.allowance)
+                orientation = DiyGravity.initialOrientation(slots: owner.slots, angles: layout.angles)
+                facings.removeAll(); lastFitSignature = nil; distance = 5.3; dynamics.wake()
+            }
             // Keep the UI surface outside HDR tone mapping so the paper color
             // matches H5. Only the beads and their lighting pass through HDR.
             view.isOpaque = false; view.backgroundColor = .clear; scene.background.contents = UIColor.clear
@@ -912,35 +883,20 @@ struct DiyNativeStage3D: UIViewRepresentable {
         }
         func fitCamera(force: Bool = false, preserveZoom: Bool = false) {
             guard let view, let owner, drag == nil, view.bounds.width > 0, view.bounds.height > 0 else { return }
-            let signature = owner.slots.hashValue ^ owner.wrist.hashValue ^ owner.allowance.hashValue ^ presentationMode.hashValue
+            let signature = owner.slots.hashValue ^ owner.wrist.hashValue ^ owner.allowance.hashValue
             guard force || view.bounds.size != viewportSize || signature != lastFitSignature else { return }
             let zoom = preserveZoom ? distance / fittedDistance : 1
             viewportSize = view.bounds.size; lastFitSignature = signature
-            updateCamera()
-            let points = envelopeWorldPoints()
-            let right = SIMD3(camera.simdWorldTransform.columns.0.x, camera.simdWorldTransform.columns.0.y, camera.simdWorldTransform.columns.0.z)
-            let up = SIMD3(camera.simdWorldTransform.columns.1.x, camera.simdWorldTransform.columns.1.y, camera.simdWorldTransform.columns.1.z)
-            let outward = SIMD3(camera.simdWorldTransform.columns.2.x, camera.simdWorldTransform.columns.2.y, camera.simdWorldTransform.columns.2.z)
-            let origin = SIMD3<Float>(
-                ((points.map(\.x).min() ?? 0) + (points.map(\.x).max() ?? 0)) / 2,
-                ((points.map(\.y).min() ?? 0) + (points.map(\.y).max() ?? 0)) / 2,
-                ((points.map(\.z).min() ?? 0) + (points.map(\.z).max() ?? 0)) / 2)
-            let xs = points.map { simd_dot($0 - origin, right) }, ys = points.map { simd_dot($0 - origin, up) }
-            let center = origin + right * (((xs.min() ?? 0) + (xs.max() ?? 0)) / 2) + up * (((ys.min() ?? 0) + (ys.max() ?? 0)) / 2)
-            cameraTarget = SCNVector3(center)
-            let tangentY = Float(tan(22 * Double.pi / 180)), tangentX = tangentY * Float(view.bounds.width / view.bounds.height)
-            let needed = points.map { point -> Float in
-                let relative = point - center, depth = simd_dot(relative, outward)
-                return max(depth + abs(simd_dot(relative, right)) / (tangentX * 0.88), depth + abs(simd_dot(relative, up)) / (tangentY * 0.88))
-            }.max() ?? 5.3
-            fittedDistance = max(2.8, Double(needed) * 1.02)
+            let layout = DiyPhysicalLayout(slots: owner.slots, wrist: owner.wrist, allowance: owner.allowance)
+            let bound = DiyGravity.framingRadius(slots: owner.slots, layout: layout)
+            let tangent = tan(22 * Double.pi / 180) * min(1, Double(view.bounds.width / view.bounds.height)) * 0.88
+            cameraTarget = SCNVector3Zero
+            fittedDistance = max(2.8, bound / sin(atan(tangent)) * 1.02)
             distance = max(2.8, fittedDistance * zoom)
             updateCamera()
         }
         private func updateCamera() {
-            camera.position = SCNVector3(Double(cameraTarget.x) + sin(yaw) * cos(pitch) * distance,
-                                         Double(cameraTarget.y) + sin(pitch) * distance,
-                                         Double(cameraTarget.z) + cos(yaw) * cos(pitch) * distance)
+            camera.position = SCNVector3(cameraTarget.x, cameraTarget.y, cameraTarget.z + Float(distance))
             camera.look(at: cameraTarget, up: SCNVector3(0, 1, 0), localFront: SCNVector3(0, 0, -1))
             updateAccessibility()
         }
@@ -956,12 +912,12 @@ struct DiyNativeStage3D: UIViewRepresentable {
         private func envelopeWorldPoints(presentation: Bool = false) -> [SIMD3<Float>] {
             guard let owner else { return [] }
             let layout = DiyPhysicalLayout(slots: owner.slots, wrist: owner.wrist, allowance: owner.allowance)
-            let cordPoints = DiyGeometry.cordPoints(slots: owner.slots, layout: layout, rotation: displayRotation), scale = Float(1.65 / layout.radius)
+            let cordPoints = DiyGeometry.cordPoints(slots: owner.slots, layout: layout), scale = Float(1.65 / layout.radius)
             // The whole cord loop closes the envelope, including the bracelet's
             // inner opening; real mesh vertices preserve the curved bead and accessory outlines.
             let loop = (0..<64).map { index -> SIMD3<Float> in
-                let point = DiyPresentation.point(cordPoints[min(cordPoints.count - 1, index * cordPoints.count / 64)], mode: presentationMode)
-                return SIMD3(Float(point.x), Float(point.y), Float(point.z)) * scale
+                let point = cordPoints[min(cordPoints.count - 1, index * cordPoints.count / 64)]
+                return orientation.act(SIMD3(Float(point.x), Float(point.y), Float(point.z)) * scale)
             }
             return loop + nodes.values.flatMap { bodyWorldPoints($0, presentation: presentation) }
         }
@@ -997,76 +953,58 @@ struct DiyNativeStage3D: UIViewRepresentable {
             guard let owner else { return }
             let layout = DiyPhysicalLayout(slots: slots, wrist: owner.wrist, allowance: owner.allowance)
             let scale = 1.65 / layout.radius, ids = Set(slots.map(\.id))
-            let placements = DiyPresentation.hangingPlacements(slots: slots, layout: layout, rotation: displayRotation)
-            let newMovementSignature = slots.hashValue ^ layout.radius.hashValue ^ presentationMode.hashValue ^ displayRotation.hashValue
-            let moved = movementSignature != newMovementSignature
-            movementSignature = newMovementSignature
-            if cordSignature != newMovementSignature {
-                cordSignature = newMovementSignature
-                let points = DiyGeometry.cordPoints(slots: slots, layout: layout, rotation: displayRotation).map { DiyPresentation.point($0, mode: presentationMode) }
-                cord.geometry = DiyMaterialAppearance.cordGeometry(points: points, scale: scale)
+            let signature = slots.hashValue ^ layout.radius.hashValue
+            let changed = movementSignature != signature
+            movementSignature = signature
+            if cordSignature != signature {
+                cordSignature = signature
+                cord.geometry = DiyMaterialAppearance.cordGeometry(points: DiyGeometry.cordPoints(slots: slots, layout: layout), scale: scale)
                 let material = SCNMaterial(); material.roughness.contents = 0.9; material.lightingModel = .physicallyBased
                 cord.geometry?.materials = [material]
             }
+            cord.simdOrientation = orientation
             let cordTint = UIColor(Color(hex: owner.cordColor ?? "B49A73"))
             cord.geometry?.firstMaterial?.diffuse.contents = cordTint
-            for id in Array(nodes.keys) where !ids.contains(id) { nodes.removeValue(forKey: id)?.removeFromParentNode(); signatures.removeValue(forKey: id); bodyVertices.removeValue(forKey: id) }
+            for id in Array(nodes.keys) where !ids.contains(id) {
+                nodes.removeValue(forKey: id)?.removeFromParentNode(); signatures.removeValue(forKey: id)
+                bodyVertices.removeValue(forKey: id); templates.removeValue(forKey: id)
+                templateVertices.removeValue(forKey: id); templateNormals.removeValue(forKey: id); facings.removeValue(forKey: id)
+            }
+            dynamics.chains.removeAll { !ids.contains($0.id) }
+            colliders = []
             for (index, bead) in slots.enumerated() {
                 let node: SCNNode
                 if let existing = nodes[bead.id] { node = existing }
                 else { node = SCNNode(); node.name = bead.id; nodes[bead.id] = node; scene.rootNode.addChildNode(node) }
-                let physical = DiyGeometry.dimensions(bead)
-                let suspended = presentationMode == .hanging && DiyPresentation.isSuspended(physical.kind)
-                let signature = bead.hashValue ^ layout.radius.hashValue ^ presentationMode.hashValue ^ (placements[index]?.standOffMm.hashValue ?? 0) ^ (placements[index]?.connectorMm.hashValue ?? 0)
-                if signatures[bead.id] != signature {
-                    signatures[bead.id] = signature
-                    let radius = CGFloat(physical.diameterMm * scale / 2)
+                let physical = DiyGeometry.dimensions(bead), suspended = DiyGravity.isSuspended(physical.kind)
+                let angle = layout.angles[index]
+                let localAnchor = SIMD3(Float(cos(angle) * 1.65), Float(physical.centerHeightMm * scale), Float(sin(angle) * 1.65))
+                let worldAnchor = orientation.act(localAnchor)
+                node.simdPosition = worldAnchor
+                node.simdOrientation = suspended ? simd_quatf() : orientation * simd_quatf(angle: Float(.pi / 2 - angle), axis: SIMD3(0, 1, 0))
+                let geometrySignature = bead.hashValue ^ layout.radius.hashValue
+                if signatures[bead.id] != geometrySignature {
+                    signatures[bead.id] = geometrySignature
                     let accessory = physical.kind.flatMap { DiyMaterialAppearance.accessoryGeometry($0) }
-                    let geometry = accessory ?? DiyMaterialAppearance.geometry(radius: radius, shape: bead.shape ?? "round", axialLength: CGFloat(physical.pitchMm * scale))
+                    let geometry = accessory ?? DiyMaterialAppearance.geometry(radius: CGFloat(physical.diameterMm * scale / 2), shape: bead.shape ?? "round", axialLength: CGFloat(physical.pitchMm * scale))
                     let material = SCNMaterial(); material.lightingModel = .physicallyBased
-                    material.diffuse.contents = texture(bead)
-                    DiyMaterialAppearance.apply(bead, to: material)
-                    geometry.materials = [material]; node.geometry = nil
-                    node.childNodes.forEach { $0.removeFromParentNode() }
+                    material.diffuse.contents = texture(bead); DiyMaterialAppearance.apply(bead, to: material)
+                    geometry.materials = [material]; node.geometry = nil; node.childNodes.forEach { $0.removeFromParentNode() }
                     let body = SCNNode(geometry: geometry); body.name = "body"
-                    if accessory != nil {
-                        let diameter = Float(physical.diameterMm * scale); body.scale = SCNVector3(diameter, diameter, diameter)
+                    if !suspended {
+                        if accessory != nil { let diameter = Float(physical.diameterMm * scale); body.scale = SCNVector3(diameter, diameter, diameter) }
+                        else { body.simdOrientation = simd_quatf(angle: DiyGeometry.textureTurn(bead.id), axis: SIMD3(1, 0, 0)) * simd_quatf(angle: -.pi / 2, axis: SIMD3(0, 0, 1)) }
                     } else {
-                        body.simdOrientation = simd_quatf(angle: DiyGeometry.textureTurn(bead.id), axis: SIMD3(1, 0, 0)) * simd_quatf(angle: -.pi / 2, axis: SIMD3(0, 0, 1))
+                        templates[bead.id] = geometry
+                        templateVertices[bead.id] = DiyMaterialAppearance.vertices(of: geometry)
+                        templateNormals[bead.id] = DiyMaterialAppearance.vertices(of: geometry, semantic: .normal)
+                        let connector = SCNNode(); connector.name = "connector"; node.addChildNode(connector)
                     }
-                    if suspended {
-                        let suspension = SCNNode(); suspension.name = "suspension"
-                        let profile = physical.kind.flatMap(DiyGeometry.profile)
-                        let placement = placements[index]
-                        let lengthMm = placement?.connectorMm ?? physical.diameterMm * (profile?.connectorRatio ?? 0.12)
-                        let pivotMm = SIMD3<Double>(0, placement?.standOffMm ?? 0, lengthMm)
-                        suspension.simdPosition = SIMD3(Float(pivotMm.x * scale), Float(pivotMm.y * scale), Float(pivotMm.z * scale))
-                        let mount = profile?.anchors["mount"] ?? [0, 0, 0]
-                        let mountOffset = mount.count == 3 ? SIMD3(Float(mount[0]), Float(mount[1]), Float(mount[2])) * Float(physical.diameterMm * scale) : .zero
-                        body.simdPosition = -mountOffset
-                        let connector = SCNNode(geometry: DiyMaterialAppearance.cordGeometry(points: [.zero, pivotMm], scale: scale))
-                        connector.name = "connector"
-                        let cordMaterial = SCNMaterial(); cordMaterial.lightingModel = .physicallyBased; cordMaterial.roughness.contents = 0.9
-                        connector.geometry?.materials = [cordMaterial]
-                        node.addChildNode(connector); suspension.addChildNode(body); node.addChildNode(suspension)
-                    } else { node.addChildNode(body) }
-                    bodyVertices[bead.id] = DiyMaterialAppearance.vertices(of: geometry)
-                    if presentationMode == .flat {
-                        let shadow = SCNNode(geometry: SCNPlane(width: radius * 3, height: CGFloat((physical.maxZ - physical.minZ) * scale * 1.4)))
-                        shadow.name = "contact-shadow"; shadow.eulerAngles.x = -.pi / 2
-                        shadow.position = SCNVector3(0, Float(-physical.centerHeightMm * scale + 0.003), Float((physical.maxZ + physical.minZ) / 2 * scale))
-                        shadow.geometry?.firstMaterial?.lightingModel = .constant
-                        shadow.geometry?.firstMaterial?.diffuse.contents = contactShadow
-                        shadow.geometry?.firstMaterial?.writesToDepthBuffer = false
-                        shadow.geometry?.firstMaterial?.isDoubleSided = true
-                        node.addChildNode(shadow)
-                    }
+                    node.addChildNode(body); bodyVertices[bead.id] = DiyMaterialAppearance.vertices(of: geometry)
                     let assets = DiyRenderAssets.parse(bead.renderAssets)
                     for (raw, property) in [(assets?.albedoMapUrl, material.diffuse), (assets?.normalMapUrl, material.normal), (assets?.roughnessMapUrl, material.roughness)] {
                         if let raw, !raw.hasPrefix("/assets/diy/textures/wood/"), let url = DiyRenderAssets.url(raw) { load(url, into: property) }
                     }
-                    // Highlight the actual silhouette, never a detached ring that
-                    // can be mistaken for another string below a tassel.
                     if let outlineGeometry = geometry.copy() as? SCNGeometry {
                         let outline = SCNNode(geometry: outlineGeometry); outline.name = "selection"
                         outline.scale = SCNVector3(1.025, 1.025, 1.025)
@@ -1076,48 +1014,107 @@ struct DiyNativeStage3D: UIViewRepresentable {
                         outlineGeometry.materials = [highlight]; body.addChildNode(outline)
                     }
                 }
+                if suspended, let kind = physical.kind, let profile = DiyGeometry.profile(kind) {
+                    let anchor = SIMD3<Double>(worldAnchor), diameter = physical.diameterMm * scale
+                    let mountZ = profile.anchors["mount"]?.last ?? profile.minZ
+                    let chain = DiyGravity.Chain(id: bead.id, anchor: anchor,
+                        connector: max(0.025, diameter * (profile.connectorRatio ?? 0.12)), bodyLength: diameter * (profile.maxZ - mountZ),
+                        radius: max(0.025, diameter * max(abs(profile.minX), abs(profile.maxX))), flexible: kind.hasPrefix("tassel"), headFraction: kind == "tassel_knot" ? 0.55 : 0.3)
+                    if let old = dynamics.chains.firstIndex(where: { $0.id == bead.id }), dynamics.chains[old].lengths == chain.lengths {
+                        if drag != nil {
+                            let delta = anchor - dynamics.chains[old].anchor
+                            dynamics.chains[old].points = dynamics.chains[old].points.map { $0 + delta }
+                            dynamics.chains[old].previous = dynamics.chains[old].previous.map { $0 + delta }
+                        }
+                        dynamics.chains[old].anchor = anchor
+                    } else {
+                        dynamics.chains.removeAll { $0.id == bead.id }; dynamics.chains.append(chain)
+                    }
+                } else {
+                    colliders.append(.init(center: SIMD3<Double>(worldAnchor), radius: physical.radialMm * scale * 0.5))
+                }
                 let selected = bead.id == owner.selectedId
                 node.childNode(withName: "selection", recursively: true)?.isHidden = !selected
                 if let material = node.childNode(withName: "body", recursively: true)?.geometry?.firstMaterial {
-                    material.emission.contents = UIColor(red: 0.68, green: 0.51, blue: 0.28, alpha: 1)
-                    material.emission.intensity = selected ? 0.08 : 0
+                    material.emission.contents = UIColor(red: 0.68, green: 0.51, blue: 0.28, alpha: 1); material.emission.intensity = selected ? 0.08 : 0
                 }
-                node.childNode(withName: "connector", recursively: true)?.geometry?.firstMaterial?.diffuse.contents = cordTint
                 node.opacity = 1
-                let angle = layout.angles[index] + displayRotation
-                let position = DiyPresentation.point(SIMD3(cos(angle) * 1.65, physical.centerHeightMm * scale, sin(angle) * 1.65), mode: presentationMode)
-                SCNTransaction.begin(); SCNTransaction.animationDuration = animated && presentationMode == .flat && !SCNVector3EqualToVector3(node.position, SCNVector3Zero) ? 0.14 : 0
-                node.simdPosition = SIMD3(Float(position.x), Float(position.y), Float(position.z))
-                node.simdOrientation = DiyPresentation.orientation(angle: angle, kind: physical.kind, mode: presentationMode)
-                SCNTransaction.commit()
             }
-            if presentationMode != .hanging || !animated || drag != nil { stopSettling() }
-            else if moved { startSettling() }
+            dynamics.advance(delta: 0, colliders: colliders)
+            applyDynamics(slots: slots, scale: scale)
+            if drag == nil && (changed || !dynamics.settled) { startSettling() }
             updateAccessibility()
         }
-        private func startSettling() {
-            stopSettling()
-            guard nodes.values.contains(where: { $0.childNode(withName: "suspension", recursively: false) != nil }) else { return }
-            swingStart = CACurrentMediaTime()
-            let link = CADisplayLink(target: self, selector: #selector(settle(_:)))
-            link.preferredFrameRateRange = CAFrameRateRange(minimum: 20, maximum: 30, preferred: 30)
-            link.add(to: .main, forMode: .common); settlingLink = link
-            view?.isPlaying = true
-        }
-        @objc private func settle(_ link: CADisplayLink) {
-            guard let owner else { stopSettling(); return }
-            let elapsed = link.timestamp - swingStart
-            guard !owner.reduceMotion, drag == nil, elapsed < DiyPresentation.settlingDuration else { stopSettling(); updateAccessibility(); return }
-            for (id, node) in nodes {
-                let swing = DiyPresentation.swing(elapsed: elapsed, identity: id, reducedMotion: false)
-                node.childNode(withName: "suspension", recursively: false)?.eulerAngles = SCNVector3(swing.x, swing.y, 0)
+        private func applyDynamics(slots: [DiyBeadSlot], scale: Double, delta: Double = 0) {
+            twisting = false
+            for chain in dynamics.chains {
+                guard let bead = slots.first(where: { $0.id == chain.id }), let node = nodes[chain.id],
+                      let template = templates[chain.id], let vertices = templateVertices[chain.id], let normals = templateNormals[chain.id],
+                      let body = node.childNode(withName: "body", recursively: false),
+                      let kind = DiyGeometry.dimensions(bead).kind, let profile = DiyGeometry.profile(kind) else { continue }
+                let diameter = Float(DiyGeometry.dimensions(bead).diameterMm * scale)
+                let mount = profile.anchors["mount"] ?? [0, 0, profile.minZ]
+                let anchor = chain.anchor
+                let headDirection = SIMD3<Float>(DiyGravity.direction(chain.points[2] - chain.points[1]))
+                let targetFacing = orientation.act(SIMD3<Float>(0, 1, 0))
+                let facing = DiyGravity.facing(previous: facings[chain.id] ?? targetFacing, direction: headDirection,
+                    target: targetFacing, delta: delta, reducedMotion: owner?.reduceMotion == true)
+                facings[chain.id] = facing.normal; twisting = twisting || facing.remaining > 0.001
+                var segments: [(start: SIMD3<Float>, tangent: SIMD3<Float>, right: SIMD3<Float>, up: SIMD3<Float>, lower: Float, upper: Float)] = []
+                var lower: Float = 0, lastFacing = facing.normal
+                for index in 1..<chain.lengths.count {
+                    let tangent = SIMD3<Float>(DiyGravity.direction(chain.points[index + 1] - chain.points[index]))
+                    lastFacing = DiyGravity.transportedFacing(lastFacing, direction: tangent)
+                    let length = Float(chain.lengths[index])
+                    segments.append((SIMD3<Float>(chain.points[index] - anchor), tangent, simd_cross(lastFacing, tangent), lastFacing, lower, lower + length))
+                    lower += length
+                }
+                var positions: [SCNVector3] = [], deformedNormals: [SCNVector3] = []
+                positions.reserveCapacity(vertices.count); deformedNormals.reserveCapacity(vertices.count)
+                let mountX = Float(mount[0]), mountY = Float(mount[1]), mountZ = Float(mount[2])
+                for (index, vertex) in vertices.enumerated() {
+                    let z = max(0, (vertex.z - mountZ) * diameter)
+                    let segment = segments.first(where: { z <= $0.upper }) ?? segments[segments.count - 1]
+                    let center = segment.start + segment.tangent * (z - segment.lower)
+                    positions.append(SCNVector3(center + segment.right * ((vertex.x - mountX) * diameter) + segment.up * ((vertex.y - mountY) * diameter)))
+                    let normal = index < normals.count ? normals[index] : SIMD3(0, 1, 0)
+                    deformedNormals.append(SCNVector3(segment.right * normal.x + segment.up * normal.y + segment.tangent * normal.z))
+                }
+                let sources = [SCNGeometrySource(vertices: positions), SCNGeometrySource(normals: deformedNormals)] + template.sources.filter { $0.semantic != .vertex && $0.semantic != .normal }
+                let geometry = SCNGeometry(sources: sources, elements: template.elements); geometry.materials = template.materials
+                body.geometry = geometry; bodyVertices[chain.id] = positions.map { SIMD3($0.x, $0.y, $0.z) }
+                if let outline = body.childNode(withName: "selection", recursively: false), let material = outline.geometry?.firstMaterial {
+                    let highlighted = SCNGeometry(sources: sources, elements: template.elements); highlighted.materials = [material]; outline.geometry = highlighted
+                }
+                if let connector = node.childNode(withName: "connector", recursively: false) {
+                    connector.geometry = DiyMaterialAppearance.cordGeometry(points: [SIMD3<Double>.zero, (chain.points[1] - anchor) / scale], scale: scale)
+                    let material = SCNMaterial(); material.lightingModel = .physicallyBased; material.roughness.contents = 0.9
+                    material.diffuse.contents = UIColor(Color(hex: owner?.cordColor ?? "B49A73")); connector.geometry?.materials = [material]
+                }
             }
         }
-        private func stopSettling() {
-            settlingLink?.invalidate(); settlingLink = nil
-            for node in nodes.values { node.childNode(withName: "suspension", recursively: false)?.eulerAngles = SCNVector3Zero }
-            view?.isPlaying = false
+        @objc func resumeDynamics() {
+            if view?.window != nil && !dynamics.settled { startSettling() }
         }
+        private func startSettling() {
+            guard drag == nil, !dynamics.chains.isEmpty else { return }
+            dynamics.wake()
+            guard settlingLink == nil else { return }
+            lastFrame = CACurrentMediaTime()
+            let link = CADisplayLink(target: self, selector: #selector(settle(_:)))
+            link.preferredFrameRateRange = CAFrameRateRange(minimum: 20, maximum: 30, preferred: 30)
+            link.add(to: .main, forMode: .common); settlingLink = link; view?.isPlaying = true
+        }
+        @objc private func settle(_ link: CADisplayLink) {
+            guard let owner, let view, view.window != nil, UIApplication.shared.applicationState == .active, drag == nil else { stopSettling(); return }
+            let delta = link.timestamp - lastFrame
+            dynamics.advance(delta: delta, colliders: colliders, reducedMotion: owner.reduceMotion)
+            lastFrame = link.timestamp
+            let layout = DiyPhysicalLayout(slots: owner.slots, wrist: owner.wrist, allowance: owner.allowance)
+            applyDynamics(slots: owner.slots, scale: 1.65 / layout.radius, delta: delta)
+            if dynamics.settled && !manipulating && !twisting { stopSettling(); updateAccessibility() }
+        }
+        private func stopSettling() { settlingLink?.invalidate(); settlingLink = nil; view?.isPlaying = false }
         private func bead(at point: CGPoint) -> String? {
             guard let view else { return nil }
             for hit in view.hitTest(point, options: [.searchMode: SCNHitTestSearchMode.all.rawValue]) {
@@ -1140,7 +1137,7 @@ struct DiyNativeStage3D: UIViewRepresentable {
             switch recognizer.state {
             case .began:
                 stopSettling()
-                gestureYaw = yaw; gesturePitch = pitch
+                gestureOrientation = orientation; manipulating = true
                 if owner.onMove != nil, let id = bead(at: recognizer.startPoint), let index = owner.slots.firstIndex(where: { $0.id == id }), let node = nodes[id] {
                     let anchor = view.projectPoint(node.presentation.worldPosition)
                     startAnchors = owner.slots.compactMap { slot in nodes[slot.id].map { item in
@@ -1156,16 +1153,18 @@ struct DiyNativeStage3D: UIViewRepresentable {
             case .changed:
                 if drag != nil { updateDrag(at: location) }
                 else {
-                    yaw = gestureYaw - Double(translation.x) * 0.008
-                    pitch = min(1.4, max(presentationMode == .hanging ? -1.4 : 0.25, gesturePitch + Double(translation.y) * 0.008))
-                    if presentationMode == .hanging { fitCamera(force: true, preserveZoom: true) }
-                    else { updateCamera() }
+                    let horizontal = simd_quatf(angle: Float(translation.x) * 0.008, axis: SIMD3(0, 1, 0))
+                    let vertical = simd_quatf(angle: Float(translation.y) * 0.008, axis: SIMD3(1, 0, 0))
+                    orientation = simd_normalize(horizontal * vertical * gestureOrientation)
+                    render(owner.slots, animated: false)
+
                 }
             case .ended:
+                manipulating = false
                 if drag != nil { updateDrag(at: location) }
-                finishDrag(endedNormally: true)
+                finishDrag(endedNormally: true); startSettling()
             case .cancelled, .failed:
-                finishDrag(endedNormally: false)
+                manipulating = false; finishDrag(endedNormally: false); startSettling()
             default: break
             }
         }
@@ -1224,13 +1223,14 @@ struct DiyNativeStage3D: UIViewRepresentable {
         private func texture(_ bead: DiyBeadSlot) -> UIImage {
             DiyMaterialAppearance.fallbackImage(color: bead.colorHex, texture: bead.textureKey, type: bead.materialType) ?? UIImage()
         }
-        func dispose() { stopSettling(); requests.values.forEach { $0.cancel() }; requests.removeAll(); textureWaiters.removeAll(); textures.removeAllObjects(); bodyVertices.removeAll(); owner = nil }
+        func dispose() { NotificationCenter.default.removeObserver(self); stopSettling(); requests.values.forEach { $0.cancel() }; requests.removeAll(); textureWaiters.removeAll(); textures.removeAllObjects(); bodyVertices.removeAll(); templates.removeAll(); templateVertices.removeAll(); templateNormals.removeAll(); owner = nil }
     }
 }
 
 private final class DiyStageSceneView: SCNView {
     var onLayout: (() -> Void)?
     override func layoutSubviews() { super.layoutSubviews(); onLayout?() }
+    override func didMoveToWindow() { super.didMoveToWindow(); onLayout?() }
 }
 
 // A six-point threshold separates a tap from a direct bead drag. A second
