@@ -349,6 +349,64 @@ final class NativeDiscoveryRefinementUITests: XCTestCase {
         capture(app, "ios-my-designs-compact-green-gold-identity")
     }
 
+    func testHomeContentCardsKeepFourWishesAndThreePointsAcrossTextSizes() {
+        for textSize in ["UICTContentSizeCategoryL", "UICTContentSizeCategoryAccessibilityXXXL"] {
+            let usesAccessibilityText = textSize == "UICTContentSizeCategoryAccessibilityXXXL"
+            let app = launch(["-UIPreferredContentSizeCategoryName", textSize])
+            let wishes = ["peace", "wealth", "love", "career"].map { app.buttons["home-intention-" + $0] }
+            XCTAssertTrue(wishes[0].waitForExistence(timeout: 20))
+            reveal(wishes[0], in: app)
+            let wishScroll = app.scrollViews["home-intention-entries"]
+            XCTAssertTrue(wishScroll.exists)
+            if usesAccessibilityText {
+                XCTAssertGreaterThanOrEqual(wishes[0].frame.width, 116)
+                XCTAssertGreaterThan(wishes[0].frame.height, 116, "辅助大字号允许心愿卡随完整文字增高")
+            } else {
+                for wish in wishes {
+                    XCTAssertTrue(wish.isHittable, "常规字号首屏完整显示四张心愿卡")
+                    XCTAssertGreaterThanOrEqual(wish.frame.minX, wishScroll.frame.minX)
+                    XCTAssertLessThanOrEqual(wish.frame.maxX, wishScroll.frame.maxX + 1)
+                    XCTAssertEqual(wish.frame.height, 116, accuracy: 1)
+                    XCTAssertEqual(wish.frame.width, wishes[0].frame.width, accuracy: 1)
+                }
+                for index in 1..<wishes.count {
+                    XCTAssertEqual(wishes[index].frame.minX - wishes[index - 1].frame.maxX, 12, accuracy: 1)
+                }
+                XCTAssertGreaterThan(app.buttons["home-intention-study"].frame.maxX, wishScroll.frame.maxX)
+            }
+
+            let diy = app.buttons["home-diy"]
+            reveal(diy, in: app)
+            if usesAccessibilityText {
+                XCTAssertGreaterThan(diy.frame.height, 116, "辅助大字号下设计入口保留完整说明")
+            } else {
+                XCTAssertEqual(diy.frame.height, 116, accuracy: 1)
+            }
+
+            let points = ["wheel", "mall", "pool"].map { app.buttons["home-points-" + $0] }
+            XCTAssertTrue(points[0].waitForExistence(timeout: 10))
+            reveal(points[0], in: app)
+            for point in points {
+                XCTAssertTrue(point.isHittable)
+                XCTAssertGreaterThanOrEqual(point.frame.minX, 0)
+                XCTAssertLessThanOrEqual(point.frame.maxX, app.frame.width)
+                XCTAssertEqual(point.frame.minY, points[0].frame.minY, accuracy: 1)
+                XCTAssertEqual(point.frame.width, points[0].frame.width, accuracy: 1)
+                XCTAssertEqual(point.frame.height, points[0].frame.height, accuracy: 1)
+                if usesAccessibilityText {
+                    XCTAssertGreaterThan(point.frame.height, 116, "积分卡在辅助字号下共同增高")
+                } else {
+                    XCTAssertEqual(point.frame.height, 116, accuracy: 1)
+                }
+            }
+            for index in 1..<points.count {
+                XCTAssertEqual(points[index].frame.minX - points[index - 1].frame.maxX, 12, accuracy: 1)
+            }
+            capture(app, "ios-home-card-height-" + textSize)
+            app.terminate()
+        }
+    }
+
     func testHomeRefinedTypeAndOpenSectionsAcrossAppearanceAndLargeText() {
         for (appearance, textSize) in [
             ("light", "UICTContentSizeCategoryL"),

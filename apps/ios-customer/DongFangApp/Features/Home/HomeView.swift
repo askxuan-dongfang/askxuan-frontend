@@ -20,6 +20,7 @@ struct HomeView: View {
     private let columnSpacing: CGFloat = 12
     private let sectionSpacing: CGFloat = 28
     private let sectionTitleSpacing: CGFloat = 12
+    private let contentCardMinHeight: CGFloat = 116
 
     var body: some View {
         GeometryReader { geometry in
@@ -33,7 +34,7 @@ struct HomeView: View {
                     if let error = viewModel.errorMessage {
                         HStack { Text(L10n.lookup(L10n.text("部分内容加载失败：") + error)).font(AppTypography.caption); Spacer(); Button(L10n.text("重试")) { Task { await viewModel.load() } } }.padding(16).appCardSurface(cornerRadius: 12).padding(.horizontal, pageInset)
                     }
-                    intentionSection
+                    intentionSection(width: viewportWidth)
                     diySection
                     pointsSection
                     hotTemplesSection(width: viewportWidth)
@@ -207,24 +208,27 @@ struct HomeView: View {
         max(0, (viewportWidth - pageInset * 2 - columnSpacing) / 2)
     }
 
-    private var intentionSection: some View {
-        VStack(alignment: .leading, spacing: sectionTitleSpacing) {
+    private func intentionSection(width: CGFloat) -> some View {
+        let regularCardWidth = max(0, (width - pageInset * 2 - columnSpacing * 3) / 4)
+        let cardWidth = dynamicTypeSize.isAccessibilitySize ? max(116, regularCardWidth) : regularCardWidth
+        return VStack(alignment: .leading, spacing: sectionTitleSpacing) {
             Text(L10n.text("按心愿办")).font(AppTypography.section).foregroundStyle(Color.textPrimary)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: columnSpacing) {
                     ForEach(viewModel.intentionEntries) { entry in
-                        NavigationLink(value: HomeRoute.intention(entry)) { intentionItem(entry) }
+                        NavigationLink(value: HomeRoute.intention(entry)) { intentionItem(entry, width: cardWidth) }
                             .buttonStyle(CardPressButtonStyle())
                             .accessibilityIdentifier("home-intention-" + entry.id)
                     }
                 }
+                .fixedSize(horizontal: false, vertical: true)
             }
             .accessibilityIdentifier("home-intention-entries")
         }
         .padding(.horizontal, pageInset)
     }
 
-    private func intentionItem(_ entry: IntentionEntry) -> some View {
+    private func intentionItem(_ entry: IntentionEntry, width: CGFloat) -> some View {
         VStack(spacing: 10) {
             IntentionLineIcon(code: entry.id)
                 .frame(width: 26, height: 26).foregroundStyle(Color.accentDefault)
@@ -234,8 +238,8 @@ struct HomeView: View {
         .foregroundStyle(Color.textPrimary)
         .multilineTextAlignment(.center)
         .padding(.horizontal, 8).padding(.vertical, 12)
-        .frame(width: dynamicTypeSize.isAccessibilitySize ? 116 : 76)
-        .frame(minHeight: 88)
+        .frame(width: width)
+        .frame(minHeight: contentCardMinHeight, maxHeight: .infinity)
         .appCardSurface(cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .combine)
@@ -268,7 +272,7 @@ struct HomeView: View {
                         .accessibilityHidden(true)
                 }
                 .foregroundStyle(Color.textPrimary)
-                .padding(16).frame(maxWidth: .infinity, minHeight: 104, alignment: .leading)
+                .padding(16).frame(maxWidth: .infinity, minHeight: contentCardMinHeight, alignment: .leading)
                 .background(LinearGradient(colors: [Color.brandDefault.opacity(0.10), Color.accentDefault.opacity(0.05)], startPoint: .leading, endPoint: .trailing))
                 .appCardSurface(cornerRadius: 12)
                 .contentShape(RoundedRectangle(cornerRadius: 12))
@@ -276,56 +280,40 @@ struct HomeView: View {
             .buttonStyle(CardPressButtonStyle())
             .accessibilityIdentifier("home-diy")
 
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(L10n.text("广场精选")).font(AppTypography.body).foregroundStyle(Color.textPrimary)
-                Spacer(minLength: 0)
-            }
-            .padding(.top, 4)
+            if !viewModel.featuredDesigns.isEmpty {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(L10n.text("广场精选")).font(AppTypography.body).foregroundStyle(Color.textPrimary)
+                    Spacer(minLength: 0)
+                }
+                .padding(.top, 4)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: columnSpacing) {
-                    if viewModel.isLoadingDesigns && viewModel.featuredDesigns.isEmpty {
-                        ForEach(0..<4) { _ in
-                            RoundedRectangle(cornerRadius: 12).fill(Color.bgTertiary)
-                                .frame(width: 104, height: 104).accessibilityHidden(true)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: columnSpacing) {
+                        ForEach(viewModel.featuredDesigns) { design in
+                            NavigationLink { DiyDetailView(designId: design.id) } label: {
+                                designPreview(slots: DiyDesignPreview.slots(from: design.designData))
+                            }
+                            .buttonStyle(CardPressButtonStyle())
+                            .accessibilityLabel(Text(verbatim: design.name))
+                            .accessibilityIdentifier("home-diy-design-\(design.id)")
                         }
-                    }
-                    ForEach(viewModel.featuredDesigns) { design in
-                        NavigationLink { DiyDetailView(designId: design.id) } label: {
-                            designPreview(slots: DiyDesignPreview.slots(from: design.designData))
+                        NavigationLink { DiyBraceletView(initialSection: .plaza) } label: {
+                            VStack(spacing: 10) {
+                                Image(systemName: "chevron.right").font(AppTypography.card).accessibilityHidden(true)
+                                Text(L10n.text("逛设计广场")).font(AppTypography.caption)
+                                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                            }
+                            .foregroundStyle(Color.accentDefault)
+                            .padding(8)
+                            .frame(width: dynamicTypeSize.isAccessibilitySize ? 160 : 104)
+                            .frame(minHeight: 104)
+                            .appCardSurface(cornerRadius: 12)
                         }
                         .buttonStyle(CardPressButtonStyle())
-                        .accessibilityLabel(Text(verbatim: design.name))
-                        .accessibilityIdentifier("home-diy-design-\(design.id)")
+                        .accessibilityIdentifier("home-diy-plaza")
                     }
-                    NavigationLink { DiyBraceletView(initialSection: .plaza) } label: {
-                        VStack(spacing: 10) {
-                            Image(systemName: "chevron.right").font(AppTypography.card).accessibilityHidden(true)
-                            Text(L10n.text("逛设计广场")).font(AppTypography.caption)
-                                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-                        }
-                        .foregroundStyle(Color.accentDefault)
-                        .padding(8)
-                        .frame(width: dynamicTypeSize.isAccessibilitySize ? 160 : 104)
-                        .frame(minHeight: 104)
-                        .appCardSurface(cornerRadius: 12)
-                    }
-                    .buttonStyle(CardPressButtonStyle())
-                    .accessibilityIdentifier("home-diy-plaza")
                 }
-            }
-            .accessibilityIdentifier("home-diy-designs")
-
-            if viewModel.isLoadingDesigns {
-                Text(L10n.text("正在加载广场作品…")).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
-            }
-            if viewModel.designsErrorMessage != nil {
-                HStack {
-                    Text(L10n.text("广场作品暂时无法加载")).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
-                    Spacer(minLength: 8)
-                    Button(L10n.text("重新加载")) { Task { await viewModel.loadFeaturedDesigns() } }
-                        .font(AppTypography.caption).frame(minHeight: 44)
-                }
+                .accessibilityIdentifier("home-diy-designs")
             }
         }
         .padding(.horizontal, pageInset)
@@ -353,21 +341,22 @@ struct HomeView: View {
                 pointsEntry(title: "转盘", detail: "积分商城", icon: "bag", mode: 1, identifier: "home-points-mall")
                 pointsEntry(title: "乐购", detail: "奖池", icon: "star", mode: 2, identifier: "home-points-pool")
             }
+            .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, pageInset)
     }
 
     private func pointsEntry(title: String, detail: String, icon: String, mode: Int, identifier: String) -> some View {
         NavigationLink { PointsView(initialMode: mode).requireAuth(title: L10n.text("登录后使用积分中心")) } label: {
-            VStack(spacing: 10) {
+            VStack(spacing: 8) {
                 Image(systemName: icon).font(.system(size: 28)).foregroundStyle(Color.accentDefault).accessibilityHidden(true)
                 Text(L10n.lookup(title)).font(AppTypography.card).foregroundStyle(Color.textPrimary)
                 Text(L10n.lookup(detail)).font(AppTypography.caption).foregroundStyle(Color.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .multilineTextAlignment(.center)
-            .padding(.horizontal, 8).padding(.vertical, 16)
-            .frame(maxWidth: .infinity, minHeight: 138)
+            .padding(.horizontal, 8).padding(.vertical, 10)
+            .frame(maxWidth: .infinity, minHeight: contentCardMinHeight, maxHeight: .infinity)
             .appCardSurface(cornerRadius: 12)
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
