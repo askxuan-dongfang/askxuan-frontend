@@ -454,6 +454,7 @@ final class NativeDiscoveryRefinementUITests: XCTestCase {
         }
     }
 
+    @MainActor
     func testEmptyHomeKeepsPlazaAndMyDesignsNavigation() async throws {
         // Only synthetic localhost designs are changed; no production publication is touched.
         var reset = URLRequest(url: try XCTUnwrap(URL(string: "http://127.0.0.1:8913/_test/reset")))
