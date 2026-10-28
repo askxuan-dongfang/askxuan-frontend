@@ -33,7 +33,6 @@ let pollTimer: ReturnType<typeof setTimeout> | undefined, alive = true, hydratin
 const taskBusy = computed(() => generating.value || !!task.value && ['queued', 'submitting', 'processing', 'running'].includes(task.value.status))
 const jobStorageKey = auth.userInfo?.userId ? `diy-material-modeling:${auth.userInfo.userId}:${materialId.value || 'new'}` : null
 const visibleTemplates = computed(() => templateOptions.filter(v => studio.value.part === 'hanging' ? /^(pendant|tassel)/.test(v.value) : !/^(pendant|tassel)/.test(v.value)))
-const visibleCategories = computed(() => categoryOptions.filter(v => studio.value.part === 'hanging' ? ['pendant', 'tassel'].includes(v.value) : !['pendant', 'tassel'].includes(v.value)))
 const axes = ['X', 'Y', 'Z'], dimensionLabels = ['宽度 X', '厚度 Y', '长度 Z']
 
 const assets = reactive({ beadImageUrl: '', albedoMapUrl: '', normalMapUrl: '', roughnessMapUrl: '', source: 'procedural', attribution: '' })
@@ -125,7 +124,6 @@ function choosePart(value: string | number | boolean | undefined) {
   studio.value.part = hanging ? 'hanging' : 'bead'
   studio.value.motion = hanging ? 'rigid' : 'fixed'
   studio.value.connectorMm = hanging ? 2 : 0
-  form.category = hanging ? 'pendant' : 'main_bead'
   if (studio.value.source === 'template') chooseTemplate(hanging ? 'pendant_generic' : 'round')
 }
 function chooseSource(value: string | number | boolean | undefined) {
@@ -135,7 +133,6 @@ function chooseSource(value: string | number | boolean | undefined) {
 }
 function chooseMotion(value: string | number | boolean | undefined) {
   studio.value.motion = value === 'flexible' ? 'flexible' : 'rigid'
-  form.category = value === 'flexible' ? 'tassel' : 'pendant'
   if (studio.value.source === 'template') chooseTemplate(value === 'flexible' ? 'tassel' : 'pendant_generic')
 }
 function updatePhotos(value: string | string[]) { studio.value.photos = Array.isArray(value) ? value.slice(0, 4) : value ? [value] : [] }
@@ -254,14 +251,14 @@ onBeforeUnmount(() => { alive = false; clearTimeout(pollTimer); configKey.value 
         <div class="authoring-fields">
           <section class="authoring-section" :aria-label='$t("材料建档")'>
             <h2>{{ $t('材料建档') }}</h2>
-            <el-form-item :label='$t("使用品类")'>
-              <el-radio-group :model-value="studio.part" @change="choosePart"><el-radio-button value="bead">{{ $t('普通串珠') }}</el-radio-button><el-radio-button value="hanging">{{ $t('动态挂件') }}</el-radio-button></el-radio-group>
+            <el-form-item :label='$t("连接方式")'>
+              <el-radio-group :model-value="studio.part" @change="choosePart"><el-radio-button value="bead">{{ $t('穿绳串接') }}</el-radio-button><el-radio-button value="hanging">{{ $t('挂件连接') }}</el-radio-button></el-radio-group>
               <p class="field-help">{{ $t(studio.part === 'bead' ? '沿主绳穿孔排列，随整串转动。' : '通过独立短绳连接，可随重力摆动。') }}</p>
             </el-form-item>
             <el-form-item v-if="studio.part === 'hanging'" :label='$t("运动方式")'><el-radio-group :model-value="studio.motion" @change="chooseMotion"><el-radio-button value="rigid">{{ $t('刚性摆动') }}</el-radio-button><el-radio-button value="flexible">{{ $t('柔性流苏') }}</el-radio-button></el-radio-group></el-form-item>
             <el-form-item :label='$t("材料名称")' prop="name"><el-input v-model="form.name" :placeholder='$t("如：8mm 红玛瑙")' maxlength="60" show-word-limit /></el-form-item>
             <div class="field-pair">
-              <el-form-item :label='$t("分类")' prop="category"><el-select v-model="form.category"><el-option v-for="item in visibleCategories" :key="item.value" :label="$t(item.label)" :value="item.value" /></el-select></el-form-item>
+              <el-form-item :label='$t("材料分类")' prop="category"><el-select v-model="form.category"><el-option v-for="item in categoryOptions" :key="item.value" :label="$t(item.label)" :value="item.value" /></el-select></el-form-item>
               <el-form-item :label='$t("材质大类")' prop="materialType"><el-select v-model="form.materialType"><el-option v-for="item in materialTypeOptions" :key="item.value" :label="$t(item.label)" :value="item.value" /></el-select></el-form-item>
               <el-form-item :label='$t("规格")' prop="spec"><el-input v-model="form.spec" :placeholder='$t("如：8mm")' /></el-form-item>
               <el-form-item :label='$t("五行属性")'><el-select v-model="form.fiveElements" :placeholder='$t("可选")' clearable><el-option v-for="item in fiveElementsOptions" :key="item.value" :label="$t(item.label)" :value="item.value" /></el-select></el-form-item>
@@ -311,7 +308,7 @@ onBeforeUnmount(() => { alive = false; clearTimeout(pollTimer); configKey.value 
             <el-form-item :label='$t("连接绳长度（mm）")'><el-input-number v-model="studio.connectorMm" :min="1" :max="30" :precision="1" controls-position="right" /></el-form-item>
             <el-form-item v-if="studio.motion === 'flexible'" :label='$t("固定部分比例")'><el-slider v-model="studio.rigidFraction" :min=".1" :max=".9" :step=".05" :format-tooltip="percentage" /><p class="field-help">{{ $t('从挂点沿蓝 Z 轴计算，剩余部分可以弯曲。') }}</p></el-form-item>
           </template>
-          <p v-else class="field-help">{{ $t('普通串珠的穿绳孔需沿红 X 轴居中；主绳保持同一平面。') }}</p>
+          <p v-else class="field-help">{{ $t('穿绳孔需沿红 X 轴居中；主绳保持同一平面。') }}</p>
           <el-checkbox :model-value="studio.previewConfirmed" :disabled="!previewReady" @change="confirmPreview"><span class="confirm-copy">{{ $t(studio.part === 'hanging' ? '已检查外观、尺寸、朝向与挂点' : '已检查外观、尺寸与穿绳方向') }}</span></el-checkbox><p class="field-help">{{ $t('修改模型或尺寸后，需要重新确认。') }}</p>
         </section>
       </div>

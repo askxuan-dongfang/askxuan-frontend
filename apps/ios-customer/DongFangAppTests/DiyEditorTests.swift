@@ -351,9 +351,12 @@ struct NativePublicSearchTests {
 
 @MainActor
 struct DiyCanvasEditorTests {
-    private func material(id: Int64, stock: Int = 100, category: String = "main_bead") -> Material {
+    private let fixedStudio = #"{"studio":{"version":1,"part":"bead","motion":"fixed","source":"template","templateId":"round","dimensionsMm":[10,10,10],"rotation":[0,0,0],"mount":[0,0,0],"connectorMm":0,"rigidFraction":0.4,"photos":[],"previewConfirmed":true}}"#
+    private let hangingStudio = #"{"studio":{"version":1,"part":"hanging","motion":"rigid","source":"template","templateId":"buddha_head","dimensionsMm":[10,10,10],"rotation":[0,0,0],"mount":[0,0,-0.5],"connectorMm":3,"rigidFraction":0.4,"photos":[],"previewConfirmed":true}}"#
+
+    private func material(id: Int64, stock: Int = 100, category: String = "main_bead", status: String = "on_shelf") -> Material {
         Material(id: id, name: "测试材料", spec: "10mm", unitPrice: Double(id) * 10, unit: "颗", category: category,
-                 fiveElements: "木", image: "", stock: stock, status: "on_shelf")
+                 fiveElements: "木", image: "", stock: stock, status: status)
     }
 
     @Test func fitToleranceMatchesBothEndpointsAndEmptyState() {
@@ -394,20 +397,87 @@ struct DiyCanvasEditorTests {
         let model = DiyViewModel(draftStore: store)
         var fixed = material(id: 1, category: "pendant")
         var moving = material(id: 2, category: "buddha_head")
-        fixed.renderAssets = #"{"studio":{"version":1,"part":"bead","motion":"fixed","source":"template","templateId":"round","dimensionsMm":[10,10,10],"rotation":[0,0,0],"mount":[0,0,0],"connectorMm":0,"rigidFraction":0.4,"photos":[],"previewConfirmed":true}}"#
-        moving.renderAssets = #"{"studio":{"version":1,"part":"hanging","motion":"rigid","source":"template","templateId":"buddha_head","dimensionsMm":[10,10,10],"rotation":[0,0,0],"mount":[0,0,-0.5],"connectorMm":3,"rigidFraction":0.4,"photos":[],"previewConfirmed":true}}"#
+        var custom = material(id: 5, category: "custom_knot")
+        var fixedTassel = material(id: 6, category: "tassel")
+        fixed.renderAssets = fixedStudio
+        moving.renderAssets = hangingStudio
+        custom.renderAssets = hangingStudio
+        fixedTassel.renderAssets = fixedStudio
         let legacy = material(id: 3, category: "tassel"), cord = material(id: 4, category: "cord")
-        model.materials = [fixed, moving, legacy, cord]
-        #expect(model.categories.map(\.code) == ["used", "all", "bead", "hanging", "cord"])
-        model.selectCategory("bead")
-        #expect(model.filteredMaterials.map(\.id) == [1])
+        model.materials = [fixed, moving, legacy, cord, custom, fixedTassel]
+        #expect(model.categories.map(\.code) == ["used", "all", "main_bead", "spacer", "buddha_head", "three_way", "hanging", "cord"])
+        model.selectCategory("all")
+        #expect(model.filteredMaterials.map(\.id) == [1, 2, 3, 4, 5, 6])
+        model.selectCategory("buddha_head")
+        #expect(model.filteredMaterials.isEmpty)
         model.selectCategory("hanging")
-        #expect(model.filteredMaterials.map(\.id) == [2, 3])
+        #expect(model.filteredMaterials.map(\.id) == [1, 2, 3, 5, 6])
+        #expect(!DiyGeometry.isSuspended(DiyBeadSlot(material: fixed, position: 0, slotId: "fixed-pendant")))
+        #expect(!DiyGeometry.isSuspended(DiyBeadSlot(material: fixedTassel, position: 0, slotId: "fixed-tassel")))
         model.selectCategory("cord")
         #expect(model.filteredMaterials.map(\.id) == [4])
         model.addBead(fixed); model.addBead(moving)
+        model.selectCategory("used")
+        #expect(model.filteredMaterials.map(\.id) == [1, 2])
         #expect(model.beadSlots.map(\.subtype) == ["pendant", "buddha_head"])
         #expect(model.designDocument().items.map(\.subtype) == ["pendant", "buddha_head"])
+    }
+
+    @Test(arguments: ["main_bead", "spacer", "buddha_head", "three_way"])
+    func ordinarySubcategoriesKeepLegacyAndFixedMaterialsSeparateFromHanging(category: String) throws {
+        let suite = "DiyOrdinaryCategoryTests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        let model = DiyViewModel(draftStore: store)
+        var fixed = material(id: 2, category: category)
+        var moving = material(id: 3, category: category)
+        fixed.renderAssets = fixedStudio
+        moving.renderAssets = hangingStudio
+        model.materials = [material(id: 1, category: category), fixed, moving,
+                           material(id: 4, category: "unrelated"), material(id: 5, category: category, status: "off_shelf")]
+        model.selectCategory(category)
+        #expect(model.filteredMaterials.map(\.id) == [1, 2])
+        model.selectCategory("hanging")
+        #expect(model.filteredMaterials.map(\.id) == [3])
+    }
+
+    @Test func cordCategoryTakesPrecedenceOverConflictingStudioMetadata() throws {
+        let suite = "DiyCordCategoryTests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        let model = DiyViewModel(draftStore: store)
+        var cord = material(id: 1, category: "cord")
+        cord.renderAssets = hangingStudio
+        model.materials = [cord, material(id: 2, category: "cord"), material(id: 3, category: "tassel")]
+        model.selectCategory("cord")
+        #expect(model.filteredMaterials.map(\.id) == [1, 2])
+        model.selectCategory("hanging")
+        #expect(model.filteredMaterials.map(\.id) == [3])
+        model.addToCart(cord)
+        #expect(model.selectedCord?.id == 1)
+        #expect(model.beadSlots.isEmpty)
+        #expect(model.designDocument().items.map(\.subtype) == ["cord"])
+    }
+
+    @Test func unavailableUsedMaterialsRemainVisibleWhileCatalogExcludesThem() throws {
+        let suite = "DiyUnavailableUsedTests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        let model = DiyViewModel(draftStore: store)
+        let bead = material(id: 1), cord = material(id: 2, category: "cord")
+        model.addBead(bead); model.setCord(cord)
+        model.materials = [material(id: 1, status: "off_shelf"), material(id: 2, category: "cord", status: "off_shelf"),
+                           material(id: 3), material(id: 4, category: "cord")]
+        model.selectCategory("all")
+        #expect(model.filteredMaterials.map(\.id) == [3, 4])
+        model.selectCategory("main_bead")
+        #expect(model.filteredMaterials.map(\.id) == [3])
+        model.selectCategory("cord")
+        #expect(model.filteredMaterials.map(\.id) == [4])
+        model.selectCategory("used")
+        #expect(model.filteredMaterials.map(\.id) == [1, 2])
+        model.undo()
+        #expect(model.filteredMaterials.map(\.id) == [1])
     }
 
     @Test func usedCategoryFollowsUndoAndIncludesCord() throws {

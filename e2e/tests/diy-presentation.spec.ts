@@ -391,11 +391,11 @@ test('authored part categories, dimensions and multi-material generated models d
   await page.route('**/api/v1/diy/materials?*',route=>route.fulfill({json:{code:0,data:{list:catalog,total:catalog.length}}}));
   await page.route('**/test-model.glb',route=>route.fulfill({body:authoredModelFixture(),contentType:'model/gltf-binary'}));
   await page.goto('/c/diy/editor');
-  await page.getByRole('button',{name:'普通串珠',exact:true}).click();
-  await expect(page.locator('.studio-materials>button')).toHaveCount(1);
+  await page.getByRole('button',{name:'全部',exact:true}).click();
+  await expect(page.locator('.studio-materials>button')).toHaveCount(3);
   await page.getByRole('button',{name:'添加名称含流苏的普通珠',exact:true}).click();
   await page.getByRole('button',{name:'动态挂件',exact:true}).click();
-  await expect(page.locator('.studio-materials>button')).toHaveCount(2);
+  await expect(page.locator('.studio-materials>button')).toHaveCount(3);
   await page.getByRole('button',{name:'添加生成的刚性挂件',exact:true}).click();
   await page.getByRole('button',{name:'添加模板柔性挂件',exact:true}).click();
   await expect(page.locator('.studio-stage-top small')).toHaveText('3 / 60 颗');
@@ -424,4 +424,48 @@ test('authored part categories, dimensions and multi-material generated models d
   await expect(page.locator('.diy-3d-fallback')).toHaveCount(0);
   expect(fixture.errors).toEqual([]);expect(fixture.writes).toEqual([]);
   await testInfo.attach('authored-actual-scene',{body:JSON.stringify(scene,null,2),contentType:'application/json'});
+});
+
+
+test('material rail restores individual bead categories and keeps authored hangings and cord separate', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const fixture = await setup(page);
+  const base = { version: 1, part: 'hanging', motion: 'rigid', source: 'template', templateId: 'pendant_generic',
+    dimensionsMm: [10, 4, 14], rotation: [0, 0, 0], mount: [0, 0, -.5], connectorMm: 2, rigidFraction: .3, photos: [], previewConfirmed: true };
+  const catalog = [
+    { ...materials[0], id: 201, name: '分类主珠', category: 'main_bead' },
+    { ...materials[0], id: 202, name: '分类隔珠', category: 'spacer', shape: 'disc' },
+    { ...materials[0], id: 203, name: '分类佛头', category: 'buddha_head', shape: 'buddha_head' },
+    { ...materials[0], id: 204, name: '分类三通', category: 'three_way', shape: 'three_way' },
+    { ...materials[0], id: 205, name: '自定义动态佛头', category: 'buddha_head', renderAssets: JSON.stringify({ studio: base }) },
+    { ...materials[1], id: 206, name: '分类流苏' },
+    { ...materials[4], id: 207, name: '分类吊坠' },
+    { ...materials[0], id: 208, name: '分类绳线', category: 'cord', renderAssets: JSON.stringify({ studio: base }) },
+  ];
+  await page.route('**/api/v1/diy/materials?*', route => route.fulfill({ json: { code: 0, data: { list: catalog, total: catalog.length } } }));
+  await page.goto('/c/diy/editor');
+  const rail = page.getByRole('group', { name: '材料分类' });
+  await expect(rail.getByRole('button')).toHaveText(['正在使用', '全部', '主珠', '隔珠', '佛头', '三通', '动态挂件', '绳线']);
+  const cards = page.locator('.studio-materials>button');
+  await expect(cards).toHaveCount(8);
+  for (const [label, material] of [['主珠', '分类主珠'], ['隔珠', '分类隔珠'], ['佛头', '分类佛头'], ['三通', '分类三通'], ['绳线', '分类绳线']]) {
+    await rail.getByRole('button', { name: label, exact: true }).click();
+    await expect(cards).toHaveCount(1);
+    await expect(cards.first()).toHaveAttribute('aria-label', '添加' + material);
+  }
+  await rail.getByRole('button', { name: '动态挂件', exact: true }).click();
+  await expect(cards).toHaveCount(3);
+  for (const label of ['添加自定义动态佛头', '添加分类流苏', '添加分类吊坠']) await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '添加分类绳线', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '添加自定义动态佛头', exact: true }).click();
+  await rail.getByRole('button', { name: '正在使用', exact: true }).click();
+  await expect(cards).toHaveCount(1);
+  await expect(page.locator('.studio-stage-top small')).toHaveText('1 / 60 颗');
+  await expect.poll(() => page.evaluate(() => {
+    const draft = JSON.parse(localStorage.getItem('diy-studio-draft-v1:guest:new') || 'null');
+    return draft?.beads?.[0]?.subtype;
+  })).toBe('buddha_head');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect(fixture.errors).toEqual([]);
+  expect(fixture.writes).toEqual([]);
 });

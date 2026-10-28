@@ -42,12 +42,13 @@ const materialTypeLabel: Record<string, string> = {
 }
 
 function partLabel(row: StudioMaterial) {
+  if (row.category === 'cord') return '绳线'
   try {
     const studio = JSON.parse(row.renderAssets || '{}').studio
-    if (studio?.part === 'hanging') return studio.motion === 'flexible' ? '动态挂件 · 柔性' : '动态挂件 · 刚性'
-    if (studio?.part === 'bead') return '普通串珠'
+    if (studio?.part === 'hanging') return studio.motion === 'flexible' ? '挂件连接 · 柔性' : '挂件连接 · 刚性'
+    if (studio?.part === 'bead') return '穿绳串接'
   } catch { return '待配置' }
-  return row.category === 'tassel' ? '动态挂件 · 柔性' : row.category === 'pendant' ? '动态挂件 · 刚性' : '普通串珠'
+  return row.category === 'tassel' ? '挂件连接 · 柔性' : row.category === 'pendant' ? '挂件连接 · 刚性' : '穿绳串接'
 }
 
 async function loadList() {
@@ -136,7 +137,7 @@ onMounted(() => {
             @keyup.enter="handleSearch"
           />
         </el-form-item>
-        <el-form-item :label='$t("分类")'>
+        <el-form-item :label='$t("材料分类")'>
           <el-select v-model="query.category" :placeholder='$t("全部分类")' clearable style="width: 160px">
             <el-option
               v-for="c in categoryOptions"
@@ -170,10 +171,10 @@ onMounted(() => {
             </div>
           </template>
         </el-table-column>
-        <el-table-column :label='$t("分类")' width="100">
+        <el-table-column :label='$t("材料分类")' width="100">
           <template #default="{ row }">{{ $t(materialCategoryLabel(row.category)) }}</template>
         </el-table-column>
-        <el-table-column :label='$t("使用品类")' width="150"><template #default="{ row }">{{ $t(partLabel(row)) }}</template></el-table-column>
+        <el-table-column :label='$t("连接方式")' width="150"><template #default="{ row }">{{ $t(partLabel(row)) }}</template></el-table-column>
         <el-table-column :label='$t("五行")' width="70">
           <template #default="{ row }">{{ $t(((elementLabel[row.fiveElements] || row.fiveElements) || '—')) }}</template>
         </el-table-column>

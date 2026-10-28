@@ -20,7 +20,8 @@ interface MaterialStudio {
 }
 ```
 
-- `part=bead` requires `motion=fixed`; `part=hanging` requires `motion=rigid|flexible`. UI top-level groups are 普通串珠 / 动态挂件; existing material subtype/category remains available within each group.
+- `part=bead` requires `motion=fixed`; `part=hanging` requires `motion=rigid|flexible`. Connection behavior is independent of the existing business category; changing part/motion must not rewrite that category.
+- Customer material groups are 主珠、隔珠、佛头、三通、动态挂件、绳线, alongside 全部/正在使用. The accessory group includes pendant/tassel categories and authored hanging parts; fixed pendant/tassel models keep their authored fixed behavior. Cord takes precedence and remains separate. Material IDs, stored categories and order subtypes are unchanged.
 - `source=template` uses `round`, `disc`, `barrel`, `faceted`, or a key from `geometry-profiles.json.models`. `templateId=custom` is reserved for `source=generated`. Generated assets are ready, permanently stored GLB + USDZ, bound to the server-owned generation job.
 - Dimensions are finite in [.5,120] mm per axis; maximum 4 photograph URLs. Rotation is finite [-180,180] degrees per axis. Connector is [1,30] mm for hanging parts; zero for beads. A hanging mount must have Z < .5, leaving a nonzero body length. Rigid fraction is [.1,.9], only used by flexible parts.
 - All model vertices are rotated, then normalized independently against that rotated bounding box to [-.5,.5], then multiplied by dimensionsMm. The mount follows the same normalized coordinates. Positive Z runs from the attachment toward the free end; flexible deformation uses that longitudinal axis. Admin provides orientation controls and displays axes/mount before confirmation.

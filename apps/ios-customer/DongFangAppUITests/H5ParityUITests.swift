@@ -722,10 +722,10 @@ final class DiyStudioUITests: XCTestCase {
         let stage = app.otherElements["diy-3d-stage"]
         XCTAssertTrue(stage.waitForExistence(timeout: 25))
         if app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 颗 ")).firstMatch.exists { clearDraft(app) }
-        app.buttons["普通串珠"].tap()
+        app.buttons["全部"].tap()
         let fixed = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "固定孔位珠，")).firstMatch
         XCTAssertTrue(fixed.waitForExistence(timeout: 10))
-        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "建模验证挂件，")).firstMatch.exists)
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "建模验证挂件，")).firstMatch.exists)
         for _ in 0..<3 { fixed.tap() }
         app.buttons["动态挂件"].tap()
         let material = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "建模验证挂件，")).firstMatch

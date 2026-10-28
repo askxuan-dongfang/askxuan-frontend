@@ -109,7 +109,10 @@ final class DiyViewModel: ObservableObject {
     let categories: [(code: String, name: String, icon: String)] = [
         ("used",        "正在使用", "checkmark.circle"),
         ("all",         "全部",   "circle.grid.3x3"),
-        ("bead",        "普通串珠", "circle"),
+        ("main_bead",   "主珠",   "circle.grid.2x2"),
+        ("spacer",      "隔珠",   "circle.grid.cross"),
+        ("buddha_head", "佛头",   "circle.fill"),
+        ("three_way",   "三通",   "sphere"),
         ("hanging",     "动态挂件", "wind"),
         ("cord",        "绳线",   "line.diagonal")
     ]
@@ -134,9 +137,9 @@ final class DiyViewModel: ObservableObject {
         materials.filter { material in
             if selectedCategory == "used" { return count(for: material.id) > 0 }
             guard material.status == "on_shelf" else { return false }
+            if material.category == "cord" { return selectedCategory == "all" || selectedCategory == "cord" }
             let suspended = DiyGeometry.isSuspended(DiyBeadSlot(material: material, position: 0, slotId: "catalog"))
-            if selectedCategory == "hanging" { return suspended }
-            if selectedCategory == "bead" { return !suspended && material.category != "cord" }
+            if selectedCategory == "hanging" { return suspended || ["pendant", "tassel"].contains(material.category) }
             return selectedCategory == "all" || (material.category == selectedCategory && !suspended)
         }
     }
