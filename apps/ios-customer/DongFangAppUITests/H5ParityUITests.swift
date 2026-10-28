@@ -580,7 +580,7 @@ final class NativePublicationGateUITests: XCTestCase {
         let unpaid = app.buttons["diy-publish-design-9002"]
         XCTAssertTrue(unpaid.waitForExistence(timeout: 15))
         reveal(unpaid, in: app); XCTAssertFalse(unpaid.isEnabled)
-        XCTAssertEqual(app.staticTexts["diy-publication-reason-9002"].label, "订单完成真实付款后才可发布，模拟支付不满足发布条件")
+        XCTAssertEqual(app.staticTexts["diy-publication-reason-9002"].label, "订单完成付款后才可发布")
         let unconfirmed = app.buttons["diy-publish-design-9003"]
         reveal(unconfirmed, in: app); XCTAssertFalse(unconfirmed.isEnabled)
         XCTAssertEqual(app.staticTexts["diy-publication-reason-9003"].label, "订单已付款，待确认款式、用料和价格后可发布")

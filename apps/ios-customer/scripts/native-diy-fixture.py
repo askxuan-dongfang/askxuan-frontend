@@ -30,7 +30,7 @@ def eligibility(reason):
     messages = {
         "ready": "订单已付款且款式、用料和价格已确认，可以发布",
         "order_required": "完成设计并下单，付款且确认款式、用料和价格后可发布",
-        "payment_required": "订单完成真实付款后才可发布，模拟支付不满足发布条件",
+        "payment_required": "订单完成付款后才可发布",
         "confirmation_required": "订单已付款，待确认款式、用料和价格后可发布",
         "design_changed": "草稿已修改，请为当前款式下单并完成付款与定稿确认后发布新定稿",
     }

@@ -47,7 +47,7 @@ struct DiyPublicationEligibility: Codable, Hashable {
         switch reason {
         case "ready": return L10n.text("订单已付款且款式、用料和价格已确认，可以发布")
         case "order_required": return L10n.text("完成设计并下单，付款且确认款式、用料和价格后可发布")
-        case "payment_required": return L10n.text("订单完成真实付款后才可发布，模拟支付不满足发布条件")
+        case "payment_required": return L10n.text("订单完成付款后才可发布")
         case "confirmation_required": return L10n.text("订单已付款，待确认款式、用料和价格后可发布")
         case "design_changed": return L10n.text("草稿已修改，请为当前款式下单并完成付款与定稿确认后发布新定稿")
         case "order_inactive": return L10n.text("定稿订单已取消、退款或处于售后中，暂不可发布")
