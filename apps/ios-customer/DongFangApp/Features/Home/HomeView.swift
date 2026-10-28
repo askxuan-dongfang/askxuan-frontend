@@ -247,7 +247,29 @@ struct HomeView: View {
 
     private var diySection: some View {
         VStack(alignment: .leading, spacing: sectionTitleSpacing) {
-            Text(L10n.text("DIY 手串")).font(AppTypography.section).foregroundStyle(Color.textPrimary)
+            let headingLayout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+                : AnyLayout(HStackLayout(alignment: .center, spacing: 12))
+            headingLayout {
+                Text(L10n.text("DIY 手串")).font(AppTypography.section).foregroundStyle(Color.textPrimary)
+                if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
+                HStack(spacing: 16) {
+                    NavigationLink {
+                        DiyBraceletView(initialSection: .plaza)
+                    } label: {
+                        Text(L10n.text("设计广场")).fixedSize(horizontal: false, vertical: true).frame(minHeight: 44)
+                    }
+                    .accessibilityIdentifier("home-diy-plaza")
+                    NavigationLink {
+                        DiyMyDesignsView().requireAuth(title: L10n.text("登录后查看我的设计"), subtitle: L10n.text("登录后同步和管理你的手串设计"))
+                    } label: {
+                        Text(L10n.text("我的设计")).fixedSize(horizontal: false, vertical: true).frame(minHeight: 44)
+                    }
+                    .accessibilityIdentifier("home-diy-mine")
+                }
+                .font(AppTypography.caption).foregroundStyle(Color.accentDefault)
+                .buttonStyle(CardPressButtonStyle())
+            }
             NavigationLink { DiyDesignView() } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "circle.dotted")
@@ -311,7 +333,7 @@ struct HomeView: View {
                             .appCardSurface(cornerRadius: 12)
                         }
                         .buttonStyle(CardPressButtonStyle())
-                        .accessibilityIdentifier("home-diy-plaza")
+                        .accessibilityIdentifier("home-diy-plaza-more")
                     }
                 }
                 .accessibilityIdentifier("home-diy-designs")

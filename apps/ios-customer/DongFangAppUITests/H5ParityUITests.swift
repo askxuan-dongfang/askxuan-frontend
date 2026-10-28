@@ -377,6 +377,13 @@ final class NativeDiscoveryRefinementUITests: XCTestCase {
 
             let diy = app.buttons["home-diy"]
             reveal(diy, in: app)
+            for identifier in ["home-diy-plaza", "home-diy-mine"] {
+                let entry = app.buttons[identifier]
+                XCTAssertTrue(entry.exists)
+                XCTAssertGreaterThanOrEqual(entry.frame.height, 44)
+                XCTAssertGreaterThanOrEqual(entry.frame.minX, 0)
+                XCTAssertLessThanOrEqual(entry.frame.maxX, app.frame.width)
+            }
             if usesAccessibilityText {
                 XCTAssertGreaterThan(diy.frame.height, 88, "辅助大字号下设计入口保留完整说明")
             } else {
@@ -447,6 +454,47 @@ final class NativeDiscoveryRefinementUITests: XCTestCase {
         }
     }
 
+    func testEmptyHomeKeepsPlazaAndMyDesignsNavigation() async throws {
+        // Only synthetic localhost designs are changed; no production publication is touched.
+        var reset = URLRequest(url: try XCTUnwrap(URL(string: "http://127.0.0.1:8913/_test/reset")))
+        reset.httpMethod = "POST"
+        let (_, resetResponse) = try await URLSession.shared.data(for: reset)
+        XCTAssertEqual((resetResponse as? HTTPURLResponse)?.statusCode, 200)
+        let cleanupRequest = reset
+        addTeardownBlock {
+            let (_, response) = try await URLSession.shared.data(for: cleanupRequest)
+            XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+        }
+        var unpublish = URLRequest(url: try XCTUnwrap(URL(string: "http://127.0.0.1:8913/api/v1/diy/designs/9001/status")))
+        unpublish.httpMethod = "PUT"
+        unpublish.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        unpublish.httpBody = Data(#"{"revision":1,"status":"private"}"#.utf8)
+        let (_, response) = try await URLSession.shared.data(for: unpublish)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+
+        let app = launch(["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99029"])
+        let plaza = app.buttons["home-diy-plaza"]
+        XCTAssertTrue(plaza.waitForExistence(timeout: 20))
+        reveal(plaza, in: app)
+        XCTAssertTrue(app.buttons["home-diy"].exists)
+        XCTAssertFalse(app.scrollViews["home-diy-designs"].exists)
+        XCTAssertFalse(app.buttons["home-diy-plaza-more"].exists)
+        capture(app, "ios-empty-home-keeps-design-navigation")
+        plaza.tap()
+        XCTAssertTrue(app.staticTexts["设计广场"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["灵感即将相遇"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.descendants(matching: .any)["diy-home-intro"].exists)
+        app.buttons["返回"].firstMatch.tap()
+
+        let mine = app.buttons["home-diy-mine"]
+        XCTAssertTrue(mine.waitForExistence(timeout: 10))
+        reveal(mine, in: app); mine.tap()
+        XCTAssertTrue(app.staticTexts["我的设计"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["diy-my-design-9001"].waitForExistence(timeout: 10))
+        app.buttons["返回"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["home-diy"].waitForExistence(timeout: 5))
+    }
+
     func testHomePlazaTailAndPointsLinksOpenTheirOwnDestinations() {
         // Synthetic localhost catalogue only; this does not publish designs or spend points.
         let app = launch(["--smoke-token", "local-diy-fixture", "--smoke-user-id", "99029"])
@@ -455,8 +503,8 @@ final class NativeDiscoveryRefinementUITests: XCTestCase {
         reveal(firstDesign, in: app)
         let designs = app.scrollViews["home-diy-designs"]
         XCTAssertTrue(designs.exists)
-        let plaza = app.buttons["home-diy-plaza"]
-        XCTAssertEqual(app.buttons.matching(identifier: "home-diy-plaza").count, 1)
+        let plaza = app.buttons["home-diy-plaza-more"]
+        XCTAssertEqual(app.buttons.matching(identifier: "home-diy-plaza-more").count, 1)
         for _ in 0..<6 where !plaza.isHittable { designs.swipeLeft() }
         XCTAssertTrue(plaza.isHittable, "设计推荐末尾可进入完整广场")
         XCTAssertGreaterThan(plaza.frame.minX, firstDesign.frame.maxX)
