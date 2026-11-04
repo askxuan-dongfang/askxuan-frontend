@@ -127,22 +127,26 @@ async function assertHomeLayout(page: Page, language: string) {
   expect(Math.abs(cards[0].y - cards[1].y)).toBeLessThan(1);
   expect(cards[1].x - cards[0].right).toBeCloseTo(12, 0);
 
-  const wishHeading = page.locator('.home-wishes > h2#home-intents-title.home-intent-heading:first-child');
+  const wishHeading = page.locator('.home-wish-row > h2#home-intents-title.home-intent-heading:first-child');
   await expect(wishHeading).toHaveText(traditional ? '按心願辦' : '按心愿办');
+  await expect(wishHeading).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(wishHeading).toHaveCSS('border-width', '0px');
   const wishes = page.locator('.home-wishes > a.home-intent');
   await expect(wishes).toHaveCount(7);
   expect(await wishes.evaluateAll(elements => elements.map(element => element.getAttribute('href')))).toEqual(
     ['peace', 'wealth', 'love', 'career', 'study', 'taisui', 'rite'].map(code => '/c/intentions/' + code));
-  await expect(page.locator('.home-wishes')).toHaveCSS('overflow-x', 'auto');
-  const wishRail = await page.locator('.home-wishes').evaluate(element => {
+  const wishRailElement = page.locator('.home-wish-row > nav.home-wishes');
+  await expect(wishRailElement).toHaveAttribute('aria-labelledby', 'home-intents-title');
+  await expect(wishRailElement).toHaveCSS('overflow-x', 'auto');
+  const wishRail = await wishRailElement.evaluate(element => {
     const cards = [...element.children].map(child => child.getBoundingClientRect());
     return { display: getComputedStyle(element).display, widths: cards.map(card => card.width), tops: cards.map(card => card.top), scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
   });
   expect(wishRail.display).toBe('flex');
-  expect(wishRail.widths).toHaveLength(8);
+  expect(wishRail.widths).toHaveLength(7);
   for (const width of wishRail.widths) expect(width).toBeCloseTo(wishRail.widths[0], 0);
   for (const top of wishRail.tops) expect(top).toBeCloseTo(wishRail.tops[0], 0);
-  // The heading occupies the first tile; narrow screens expose the remaining tiles by scrolling.
+  // Only the right rail scrolls; the heading stays beside it.
   if (page.viewportSize()!.width < 768) expect(wishRail.scrollWidth).toBeGreaterThan(wishRail.clientWidth);
 
   const diy = page.locator('.home-diy-entry');
@@ -163,7 +167,7 @@ async function assertHomeLayout(page: Page, language: string) {
     const sections = [...element.querySelectorAll(':scope > .home-discovery-section')];
     const core = element.querySelector('.home-core-entries')!.getBoundingClientRect();
     const banner = element.querySelector('.home-promotions-window')!.getBoundingClientRect();
-    const wishes = element.querySelector('.home-wishes')!.getBoundingClientRect();
+    const wishes = element.querySelector('.home-wish-row')!.getBoundingClientRect();
     const diy = element.querySelector('.home-diy-entry')!.getBoundingClientRect();
     const points = element.querySelector('.home-points-grid')!.getBoundingClientRect();
     return {
@@ -187,6 +191,8 @@ async function assertHomeLayout(page: Page, language: string) {
   for (const surface of layout.surfaces) expect(surface).toEqual({ radius: '12px', left: '0px', right: '0px' });
   for (const entry of await wishes.all()) expect(await entry.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBeTruthy();
   const utilityLayout = await page.locator('.customer-home').evaluate(element => {
+    const wishRow = element.querySelector('.home-wish-row')!.getBoundingClientRect();
+    const wishTitle = element.querySelector('#home-intents-title')!.getBoundingClientRect();
     const wishes = element.querySelector('.home-wishes')!.getBoundingClientRect();
     const wishCards = [...element.querySelectorAll('.home-intent')].map(item => item.getBoundingClientRect());
     const diy = element.querySelector('.home-diy-entry')!.getBoundingClientRect();
@@ -196,7 +202,9 @@ async function assertHomeLayout(page: Page, language: string) {
     const titleBottom = (id: string) => element.querySelector('#' + id)!.getBoundingClientRect().bottom;
     return {
       heights: [...wishCards, diy, ...pointCards].map(rect => rect.height),
-      wishRight: wishes.right, fourthTileRight: wishCards[3].right, fifthTileLeft: wishCards[4].left,
+      wishRight: wishes.right, thirdTileRight: wishCards[2].right, fourthTileLeft: wishCards[3].left,
+      wishTitleWidth: wishTitle.width, wishTileWidth: wishCards[0].width, wishTitleInset: wishTitle.left - wishRow.left,
+      wishTitleGap: wishes.left - wishTitle.right,
       gaps: [wishCards[1].left - wishCards[0].right, pointCards[1].left - pointCards[0].right, pointCards[2].left - pointCards[1].right],
       pointWidths: pointCards.map(rect => rect.width), pointTops: pointCards.map(rect => rect.top),
       headingGaps: [diy.top - titleBottom('home-diy-title'), points.top - titleBottom('home-points-title')],
@@ -209,9 +217,12 @@ async function assertHomeLayout(page: Page, language: string) {
   for (const width of utilityLayout.pointWidths) expect(width).toBeCloseTo(utilityLayout.pointWidths[0], 0);
   for (const top of utilityLayout.pointTops) expect(top).toBeCloseTo(utilityLayout.pointTops[0], 0);
   expect(utilityLayout.diyToPoints).toBeCloseTo(28, 0);
+  expect(utilityLayout.wishTitleInset).toBeCloseTo(0, 0);
+  expect(utilityLayout.wishTitleGap).toBeCloseTo(12, 0);
   if (page.viewportSize()!.width < 768) {
-    expect(utilityLayout.fourthTileRight).toBeCloseTo(utilityLayout.wishRight, 0);
-    expect(utilityLayout.fifthTileLeft).toBeGreaterThan(utilityLayout.wishRight);
+    expect(utilityLayout.wishTitleWidth).toBeCloseTo(utilityLayout.wishTileWidth, 0);
+    expect(utilityLayout.thirdTileRight).toBeCloseTo(utilityLayout.wishRight, 0);
+    expect(utilityLayout.fourthTileLeft).toBeGreaterThan(utilityLayout.wishRight);
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 }
@@ -225,6 +236,15 @@ for (const theme of ['light', 'dark']) for (const language of ['zh-Hans', 'zh-Ha
     await page.goto('/c');
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
     await assertHomeLayout(page, language);
+    if (theme === 'light' && language === 'zh-Hans' && width === 390) {
+      const rail = page.locator('.home-wishes');
+      const title = page.locator('#home-intents-title');
+      await rail.hover();
+      const titleX = await title.evaluate(element => element.getBoundingClientRect().left);
+      await page.mouse.wheel(240, 0);
+      await expect.poll(() => rail.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+      expect(await title.evaluate(element => element.getBoundingClientRect().left)).toBeCloseTo(titleX, 0);
+    }
     expect(accountRequests).toBe(0);
     await pointsEntry(page).click();
     await expect(page).toHaveURL(new RegExp('/c/login\\?redirect=' + encodeURIComponent(pointsTarget('wheel')) + '$'));
@@ -244,9 +264,11 @@ test('homepage previews four public designs with a primary DIY entry and one rai
   const list = [designFixture(9000, 'private'), ...[9001, 9002, 9003, 9004, 9005].map(id => designFixture(id)), designFixture(9006, 'withdrawn')];
   await page.route('**/api/v1/diy/designs**', route => route.fulfill({ json: { code: 0, data: { total: list.length, list } } }));
   await page.goto('/c');
-  const designs = page.locator('.home-designs > a.home-design');
+  const designsRail = page.locator('.home-diy-entry + .home-designs');
+  const designs = designsRail.locator('a.home-design');
   await expect(designs).toHaveCount(4);
-  await expect(page.locator('.home-plaza-heading h3')).toHaveText('广场精选');
+  await expect(designsRail).toHaveAttribute('aria-label', '设计广场推荐作品');
+  await expect(page.locator('.home-diy-section').getByText('广场精选', { exact: true })).toHaveCount(0);
   expect(await designs.evaluateAll(elements => elements.map(element => element.getAttribute('href')))).toEqual([9001, 9002, 9003, 9004].map(id => '/c/diy/' + id));
   await expect(page.locator('.home-design-example, .home-plaza-example-label')).toHaveCount(0);
   await expect(designs.locator('strong, small, p')).toHaveCount(0);
@@ -267,13 +289,16 @@ test('homepage previews four public designs with a primary DIY entry and one rai
   expect(tailRect.height).toBeCloseTo(104, 0);
   await assertDiyEntry(page);
   await expect(page.locator('.home-diy-section a[href="/c/diy?tab=plaza"]')).toHaveCount(2);
-  const rail = await page.locator('.home-designs').evaluate(element => {
+  const rail = await designsRail.evaluate(element => {
     const items = [...element.children].map(child => child.getBoundingClientRect());
-    return { display: getComputedStyle(element).display, tops: items.map(item => item.top), gap: items[1].left - items[0].right, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
+    return { display: getComputedStyle(element).display, tops: items.map(item => item.top), gap: items[1].left - items[0].right,
+      entryGap: element.getBoundingClientRect().top - element.previousElementSibling!.getBoundingClientRect().bottom,
+      scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
   });
   expect(rail.display).toBe('flex');
   for (const top of rail.tops) expect(top).toBeCloseTo(rail.tops[0], 0);
   expect(rail.gap).toBeCloseTo(12, 0);
+  expect(rail.entryGap).toBeCloseTo(8, 0);
   expect(rail.scrollWidth).toBeGreaterThan(rail.clientWidth);
   await tail.click();
   await expect(page).toHaveURL(/\/c\/diy\?tab=plaza$/);
@@ -368,7 +393,7 @@ test('homepage hides pending, failed and private-only plaza data and restores pu
   const gallery = page.locator('.home-diy-section');
   await expect(gallery.locator('a.home-design')).toHaveCount(1);
   await expect(gallery.locator('a.home-design')).toHaveAttribute('href', '/c/diy/9001');
-  await expect(gallery.locator('.home-plaza-heading h3')).toHaveText('广场精选');
+  await expect(gallery.locator('.home-diy-entry + .home-designs')).toBeVisible();
   await expect(gallery.locator('.home-design-more')).toHaveCount(1);
   await expect(gallery.locator('.home-design-more')).toHaveAttribute('href', '/c/diy?tab=plaza');
   await expect(gallery.locator('.home-design-example, .home-plaza-example-label, .home-design-status')).toHaveCount(0);
