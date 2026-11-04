@@ -63,33 +63,16 @@ async function login(page: Page) {
   await page.locator('.account-submit').click();
 }
 
-async function assertDiyNavigation(page: Page, traditional = false) {
-  const navigation = page.locator('.home-diy-section nav');
-  const links = navigation.getByRole('link');
-  await expect(links).toHaveText(traditional ? ['設計廣場', '我的設計'] : ['设计广场', '我的设计']);
-  await expect(links.nth(0)).toHaveAttribute('href', '/c/diy?tab=plaza');
-  await expect(links.nth(1)).toHaveAttribute('href', '/c/diy?tab=mine');
-  const layout = await navigation.evaluate(element => {
-    const section = element.closest('.home-diy-section')!.getBoundingClientRect();
-    const heading = element.closest('.home-section-heading')!.querySelector('h2')!.getBoundingClientRect();
-    return [...element.querySelectorAll('a')].map(link => {
-      const rect = link.getBoundingClientRect(), style = getComputedStyle(link);
-      return { height: rect.height, fits: rect.left >= heading.right && rect.right <= section.right,
-        leftBorder: style.borderLeftWidth, rightBorder: style.borderRightWidth };
-    });
-  });
-  for (const link of layout) {
-    expect(link.height).toBeGreaterThanOrEqual(44);
-    expect(link.fits).toBeTruthy();
-    expect(link.leftBorder).toBe('0px');
-    expect(link.rightBorder).toBe('0px');
-  }
+async function assertDiyEntry(page: Page) {
+  const diy = page.locator('.home-diy-section');
+  await expect(diy.locator('.home-diy-entry')).toHaveAttribute('href', '/c/diy?tab=plaza');
+  await expect(diy.locator('.home-diy-navigation, a[href="/c/diy?tab=mine"], a[href="/c/diy/editor"]')).toHaveCount(0);
 }
 
-async function assertPlazaHidden(page: Page, traditional = false) {
+async function assertPlazaHidden(page: Page) {
   const diy = page.locator('.home-diy-section');
   await expect(diy.locator('.home-diy-entry')).toBeVisible();
-  await assertDiyNavigation(page, traditional);
+  await assertDiyEntry(page);
   await expect(diy.locator('.home-plaza-heading, .home-designs, .home-design-more, .home-design, .home-design-example, .home-plaza-example-label, .home-design-status')).toHaveCount(0);
   await expect(diy.getByRole('status')).toHaveCount(0);
   await expect(diy.getByRole('alert')).toHaveCount(0);
@@ -144,25 +127,28 @@ async function assertHomeLayout(page: Page, language: string) {
   expect(Math.abs(cards[0].y - cards[1].y)).toBeLessThan(1);
   expect(cards[1].x - cards[0].right).toBeCloseTo(12, 0);
 
-  const wishes = page.locator('.home-wishes > .home-intent');
+  const wishHeading = page.locator('.home-wishes > h2#home-intents-title.home-intent-heading:first-child');
+  await expect(wishHeading).toHaveText(traditional ? '按心願辦' : '按心愿办');
+  const wishes = page.locator('.home-wishes > a.home-intent');
   await expect(wishes).toHaveCount(7);
   expect(await wishes.evaluateAll(elements => elements.map(element => element.getAttribute('href')))).toEqual(
     ['peace', 'wealth', 'love', 'career', 'study', 'taisui', 'rite'].map(code => '/c/intentions/' + code));
   await expect(page.locator('.home-wishes')).toHaveCSS('overflow-x', 'auto');
   const wishRail = await page.locator('.home-wishes').evaluate(element => {
     const cards = [...element.children].map(child => child.getBoundingClientRect());
-    return { display: getComputedStyle(element).display, firstTop: cards[0].top, lastTop: cards.at(-1)!.top, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
+    return { display: getComputedStyle(element).display, widths: cards.map(card => card.width), tops: cards.map(card => card.top), scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
   });
   expect(wishRail.display).toBe('flex');
-  expect(wishRail.firstTop).toBeCloseTo(wishRail.lastTop, 0);
-  // Narrow screens expose the remaining wishes by scrolling; wide screens may fit all seven.
+  expect(wishRail.widths).toHaveLength(8);
+  for (const width of wishRail.widths) expect(width).toBeCloseTo(wishRail.widths[0], 0);
+  for (const top of wishRail.tops) expect(top).toBeCloseTo(wishRail.tops[0], 0);
+  // The heading occupies the first tile; narrow screens expose the remaining tiles by scrolling.
   if (page.viewportSize()!.width < 768) expect(wishRail.scrollWidth).toBeGreaterThan(wishRail.clientWidth);
 
   const diy = page.locator('.home-diy-entry');
-  await expect(diy).toHaveAttribute('href', '/c/diy/editor');
   await expect(diy.locator('strong')).toHaveText(traditional ? '開始設計' : '开始设计');
   await expect(diy.locator('.home-diy-reward')).toHaveText(traditional ? '創作返利' : '创作返利');
-  await assertPlazaHidden(page, traditional);
+  await assertPlazaHidden(page);
 
   const pointCards = page.locator('.home-points-grid > .home-points-card');
   await expect(pointCards).toHaveCount(3);
@@ -210,10 +196,10 @@ async function assertHomeLayout(page: Page, language: string) {
     const titleBottom = (id: string) => element.querySelector('#' + id)!.getBoundingClientRect().bottom;
     return {
       heights: [...wishCards, diy, ...pointCards].map(rect => rect.height),
-      wishRight: wishes.right, fourthWishRight: wishCards[3].right, fifthWishLeft: wishCards[4].left,
+      wishRight: wishes.right, fourthTileRight: wishCards[3].right, fifthTileLeft: wishCards[4].left,
       gaps: [wishCards[1].left - wishCards[0].right, pointCards[1].left - pointCards[0].right, pointCards[2].left - pointCards[1].right],
       pointWidths: pointCards.map(rect => rect.width), pointTops: pointCards.map(rect => rect.top),
-      headingGaps: [wishes.top - titleBottom('home-intents-title'), diy.top - titleBottom('home-diy-title'), points.top - titleBottom('home-points-title')],
+      headingGaps: [diy.top - titleBottom('home-diy-title'), points.top - titleBottom('home-points-title')],
       diyToPoints: pointsSection.top - diy.bottom,
     };
   });
@@ -224,8 +210,8 @@ async function assertHomeLayout(page: Page, language: string) {
   for (const top of utilityLayout.pointTops) expect(top).toBeCloseTo(utilityLayout.pointTops[0], 0);
   expect(utilityLayout.diyToPoints).toBeCloseTo(28, 0);
   if (page.viewportSize()!.width < 768) {
-    expect(utilityLayout.fourthWishRight).toBeCloseTo(utilityLayout.wishRight, 0);
-    expect(utilityLayout.fifthWishLeft).toBeGreaterThan(utilityLayout.wishRight);
+    expect(utilityLayout.fourthTileRight).toBeCloseTo(utilityLayout.wishRight, 0);
+    expect(utilityLayout.fifthTileLeft).toBeGreaterThan(utilityLayout.wishRight);
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 }
@@ -252,7 +238,7 @@ function designFixture(id: number, status = 'public') {
     beads: Array.from({ length: 18 }, (_, position) => ({ position, materialId: 1, materialName: '紫檀', spec: '10mm', unitPrice: 1, subtype: 'main_bead', diameterMm: 10, colorHex: '694834', materialType: 'wood', textureKey: 'wood_grain', shape: 'round' })) }) };
 }
 
-test('homepage previews four public designs with a permanent plaza entry and one rail tail', async ({ page }) => {
+test('homepage previews four public designs with a primary DIY entry and one rail tail', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 954 });
   await setup(page);
   const list = [designFixture(9000, 'private'), ...[9001, 9002, 9003, 9004, 9005].map(id => designFixture(id)), designFixture(9006, 'withdrawn')];
@@ -279,7 +265,7 @@ test('homepage previews four public designs with a permanent plaza entry and one
   const tailRect = (await tail.boundingBox())!;
   expect(tailRect.width).toBeCloseTo(104, 0);
   expect(tailRect.height).toBeCloseTo(104, 0);
-  await assertDiyNavigation(page);
+  await assertDiyEntry(page);
   await expect(page.locator('.home-diy-section a[href="/c/diy?tab=plaza"]')).toHaveCount(2);
   const rail = await page.locator('.home-designs').evaluate(element => {
     const items = [...element.children].map(child => child.getBoundingClientRect());
@@ -309,14 +295,13 @@ test('homepage DIY lists stay reachable for guests and login returns to my desig
   page.on('framenavigated', frame => { if (frame === page.mainFrame() && new URL(frame.url()).pathname === '/c/diy/editor') editorVisits++; });
   await page.goto('/c');
   await assertPlazaHidden(page);
-  await page.locator('.home-diy-section nav').getByRole('link', { name: '设计广场', exact: true }).click();
+  await page.locator('.home-diy-entry').click();
   await expect(page).toHaveURL(/\/c\/diy\?tab=plaza$/);
   await expect(page.getByRole('tab', { name: '设计广场', exact: true })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('heading', { name: '第一份灵感，等你来发布', exact: true })).toBeVisible();
   expect(myRequests).toBe(0);
 
-  await page.goto('/c');
-  await page.locator('.home-diy-section nav').getByRole('link', { name: '我的设计', exact: true }).click();
+  await page.getByRole('tab', { name: '我的设计', exact: true }).click();
   await expect(page).toHaveURL(/\/c\/login\?redirect=%2Fc%2Fdiy%3Ftab%3Dmine$/);
   expect(myRequests).toBe(0);
   await login(page);
@@ -329,7 +314,7 @@ test('homepage DIY lists stay reachable for guests and login returns to my desig
   expect(editorVisits).toBe(0);
 });
 
-test('signed-in homepage my designs entry opens the saved list without selecting a recent design', async ({ page }) => {
+test('signed-in DIY landing opens the saved list and starts a design only on request', async ({ page }) => {
   await setup(page, { token: 'local-only' });
   const authorizations: (string | undefined)[] = [];
   await page.route('**/api/v1/diy/my-designs**', route => {
@@ -337,13 +322,18 @@ test('signed-in homepage my designs entry opens the saved list without selecting
     return route.fulfill({ json: { code: 0, data: { total: 1, list: [designFixture(9021, 'private')], page: 1, size: 20 } } });
   });
   await page.goto('/c');
-  await page.locator('.home-diy-section nav').getByRole('link', { name: '我的设计', exact: true }).click();
+  await page.locator('.home-diy-entry').click();
+  await expect(page).toHaveURL(/\/c\/diy\?tab=plaza$/);
+  await page.getByRole('tab', { name: '我的设计', exact: true }).click();
   await expect(page).toHaveURL(/\/c\/diy\?tab=mine$/);
   await expect(page.getByRole('tab', { name: '我的设计', exact: true })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('link', { name: '编辑设计：公开作品9021', exact: true })).toHaveAttribute('href', '/c/diy/editor?design=9021');
   expect(authorizations.length).toBeGreaterThan(0);
   expect(authorizations.every(value => value === 'Bearer local-only')).toBeTruthy();
   await expect(page.locator('.diy-editor')).toHaveCount(0);
+  await page.locator('.diy-plaza-intro').getByRole('link', { name: '开始设计', exact: true }).click();
+  await expect(page).toHaveURL(/\/c\/diy\/editor$/);
+  await expect(page.locator('.diy-editor')).toBeVisible();
 });
 
 test('homepage hides pending, failed and private-only plaza data and restores public works after reload', async ({ page }) => {
