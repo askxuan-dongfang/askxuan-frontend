@@ -210,7 +210,7 @@ async function assertHomeLayout(page: Page, language: string) {
     return {
       heights: [...wishCards, diy, ...pointCards].map(rect => rect.height),
       wishRight: wishes.right, fourthTileRight: wishCards[3].right, fifthTileLeft: wishCards[4].left,
-      wishTitleWidth: wishTitle.width, wishTileWidth: wishCards[0].width, wishTitleInset: wishTitle.left - wishRow.left,
+      wishTitleInset: wishTitle.left - wishRow.left,
       wishTitleGap: wishes.top - wishTitle.bottom,
       gaps: [wishCards[1].left - wishCards[0].right, pointCards[1].left - pointCards[0].right, pointCards[2].left - pointCards[1].right],
       pointWidths: pointCards.map(rect => rect.width), pointTops: pointCards.map(rect => rect.top),
