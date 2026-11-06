@@ -127,7 +127,7 @@ async function assertHomeLayout(page: Page, language: string) {
   expect(Math.abs(cards[0].y - cards[1].y)).toBeLessThan(1);
   expect(cards[1].x - cards[0].right).toBeCloseTo(12, 0);
 
-  const wishHeading = page.locator('.home-wish-row > h2#home-intents-title.home-intent-heading:first-child');
+  const wishHeading = page.locator('.home-section-heading > h2#home-intents-title');
   await expect(wishHeading).toHaveText(traditional ? '按心願辦' : '按心愿办');
   await expect(wishHeading).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(wishHeading).toHaveCSS('border-width', '0px');
@@ -135,7 +135,7 @@ async function assertHomeLayout(page: Page, language: string) {
   await expect(wishes).toHaveCount(7);
   expect(await wishes.evaluateAll(elements => elements.map(element => element.getAttribute('href')))).toEqual(
     ['peace', 'wealth', 'love', 'career', 'study', 'taisui', 'rite'].map(code => '/c/intentions/' + code));
-  const wishRailElement = page.locator('.home-wish-row > nav.home-wishes');
+  const wishRailElement = page.locator('section[aria-labelledby="home-intents-title"] > nav.home-wishes');
   await expect(wishRailElement).toHaveAttribute('aria-labelledby', 'home-intents-title');
   await expect(wishRailElement).toHaveCSS('overflow-x', 'auto');
   const wishRail = await wishRailElement.evaluate(element => {
@@ -146,7 +146,7 @@ async function assertHomeLayout(page: Page, language: string) {
   expect(wishRail.widths).toHaveLength(7);
   for (const width of wishRail.widths) expect(width).toBeCloseTo(wishRail.widths[0], 0);
   for (const top of wishRail.tops) expect(top).toBeCloseTo(wishRail.tops[0], 0);
-  // Only the right rail scrolls; the heading stays beside it.
+  // Wishes scroll below their heading without moving the page.
   if (page.viewportSize()!.width < 768) expect(wishRail.scrollWidth).toBeGreaterThan(wishRail.clientWidth);
 
   const diy = page.locator('.home-diy-entry');
@@ -167,7 +167,7 @@ async function assertHomeLayout(page: Page, language: string) {
     const sections = [...element.querySelectorAll(':scope > .home-discovery-section')];
     const core = element.querySelector('.home-core-entries')!.getBoundingClientRect();
     const banner = element.querySelector('.home-promotions-window')!.getBoundingClientRect();
-    const wishes = element.querySelector('.home-wish-row')!.getBoundingClientRect();
+    const wishes = element.querySelector('section[aria-labelledby="home-intents-title"]')!.getBoundingClientRect();
     const diy = element.querySelector('.home-diy-entry')!.getBoundingClientRect();
     const points = element.querySelector('.home-points-grid')!.getBoundingClientRect();
     return {
@@ -188,10 +188,17 @@ async function assertHomeLayout(page: Page, language: string) {
     expect(Math.abs(bounds.right - layout.right)).toBeLessThan(1);
   }
   expect(cards[0].font).toBe(layout.headingFont);
+  const headings = await page.locator('#home-intents-title, #home-diy-title, #home-points-title').evaluateAll(elements => elements.map(element => {
+    const style = getComputedStyle(element);
+    return { x: element.getBoundingClientRect().left, color: style.color, font: style.font };
+  }));
+  expect(headings).toHaveLength(3);
+  for (const heading of headings) expect(heading).toEqual(headings[0]);
+  await expect(page.locator('.home-quiet-entry')).toHaveAttribute('href', '/c/quiet');
   for (const surface of layout.surfaces) expect(surface).toEqual({ radius: '12px', left: '0px', right: '0px' });
   for (const entry of await wishes.all()) expect(await entry.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBeTruthy();
   const utilityLayout = await page.locator('.customer-home').evaluate(element => {
-    const wishRow = element.querySelector('.home-wish-row')!.getBoundingClientRect();
+    const wishRow = element.querySelector('section[aria-labelledby="home-intents-title"]')!.getBoundingClientRect();
     const wishTitle = element.querySelector('#home-intents-title')!.getBoundingClientRect();
     const wishes = element.querySelector('.home-wishes')!.getBoundingClientRect();
     const wishCards = [...element.querySelectorAll('.home-intent')].map(item => item.getBoundingClientRect());
@@ -202,9 +209,9 @@ async function assertHomeLayout(page: Page, language: string) {
     const titleBottom = (id: string) => element.querySelector('#' + id)!.getBoundingClientRect().bottom;
     return {
       heights: [...wishCards, diy, ...pointCards].map(rect => rect.height),
-      wishRight: wishes.right, thirdTileRight: wishCards[2].right, fourthTileLeft: wishCards[3].left,
+      wishRight: wishes.right, fourthTileRight: wishCards[3].right, fifthTileLeft: wishCards[4].left,
       wishTitleWidth: wishTitle.width, wishTileWidth: wishCards[0].width, wishTitleInset: wishTitle.left - wishRow.left,
-      wishTitleGap: wishes.left - wishTitle.right,
+      wishTitleGap: wishes.top - wishTitle.bottom,
       gaps: [wishCards[1].left - wishCards[0].right, pointCards[1].left - pointCards[0].right, pointCards[2].left - pointCards[1].right],
       pointWidths: pointCards.map(rect => rect.width), pointTops: pointCards.map(rect => rect.top),
       headingGaps: [diy.top - titleBottom('home-diy-title'), points.top - titleBottom('home-points-title')],
@@ -220,9 +227,8 @@ async function assertHomeLayout(page: Page, language: string) {
   expect(utilityLayout.wishTitleInset).toBeCloseTo(0, 0);
   expect(utilityLayout.wishTitleGap).toBeCloseTo(12, 0);
   if (page.viewportSize()!.width < 768) {
-    expect(utilityLayout.wishTitleWidth).toBeCloseTo(utilityLayout.wishTileWidth, 0);
-    expect(utilityLayout.thirdTileRight).toBeCloseTo(utilityLayout.wishRight, 0);
-    expect(utilityLayout.fourthTileLeft).toBeGreaterThan(utilityLayout.wishRight);
+    expect(utilityLayout.fourthTileRight).toBeCloseTo(utilityLayout.wishRight, 0);
+    expect(utilityLayout.fifthTileLeft).toBeGreaterThan(utilityLayout.wishRight);
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 }
