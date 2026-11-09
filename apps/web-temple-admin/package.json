@@ -6,9 +6,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node ../../scripts/sync-admin-ui-components.mjs --check && node ../../scripts/sync-typography.mjs --check && node ../../scripts/sync-motion.mjs --check && node --test ../../packages/admin-ui/session-expiry.test.mjs && node --test ../../packages/localization/language.test.mjs ../../packages/admin-ui/localized-feedback.test.mjs && node ../../packages/localization/scripts/check.mjs",
+    "prebuild": "node ../../scripts/sync-admin-ui-components.mjs --check && node ../../scripts/sync-typography.mjs --check && node ../../scripts/sync-motion.mjs --check && node --test ../../packages/admin-ui/session-expiry.test.mjs && node --test ../../packages/localization/language.test.mjs ../../packages/admin-ui/localized-feedback.test.mjs && node ../../packages/localization/scripts/check.mjs && npm run test:review",
     "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:review": "node --test src/views/temple-review.test.mjs"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",

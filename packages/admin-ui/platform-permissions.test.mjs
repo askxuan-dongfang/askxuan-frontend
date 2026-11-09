@@ -71,3 +71,42 @@ test('moderation roles land on delegated reports, while mixed-type queues remain
  assert.equal(access.defaultRoute(r,s),'/audit/report');assert.equal(access.canAccessRoute(router.resolve('/audit/report'),r,s),true)
  for(const path of ['/audit/comment','/audit/design'])assert.equal(access.canAccessRoute(router.resolve(path),r,s),false)
 })
+
+test('write actions respect both the identity boundary and the specific write grant',()=>{
+ const finance={...snapshot,permissions:['platform.finance.read']}
+ assert.equal(access.hasPlatformPermission(['finance_reader'],finance,'platform.finance.write',['platform_super']),false)
+ assert.equal(access.hasPlatformPermission(['finance_editor'],{...finance,permissions:['platform.finance.write']},'platform.finance.write',['platform_super']),true)
+ assert.equal(access.hasPlatformPermission(['customer'],{...finance,permissions:['platform.finance.write']},'platform.finance.write',['platform_super']),false)
+ assert.equal(access.hasPlatformPermission(['finance_editor'],{...finance,clientId:'temple-admin',permissions:['platform.finance.write']},'platform.finance.write',['platform_super']),false)
+ assert.equal(access.hasPlatformPermission(['platform_service'],null,'platform.finance.write',['platform_super']),false)
+ assert.equal(access.hasPlatformPermission(['shop_admin'],null,'platform.finance.write',['platform_super']),false)
+ assert.equal(access.hasPlatformPermission(['shop_admin'],null,'platform.products.write',['platform_super','shop_admin']),true)
+})
+function finance(path,expose,api,auth={roles:['platform_super']}){
+ const script=read('../../apps/web-platform-admin/src/views/finance/'+path).match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1]
+ return compile(script+'\nexport {'+expose+'};',{
+  vue:{...vue,onMounted(){},onBeforeUnmount(){}},'@/stores/auth':{useAuthStore:()=>auth},'@/router/access':access,
+  '@/api/finance':api,'@/i18n':{ElMessage:{warning(){},success(){}},ElMessageBox:{confirm:async()=>{},prompt:async()=>({value:'原因'})}},
+  '../../../../../packages/localization/language':{t:v=>v}
+ })
+}
+test('a failed finance refresh retains data but cannot submit settlement or withdrawal actions',async()=>{
+ for(const [path,apiName,actionName,expose] of [
+  ['FinanceTempleView.vue','getSettlements','confirm','loadData,list,confirm,loading,loadError'],
+  ['FinanceMasterView.vue','getSettlements','confirmSettle','loadData,sList,confirmSettle,loading,loadError'],
+  ['FinanceReconcileView.vue','getWithdrawals','auditW','loadWithdrawals,wList,auditW,loading,loadError']
+ ]){
+  let failed=false,writes=0;const row={id:1,settlementNo:'S1',withdrawalNo:'W1',status:'pending',settleAmount:9.9,amount:9.9}
+  const state=finance(path,expose,{[apiName]:async()=>{if(failed)throw new Error('连接失败');return{list:[row],total:1}},confirmSettlement:async()=>{writes++},auditWithdrawal:async()=>{writes++}})
+  const load=state.loadData||state.loadWithdrawals;await load();failed=true;await load()
+  assert.equal(state.loadError.value,true);assert.equal((state.list||state.sList||state.wList).value.length,1)
+  await state[actionName](row,'approve');assert.equal(writes,0,path)
+ }
+})
+test('commission writes require a successful current configuration read',async()=>{
+ let failed=false,writes=0
+ const state=finance('FinanceOverviewView.vue','loadData,saveConfig,configs,configsReady',{getFinanceOverview:async()=>({}),getCommissionConfigs:async()=>{if(failed)throw new Error('读取失败');return[{id:1,rate:.1,description:''}]},updateCommissionConfig:async()=>{writes++}})
+ await state.loadData();assert.equal(state.configsReady.value,true);failed=true;await state.loadData()
+ assert.equal(state.configs.value.length,1);assert.equal(state.configsReady.value,false)
+ await state.saveConfig(state.configs.value[0]);assert.equal(writes,0)
+})

@@ -508,12 +508,13 @@ async function checkoutFixture(
   await page.route("**/api/v1/orders/81/returns", (r) =>
     r.fulfill({ json: { code: 0, data: [] } }),
   );
-  await page.route("**/api/v1/payments", (r) => {
+  await page.route("**/api/v1/payments/checkout/quote", (r) => r.fulfill({
+    json: { code: 0, data: { mode: "cash", amountCents: 13670, availableCents: 0, balanceEnabled: false, mockEnabled: true, experience } },
+  }));
+  await page.route("**/api/v1/payments/checkout", (r) => {
     payments.push(r.request().postDataJSON());
     paid = true;
-    return r.fulfill({
-      json: { code: 0, data: { id: 91, paymentNo: "LOCAL-PAY" } },
-    });
+    return r.fulfill({ json: { code: 0, data: { id: 91, paymentNo: "LOCAL-PAY", status: "success", channel: "mock" } } });
   });
   await page.route("**/api/v1/payments/91", (r) =>
     r.fulfill({
@@ -587,18 +588,19 @@ test("selected cart checkout survives reload and preserves unselected items", as
     page.getByRole("region", { name: "本次结算商品" }),
   ).not.toContainText("大号手串");
   await expect(
-    page.getByRole("button", { name: "提交并模拟支付" }),
+    page.getByRole("button", { name: "提交并支付" }),
   ).toBeEnabled();
   await page.screenshot({
     path: "/private/tmp/askxuan-market-checkout-320.png",
     fullPage: true,
   });
-  await page.getByRole("button", { name: "提交并模拟支付" }).click();
+  await page.getByRole("button", { name: "提交并支付" }).click();
+  await page.getByRole("button", { name: "确认演示支付", exact: true }).click();
   await expect(page).toHaveURL(/orders\/81/);
   expect(calls).toHaveLength(1);
   expect(calls[0].items.map((i: any) => i.skuId)).toEqual([11]);
   expect(calls[0].items[0].quantity).toBe(2);
-  expect(payments[0].amount).toBe(136.7);
+  expect(payments[0].expectedCents).toBe(13670);
   await page.goto(h5 + "/c/shop/cart");
   await expect(page.locator(".market-cart-item")).toHaveCount(1);
   await expect(page.locator(".market-cart-item")).toContainText("大号手串");
@@ -613,7 +615,8 @@ test("buy now creates a separate checkout and leaves cart untouched", async ({
   await page.getByRole("button", { name: "确认并去结算" }).click();
   await expect(page.locator(".market-cart-item")).toHaveCount(1);
   await expect(page.locator(".market-cart-bar")).toContainText("68.35");
-  await page.getByRole("button", { name: "提交并模拟支付" }).click();
+  await page.getByRole("button", { name: "提交并支付" }).click();
+  await page.getByRole("button", { name: "确认演示支付", exact: true }).click();
   await expect(page).toHaveURL(/orders\/81/);
   expect(calls[0].items).toHaveLength(1);
   expect(calls[0].items[0].quantity).toBe(1);
@@ -627,10 +630,11 @@ test("checkout retry after refresh reuses the original request", async ({
   const { calls } = await checkoutFixture(page, { failCreate: true });
   await page.goto(h5 + "/c/shop/cart");
   await page.getByRole("button", { name: "去结算 (3)" }).click();
-  await page.getByRole("button", { name: "提交并模拟支付" }).click();
-  await expect(page.getByRole("alert")).toContainText("网络中断");
+  await page.getByRole("button", { name: "提交并支付" }).click();
+  await expect(page.locator('.error-note[role="alert"]')).toContainText("网络中断");
   await page.reload();
-  await page.getByRole("button", { name: "提交并模拟支付" }).click();
+  await page.getByRole("button", { name: "提交并支付" }).click();
+  await page.getByRole("button", { name: "确认演示支付", exact: true }).click();
   await expect(page).toHaveURL(/orders\/81/);
   expect(calls).toHaveLength(2);
   expect(calls[1]).toEqual(calls[0]);
@@ -641,8 +645,8 @@ test("sold out cart item blocks checkout without writing an order", async ({
   const { calls } = await checkoutFixture(page, { stockChanged: true });
   await page.goto(h5 + "/c/shop/cart");
   await page.getByRole("button", { name: "去结算 (3)" }).click();
-  await page.getByRole("button", { name: "提交并模拟支付" }).click();
-  await expect(page.getByRole("alert")).toContainText("库存不足");
+  await page.getByRole("button", { name: "提交并支付" }).click();
+  await expect(page.locator('.error-note[role="alert"]')).toContainText("库存不足");
   expect(calls).toHaveLength(0);
 });
 test("order cards show real status and totals without fabricated payment success", async ({
@@ -693,8 +697,9 @@ test("experience checkout preserves disclosure and simulated order identity", as
     page.getByText("体验订单不发放消费积分。", { exact: true }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "提交并模拟支付", exact: true })
+    .getByRole("button", { name: "提交并支付", exact: true })
     .click();
+  await page.getByRole("button", { name: "确认演示支付", exact: true }).click();
   await expect(page).toHaveURL(/orders\/81/);
   expect(calls).toHaveLength(1);
   expect(payments[0].orderNo).toBe("EXO-81");
@@ -748,13 +753,14 @@ test("paid response waits for order synchronization instead of asking for anothe
   await page.goto(h5 + "/c/shop/cart");
   await page.getByRole("button", { name: /去结算/ }).click();
   await page
-    .getByRole("button", { name: "提交并模拟支付", exact: true })
+    .getByRole("button", { name: "提交并支付", exact: true })
     .click();
+  await page.getByRole("button", { name: "确认演示支付", exact: true }).click();
   await expect(
     page.getByText("支付已确认 · 正在同步订单", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "继续模拟支付", exact: true }),
+    page.getByRole("button", { name: "继续支付", exact: true }),
   ).toHaveCount(0);
   await expect(page.getByText("已付款", { exact: true })).toBeVisible();
 });

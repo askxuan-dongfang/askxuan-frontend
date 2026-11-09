@@ -1,6 +1,6 @@
 <template>
   <div class="dfx-page">
-    <PageHeader :title='$t("帖子审核")' :subtitle='$t("大师广场图文与视频内容")'>
+    <PageHeader :title='$t("广场内容审核")' :subtitle='$t("大师广场图文与视频内容")'>
       <template #actions>
         <el-button :icon="Refresh" @click="loadData">{{ $t("刷新") }}</el-button>
       </template>
@@ -16,7 +16,7 @@
 
     <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
       <div class="ax-page-feedback__copy">
-        <div class="ax-page-feedback__title">{{ $t("帖子审核任务加载失败") }}</div>
+        <div class="ax-page-feedback__title">{{ $t("广场内容审核任务加载失败") }}</div>
         <div class="ax-page-feedback__description">{{ $t("当前结果不可用于判断是否存在待审核内容。") }}</div>
       </div>
       <el-button :loading="loading" @click="loadData">{{ $t("重新加载") }}</el-button>

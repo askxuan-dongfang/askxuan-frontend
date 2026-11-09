@@ -11,13 +11,14 @@ for(const width of [375,768])test(`H5 cart checkout retry preserves request ${wi
  else if(path==='/api/v1/orders'&&req.method()==='POST'){requests.push(req.postDataJSON());if(requests.length===1){await route.fulfill({status:503,json:{code:500,message:'网络中断，请重试'}});return}data={id:11,orderNo:order.orderNo}}
  else if(path.endsWith('/orders/11/returns'))data=[]
  else if(path.endsWith('/orders/11'))data={...order,status:paid?'paid':'pending_payment'}
- else if(path==='/api/v1/payments'){paid=true;data={id:2,paymentNo:'PAY-real'}}
+ else if(path==='/api/v1/payments/checkout/quote')data={mode:'cash',amountCents:20000,availableCents:0,balanceEnabled:false,mockEnabled:true,experience:false}
+ else if(path==='/api/v1/payments/checkout'){paid=true;data={id:2,paymentNo:'PAY-fixture',status:'success',channel:'mock'}}
  else if(path.endsWith('/payments/2'))data={id:2,status:'success'}
  await route.fulfill({json:{code:0,message:'ok',data}})})
- await page.goto('http://127.0.0.1:5376/c/shop/1');await page.getByRole('button',{name:'加入购物车',exact:true}).click()
- await page.goto('http://127.0.0.1:5376/c/shop/cart');await expect(page.getByText('山间木珠手串')).toBeVisible()
- await page.getByRole('button',{name:'确认订单并模拟支付'}).click();await expect(page.getByText('网络中断，请重试')).toBeVisible()
- await page.getByRole('button',{name:'确认订单并模拟支付'}).click();await expect(page).toHaveURL(/shop\/orders\/11/);await expect(page.getByRole('heading',{name:'订单详情',exact:true})).toBeVisible();await expect(page.getByText('O-COMMERCE',{exact:true})).toBeVisible()
+ await page.goto('http://127.0.0.1:5376/c/shop/1');await page.getByRole('button',{name:'加入购物车',exact:true}).click();await page.getByRole('button',{name:'确认加入购物车',exact:true}).click()
+ await page.goto('http://127.0.0.1:5376/c/shop/cart');await expect(page.getByText('山间木珠手串')).toBeVisible();await page.getByRole('button',{name:/去结算/}).click()
+ await page.getByRole('button',{name:'提交并支付'}).click();await expect(page.locator('.error-note')).toContainText('网络中断，请重试')
+ await page.getByRole('button',{name:'提交并支付'}).click();await page.getByRole('button',{name:'确认演示支付',exact:true}).click();await expect(page).toHaveURL(/shop\/orders\/11/);await expect(page.getByRole('heading',{name:'订单详情',exact:true})).toBeVisible();await expect(page.getByText('O-COMMERCE',{exact:true})).toBeVisible()
  expect(requests).toHaveLength(2);expect(requests[0].requestId).toBe(requests[1].requestId);expect(requests[1].addressId).toBe(1)
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy()
  await page.screenshot({path:`/private/tmp/commerce-order-${width}.png`,fullPage:true})

@@ -8,6 +8,7 @@ import { isAdminSessionExpired } from '@/api/client'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { hasPlatformPermission } from '@/router/access'
 import { beliefOptions as standardBeliefs, normalizeBelief } from '../../../../../packages/admin-ui/affiliation'
 
 import { getDirectoryTags, getPublicDirectoryTags, type DirectoryTag } from '@/api/directoryTags'
@@ -28,6 +29,8 @@ import {
 import type { Master } from '@/types'
 
 const auth=useAuthStore()
+const canEditProfile=computed(()=>auth.roles.includes('platform_super'))
+const canEditServices=computed(()=>hasPlatformPermission(auth.roles,auth.access,'platform.masters.write',['platform_super']))
 const route = useRoute()
 const router = useRouter()
 
@@ -101,7 +104,7 @@ async function loadDetail() {
 }
 
 function startEdit() {
-  if (!master.value || !auth.roles.includes('platform_super')) return
+  if (!master.value || (!canEditProfile.value && !canEditServices.value)) return
   form.value = {
     dharmaName: master.value.dharmaName,
     layName: master.value.layName,
@@ -144,6 +147,7 @@ function syncType() {
 }
 
 async function saveProfile() {
+  if (!editing.value || !canEditProfile.value) return
   if (beliefRelationConflict.value) { ElMessage.warning(uiText('已有选择与当前主信仰或有效目录不一致。请明确核对后调整，不会自动清空。')); return }
   if (!form.value.dharmaName.trim()) { ElMessage.warning(uiText('请填写法号')); return }
   if (saving.value) return
@@ -166,7 +170,7 @@ async function saveProfile() {
   } finally { saving.value=false }
 }
 async function saveServices() {
-  if (serviceSaving.value || !servicesReady.value) return
+  if (!editing.value || !canEditServices.value || serviceSaving.value || !servicesReady.value) return
   const submitted = JSON.parse(JSON.stringify(tagEdits.value)) as typeof tagEdits.value
   serviceSaving.value=true;serviceFailed.value=false;serviceReceipt.value=''
   try {
@@ -189,7 +193,7 @@ onMounted(() => { void loadDetail() })
     <PageHeader :title='$t("法师详情")' :subtitle='$t("法师资料、可提供服务查看与平台编辑（寺院与独立执业两类大师）")'>
       <template #actions>
         <el-button @click="router.push('/master/list')">{{ $t("返回列表") }}</el-button>
-        <el-button v-if="master && !editing && auth.roles.includes('platform_super')" type="primary" @click="startEdit">{{ $t("编辑资料") }}</el-button>
+        <el-button v-if="master && !editing && (canEditProfile || canEditServices)" type="primary" @click="startEdit">{{ $t(canEditProfile ? "编辑资料" : "编辑服务") }}</el-button>
       </template>
     </PageHeader>
 
@@ -204,7 +208,7 @@ onMounted(() => { void loadDetail() })
     </div>
     <!-- 查看态 -->
     <SubjectAccounts v-if="master && !editing" kind="master" :id="master.id" />
-    <div v-if="master && !editing && auth.roles.includes('platform_super')" class="df-card" style="max-width: 760px">
+    <div v-if="master && !editing" class="df-card" style="max-width: 760px">
       <div class="master-head">
         <el-avatar :size="64" :src="master.avatar">{{ $t(master.dharmaName.slice(0, 1)) }}</el-avatar>
         <div class="master-head__info">
@@ -251,8 +255,9 @@ onMounted(() => { void loadDetail() })
     </div>
 
     <!-- 编辑态 -->
-    <div v-else-if="master" class="df-card" style="max-width: 640px">
+    <div v-else-if="master && editing && (canEditProfile || canEditServices)" class="df-card" style="max-width: 640px">
       <el-form label-width="110px" :disabled="saving || serviceSaving">
+        <div v-if="canEditProfile">
         <el-form-item :label='$t("法号")' required>
           <el-input v-model="form.dharmaName" maxlength="32" />
         </el-form-item>
@@ -282,6 +287,7 @@ onMounted(() => { void loadDetail() })
 
         <p class="save-segment-note">{{ $t('展示文字与标准关联分别维护。保存资料不会改写宗派标签；历史资料与交易快照保留。') }}</p>
         <div class="segment-save"><el-button type="primary" :loading="saving" @click="saveProfile">{{ $t(profileFailed ? '仅重试资料' : '保存资料') }}</el-button><p v-if="profileReceipt" :role="profileFailed?'alert':'status'" :class="{failed:profileFailed}">{{ $t(profileReceipt) }}</p></div>
+        </div>
         <el-divider content-position="left">{{ $t("可提供服务（S001-S013 大师标签）") }}</el-divider>
         <el-form-item :label='$t("服务配置")'>
           <div style="width: 100%">
@@ -303,7 +309,7 @@ onMounted(() => { void loadDetail() })
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" :loading="serviceSaving" :disabled="!servicesReady || serviceLoading" @click="saveServices">{{ $t(serviceFailed ? "仅重试服务" : "保存服务") }}</el-button>
+          <el-button type="primary" :loading="serviceSaving" :disabled="!canEditServices || !servicesReady || serviceLoading" @click="saveServices">{{ $t(serviceFailed ? "仅重试服务" : "保存服务") }}</el-button>
           <el-button @click="cancelEdit" data-quiet-action="cancel">{{ $t("返回查看") }}</el-button>
         </el-form-item>
         <p v-if="serviceReceipt" :role="serviceFailed?'alert':'status'" :class="{failed:serviceFailed}">{{ $t(serviceReceipt) }}</p>

@@ -13,6 +13,7 @@ import { createTempleImage, deleteTempleImage, getTempleImages } from '@/api/tem
 import type { TempleImage } from '@/types'
 
 const loading = ref(false)
+const loadError = ref('')
 const saving = ref(false)
 const list = ref<TempleImage[]>([])
 const dialogVisible = ref(false)
@@ -26,9 +27,12 @@ const typeLabels: Record<string, string> = {
 
 async function loadData() {
   loading.value = true
+  loadError.value = ''
   try {
     const data = await getTempleImages()
     list.value = data.list || []
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : '图册加载失败'
   } finally {
     loading.value = false
   }
@@ -58,7 +62,7 @@ async function submit() {
 }
 
 async function remove(image: TempleImage) {
-  await ElMessageBox.confirm(uiText('删除后 C 端将不再展示这张图片，确认继续？'), uiText('删除图片'), {
+  await ElMessageBox.confirm(uiText('删除后信众将不再看到这张图片，确认继续？'), uiText('删除图片'), {
     confirmButtonText: uiText('删除'),
     cancelButtonText: uiText('取消'),
     type: 'warning'
@@ -73,13 +77,18 @@ onMounted(loadData)
 
 <template>
   <div class="df-page">
-    <PageHeader :title='$t("寺院图册")' :subtitle='$t("维护 C 端寺院详情展示的头图与详情图片")'>
+    <PageHeader :title='$t("寺院图册")'>
       <el-button :icon="Refresh" @click="loadData">{{ $t("刷新") }}</el-button>
       <el-button v-if="auth.can('temple.profile.write')" type="primary" :icon="Plus" @click="openCreate">{{ $t("上传图片") }}</el-button>
     </PageHeader>
 
     <div class="df-card gallery-panel" v-loading="loading">
-      <div v-if="list.length" class="gallery-grid">
+      <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+        <div class="ax-page-feedback__copy">{{ $t(loadError) }}</div>
+        <el-button :loading="loading" @click="loadData">{{ $t("重试") }}</el-button>
+      </div>
+
+      <div v-else-if="list.length" class="gallery-grid">
         <article v-for="image in list" :key="image.id" class="gallery-item">
           <el-image :src="image.url" fit="cover" class="gallery-image" :preview-src-list="[image.url]" preview-teleported>
             <template #error><div class="gallery-fallback">{{ $t("图片无法访问") }}</div></template>
@@ -93,7 +102,7 @@ onMounted(loadData)
           </div>
         </article>
       </div>
-      <el-empty v-else :description='$t("暂无图册图片")' />
+      <el-empty v-else-if="!loading" :description='$t("暂无图册图片")' />
     </div>
 
     <el-dialog v-model="dialogVisible" :title='$t("上传寺院图片")' width="520px" append-to-body>

@@ -49,7 +49,7 @@
         </el-table-column>
         <el-table-column :label='$t("操作")' width="120" fixed="right">
           <template #default="{ row }">
-            <el-button v-if="row.status === 'pending'" link type="success" :loading="row._saving" @click="confirm(row)">{{ $t("确认结算") }}</el-button>
+            <el-button v-if="row.status === 'pending'" link type="success" :loading="row._saving" :disabled="!canWrite || loading || loadError" @click="confirm(row)">{{ $t("确认结算") }}</el-button>
             <span v-else class="muted">-</span>
           </template>
         </el-table-column>
@@ -60,7 +60,7 @@
             <div class="mobile-task-card__head"><strong>{{ $t((row.targetName || row.targetId)) }}</strong><StatusTag :status="row.status" /></div>
             <div class="mobile-task-card__meta">{{ $t(row.settlementNo) }} · {{ $t(row.periodStart) }}{{ $t(" 至 ") }}{{ $t(row.periodEnd) }}</div>
             <div class="mobile-task-card__meta">{{ $t(row.orderCount) }}{{ $t(" 单 · 总额 ") }}{{ $t(formatMoney(row.totalAmount)) }}{{ $t(" · 抽成 ") }}{{ $t(formatPercent(row.commissionRate)) }}</div>
-            <div class="mobile-task-card__foot"><span>{{ $t("应结 ") }}<b>{{ $t(formatMoney(row.settleAmount)) }}</b></span><el-button v-if="row.status === 'pending'" type="primary" :loading="row._saving" @click="confirm(row)">{{ $t("确认结算") }}</el-button><b v-else>{{ $t("已处理") }}</b></div>
+            <div class="mobile-task-card__foot"><span>{{ $t("应结 ") }}<b>{{ $t(formatMoney(row.settleAmount)) }}</b></span><el-button v-if="row.status === 'pending'" type="primary" :loading="row._saving" :disabled="!canWrite || loading || loadError" @click="confirm(row)">{{ $t("确认结算") }}</el-button><b v-else>{{ $t("已处理") }}</b></div>
           </article>
         </template>
       </MobileTaskList>
@@ -69,10 +69,12 @@
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
+import { hasPlatformPermission } from '@/router/access'
 import { ElMessage, ElMessageBox } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
 
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 
 import PageHeader from '@/components/PageHeader.vue'
@@ -86,6 +88,9 @@ import type { Settlement } from '@/types'
 interface Row extends Settlement {
   _saving?: boolean
 }
+
+const auth=useAuthStore()
+const canWrite=computed(()=>hasPlatformPermission(auth.roles,auth.access,'platform.finance.write',['platform_super']))
 
 const loading = ref(false)
 const loadError = ref(false)
@@ -113,6 +118,7 @@ function onSearch() {
 }
 
 async function confirm(row: Row) {
+  if (!canWrite.value || loading.value || loadError.value) return
   await ElMessageBox.confirm((uiText("确认结算单「") + String(row.settlementNo) + uiText("」，应结金额 ") + String(formatMoney(row.settleAmount)) + uiText("？")), uiText('确认结算'), { type: 'warning' })
   row._saving = true
   try {

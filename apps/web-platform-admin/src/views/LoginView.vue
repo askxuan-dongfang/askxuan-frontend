@@ -135,4 +135,5 @@ function complete(){const next=typeof route.query.redirect==='string'?route.quer
   z-index: 1;
   width: min(400px, 100%);
 }
+@media(max-width:420px){.login__panel{padding:32px 24px 28px}}
 </style>

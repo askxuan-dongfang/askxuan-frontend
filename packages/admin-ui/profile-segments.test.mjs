@@ -10,13 +10,14 @@ function moduleOf(source,bindings){
  const exports={};new Function('exports','require',js)(exports,name=>bindings[name]??{});return exports
 }
 const affiliation=moduleOf(affiliationSource,{})
+const access=moduleOf(readFileSync(new URL('../../apps/web-platform-admin/src/router/access.ts',import.meta.url),'utf8'),{})
 const text=readFileSync(new URL('../../apps/web-platform-admin/src/views/master/MasterDetailView.vue',import.meta.url),'utf8')
-const script=text.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1]+'\nexport {form,master,serviceCatalog,serviceTags,tagEdits,startEdit,saveProfile,saveServices,dirty,profileFailed,serviceFailed,profileBaseline,servicesReady,serviceLoadError,loadDetail,loadServiceConfig};'
+const script=text.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1]+'\nexport {form,master,serviceCatalog,serviceTags,tagEdits,startEdit,saveProfile,saveServices,dirty,profileFailed,serviceFailed,profileBaseline,servicesReady,serviceLoadError,loadDetail,loadServiceConfig,editing,canEditProfile,canEditServices};'
 const original={id:'m1',dharmaName:'原法号',layName:'姓名',position:'职务',beliefCode:'han_buddhism',sect:'旧宗派说明',type:'汉传佛教',specialties:[],avatar:'',traditionCodes:['old_code']}
-function fixture(api){
+function fixture(api,auth={roles:['platform_super']}){
  const state=moduleOf(script,{
   vue:{...vue,onMounted(){},onUnmounted(){}},'vue-router':{useRoute:()=>({params:{id:'m1'}}),useRouter:()=>({}),onBeforeRouteLeave(){}},
-  '@/stores/auth':{useAuthStore:()=>({roles:['platform_super']})},'@/i18n':{ElMessage:{success(){},warning(){},error(){}},ElMessageBox:{}},
+  '@/stores/auth':{useAuthStore:()=>auth},'@/router/access':access,'@/i18n':{ElMessage:{success(){},warning(){},error(){}},ElMessageBox:{}},
   '../../../../../packages/localization/language':{t:v=>v},'@/api/client':{isAdminSessionExpired:()=>false},
   '../../../../../packages/admin-ui/affiliation':affiliation,'@/api/master':api
  })
@@ -59,4 +60,18 @@ test('changing belief cannot save a conflicting relation or silently discard his
  const state=fixture({updatePlatformMaster:async()=>{writes++;return original}})
  state.form.value.beliefCode='daoism';await state.saveProfile()
  assert.equal(writes,0);assert.equal(state.form.value.beliefCode,'daoism');assert.deepEqual([...state.master.value.traditionCodes],['old_code']);assert.equal(state.dirty.value,true)
+})
+
+test('read-only master details never start an empty editing session or save services',async()=>{
+ let writes=0
+ const state=fixture({updatePlatformMasterServiceTags:async()=>{writes++;return{list:[]}}},{roles:['master_reader'],access:{authzScope:'platform',clientId:'platform-admin',permissions:['platform.masters.read']}})
+ assert.equal(state.editing.value,false);assert.equal(state.canEditServices.value,false)
+ await state.saveServices();assert.equal(writes,0)
+})
+test('delegated service editing loads the existing list without enabling profile writes',async()=>{
+ let profileWrites=0,serviceWrites=0
+ const state=fixture({updatePlatformMaster:async()=>{profileWrites++;return original},updatePlatformMasterServiceTags:async(_id,tags)=>{serviceWrites++;assert.deepEqual(tags,[{serviceCode:'S001',price:9.9}]);return{list:tags}}},{roles:['master_editor'],access:{authzScope:'platform',clientId:'platform-admin',permissions:['platform.masters.read','platform.masters.write']}})
+ state.editing.value=false;state.serviceTags.value=[{serviceCode:'S001',price:9.9}];state.startEdit()
+ assert.equal(state.canEditProfile.value,false);assert.equal(state.tagEdits.value[0].enabled,true);assert.equal(state.tagEdits.value[0].price,9.9)
+ await state.saveProfile();await state.saveServices();assert.equal(profileWrites,0);assert.equal(serviceWrites,1)
 })

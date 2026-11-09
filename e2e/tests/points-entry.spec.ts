@@ -127,7 +127,7 @@ async function assertHomeLayout(page: Page, language: string) {
   expect(Math.abs(cards[0].y - cards[1].y)).toBeLessThan(1);
   expect(cards[1].x - cards[0].right).toBeCloseTo(12, 0);
 
-  const wishHeading = page.locator('.home-section-heading > h2#home-intents-title');
+  const wishHeading = page.locator('.home-intents-section > h2#home-intents-title');
   await expect(wishHeading).toHaveText(traditional ? '按心願辦' : '按心愿办');
   await expect(wishHeading).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(wishHeading).toHaveCSS('border-width', '0px');
@@ -146,7 +146,7 @@ async function assertHomeLayout(page: Page, language: string) {
   expect(wishRail.widths).toHaveLength(7);
   for (const width of wishRail.widths) expect(width).toBeCloseTo(wishRail.widths[0], 0);
   for (const top of wishRail.tops) expect(top).toBeCloseTo(wishRail.tops[0], 0);
-  // Wishes scroll below their heading without moving the page.
+  // Only the wishes scroll; the plain-text heading stays fixed on the left.
   if (page.viewportSize()!.width < 768) expect(wishRail.scrollWidth).toBeGreaterThan(wishRail.clientWidth);
 
   const diy = page.locator('.home-diy-entry');
@@ -209,9 +209,10 @@ async function assertHomeLayout(page: Page, language: string) {
     const titleBottom = (id: string) => element.querySelector('#' + id)!.getBoundingClientRect().bottom;
     return {
       heights: [...wishCards, diy, ...pointCards].map(rect => rect.height),
-      wishRight: wishes.right, fourthTileRight: wishCards[3].right, fifthTileLeft: wishCards[4].left,
+      wishRight: wishes.right, thirdTileRight: wishCards[2].right, fourthTileRight: wishCards[3].right, fifthTileLeft: wishCards[4].left,
       wishTitleInset: wishTitle.left - wishRow.left,
-      wishTitleGap: wishes.top - wishTitle.bottom,
+      wishTitleGap: wishes.left - wishTitle.right,
+      wishTitleCenter: wishTitle.top + wishTitle.height / 2, wishRailCenter: wishes.top + wishes.height / 2,
       gaps: [wishCards[1].left - wishCards[0].right, pointCards[1].left - pointCards[0].right, pointCards[2].left - pointCards[1].right],
       pointWidths: pointCards.map(rect => rect.width), pointTops: pointCards.map(rect => rect.top),
       headingGaps: [diy.top - titleBottom('home-diy-title'), points.top - titleBottom('home-points-title')],
@@ -226,8 +227,10 @@ async function assertHomeLayout(page: Page, language: string) {
   expect(utilityLayout.diyToPoints).toBeCloseTo(28, 0);
   expect(utilityLayout.wishTitleInset).toBeCloseTo(0, 0);
   expect(utilityLayout.wishTitleGap).toBeCloseTo(12, 0);
+  expect(utilityLayout.wishTitleCenter).toBeCloseTo(utilityLayout.wishRailCenter, 0);
   if (page.viewportSize()!.width < 768) {
-    expect(utilityLayout.fourthTileRight).toBeCloseTo(utilityLayout.wishRight, 0);
+    expect(utilityLayout.thirdTileRight).toBeLessThanOrEqual(utilityLayout.wishRight + 1);
+    expect(utilityLayout.fourthTileRight).toBeGreaterThan(utilityLayout.wishRight);
     expect(utilityLayout.fifthTileLeft).toBeGreaterThan(utilityLayout.wishRight);
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();

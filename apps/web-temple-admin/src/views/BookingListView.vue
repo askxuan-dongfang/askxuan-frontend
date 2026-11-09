@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Refresh, Search, View } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import DataTable from '@/components/DataTable.vue'
@@ -11,13 +11,13 @@ import { formatMoney, formatDate } from '@/utils/format'
 import type { Booking } from '@/types'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 
 const loading = ref(false)
 const loadError = ref('')
 const list = ref<Booking[]>([])
 const total = ref(0)
-const query = reactive({ status: '', page: 1, size: 20 })
 
 const statusOptions = [
   { value: 'pending', label: '待确认' },
@@ -26,6 +26,29 @@ const statusOptions = [
   { value: 'reviewed', label: '已评价' },
   { value: 'cancelled', label: '已取消' }
 ]
+
+function readFilters() {
+  const status = typeof route.query.status === 'string' ? route.query.status : ''
+  const page = typeof route.query.page === 'string' ? Number(route.query.page) : 1
+  const size = typeof route.query.size === 'string' ? Number(route.query.size) : 20
+  return {
+    status: statusOptions.some(option => option.value === status) ? status : '',
+    page: Number.isSafeInteger(page) && page > 0 ? page : 1,
+    size: [10, 20, 50, 100].includes(size) ? size : 20
+  }
+}
+const query = reactive(readFilters())
+watch(() => route.query, () => {
+  const filters = readFilters()
+  if (query.status === filters.status && query.page === filters.page && query.size === filters.size) return
+  Object.assign(query, filters)
+  void load()
+})
+
+function updateQuery() {
+  void router.replace({ query: { ...route.query, status: query.status || undefined, page: query.page > 1 ? String(query.page) : undefined, size: query.size !== 20 ? String(query.size) : undefined } })
+  void load()
+}
 
 async function load() {
   loading.value = true
@@ -48,12 +71,12 @@ async function load() {
 
 function onSearch() {
   query.page = 1
-  load()
+  updateQuery()
 }
 function onPageChange(p: { page: number; size: number }) {
   query.page = p.page
   query.size = p.size
-  load()
+  updateQuery()
 }
 function goDetail(id: string) {
   router.push(`/bookings/${id}`)
@@ -64,7 +87,7 @@ onMounted(load)
 
 <template>
   <div class="df-page">
-    <PageHeader :title='$t("预约管理")' :subtitle='$t("查看与处理信众预约")'>
+    <PageHeader :title='$t("预约管理")'>
       <el-button :icon="Refresh" @click="load">{{ $t("刷新") }}</el-button>
     </PageHeader>
 
@@ -84,7 +107,7 @@ onMounted(load)
         <el-button :loading="loading" @click="load">{{ $t("重试") }}</el-button>
       </div>
 
-      <div class="desktop-table"><DataTable
+      <div v-if="!loadError" class="desktop-table"><DataTable
         :data="list"
         :loading="loading"
         :total="total"
@@ -120,7 +143,7 @@ onMounted(load)
         </el-table-column>
       </DataTable></div>
 
-      <div class="mobile-task-list" :aria-label='$t("预约任务列表")'>
+      <div v-if="!loadError" class="mobile-task-list" :aria-label='$t("预约任务列表")'>
         <button v-for="item in list" :key="item.id" class="mobile-task-card" type="button" @click="goDetail(item.id)">
           <span class="mobile-task-card__head">
             <strong>{{ $t((item.serviceName || $t('预约服务'))) }}</strong>

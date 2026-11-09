@@ -107,13 +107,13 @@ const routes: RouteRecordRaw[] = [
         path: 'audit/comment',
         name: 'ContentComment',
         component: () => import('@/views/audit/ContentCommentView.vue'),
-        meta: { title: '评价审核', parent: '内容审核' }
+        meta: { title: '广场评论审核', parent: '内容审核' }
       },
       {
         path: 'audit/design',
         name: 'ContentDesign',
         component: () => import('@/views/audit/ContentDesignView.vue'),
-        meta: { title: '素材审核', parent: '内容审核' }
+        meta: { title: '广场内容审核', parent: '内容审核' }
       },
       {
         path: 'audit/report',
@@ -238,7 +238,7 @@ const routePermissions: Record<string, string[]> = {
  ShopOrderList:['platform.orders.read'],ShopOrderDetail:['platform.orders.read'],ShopDiyOrderList:['platform.diy.read'],ShopDiyOrderDetail:['platform.diy.read'],ShopLogistics:['platform.logistics.read'],
  ShopReturnList:['platform.orders.read'],ShopReturnDetail:['platform.orders.read'],ShopReport:['platform.orders.read'],ShopPointsMall:['platform.points.read']
 }
-const superOnlyNames=['Growth','onboarding-review','CreatorRewards','ServiceIntentions','SettingsDirectoryTags','SettingsRegions','SettingsRole','SettingsAccount','SettingsBackup','SettingsTaxonomy','HomeDisplay','ServiceOverview','PayoutSandbox','TempleReview','MasterReview','MasterCreate','ContentComment','ContentDesign']
+const superOnlyNames=['Commerce','Growth','onboarding-review','CreatorRewards','ServiceIntentions','SettingsDirectoryTags','SettingsRegions','SettingsRole','SettingsAccount','SettingsBackup','SettingsTaxonomy','HomeDisplay','ServiceOverview','PayoutSandbox','TempleReview','MasterReview','MasterCreate','ContentComment','ContentDesign']
 for (const route of routes[1].children || []) {
  route.meta ||= {}
  if(route.name && routePermissions[String(route.name)]) route.meta.permissions=routePermissions[String(route.name)]

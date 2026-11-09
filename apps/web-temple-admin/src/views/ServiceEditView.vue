@@ -39,10 +39,6 @@ const intentOptions = ref<IntentionOption[]>([])
 const serviceTypeOptions = ref<ServiceTypeOption[]>([])
 const enabledServiceCodes = ref<Set<string>>(new Set())
 
-const selectedServiceType = computed(() =>
-  serviceTypeOptions.value.find((item) => item.code === form.serviceCode)
-)
-
 function selectServiceType(item: ServiceTypeOption) {
   if (isEdit.value || enabledServiceCodes.value.has(item.code)) return
   form.serviceCode = item.code
@@ -109,7 +105,8 @@ async function handleSubmit() {
 }
 
 function addSlot() {
-	const index = form.slots.length + 1
+	let index = form.slots.length + 1
+	while (form.slots.some(slot => slot.code === `slot_${String(index).padStart(2, '0')}`)) index++
 	form.slots.push({ code: `slot_${String(index).padStart(2, '0')}`, label: `时段${index}`, startTime: '09:00', endTime: '10:00', capacity: 10, status: 'enabled', sort: index })
 }
 
@@ -128,7 +125,7 @@ onMounted(async () => {
 
 <template>
   <div class="df-page" v-loading="loading">
-    <PageHeader :title="$t((isEdit ? $t('编辑服务') : $t('新增服务')))" :subtitle="$t((isEdit ? $t('修改法事服务信息') : $t('新增法事服务项目')))">
+    <PageHeader :title="$t((isEdit ? $t('编辑服务') : $t('新增服务')))">
       <el-button :icon="ArrowLeft" @click="router.back()">{{ $t("返回") }}</el-button>
       <el-button type="primary" :icon="Check" :loading="saving" @click="handleSubmit">{{ $t("保存") }}</el-button>
     </PageHeader>
@@ -153,7 +150,6 @@ onMounted(async () => {
               <small>{{ $t(item.category) }} · {{ $t(item.priceRange) }}</small>
             </button>
           </div>
-          <div v-if="selectedServiceType" class="selected-type-hint">{{ $t(" 已选择 ") }}{{ $t(selectedServiceType.name) }}（{{ $t(selectedServiceType.code) }}{{ $t("）；服务类型由平台统一维护 ") }}</div>
         </el-form-item>
         <el-form-item :label='$t("价格（元）")' prop="price">
           <el-input-number v-model="form.price" :min="0" :precision="2" controls-position="right" />
@@ -193,13 +189,12 @@ onMounted(async () => {
 .slot-editor { width: 100%; display: grid; gap: 10px; }
 .slot-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr 120px 48px 40px; gap: 8px; align-items: center; }
 .service-type-picker { width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.service-type-tag { min-height: 64px; padding: 10px 12px; border: 1px solid var(--el-border-color); border-radius: 6px; background: var(--el-bg-color); color: var(--el-text-color-primary); text-align: left; cursor: pointer; }
+.service-type-tag { min-height: 64px; padding: 10px 12px; border: 0; border-radius: 6px; background: var(--admin-surface-muted); color: var(--el-text-color-primary); text-align: left; cursor: pointer; }
 .service-type-tag span, .service-type-tag small { display: block; }
 .service-type-tag span { font-size: var(--type-size-body); font-weight: var(--type-weight-semibold); }
 .service-type-tag small { margin-top: 4px; color: var(--el-text-color-secondary); }
-.service-type-tag.selected { border-color: var(--el-color-primary); background: var(--el-color-primary-light-9); color: var(--el-color-primary); }
+.service-type-tag.selected { background: var(--el-color-primary-light-9); color: var(--el-color-primary); }
 .service-type-tag.unavailable { opacity: 0.45; cursor: not-allowed; }
-.selected-type-hint { margin-top: 8px; color: var(--el-text-color-secondary); font-size: var(--type-size-caption); }
 @media (max-width: 760px) { .slot-row { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 760px) { .service-type-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>

@@ -6,6 +6,10 @@ export function isDelegatedPlatform(roles: string[], access?: PlatformAccess | n
   return access?.authzScope === 'platform' && access.clientId === 'platform-admin' && roles.length === 1 && !fixedRoles.includes(roles[0])
 }
 
+export function hasPlatformPermission(roles: string[], access: PlatformAccess | null | undefined, permission: string, allowedRoles: string[]): boolean {
+  return allowedRoles.some(role => roles.includes(role)) || (isDelegatedPlatform(roles, access) && access!.permissions.includes(permission))
+}
+
 // Every matched level must authorize the route. A broad shell never unlocks a child.
 export function canAccessRoute(route: Pick<RouteLocationResolved | RouteLocationNormalized, 'matched'>, roles: string[], access?: PlatformAccess | null): boolean {
   const delegated = isDelegatedPlatform(roles, access)

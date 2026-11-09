@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
+import { hasPlatformPermission } from '@/router/access'
 import { ElMessage, ElMessageBox } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
 
@@ -12,6 +14,9 @@ import { productApi, type ProductListParams } from "@/commerce/api/product";
 import { categoryApi } from "@/commerce/api/category";
 import { formatMoney } from "@/commerce/utils/format";
 import type { Product, ProductCategory, ProductStatus } from "@/commerce/types";
+
+const auth=useAuthStore()
+const canWrite=computed(()=>hasPlatformPermission(auth.roles,auth.access,'platform.products.write',['platform_super','shop_admin']))
 
 const router = useRouter();
 const loading = ref(false);
@@ -100,7 +105,7 @@ function handleSizeChange(s: number) {
 }
 
 async function handleStatusChange(row: any, status: ProductStatus) {
-  if (busyIds.value.includes(row.id)) return;
+  if (!canWrite.value || busyIds.value.includes(row.id)) return;
   busyIds.value.push(row.id);
   try {
     await productApi.updateStatus(row.id, status as "on_shelf" | "off_shelf");
@@ -114,6 +119,7 @@ async function handleStatusChange(row: any, status: ProductStatus) {
 }
 
 async function handleDelete(row: any) {
+  if (!canWrite.value) return;
   try {
     await ElMessageBox.confirm((uiText("确认删除商品「") + String(row.name) + uiText("」吗？")), uiText("提示"), {
       confirmButtonText: uiText("删除"),
@@ -143,7 +149,7 @@ onMounted(() => {
       <template #extra>
         <el-button
           type="primary"
-          @click="router.push('/commerce/products/edit')"
+          :disabled="!canWrite" @click="router.push('/commerce/products/edit')"
         >
           <el-icon><Plus /></el-icon>{{ $t(" 新建商品 ") }}</el-button>
       </template>
@@ -248,11 +254,11 @@ onMounted(() => {
             <el-button
               text
               type="primary"
-              @click="router.push(`/commerce/products/edit/${row.id}`)"
+              :disabled="!canWrite" @click="router.push(`/commerce/products/edit/${row.id}`)"
               >{{ $t("编辑展示") }}</el-button
             ><el-button
               text
-              :disabled="busyIds.includes(row.id)"
+              :disabled="!canWrite || busyIds.includes(row.id)"
               @click="
                 handleStatusChange(
                   row,
@@ -314,7 +320,7 @@ onMounted(() => {
               text
               type="primary"
               size="small"
-              @click="router.push(`/commerce/products/edit/${row.id}`)"
+              :disabled="!canWrite" @click="router.push(`/commerce/products/edit/${row.id}`)"
               >{{ $t("编辑") }}</el-button
             >
             <el-button
@@ -322,7 +328,7 @@ onMounted(() => {
               text
               type="success"
               size="small"
-              :disabled="busyIds.includes(row.id)"
+              :disabled="!canWrite || busyIds.includes(row.id)"
               @click="handleStatusChange(row, 'on_shelf')"
               >{{ $t("上架") }}</el-button
             >
@@ -331,7 +337,7 @@ onMounted(() => {
               text
               type="warning"
               size="small"
-              :disabled="busyIds.includes(row.id)"
+              :disabled="!canWrite || busyIds.includes(row.id)"
               @click="handleStatusChange(row, 'off_shelf')"
               >{{ $t("下架") }}</el-button
             >
@@ -339,7 +345,7 @@ onMounted(() => {
               text
               type="danger"
               size="small"
-              @click="handleDelete(row)"
+              :disabled="!canWrite" @click="handleDelete(row)"
               >{{ $t("删除") }}</el-button
             >
           </template>
