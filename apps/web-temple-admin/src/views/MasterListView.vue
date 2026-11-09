@@ -17,12 +17,14 @@ const router = useRouter()
 const auth = useAuthStore()
 
 const loading = ref(false)
+const loadError = ref('')
 const list = ref<Master[]>([])
 const total = ref(0)
 const query = reactive({ status: '', page: 1, size: 20 })
 
 async function load() {
   loading.value = true
+  loadError.value = ''
   try {
     const r = await listMasters({
       templeId: auth.templeId,
@@ -32,6 +34,8 @@ async function load() {
     })
     list.value = r.list || []
     total.value = r.total || 0
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : '法师列表加载失败'
   } finally {
     loading.value = false
   }
@@ -68,7 +72,7 @@ onMounted(load)
 
 <template>
   <div class="df-page">
-    <PageHeader :title='$t("法师管理")' :subtitle='$t("维护本寺法师信息与上下架状态")'>
+    <PageHeader :title='$t("法师管理")'>
       <el-button v-if="auth.can('temple.team.manage')" @click="router.push('/masters/accounts')">{{ $t("账号分配") }}</el-button>
       <el-button :icon="Refresh" @click="load">{{ $t("刷新") }}</el-button>
       <el-button v-if="auth.can('temple.people.write')" type="primary" :icon="Plus" @click="goEdit()">{{ $t("新增法师") }}</el-button>
@@ -83,7 +87,12 @@ onMounted(load)
         <el-button :icon="Search" type="primary" plain @click="onSearch">{{ $t("查询") }}</el-button>
       </div>
 
-      <DataTable
+      <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+        <div class="ax-page-feedback__copy">{{ $t(loadError) }}</div>
+        <el-button :loading="loading" @click="load">{{ $t("重试") }}</el-button>
+      </div>
+
+      <DataTable v-else
         :data="list"
         :loading="loading"
         :total="total"

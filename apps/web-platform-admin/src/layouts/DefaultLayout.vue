@@ -23,7 +23,6 @@ const activeMenu = computed(() => activeWorkspacePath(route.path))
 const pageWorkspace = computed(() => workspaceForPath(route.path))
 const pageList = computed(() => workspaceItemForPath(route.path))
 const avatarText = computed(() => (auth.userInfo?.nickname || '管').slice(0, 1))
-const pageTitle = computed(() => (route.meta.title as string) || '平台管理台')
 const pageParent = computed(() => pageWorkspace.value?.title || '平台管理台')
 
 
@@ -117,7 +116,6 @@ async function onCommand(cmd: string) {
               <span>{{ $t(pageParent) }}</span>
               <template v-if="pageList && pageList.path !== route.path"> / <router-link :to="pageList.path">{{ $t(pageList.title) }}</router-link></template>
             </nav>
-            <div class="ax-admin-header__title">{{ $t(pageTitle) }}</div>
           </div>
         </div>
 

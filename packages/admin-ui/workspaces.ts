@@ -22,8 +22,8 @@ export const adminWorkspaces: AdminWorkspace[] = [
   ] },
   { title: '审核与治理', icon: 'Checked', children: [
     { path: '/onboarding/review', title: '认证与入驻审核' }, { path: '/temple/review', title: '寺院初审与终审' },
-    { path: '/master/review', title: '法师资质审核' }, { path: '/audit/comment', title: '评价审核' },
-    { path: '/audit/design', title: '社区/短视频审核' }, { path: '/audit/report', title: '举报处理' },
+    { path: '/master/review', title: '法师资质审核' }, { path: '/audit/comment', title: '广场评论审核' },
+    { path: '/audit/design', title: '广场内容审核' }, { path: '/audit/report', title: '举报处理' },
     { path: '/settings/dict', title: '敏感词管理' }
   ] },
   { title: '财务中心', icon: 'Money', children: [
@@ -40,7 +40,7 @@ export const adminWorkspaces: AdminWorkspace[] = [
     { path: '/marketing/coupon', title: '优惠券管理' }
   ] },
   { title: 'AI 中心', icon: 'Connection', children: [
-    { path: '/ai/agent', title: '智能体编排' }, { path: '/ai/connections', title: '模型与连接' },
+    { path: '/ai/agent', title: '智能体编排' }, { path: '/ai/report-pricing', title: '报告定价' }, { path: '/ai/connections', title: '模型与连接' },
     { path: '/ai/knowledge', title: '知识中心' }, { path: '/ai/tools', title: '技能与工具' },
     { path: '/ai/debug', title: '调试工作台' }, { path: '/ai/evaluations', title: '质量评测' },
     { path: '/ai/releases', title: '版本与发布' }, { path: '/ai/runs', title: '运行监控' }

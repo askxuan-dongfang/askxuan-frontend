@@ -42,7 +42,7 @@ onMounted(() => run(load))
 
 <template>
   <section class="model-library" v-loading="busy">
-    <header><div><h2>{{ $t("模型库") }}</h2><p>{{ $t("模型添加一次，聊天、建索引、重排和文档理解按用途选择。") }}</p></div><el-button @click="refresh">{{ $t("刷新") }}</el-button><el-button type="primary" :disabled="!library?.writable" @click="add">{{ $t("添加模型") }}</el-button></header>
+    <header><div><h2>{{ $t("模型库") }}</h2></div><el-button @click="refresh">{{ $t("刷新") }}</el-button><el-button type="primary" :disabled="!library?.writable" @click="add">{{ $t("添加模型") }}</el-button></header>
     <el-alert v-if="error" :title="$t(error)" type="error" :closable="false" />
     <el-alert v-for="warning in library?.warnings" :key="warning" :title="$t(warning)" type="warning" :closable="false" />
     <el-tabs>

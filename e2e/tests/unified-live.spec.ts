@@ -18,7 +18,7 @@ test('ECS real platform login and unified operations load with real read-only AP
  page.on('response',async r=>{if(!r.url().includes('/api/v1/'))return;try{const body=await r.json();if(!r.ok()||body.code!==undefined&&body.code!==0)failed.push(new URL(r.url()).pathname+':'+body.code)}catch{failed.push(new URL(r.url()).pathname+':non-json')}})
  await page.goto('/admin/login');await page.getByPlaceholder('管理员账号').fill(account);await page.getByPlaceholder('登录密码').fill(password);const loginResponse=page.waitForResponse(r=>r.url().includes('/auth/admin/login')&&r.request().method()==='POST');await page.getByRole('button',{name:/登\s*录/}).click();expect((await (await loginResponse).json()).code).toBe(0);await expect(page).toHaveURL(/\/admin\/dashboard$/,{timeout:20000})
  for(const path of ['/commerce','/commerce/dashboard','/commerce/products','/commerce/categories','/commerce/materials','/commerce/services','/commerce/orders','/commerce/diy-orders','/commerce/logistics','/commerce/returns','/commerce/reports','/commerce/points-mall','/marketing/rewards','/marketing/banner','/marketing/activity','/marketing/coupon','/temple/list','/master/list','/user/list','/finance/overview','/settings/account','/settings/role','/settings/dict','/settings/log','/settings/backup']){
-  await page.goto('/admin'+path);await expect(page.locator('.ax-admin-header__title')).not.toBeEmpty();await page.waitForLoadState('networkidle')
+  await page.goto('/admin'+path);await expect(page.locator('.ax-admin-main').getByRole('heading',{level:1}).first()).toBeVisible();await page.waitForLoadState('networkidle')
   await expect(page.locator('.ax-admin-main')).not.toBeEmpty()
  }
  expect(errors).toEqual([]);expect(failed).toEqual([])

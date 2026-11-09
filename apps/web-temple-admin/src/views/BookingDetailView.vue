@@ -22,6 +22,7 @@ const router = useRouter()
 const bookingId = computed(() => (route.params.id as string) || '')
 
 const loading = ref(false)
+const loadError = ref('')
 const acting = ref(false)
 const booking = ref<Booking | null>(null)
 const logs = ref<BookingStatusLog[]>([])
@@ -34,6 +35,7 @@ const canCancel = computed(() => !!booking.value && ['pending_payment','pending'
 
 async function load() {
   loading.value = true
+  loadError.value = ''
   try {
     const b = await getBooking(bookingId.value)
     booking.value = b
@@ -49,6 +51,8 @@ async function load() {
       review.value = null
     }
     await Promise.allSettled(tasks)
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : '预约详情加载失败'
   } finally {
     loading.value = false
   }
@@ -121,12 +125,16 @@ onMounted(load)
   <div class="df-page" v-loading="loading">
     <PageHeader :title='$t("预约详情")' :subtitle="$t(booking?.id)">
       <el-button :icon="ArrowLeft" @click="router.back()">{{ $t("返回") }}</el-button>
-      <el-button v-if="canConfirm" type="primary" :icon="Check" :loading="acting" @click="doConfirm">{{ $t("确认预约") }}</el-button>
-      <el-button v-if="booking?.status==='confirmed'" type="primary" :loading="acting" @click="doStart">{{ $t("开始执行") }}</el-button>
-      <el-button v-if="canCancel" type="danger" plain :icon="Close" :loading="acting" @click="doCancel">{{ $t("取消预约") }}</el-button>
+      <el-button v-if="!loadError && canConfirm" type="primary" :icon="Check" :loading="acting" @click="doConfirm">{{ $t("确认预约") }}</el-button>
+      <el-button v-if="!loadError && booking?.status==='confirmed'" type="primary" :loading="acting" @click="doStart">{{ $t("开始执行") }}</el-button>
+      <el-button v-if="!loadError && canCancel" type="danger" plain :icon="Close" :loading="acting" @click="doCancel">{{ $t("取消预约") }}</el-button>
     </PageHeader>
 
-    <div class="detail-grid" v-if="booking">
+    <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+      <div class="ax-page-feedback__copy">{{ $t(loadError) }}</div>
+      <el-button :loading="loading" @click="load">{{ $t("重试") }}</el-button>
+    </div>
+    <div class="detail-grid" v-else-if="booking">
       <div class="detail-left">
         <div class="df-card section">
           <div class="section-title">{{ $t("预约信息") }}</div>
@@ -145,7 +153,7 @@ onMounted(load)
 			<el-descriptions-item :label='$t("法师执行费")'><span class="price">{{ $t(formatMoney(booking.serviceFee)) }}</span></el-descriptions-item>
 			<el-descriptions-item :label='$t("预约合同总额")'><span class="price">{{ $t(formatMoney(booking.totalFee)) }}</span></el-descriptions-item>
 			<el-descriptions-item :label='$t("支付状态")'>
-			  <el-tag :type="booking.paymentStatus === 'success' ? 'success' : 'warning'">{{ $t(booking.paymentStatus) }}</el-tag>
+			  <StatusTag :status="booking.paymentStatus" domain="payment" />
 			</el-descriptions-item>
 			<el-descriptions-item :label='$t("支付单号")'>{{ $t((booking.paymentNo || '-')) }}</el-descriptions-item>
             <el-descriptions-item :label='$t("提交时间")'>{{ $t(formatDate(booking.createdAt)) }}</el-descriptions-item>

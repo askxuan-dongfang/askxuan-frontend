@@ -1,6 +1,6 @@
 <template>
   <div class="dfx-page">
-    <PageHeader :title='$t("平台总览")' :subtitle='$t("先处理风险与待办，再查看经营数据；所有指标均来自实时接口")'>
+    <PageHeader :title='$t("平台总览")'>
       <template #actions>
         <el-button :loading="loading" @click="loadDashboard">{{ $t("刷新数据") }}</el-button>
       </template>
@@ -15,10 +15,10 @@
     </div>
 
     <!-- 先任务、后数据 -->
-    <div class="dfx-card dashboard__todo">
+    <div v-if="visibleTodos.length" class="dfx-card dashboard__todo">
       <div class="chart-card__title">{{ $t("运营待办") }}</div>
       <div class="dashboard__todo-grid">
-        <router-link v-for="todo in todos" :key="todo.path" :to="todo.path" class="todo-item">
+        <router-link v-for="todo in visibleTodos" :key="todo.path" :to="todo.path" class="todo-item">
           <el-icon :size="22" :color="todo.color"><component :is="todo.icon" /></el-icon>
           <div class="todo-item__info">
             <div class="todo-item__label">{{ $t(todo.label) }}</div>
@@ -57,7 +57,7 @@
         <div v-if="audit" class="chart-card__mobile-summary">
           <span>{{ $t("当前待审核") }}</span>
           <strong>{{ $t(stats.pendingCount) }}</strong>
-          <router-link to="/audit/comment">{{ $t("进入审核中心") }}</router-link>
+          <router-link v-if="canAccessRoute(router.resolve('/audit/comment'),auth.roles,auth.access)" to="/audit/comment">{{ $t("进入审核中心") }}</router-link>
         </div>
       </div>
     </div>
@@ -68,7 +68,10 @@
 <script setup lang="ts">
 import { withAdminChartTheme, watchAdminChartAppearance } from "../../../../packages/admin-ui/chart-theme"
 
-import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { canAccessRoute } from '@/router/access'
 import * as echarts from 'echarts'
 import PageHeader from '@/components/PageHeader.vue'
 import StatCard from '@/components/StatCard.vue'
@@ -78,6 +81,9 @@ import { getTempleList } from '@/api/temple'
 import { getMasterList } from '@/api/master'
 import { getUserList } from '@/api/user'
 import type { FinanceOverview, AuditStatistics } from '@/types'
+
+const router=useRouter(),auth=useAuthStore()
+const visibleTodos=computed(()=>todos.value.filter(todo=>canAccessRoute(router.resolve(todo.path),auth.roles,auth.access)))
 
 const pieRef = ref<HTMLElement>()
 const barRef = ref<HTMLElement>()
@@ -102,7 +108,7 @@ const audit = ref<AuditStatistics | null>(null)
 const todos = ref<Array<{ path: string; label: string; count: number | string; icon: string; color: string }>>([
   { path: '/temple/review', label: '寺院入驻审核', count: '查看', icon: 'OfficeBuilding', color: '#C45A3C' },
   { path: '/master/review', label: '法师资质审核', count: '查看', icon: 'Avatar', color: '#B5453A' },
-  { path: '/audit/comment', label: '评价内容审核', count: '—', icon: 'ChatDotRound', color: '#D4A843' },
+  { path: '/audit/comment', label: '广场评论审核', count: '—', icon: 'ChatDotRound', color: '#D4A843' },
   { path: '/audit/report', label: '举报待处理', count: '查看', icon: 'Warning', color: '#C45A3C' },
   { path: '/finance/reconcile', label: '提现待审核', count: '—', icon: 'Wallet', color: '#C8A96E' }
 ])

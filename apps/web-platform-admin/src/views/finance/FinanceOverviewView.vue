@@ -59,12 +59,12 @@
         </el-table-column>
         <el-table-column :label='$t("抽成比例")' width="160">
           <template #default="{ row }">
-            <el-input-number v-model="row.rate" :min="0" :max="1" :step="0.01" :precision="2" size="small" controls-position="right" style="width: 120px" />
+            <el-input-number v-model="row.rate" :disabled="!canWrite || !configsReady || configLoading" :min="0" :max="1" :step="0.01" :precision="2" size="small" controls-position="right" style="width: 120px" />
           </template>
         </el-table-column>
         <el-table-column :label='$t("说明")' min-width="200">
           <template #default="{ row }">
-            <el-input v-model="row.description" size="small" />
+            <el-input v-model="row.description" :disabled="!canWrite || !configsReady || configLoading" size="small" />
           </template>
         </el-table-column>
         <el-table-column :label='$t("更新时间")' width="170">
@@ -72,7 +72,7 @@
         </el-table-column>
         <el-table-column :label='$t("操作")' width="100" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" :loading="row._saving" @click="saveConfig(row)">{{ $t("保存") }}</el-button>
+            <el-button link type="primary" :loading="row._saving" :disabled="!canWrite || !configsReady || configLoading" @click="saveConfig(row)">{{ $t("保存") }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -80,9 +80,9 @@
         <template #item="{ item: row }">
           <article class="mobile-task-card config-task-card">
             <div class="mobile-task-card__head"><strong>{{ $t(bizTypeText(row.bizType)) }}</strong><span class="muted">{{ $t(formatDate(row.updateTime)) }}</span></div>
-            <label class="config-field"><span>{{ $t("抽成比例") }}</span><el-input-number v-model="row.rate" :min="0" :max="1" :step="0.01" :precision="2" controls-position="right" /></label>
-            <label class="config-field"><span>{{ $t("说明") }}</span><el-input v-model="row.description" /></label>
-            <el-button type="primary" :loading="row._saving" @click="saveConfig(row)">{{ $t("保存配置") }}</el-button>
+            <label class="config-field"><span>{{ $t("抽成比例") }}</span><el-input-number v-model="row.rate" :disabled="!canWrite || !configsReady || configLoading" :min="0" :max="1" :step="0.01" :precision="2" controls-position="right" /></label>
+            <label class="config-field"><span>{{ $t("说明") }}</span><el-input v-model="row.description" :disabled="!canWrite || !configsReady || configLoading" /></label>
+            <el-button type="primary" :loading="row._saving" :disabled="!canWrite || !configsReady || configLoading" @click="saveConfig(row)">{{ $t("保存配置") }}</el-button>
           </article>
         </template>
       </MobileTaskList>
@@ -91,12 +91,14 @@
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
+import { hasPlatformPermission } from '@/router/access'
 import { ElMessage } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
 
 import { withAdminChartTheme, watchAdminChartAppearance } from '../../../../../packages/admin-ui/chart-theme'
 import client from '@/api/client'
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { Refresh } from '@element-plus/icons-vue'
 
@@ -117,6 +119,9 @@ const demoMoney=(cents:number)=>`¥${(cents/100).toFixed(2)}`
 async function loadDemo(){if(demoLoading.value)return;demoLoading.value=true;demoError.value='';try{demoWallet.value=await client.get<DemoWallet>('/finance/wallet/platform/demo')}catch(e){demoError.value=e instanceof Error?e.message:'模拟钱包未开启或暂时不可用'}finally{demoLoading.value=false}}
 function onDemoToggle(event:Event){if((event.target as HTMLDetailsElement).open&&!demoWallet.value)void loadDemo()}
 
+const auth=useAuthStore()
+const canWrite=computed(()=>hasPlatformPermission(auth.roles,auth.access,'platform.finance.write',['platform_super']))
+
 const pieRef = ref<HTMLElement>()
 let pieChart: echarts.ECharts | null = null
 
@@ -124,6 +129,7 @@ const overview = ref<FinanceOverview | null>(null)
 const configs = ref<ConfigRow[]>([])
 const loading = ref(false)
 const configLoading = ref(false)
+const configsReady = ref(false)
 const loadIssueCount = ref(0)
 
 function bizTypeText(t: string) {
@@ -159,10 +165,11 @@ function renderPie() {
 async function loadData() {
   loading.value = true
   configLoading.value = true
+  configsReady.value = false
   loadIssueCount.value = 0
   const [ovRes, cfgRes] = await Promise.allSettled([getFinanceOverview(), getCommissionConfigs({})])
   overview.value = ovRes.status === 'fulfilled' ? ovRes.value : null
-  if (cfgRes.status === 'fulfilled') configs.value = cfgRes.value.map((c) => ({ ...c }))
+  if (cfgRes.status === 'fulfilled') { configs.value = cfgRes.value.map((c) => ({ ...c })); configsReady.value = true }
   loadIssueCount.value = [ovRes, cfgRes].filter((result) => result.status === 'rejected').length
   configLoading.value = false
   loading.value = false
@@ -171,6 +178,7 @@ async function loadData() {
 }
 
 async function saveConfig(row: ConfigRow) {
+  if (!canWrite.value || !configsReady.value || configLoading.value || row._saving) return
   row._saving = true
   try {
     await updateCommissionConfig(row.id, { rate: row.rate, description: row.description })

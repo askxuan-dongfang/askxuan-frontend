@@ -1,6 +1,6 @@
 <template>
   <div class="dfx-page">
-    <PageHeader :title='$t("评论审核")' :subtitle='$t("大师广场评论先审后显")'>
+    <PageHeader :title='$t("广场评论审核")' :subtitle='$t("大师广场评论先审后显")'>
       <template #actions>
         <el-button :icon="Refresh" @click="loadData">{{ $t("刷新") }}</el-button>
       </template>

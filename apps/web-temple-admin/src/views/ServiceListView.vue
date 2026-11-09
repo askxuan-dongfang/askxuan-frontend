@@ -18,6 +18,7 @@ import type { TempleService } from '@/types'
 const router = useRouter()
 
 const loading = ref(false)
+const loadError = ref('')
 const list = ref<TempleService[]>([])
 const statusFilter = ref('')
 
@@ -27,9 +28,12 @@ const filteredList = computed(() =>
 
 async function load() {
   loading.value = true
+  loadError.value = ''
   try {
     const r = await listServices()
     list.value = r.list || []
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : '服务列表加载失败'
   } finally {
     loading.value = false
   }
@@ -57,7 +61,7 @@ onMounted(load)
 
 <template>
   <div class="df-page">
-    <PageHeader :title='$t("服务管理")' :subtitle='$t("管理本寺法事服务项目与上下架")'>
+    <PageHeader :title='$t("服务管理")'>
       <el-button :icon="Refresh" @click="load">{{ $t("刷新") }}</el-button>
       <el-button v-if="auth.can('temple.services.write')" type="primary" :icon="Plus" @click="goEdit()">{{ $t("新增服务") }}</el-button>
     </PageHeader>
@@ -70,7 +74,12 @@ onMounted(load)
         </el-select>
       </div>
 
-      <DataTable :data="filteredList" :loading="loading" :total="0" row-key="id">
+      <div v-if="loadError" class="ax-page-feedback is-error" role="alert">
+        <div class="ax-page-feedback__copy">{{ $t(loadError) }}</div>
+        <el-button :loading="loading" @click="load">{{ $t("重试") }}</el-button>
+      </div>
+
+      <DataTable v-else :data="filteredList" :loading="loading" :total="0" row-key="id">
         <el-table-column prop="serviceCode" :label='$t("服务编码")' width="120" />
         <el-table-column prop="serviceName" :label='$t("服务名称")' min-width="150" />
         <el-table-column :label='$t("价格")' width="120">

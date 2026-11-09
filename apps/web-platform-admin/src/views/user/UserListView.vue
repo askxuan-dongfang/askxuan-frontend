@@ -48,8 +48,8 @@
         <el-table-column :label='$t("操作")' width="170" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="$router.push(`/user/detail/${row.userId}`)">{{ $t("详情") }}</el-button>
-            <el-button v-if="row.status === 'normal'" link type="danger" @click="onStatus(row, 'banned')">{{ $t("封禁") }}</el-button>
-            <el-button v-else link type="success" @click="onStatus(row, 'normal')">{{ $t("解封") }}</el-button>
+            <el-button v-if="canWrite && row.status === 'normal'" link type="danger" @click="onStatus(row, 'banned')">{{ $t("封禁") }}</el-button>
+            <el-button v-else-if="canWrite" link type="success" @click="onStatus(row, 'normal')">{{ $t("解封") }}</el-button>
           </template>
         </el-table-column>
       </DataTable>
@@ -58,10 +58,12 @@
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
+import { hasPlatformPermission } from '@/router/access'
 import { ElMessage, ElMessageBox } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
 
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { Search, Refresh, RefreshLeft } from '@element-plus/icons-vue'
 
 import PageHeader from '@/components/PageHeader.vue'
@@ -70,6 +72,9 @@ import StatusTag from '@/components/StatusTag.vue'
 import { getUserList, updateUserStatus } from '@/api/user'
 import { formatDate, formatMoney, maskMobile } from '@/utils/format'
 import type { AdminUserItem } from '@/types'
+
+const auth=useAuthStore()
+const canWrite=computed(()=>hasPlatformPermission(auth.roles,auth.access,'platform.users.write',['platform_super']))
 
 const loading = ref(false)
 const loadError = ref(false)
@@ -102,6 +107,7 @@ function onReset() {
 }
 
 async function onStatus(row: AdminUserItem, status: string) {
+  if (!canWrite.value) return
   await ElMessageBox.confirm((uiText("确认") + String((status === 'banned' ? uiText('封禁') : uiText('解封'))) + uiText("用户「") + String(row.nickname) + uiText("」？") + uiText(status === 'banned' ? '封禁后旧会话立即失效，订单和资产保留。' : '解封后需要重新登录，旧会话不会恢复。')), uiText('提示'), {
     type: status === 'banned' ? 'warning' : 'info'
   })

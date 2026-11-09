@@ -1,6 +1,6 @@
 <template>
   <div class="dfx-page">
-    <PageHeader :title='$t("提现审核与收支汇总")' :subtitle='$t("提现审核 / 收支汇总")'>
+    <PageHeader :title='$t("提现审核与收支汇总")'>
       <template #actions>
         <el-button :icon="Refresh" @click="loadData">{{ $t("刷新") }}</el-button>
       </template>
@@ -51,8 +51,8 @@
             <el-table-column :label='$t("操作")' width="180" fixed="right">
               <template #default="{ row }">
                 <template v-if="row.status === 'pending'">
-                  <el-button link type="success" @click="auditW(row, 'approve')">{{ $t("通过") }}</el-button>
-                  <el-button link type="danger" @click="auditW(row, 'reject')">{{ $t("驳回") }}</el-button>
+                  <el-button link type="success" :disabled="!canWrite || loading || loadError" @click="auditW(row, 'approve')">{{ $t("通过") }}</el-button>
+                  <el-button link type="danger" :disabled="!canWrite || loading || loadError" @click="auditW(row, 'reject')">{{ $t("驳回") }}</el-button>
                 </template>
                 <el-button v-else-if="row.status === 'approved'" link disabled>{{ $t("打款未接入") }}</el-button>
                 <span v-else class="muted">-</span>
@@ -66,7 +66,7 @@
                 <div class="mobile-task-card__meta">{{ $t(applicantText(row.applicantType)) }} {{ $t(row.applicantId) }} · {{ $t(maskBankCard(row.bankCard)) }}</div>
                 <div class="mobile-task-card__foot">
                   <span>{{ $t(formatDate(row.createTime)) }} · <b>{{ $t(formatMoney(row.amount)) }}</b></span>
-                  <span class="mobile-actions" v-if="row.status === 'pending'"><el-button type="success" @click="auditW(row, 'approve')">{{ $t("通过") }}</el-button><el-button type="danger" plain @click="auditW(row, 'reject')">{{ $t("驳回") }}</el-button></span>
+                  <span class="mobile-actions" v-if="row.status === 'pending'"><el-button type="success" :disabled="!canWrite || loading || loadError" @click="auditW(row, 'approve')">{{ $t("通过") }}</el-button><el-button type="danger" plain :disabled="!canWrite || loading || loadError" @click="auditW(row, 'reject')">{{ $t("驳回") }}</el-button></span>
                   <el-button v-else-if="row.status === 'approved'" disabled>{{ $t("打款未接入") }}</el-button>
                   <b v-else>{{ $t("已处理") }}</b>
                 </div>
@@ -94,10 +94,12 @@
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
+import { hasPlatformPermission } from '@/router/access'
 import { ElMessage, ElMessageBox } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
 
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { Refresh, Search } from '@element-plus/icons-vue'
 
 import PageHeader from '@/components/PageHeader.vue'
@@ -108,6 +110,9 @@ import StatCard from '@/components/StatCard.vue'
 import { getWithdrawals, auditWithdrawal, getFinanceReports } from '@/api/finance'
 import { formatDate, formatMoney, maskBankCard } from '@/utils/format'
 import type { Withdrawal, FinanceReport } from '@/types'
+
+const auth=useAuthStore()
+const canWrite=computed(()=>hasPlatformPermission(auth.roles,auth.access,'platform.finance.write',['platform_super']))
 
 const activeTab = ref('withdrawal')
 const loading = ref(false)
@@ -144,6 +149,7 @@ function onWSearch() {
 }
 
 async function auditW(row: Withdrawal, action: 'approve' | 'reject') {
+  if (!canWrite.value || loading.value || loadError.value) return
   if (action === 'approve') {
     await ElMessageBox.confirm(
       (uiText("确认通过提现单「") + String(row.withdrawalNo) + uiText("」？金额 ") + String(formatMoney(row.amount)) + uiText("。当前未接入打款通道，审核通过不会发起转账。")),

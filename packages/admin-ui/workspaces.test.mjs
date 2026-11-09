@@ -45,15 +45,15 @@ test('navigation consults unchanged route roles: shop cannot acquire platform, A
  const shop=visible(['shop_admin']),service=visible(['platform_service']),superuser=visible(['platform_super'])
  assert.equal(defaultRoute(['shop_admin']),'/commerce/dashboard')
  assert.ok(shop.includes('/commerce/orders'));assert.ok(!shop.includes('/master/list'));assert.ok(!shop.includes('/ai/agent'));assert.ok(!shop.includes('/commerce/creator-rewards'))
- assert.ok(service.includes('/master/list'));assert.ok(!service.includes('/commerce/orders'));assert.ok(!service.includes('/onboarding/review'));assert.ok(!service.includes('/settings/directory-tags'))
- for(const path of ['/onboarding/review','/ai/agent','/commerce/creator-rewards','/settings/directory-tags'])assert.ok(superuser.includes(path))
+ assert.ok(service.includes('/master/list'));assert.ok(!service.includes('/commerce'));assert.ok(!service.includes('/commerce/orders'));assert.ok(!service.includes('/onboarding/review'));assert.ok(!service.includes('/settings/directory-tags'))
+ for(const path of ['/onboarding/review','/ai/agent','/ai/report-pricing','/commerce/creator-rewards','/settings/directory-tags'])assert.ok(superuser.includes(path))
 })
 
 test('shell preserves commerce page titles independently of workspace menu labels',()=>{
  const {reactive,computed}=require('vue')
  const routeState=reactive({path:'/dashboard',meta:{title:'平台总览'}})
  const source=read('../../apps/web-platform-admin/src/layouts/DefaultLayout.vue').match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1]
- const shell=compile(source+'\nexport {pageTitle,pageParent};',{
+ const shell=compile(source+'\nexport {pageParent};',{
   vue:{computed},
   'vue-router':{useRoute:()=>routeState,useRouter:()=>router},
   '../../../../packages/admin-ui/navigation':{useAdminNavigation:()=>({})},
@@ -64,7 +64,22 @@ test('shell preserves commerce page titles independently of workspace menu label
  for(const route of JSON.parse(read('../../scripts/commerce-routes.json'))){
   routeState.path=route.path.replace('/:id?','/1').replace('/:id','/1')
   routeState.meta={title:route.title}
-  assert.equal(shell.pageTitle.value,route.title,route.path)
+  assert.equal(router.resolve(routeState.path).meta.title,route.title,route.path)
   assert.equal(shell.pageParent.value,workspaceForPath(routeState.path).title,route.path)
  }
+})
+
+test('each leaf page retains its own title after the shell title is removed',()=>{
+ const readVue=source=>read('../../apps/web-platform-admin/src/'+source)
+ let pages=0
+ for(const route of router.getRoutes().filter(route=>!route.redirect&&!route.children.length)){
+  const target=String(route.components?.default).match(/(?:import|require)\(['"]([^'"]+)['"]\)/)?.[1]
+  const source=target?.startsWith('@/')?target.slice(2):target?.startsWith('./views/')?'commerce/'+target.slice(2):undefined
+  assert.ok(source,route.path+' must resolve to a reviewed page component')
+  const template=readVue(source).split('<template')[1]||''
+  const title=/<PageHeader\b|<h[12]\b/.test(template)||(/<GrowthOperations\b/.test(template)&&/<h1\b/.test(read('../growth/GrowthOperations.vue')))
+  assert.equal(title,true,route.path+' must have a page title')
+  pages++
+ }
+ assert.equal(pages,69)
 })

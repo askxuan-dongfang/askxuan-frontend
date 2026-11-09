@@ -3,6 +3,12 @@ import { readFileSync } from 'node:fs'
 const migration = JSON.parse(readFileSync('../scripts/commerce-routes.json','utf8'))
 const platformPaths: string[] = JSON.parse(readFileSync('../scripts/platform-routes.json','utf8'))
 const origin = 'http://127.0.0.1:5388'
+function pageHeading(view: string, title: string, path: string) {
+ if(view==='ProductEditView.vue')return path.includes('/edit/')?'编辑这份好物':'上新一份好物'
+ if(view==='MaterialEditView.vue')return path.includes('/edit/')?'编辑材料':'新建材料'
+ return ({'DashboardView.vue':'今日工作台','MaterialListView.vue':'DIY 材料列表','ServiceEditView.vue':'维护历史附加服务'} as Record<string,string>)[view]||title
+}
+
 function token(role: string) { return 'e30.'+Buffer.from(JSON.stringify({userId:9901,roles:[role],clientId:role==='shop_admin'?'shop-admin':'platform-admin',exp:Math.floor(Date.now()/1000)+3600})).toString('base64url')+'.fixture' }
 async function session(page: Page, role='platform_super', legacy=false) {
  await page.addInitScript(({value,legacy})=>{
@@ -29,14 +35,14 @@ for(const width of [390,1440]) {
   await session(page,'shop_admin');await fixture(page);await page.setViewportSize({width,height:900})
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message))
   const path=m.path==='/commerce/services/edit/:id?'?'/commerce/services/edit/1':m.path.replace('/:id?','').replace('/:id','/1')
-  await page.goto(origin+'/admin'+path);await expect(page.locator('.ax-admin-header__title')).toHaveText(m.title)
+  await page.goto(origin+'/admin'+path);await expect(page.locator('.ax-admin-main').getByRole('heading',{level:1,name:pageHeading(m.view,m.title,path),exact:true})).toBeVisible()
   await expect(page.locator('.ax-admin-main')).not.toBeEmpty();await page.waitForTimeout(150)
   expect(errors).toEqual([]);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBeTruthy()
  })
  for(const path of platformPaths) test(`platform page ${path} at ${width}`,async({page})=>{
   await session(page);await fixture(page);await page.setViewportSize({width,height:900})
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message))
-  await page.goto(origin+'/admin'+path.replace('/:id','/1'));await expect(page.locator('.ax-admin-main')).not.toBeEmpty();await page.waitForTimeout(150)
+  await page.goto(origin+'/admin'+path.replace('/:id','/1'));await expect(page.locator('.ax-admin-main').getByRole('heading',{level:1}).first()).toBeVisible();await expect(page.locator('.ax-admin-main')).not.toBeEmpty();await page.waitForTimeout(150)
   expect(errors).toEqual([]);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBeTruthy()
  })
 }
@@ -45,7 +51,7 @@ for(const m of migration) test(`legacy deep link ${m.legacy}`,async({page})=>{
  const path=m.legacy.replace('/:id?','/9').replace('/:id','/9')
  await page.goto(origin+path+'?page=2#record')
  await expect(page).toHaveURL(origin+'/admin'+path.replace(/^\/shop/,'/commerce')+'?page=2#record')
- await expect(page.locator('.ax-admin-header__title')).toHaveText(m.title)
+ await expect(page.locator('.ax-admin-main').getByRole('heading',{level:1,name:pageHeading(m.view,m.title,path),exact:true})).toBeVisible()
  expect(await page.evaluate(()=>localStorage.getItem('df_shop_admin_token'))).toBeNull()
  expect(await page.evaluate(()=>!!localStorage.getItem('df_platform_admin_token'))).toBeTruthy()
 })
@@ -195,7 +201,7 @@ test('legacy service creation bookmark opens current consecration catalog',async
  await session(page,'shop_admin');await fixture(page)
  await page.goto(origin+'/admin/commerce/services/edit')
  await expect(page).toHaveURL(origin+'/admin/commerce/services')
- await expect(page.locator('.ax-admin-header__title')).toHaveText('DIY 开光服务')
+ await expect(page.locator('.ax-admin-main').getByRole('heading',{level:1,name:'DIY 开光服务',exact:true})).toBeVisible()
  await expect(page.getByText('当前开光服务',{exact:true})).toBeVisible()
  await expect(page.getByRole('button',{name:/新增|新建|保存/})).toHaveCount(0)
 })
