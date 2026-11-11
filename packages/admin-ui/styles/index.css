@@ -713,7 +713,7 @@ a:focus-visible,
 }
 
 /* Date-range panels are teleported outside forms, so form width rules do not apply. */
-@media (max-width: 700px) {
+@media (max-width: 700px), (orientation: landscape) and (max-height: 500px) {
   html .el-picker__popper:has(.el-date-range-picker) {
     position: fixed !important;
     top: max(12px, env(safe-area-inset-top)) !important;
@@ -726,7 +726,9 @@ a:focus-visible,
   html .el-picker__popper:has(.el-date-range-picker) > .el-popper__arrow {
     display: none;
   }
+}
 
+@media (max-width: 700px) {
   html .el-date-range-picker,
   html .el-date-range-picker.has-sidebar {
     width: min(360px, calc(100vw - 24px));
@@ -781,6 +783,29 @@ a:focus-visible,
   }
 }
 
+@media (orientation: landscape) and (max-height: 500px) {
+  html .el-date-range-picker {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - max(12px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom)) - 2px);
+  }
+
+  html .el-date-range-picker > .el-picker-panel__body-wrapper {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  html .el-date-range-picker .el-picker-panel__body {
+    max-height: none;
+    overflow: visible;
+  }
+
+  html .el-date-range-picker > .el-picker-panel__footer {
+    flex: none;
+  }
+}
+
 .el-button--primary {
   background: var(--admin-primary);
   border-color: var(--admin-primary);
@@ -815,24 +840,6 @@ a:focus-visible,
 }
 
 @media (max-width: 1199px) and (min-width: 992px) {
-  .ax-admin-sidebar {
-    width: var(--admin-sidebar-collapsed-width) !important;
-  }
-
-  .ax-admin-content {
-    margin-left: var(--admin-sidebar-collapsed-width) !important;
-  }
-
-  .ax-admin-logo__copy,
-  .ax-admin-user__copy,
-  .ax-admin-user__action,
-  .ax-admin-menu__section,
-  .ax-admin-version {
-    width: 0 !important;
-    opacity: 0 !important;
-    pointer-events: none;
-  }
-
   .stats-grid,
   .stat-grid,
   .stat-row,
@@ -1398,5 +1405,27 @@ select:focus-visible { outline: 2px solid var(--admin-primary); outline-offset: 
 
   .ax-admin-header .ax-admin-user {
     min-height: 44px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 767px) and (max-height: 500px) {
+  .ax-admin-header {
+    display: flex;
+    padding-block: 6px;
+    gap: 12px;
+  }
+
+  .ax-admin-header__left,
+  .ax-admin-header__right { width: auto; }
+
+  .ax-admin-header .ax-preferences {
+    flex: none;
+    grid-template-columns: 120px 130px;
+  }
+
+  .ax-admin-header__eyebrow {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

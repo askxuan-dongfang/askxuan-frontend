@@ -82,13 +82,17 @@ export function withAdminChartTheme(option: Record<string, any>): Record<string,
   return result
 }
 
-/** Refresh visible charts immediately when OS motion preference or theme changes. */
-export function watchAdminChartAppearance(refresh: () => void): () => void {
+/** Keep charts aligned with the admin content area and current appearance. */
+export function watchAdminCharts(refresh: () => void, resize: () => void): () => void {
   const query = window.matchMedia('(prefers-reduced-motion: reduce)')
+  const observer = new ResizeObserver(resize)
+  const content = document.querySelector('.ax-admin-main')
+  if (content) observer.observe(content)
   window.addEventListener(ADMIN_THEME_EVENT, refresh)
   window.addEventListener(LANGUAGE_EVENT, refresh)
   query.addEventListener('change', refresh)
   return () => {
+    observer.disconnect()
     window.removeEventListener(ADMIN_THEME_EVENT, refresh)
     window.removeEventListener(LANGUAGE_EVENT, refresh)
     query.removeEventListener('change', refresh)

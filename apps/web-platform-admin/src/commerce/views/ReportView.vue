@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { withAdminChartTheme, watchAdminChartAppearance } from '../../../../../packages/admin-ui/chart-theme'
+import { withAdminChartTheme, watchAdminCharts } from '../../../../../packages/admin-ui/chart-theme'
 // 商城报表 - ECharts 渲染销售趋势 + Top 商品
 import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
@@ -190,19 +190,17 @@ function disposeCharts() {
 }
 
 onMounted(async () => {
-  stopChartAppearance = watchAdminChartAppearance(refreshChartAppearance)
+  stopChartWatch = watchAdminCharts(refreshChartAppearance, handleResize)
   dateRange.value = defaultRange()
   await loadReport()
-  window.addEventListener('resize', handleResize)
 })
 
 onBeforeUnmount(() => {
-  stopChartAppearance?.()
-  window.removeEventListener('resize', handleResize)
+  stopChartWatch?.()
   disposeCharts()
 })
 
-let stopChartAppearance: (() => void) | undefined
+let stopChartWatch: (() => void) | undefined
 
 function refreshChartAppearance() {
   for (const chart of [trendChart, topChart]) {

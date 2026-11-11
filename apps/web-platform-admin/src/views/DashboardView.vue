@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { withAdminChartTheme, watchAdminChartAppearance } from "../../../../packages/admin-ui/chart-theme"
+import { withAdminChartTheme, watchAdminCharts } from "../../../../packages/admin-ui/chart-theme"
 
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
@@ -218,19 +218,17 @@ async function loadDashboard() {
 }
 
 onMounted(async () => {
-  stopChartAppearance = watchAdminChartAppearance(refreshChartAppearance)
+  stopChartWatch = watchAdminCharts(refreshChartAppearance, onResize)
   await loadDashboard()
-  window.addEventListener('resize', onResize)
 })
 
 onBeforeUnmount(() => {
-  stopChartAppearance?.()
-  window.removeEventListener('resize', onResize)
+  stopChartWatch?.()
   pieChart?.dispose()
   barChart?.dispose()
 })
 
-let stopChartAppearance: (() => void) | undefined
+let stopChartWatch: (() => void) | undefined
 
 function refreshChartAppearance() {
   for (const chart of [pieChart, barChart]) {
