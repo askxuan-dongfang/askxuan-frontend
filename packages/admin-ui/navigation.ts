@@ -8,6 +8,7 @@ export function useAdminNavigation(routePath: () => string) {
   const sidebarRef = ref<HTMLElement>()
   const toggleRef = ref<HTMLButtonElement>()
   let mobileQuery: MediaQueryList | undefined
+  let compactQuery: MediaQueryList | undefined
   let previousOverflow: string | undefined
   let disposed = false
 
@@ -22,8 +23,9 @@ export function useAdminNavigation(routePath: () => string) {
     if (mobile.value) drawerOpen.value = !drawerOpen.value
     else collapsed.value = !collapsed.value
   }
-  function syncViewport(event?: MediaQueryListEvent) {
-    mobile.value = event ? event.matches : Boolean(mobileQuery?.matches)
+  function syncViewport() {
+    mobile.value = Boolean(mobileQuery?.matches)
+    collapsed.value = Boolean(compactQuery?.matches)
     if (!mobile.value) closeNavigation()
   }
   function restoreScroll() {
@@ -72,14 +74,17 @@ export function useAdminNavigation(routePath: () => string) {
 
   onMounted(() => {
     mobileQuery = window.matchMedia('(max-width: 991px)')
+    compactQuery = window.matchMedia('(max-width: 1199px)')
     syncViewport()
     mobileQuery.addEventListener('change', syncViewport)
+    compactQuery.addEventListener('change', syncViewport)
     document.addEventListener('keydown', onKeydown)
   })
   onBeforeUnmount(() => {
     disposed = true
     restoreScroll()
     mobileQuery?.removeEventListener('change', syncViewport)
+    compactQuery?.removeEventListener('change', syncViewport)
     document.removeEventListener('keydown', onKeydown)
   })
 

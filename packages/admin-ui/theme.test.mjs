@@ -72,6 +72,8 @@ test('chart theme changes repaint chrome and gradients while preserving data, ca
   const chartSource = await readFile(new URL('./chart-theme.ts', import.meta.url), 'utf8')
   let palette = tokens.themes.light.color
   let reduceMotion = false
+  let resizeCallback, observedContainer
+  const chartContainer = {}
   const windowEvents = new Map()
   const mediaEvents = new Map()
   const media = { get matches() { return reduceMotion }, addEventListener: (name, fn) => mediaEvents.set(name, fn), removeEventListener: name => mediaEvents.delete(name) }
@@ -86,9 +88,19 @@ test('chart theme changes repaint chrome and gradients while preserving data, ca
   })[name] || ''
   const favicon = { href: 'https://example.test/temple/logos/favicon-temple.svg' }
   const meta = { content: '', setAttribute(_key, value) { this.content = value } }
-  const context = vm.createContext({ tokens, ADMIN_THEME_EVENT: 'askxuan:admin-theme-change', LANGUAGE_EVENT: 'askxuan:language-change', t: value => value, document: { documentElement: {} }, getComputedStyle: () => ({ getPropertyValue: variable }), window: { matchMedia: () => media, addEventListener: (name, fn) => windowEvents.set(name, fn), removeEventListener: name => windowEvents.delete(name) } })
+  const context = vm.createContext({
+    tokens, ADMIN_THEME_EVENT: 'askxuan:admin-theme-change', LANGUAGE_EVENT: 'askxuan:language-change', t: value => value,
+    document: { documentElement: {}, querySelector: selector => selector === '.ax-admin-main' ? chartContainer : null },
+    getComputedStyle: () => ({ getPropertyValue: variable }),
+    window: { matchMedia: () => media, addEventListener: (name, fn) => windowEvents.set(name, fn), removeEventListener: name => windowEvents.delete(name) },
+    ResizeObserver: class {
+      constructor(callback) { resizeCallback = callback }
+      observe(target) { observedContainer = target }
+      disconnect() { observedContainer = resizeCallback = undefined }
+    }
+  })
   const stripped = stripTypeScriptTypes(chartSource.replace(/^import [^\n]*\n/gm, ''), { mode: 'strip' }).replace(/\bexport /g, '')
-  vm.runInContext(stripped + '\nthis.repaint = withAdminChartTheme; this.watch = watchAdminChartAppearance;', context)
+  vm.runInContext(stripped + '\nthis.repaint = withAdminChartTheme; this.watch = watchAdminCharts;', context)
   const formatter = value => String(value)
   const initial = { tooltip: { formatter }, legend: { selected: { '#C45A3C': false } }, dataZoom: [{ start: 20, end: 80 }],
     xAxis: { data: ['#C45A3C', '九月'] }, series: [{ name: '#C45A3C', data: [{ name: '#C45A3C', value: 37 }],
@@ -116,7 +128,12 @@ test('chart theme changes repaint chrome and gradients while preserving data, ca
   assert.equal(dark.textStyle.color, '#F0E6DA')
   assert.equal(dark.legend.selected['#C45A3C'], false)
   let current = dark
-  const stop = context.watch(() => { current = context.repaint(current) })
+  let resized = 0
+  const stop = context.watch(() => { current = context.repaint(current) }, () => { resized++ })
+  assert.equal(observedContainer, chartContainer)
+  resizeCallback()
+  assert.equal(resized, 1)
+  assert.equal(current, dark)
   assert.equal(windowEvents.size, 2)
   assert.ok(windowEvents.has('askxuan:admin-theme-change'))
   assert.ok(windowEvents.has('askxuan:language-change'))
@@ -133,6 +150,8 @@ test('chart theme changes repaint chrome and gradients while preserving data, ca
   assert.equal(current.animation, true)
   assert.equal(current.animationDuration, 280)
   stop()
+  assert.equal(observedContainer, undefined)
+  assert.equal(resizeCallback, undefined)
   assert.equal(windowEvents.size, 0)
   assert.equal(mediaEvents.size, 0)
 })

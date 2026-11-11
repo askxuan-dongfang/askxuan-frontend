@@ -16,13 +16,18 @@ const renderer = createRenderer({
 })
 async function flush() { await nextTick(); await nextTick() }
 
-function fixture({ mobile = true, overflow = '' } = {}) {
+function fixture({ width = 390, overflow = '' } = {}) {
   const handlers = new Map()
   const mediaHandlers = new Map()
-  const media = { matches: mobile, addEventListener: (name, fn) => mediaHandlers.set(name, fn), removeEventListener: name => mediaHandlers.delete(name) }
+  const queries = new Map()
   const document = { documentElement: { style: { overflow } }, activeElement: null, addEventListener: (name, fn) => handlers.set(name, fn), removeEventListener: name => handlers.delete(name) }
   globalThis.document = document
-  globalThis.window = { matchMedia: () => media }
+  globalThis.window = { matchMedia: query => {
+    const limit = Number(query.match(/\d+/)[0])
+    const media = { matches: width <= limit, addEventListener: (name, fn) => mediaHandlers.set(query, fn), removeEventListener: () => mediaHandlers.delete(query) }
+    queries.set(query, { limit, media })
+    return media
+  } }
   const element = name => markRaw({ name, closest: () => null, getClientRects: () => [{}], focus() { document.activeElement = this } })
   const first = element('close')
   const active = element('selected menu')
@@ -43,7 +48,15 @@ function fixture({ mobile = true, overflow = '' } = {}) {
     return event
   }
   return { api, document, route, items, sidebar, trigger, handlers, mediaHandlers, key,
-    resize(matches) { media.matches = matches; mediaHandlers.get('change')?.({ matches }) },
+    resize(width) {
+      const changed = []
+      for (const [query, { limit, media }] of queries) {
+        const matches = width <= limit
+        if (matches !== media.matches) changed.push(query)
+        media.matches = matches
+      }
+      for (const query of changed) mediaHandlers.get(query)?.()
+    },
     close() { app.unmount(); delete globalThis.document; delete globalThis.window }
   }
 }
@@ -80,7 +93,7 @@ test('route changes and desktop resizing close the navigation and release its sc
     f.api.toggleNavigation(); await flush(); f.route.value = '/bookings'; await flush()
     assert.equal(f.api.drawerOpen.value, false)
     assert.equal(f.document.documentElement.style.overflow, '')
-    f.api.toggleNavigation(); await flush(); f.resize(false); await flush()
+    f.api.toggleNavigation(); await flush(); f.resize(1440); await flush()
     assert.equal(f.api.drawerOpen.value, false)
     assert.equal(f.api.mobile.value, false)
     assert.equal(f.document.documentElement.style.overflow, '')
@@ -111,5 +124,25 @@ test('rapid close and reopen keeps focus inside the current drawer', async () =>
     assert.equal(f.api.drawerOpen.value, true)
     assert.equal(f.document.activeElement, f.items[1])
     assert.equal(f.document.documentElement.style.overflow, 'hidden')
+  } finally { f.close() }
+})
+
+test('tablet sidebar defaults to a real collapsed menu and can be expanded before rotating into a mobile drawer', async () => {
+  const f = fixture({ width: 1024 })
+  try {
+    assert.equal(f.api.mobile.value, false)
+    assert.equal(f.api.collapsed.value, true)
+    f.api.toggleNavigation(); await flush()
+    assert.equal(f.api.collapsed.value, false)
+    assert.equal(f.api.drawerOpen.value, false)
+    f.resize(768); await flush()
+    assert.equal(f.api.mobile.value, true)
+    f.api.toggleNavigation(); await flush()
+    assert.equal(f.api.drawerOpen.value, true)
+    f.resize(1440); await flush()
+    assert.equal(f.api.mobile.value, false)
+    assert.equal(f.api.collapsed.value, false)
+    assert.equal(f.api.drawerOpen.value, false)
+    assert.equal(f.document.documentElement.style.overflow, '')
   } finally { f.close() }
 })

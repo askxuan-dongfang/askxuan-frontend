@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { withAdminChartTheme, watchAdminChartAppearance } from '../../../../../packages/admin-ui/chart-theme'
+import { withAdminChartTheme, watchAdminCharts } from '../../../../../packages/admin-ui/chart-theme'
 // 商城工作台 - 今日订单 / 销售额 / 待发货 / 商品总数
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
@@ -183,18 +183,16 @@ async function loadDashboard() {
 }
 
 onMounted(async () => {
-  stopChartAppearance = watchAdminChartAppearance(refreshChartAppearance)
-  window.addEventListener('resize', handleResize)
+  stopChartWatch = watchAdminCharts(refreshChartAppearance, handleResize)
   await loadDashboard()
 })
 
 onBeforeUnmount(() => {
-  stopChartAppearance?.()
-  window.removeEventListener('resize', handleResize)
+  stopChartWatch?.()
   trendChart?.dispose()
 })
 
-let stopChartAppearance: (() => void) | undefined
+let stopChartWatch: (() => void) | undefined
 
 function refreshChartAppearance() {
   for (const chart of [trendChart]) {

@@ -96,7 +96,7 @@ import { hasPlatformPermission } from '@/router/access'
 import { ElMessage } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
 
-import { withAdminChartTheme, watchAdminChartAppearance } from '../../../../../packages/admin-ui/chart-theme'
+import { withAdminChartTheme, watchAdminCharts } from '../../../../../packages/admin-ui/chart-theme'
 import client from '@/api/client'
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
@@ -192,17 +192,15 @@ function onResize() {
   pieChart?.resize()
 }
 onMounted(() => {
-  stopChartAppearance = watchAdminChartAppearance(refreshChartAppearance)
+  stopChartWatch = watchAdminCharts(refreshChartAppearance, onResize)
   loadData()
-  window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => {
-  stopChartAppearance?.()
-  window.removeEventListener('resize', onResize)
+  stopChartWatch?.()
   pieChart?.dispose()
 })
 
-let stopChartAppearance: (() => void) | undefined
+let stopChartWatch: (() => void) | undefined
 
 function refreshChartAppearance() {
   for (const chart of [pieChart]) {

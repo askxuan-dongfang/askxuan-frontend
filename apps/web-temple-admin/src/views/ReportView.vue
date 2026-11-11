@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { withAdminChartTheme, watchAdminChartAppearance } from '../../../../packages/admin-ui/chart-theme'
+import { withAdminChartTheme, watchAdminCharts } from '../../../../packages/admin-ui/chart-theme'
 import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { Refresh, Calendar, Wallet, DataAnalysis, CircleCheck } from '@element-plus/icons-vue'
@@ -154,18 +154,16 @@ function disposeCharts() {
 watch(tab, async () => { disposeCharts(); await nextTick(); if(tab.value==='bookings') renderCharts() })
 
 onMounted(() => {
-  stopChartAppearance = watchAdminChartAppearance(refreshChartAppearance)
+  stopChartWatch = watchAdminCharts(refreshChartAppearance, onResize)
   load()
-  window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => {
   generation++
-  stopChartAppearance?.()
-  window.removeEventListener('resize', onResize)
+  stopChartWatch?.()
   disposeCharts()
 })
 
-let stopChartAppearance: (() => void) | undefined
+let stopChartWatch: (() => void) | undefined
 
 function refreshChartAppearance() {
   for (const chart of [trendChart, pieChart, barChart]) {
