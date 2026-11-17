@@ -45,6 +45,38 @@ final class RewardExperienceTests: XCTestCase {
         XCTAssertEqual(liveRewardFixture(kind: "pool", participants: 2, prizes: 3).oddsText, "100.00%")
         XCTAssertEqual(liveRewardFixture(kind: "pool", participants: 0, prizes: 1).oddsText, "—")
     }
+    func testPoolPrizesKeepProgressAndEntriesIndependent() throws {
+        var c = liveRewardFixture(kind: "pool", participants: 102, prizes: 2)
+        var a = multiRewardFixture().displayPrizes[0]
+        a.capacity = 100; a.participantCount = 100; a.drawnAt = 42; a.phase = "drawn"
+        var b = multiRewardFixture().displayPrizes[1]
+        b.capacity = 200; b.participantCount = 2; b.drawnAt = 0; b.phase = "open"
+        c.prizes = [a, b]
+        let decoded = try JSONDecoder().decode(RewardCampaign.self, from: JSONEncoder().encode(c))
+        XCTAssertEqual(decoded.prizes?[0].phase, "drawn")
+        XCTAssertEqual(decoded.prizes?[1].capacity, 200)
+        XCTAssertEqual(c.probability(for: a), 10)
+        XCTAssertEqual(c.probability(for: b), 100)
+        let entry = RewardEntry(id: 1, campaignId: c.id, createdAt: 1, pointsSpent: 10, code: "POOL-A", outcome: "won", title: c.title, prizeId: a.id)
+        var d = RewardDetail(campaign: c, mine: entry, winners: [entry], pointsBalance: 20, mineEntries: [entry])
+        XCTAssertEqual(d.poolEntry(prizeID: a.id)?.code, "POOL-A")
+        XCTAssertNil(d.poolEntry(prizeID: b.id))
+        let second = RewardEntry(id: 2, campaignId: c.id, createdAt: 2, pointsSpent: 10, code: "POOL-B", outcome: "pending", title: c.title, prizeId: b.id)
+        d.mineEntries?.append(second)
+        XCTAssertEqual(d.poolEntry(prizeID: b.id)?.outcome, "pending")
+        let legacy = liveRewardFixture(kind: "pool", participants: 9)
+        XCTAssertEqual(legacy.displayPrizes.first?.participantCount, 9)
+        XCTAssertEqual(legacy.displayPrizes.first?.capacity, legacy.capacity)
+    }
+    @MainActor func testPoolJoinSendsPrizeAndLegacyJoinOmitsIt() throws {
+        let request = try APIClient.shared.buildRequest(.rewardJoin(2, 10, "pool-request-key", prizeId: 12))
+        let body = try XCTUnwrap(JSONSerialization.jsonObject(with: XCTUnwrap(request.httpBody)) as? [String: Any])
+        XCTAssertEqual(body["prizeId"] as? Int, 12)
+        XCTAssertEqual(body["expectedPoints"] as? Int, 10)
+        let legacy = try APIClient.shared.buildRequest(.rewardJoin(2, 10, "wheel-request-key"))
+        let legacyBody = try XCTUnwrap(JSONSerialization.jsonObject(with: XCTUnwrap(legacy.httpBody)) as? [String: Any])
+        XCTAssertNil(legacyBody["prizeId"])
+    }
     func testWheelProbabilityUsesRemainingInventory() {
         XCTAssertEqual(liveRewardFixture().oddsText, "10.00%")
         XCTAssertEqual(liveRewardFixture(participants: 100, awarded: 15).oddsText, "5.00%")
@@ -64,6 +96,17 @@ final class RewardExperienceTests: XCTestCase {
 // project's Simulator window or making any production activity API request.
 import SwiftUI
 @MainActor final class RewardNativeRenderTests: XCTestCase {
+    func testPoolPrizeListLayouts() async throws {
+        var c = liveRewardFixture(kind: "pool", participants: 3, prizes: 2)
+        var a = multiRewardFixture().displayPrizes[0]
+        a.capacity = 2; a.participantCount = 2; a.drawnAt = 42; a.phase = "drawn"
+        var b = multiRewardFixture().displayPrizes[1]
+        b.capacity = 5; b.participantCount = 1; b.phase = "open"
+        c.prizes = [a, b]
+        for width in [320.0, 390.0, 768.0] {
+            try await render(NavigationStack { List { RewardCampaignCard(campaign: c) } }, name: "ios-pool-prizes-\(Int(width))", width: width)
+        }
+    }
     func testNativeActivityLayouts() async throws {
         let detail = RewardDetail(campaign: multiRewardFixture(), mine: nil, winners: [], pointsBalance: 15)
         for width in [320.0, 390.0, 768.0] {

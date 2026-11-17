@@ -1173,7 +1173,7 @@ struct PointsRulesSheet: View {
         NavigationStack {
             List {
                 Section(L10n.text("01 · 消费积累")) { Text(L10n.text("每笔实付满 100 元得 1 积分，不足部分舍去。例如 199 元得 1 积分，200 元得 2 积分。")) }
-                Section(L10n.text("02 · 兑换与参与")) { Text(L10n.text("积分商城按标价兑换；转盘按次扣分，可多次抽奖，中奖后也可继续；奖池每人每期一次。成功参与后无论中奖与否均不退回，奖品预算由平台承担。")) }
+                Section(L10n.text("02 · 兑换与参与")) { Text(L10n.text("积分商城按标价兑换；转盘按次扣分，可多次抽奖，中奖后也可继续；奖池每人每期每个奖品限一次，满员或到期独立开奖。成功参与后无论中奖与否均不退回，奖品预算由平台承担。")) }
                 Section(L10n.text("03 · 退款与记录")) { Text(L10n.text("退款按净实付重算所得积分，余额不足时可能为负；后续获得的积分先补足。取消待发货兑换会退回积分。所有变动可查积分明细。")) }
                 Text(L10n.text("功德值独立记录成长，不用于兑换，也不影响中奖概率。")).font(AppTypography.caption).foregroundStyle(.secondary)
             }.navigationTitle(L10n.text("积分规则")).navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .confirmationAction) { Button(L10n.text("知道了")) { dismiss() } } }
