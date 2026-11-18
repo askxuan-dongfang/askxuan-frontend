@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import {emptyCreatorWallet} from '../fixtures/creator-wallet';
 const bead = { position:0, materialId:1, materialName:'测试木珠', spec:'10mm', unitPrice:10, subtype:'wood', diameterMm:10 };
-const design = { id:1, userId:'42', name:'返回测试手串', status:'public', revision:1, totalPrice:10, designData:JSON.stringify({version:2,wristSizeMm:160,beads:[bead],items:[{...bead,quantity:1}]}) };
+const design = { id:1, userId:'42', authorName:'返回测试用户', useCount:0, fiveElements:[], meanings:[], name:'返回测试手串', status:'public', revision:1, totalPrice:10, designData:JSON.stringify({version:2,wristSizeMm:160,beads:[bead],items:[{...bead,quantity:1}]}) };
 type Eligibility = { canPublish: boolean; reason: string; message: string; orderId?: number };
 type FixtureOptions = { eligibility?: Eligibility | null; status?: string; draftName?: string; publicationError?: string; reads?: URL[]; language?: string; theme?: string };
 const ready: Eligibility = { canPublish:true, reason:'ready', message:'订单已付款，款式、用料和价格已确认。', orderId:9 };
@@ -130,7 +130,7 @@ test('saving a published design preserves its public snapshot and returns once t
 });
 test('even the authors public detail is a read-only viewer',async({page})=>{
  const reads:URL[]=[];const writes=await setup(page,{reads,draftName:'未发布的新标题'});await viewer(page);
- await expect(page.getByText('作者：我',{exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'用料',exact:true})).toBeVisible();
+ await expect(page.getByText('作者：返回测试用户',{exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'用料',exact:true})).toBeVisible();
  await expect(page.getByRole('button',{name:'复制并编辑',exact:true})).toBeVisible();
  await expect(page.getByRole('link',{name:'继续编辑',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:/下架|发布到|按此设计定制/})).toHaveCount(0);
  await expect(page.getByRole('heading',{name:design.name,exact:true})).toBeVisible();
