@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const design = {
-  id: 31, userId: '42', name: '远山手串', authorName: '山间创作者', useCount: 12,
+  id: 31, userId: '42', name: '远山手串', authorName: '山间创作者', useCount: 8672,
   status: 'public', revision: 4, totalPrice: 595, fiveElements: ['wood'], meanings: ['peace'],
   designData: JSON.stringify({ version: 2, beads: [{ position: 0, materialId: 1, materialName: '木珠', unitPrice: 10, diameterMm: 10, color: '#77593d' }] }),
   publication: { id: 9, designRevision: 4, materialFee: 595 },
@@ -56,13 +56,17 @@ for (const width of [320, 390, 1280]) test(`plaza keeps the primary action and a
   const card = page.locator('.diy-gallery-card');
   await expect(card).toContainText('很长的作品名称也应保持卡片整齐清晰');
   await expect(card).toContainText('很长的真实作者昵称不会遮住使用次数');
-  await expect(card).toContainText('12 次使用'); await expect(card).toContainText('健康平安');
+  await expect(card).toContainText('8672 次使用'); await expect(card).toContainText('健康平安');
   await expect(card).not.toContainText('595'); await expect(card).not.toContainText('颗');
   await expect(page.getByText(/把喜欢，串在一起|件已加载|灵感未完/)).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const credit = await card.locator('.diy-gallery-credit').evaluate(element => {
     const [author, uses] = Array.from(element.children, child => child.getBoundingClientRect());
-    return { noOverlap: author.right <= uses.left + 1, fits: uses.right <= element.getBoundingClientRect().right + 1 };
+    const box = element.getBoundingClientRect();
+    return {
+      noOverlap: author.right <= uses.left + 1 || author.bottom <= uses.top + 1,
+      fits: [author, uses].every(rect => rect.width > 0 && rect.left >= box.left - 1 && rect.right <= box.right + 1 && rect.top >= box.top - 1 && rect.bottom <= box.bottom + 1),
+    };
   });
   expect(credit).toEqual({ noOverlap: true, fits: true });
 });
