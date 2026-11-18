@@ -51,9 +51,17 @@ final class RewardExperienceTests: XCTestCase {
         a.capacity = 100; a.participantCount = 100; a.drawnAt = 42; a.phase = "drawn"
         var b = multiRewardFixture().displayPrizes[1]
         b.capacity = 200; b.participantCount = 2; b.drawnAt = 0; b.phase = "open"
+        a.phase = "open"
         c.prizes = [a, b]
+        let products = RewardPoolProduct.catalog([c])
+        XCTAssertEqual(products.map(\.prize.id), [b.id, a.id])
+        XCTAssertEqual(products.map(\.phase), ["open", "drawn"])
+        XCTAssertEqual(c.poolPrize(id: a.id)?.name, a.name)
+        XCTAssertNil(c.poolPrize(id: -1))
+        XCTAssertNil(c.poolPrize(id: nil), "Old multi-product links must not silently select the first item")
+        XCTAssertEqual(liveRewardFixture(kind: "pool").poolPrize(id: nil)?.id, 0)
         let decoded = try JSONDecoder().decode(RewardCampaign.self, from: JSONEncoder().encode(c))
-        XCTAssertEqual(decoded.prizes?[0].phase, "drawn")
+        XCTAssertEqual(decoded.prizes?[0].drawnAt, 42)
         XCTAssertEqual(decoded.prizes?[1].capacity, 200)
         XCTAssertEqual(c.probability(for: a), 10)
         XCTAssertEqual(c.probability(for: b), 100)
@@ -104,7 +112,7 @@ import SwiftUI
         b.capacity = 5; b.participantCount = 1; b.phase = "open"
         c.prizes = [a, b]
         for width in [320.0, 390.0, 768.0] {
-            try await render(NavigationStack { List { RewardCampaignCard(campaign: c) } }, name: "ios-pool-prizes-\(Int(width))", width: width)
+            try await render(NavigationStack { List(RewardPoolProduct.catalog([c])) { RewardPoolProductCard(product: $0) } }, name: "ios-pool-prizes-\(Int(width))", width: width)
         }
     }
     func testNativeActivityLayouts() async throws {

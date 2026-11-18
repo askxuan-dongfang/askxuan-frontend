@@ -111,7 +111,13 @@ import XCTest
         modes.buttons["积分商城"].tap()
         XCTAssertTrue(app.textFields["搜索积分商品"].waitForExistence(timeout: 10))
         modes.buttons["奖池"].tap()
-        XCTAssertTrue(app.staticTexts["本期大奖池"].waitForExistence(timeout: 10))
+        let prize = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "reward-pool-product-")).firstMatch
+        XCTAssertTrue(prize.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["本期大奖池"].exists)
+        prize.tap()
+        XCTAssertTrue(app.navigationBars["奖品详情"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "reward-pool-join-")).count, 1)
+        app.navigationBars.buttons.firstMatch.tap()
         modes.buttons["积分转盘"].tap()
         let spin = app.buttons["10 积分转一次"]
         XCTAssertTrue(spin.waitForExistence(timeout: 10))

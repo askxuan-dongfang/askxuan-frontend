@@ -930,7 +930,10 @@ struct NativeDiscoveryDestination: View {
                 if let id = identifier, let type = ServiceType.from(serviceCode: id) { ServiceContainerView(serviceType: type) }
                 else { ScrollView { VStack { DFTopNavBar("预约服务"); ForEach(ServiceType.allCases, id: \.self) { type in NavigationLink { ServiceContainerView(serviceType: type) } label: { HStack { Text(L10n.lookup(type.rawValue)); Spacer(); Image(systemName: "chevron.right") }.padding(18).background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 12)) } } }.padding(.horizontal, 16) } }
             case "rewards":
-                if let id = identifier.flatMap(Int64.init) { RewardDetailView(id: id) } else { RewardsView() }
+                if let id = identifier.flatMap(Int64.init) {
+                    let prize = URLComponents(string: route)?.queryItems?.first { $0.name == "prize" }
+                    RewardDetailView(id: id, prizeID: prize.map { Int64($0.value ?? "") ?? -1 })
+                } else { RewardsView(initialTab: routeTab == "pool" ? 0 : 1) }
             case "activities":
                 if let id = identifier { NativeMarketingActivityView(id: id) }
             default: DFEmptyState(icon: "link", title: L10n.text("推荐已更新"), subtitle: L10n.text("请返回首页刷新后查看"))
