@@ -2,8 +2,8 @@ import { test, expect, type Page } from '@playwright/test';
 
 type SessionFixture = { token?: string | null; userId?: number | null; role?: string; language?: string; theme?: string };
 const pointModes = [
-  { tab: 'wheel', label: '商城', traditionalLabel: '商城', detail: '积分转盘', traditionalDetail: '積分轉盤' },
-  { tab: 'mall', label: '转盘', traditionalLabel: '轉盤', detail: '积分商城', traditionalDetail: '積分商城' },
+  { tab: 'mall', label: '商城', traditionalLabel: '商城', detail: '积分商城', traditionalDetail: '積分商城' },
+  { tab: 'wheel', label: '转盘', traditionalLabel: '轉盤', detail: '积分转盘', traditionalDetail: '積分轉盤' },
   { tab: 'pool', label: '乐购', traditionalLabel: '樂購', detail: '奖池', traditionalDetail: '獎池' },
 ] as const;
 type PointTab = typeof pointModes[number]['tab'];
@@ -86,7 +86,7 @@ async function assertHomeLayout(page: Page, language: string) {
   await expect(entries.locator('strong')).toHaveText(traditional ? ['找寺廟', '找師傅'] : ['找寺庙', '找师傅']);
   await expect(entries.nth(0)).toHaveAttribute('href', '/c/temples');
   await expect(entries.nth(1)).toHaveAttribute('href', '/c/masters');
-  await expect(entries.locator('.home-core-copy > span')).toHaveCount(2);
+  await expect(entries.locator('.home-core-copy > span, .home-core-arrow')).toHaveCount(0);
   await expect(page.locator('.home-belief-card, .home-belief-grid, .home-points-entry, .home-points-balance, .home-directory')).toHaveCount(0);
   await expect(entries.locator('.home-core-icon > svg')).toHaveCount(2);
   const patterns = entries.locator('svg.home-core-pattern');
@@ -152,13 +152,25 @@ async function assertHomeLayout(page: Page, language: string) {
   const diy = page.locator('.home-diy-entry');
   await expect(diy.locator('strong')).toHaveText(traditional ? '開始設計' : '开始设计');
   await expect(diy.locator('.home-diy-reward')).toHaveText(traditional ? '創作返利' : '创作返利');
+  await expect(diy.locator('.home-diy-description')).toHaveCount(0);
+  const diyContent = await diy.evaluate(element => {
+    const card = element.getBoundingClientRect();
+    const icon = element.querySelector('.home-diy-emblem')!.getBoundingClientRect();
+    const title = element.querySelector('.home-diy-entry-title')!.getBoundingClientRect();
+    return { cardCenter: card.x + card.width / 2, contentCenter: (icon.left + title.right) / 2,
+      cardMiddle: card.y + card.height / 2, iconMiddle: icon.y + icon.height / 2, titleMiddle: title.y + title.height / 2 };
+  });
+  expect(Math.abs(diyContent.contentCenter - diyContent.cardCenter)).toBeLessThan(1);
+  expect(Math.abs(diyContent.iconMiddle - diyContent.cardMiddle)).toBeLessThan(1);
+  expect(Math.abs(diyContent.titleMiddle - diyContent.cardMiddle)).toBeLessThan(1);
   await assertPlazaHidden(page);
 
   const pointCards = page.locator('.home-points-grid > .home-points-card');
   await expect(pointCards).toHaveCount(3);
+  await expect(pointCards.locator('.home-points-detail')).toHaveCount(0);
   for (const [index, mode] of pointModes.entries()) {
     await expect(pointCards.nth(index)).toHaveAttribute('href', pointsTarget(mode.tab));
-    await expect(pointCards.nth(index)).toHaveAttribute('aria-label', `${traditional ? mode.traditionalLabel : mode.label} · ${traditional ? mode.traditionalDetail : mode.detail}`);
+    await expect(pointCards.nth(index)).toHaveAttribute('aria-label', traditional ? mode.traditionalLabel : mode.label);
     await expect(pointCards.nth(index).locator('strong')).toHaveText(traditional ? mode.traditionalLabel : mode.label);
   }
 
@@ -195,6 +207,7 @@ async function assertHomeLayout(page: Page, language: string) {
   expect(headings).toHaveLength(3);
   for (const heading of headings) expect(heading).toEqual(headings[0]);
   await expect(page.locator('.home-quiet-entry')).toHaveAttribute('href', '/c/quiet');
+  await expect(page.locator('.home-quiet-copy > small')).toHaveCount(0);
   for (const surface of layout.surfaces) expect(surface).toEqual({ radius: '12px', left: '0px', right: '0px' });
   for (const entry of await wishes.all()) expect(await entry.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBeTruthy();
   const utilityLayout = await page.locator('.customer-home').evaluate(element => {
@@ -524,7 +537,7 @@ test('home destinations remain stable through account changes and the points pag
     }, identity);
     for (const mode of pointModes) {
       await expect(pointsEntry(page, mode.tab)).toHaveAttribute('href', pointsTarget(mode.tab));
-      await expect(pointsEntry(page, mode.tab)).toHaveAttribute('aria-label', `${mode.label} · ${mode.detail}`);
+      await expect(pointsEntry(page, mode.tab)).toHaveAttribute('aria-label', mode.label);
     }
     expect(accountRequests).toBe(0);
   }
