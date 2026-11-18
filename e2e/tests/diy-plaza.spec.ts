@@ -70,6 +70,13 @@ for (const width of [320, 390, 1280]) test(`plaza keeps the primary action and a
 test('plaza filters and author search reach works beyond the loaded page', async ({ page }) => {
   const { reads } = await setup(page, { many: true }); await page.goto('/c/diy?tab=plaza');
   await expect(page.locator('.diy-gallery-card')).toHaveCount(20);
+  await expect(page.getByRole('heading', { name: '远山手串', exact: true })).toHaveCount(0);
+  const elements = page.getByRole('group', { name: '五行', exact: true });
+  await elements.getByRole('button', { name: '木', exact: true }).click();
+  await expect(page.locator('.diy-gallery-card')).toHaveCount(1);
+  await expect(page.getByRole('heading', { name: '远山手串', exact: true })).toBeVisible();
+  await elements.getByRole('button', { name: '全部', exact: true }).click();
+  await expect(page.locator('.diy-gallery-card')).toHaveCount(20);
   await page.getByRole('button', { name: /浏览更多作品/ }).click();
   await expect(page.locator('.diy-gallery-card')).toHaveCount(21);
   await page.getByRole('group', { name: '五行', exact: true }).getByRole('button', { name: '木', exact: true }).click();
