@@ -302,12 +302,14 @@ for (const width of [442, 1280]) test(`homepage keeps the plaza link beside four
   expect(await designs.evaluateAll(elements => elements.map(element => element.getAttribute('href')))).toEqual([9001, 9002, 9003, 9004].map(id => '/c/diy/' + id));
   await expect(page.locator('.home-design-example, .home-plaza-example-label')).toHaveCount(0);
   await expect(designs.locator('strong, small, p')).toHaveCount(0);
+  const utilityHeights = await page.locator('.home-intent, .home-diy-entry, .home-design, .home-points-card')
+    .evaluateAll(cards => cards.map(card => card.getBoundingClientRect().height));
+  for (const height of utilityHeights) expect(height).toBeCloseTo(88, 0);
   for (const [index, design] of (await designs.all()).entries()) {
     await expect(design).toHaveAttribute('aria-label', `查看作品：公开作品${9001 + index}`);
     expect(await design.innerText()).toBe('');
     const rect = (await design.boundingBox())!;
     expect(rect.width).toBeCloseTo(104, 0);
-    expect(rect.height).toBeCloseTo(104, 0);
   }
   const plaza = page.locator('.home-plaza-row').getByRole('link', { name: '设计广场', exact: true });
   await expect(plaza).toHaveAttribute('href', '/c/diy?tab=plaza');
