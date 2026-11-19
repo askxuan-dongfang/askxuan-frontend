@@ -181,10 +181,9 @@ async function assertHomeLayout(page: Page, language: string) {
     const banner = element.querySelector('.home-promotions-window')!.getBoundingClientRect();
     const wishes = element.querySelector('section[aria-labelledby="home-intents-title"]')!.getBoundingClientRect();
     const diy = element.querySelector('.home-diy-row')!.getBoundingClientRect();
-    const points = element.querySelector('.home-points-grid')!.getBoundingClientRect();
     return {
       ids: sections.map(section => section.getAttribute('aria-labelledby')),
-      bounds: [banner, ...sections.map(section => section.getBoundingClientRect()), wishes, diy, points].map(rect => ({ left: rect.left, right: rect.right })),
+      bounds: [banner, ...sections.map(section => section.getBoundingClientRect()), wishes, diy].map(rect => ({ left: rect.left, right: rect.right })),
       left: core.left, right: core.right, bannerBottom: banner.bottom, coreTop: core.top,
       headingFont: getComputedStyle(sections[0].querySelector('h2')!).fontFamily,
       surfaces: [...element.querySelectorAll('.home-core-entry, .home-intent, .home-diy-entry, .home-design, .home-points-card')].map(item => {
@@ -220,7 +219,7 @@ async function assertHomeLayout(page: Page, language: string) {
     const points = element.querySelector('.home-points-grid')!.getBoundingClientRect();
     const pointCards = [...element.querySelectorAll('.home-points-card')].map(item => item.getBoundingClientRect());
     const pointsSection = element.querySelector('.home-points-section')!.getBoundingClientRect();
-    const titleBottom = (id: string) => element.querySelector('#' + id)!.getBoundingClientRect().bottom;
+    const pointsTitle = element.querySelector('#home-points-title')!.getBoundingClientRect();
     return {
       heights: [...wishCards, diy, ...pointCards].map(rect => rect.height),
       wishRight: wishes.right, thirdTileRight: wishCards[2].right, fourthTileRight: wishCards[3].right, fifthTileLeft: wishCards[4].left,
@@ -229,7 +228,8 @@ async function assertHomeLayout(page: Page, language: string) {
       wishTitleCenter: wishTitle.top + wishTitle.height / 2, wishRailCenter: wishes.top + wishes.height / 2,
       gaps: [wishCards[1].left - wishCards[0].right, pointCards[1].left - pointCards[0].right, pointCards[2].left - pointCards[1].right],
       pointWidths: pointCards.map(rect => rect.width), pointTops: pointCards.map(rect => rect.top),
-      pointsHeadingGap: points.top - titleBottom('home-points-title'),
+      pointsInset: points.left - wishes.left, pointsEnd: points.right - wishRow.right,
+      pointsTitleCenter: pointsTitle.top + pointsTitle.height / 2, pointsCenter: points.top + points.height / 2,
       diyTitleCenter: diyTitle.top + diyTitle.height / 2, diyEntryCenter: diy.top + diy.height / 2,
       diyEntryInset: diy.left - wishes.left, diyEntryEnd: diy.right - wishRow.right,
       diyToPoints: pointsSection.top - diy.bottom,
@@ -237,13 +237,15 @@ async function assertHomeLayout(page: Page, language: string) {
   });
   for (const height of utilityLayout.heights) expect(height).toBeCloseTo(88, 0);
   for (const gap of utilityLayout.gaps) expect(gap).toBeCloseTo(12, 0);
-  expect(utilityLayout.pointsHeadingGap).toBeCloseTo(8, 0);
+  expect(utilityLayout.pointsInset).toBeCloseTo(0, 0);
+  expect(utilityLayout.pointsEnd).toBeCloseTo(0, 0);
+  expect(utilityLayout.pointsTitleCenter).toBeCloseTo(utilityLayout.pointsCenter, 0);
   expect(utilityLayout.diyTitleCenter).toBeCloseTo(utilityLayout.diyEntryCenter, 0);
   expect(utilityLayout.diyEntryInset).toBeCloseTo(0, 0);
   expect(utilityLayout.diyEntryEnd).toBeCloseTo(0, 0);
   for (const width of utilityLayout.pointWidths) expect(width).toBeCloseTo(utilityLayout.pointWidths[0], 0);
   for (const top of utilityLayout.pointTops) expect(top).toBeCloseTo(utilityLayout.pointTops[0], 0);
-  expect(utilityLayout.diyToPoints).toBeCloseTo(20, 0);
+  expect(utilityLayout.diyToPoints).toBeCloseTo(12, 0);
   expect(utilityLayout.wishTitleInset).toBeCloseTo(0, 0);
   expect(utilityLayout.wishTitleGap).toBeCloseTo(12, 0);
   expect(utilityLayout.wishTitleCenter).toBeCloseTo(utilityLayout.wishRailCenter, 0);
@@ -325,7 +327,12 @@ for (const width of [442, 1280]) test(`homepage keeps the plaza link beside four
   const works = (await designsRail.boundingBox())!;
   const wishes = (await page.locator('.home-intents-section').boundingBox())!;
   const points = (await page.locator('.home-points-section').boundingBox())!;
+  const pointsGrid = (await page.locator('.home-points-grid').boundingBox())!;
+  const pointsTitle = (await page.locator('#home-points-title').boundingBox())!;
   const temples = (await page.locator('section[aria-labelledby="home-temples-title"]').boundingBox())!;
+  expect(pointsGrid.x - points.x).toBeCloseTo(entry.x - diyTitle.x, 0);
+  expect(pointsGrid.y).toBeCloseTo(points.y, 0);
+  expect(pointsTitle.y + pointsTitle.height / 2).toBeCloseTo(pointsGrid.y + pointsGrid.height / 2, 0);
   expect(entry.y - (wishes.y + wishes.height)).toBeCloseTo(12, 0);
   expect(title.x).toBeCloseTo(diyTitle.x, 0);
   expect(works.x).toBeCloseTo(entry.x, 0);
@@ -334,7 +341,7 @@ for (const width of [442, 1280]) test(`homepage keeps the plaza link beside four
   expect(title.y + title.height / 2).toBeCloseTo(works.y + works.height / 2, 0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   if (width === 442) {
-    expect(points.y - (works.y + works.height)).toBeCloseTo(20, 0);
+    expect(points.y - (works.y + works.height)).toBeCloseTo(12, 0);
     expect(temples.y - (points.y + points.height)).toBeCloseTo(20, 0);
     await designsRail.hover();
     await page.mouse.wheel(240, 0);
