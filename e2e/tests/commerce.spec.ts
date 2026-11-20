@@ -81,7 +81,7 @@ test('peace wish carries a verified slot through booking and explicit payment', 
   await expect(review).toContainText('2026-11-20 14:00-15:00');
   expect(requests).toHaveLength(1);
 });
-for(const width of [375,768])test(`H5 cart checkout retry preserves request ${width}`,async({page})=>{
+for(const width of [375,768])test(`H5 cart checkout retry preserves request ${width}`,async({page}, testInfo) =>{
  await customer(page);await page.setViewportSize({width,height:900});let requests:any[]=[],paid=false
  await page.route('**/api/v1/**',async route=>{let data:any={};const req=route.request(),path=new URL(req.url()).pathname;
  if(path.endsWith('/products/1'))data=product
@@ -99,7 +99,7 @@ for(const width of [375,768])test(`H5 cart checkout retry preserves request ${wi
  await page.getByRole('button',{name:'提交订单'}).click();await page.getByRole('button',{name:'继续支付',exact:true}).click();await page.getByRole('button',{name:'确认演示支付',exact:true}).click();await expect(page).toHaveURL(/shop\/orders\/11/);await expect(page.getByRole('heading',{name:'订单详情',exact:true})).toBeVisible();await expect(page.getByText('O-COMMERCE',{exact:true})).toBeVisible()
  expect(requests).toHaveLength(2);expect(requests[0].requestId).toBe(requests[1].requestId);expect(requests[1].addressId).toBe(1)
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy()
- await page.screenshot({path:`/private/tmp/commerce-order-${width}.png`,fullPage:true})
+ await page.screenshot({path: testInfo.outputPath(`commerce-order-${width}.png`),fullPage:true})
 })
 test('H5 aftersales tracks approval and return shipment',async({page})=>{
  await customer(page);let state='shipped',returns:any[]=[]
@@ -117,8 +117,8 @@ test('DIY shipped order can be confirmed',async({page})=>{
  await page.route('**/api/v1/**',async route=>{if(route.request().method()==='PUT')status='completed';await route.fulfill({json:{code:0,message:'ok',data:{list:[{id:1,orderNo:'DIY-test',designId:1,status,paymentStatus:'success',materialFee:200,blessFee:0,totalFee:200,items:[]}]}}})})
  await page.goto('http://127.0.0.1:5376/c/diy/orders');page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'确认收到作品'}).click();await expect(page.getByRole('button',{name:'确认收到作品'})).toHaveCount(0)
 })
-test('platform commerce separates cash and points',async({page})=>{
+test('platform commerce separates cash and points',async({page}, testInfo) =>{
  const token='e30.'+Buffer.from(JSON.stringify({roles:['platform_super']})).toString('base64url')+'.test';await page.addInitScript(t=>localStorage.setItem('df_platform_admin_token',t),token)
  await page.route('**/api/v1/**',async route=>{const path=new URL(route.request().url()).pathname;let data:any={total:1,list:[{...order,status:'paid'}]};if(path.endsWith('/orders/11'))data={...order,status:'paid'};else if(path.endsWith('/orders/report'))data={totalSales:200,pendingShip:1};else if(path.endsWith('/points/report'))data={pendingCount:3,pointsSpent:7};await route.fulfill({json:{code:0,message:'ok',data}})})
- await page.goto('http://127.0.0.1:5370/commerce');await expect(page.getByRole('heading',{name:'商城运营中心'})).toBeVisible();await expect(page.getByText('兑换消耗 7 积分，不计入现金销售')).toBeVisible();await page.getByRole('button',{name:'查看详情'}).first().click();await expect(page.getByRole('button',{name:'安排发货'})).toBeVisible();await page.screenshot({path:'/private/tmp/commerce-platform.png',fullPage:true})
+ await page.goto('http://127.0.0.1:5370/commerce');await expect(page.getByRole('heading',{name:'商城运营中心'})).toBeVisible();await expect(page.getByText('兑换消耗 7 积分，不计入现金销售')).toBeVisible();await page.getByRole('button',{name:'查看详情'}).first().click();await expect(page.getByRole('button',{name:'安排发货'})).toBeVisible();await page.screenshot({path: testInfo.outputPath('commerce-platform.png'),fullPage:true})
 })
