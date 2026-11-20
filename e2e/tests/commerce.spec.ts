@@ -82,6 +82,64 @@ test('peace wish carries a verified slot through booking and explicit payment', 
   await expect(review).toContainText('2026-11-20 14:00-15:00 · 代办');
   expect(requests).toHaveLength(1);
 });
+test('all booking wishes show verified slots and an isolated preview', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.clock.setFixedTime(new Date(2026, 10, 20, 10));
+  const date = '2026-11-20';
+  const wishes = [
+    ['peace', '求平安'], ['wealth', '求财运'], ['love', '求姻缘'], ['career', '求事业'],
+    ['study', '求学业'], ['taisui', '化太岁'], ['rite', '做法事'],
+  ];
+  const tags = wishes.map(([code, name]) => ({ code, name, landingType: 'service' }));
+  let mutations = 0;
+  await page.route('**/api/v1/**', async route => {
+    const url = new URL(route.request().url());
+    if (route.request().method() !== 'GET') mutations++;
+    let data: unknown = {};
+    if (url.pathname.endsWith('/intentions')) {
+      const code = url.searchParams.get('code');
+      data = { page: 1, size: 30, total: 1, tags, list: [
+        { resourceType: 'service', sourceId: code, title: '验收寺院 · 可预约服务', subtitle: '', templeCode: 'T001', serviceCode: 'S001', price: 18 },
+      ] };
+    } else if (url.pathname.endsWith('/bookings/availability')) {
+      data = { templeId: 'T001', serviceId: 'S001', bookingDate: url.searchParams.get('date'), serviceName: '可预约服务', serviceFee: 18,
+        slots: [{ slotCode: 'case', label: '下午', timeRange: '15:00-16:00', available: true, participationMode: 'proxy' }] };
+    }
+    await route.fulfill({ json: { code: 0, data } });
+  });
+  for (const [code, label] of wishes) {
+    await page.goto('http://127.0.0.1:5376/c/intentions/' + code);
+    await expect(page.getByRole('heading', { name: label, exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: /可预约服务/ })).toHaveAttribute('href', new RegExp('date=' + date + '&slotCode=case'));
+    await page.getByRole('button', { name: '体验预约' }).click();
+    const preview = page.getByRole('dialog', { name: '体验预约' });
+    await preview.getByRole('radio', { name: /代办/ }).check();
+    await preview.getByRole('button', { name: '确认模拟预约' }).click();
+    await expect(preview.getByRole('status')).toHaveText('预约体验已完成');
+    await preview.getByRole('button', { name: '完成', exact: true }).click();
+  }
+  expect(mutations).toBe(0);
+});
+
+test('the empty points shelf can preview redemption without touching the account', async ({ page }) => {
+  await customer(page);
+  let mutations = 0;
+  await page.route('**/api/v1/**', async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (route.request().method() !== 'GET') mutations++;
+    await route.fulfill({ json: { code: 0, data: path.endsWith('/points') ? { balance: 25 } : [] } });
+  });
+  await page.goto('http://127.0.0.1:5376/c/points?tab=mall');
+  await expect(page.locator('.points-account-value')).toHaveText('25');
+  await page.getByRole('button', { name: /随身平安卡/ }).click();
+  const preview = page.getByRole('dialog', { name: '随身平安卡 · 兑换体验' });
+  await preview.getByRole('button', { name: '确认模拟兑换' }).click();
+  await expect(preview.getByRole('status')).toContainText('380 体验积分');
+  await preview.getByRole('button', { name: '取消模拟兑换' }).click();
+  await expect(preview.getByRole('status')).toContainText('体验积分恢复到 500');
+  await expect(page.locator('.points-account-value')).toHaveText('25');
+  expect(mutations).toBe(0);
+});
 for(const width of [375,768])test(`H5 cart checkout retry preserves request ${width}`,async({page}, testInfo) =>{
  await customer(page);await page.setViewportSize({width,height:900});let requests:any[]=[],paid=false
  await page.route('**/api/v1/**',async route=>{let data:any={};const req=route.request(),path=new URL(req.url()).pathname;
