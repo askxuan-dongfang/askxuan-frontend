@@ -7,10 +7,13 @@ for(const width of [375,768]){
   await page.addInitScript(()=>{localStorage.setItem('h5_token','test');localStorage.setItem('h5-auth',JSON.stringify({state:{role:'customer',token:'test',userId:1,displayName:'测试'},version:0}))})
   let balance=5;let orders:any[]=[];let requests:any[]=[]
   await page.route('**/api/v1/**',async route=>{
-   const req=route.request(), path=new URL(req.url()).pathname;let data:any={}
+   const req=route.request(), url=new URL(req.url()), path=url.pathname;let data:any={}
    if(path==='/api/v1/points')data={balance}
    else if(path.endsWith('/points/ledger'))data=[{id:1,kind:'earn',delta:5,balanceAfter:5,referenceNo:'PAY123',createdAt:'2026-09-07 12:00:00'}]
-   else if(path.endsWith('/points/products'))data=[product]
+   else if(path.endsWith('/points/products')){
+    expect(url.searchParams.get('redeemableFirst')).toBe('true')
+    data=[product,{...product,id:2,name:'余额不足样例',pointsPrice:8},{...product,id:3,name:'库存为零样例',stock:0}]
+   }
    else if(path.endsWith('/users/addresses'))data=[address]
    else if(path.endsWith('/points/orders')&&req.method()==='POST'){
     const body=req.postDataJSON();requests.push(body);balance-=2
@@ -19,17 +22,29 @@ for(const width of [375,768]){
    else if(path.endsWith('/points/orders'))data=orders
    await route.fulfill({json:{code:0,message:'ok',data}})
   })
-  await page.goto('http://127.0.0.1:5386/c/points')
-  await expect(page.getByText('消费获得')).toBeVisible()
-  await page.getByRole('tab',{name:'积分商城',exact:true}).click()
+  await page.goto('http://127.0.0.1:5376/c/points?tab=mall')
+  const shelves=page.locator('.points-shelf')
+  await expect(shelves.first()).toContainText('现在可兑')
+  await expect(shelves.first()).toContainText(product.name)
+  await expect(shelves.last()).toContainText('还差 3 积分')
+  await expect(shelves.last()).toContainText('已兑完')
+  await page.getByRole('button',{name:/库存为零样例/}).click()
+  await expect(page.getByRole('dialog',{name:'兑换商品'}).getByRole('button',{name:'确认兑换'})).toHaveCount(0)
+  await page.getByRole('dialog',{name:'兑换商品'}).getByRole('button',{name:'关闭',exact:true}).click()
   await page.getByRole('button',{name:/积分专属香囊/}).click()
   await expect(page.getByRole('dialog')).toBeVisible()
+  await expect(page.locator('.points-delivery-address')).toHaveText('上海市上海市浦东新区测试地址')
+  await expect(page.locator('.points-redemption-quote')).toContainText('兑换前余额5 积分')
+  await expect(page.locator('.points-redemption-quote')).toContainText('兑换后余额3 积分')
+  expect(requests).toHaveLength(0)
   await page.getByRole('button',{name:'确认兑换',exact:true}).click()
   await expect(page.getByText('2 积分 · 待发货')).toBeVisible()
+  await expect(page.getByText('当前可用积分 3')).toBeVisible()
   expect(requests).toHaveLength(1);expect(requests[0].expectedPrice).toBe(2);expect(requests[0].requestKey.length).toBeGreaterThan(16)
-  page.once('dialog',d=>d.accept())
+  page.once('dialog',d=>{expect(d.message()).toContain('退回 2 积分');void d.accept()})
   await page.getByRole('button',{name:'取消兑换',exact:true}).click()
   await expect(page.getByText('2 积分 · 已取消')).toBeVisible()
+  await expect(page.getByText('当前可用积分 5')).toBeVisible()
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy()
   await page.screenshot({path:`/private/tmp/askxuan-points-h5-${width}.png`,fullPage:true})
  })
@@ -47,7 +62,7 @@ test('shop admin independently creates a points product and ships redemption',as
   else if(path.endsWith('/points/orders/1/ship')){shipped=req.postDataJSON();data={success:true}}
   await route.fulfill({json:{code:0,message:'ok',data}})
  })
- await page.goto('http://127.0.0.1:5387/commerce/points-mall')
+ await page.goto('http://127.0.0.1:5374/commerce/points-mall')
  await expect(page.getByRole('heading',{name:'积分商城'})).toBeVisible()
  await page.getByRole('button',{name:'新增积分商品'}).click()
  const dialog=page.getByRole('dialog')
