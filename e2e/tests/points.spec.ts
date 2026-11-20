@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 const product={id:1,name:'积分专属香囊',category:'生活礼品',description:'独立运营的积分商品',image:'',pointsPrice:2,stock:3,status:'on_sale',version:1}
 const address={id:1,name:'测试用户',phone:'13800000000',province:'上海市',city:'上海市',district:'浦东新区',detail:'测试地址',isDefault:true}
 for(const width of [375,768]){
- test(`H5 points redemption and cancellation ${width}`,async({page})=>{
+ test(`H5 points redemption and cancellation ${width}`,async({page}, testInfo) =>{
   await page.setViewportSize({width,height:850})
   await page.addInitScript(()=>{localStorage.setItem('h5_token','test');localStorage.setItem('h5-auth',JSON.stringify({state:{role:'customer',token:'test',userId:1,displayName:'测试'},version:0}))})
   let balance=5;let orders:any[]=[];let requests:any[]=[]
@@ -46,10 +46,10 @@ for(const width of [375,768]){
   await expect(page.getByText('2 积分 · 已取消')).toBeVisible()
   await expect(page.getByText('当前可用积分 5')).toBeVisible()
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy()
-  await page.screenshot({path:`/private/tmp/askxuan-points-h5-${width}.png`,fullPage:true})
+  await page.screenshot({path: testInfo.outputPath(`askxuan-points-h5-${width}.png`),fullPage:true})
  })
 }
-test('shop admin independently creates a points product and ships redemption',async({page})=>{
+test('shop admin independently creates a points product and ships redemption',async({page}, testInfo) =>{
  const token='e30.'+Buffer.from(JSON.stringify({roles:['shop_admin'],clientId:'shop-admin'})).toString('base64url')+'.test'
  await page.addInitScript(t=>localStorage.setItem('df_platform_admin_token',t),token)
  let saved:any,shipped:any
@@ -78,5 +78,5 @@ test('shop admin independently creates a points product and ships redemption',as
  await expect(dialog).not.toBeVisible()
  await expect(page.locator('.el-loading-mask')).toHaveCount(0)
  expect(shipped).toEqual({carrier:'顺丰',trackingNo:'SF123456'})
- await page.screenshot({path:'/private/tmp/askxuan-points-admin.png',fullPage:true})
+ await page.screenshot({path: testInfo.outputPath('askxuan-points-admin.png'),fullPage:true})
 })

@@ -146,7 +146,7 @@ test("the same product links from gift and daily themes", async ({ page }) => {
   }
 });
 for (const width of [320, 390, 768])
-  test(`store layout ${width}`, async ({ page }) => {
+  test(`store layout ${width}`, async ({ page }, testInfo) => {
     await fixtures(page);
     await page.setViewportSize({ width, height: 900 });
     await page.goto(h5 + "/c/shop");
@@ -157,13 +157,13 @@ for (const width of [320, 390, 768])
         () => document.documentElement.scrollWidth <= innerWidth + 1,
       ),
     ).toBeTruthy();
-    await page.screenshot({ path: `/private/tmp/askxuan-store-${width}.png` });
+    await page.screenshot({ path: testInfo.outputPath(`askxuan-store-${width}.png`) });
     expect(
       (await page.locator(".store-product").first().boundingBox())!.y,
     ).toBeLessThan(600);
     await page.locator(".store-product").first().scrollIntoViewIfNeeded();
     await page.screenshot({
-      path: `/private/tmp/askxuan-store-catalog-${width}.png`,
+      path: testInfo.outputPath(`askxuan-store-catalog-${width}.png`),
     });
   });
 test("filters use server parameters; detail back preserves filters", async ({
@@ -213,7 +213,7 @@ test("pagination failure retries same page without duplicating items", async ({
       .map((u) => u.searchParams.get("page")),
   ).toEqual(["2", "2"]);
 });
-test("SKU stock, cents, gallery and cart feedback", async ({ page }) => {
+test("SKU stock, cents, gallery and cart feedback", async ({ page }, testInfo) => {
   await fixtures(page);
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto(h5 + "/c/shop/1");
@@ -228,7 +228,7 @@ test("SKU stock, cents, gallery and cart feedback", async ({ page }) => {
   await page.getByRole("button", { name: "增加数量" }).click();
   await page.getByRole("button", { name: "增加数量" }).click();
   await expect(page.getByRole("button", { name: "增加数量" })).toBeDisabled();
-  await page.screenshot({ path: "/private/tmp/askxuan-market-sheet.png" });
+  await page.screenshot({ path: testInfo.outputPath("askxuan-market-sheet.png") });
   await page.getByRole("button", { name: "确认加入购物车" }).click();
   await page.getByRole("button", { name: "查看商品图片2" }).click();
   await expect(
@@ -239,7 +239,7 @@ test("SKU stock, cents, gallery and cart feedback", async ({ page }) => {
     "已放入购物车",
   );
   await page.screenshot({
-    path: "/private/tmp/askxuan-store-detail.png",
+    path: testInfo.outputPath("askxuan-store-detail.png"),
     fullPage: true,
   });
 });
@@ -304,7 +304,7 @@ async function adminFixture(page: Page, failDetail = false) {
 }
 test("admin edit previews exact customer fields and preserves freight on save", async ({
   page,
-}) => {
+}, testInfo) => {
   const saved = await adminFixture(page);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(admin + "/commerce/products/edit/1");
@@ -319,7 +319,7 @@ test("admin edit previews exact customer fields and preserves freight on save", 
   );
   await expect(page.locator(".store-preview-product")).toContainText("68.35");
   await page.screenshot({
-    path: "/private/tmp/askxuan-store-admin.png",
+    path: testInfo.outputPath("askxuan-store-admin.png"),
     fullPage: true,
   });
   await page.getByRole("button", { name: "保存修改" }).click();
@@ -388,7 +388,7 @@ test("slow previous search cannot overwrite newer results", async ({
 for (const width of [390, 1440])
   test(`admin catalog modes and category preview ${width}`, async ({
     page,
-  }) => {
+  }, testInfo) => {
     await adminFixture(page);
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(admin + "/commerce/products");
@@ -406,7 +406,7 @@ for (const width of [390, 1440])
       ),
     ).toBeTruthy();
     await page.screenshot({
-      path: `/private/tmp/askxuan-store-admin-list-${width}.png`,
+      path: testInfo.outputPath(`askxuan-store-admin-list-${width}.png`),
       fullPage: true,
     });
     await page.goto(admin + "/commerce/categories");
@@ -586,13 +586,13 @@ async function checkoutFixture(
 }
 test("selected cart checkout survives reload and preserves unselected items", async ({
   page,
-}) => {
+}, testInfo) => {
   const { calls, payments } = await checkoutFixture(page);
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto(h5 + "/c/shop/cart");
   await page.getByRole("checkbox", { name: "选择大号手串" }).uncheck();
   await expect(page.locator(".market-cart-bar")).toContainText("136.70");
-  await page.screenshot({ path: "/private/tmp/askxuan-market-cart-320.png" });
+  await page.screenshot({ path: testInfo.outputPath("askxuan-market-cart-320.png") });
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth + 1,
@@ -607,7 +607,7 @@ test("selected cart checkout survives reload and preserves unselected items", as
     page.getByRole("button", { name: "提交订单" }),
   ).toBeEnabled();
   await page.screenshot({
-    path: "/private/tmp/askxuan-market-checkout-320.png",
+    path: testInfo.outputPath("askxuan-market-checkout-320.png"),
     fullPage: true,
   });
   await page.getByRole("button", { name: "提交订单" }).click();
@@ -673,7 +673,7 @@ test("sold out cart item blocks checkout without writing an order", async ({
 });
 test("order cards show real status and totals without fabricated payment success", async ({
   page,
-}) => {
+}, testInfo) => {
   await fixtures(page);
   await page.route("**/api/v1/orders?*", (r) =>
     r.fulfill({
@@ -706,7 +706,7 @@ test("order cards show real status and totals without fabricated payment success
       () => document.documentElement.scrollWidth <= innerWidth + 1,
     ),
   ).toBeTruthy();
-  await page.screenshot({ path: "/private/tmp/askxuan-market-orders-320.png" });
+  await page.screenshot({ path: testInfo.outputPath("askxuan-market-orders-320.png") });
 });
 
 test("experience checkout preserves disclosure and simulated order identity", async ({
@@ -731,7 +731,7 @@ test("experience checkout preserves disclosure and simulated order identity", as
 });
 test("experience detail discloses provenance and does not promise shipping", async ({
   page,
-}) => {
+}, testInfo) => {
   await checkoutFixture(page, { experience: true });
   await page.goto(h5 + "/c/shop/1");
   await expect(
@@ -744,7 +744,7 @@ test("experience detail discloses provenance and does not promise shipping", asy
   await page.getByText("配送与售后", { exact: true }).click();
   await expect(page.getByText(/本商品用于体验商城流程/)).toBeVisible();
   await page.screenshot({
-    path: "/private/tmp/askxuan-case-detail.png",
+    path: testInfo.outputPath("askxuan-case-detail.png"),
     fullPage: true,
   });
 });

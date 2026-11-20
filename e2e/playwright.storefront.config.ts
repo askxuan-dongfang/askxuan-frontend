@@ -5,7 +5,7 @@ export default defineConfig({
   timeout: 30000,
   workers: 2,
   reporter: "list",
-  outputDir: "/private/tmp/askxuan-storefront-tests",
+  outputDir: "./test-results/storefront",
   use: { headless: true, trace: "retain-on-failure" },
   webServer: [
     {
