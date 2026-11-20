@@ -31,13 +31,13 @@ test('peace wish carries a verified slot through booking and explicit payment', 
       templeId: 'T001', serviceId: url.searchParams.get('serviceId'), bookingDate: url.searchParams.get('date'), serviceName: '平安祈福', serviceFee: 68,
       slots: url.searchParams.get('serviceId') === 'S001' ? [
         { slotCode: 'past', label: '上午', timeRange: '08:00-09:00', capacity: 4, remaining: 4, available: true },
-        { slotCode: 'a', label: '上午', timeRange: '11:00-12:00', capacity: 4, remaining: preferredAvailable ? 4 : 0, available: preferredAvailable },
-        { slotCode: 'b', label: '下午', timeRange: '14:00-15:00', capacity: 4, remaining: 4, available: true },
+        { slotCode: 'a', label: '上午', timeRange: '11:00-12:00', participationMode: 'onsite', capacity: 4, remaining: preferredAvailable ? 4 : 0, available: preferredAvailable },
+        { slotCode: 'b', label: '下午', timeRange: '14:00-15:00', participationMode: 'proxy', capacity: 4, remaining: 4, available: true },
       ] : [],
     };
     else if (path === '/bookings' && req.method() === 'POST') { requests.push(req.postDataJSON()); data = pendingResult; }
     else if (path === '/bookings/B1/pay') data = paidResult;
-    else if (path === '/bookings/B1') data = { ...paidResult, serviceName: '平安祈福', templeName: '清和院', bookingDate: start, timeSlot: '11:00-12:00' };
+    else if (path === '/bookings/B1') data = { ...paidResult, serviceName: '平安祈福', templeName: '清和院', bookingDate: start, timeSlot: '11:00-12:00', participationMode: 'onsite' };
     else if (path === '/bookings/B1/fulfillment') data = { status: 'pending', receipts: [], logs: [] };
     else if (path === '/payments/checkout/quote') data = { mode: 'cash', amountCents: 6800, availableCents: 0, balanceEnabled: false, mockEnabled: true, experience: false };
     else if (path === '/payments/checkout') { payments++; data = { id: 1, paymentNo: 'PAY-B1', status: 'success', channel: 'mock' }; }
@@ -45,7 +45,7 @@ test('peace wish carries a verified slot through booking and explicit payment', 
   });
   await page.goto('http://127.0.0.1:5376/c/intentions/peace');
   const offer = page.getByRole('link', { name: /平安祈福/ });
-  await expect(offer).toContainText('11:00-12:00');
+  await expect(offer).toContainText('11:00-12:00 · 到场');
   await expect(page.getByText('08:00-09:00')).toHaveCount(0);
   await expect(page.getByText('清和院 · 待确认项目')).toBeHidden();
   await page.getByRole('button', { name: '查看全部服务' }).click();
@@ -57,11 +57,11 @@ test('peace wish carries a verified slot through booking and explicit payment', 
   await expect(page.getByRole('button', { name: /08:00-09:00/ })).toBeDisabled();
   const review = page.getByRole('dialog', { name: '核对预约' });
   await page.getByRole('button', { name: '核对预约信息' }).click();
-  await expect(review).toContainText('2026-11-20 11:00-12:00');
+  await expect(review).toContainText('2026-11-20 11:00-12:00 · 到场');
   expect(requests).toHaveLength(0);
   await review.getByRole('button', { name: '关闭预约核对' }).click();
   await page.getByRole('button', { name: '核对预约信息' }).click();
-  await expect(review).toContainText('2026-11-20 11:00-12:00');
+  await expect(review).toContainText('2026-11-20 11:00-12:00 · 到场');
   await review.getByRole('button', { name: '提交预约' }).click();
   await expect(page.getByRole('heading', { name: '预约待支付' })).toBeVisible();
   expect(requests).toEqual([expect.objectContaining({ bookingDate: start, slotCode: 'a', manualPayment: true })]);
@@ -72,14 +72,73 @@ test('peace wish carries a verified slot through booking and explicit payment', 
   expect(payments).toBe(1);
   await page.getByRole('button', { name: '查看预约详情' }).click();
   await expect(page.getByText('预约场次等待承办方确认。')).toBeVisible();
+  await expect(page.getByText('11:00-12:00 · 到场', { exact: true })).toBeVisible();
   preferredAvailable = false;
   await page.goto('http://127.0.0.1:5376/c/temples/T001/booking?serviceCode=S001&date=2026-11-20&slotCode=a');
   await expect(page.getByText('所选场次已不可预约，请重新选择。')).toBeVisible();
   await expect(page.getByRole('button', { name: '请选择可预约时段' })).toBeDisabled();
   await page.getByRole('button', { name: /14:00-15:00/ }).click();
   await page.getByRole('button', { name: '核对预约信息' }).click();
-  await expect(review).toContainText('2026-11-20 14:00-15:00');
+  await expect(review).toContainText('2026-11-20 14:00-15:00 · 代办');
   expect(requests).toHaveLength(1);
+});
+test('all booking wishes show verified slots and an isolated preview', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.clock.setFixedTime(new Date(2026, 10, 20, 10));
+  const date = '2026-11-20';
+  const wishes = [
+    ['peace', '求平安'], ['wealth', '求财运'], ['love', '求姻缘'], ['career', '求事业'],
+    ['study', '求学业'], ['taisui', '化太岁'], ['rite', '做法事'],
+  ];
+  const tags = wishes.map(([code, name]) => ({ code, name, landingType: 'service' }));
+  let mutations = 0;
+  await page.route('**/api/v1/**', async route => {
+    const url = new URL(route.request().url());
+    if (route.request().method() !== 'GET') mutations++;
+    let data: unknown = {};
+    if (url.pathname.endsWith('/intentions')) {
+      const code = url.searchParams.get('code');
+      data = { page: 1, size: 30, total: 1, tags, list: [
+        { resourceType: 'service', sourceId: code, title: '验收寺院 · 可预约服务', subtitle: '', templeCode: 'T001', serviceCode: 'S001', price: 18 },
+      ] };
+    } else if (url.pathname.endsWith('/bookings/availability')) {
+      data = { templeId: 'T001', serviceId: 'S001', bookingDate: url.searchParams.get('date'), serviceName: '可预约服务', serviceFee: 18,
+        slots: [{ slotCode: 'case', label: '下午', timeRange: '15:00-16:00', available: true, participationMode: 'proxy' }] };
+    }
+    await route.fulfill({ json: { code: 0, data } });
+  });
+  for (const [code, label] of wishes) {
+    await page.goto('http://127.0.0.1:5376/c/intentions/' + code);
+    await expect(page.getByRole('heading', { name: label, exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: /可预约服务/ })).toHaveAttribute('href', new RegExp('date=' + date + '&slotCode=case'));
+    await page.getByRole('button', { name: '体验预约' }).click();
+    const preview = page.getByRole('dialog', { name: '体验预约' });
+    await preview.getByRole('radio', { name: /代办/ }).check();
+    await preview.getByRole('button', { name: '确认模拟预约' }).click();
+    await expect(preview.getByRole('status')).toHaveText('预约体验已完成');
+    await preview.getByRole('button', { name: '完成', exact: true }).click();
+  }
+  expect(mutations).toBe(0);
+});
+
+test('the empty points shelf can preview redemption without touching the account', async ({ page }) => {
+  await customer(page);
+  let mutations = 0;
+  await page.route('**/api/v1/**', async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (route.request().method() !== 'GET') mutations++;
+    await route.fulfill({ json: { code: 0, data: path.endsWith('/points') ? { balance: 25 } : [] } });
+  });
+  await page.goto('http://127.0.0.1:5376/c/points?tab=mall');
+  await expect(page.locator('.points-account-value')).toHaveText('25');
+  await page.getByRole('button', { name: /随身平安卡/ }).click();
+  const preview = page.getByRole('dialog', { name: '随身平安卡 · 兑换体验' });
+  await preview.getByRole('button', { name: '确认模拟兑换' }).click();
+  await expect(preview.getByRole('status')).toContainText('380 体验积分');
+  await preview.getByRole('button', { name: '取消模拟兑换' }).click();
+  await expect(preview.getByRole('status')).toContainText('体验积分恢复到 500');
+  await expect(page.locator('.points-account-value')).toHaveText('25');
+  expect(mutations).toBe(0);
 });
 for(const width of [375,768])test(`H5 cart checkout retry preserves request ${width}`,async({page}, testInfo) =>{
  await customer(page);await page.setViewportSize({width,height:900});let requests:any[]=[],paid=false
@@ -88,19 +147,43 @@ for(const width of [375,768])test(`H5 cart checkout retry preserves request ${wi
  else if(path.endsWith('/users/addresses'))data={list:[address]}
  else if(path==='/api/v1/orders'&&req.method()==='POST'){requests.push(req.postDataJSON());if(requests.length===1){await route.fulfill({status:503,json:{code:500,message:'网络中断，请重试'}});return}data={id:11,orderNo:order.orderNo}}
  else if(path.endsWith('/orders/11/returns'))data=[]
- else if(path.endsWith('/orders/11'))data={...order,status:paid?'paid':'pending_payment'}
- else if(path==='/api/v1/payments/checkout/quote')data={mode:'cash',amountCents:20000,availableCents:0,balanceEnabled:false,mockEnabled:true,experience:false}
+ else if(path.endsWith('/orders/11'))data={...order,totalAmount:208,payAmount:208,freightAmount:8,status:paid?'paid':'pending_payment'}
+ else if(path==='/api/v1/payments/checkout/quote')data={mode:'cash',amountCents:20800,availableCents:0,balanceEnabled:false,mockEnabled:true,experience:false}
  else if(path==='/api/v1/payments/checkout'){paid=true;data={id:2,paymentNo:'PAY-fixture',status:'success',channel:'mock'}}
  else if(path.endsWith('/payments/2'))data={id:2,status:'success'}
  await route.fulfill({json:{code:0,message:'ok',data}})})
  await page.goto('http://127.0.0.1:5376/c/shop/1');await page.getByRole('button',{name:'加入购物车',exact:true}).click();await page.getByRole('button',{name:'确认加入购物车',exact:true}).click()
  await page.goto('http://127.0.0.1:5376/c/shop/cart');await expect(page.getByText('山间木珠手串')).toBeVisible();await page.getByRole('button',{name:/去结算/}).click()
  await page.getByRole('button',{name:'提交订单'}).click();await expect(page.locator('.error-note')).toContainText('网络中断，请重试')
- await page.getByRole('button',{name:'提交订单'}).click();await page.getByRole('button',{name:'继续支付',exact:true}).click();await page.getByRole('button',{name:'确认演示支付',exact:true}).click();await expect(page).toHaveURL(/shop\/orders\/11/);await expect(page.getByRole('heading',{name:'订单详情',exact:true})).toBeVisible();await expect(page.getByText('O-COMMERCE',{exact:true})).toBeVisible()
+ await page.getByRole('button',{name:'提交订单'}).click();await expect(page.getByText('¥8.00',{exact:true})).toBeVisible();await expect(page.getByText('¥208.00',{exact:true})).toBeVisible();await page.getByRole('button',{name:'继续支付',exact:true}).click();await page.getByRole('button',{name:'确认演示支付',exact:true}).click();await expect(page).toHaveURL(/shop\/orders\/11/);await expect(page.getByRole('heading',{name:'订单详情',exact:true})).toBeVisible();await expect(page.getByText('O-COMMERCE',{exact:true})).toBeVisible()
  expect(requests).toHaveLength(2);expect(requests[0].requestId).toBe(requests[1].requestId);expect(requests[1].addressId).toBe(1)
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy()
  await page.screenshot({path: testInfo.outputPath(`commerce-order-${width}.png`),fullPage:true})
 })
+test('H5 confirms cancellation of an unpaid shop order', async ({ page }) => {
+  await customer(page);
+  let cancelled = 0;
+  const record = { ...order, paymentExpireTime: '2026-11-21 12:45:00' };
+  await page.route('**/api/v1/**', async route => {
+    const path = new URL(route.request().url()).pathname;
+    let data: unknown = [];
+    if (path.endsWith('/orders/11')) data = record;
+    else if (path.endsWith('/orders/11/cancel') && route.request().method() === 'POST') {
+      cancelled++;
+      data = { ...record, status: 'cancelled' };
+    }
+    await route.fulfill({ json: { code: 0, data } });
+  });
+  await page.goto('http://127.0.0.1:5376/c/shop/orders/11');
+  await expect(page.getByText('2026-11-21 12:45:00')).toBeVisible();
+  await page.getByRole('button', { name: '取消订单' }).click();
+  const dialog = page.getByRole('dialog', { name: '取消这笔订单？' });
+  expect(cancelled).toBe(0);
+  await dialog.getByRole('button', { name: '确认取消' }).click();
+  await expect(page.getByText('已取消', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '继续支付' })).toHaveCount(0);
+  expect(cancelled).toBe(1);
+});
 test('H5 aftersales tracks approval and return shipment',async({page})=>{
  await customer(page);let state='shipped',returns:any[]=[]
  await page.route('**/api/v1/**',async route=>{const req=route.request(),path=new URL(req.url()).pathname;let data:any={}

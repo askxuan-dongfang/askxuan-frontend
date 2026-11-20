@@ -434,6 +434,9 @@ onMounted(() => {
             :rows="4"
             :placeholder='$t("JSON 格式，如 {\"first\":1,\"firstFee\":10,\"next\":1,\"nextFee\":2}")'
           />
+          <small v-if="freightForm.type === 'by_piece' && !freightForm.freeShipping">
+            {{ $t("regions 可以按收货省份覆盖默认运费。地区规则同样填写首件数、首费、续件数和续费。") }}
+          </small>
         </el-form-item>
         <el-form-item v-if="freightForm.id" :label='$t("状态")'>
           <el-radio-group v-model="freightForm.status">

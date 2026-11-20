@@ -276,8 +276,11 @@ watch(() => route.params.id, loadDetail, { immediate: true });
               :reserve-keyword="false"
               :placeholder='$t("输入标签后回车，例如：天然材质、随身好物")'
               style="width: 100%"
-            /><span class="editor-help"
-              >{{ $t("首个标签显示在商品卡片，所有标签展示在详情页。请填写可核实的商品特点。") }}</span
+            >
+              <el-option :label='$t("送礼")' value="送礼" />
+              <el-option :label='$t("日常佩戴")' value="日常佩戴" />
+            </el-select><span class="editor-help"
+              >{{ $t("送礼和日常佩戴标签决定商品在哪个主题展示。") }}</span
             ></el-form-item
           >
         </section>
