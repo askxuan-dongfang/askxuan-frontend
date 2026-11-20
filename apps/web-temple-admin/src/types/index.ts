@@ -97,6 +97,7 @@ export interface TempleServiceSlot {
 	endTime: string
 	capacity: number
 	status: 'enabled' | 'disabled'
+	participationMode?: '' | 'onsite' | 'proxy'
 	sort: number
 }
 
@@ -135,6 +136,7 @@ export interface Booking {
   bookingDate: string
 	slotCode: string
   timeSlot: string
+  participationMode?: 'onsite' | 'proxy'
 	serviceFee: number
   meritMoney: number
 	totalFee: number

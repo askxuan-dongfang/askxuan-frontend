@@ -161,6 +161,11 @@ onMounted(async () => {
 			  <el-time-select v-model="slot.startTime" start="05:00" step="00:30" end="22:00" :placeholder='$t("开始")' />
 			  <el-time-select v-model="slot.endTime" start="05:30" step="00:30" end="23:00" :placeholder='$t("结束")' />
 			  <el-input-number v-model="slot.capacity" :min="1" :max="999" controls-position="right" />
+			  <el-select v-model="slot.participationMode" :placeholder='$t("参与方式")' :aria-label='$t("参与方式")'>
+			    <el-option :label='$t("未设置")' value="" />
+			    <el-option :label='$t("到场")' value="onsite" />
+			    <el-option :label='$t("代办")' value="proxy" />
+			  </el-select>
 			  <el-switch v-model="slot.status" active-value="enabled" inactive-value="disabled" />
 			  <el-button :icon="Delete" circle :aria-label='$t("删除时段")' @click="removeSlot(index)" />
 			</div>
@@ -187,7 +192,8 @@ onMounted(async () => {
 	max-width: 900px;
 }
 .slot-editor { width: 100%; display: grid; gap: 10px; }
-.slot-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr 120px 48px 40px; gap: 8px; align-items: center; }
+.slot-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr 96px 108px 44px 36px; gap: 8px; align-items: center; }
+.slot-row .el-input-number { width: 100%; }
 .service-type-picker { width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .service-type-tag { min-height: 64px; padding: 10px 12px; border: 0; border-radius: 6px; background: var(--admin-surface-muted); color: var(--el-text-color-primary); text-align: left; cursor: pointer; }
 .service-type-tag span, .service-type-tag small { display: block; }

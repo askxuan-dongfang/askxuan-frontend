@@ -147,6 +147,9 @@ onMounted(load)
             <el-descriptions-item :label='$t("法师")'>{{ booking.masterName || $t('全院执行') }}</el-descriptions-item>
             <el-descriptions-item :label='$t("预约日期")'>{{ $t(booking.bookingDate) }}</el-descriptions-item>
             <el-descriptions-item :label='$t("时段")'>{{ $t(booking.timeSlot) }}</el-descriptions-item>
+            <el-descriptions-item v-if="booking.participationMode" :label='$t("参与方式")'>
+              {{ $t(booking.participationMode === 'onsite' ? '到场' : '代办') }}
+            </el-descriptions-item>
             <el-descriptions-item :label='$t("寺院服务费与随喜")'>
               <span class="price">{{ $t(formatMoney(booking.meritMoney)) }}</span>
             </el-descriptions-item>
