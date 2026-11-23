@@ -3,6 +3,8 @@ import { useAuthStore } from '@/stores/auth'
 const auth=useAuthStore()
 import { ElMessage } from '@/i18n'
 import { t as uiText } from '../../../../packages/localization/language'
+import CatalogTranslationButton from '../../../../packages/admin-ui/components/CatalogTranslationButton.vue'
+import { catalogTranslations } from '@/api/catalogTranslations'
 
 import { ref, reactive, onMounted } from 'vue'
 import { type FormInstance } from 'element-plus'
@@ -70,6 +72,7 @@ async function handleSave() {
       })
       temple.value = t
       ElMessage.success(uiText('寺院信息已保存'))
+      catalogTranslations.queueAfterSave('temple', t.id)
     } finally {
       saving.value = false
     }
@@ -85,6 +88,7 @@ onMounted(async () => {
 <template>
   <div class="df-page" v-loading="loading">
     <PageHeader :title='$t("寺院信息")' :subtitle='$t("维护寺院基础资料与封面")'>
+      <CatalogTranslationButton v-if="temple && auth.can('temple.profile.write') && !saving" :key="temple.id" :api="catalogTranslations" kind="temple" :record-id="temple.id" />
       <el-button v-if="auth.can('temple.profile.write')" type="primary" :icon="Check" :loading="saving" @click="handleSave">{{ $t("保存修改") }}</el-button>
     </PageHeader>
 

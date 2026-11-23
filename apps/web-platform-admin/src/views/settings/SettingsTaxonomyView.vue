@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ElMessage } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
+import CatalogTranslationButton from '../../../../../packages/admin-ui/components/CatalogTranslationButton.vue'
+import { catalogTranslations } from '@/api/catalogTranslations'
 
 import { computed, onMounted, reactive, ref } from 'vue'
 
@@ -55,6 +57,7 @@ async function saveBelief() {
   await taxonomyApi.updateBelief(code, body)
   beliefVisible.value = false
   ElMessage.success(uiText('信仰分类已保存'))
+  catalogTranslations.queueAfterSave('belief', code)
   await load()
 }
 
@@ -124,7 +127,13 @@ onMounted(load)
         <el-table-column prop="icon" label="SF Symbol" min-width="150" />
         <el-table-column prop="summary" :label='$t("摘要")' min-width="220" show-overflow-tooltip />
         <el-table-column :label='$t("状态")' width="90"><template #default="{ row }"><el-tag :type="row.status === 'enabled' ? 'success' : 'info'">{{ $t((row.status === 'enabled' ? $t('启用') : $t('停用'))) }}</el-tag></template></el-table-column>
-        <el-table-column :label='$t("操作")' width="160"><template #default="{ row }"><el-button link type="primary" @click="openBelief(row)">{{ $t("编辑") }}</el-button><el-button link :type="row.status === 'enabled' ? 'danger' : 'success'" @click="toggleBelief(row)">{{ $t((row.status === 'enabled' ? $t('停用') : $t('启用'))) }}</el-button></template></el-table-column>
+        <el-table-column :label='$t("操作")' width="190">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="openBelief(row)">{{ $t("编辑") }}</el-button>
+            <CatalogTranslationButton :key="row.code" :api="catalogTranslations" kind="belief" :record-id="row.code" link />
+            <el-button link :type="row.status === 'enabled' ? 'danger' : 'success'" @click="toggleBelief(row)">{{ $t((row.status === 'enabled' ? $t('停用') : $t('启用'))) }}</el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </section>
 

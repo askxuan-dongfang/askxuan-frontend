@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ElMessage } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
+import CatalogTranslationButton from '../../../../../packages/admin-ui/components/CatalogTranslationButton.vue'
+import { catalogTranslations } from '@/api/catalogTranslations'
 
 import { isAdminSessionExpired } from '@/api/client'
 // DIY 材料编辑 / 新建
@@ -230,6 +232,7 @@ async function handleSubmit(publish = false) {
     const data = { ...form, renderAssets: JSON.stringify({ ...assets, studio: studio.value }) }
     if (savedId.value) await materialApi.update(savedId.value, data)
     else savedId.value = (await materialApi.create(data)).id
+    catalogTranslations.queueAfterSave('diy-material', savedId.value)
     if (publish) await materialApi.updateStatus(savedId.value, 'on_shelf')
     if (jobStorageKey) sessionStorage.removeItem(jobStorageKey)
     ElMessage.success(uiText(publish ? '材料已发布' : '草稿已保存'))
@@ -243,7 +246,9 @@ onBeforeUnmount(() => { alive = false; clearTimeout(pollTimer); configKey.value 
 
 <template>
   <div class="page-wrap material-authoring" v-loading="loading">
-    <PageHeader :title="$t(isEdit ? '编辑材料' : '新建材料')" :subtitle='$t("选择品类、准备模型，确认实物尺寸与挂点后发布")' />
+    <PageHeader :title="$t(isEdit ? '编辑材料' : '新建材料')" :subtitle='$t("选择品类、准备模型，确认实物尺寸与挂点后发布")'>
+      <CatalogTranslationButton v-if="savedId && detailReady && !saving" :key="savedId" :api="catalogTranslations" kind="diy-material" :record-id="savedId" />
+    </PageHeader>
     <el-alert v-if="detailError" :title="$t(detailError)" type="error" :closable="false"><el-button @click="loadDetail">{{ $t('重新读取材料') }}</el-button></el-alert>
     <ol class="authoring-steps" :aria-label='$t("材料建模流程")'><li v-for="(label, index) in ['材料建档', '实拍与尺寸', '生成或复用', '预览与挂点', '保存发布']" :key="label"><span>{{ index + 1 }}</span>{{ $t(label) }}</li></ol>
     <el-form ref="formRef" :model="form" :rules="rules" :disabled="!detailReady" label-position="top" @submit.prevent="handleSubmit(false)">

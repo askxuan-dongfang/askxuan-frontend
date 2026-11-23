@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ElMessage } from '@/i18n'
 import { t as uiText } from '../../../../packages/localization/language'
+import CatalogTranslationButton from '../../../../packages/admin-ui/components/CatalogTranslationButton.vue'
+import { catalogTranslations } from '@/api/catalogTranslations'
 
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -97,8 +99,9 @@ async function handleSubmit() {
           avatar: form.avatar
         })
         ElMessage.success(uiText('法师信息已更新'))
+        catalogTranslations.queueAfterSave('master', masterId.value)
       } else {
-        await createMaster({
+        const saved = await createMaster({
           dharmaName: form.dharmaName,
           layName: form.layName,
           templeId: auth.templeId,
@@ -112,6 +115,7 @@ async function handleSubmit() {
           avatar: form.avatar
         })
         ElMessage.success(uiText('法师已创建'))
+        catalogTranslations.queueAfterSave('master', saved.id)
       }
       router.push('/masters')
     } finally {
@@ -130,6 +134,7 @@ onMounted(async () => {
   <div class="df-page" v-loading="loading">
     <PageHeader :title="$t(pageTitle)" :subtitle="$t(pageSubtitle)">
       <el-button :icon="ArrowLeft" @click="router.back()">{{ $t("返回") }}</el-button>
+      <CatalogTranslationButton v-if="masterId && auth.can('temple.people.write') && !loading && !saving" :key="masterId" :api="catalogTranslations" kind="master" :record-id="masterId" />
       <el-button type="primary" :icon="Check" :loading="saving" @click="handleSubmit">{{ $t("保存") }}</el-button>
     </PageHeader>
 

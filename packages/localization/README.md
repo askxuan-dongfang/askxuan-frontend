@@ -1,10 +1,10 @@
 # 全产品界面语言
 
-支持 `system`、`zh-Hans`、`zh-Hant`，默认跟随系统。按系统首个受支持的中文偏好匹配：显式 Hans/Hant 优先于地区，TW/HK/MO 匹配繁体，其他中文匹配简体；系统没有中文偏好时回退简体。语言与外观独立。
+支持 `system`、`zh-Hans`、`zh-Hant`，默认跟随系统。显式 Hans/Hant 优先于地区，TW/HK/MO 匹配繁体，其他中文匹配简体；系统没有中文偏好时回退简体。H5 信众端可主动选择 English。语言与外观独立。
 
-Web 使用 `askxuan-language` localStorage，实时响应 `languagechange` 与 `storage`；被禁用的存储仅影响重启记忆。iOS/Mac 使用 `askxuan.language` UserDefaults，跟随系统时在回到前台和 locale 通知时刷新。偏好是设备/浏览器本地设置，退出登录不清除，不进行账号云同步。
+管理 Web 使用 `askxuan-language` localStorage。H5 信众端和大师端分别写入 `askxuan-language-customer` 和 `askxuan-language-master`，首次读取时兼容原有中文设置。两者都实时响应 `languagechange` 与 `storage`。iOS/Mac 使用 `askxuan.language` UserDefaults，跟随系统时在回到前台和 locale 通知时刷新。偏好保存在设备或浏览器，退出登录后也有效。
 
-`language.ts` 与 `zh-Hant.json` 是 Web 权威源。H5 是独立 Git 仓库，提交自身镜像，正式构建不依赖父仓新版本。Vue 使用显式 `$t`，React 使用显式文本查表与 `useLanguage`，SwiftUI 使用 `L10n.text`/`lookup` 与 Observation。没有 DOM 改写、运行时全文转码、页面 reload 或语言切换导致的根视图重建。输入值、业务状态码、API payload、用户昵称、聊天/评论原文保持原值；内容标题等仅做目录中已知界面文案查表，未知内容原样显示。
+`language.ts` 供 Vue 管理台使用，`zh-Hant.json` 是繁体词库的权威源。独立 H5 仓库维护按角色切换语言的实现和英文界面词库，并提交 `zh-Hant.json` 镜像。Vue 使用显式 `$t`，React 使用显式文本查表与 `useLanguage`，SwiftUI 使用 `L10n.text`/`lookup` 与 Observation。英文目录内容从已审核的版本读取。设备偏好、业务状态码、库存、积分、用户输入和聊天原文按现有业务路径处理。
 
 原生聊天 WKWebView 随宿主的当前语言更新；Mac 两个独立 WebKit 数据仓库与菜单通过限定同源主框架的桥接同步。Element Plus 日期与分页由 `ElConfigProvider` 切换 zh-cn/zh-tw。切换不会改变币种、时区、用户业务数据或 AI 已生成内容。
 

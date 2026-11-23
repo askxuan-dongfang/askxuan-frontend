@@ -9,6 +9,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { hasPlatformPermission } from '@/router/access'
+import CatalogTranslationButton from '../../../../../packages/admin-ui/components/CatalogTranslationButton.vue'
+import { catalogTranslations } from '@/api/catalogTranslations'
 import { beliefOptions as standardBeliefs, normalizeBelief } from '../../../../../packages/admin-ui/affiliation'
 
 import { getDirectoryTags, getPublicDirectoryTags, type DirectoryTag } from '@/api/directoryTags'
@@ -30,7 +32,7 @@ import type { Master } from '@/types'
 
 const auth=useAuthStore()
 const canEditProfile=computed(()=>auth.roles.includes('platform_super'))
-const canEditServices=computed(()=>hasPlatformPermission(auth.roles,auth.access,'platform.masters.write',['platform_super']))
+const canWriteMaster=computed(()=>hasPlatformPermission(auth.roles,auth.access,'platform.masters.write',['platform_super']))
 const route = useRoute()
 const router = useRouter()
 
@@ -104,7 +106,7 @@ async function loadDetail() {
 }
 
 function startEdit() {
-  if (!master.value || (!canEditProfile.value && !canEditServices.value)) return
+  if (!master.value || (!canEditProfile.value && !canWriteMaster.value)) return
   form.value = {
     dharmaName: master.value.dharmaName,
     layName: master.value.layName,
@@ -164,13 +166,14 @@ async function saveProfile() {
     profileBaseline.value=JSON.stringify(submitted)
     profileReceipt.value='资料已保存，服务草稿仍独立保留'
     ElMessage.success(uiText('资料已保存'))
+    catalogTranslations.queueAfterSave('master', masterId.value)
   } catch (error) {
     if (isAdminSessionExpired(error)) return
     profileFailed.value=true;profileReceipt.value=error instanceof Error?error.message:'资料保存失败，草稿已保留，可单独重试'
   } finally { saving.value=false }
 }
 async function saveServices() {
-  if (!editing.value || !canEditServices.value || serviceSaving.value || !servicesReady.value) return
+  if (!editing.value || !canWriteMaster.value || serviceSaving.value || !servicesReady.value) return
   const submitted = JSON.parse(JSON.stringify(tagEdits.value)) as typeof tagEdits.value
   serviceSaving.value=true;serviceFailed.value=false;serviceReceipt.value=''
   try {
@@ -193,7 +196,8 @@ onMounted(() => { void loadDetail() })
     <PageHeader :title='$t("法师详情")' :subtitle='$t("法师资料、可提供服务查看与平台编辑（寺院与独立执业两类大师）")'>
       <template #actions>
         <el-button @click="router.push('/master/list')">{{ $t("返回列表") }}</el-button>
-        <el-button v-if="master && !editing && (canEditProfile || canEditServices)" type="primary" @click="startEdit">{{ $t(canEditProfile ? "编辑资料" : "编辑服务") }}</el-button>
+        <CatalogTranslationButton v-if="master && canWriteMaster && !saving" :key="master.id" :api="catalogTranslations" kind="master" :record-id="master.id" />
+        <el-button v-if="master && !editing && (canEditProfile || canWriteMaster)" type="primary" @click="startEdit">{{ $t(canEditProfile ? "编辑资料" : "编辑服务") }}</el-button>
       </template>
     </PageHeader>
 
@@ -255,7 +259,7 @@ onMounted(() => { void loadDetail() })
     </div>
 
     <!-- 编辑态 -->
-    <div v-else-if="master && editing && (canEditProfile || canEditServices)" class="df-card" style="max-width: 640px">
+    <div v-else-if="master && editing && (canEditProfile || canWriteMaster)" class="df-card" style="max-width: 640px">
       <el-form label-width="110px" :disabled="saving || serviceSaving">
         <div v-if="canEditProfile">
         <el-form-item :label='$t("法号")' required>
@@ -309,7 +313,7 @@ onMounted(() => { void loadDetail() })
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" :loading="serviceSaving" :disabled="!canEditServices || !servicesReady || serviceLoading" @click="saveServices">{{ $t(serviceFailed ? "仅重试服务" : "保存服务") }}</el-button>
+          <el-button type="primary" :loading="serviceSaving" :disabled="!canWriteMaster || !servicesReady || serviceLoading" @click="saveServices">{{ $t(serviceFailed ? "仅重试服务" : "保存服务") }}</el-button>
           <el-button @click="cancelEdit" data-quiet-action="cancel">{{ $t("返回查看") }}</el-button>
         </el-form-item>
         <p v-if="serviceReceipt" :role="serviceFailed?'alert':'status'" :class="{failed:serviceFailed}">{{ $t(serviceReceipt) }}</p>
