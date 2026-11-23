@@ -9,6 +9,7 @@ export interface LibraryModel {
 export type ModelUses = Record<ModelRole, string>
 export interface ModelLibrary {
   list: LibraryModel[]; uses: ModelUses; revision: number; writable: boolean; defaultChat: string; warnings: string[]
+  customerModelIds?: string[]
 }
 export interface DiscoveredLanguageModel {
   id: string; name: string; contextWindow: number; maxOutputTokens: number; supportsVision: boolean
@@ -31,5 +32,6 @@ export const modelLibraryApi = {
   list: () => client.get<ModelLibrary>('/ai/admin/model-library', { timeout: 35000 }),
   discoverOpenCodeGo: (apiKey: string) =>
     client.post<{ list: DiscoveredLanguageModel[] }>('/ai/admin/model-library/language/discover', { provider: 'opencode_go', apiKey }, { timeout: 35000 }),
-  saveUses: (uses: ModelUses, revision: number) => client.put('/ai/admin/model-library/uses', { uses, revision }, { timeout: 90000 }),
+  saveUses: (uses: ModelUses, revision: number, customerModelIds?: string[]) =>
+    client.put('/ai/admin/model-library/uses', { uses, revision, customerModelIds }, { timeout: 90000 }),
 }

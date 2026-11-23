@@ -8,7 +8,10 @@ import { onBeforeRouteLeave } from 'vue-router'
 import client from '@/api/client'
 import { emptyUses, modelLibraryApi, modelOptions, modelRoles, type DiscoveredLanguageModel, type LibraryModel, type ModelLibrary, type ModelRole } from '@/api/modelLibrary'
 
-const library = ref<ModelLibrary>(), uses = ref(emptyUses()), savedUses = ref(JSON.stringify(emptyUses()))
+const library = ref<ModelLibrary>(), uses = ref(emptyUses())
+const customerModelIds = ref<string[]>([])
+const selection = computed(() => JSON.stringify({ uses: uses.value, customerModelIds: customerModelIds.value }))
+const savedSelection = ref(selection.value)
 const busy = ref(false), error = ref(''), query = ref(''), role = ref<ModelRole | ''>(''), dialog = ref(false)
 const initial = () => ({ kind: 'language', name: '', model: '', provider: 'volcengine', baseUrl: 'https://ark.cn-beijing.volces.com/api/v3', apiKey: '', reuseConnection: '', supportsVision: false, contextWindow: 0, maxOutputTokens: 0, dimension: 512 })
 const form = ref(initial()), formBaseline = ref('')
@@ -23,9 +26,15 @@ function providerName(provider: string) { return provider === 'opencode_go' ? 'O
 const visible = computed(() => library.value?.list.filter(m => (!role.value || m.bindings[role.value]) &&
   `${m.name} ${m.model} ${m.provider} ${providerName(m.provider)}`.toLowerCase().includes(query.value.trim().toLowerCase())) || [])
 const connections = computed(() => library.value?.list.filter(m => m.kind === 'language' && m.provider !== 'opencode_go') || [])
-const dirty = computed(() => JSON.stringify(uses.value) !== savedUses.value || (dialog.value && JSON.stringify(form.value) !== formBaseline.value))
+const dirty = computed(() => selection.value !== savedSelection.value || (dialog.value && JSON.stringify(form.value) !== formBaseline.value))
 async function run(fn: () => Promise<void>) { if (busy.value) return; busy.value = true; error.value = ''; try { await fn() } catch (e) { error.value = e instanceof Error ? e.message : '模型操作失败' } finally { busy.value = false } }
-async function load() { library.value = await modelLibraryApi.list(); uses.value = { ...emptyUses(), ...library.value.uses }; savedUses.value = JSON.stringify(uses.value) }
+async function load() {
+  const data = await modelLibraryApi.list()
+  library.value = data
+  uses.value = { ...emptyUses(), ...data.uses }
+  customerModelIds.value = [...(data.customerModelIds ?? [])]
+  savedSelection.value = selection.value
+}
 async function refresh() { if (dirty.value) { try { await ElMessageBox.confirm(uiText('刷新将丢弃尚未保存的选择。'), uiText('刷新模型库'), { confirmButtonText: uiText('刷新'), cancelButtonText: uiText('继续编辑') }) } catch { return } } await run(load) }
 function add() { form.value = initial(); formBaseline.value = JSON.stringify(form.value); dialog.value = true }
 watch(() => form.value.kind, kind => { form.value.apiKey = ''; form.value.reuseConnection = ''; form.value.provider = kind === 'language' ? 'volcengine' : kind === 'Rerank' ? 'generic' : 'openai'; form.value.baseUrl = kind === 'language' ? 'https://ark.cn-beijing.volces.com/api/v3' : '' })
@@ -72,7 +81,15 @@ async function saveModel() { await run(async () => {
   else { const f = form.value; await client.post('/ai/admin/knowledge-models', { name: f.model, displayName: f.name, type: f.kind, baseUrl: f.baseUrl, apiKey: f.apiKey, provider: f.provider, dimension: f.dimension }) }
   form.value.apiKey = ''; dialog.value = false; await load(); ElMessage.success(uiText('模型已加入模型库，可按用途选择'))
 }) }
-async function saveUses() { if (!library.value) return; await run(async () => { await modelLibraryApi.saveUses(uses.value, library.value!.revision); await load(); ElMessage.success(uiText('默认模型选择已保存')) }) }
+async function saveUses() {
+  const data = library.value
+  if (!data) return
+  await run(async () => {
+    await modelLibraryApi.saveUses(uses.value, data.revision, data.customerModelIds ? customerModelIds.value : undefined)
+    await load()
+    ElMessage.success(uiText(data.customerModelIds ? '模型用途配置已保存' : '默认模型选择已保存'))
+  })
+}
 async function test(m: LibraryModel) { await run(async () => { const root = m.kind === 'language' ? '/ai/admin/model-library/' : '/ai/admin/knowledge-models/'; await client.post(root + encodeURIComponent(m.id) + '/test', {}, { timeout: 45000 }); ElMessage.success((uiText("") + String(m.name) + uiText(" 连接成功"))) }) }
 async function remove(m: LibraryModel) { try { await ElMessageBox.confirm((uiText("删除“") + String(m.name) + uiText("”？已绑定或发布使用的模型会保留。")), uiText('删除模型'), { type: 'warning', confirmButtonText: uiText('删除'), cancelButtonText: uiText('取消') }) } catch { return }
   await run(async () => { if (m.kind === 'language') await client.delete('/ai/admin/model-library/' + encodeURIComponent(m.id), { data: { revision: library.value?.revision } }); else await client.delete('/ai/admin/knowledge-models/' + encodeURIComponent(m.id)); await load() })
@@ -98,7 +115,6 @@ onMounted(() => run(load))
         </el-table>
       </el-tab-pane>
       <el-tab-pane :label='$t("默认用途")'>
-        <p>{{ $t("为各用途指定默认模型。已有知识库和已发布智能体保留各自的模型选择。") }}</p>
         <el-form label-position="top" class="uses">
           <el-form-item v-for="use in modelRoles" :key="use.key" :label="$t(use.label)">
             <el-select v-model="uses[use.key]" filterable clearable :value-on-clear="''" :aria-label="$t(use.label) + $t('默认模型')"
@@ -107,8 +123,15 @@ onMounted(() => run(load))
             </el-select>
             <small>{{ $t(use.hint) }}</small>
           </el-form-item>
+          <el-form-item v-if="library?.customerModelIds" :label='$t("信众可选模型")'>
+            <el-select v-model="customerModelIds" multiple filterable clearable
+              :aria-label='$t("信众可选模型")' :placeholder='$t("沿用原有开放规则")'>
+              <el-option v-for="model in options('chat')" :key="model.id" :value="model.id" :label="$t(model.name)" />
+            </el-select>
+            <small>{{ $t("选中后仅开放这些模型。上传图片时仅能选择支持图片输入的模型。") }}</small>
+          </el-form-item>
         </el-form>
-        <el-button type="primary" :disabled="!library?.writable || JSON.stringify(uses) === savedUses" @click="saveUses">{{ $t("保存默认选择") }}</el-button>
+        <el-button type="primary" :disabled="!library?.writable || selection === savedSelection" @click="saveUses">{{ $t(library?.customerModelIds ? "保存用途配置" : "保存默认选择") }}</el-button>
       </el-tab-pane>
     </el-tabs>
     <p class="note">{{ $t("模型需支持对应接口：聊天大模型不能代替 Embedding 或 Rerank。更换向量模型需要新建索引。") }}<router-link to="/ai/connections/legacy">{{ $t("原有连接与运行参数") }}</router-link></p>
