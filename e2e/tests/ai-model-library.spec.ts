@@ -11,7 +11,7 @@ async function setup(page: Page, customerModelIds?: string[]) {
   ]
   if (customerModelIds !== undefined) list.push(
     {id:'vision',name:'图片模型',model:'vision',kind:'language',source:'registered',provider:'openai_compatible',baseUrl:'https://example.test',bindings:{chat:'vision',vision:'vision'}},
-    {id:'go',name:'翻译模型',model:'kimi',kind:'language',source:'registered',provider:'opencode_go',baseUrl:'https://opencode.ai/inference/go/openai/v1',bindings:{catalogTranslation:'go'}},
+    {id:'go',name:'OpenCode Go 文本模型',model:'kimi',kind:'language',source:'registered',provider:'opencode_go',baseUrl:'https://opencode.ai/inference/go/openai/v1',bindings:{chat:'go',catalogTranslation:'go'}},
   )
   let uses = {chat:'',vision:'',embedding:'embed',rerank:'rank',document:''}, revision = 3
   const calls: {path:string;method:string;body:any}[] = []
@@ -27,7 +27,12 @@ async function setup(page: Page, customerModelIds?: string[]) {
   })
   return calls
 }
-async function openSelect(page:Page,label:string){await page.locator(`.el-select:has(input[aria-label="${label}"]) .el-select__wrapper`).click()}
+async function openSelect(page: Page, label: string) {
+  const select = page.locator(`.el-select:has(input[aria-label="${label}"])`)
+  await select.locator('.el-select__wrapper').click()
+  const controls = await select.locator(`input[aria-label="${label}"]`).getAttribute('aria-controls')
+  return page.locator(`[id="${controls}"]`)
+}
 
 test('catalog filters by capability and saves role-specific model identities',async({page})=>{
   const calls=await setup(page);await page.goto('/ai/connections/models')
@@ -52,20 +57,23 @@ test('customer options and role defaults are saved together and can be cleared',
   const calls = await setup(page, [])
   await page.goto('/ai/connections/models')
   await page.getByRole('tab', { name: '默认用途', exact: true }).click()
-  await openSelect(page, '图片理解默认模型')
-  await page.getByRole('option', { name: '图片模型 · vision', exact: true }).click()
-  await openSelect(page, '信众可选模型')
-  const pool = page.locator('input[aria-label="信众可选模型"]')
-  const listbox = page.locator(`[id="${await pool.getAttribute('aria-controls')}"]`)
+  const chat = await openSelect(page, '聊天默认模型')
+  await chat.getByRole('option', { name: 'OpenCode Go 文本模型 · kimi', exact: true }).click()
+  const translation = await openSelect(page, '目录翻译默认模型')
+  await translation.getByRole('option', { name: 'OpenCode Go 文本模型 · kimi', exact: true }).click()
+  const vision = await openSelect(page, '图片理解默认模型')
+  await expect(vision.getByRole('option', { name: 'OpenCode Go 文本模型 · kimi', exact: true })).toHaveCount(0)
+  await vision.getByRole('option', { name: '图片模型 · vision', exact: true }).click()
+  const listbox = await openSelect(page, '信众可选模型')
   const imageOption = listbox.getByRole('option', { name: '图片模型 · vision', exact: true })
-  await expect(listbox.getByRole('option')).toHaveCount(2)
+  await expect(listbox.getByRole('option')).toHaveCount(3)
   await imageOption.click()
   await page.keyboard.press('Escape')
   const save = page.getByRole('button', { name: '保存用途配置', exact: true })
   await save.click()
   await expect(save).toBeDisabled()
   const requests = () => calls.filter(call => call.path.endsWith('/model-library/uses')).map(call => call.body)
-  expect(requests()).toMatchObject([{ revision: 3, uses: { vision: 'vision' }, customerModelIds: ['vision'] }])
+  expect(requests()).toMatchObject([{ revision: 3, uses: { chat: 'go', vision: 'vision', catalogTranslation: 'go' }, customerModelIds: ['vision'] }])
   await openSelect(page, '信众可选模型')
   await imageOption.click()
   await page.keyboard.press('Escape')
