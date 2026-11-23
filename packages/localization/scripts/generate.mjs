@@ -27,5 +27,5 @@ Object.assign(dictionary,{'后台':'後台','运营后台':'運營後台','寺�
 const out=JSON.stringify(Object.fromEntries(Object.entries(dictionary).sort(([a],[b])=>a<b?-1:a>b?1:0)),null,2)+'\n';
 fs.writeFileSync(catalogPath,out);
 const h5Mirror=root+'/apps/web-h5/src/i18n';
-if(fs.existsSync(h5Mirror))for(const f of ['language.ts','zh-Hant.json'])fs.copyFileSync(root+'/packages/localization/'+f,h5Mirror+'/'+f);
+if(fs.existsSync(h5Mirror))fs.copyFileSync(catalogPath,h5Mirror+'/zh-Hant.json');
 console.log({phrases:phrases.size,translations:Object.keys(dictionary).length,bytes:Buffer.byteLength(out)});

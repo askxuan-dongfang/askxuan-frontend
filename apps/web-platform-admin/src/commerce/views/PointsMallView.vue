@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
+import CatalogTranslationButton from '../../../../../packages/admin-ui/components/CatalogTranslationButton.vue'
+import { catalogTranslations } from '@/api/catalogTranslations'
+import { useAuthStore } from '@/stores/auth'
+import { hasPlatformPermission } from '@/router/access'
 
 import StatCard from '@/components/StatCard.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { isAdminSessionExpired } from '@/api/client'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 
 import 'element-plus/es/components/message/style/css'
 import 'element-plus/es/components/message-box/style/css'
@@ -14,6 +18,8 @@ import client from '@/api/client'
 import ImageUploader from '@/components/ImageUploader.vue'
 interface Product { id:number; name:string; category:string; description:string; image:string; pointsPrice:number; stock:number; status:string; version:number }
 interface Order { id:number; orderNo:string; productName:string; quantity:number; pointsTotal:number; status:string; receiver:string; mobile:string; address:string; carrier:string; trackingNo:string; createdAt:string }
+const auth = useAuthStore()
+const canTranslate = computed(() => hasPlatformPermission(auth.roles, auth.access, 'platform.points.write', ['platform_super', 'shop_admin']))
 const keyword=ref(''), status=ref(''), loaded=ref(false)
 const products=ref<Product[]>([]), orders=ref<Order[]>([])
 const report=reactive({productCount:0,orderCount:0,pointsSpent:0,pendingCount:0})
@@ -23,7 +29,28 @@ const shipment=reactive({carrier:'',trackingNo:''})
 const labels:Record<string,string>={draft:'草稿',on_sale:'上架',off_sale:'下架',pending:'待发货',shipped:'已发货',completed:'已完成',cancelled:'已取消'}
 async function load(){busy.value=true;error.value='';try{const [r,rows]=await Promise.all([client.get<typeof report>('/admin/points/report'),client.get<Product[]|Order[]>(`/admin/points/${tab.value}`,{params:{page:page.value,keyword:keyword.value,status:status.value}})]);Object.assign(report,r);loaded.value=true;if(tab.value==='products')products.value=rows as Product[];else orders.value=rows as Order[]}catch(e){error.value=e instanceof Error?e.message:'加载失败'}finally{busy.value=false}}
 function edit(p?:Product){Object.assign(form,p||{id:0,name:'',category:'',description:'',image:'',pointsPrice:1,stock:0,status:'draft',version:0});editing.value=true}
-async function save(){if(!form.name.trim()||!Number.isInteger(form.pointsPrice)||form.pointsPrice<1||!Number.isInteger(form.stock)||form.stock<0){ElMessage.error(uiText('请填写商品名称、正整数积分价格和非负整数库存'));return}busy.value=true;try{if(form.id)await client.put(`/admin/points/products/${form.id}`,form);else await client.post('/admin/points/products',form);editing.value=false;ElMessage.success(uiText('商品已保存'));await load()}catch(e){ if (isAdminSessionExpired(e)) return;error.value=e instanceof Error?e.message:'操作失败';ElMessage.error(uiText(error.value))}finally{busy.value=false}}
+async function save() {
+  if (!form.name.trim() || !Number.isInteger(form.pointsPrice) || form.pointsPrice < 1 || !Number.isInteger(form.stock) || form.stock < 0) {
+    ElMessage.error(uiText('请填写商品名称、正整数积分价格和非负整数库存'))
+    return
+  }
+  busy.value = true
+  try {
+    const saved = form.id
+      ? await client.put<Product>(`/admin/points/products/${form.id}`, form)
+      : await client.post<Product>('/admin/points/products', form)
+    editing.value = false
+    ElMessage.success(uiText('商品已保存'))
+    catalogTranslations.queueAfterSave('points-product', saved.id)
+    await load()
+  } catch (e) {
+    if (isAdminSessionExpired(e)) return
+    error.value = e instanceof Error ? e.message : '操作失败'
+    ElMessage.error(uiText(error.value))
+  } finally {
+    busy.value = false
+  }
+}
 async function cancel(o:Order){try{await ElMessageBox.confirm((uiText("取消 ") + String(o.orderNo) + uiText("，退回 ") + String(o.pointsTotal) + uiText(" 积分并恢复库存？")),uiText('取消兑换'))}catch{return}busy.value=true;try{await client.post(`/admin/points/orders/${o.id}/cancel`);await load()}catch(e){ if (isAdminSessionExpired(e)) return;error.value=e instanceof Error?e.message:'操作失败';ElMessage.error(uiText(error.value))}finally{busy.value=false}}
 function openShip(o:Order){shipping.value=o;shipment.carrier='';shipment.trackingNo=''}
 async function ship(){if(!shipping.value||!shipment.carrier.trim()||!shipment.trackingNo.trim()){ElMessage.error(uiText('请填写物流公司和运单号'));return}busy.value=true;try{await client.post(`/admin/points/orders/${shipping.value.id}/ship`,shipment);shipping.value=null;await load()}catch(e){ if (isAdminSessionExpired(e)) return;error.value=e instanceof Error?e.message:'操作失败';ElMessage.error(uiText(error.value))}finally{busy.value=false}}
@@ -38,7 +65,13 @@ onMounted(load)
     <div class="df-card"><el-tabs v-model="tab" @tab-change="switchTab"><el-tab-pane name="products" :label='$t("积分商品")'/><el-tab-pane name="orders" :label='$t("兑换订单")'/></el-tabs>
     <div class="toolbar"><el-input v-model="keyword" clearable :placeholder='$t("搜索商品、分类或兑换单号")' :aria-label='$t("积分商城搜索")' style="max-width:300px" @keyup.enter="page=1;load()"/><el-select v-model="status" clearable :placeholder='$t("全部状态")' style="width:160px" @change="page=1;load()"><el-option v-for="key in (tab==='products'?['draft','on_sale','off_sale']:['pending','shipped','completed','cancelled'])" :key="key" :label="$t(labels[key])" :value="key"/></el-select><el-button @click="page=1;load()">{{ $t("查询") }}</el-button><el-button v-if="tab==='products'" type="primary" @click="edit()">{{ $t("新增积分商品") }}</el-button><el-button :loading="busy" @click="load">{{ $t("刷新") }}</el-button></div>
     <el-table v-if="tab==='products'" :data="products" v-loading="busy" :empty-text='$t("暂无积分商品，请新增商品后上架")'>
-      <el-table-column :label='$t("商品")' min-width="220"><template #default="{row}"><div class="product-cell"><img v-if="row.image" :src="row.image" alt=""/><div><strong>{{$t(row.name)}}</strong><small>{{$t((row.category || $t('未分类')))}}</small></div></div></template></el-table-column><el-table-column prop="category" :label='$t("独立分类")' min-width="100"/><el-table-column prop="pointsPrice" :label='$t("积分价格")' width="100"/><el-table-column prop="stock" :label='$t("库存")' width="90"/><el-table-column :label='$t("状态")' width="90"><template #default="{row}">{{$t(labels[row.status])}}</template></el-table-column><el-table-column :label='$t("操作")' width="150"><template #default="{row}"><el-button link type="primary" @click="edit(row as Product)">{{ $t("编辑 / 上下架") }}</el-button></template></el-table-column>
+      <el-table-column :label='$t("商品")' min-width="220"><template #default="{row}"><div class="product-cell"><img v-if="row.image" :src="row.image" alt=""/><div><strong>{{$t(row.name)}}</strong><small>{{$t((row.category || $t('未分类')))}}</small></div></div></template></el-table-column><el-table-column prop="category" :label='$t("独立分类")' min-width="100"/><el-table-column prop="pointsPrice" :label='$t("积分价格")' width="100"/><el-table-column prop="stock" :label='$t("库存")' width="90"/><el-table-column :label='$t("状态")' width="90"><template #default="{row}">{{$t(labels[row.status])}}</template></el-table-column>
+      <el-table-column :label='$t("操作")' width="165">
+        <template #default="{row}">
+          <el-button link type="primary" @click="edit(row as Product)">{{ $t("编辑 / 上下架") }}</el-button>
+          <CatalogTranslationButton v-if="canTranslate" :key="row.id" :api="catalogTranslations" kind="points-product" :record-id="row.id" link />
+        </template>
+      </el-table-column>
     </el-table>
     <el-table v-else :data="orders" v-loading="busy" :empty-text='$t("暂无兑换订单")'>
       <el-table-column prop="orderNo" :label='$t("兑换单号")' min-width="240"/><el-table-column prop="productName" :label='$t("商品")' min-width="130"/><el-table-column prop="quantity" :label='$t("数量")' width="70"/><el-table-column prop="pointsTotal" :label='$t("积分")' width="90"/><el-table-column :label='$t("收货信息")' min-width="220"><template #default="{row}">{{$t(row.receiver)}} {{row.mobile}}<br/>{{row.address}}</template></el-table-column><el-table-column :label='$t("状态 / 物流")' min-width="150"><template #default="{row}">{{$t(labels[row.status])}}<br/>{{$t(row.carrier)}} {{$t(row.trackingNo)}}</template></el-table-column><el-table-column prop="createdAt" :label='$t("兑换时间")' min-width="170"/><el-table-column :label='$t("操作")' width="140" fixed="right"><template #default="{row}"><template v-if="row.status==='pending'"><el-button link type="primary" :disabled="busy" @click="openShip(row as Order)">{{ $t("发货") }}</el-button><el-button link type="danger" :disabled="busy" @click="cancel(row as Order)">{{ $t("取消") }}</el-button></template></template></el-table-column>

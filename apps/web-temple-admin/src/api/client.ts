@@ -8,7 +8,8 @@ import { ADMIN_SESSION_EXPIRED_EVENT, ADMIN_SESSION_REFRESHED_EVENT, AdminSessio
 import type { AdminRequestSession } from '../../../../packages/admin-ui/session-expiry'
 import type { ApiResponse } from '@/types'
 
-type SessionRequest = InternalAxiosRequestConfig & { _adminSession?: AdminRequestSession | null; _sessionRetried?: boolean }
+type RequestConfig = AxiosRequestConfig & { suppressErrorMessage?: boolean }
+type SessionRequest = InternalAxiosRequestConfig & Pick<RequestConfig, 'suppressErrorMessage'> & { _adminSession?: AdminRequestSession | null; _sessionRetried?: boolean }
 const session = createAdminSessionGuard({
   prefix: 'df_temple_admin',
   baseUrl: import.meta.env.BASE_URL,
@@ -60,8 +61,8 @@ instance.interceptors.response.use(
         return instance.request(request)
       }
       if (recovery.kind !== 'unhandled') throw new AdminSessionExpiredError()
-      ElMessage.error((res.message || uiText('请求失败')))
-      return Promise.reject(new Error(res.message || '请求失败'))
+      if (!request.suppressErrorMessage) ElMessage.error((res.message || uiText('请求失败')))
+      return Promise.reject(Object.assign(new Error(res.message || '请求失败'), { apiCode: res.code }))
     }
     return res.data as any
   },
@@ -75,22 +76,22 @@ instance.interceptors.response.use(
       return instance.request(request)
     }
     if (recovery.kind !== 'unhandled') return Promise.reject(new AdminSessionExpiredError())
-    ElMessage.error(((error.response?.data?.message || error.message) || uiText('网络异常')))
+    if (!request?.suppressErrorMessage) ElMessage.error(((error.response?.data?.message || error.message) || uiText('网络异常')))
     return Promise.reject(error)
   }
 )
 
 const client = {
-  get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  get<T = unknown>(url: string, config?: RequestConfig): Promise<T> {
     return instance.get(url, config) as unknown as Promise<T>
   },
-  post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+  post<T = unknown>(url: string, data?: unknown, config?: RequestConfig): Promise<T> {
     return instance.post(url, data, config) as unknown as Promise<T>
   },
-  put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+  put<T = unknown>(url: string, data?: unknown, config?: RequestConfig): Promise<T> {
     return instance.put(url, data, config) as unknown as Promise<T>
   },
-  delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  delete<T = unknown>(url: string, config?: RequestConfig): Promise<T> {
     return instance.delete(url, config) as unknown as Promise<T>
   }
 }

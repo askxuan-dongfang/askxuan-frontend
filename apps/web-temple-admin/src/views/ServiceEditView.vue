@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ElMessage } from '@/i18n'
 import { t as uiText } from '../../../../packages/localization/language'
+import CatalogTranslationButton from '../../../../packages/admin-ui/components/CatalogTranslationButton.vue'
+import { catalogTranslations } from '@/api/catalogTranslations'
+import { useAuthStore } from '@/stores/auth'
 
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -13,6 +16,7 @@ import type { ServiceTypeOption, TempleService, TempleServiceSlot } from '@/type
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 
 const serviceId = computed(() => (route.params.id as string) || '')
 const isEdit = computed(() => !!serviceId.value)
@@ -75,28 +79,19 @@ async function handleSubmit() {
     if (!valid) return
     saving.value = true
     try {
-		const slots = form.slots.map((slot, index) => ({ ...slot, sort: index + 1 }))
-		const timeSlots = slots.map((slot) => `${slot.startTime}-${slot.endTime}`)
-      if (isEdit.value) {
-        await updateService(Number(serviceId.value), {
-          price: form.price,
-			timeSlots,
-			slots,
-          intentMode: form.intentMode,
-          intentTags: form.intentMode === 'custom' ? form.intentTags : undefined
-        })
-        ElMessage.success(uiText('服务已更新'))
-      } else {
-        await createService({
-          serviceCode: form.serviceCode,
-          price: form.price,
-			timeSlots,
-			slots,
-          intentMode: form.intentMode,
-          intentTags: form.intentMode === 'custom' ? form.intentTags : undefined
-        })
-        ElMessage.success(uiText('服务已创建'))
+      const slots = form.slots.map((slot, index) => ({ ...slot, sort: index + 1 }))
+      const data = {
+        price: form.price,
+        timeSlots: slots.map((slot) => `${slot.startTime}-${slot.endTime}`),
+        slots,
+        intentMode: form.intentMode,
+        intentTags: form.intentMode === 'custom' ? form.intentTags : undefined
       }
+      const saved = isEdit.value
+        ? await updateService(Number(serviceId.value), data)
+        : await createService({ serviceCode: form.serviceCode, ...data })
+      ElMessage.success(uiText(isEdit.value ? '服务已更新' : '服务已创建'))
+      catalogTranslations.queueAfterSave('temple-service', saved.id)
       router.push('/services')
     } finally {
       saving.value = false
@@ -127,6 +122,7 @@ onMounted(async () => {
   <div class="df-page" v-loading="loading">
     <PageHeader :title="$t((isEdit ? $t('编辑服务') : $t('新增服务')))">
       <el-button :icon="ArrowLeft" @click="router.back()">{{ $t("返回") }}</el-button>
+      <CatalogTranslationButton v-if="serviceId && auth.can('temple.services.write') && !loading && !saving" :key="serviceId" :api="catalogTranslations" kind="temple-service" :record-id="serviceId" />
       <el-button type="primary" :icon="Check" :loading="saving" @click="handleSubmit">{{ $t("保存") }}</el-button>
     </PageHeader>
 

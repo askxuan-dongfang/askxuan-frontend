@@ -11,6 +11,7 @@ import ProviderAffiliation from '../../../../../packages/admin-ui/components/Pro
 import { beliefOptions as standardBeliefs } from '../../../../../packages/admin-ui/affiliation'
 import PageHeader from '@/components/PageHeader.vue'
 import { createWildMaster } from '@/api/master'
+import { catalogTranslations } from '@/api/catalogTranslations'
 
 const router = useRouter()
 const saving = ref(false)
@@ -64,6 +65,7 @@ async function submit() {
       consultResponseMinutes: Number(form.consultResponseMinutes) || 30
     })
     ElMessage.success((uiText("已创建独立执业大师 ") + String(resp.id) + uiText("，待资质审核通过后上架")))
+    catalogTranslations.queueAfterSave('master', resp.id)
     router.push('/master/list')
   } catch (e) { if (isAdminSessionExpired(e)) return;
     ElMessage.error(e instanceof Error ? e.message : uiText('创建失败，请稍后重试'))

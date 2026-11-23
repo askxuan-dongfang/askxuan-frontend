@@ -2,6 +2,7 @@
   <div class="dfx-page">
     <PageHeader :title="$t(($t('寺院详情 · ') + String((detail?.temple?.name || '')) + $t('')))" :subtitle='$t("寺院基础信息 / 图册 / 服务项目")'>
       <template #actions>
+        <CatalogTranslationButton v-if="detail && canWriteTemple" :key="detail.temple.id" :api="catalogTranslations" kind="temple" :record-id="detail.temple.id" />
         <el-button :icon="Back" @click="$router.back()">{{ $t("返回") }}</el-button>
       </template>
     </PageHeader>
@@ -73,6 +74,11 @@
             <el-table-column :label='$t("状态")' width="100">
               <template #default="{ row }"><StatusTag :status="row.status" /></template>
             </el-table-column>
+            <el-table-column v-if="canWriteTemple" :label='$t("操作")' width="120">
+              <template #default="{ row }">
+                <CatalogTranslationButton :key="row.id" :api="catalogTranslations" kind="temple-service" :record-id="row.id" link />
+              </template>
+            </el-table-column>
           </el-table>
         </div>
       </div>
@@ -81,10 +87,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { Back } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
+import { hasPlatformPermission } from '@/router/access'
+import CatalogTranslationButton from '../../../../../packages/admin-ui/components/CatalogTranslationButton.vue'
+import { catalogTranslations } from '@/api/catalogTranslations'
 import ProviderAffiliation from '../../../../../packages/admin-ui/components/ProviderAffiliation.vue'
 import ProviderDirectoryTags from '@/components/ProviderDirectoryTags.vue'
 import PageHeader from '@/components/PageHeader.vue'
@@ -96,6 +105,7 @@ import type { TempleDetail } from '@/types'
 
 const route = useRoute()
 const auth = useAuthStore()
+const canWriteTemple = computed(() => hasPlatformPermission(auth.roles, auth.access, 'platform.temples.write', ['platform_super']))
 const loading = ref(false)
 const detail = ref<TempleDetail | null>(null)
 const loadError = ref('')

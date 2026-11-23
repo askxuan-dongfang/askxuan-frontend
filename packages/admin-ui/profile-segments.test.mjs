@@ -12,30 +12,33 @@ function moduleOf(source,bindings){
 const affiliation=moduleOf(affiliationSource,{})
 const access=moduleOf(readFileSync(new URL('../../apps/web-platform-admin/src/router/access.ts',import.meta.url),'utf8'),{})
 const text=readFileSync(new URL('../../apps/web-platform-admin/src/views/master/MasterDetailView.vue',import.meta.url),'utf8')
-const script=text.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1]+'\nexport {form,master,serviceCatalog,serviceTags,tagEdits,startEdit,saveProfile,saveServices,dirty,profileFailed,serviceFailed,profileBaseline,servicesReady,serviceLoadError,loadDetail,loadServiceConfig,editing,canEditProfile,canEditServices};'
+const script=text.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1]+'\nexport {form,master,serviceCatalog,serviceTags,tagEdits,startEdit,saveProfile,saveServices,dirty,profileFailed,serviceFailed,profileBaseline,servicesReady,serviceLoadError,loadDetail,loadServiceConfig,editing,canEditProfile,canWriteMaster};'
 const original={id:'m1',dharmaName:'原法号',layName:'姓名',position:'职务',beliefCode:'han_buddhism',sect:'旧宗派说明',type:'汉传佛教',specialties:[],avatar:'',traditionCodes:['old_code']}
 function fixture(api,auth={roles:['platform_super']}){
  const state=moduleOf(script,{
   vue:{...vue,onMounted(){},onUnmounted(){}},'vue-router':{useRoute:()=>({params:{id:'m1'}}),useRouter:()=>({}),onBeforeRouteLeave(){}},
   '@/stores/auth':{useAuthStore:()=>auth},'@/router/access':access,'@/i18n':{ElMessage:{success(){},warning(){},error(){}},ElMessageBox:{}},
   '../../../../../packages/localization/language':{t:v=>v},'@/api/client':{isAdminSessionExpired:()=>false},
+  '@/api/catalogTranslations':{catalogTranslations:{queueAfterSave:api.queueTranslation || (()=>{})}},
   '../../../../../packages/admin-ui/affiliation':affiliation,'@/api/master':api
  })
  state.master.value={...original};state.servicesReady.value=true;state.serviceCatalog.value=[{code:'S001',name:'祈福'}];state.serviceTags.value=[];state.startEdit();return state
 }
 test('profile success and service failure preserve only the failed draft for retry',async()=>{
  let profileCalls=0,serviceCalls=0
- const state=fixture({updatePlatformMaster:async(_id,payload)=>{profileCalls++;return{...original,...payload}},updatePlatformMasterServiceTags:async(_id,tags)=>{serviceCalls++;if(serviceCalls===1)throw new Error('服务暂时失败');return{list:tags}}})
+ const translations=[]
+ const state=fixture({updatePlatformMaster:async(_id,payload)=>{profileCalls++;return{...original,...payload}},updatePlatformMasterServiceTags:async(_id,tags)=>{serviceCalls++;if(serviceCalls===1)throw new Error('服务暂时失败');return{list:tags}},queueTranslation:(kind,id)=>translations.push([kind,id])})
  state.form.value.dharmaName='新法号';state.tagEdits.value[0].enabled=true;state.tagEdits.value[0].price=12
  await state.saveProfile();await state.saveServices()
  assert.equal(profileCalls,1);assert.equal(state.profileFailed.value,false);assert.equal(state.serviceFailed.value,true)
  assert.equal(state.form.value.dharmaName,'新法号');assert.equal(state.tagEdits.value[0].price,12);assert.equal(state.dirty.value,true)
  await state.saveServices()
  assert.equal(profileCalls,1);assert.equal(serviceCalls,2);assert.equal(state.dirty.value,false);assert.equal(state.serviceTags.value[0].price,12)
+ assert.deepEqual(translations,[['master','m1']])
 })
 test('profile failure never sends a service request or drops the profile draft',async()=>{
  let serviceCalls=0
- const state=fixture({updatePlatformMaster:async()=>{throw new Error('版本冲突，请比较后重试')},updatePlatformMasterServiceTags:async()=>{serviceCalls++;return{list:[]}}})
+ const state=fixture({updatePlatformMaster:async()=>{throw new Error('版本冲突，请比较后重试')},updatePlatformMasterServiceTags:async()=>{serviceCalls++;return{list:[]}},queueTranslation:()=>assert.fail('Chinese save failed')})
  state.form.value.sect='保留的草稿'
  await state.saveProfile()
  assert.equal(serviceCalls,0);assert.equal(state.profileFailed.value,true);assert.equal(state.form.value.sect,'保留的草稿');assert.equal(state.dirty.value,true)
@@ -65,7 +68,7 @@ test('changing belief cannot save a conflicting relation or silently discard his
 test('read-only master details never start an empty editing session or save services',async()=>{
  let writes=0
  const state=fixture({updatePlatformMasterServiceTags:async()=>{writes++;return{list:[]}}},{roles:['master_reader'],access:{authzScope:'platform',clientId:'platform-admin',permissions:['platform.masters.read']}})
- assert.equal(state.editing.value,false);assert.equal(state.canEditServices.value,false)
+ assert.equal(state.editing.value,false);assert.equal(state.canWriteMaster.value,false)
  await state.saveServices();assert.equal(writes,0)
 })
 test('delegated service editing loads the existing list without enabling profile writes',async()=>{

@@ -28,15 +28,18 @@ test('temple profile edit omits standardized affiliation, while initial creation
  const source=script('../../apps/web-temple-admin/src/views/MasterEditView.vue','form,formRef,affiliation,loadMaster,handleSubmit')
  const fixture={id:'m1',dharmaName:'法号',layName:'姓名',position:'职务',beliefCode:'taoism',traditionCodes:['old_disabled'],sect:'原始资料',type:'道教',specialties:[],avatar:''}
  let update,created,updates=0,creates=0
+ const translations=[]
  function stateFor(id){return compile(source,{
   ...shared,'vue-router':{useRoute:()=>({params:{id}}),useRouter:()=>({push(){}})},'@/stores/auth':{useAuthStore:()=>({templeId:'t1',templeName:'测试寺院'})},
   '../../../../packages/admin-ui/affiliation':affiliation,'../../../../packages/localization/language':{t:value=>value},
-  '@/api/master':{getMasterDetail:async()=>fixture,updateMaster:async(_id,payload)=>{updates++;update=payload},createMaster:async payload=>{creates++;created=payload}}
+  '@/api/master':{getMasterDetail:async()=>fixture,updateMaster:async(_id,payload)=>{updates++;update=payload},createMaster:async payload=>{creates++;created=payload;return {id:'m2'}}},
+  '@/api/catalogTranslations':{catalogTranslations:{queueAfterSave:(kind,id)=>translations.push([kind,id])}}
  })}
  const edit=stateFor('m1');edit.formRef.value={validate:async callback=>await callback(true)};await edit.loadMaster();assert.equal(edit.form.beliefCode,'daoism');assert.deepEqual([...edit.form.traditionCodes],['old_disabled'])
  edit.form.sect='资料补充';await edit.handleSubmit();assert.equal(updates,1);assert.equal(update.sect,'资料补充');assert.ok(!('beliefCode'in update));assert.ok(!('traditionCodes'in update));assert.equal(creates,0)
  const create=stateFor('');create.formRef.value={validate:async callback=>await callback(true)};create.affiliation.value={validate:()=>''};Object.assign(create.form,fixture,{beliefCode:'daoism',traditionCodes:['quanzhen'],sect:''})
  await create.handleSubmit();assert.equal(creates,1);assert.equal(updates,1);assert.deepEqual(created.traditionCodes,['quanzhen']);assert.equal(created.beliefCode,'daoism');assert.equal(created.sect,'')
+ assert.deepEqual(translations,[['master','m1'],['master','m2']])
 })
 test('legacy submitted application without standard tags cannot approve or change its status',async()=>{
  let writes=0

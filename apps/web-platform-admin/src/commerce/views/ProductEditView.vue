@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ElMessage } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
+import CatalogTranslationButton from '../../../../../packages/admin-ui/components/CatalogTranslationButton.vue'
+import { catalogTranslations } from '@/api/catalogTranslations'
 
 // 商品编辑 / 新建
 import { ref, reactive, onMounted, computed, watch } from "vue";
@@ -156,13 +158,11 @@ async function handleSubmit() {
     if (!valid) return;
     saving.value = true;
     try {
-      if (isEdit.value) {
-        await productApi.update(productId.value, form);
-        ElMessage.success(uiText("更新成功"));
-      } else {
-        await productApi.create(form);
-        ElMessage.success(uiText("创建成功"));
-      }
+      const saved = isEdit.value
+        ? await productApi.update(productId.value, form)
+        : await productApi.create(form);
+      ElMessage.success(uiText(isEdit.value ? "更新成功" : "创建成功"));
+      catalogTranslations.queueAfterSave('shop-product', saved.id);
       router.push("/commerce/products");
     } finally {
       saving.value = false;
@@ -183,10 +183,12 @@ watch(() => route.params.id, loadDetail, { immediate: true });
     <PageHeader
       :title="$t((isEdit ? $t('编辑这份好物') : $t('上新一份好物')))"
       :subtitle='$t("商品信息与顾客端展示同步维护；保存后在商品列表管理上下架。")'
-      ><template #extra
-        ><el-button @click="handleCancel">{{ $t("返回商品列表") }}</el-button></template
-      ></PageHeader
     >
+      <template #extra>
+        <CatalogTranslationButton v-if="productId && detailReady && !saving" :key="productId" :api="catalogTranslations" kind="shop-product" :record-id="productId" />
+        <el-button @click="handleCancel">{{ $t("返回商品列表") }}</el-button>
+      </template>
+    </PageHeader>
     <el-alert
       v-if="loadError"
       :title="$t(loadError)"
