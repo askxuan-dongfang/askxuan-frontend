@@ -101,7 +101,7 @@ onMounted(() => run(load))
         <p>{{ $t("为各用途指定默认模型。已有知识库和已发布智能体保留各自的模型选择。") }}</p>
         <el-form label-position="top" class="uses">
           <el-form-item v-for="use in modelRoles" :key="use.key" :label="$t(use.label)">
-            <el-select v-model="uses[use.key]" filterable clearable :aria-label="$t(use.label) + $t('默认模型')"
+            <el-select v-model="uses[use.key]" filterable clearable :value-on-clear="''" :aria-label="$t(use.label) + $t('默认模型')"
               :placeholder="$t(use.key === 'chat' ? (library?.defaultChat || '沿用原有连接') : use.key === 'catalogTranslation' ? '沿用默认文本模型' : '不指定默认模型')">
               <el-option v-for="m in options(use.key)" :key="m.id" :value="m.id" :label="$t(m.name)" />
             </el-select>
