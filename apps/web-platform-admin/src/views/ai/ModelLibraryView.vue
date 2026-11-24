@@ -128,7 +128,7 @@ onMounted(() => run(load))
               :aria-label='$t("信众可选模型")' :placeholder='$t("沿用原有开放规则")'>
               <el-option v-for="model in options('chat')" :key="model.id" :value="model.id" :label="$t(model.name)" />
             </el-select>
-            <small>{{ $t("选中后仅开放这些模型。上传图片时仅能选择支持图片输入的模型。") }}</small>
+            <small>{{ $t("选中后仅开放这些模型。留空时，OpenCode Go 需设为聊天或图片理解的默认模型才会显示。") }}</small>
           </el-form-item>
         </el-form>
         <el-button type="primary" :disabled="!library?.writable || selection === savedSelection" @click="saveUses">{{ $t(library?.customerModelIds ? "保存用途配置" : "保存默认选择") }}</el-button>
