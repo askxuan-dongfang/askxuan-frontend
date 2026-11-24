@@ -1,14 +1,14 @@
 import { test, expect, type Page } from '@playwright/test'
 import { seedPlatformAdmin, fulfillPlatformAdminAccess } from '../fixtures/platform-admin-access'
-async function setup(page: Page, role = 'platform_super', tested = true) {
+async function setup(page: Page, role = 'platform_super', { tested = true, runtimeMode = 'harness', draftModel = 'test-chat' } = {}) {
   const identity = await seedPlatformAdmin(page, role, '导航验收')
   const calls: string[] = []
   await page.route('**/api/v1/**', async route => {
     if (await fulfillPlatformAdminAccess(route, identity)) return
     const path = new URL(route.request().url()).pathname; calls.push(path)
     let data: any = { list: [], total: 0 }
-    if (path.endsWith('/ai/admin/agent')) data = { runtimeMode: 'harness', revision: 1, draftSaved: true, activeVersion: 1, draft: { name: '问事助手', instruction: '测试职责', model: '', maxOutputTokens: 8192, skills: [{ code: 'general', enabled: true, prompt: '', useTool: false }], evaluation: [] }, catalog: [{ code: 'general', name: '日常问事', description: '测试', version: '1', inputSchema: { fields: [] }, toolName: '', toolAvailable: false }], versions: [], audit: [], tested, liveEnabled: true, persistentRecovery: true, rollout: { versionId: 1, stableVersion: 1, percentage: 100, revision: 1 } }
-    if (path.endsWith('/ai/admin/model-library')) data = { list: [], uses: {chat:'',vision:'',embedding:'',rerank:'',document:''}, revision:1, writable:true, defaultChat:'deepseek-flash', warnings:[] }
+    if (path.endsWith('/ai/admin/agent')) data = { runtimeMode, revision: 1, draftSaved: true, activeVersion: 1, draft: { name: '问事助手', instruction: '测试职责', model: draftModel, maxOutputTokens: 8192, skills: [{ code: 'general', enabled: true, prompt: '', useTool: false }], evaluation: [] }, catalog: [{ code: 'general', name: '日常问事', description: '测试', version: '1', inputSchema: { fields: [] }, toolName: '', toolAvailable: false }], versions: [], audit: [], tested, liveEnabled: true, persistentRecovery: true, rollout: { versionId: 1, stableVersion: 1, percentage: 100, revision: 1 } }
+    if (path.endsWith('/ai/admin/model-library')) data = { list: [{ id: 'test-chat', name: '问事测试模型', model: 'fixture-chat', provider: 'openai_compatible', kind: 'language', source: 'registered', bindings: { chat: 'test-chat' } }], uses: {chat:'',vision:'',embedding:'',rerank:'',document:''}, revision:1, writable:true, defaultChat:'deepseek-flash', warnings:[] }
     if (path.endsWith('/ai/admin/provider')) data = { provider: 'deepseek', baseUrl: 'https://api.deepseek.com', defaultModel: 'deepseek-flash', visionModel: '', enabledModels: [], thinkingEnabled: true, maxOutputTokens: 8192, revision: 1, hasApiKey: true, writable: true, source: 'platform', history: [] }
     if (path.endsWith('/ai/admin/products')) data = []
     await route.fulfill({ json: { code: 0, data } })
@@ -49,9 +49,14 @@ test('development routes retain the shared draft and guard exits', async ({ page
   await expect(page).toHaveURL(/\/ai\/report-pricing$/)
   await expect(page.getByRole('navigation', { name: '开发流程' })).toHaveCount(0)
 })
-test('publish explains the missing evaluation and opens its page', async ({ page }) => {
-  await setup(page, 'platform_super', false)
+test('single-agent release shows the saved model and engine and links to a missing evaluation', async ({ page }) => {
+  await setup(page, 'platform_super', { tested: false })
   await page.goto('/ai/releases')
+  const agent = page.getByRole('region', { name: '问事智能体', exact: true })
+  await expect(agent).toHaveCount(1)
+  await expect(agent.getByRole('heading', { name: '发布问事智能体' })).toBeVisible()
+  await expect(agent.getByRole('region', { name: '智能体状态' })).toContainText('Eino Harness')
+  await expect(agent.getByText('问事测试模型 · fixture-chat', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: '发布当前草稿' })).toBeDisabled()
   const blocker = page.getByRole('status').filter({ hasText: '当前草稿尚未通过质量评测' })
   await blocker.getByRole('link', { name: '去评测' }).click()
@@ -65,6 +70,7 @@ test('mobile can reach all development stages and shared resources', async ({ pa
   await page.getByRole('button', { name: '打开主导航' }).click()
   await page.getByRole('menuitem', { name: 'AI 开发中心', exact: true }).click()
   await expect(page.getByRole('heading', { name: '职责与模型', exact: true })).toBeVisible()
+  await expect(page.getByText('问事智能体', { exact: true })).toBeInViewport()
   const stages = page.getByRole('navigation', { name: '开发流程' })
   const stagesBounds = await stages.boundingBox()
   expect(stagesBounds).not.toBeNull()
@@ -107,10 +113,13 @@ test('leaving the original connection for the library guards unsaved keys', asyn
 })
 for (const [path, title] of [['agent','职责与模型'],['tools','技能与工具'],['context','知识与上下文'],['debug','单次调试'],['evaluations','质量评测'],['releases','版本与发布'],['runs','运行监控'],['knowledge','知识中心']] ) {
   test(`direct entry and reload: ${path}`, async ({ page }) => {
-    const calls = await setup(page); await page.goto('/ai/' + path)
+    const fixture = path === 'debug' ? { runtimeMode: 'classic' } : path === 'releases' ? { draftModel: '' } : {}
+    const calls = await setup(page, 'platform_super', fixture); await page.goto('/ai/' + path)
     await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
     await page.reload(); await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
     if (path === 'runs') expect(calls.some(p => p.endsWith('/agent/runs'))).toBeTruthy()
+    if (path === 'debug') await expect(page.getByRole('region', { name: '智能体状态' })).toContainText('原问事流程')
+    if (path === 'releases') await expect(page.getByText('平台聊天默认模型', { exact: true })).toBeVisible()
     if (path === 'agent') {
       await page.getByRole('link', { name: '进入单次调试', exact: true }).click()
       await expect(page).toHaveURL(/\/ai\/debug$/)

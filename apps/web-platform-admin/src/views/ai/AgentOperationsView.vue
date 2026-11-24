@@ -21,8 +21,18 @@ const form = ref<AgentConfig>(), baseline = ref(''), selectedSkill = ref('')
 const models = ref<{ id: string; name: string }[]>([])
 const knowledgeBases=ref<{id:string;name:string;enabled:boolean}[]>([])
 async function loadKnowledgeBases(){try{const v=await client.get<{list:typeof knowledgeBases.value}>("/ai/admin/knowledge-bases");knowledgeBases.value=v.list||[]}catch{knowledgeBases.value=[]}}
-const engineModels=ref<{id:string;name:string}[]>([])
-async function loadEngineModels(){try{const library=await modelLibraryApi.list();models.value=modelOptions(library,"chat");engineModels.value=modelOptions(library,"rerank")}catch{engineModels.value=[]}}
+const rerankModels = ref<{ id: string; name: string }[]>([])
+async function loadModelOptions() {
+  try {
+    const library = await modelLibraryApi.list()
+    models.value = modelOptions(library, 'chat')
+    rerankModels.value = modelOptions(library, 'rerank')
+  } catch { rerankModels.value = [] }
+}
+const savedChatModel = computed(() => {
+  const id = workspace.value?.draft.model
+  return models.value.find(model => model.id === id)?.name || id || '平台聊天默认模型'
+})
 const dirty = computed(() => JSON.stringify(form.value) !== baseline.value || Object.keys(caseErrors).length > 0)
 const workspaceDirty = inject(agentDraftDirtyKey)
 watch(() => !!workspace.value && dirty.value, changed => {
@@ -158,7 +168,7 @@ async function setRollout(percentage: number) {
 watch(tab, (value, previous) => {
   if (value === 'versions' || (value && !previous)) void load(true)
   if (value === 'evaluation') void loadEvaluations()
-  if (value === 'config' || value === 'context') void loadEngineModels()
+  if (['config', 'context', 'versions'].includes(value)) void loadModelOptions()
   if (value === 'context') void loadKnowledgeBases()
 })
 
@@ -240,7 +250,7 @@ onMounted(() => {
   void load()
   if (tab.value === 'evaluation') void loadEvaluations()
   if (tab.value === 'runs') void loadRecords()
-  if (tab.value === 'config' || tab.value === 'context') void loadEngineModels()
+  if (['config', 'context', 'versions'].includes(tab.value)) void loadModelOptions()
   if (tab.value === 'context') void loadKnowledgeBases()
 })
 onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer); stopPoll(); recordGeneration++; window.removeEventListener('beforeunload', beforeUnload) })
@@ -254,6 +264,10 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
       <section class="ops-context" :aria-label='$t("智能体状态")'>
         <strong>{{ form.name || workspace.draft.name || $t('问事助手') }}</strong>
         <dl>
+          <div v-if="workspace.runtimeMode">
+            <dt>{{ $t("执行引擎") }}</dt>
+            <dd>{{ $t(workspace.runtimeMode === 'harness' ? 'Eino Harness' : '原问事流程') }}</dd>
+          </div>
           <div><dt>{{ $t("草稿") }}</dt><dd :class="{ 'is-dirty': draftNeedsSave }">
             r{{ workspace.revision }}<span v-if="draftNeedsSave"> · {{ $t("未保存") }}</span>
           </dd></div>
@@ -274,8 +288,8 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
             <el-form-item :label='$t("名称")'>
               <el-input v-model="form.name" maxlength="40" :aria-label='$t("智能体名称")' />
             </el-form-item>
-            <el-form-item :label='$t("默认模型")'>
-              <el-select v-model="form.model" filterable clearable :aria-label='$t("智能体默认模型")' :placeholder='$t("沿用模型库的聊天默认模型")'>
+            <el-form-item :label='$t("问事聊天模型")'>
+              <el-select v-model="form.model" filterable clearable :aria-label='$t("问事聊天模型")' :placeholder='$t("保存时采用平台聊天默认模型")'>
                 <el-option v-if="form.model && !models.some(m => m.id === form?.model)" :value="form.model" :label="$t(form.model)" />
                 <el-option v-for="model in models" :key="model.id" :value="model.id" :label="$t(model.name)" />
               </el-select>
@@ -325,9 +339,9 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
             <el-form-item :label='$t("重排模型")'>
               <el-select v-model="form.retrieval.rerankModel" filterable clearable :placeholder='$t("关闭专用重排")'
                 @change="!form.retrieval.rerankModel && (form.retrieval.rerankRequired = false)">
-                <el-option v-if="form.retrieval.rerankModel && !engineModels.some(m => m.id === form?.retrieval?.rerankModel)"
+                <el-option v-if="form.retrieval.rerankModel && !rerankModels.some(m => m.id === form?.retrieval?.rerankModel)"
                   :value="form.retrieval.rerankModel" :label="$t(form.retrieval.rerankModel)" />
-                <el-option v-for="model in engineModels" :key="model.id" :value="model.id" :label="$t(model.name)" />
+                <el-option v-for="model in rerankModels" :key="model.id" :value="model.id" :label="$t(model.name)" />
               </el-select>
             </el-form-item>
             <el-form-item :label='$t("重排不可用时")'>
@@ -425,7 +439,16 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
       </section>
 
       <section v-if="tab === 'versions'" class="ops-card">
-        <div class="ops-section-head"><div><h2>{{ $t("发布与回滚") }}</h2><p>{{ $t("每个启用技能至少一条正常用例通过后才能发布。自动断言通过后，仍需人工检查回答质量。") }}</p></div><el-button type="primary" :icon="Check" :disabled="!!publishBlock || busy" @click="publish">{{ $t("发布当前草稿") }}</el-button></div>
+        <div class="ops-section-head">
+          <div>
+            <h2>{{ $t("发布问事智能体") }}</h2>
+            <p>{{ $t("将通过评测的草稿发布为新版本，初始覆盖 0%。") }}</p>
+          </div>
+          <el-button type="primary" :icon="Check" :disabled="!!publishBlock || busy" @click="publish">{{ $t("发布当前草稿") }}</el-button>
+        </div>
+        <p v-if="workspace.draftSaved" class="ops-release-model">
+          <span>{{ $t("已保存草稿的聊天模型") }}</span> <strong>{{ $t(savedChatModel) }}</strong>
+        </p>
         <p v-if="publishBlock" class="ops-publish-block" role="status">
           {{ $t(publishBlock) }}
           <RouterLink v-if="!draftNeedsSave" :to="agentSectionPath('evaluation')">{{ $t("去评测") }}</RouterLink>
@@ -482,6 +505,14 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
 .ops-context dl > div { display: flex; align-items: baseline; gap: 6px }
 .ops-context dt { color: var(--el-text-color-secondary); white-space: nowrap }
 .ops-context dd { margin: 0; font-weight: 600 }
+.ops-release-model {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0 0 16px;
+  font-size: 13px;
+}
+.ops-release-model > span { color: var(--el-text-color-secondary) }
 .ops-field-link, .ops-publish-block a, .ops-save-bar a {
   color: var(--el-color-primary);
   font-size: 13px;
@@ -509,8 +540,8 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
 }
 @media (max-width: 640px) {
   .ops-context { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 6px 8px 12px 14px }
-  .ops-context dl { grid-area: 2 / 1 / auto / -1; display: grid; grid-template-columns: 1fr 1fr 1.4fr; column-gap: 10px }
-  .ops-context dl > div { display: grid; gap: 4px }
+  .ops-context dl { grid-area: 2 / 1 / auto / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px }
+  .ops-context dd { overflow-wrap: anywhere }
   .ops-fallback:has(.ops-rollout-actions) { flex-direction: column; align-items: flex-start }
   .ops-card :deep(.el-radio-group) { row-gap: 4px }
 }

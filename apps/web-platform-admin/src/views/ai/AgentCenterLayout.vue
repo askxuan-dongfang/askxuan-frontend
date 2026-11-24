@@ -24,9 +24,10 @@ onBeforeRouteLeave(async () => {
 </script>
 
 <template>
-  <div class="agent-center">
+  <section class="agent-center" :aria-label='$t("问事智能体")'>
     <div class="center-chrome">
       <div class="center-navigation">
+        <strong class="center-agent-name">{{ $t("问事智能体") }}</strong>
         <nav class="center-stages" :aria-label='$t("开发流程")'>
           <RouterLink v-for="stage in agentWorkflow" :key="stage.title" :to="stage.steps[0].path"
             :class="{ 'is-current': activeStage === stage }" :aria-current="activeStage === stage ? 'step' : undefined">
@@ -47,7 +48,7 @@ onBeforeRouteLeave(async () => {
         <component :is="Component" />
       </KeepAlive>
     </RouterView>
-  </div>
+  </section>
 </template>
 
 <style scoped>
@@ -75,6 +76,11 @@ onBeforeRouteLeave(async () => {
   flex-wrap: wrap;
   gap: 2px 6px;
 }
+.center-agent-name {
+  padding-inline: 8px;
+  font-size: 14px;
+}
+.center-stages { margin-inline-end: auto }
 .center-navigation a, .center-steps a {
   display: inline-flex;
   justify-content: center;
@@ -102,10 +108,19 @@ onBeforeRouteLeave(async () => {
   outline-offset: 2px;
 }
 @media (max-width: 640px) {
-  .center-navigation { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 6px 8px }
-  .center-stages { display: grid; grid-template-columns: 1fr 1.8fr 1fr 1fr; gap: 2px }
+  .center-navigation { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 4px; padding: 4px 8px 6px }
+  .center-stages {
+    grid-area: 2 / 1 / auto / -1;
+    display: grid;
+    grid-template-columns: 1fr 1.8fr 1fr 1fr;
+    gap: 2px;
+    margin: 0;
+    padding-top: 4px;
+    border-top: 1px solid var(--el-border-color-light);
+  }
   .center-stages a { padding-inline: 7px; font-size: 13px }
-  .center-resources { border-top: 1px solid var(--el-border-color-light) }
+  .center-resources { grid-area: 1 / 2 }
+  .center-resources a { padding-inline: 8px }
   .center-steps { gap: 2px }
   .center-steps a { padding-inline: 8px }
 }
