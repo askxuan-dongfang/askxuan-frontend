@@ -1,13 +1,31 @@
-// One navigation contract for the sidebar, routes and links inside the workspace.
-export const agentCenterSections = [
-  { path: '/ai/agent', title: '智能体编排', section: 'config', description: '定义问事助手的职责、知识范围和 Harness 执行策略' },
-  { path: '/ai/connections', title: '模型与连接', description: '管理大模型、联网搜索与知识模型的服务连接' },
-  { path: '/ai/knowledge', title: '知识中心', description: '管理文档、检索、Wiki 和实体知识图谱' },
-  { path: '/ai/tools', title: '技能与工具', section: 'skills', description: '为问事助手添加、移除或启停现有技能与 MCP 工具' },
-  { path: '/ai/report-pricing', title: '报告定价', description: '按专题设置完整报告的钱包支付价格' },
-  { path: '/ai/debug', title: '调试工作台', section: 'debug', description: '验证回答与 Harness 工具执行过程' },
-  { path: '/ai/evaluations', title: '质量评测', section: 'evaluation', description: '通过测试用例检查当前草稿的回答质量' },
-  { path: '/ai/releases', title: '版本与发布', section: 'versions', description: '管理已发布版本、灰度范围与回滚' },
-  { path: '/ai/runs', title: '运行监控', section: 'runs', description: '查看用户请求、执行状态和工具调用记录' },
-] as const
-export const agentSectionPath = (section: string) => agentCenterSections.find(item => 'section' in item && item.section === section)?.path || '/ai/agent'
+import type { InjectionKey, Ref } from 'vue'
+
+interface AgentStep {
+  path: string
+  title: string
+  section: string
+}
+
+interface AgentStage {
+  title: string
+  steps: readonly AgentStep[]
+}
+
+export const agentWorkflow: readonly AgentStage[] = [
+  { title: '配置', steps: [
+    { path: '/ai/agent', title: '职责与模型', section: 'config' },
+    { path: '/ai/tools', title: '技能与工具', section: 'skills' },
+    { path: '/ai/context', title: '知识与上下文', section: 'context' },
+  ] },
+  { title: '调试与评测', steps: [
+    { path: '/ai/debug', title: '单次调试', section: 'debug' },
+    { path: '/ai/evaluations', title: '质量评测', section: 'evaluation' },
+  ] },
+  { title: '发布', steps: [{ path: '/ai/releases', title: '版本与发布', section: 'versions' }] },
+  { title: '运行', steps: [{ path: '/ai/runs', title: '运行监控', section: 'runs' }] },
+]
+
+export const agentCenterSections = agentWorkflow.flatMap(stage => stage.steps)
+export const agentSectionPath = (section: string) => agentCenterSections.find(step => step.section === section)?.path ?? '/ai/agent'
+
+export const agentDraftDirtyKey: InjectionKey<Ref<boolean>> = Symbol('agentDraftDirty')

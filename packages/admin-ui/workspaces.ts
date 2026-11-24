@@ -1,5 +1,5 @@
 export interface WorkspaceItem { path: string; title: string; pending?: boolean }
-export interface AdminWorkspace { title: string; icon: string; children: WorkspaceItem[] }
+export interface AdminWorkspace { title: string; icon: string; children: WorkspaceItem[]; direct?: boolean }
 
 // Paths and permissions belong to the existing router. A pending item creates no route.
 export const adminWorkspaces: AdminWorkspace[] = [
@@ -37,13 +37,11 @@ export const adminWorkspaces: AdminWorkspace[] = [
     { path: '/marketing/banner', title: '首页活动与广告' }, { path: '/marketing/activity', title: '活动管理' },
     { path: '/commerce/reports', title: '商城经营报表' },
     { path: '/marketing/growth', title: '成长体系' }, { path: '/marketing/rewards', title: '积分活动与奖品' },
-    { path: '/marketing/coupon', title: '优惠券管理' }
+    { path: '/marketing/coupon', title: '优惠券管理' },
+    { path: '/ai/report-pricing', title: '报告定价' }
   ] },
-  { title: 'AI 中心', icon: 'Connection', children: [
-    { path: '/ai/agent', title: '智能体编排' }, { path: '/ai/report-pricing', title: '报告定价' }, { path: '/ai/connections', title: '模型与连接' },
-    { path: '/ai/knowledge', title: '知识中心' }, { path: '/ai/tools', title: '技能与工具' },
-    { path: '/ai/debug', title: '调试工作台' }, { path: '/ai/evaluations', title: '质量评测' },
-    { path: '/ai/releases', title: '版本与发布' }, { path: '/ai/runs', title: '运行监控' }
+  { title: 'AI 开发中心', icon: 'Connection', direct: true, children: [
+    { path: '/ai', title: 'AI 开发中心' }
   ] },
   { title: '基础标准', icon: 'Collection', children: [
     { path: '/settings/taxonomy', title: '信仰与心愿标准' },
@@ -57,7 +55,8 @@ export const adminWorkspaces: AdminWorkspace[] = [
 ]
 
 export function activeWorkspacePath(path: string): string {
-  if (path.startsWith('/ai/connections')) return '/ai/connections'
+  if (path === '/ai/report-pricing' || path === '/ai/report-pricing/') return '/ai/report-pricing'
+  if (path.startsWith('/ai/')) return '/ai'
   if (path.startsWith('/temple/detail/')) return '/temple/list'
   if (path.startsWith('/master/detail/') || path === '/master/create') return '/master/list'
   if (path.startsWith('/user/detail/')) return '/user/list'
