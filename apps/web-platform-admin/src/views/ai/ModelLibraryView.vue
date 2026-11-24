@@ -6,13 +6,15 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 
 import client from '@/api/client'
-import { emptyUses, modelLibraryApi, modelOptions, modelRoles, type DiscoveredLanguageModel, type LibraryModel, type ModelLibrary, type ModelRole } from '@/api/modelLibrary'
+import { emptyUses, modelLibraryApi, modelOptions, modelRoles, providerName, type DiscoveredLanguageModel, type LibraryModel, type ModelLibrary, type ModelRole, type ModelSupplier } from '@/api/modelLibrary'
 
 const library = ref<ModelLibrary>(), uses = ref(emptyUses())
 const customerModelIds = ref<string[]>([])
 const selection = computed(() => JSON.stringify({ uses: uses.value, customerModelIds: customerModelIds.value }))
 const savedSelection = ref(selection.value)
 const busy = ref(false), error = ref(''), query = ref(''), role = ref<ModelRole | ''>(''), dialog = ref(false)
+const supplierDialog = ref(false)
+const supplierForm = ref({ provider: 'opencode_go' as ModelSupplier, apiKey: '', reuseConnection: '' })
 const initial = () => ({ kind: 'language', name: '', model: '', provider: 'volcengine', baseUrl: 'https://ark.cn-beijing.volces.com/api/v3', apiKey: '', reuseConnection: '', supportsVision: false, contextWindow: 0, maxOutputTokens: 0, dimension: 512 })
 const form = ref(initial()), formBaseline = ref('')
 const openCodeGoBaseUrl = 'https://opencode.ai/inference/go/openai/v1'
@@ -22,11 +24,13 @@ const discoveredModel = computed(() => discoveredModels.value.find(model => mode
 const canSubmit = computed(() => !!form.value.model && !!form.value.baseUrl &&
   (!isOpenCodeGo.value || (!!discoveredModel.value && !!form.value.apiKey.trim())))
 const options = (use: ModelRole) => library.value ? modelOptions(library.value, use) : []
-function providerName(provider: string) { return provider === 'opencode_go' ? 'OpenCode Go' : provider }
 const visible = computed(() => library.value?.list.filter(m => (!role.value || m.bindings[role.value]) &&
   `${m.name} ${m.model} ${m.provider} ${providerName(m.provider)}`.toLowerCase().includes(query.value.trim().toLowerCase())) || [])
 const connections = computed(() => library.value?.list.filter(m => m.kind === 'language' && m.provider !== 'opencode_go') || [])
-const dirty = computed(() => selection.value !== savedSelection.value || (dialog.value && JSON.stringify(form.value) !== formBaseline.value))
+const supplierConnected = computed(() => library.value?.suppliers?.includes(supplierForm.value.provider) ?? false)
+const supplierConnections = computed(() => library.value?.list.filter(m => m.kind === 'language' && m.provider === supplierForm.value.provider) ?? [])
+const dirty = computed(() => selection.value !== savedSelection.value || (dialog.value && JSON.stringify(form.value) !== formBaseline.value) ||
+  (supplierDialog.value && !!(supplierForm.value.apiKey || supplierForm.value.reuseConnection)))
 async function run(fn: () => Promise<void>) { if (busy.value) return; busy.value = true; error.value = ''; try { await fn() } catch (e) { error.value = e instanceof Error ? e.message : '模型操作失败' } finally { busy.value = false } }
 async function load() {
   const data = await modelLibraryApi.list()
@@ -37,6 +41,38 @@ async function load() {
 }
 async function refresh() { if (dirty.value) { try { await ElMessageBox.confirm(uiText('刷新将丢弃尚未保存的选择。'), uiText('刷新模型库'), { confirmButtonText: uiText('刷新'), cancelButtonText: uiText('继续编辑') }) } catch { return } } await run(load) }
 function add() { form.value = initial(); formBaseline.value = JSON.stringify(form.value); dialog.value = true }
+function openSupplier() {
+  supplierForm.value = { provider: 'opencode_go', apiKey: '', reuseConnection: '' }
+  error.value = ''
+  supplierDialog.value = true
+}
+watch(() => supplierForm.value.provider, () => {
+  supplierForm.value.apiKey = ''
+  supplierForm.value.reuseConnection = ''
+  error.value = ''
+})
+watch(() => supplierForm.value.reuseConnection, id => { if (id) supplierForm.value.apiKey = '' })
+async function importSupplier() {
+  const data = library.value
+  if (!data) return
+  await run(async () => {
+    const { provider, apiKey, reuseConnection } = supplierForm.value
+    const pendingUses = uses.value
+    const pendingCustomerModels = customerModelIds.value
+    const hasPendingSelection = selection.value !== savedSelection.value
+    const result = await modelLibraryApi.importSupplier({
+      provider, revision: data.revision, apiKey: apiKey.trim() || undefined, reuseConnection: reuseConnection || undefined,
+    })
+    supplierForm.value.apiKey = ''
+    supplierDialog.value = false
+    ElMessage.success(uiText('新增 ') + result.added + uiText(' 个模型，已存在 ') + result.existing + uiText(' 个'))
+    await load()
+    if (hasPendingSelection) {
+      uses.value = pendingUses
+      customerModelIds.value = pendingCustomerModels
+    }
+  })
+}
 watch(() => form.value.kind, kind => { form.value.apiKey = ''; form.value.reuseConnection = ''; form.value.provider = kind === 'language' ? 'volcengine' : kind === 'Rerank' ? 'generic' : 'openai'; form.value.baseUrl = kind === 'language' ? 'https://ark.cn-beijing.volces.com/api/v3' : '' })
 watch(() => form.value.provider, (provider, previous) => {
   if (provider === 'opencode_go' || previous === 'opencode_go') form.value.apiKey = ''
@@ -95,13 +131,18 @@ async function remove(m: LibraryModel) { try { await ElMessageBox.confirm((uiTex
   await run(async () => { if (m.kind === 'language') await client.delete('/ai/admin/model-library/' + encodeURIComponent(m.id), { data: { revision: library.value?.revision } }); else await client.delete('/ai/admin/knowledge-models/' + encodeURIComponent(m.id)); await load() })
 }
 onBeforeRouteLeave(async () => { if (!dirty.value) return true; try { await ElMessageBox.confirm(uiText('尚有未保存的模型资料或用途选择。'), uiText('离开模型库'), { confirmButtonText: uiText('离开'), cancelButtonText: uiText('继续编辑') }); return true } catch { return false } })
-onBeforeUnmount(() => { form.value.apiKey = '' })
+onBeforeUnmount(() => { form.value.apiKey = ''; supplierForm.value.apiKey = '' })
 onMounted(() => run(load))
 </script>
 
 <template>
   <section class="model-library" v-loading="busy">
-    <header><div><h2>{{ $t("模型库") }}</h2></div><el-button @click="refresh">{{ $t("刷新") }}</el-button><el-button type="primary" :disabled="!library?.writable" @click="add">{{ $t("添加模型") }}</el-button></header>
+    <header>
+      <div><h2>{{ $t("模型库") }}</h2></div>
+      <el-button @click="refresh">{{ $t("刷新") }}</el-button>
+      <el-button :type="library?.suppliers ? 'default' : 'primary'" :disabled="!library?.writable" @click="add">{{ $t("添加模型") }}</el-button>
+      <el-button v-if="library?.suppliers" type="primary" :disabled="!library.writable" @click="openSupplier">{{ $t("导入供应商模型") }}</el-button>
+    </header>
     <el-alert v-if="error" :title="$t(error)" type="error" :closable="false" />
     <el-alert v-for="warning in library?.warnings" :key="warning" :title="$t(warning)" type="warning" :closable="false" />
     <el-tabs>
@@ -135,6 +176,36 @@ onMounted(() => run(load))
       </el-tab-pane>
     </el-tabs>
     <p class="note">{{ $t("模型需支持对应接口：聊天大模型不能代替 Embedding 或 Rerank。更换向量模型需要新建索引。") }}<router-link to="/ai/connections/legacy">{{ $t("原有连接与运行参数") }}</router-link></p>
+    <el-dialog v-model="supplierDialog" :title='$t("导入供应商模型")' width="min(500px,94vw)" append-to-body
+      :close-on-click-modal="!busy" :close-on-press-escape="!busy" :show-close="!busy" @closed="supplierForm.apiKey = ''">
+      <el-form label-position="top" :disabled="busy">
+        <el-form-item :label='$t("供应商")'>
+          <el-select v-model="supplierForm.provider" :aria-label='$t("供应商")'>
+            <el-option label="OpenCode Go" value="opencode_go" />
+            <el-option label="DeepSeek" value="deepseek" />
+          </el-select>
+        </el-form-item>
+        <p v-if="supplierConnected">{{ $t("使用已保存的 API Key 同步新增模型。") }}</p>
+        <template v-else>
+          <el-form-item v-if="supplierConnections.length" :label='$t("复用已保存的连接")'>
+            <el-select v-model="supplierForm.reuseConnection" filterable clearable :value-on-clear="''"
+              :aria-label='$t("供应商已有连接")' :placeholder='$t("使用新的 API Key")'>
+              <el-option v-for="connection in supplierConnections" :key="connection.id" :value="connection.id" :label="$t(connection.name)" />
+            </el-select>
+          </el-form-item>
+          <el-form-item v-if="!supplierForm.reuseConnection" label="API Key">
+            <el-input v-model="supplierForm.apiKey" type="password" autocomplete="new-password" :aria-label='$t("供应商 API Key")' />
+          </el-form-item>
+        </template>
+      </el-form>
+      <el-alert v-if="error" :title="$t(error)" type="error" :closable="false" />
+      <template #footer>
+        <el-button :disabled="busy" @click="supplierDialog = false">{{ $t("取消") }}</el-button>
+        <el-button type="primary" :loading="busy" :disabled="!supplierConnected && !supplierForm.reuseConnection && !supplierForm.apiKey.trim()" @click="importSupplier">
+          {{ $t(supplierConnected ? "同步新增模型" : "导入全部可用模型") }}
+        </el-button>
+      </template>
+    </el-dialog>
     <el-dialog v-model="dialog" :title='$t("添加模型")' width="min(640px,94vw)" append-to-body
       :close-on-click-modal="!busy" :close-on-press-escape="!busy" :show-close="!busy" @closed="form.apiKey = ''">
       <el-form label-position="top" :disabled="busy" v-loading="busy">

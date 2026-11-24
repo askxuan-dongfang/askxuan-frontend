@@ -1,8 +1,8 @@
 import { test, expect, type Page } from '@playwright/test'
-import type { LibraryModel } from '../../apps/web-platform-admin/src/api/modelLibrary'
+import type { LibraryModel, ModelSupplier } from '../../apps/web-platform-admin/src/api/modelLibrary'
 import { seedPlatformAdmin, fulfillPlatformAdminAccess } from '../fixtures/platform-admin-access'
 
-async function setup(page: Page, customerModelIds?: string[]) {
+async function setup(page: Page, customerModelIds?: string[], suppliers?: ModelSupplier[]) {
   const identity = await seedPlatformAdmin(page, 'platform_super', '模型库验收')
   const list: Partial<LibraryModel>[] = [
     {id:'ark-code-latest',name:'方舟套餐',model:'ark-code-latest',kind:'language',source:'legacy',provider:'volcengine',baseUrl:'https://ark.cn-beijing.volces.com/api/plan/v3',bindings:{chat:'ark-code-latest',document:'chat:ark-code-latest'}},
@@ -13,6 +13,10 @@ async function setup(page: Page, customerModelIds?: string[]) {
     {id:'vision',name:'图片模型',model:'vision',kind:'language',source:'registered',provider:'openai_compatible',baseUrl:'https://example.test',bindings:{chat:'vision',vision:'vision'}},
     {id:'go',name:'OpenCode Go 文本模型',model:'kimi',kind:'language',source:'registered',provider:'opencode_go',baseUrl:'https://opencode.ai/inference/go/openai/v1',bindings:{chat:'go',catalogTranslation:'go'}},
   )
+  if (suppliers) list.push({
+    id: 'deepseek-flash', name: 'DeepSeek Flash', model: 'deepseek-flash', kind: 'language', source: 'legacy',
+    provider: 'deepseek', baseUrl: 'https://api.deepseek.com', bindings: { chat: 'deepseek-flash', vision: 'deepseek-flash' },
+  })
   let uses = {chat:'',vision:'',embedding:'embed',rerank:'rank',document:''}, revision = 3
   const calls: {path:string;method:string;body:any}[] = []
   await page.route('**/api/v1/**', async route => {
@@ -20,9 +24,27 @@ async function setup(page: Page, customerModelIds?: string[]) {
     const req=route.request(), path=new URL(req.url()).pathname, body=req.postData()?req.postDataJSON():null
     calls.push({path,method:req.method(),body})
     let data:any={list:[],total:0}
-    if(path.endsWith('/model-library'))data={list,uses,customerModelIds,revision,writable:true,defaultChat:'ark-code-latest',warnings:[]}
+    if(path.endsWith('/model-library'))data={list,uses,customerModelIds,suppliers,revision,writable:true,defaultChat:'ark-code-latest',warnings:[]}
     else if(path.endsWith('/model-library/uses')){uses=body.uses;customerModelIds=body.customerModelIds;revision++}
     else if(path.endsWith('/model-library/language')){list.push({id:'registered',name:body.name,model:body.model,kind:'language',source:'registered',provider:body.provider,baseUrl:body.baseUrl,bindings:{chat:'registered',document:'chat:registered'}});revision++}
+    else if (path.endsWith('/model-library/language/import') && suppliers) {
+      const provider = body.provider as ModelSupplier
+      const syncing = suppliers.includes(provider)
+      const fresh: Partial<LibraryModel>[] = []
+      if (!syncing) {
+        suppliers.push(provider)
+        const id = provider + '-pro'
+        fresh.push({ id, name: 'DeepSeek Pro', model: 'deepseek-v4-pro', kind: 'language', source: 'registered', provider, bindings: { chat: id } })
+        if (provider === 'opencode_go') fresh.push({
+          id: 'go-vision', name: 'Go Vision', model: 'go-vision', kind: 'language', source: 'registered', provider, bindings: { chat: 'go-vision', vision: 'go-vision' },
+        })
+      } else {
+        fresh.push({ id: 'go-new', name: 'Go New Model', model: 'go-new', kind: 'language', source: 'registered', provider, bindings: { chat: 'go-new' } })
+      }
+      list.push(...fresh)
+      data = { added: fresh.length, existing: syncing ? 2 : provider === 'deepseek' ? 1 : 0 }
+      revision++
+    }
     await route.fulfill({json:{code:0,data}})
   })
   return calls
@@ -33,6 +55,45 @@ async function openSelect(page: Page, label: string) {
   const controls = await select.locator(`input[aria-label="${label}"]`).getAttribute('aria-controls')
   return page.locator(`[id="${controls}"]`)
 }
+
+test('imports both suppliers and syncs new models with the saved credential', async ({ page }) => {
+  const calls = await setup(page, [], [])
+  await page.goto('/ai/connections/models')
+  const open = page.getByRole('button', { name: '导入供应商模型', exact: true })
+  const dialog = page.getByRole('dialog', { name: '导入供应商模型', exact: true })
+
+  await open.click()
+  await dialog.getByLabel('供应商 API Key', { exact: true }).fill('fixture-go-key')
+  await dialog.getByRole('button', { name: '导入全部可用模型', exact: true }).click()
+  await expect(page.locator('.el-table__body')).toContainText('Go Vision')
+  await expect(dialog).toBeHidden()
+
+  await open.click()
+  await expect(dialog.getByLabel('供应商 API Key', { exact: true })).toHaveCount(0)
+  await dialog.getByRole('button', { name: '同步新增模型', exact: true }).click()
+  await expect(page.locator('.el-table__body')).toContainText('Go New Model')
+  await expect(dialog).toBeHidden()
+
+  await open.click()
+  const supplier = await openSelect(page, '供应商')
+  await supplier.getByRole('option', { name: 'DeepSeek', exact: true }).click()
+  const saved = await openSelect(page, '供应商已有连接')
+  await saved.getByRole('option', { name: 'DeepSeek Flash', exact: true }).click()
+  await expect(dialog.getByLabel('供应商 API Key', { exact: true })).toHaveCount(0)
+  await dialog.getByRole('button', { name: '导入全部可用模型', exact: true }).click()
+  await expect(dialog).toBeHidden()
+
+  const requests = calls.filter(call => call.path.endsWith('/language/import')).map(call => call.body)
+  expect(requests).toEqual([
+    { provider: 'opencode_go', revision: 3, apiKey: 'fixture-go-key' },
+    { provider: 'opencode_go', revision: 4 },
+    { provider: 'deepseek', revision: 5, reuseConnection: 'deepseek-flash' },
+  ])
+  await page.getByRole('tab', { name: '默认用途', exact: true }).click()
+  const chat = await openSelect(page, '聊天默认模型')
+  await expect(chat.getByRole('option', { name: 'DeepSeek Pro · deepseek-v4-pro · OpenCode Go', exact: true })).toBeVisible()
+  await expect(chat.getByRole('option', { name: 'DeepSeek Pro · deepseek-v4-pro · DeepSeek', exact: true })).toBeVisible()
+})
 
 test('catalog filters by capability and saves role-specific model identities',async({page})=>{
   const calls=await setup(page);await page.goto('/ai/connections/models')
