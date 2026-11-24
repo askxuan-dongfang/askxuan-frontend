@@ -79,15 +79,21 @@ async function onCommand(cmd: string) {
         unique-opened
         class="ax-admin-menu"
       >
-        <el-sub-menu v-for="group in menuGroups" :key="group.title" :index="group.title">
-          <template #title>
+        <template v-for="group in menuGroups" :key="group.title">
+          <el-menu-item v-if="group.direct" :index="group.children[0].path">
             <el-icon><component :is="group.icon" /></el-icon>
-            <span>{{ $t(group.title) }}</span>
-          </template>
-          <el-menu-item v-for="item in group.children" :key="item.path" :index="item.pending ? `pending:${group.title}` : item.path" :disabled="item.pending">
-            {{ $t(item.title) }}
+            <template #title>{{ $t(group.title) }}</template>
           </el-menu-item>
-        </el-sub-menu>
+          <el-sub-menu v-else :index="group.title">
+            <template #title>
+              <el-icon><component :is="group.icon" /></el-icon>
+              <span>{{ $t(group.title) }}</span>
+            </template>
+            <el-menu-item v-for="item in group.children" :key="item.path" :index="item.pending ? `pending:${group.title}` : item.path" :disabled="item.pending">
+              {{ $t(item.title) }}
+            </el-menu-item>
+          </el-sub-menu>
+        </template>
       </el-menu>
 
       <div class="ax-admin-version">{{ $t("统一运营管理台") }}</div>
@@ -114,7 +120,7 @@ async function onCommand(cmd: string) {
           <div>
             <nav class="ax-admin-header__eyebrow" :aria-label="$t('面包屑')">
               <span>{{ $t(pageParent) }}</span>
-              <template v-if="pageList && pageList.path !== route.path"> / <router-link :to="pageList.path">{{ $t(pageList.title) }}</router-link></template>
+              <template v-if="pageList && pageList.path !== route.path && pageList.title !== pageParent"> / <router-link :to="pageList.path">{{ $t(pageList.title) }}</router-link></template>
             </nav>
           </div>
         </div>

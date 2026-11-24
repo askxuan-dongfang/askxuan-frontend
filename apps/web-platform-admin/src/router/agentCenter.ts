@@ -1,13 +1,12 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { agentCenterSections } from '@/views/ai/centerNavigation'
-const meta = { parent: '问事智能体开发中心', roles: ['platform_super'] }
+const meta = { parent: 'AI 开发中心', roles: ['platform_super'] }
 export const agentCenterRoutes: RouteRecordRaw[] = [
-  ...agentCenterSections.filter(item => 'section' in item).map(item => ({
+  ...agentCenterSections.map(item => ({
     path: item.path.slice('/ai/'.length), name: `AgentCenter-${item.path.split('/').pop()}`,
     component: () => import('@/views/ai/AgentOperationsView.vue'),
-    meta: { ...meta, title: item.title, agentSection: 'section' in item ? item.section : undefined, description: item.description },
+    meta: { ...meta, title: item.title, agentSection: item.section },
   })),
-  { path: 'report-pricing', component: () => import('@/views/ai/ReportPricingView.vue'), meta: { ...meta, title: '报告定价' } },
   { path: 'knowledge', component: () => import('@/views/ai/KnowledgeCenterView.vue'), meta: { ...meta, title: '知识中心' } },
   { path: 'connections', component: () => import('@/views/ai/ConnectionsView.vue'), redirect: '/ai/connections/models', meta: { ...meta, title: '模型与连接' }, children: [
     { path: 'models', component: () => import('@/views/ai/ModelLibraryView.vue'), meta: { ...meta, title: '模型库' } },
