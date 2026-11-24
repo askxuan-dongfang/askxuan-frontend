@@ -26,6 +26,10 @@ async function setup(page: Page, customerModelIds?: string[], suppliers?: ModelS
     let data:any={list:[],total:0}
     if(path.endsWith('/model-library'))data={list,uses,customerModelIds,suppliers,revision,writable:true,defaultChat:'ark-code-latest',warnings:[]}
     else if(path.endsWith('/model-library/uses')){uses=body.uses;customerModelIds=body.customerModelIds;revision++}
+    else if (path.endsWith('/model-library/ark-code-latest/test')) data = { ok: true }
+    else if (path.endsWith('/knowledge-models/rank/test')) {
+      return route.fulfill({ json: { code: 50301, message: '知识模型服务暂不可用' } })
+    }
     else if(path.endsWith('/model-library/language')){list.push({id:'registered',name:body.name,model:body.model,kind:'language',source:'registered',provider:body.provider,baseUrl:body.baseUrl,bindings:{chat:'registered',document:'chat:registered'}});revision++}
     else if (path.endsWith('/model-library/language/import') && suppliers) {
       const provider = body.provider as ModelSupplier
@@ -112,6 +116,28 @@ test('catalog filters by capability and saves role-specific model identities',as
   const saved=calls.find(c=>c.path.endsWith('/model-library/uses'))!.body
   expect(saved).toMatchObject({revision:3,uses:{document:'chat:ark-code-latest',embedding:'embed',rerank:'rank'}})
   expect(saved).not.toHaveProperty('customerModelIds')
+})
+
+test('shows the selected model and its connection result without changing model assignments', async ({ page }) => {
+  const calls = await setup(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/ai/connections/models')
+  const drawer = page.getByRole('dialog', { name: '模型连接测试' })
+  const testConnection = page.getByRole('row', { name: /方舟套餐/ }).getByRole('button', { name: '测试连接' })
+  await expect(testConnection).toBeInViewport()
+  await testConnection.click()
+  await expect(drawer.getByRole('heading', { name: '方舟套餐' })).toBeVisible()
+  await expect(drawer.getByText('连接成功', { exact: true })).toBeVisible()
+  await expect(drawer.getByText(/^\d+ ms$/)).toBeVisible()
+  await drawer.getByRole('button', { name: '关闭', exact: true }).click()
+
+  await page.getByRole('row', { name: /重排模型/ }).getByRole('button', { name: '测试连接' }).click()
+  await expect(drawer.getByText('连接失败', { exact: true })).toBeVisible()
+  await expect(drawer.getByText('知识模型服务暂不可用')).toBeVisible()
+  expect(calls.filter(call => call.method === 'POST' || call.method === 'PUT').map(call => call.path)).toEqual([
+    '/api/v1/ai/admin/model-library/ark-code-latest/test',
+    '/api/v1/ai/admin/knowledge-models/rank/test',
+  ])
 })
 
 test('customer options and role defaults are saved together and can be cleared', async ({ page }) => {
