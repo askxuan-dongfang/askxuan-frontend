@@ -63,6 +63,32 @@ test('single-agent release shows the saved model and engine and links to a missi
   await expect(page.getByRole('heading', { name: '质量评测', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: '添加用例' })).toBeVisible()
 })
+test('desktop can test the saved draft beside the editor and retain its result between configuration pages', async ({ page }) => {
+  await setup(page)
+  const result = {
+    id: 'fixture-run', revision: 1, providerRevision: 1, kind: 'harness', skillCode: 'general',
+    model: 'fixture-chat', status: 'completed', result: '草稿试跑完成', error: '', clarification: '',
+    events: [{ stage: 'draft', label: '读取已保存草稿', at: '2026-11-24T08:00:00Z' }],
+    modelAttempts: 1, toolAttempts: 0, promptTokens: 30, completionTokens: 12,
+  }
+  await page.route(/\/api\/v1\/ai\/admin\/agent\/debug(?:\/fixture-run)?$/, route =>
+    route.fulfill({ json: { code: 0, data: result } }))
+  await page.goto('/ai/agent')
+  const preview = page.getByRole('region', { name: '调试预览', exact: true })
+  await expect(preview.getByRole('button', { name: '开始调试' })).toBeVisible()
+  const request = page.waitForRequest(req => req.method() === 'POST' && req.url().endsWith('/agent/debug'))
+  await preview.getByRole('button', { name: '开始调试' }).click()
+  expect((await request).postDataJSON()).toMatchObject({ revision: 1, kind: 'harness', skillCode: 'general' })
+  await expect(preview.getByText('草稿试跑完成', { exact: true })).toBeVisible()
+  await preview.getByText('执行轨迹 · 1', { exact: true }).click()
+  await expect(preview.getByRole('listitem').filter({ hasText: '读取已保存草稿' })).toBeVisible()
+  const config = page.getByRole('navigation', { name: '配置', exact: true })
+  await config.getByRole('link', { name: '知识与上下文', exact: true }).click()
+  await expect(preview.getByText('草稿试跑完成', { exact: true })).toBeVisible()
+  await config.getByRole('link', { name: '职责与模型', exact: true }).click()
+  await page.getByLabel('职责与回答要求', { exact: true }).fill('尚未保存的指令')
+  await expect(preview.getByRole('button', { name: '开始调试' })).toBeDisabled()
+})
 test('mobile can reach all development stages and shared resources', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await setup(page)
@@ -84,6 +110,9 @@ test('mobile can reach all development stages and shared resources', async ({ pa
   const resources = page.getByRole('navigation', { name: '共享资源' })
   await expect(resources.getByRole('link', { name: '知识中心' })).toBeInViewport()
   await expect(resources.getByRole('link', { name: '模型与连接' })).toBeInViewport()
+  await expect(page.getByRole('region', { name: '调试预览', exact: true })).toBeHidden()
+  await page.getByRole('link', { name: '进入单次调试' }).click()
+  await expect(page.getByRole('button', { name: '开始调试' })).toBeVisible()
   await stages.getByRole('link', { name: '发布', exact: true }).click()
   await expect(page.getByRole('button', { name: '发布当前草稿' })).toBeEnabled()
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390)
