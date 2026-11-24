@@ -6,13 +6,18 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 
 import client from '@/api/client'
-import { emptyUses, modelLibraryApi, modelOptions, modelRoles, providerName, type DiscoveredLanguageModel, type LibraryModel, type ModelLibrary, type ModelRole, type ModelSupplier } from '@/api/modelLibrary'
+import { emptyUses, groupModelOptions, modelLibraryApi, modelOptions, modelRoles, providerName, type DiscoveredLanguageModel, type LibraryModel, type ModelLibrary, type ModelRole, type ModelSupplier } from '@/api/modelLibrary'
+
+type ConnectionResult = { ok: boolean; observations?: { dimension: number; result_count: number } }
 
 const library = ref<ModelLibrary>(), uses = ref(emptyUses())
 const customerModelIds = ref<string[]>([])
 const selection = computed(() => JSON.stringify({ uses: uses.value, customerModelIds: customerModelIds.value }))
 const savedSelection = ref(selection.value)
 const busy = ref(false), error = ref(''), query = ref(''), role = ref<ModelRole | ''>(''), dialog = ref(false)
+const supplierFilter = ref('')
+const testDrawer = ref(false)
+const connectionCheck = ref<{ model: LibraryModel; result?: ConnectionResult; requestMs?: number; error?: string }>()
 const supplierDialog = ref(false)
 const supplierForm = ref({ provider: 'opencode_go' as ModelSupplier, apiKey: '', reuseConnection: '' })
 const initial = () => ({ kind: 'language', name: '', model: '', provider: 'volcengine', baseUrl: 'https://ark.cn-beijing.volces.com/api/v3', apiKey: '', reuseConnection: '', supportsVision: false, contextWindow: 0, maxOutputTokens: 0, dimension: 512 })
@@ -23,9 +28,16 @@ const discoveredModels = ref<DiscoveredLanguageModel[]>([])
 const discoveredModel = computed(() => discoveredModels.value.find(model => model.id === form.value.model))
 const canSubmit = computed(() => !!form.value.model && !!form.value.baseUrl &&
   (!isOpenCodeGo.value || (!!discoveredModel.value && !!form.value.apiKey.trim())))
-const options = (use: ModelRole) => library.value ? modelOptions(library.value, use) : []
-const visible = computed(() => library.value?.list.filter(m => (!role.value || m.bindings[role.value]) &&
-  `${m.name} ${m.model} ${m.provider} ${providerName(m.provider)}`.toLowerCase().includes(query.value.trim().toLowerCase())) || [])
+const options = (use: ModelRole) => library.value ? groupModelOptions(modelOptions(library.value, use)) : []
+const providers = computed(() => [...new Set(library.value?.list.map(model => providerName(model.provider)))]
+  .sort((a, b) => a.localeCompare(b, 'zh-CN')))
+const visible = computed(() => {
+  const search = query.value.trim().toLowerCase()
+  return library.value?.list.filter(model =>
+    (!role.value || model.bindings[role.value]) &&
+    (!supplierFilter.value || providerName(model.provider) === supplierFilter.value) &&
+    `${model.name} ${model.model} ${model.provider} ${providerName(model.provider)}`.toLowerCase().includes(search)) ?? []
+})
 const connections = computed(() => library.value?.list.filter(m => m.kind === 'language' && m.provider !== 'opencode_go') || [])
 const supplierConnected = computed(() => library.value?.suppliers?.includes(supplierForm.value.provider) ?? false)
 const supplierConnections = computed(() => library.value?.list.filter(m => m.kind === 'language' && m.provider === supplierForm.value.provider) ?? [])
@@ -126,7 +138,22 @@ async function saveUses() {
     ElMessage.success(uiText(data.customerModelIds ? '模型用途配置已保存' : '默认模型选择已保存'))
   })
 }
-async function test(m: LibraryModel) { await run(async () => { const root = m.kind === 'language' ? '/ai/admin/model-library/' : '/ai/admin/knowledge-models/'; await client.post(root + encodeURIComponent(m.id) + '/test', {}, { timeout: 45000 }); ElMessage.success((uiText("") + String(m.name) + uiText(" 连接成功"))) }) }
+async function test(model: LibraryModel) {
+  if (busy.value) return
+  const start = performance.now()
+  connectionCheck.value = { model }
+  testDrawer.value = true
+  await run(async () => {
+    const root = model.kind === 'language' ? '/ai/admin/model-library/' : '/ai/admin/knowledge-models/'
+    const result = await client.post<ConnectionResult>(root + encodeURIComponent(model.id) + '/test', {}, {
+      timeout: 45000, suppressErrorMessage: true,
+    })
+    connectionCheck.value = { model, result }
+  })
+  connectionCheck.value.requestMs = Math.round(performance.now() - start)
+  connectionCheck.value.error = error.value
+  error.value = ''
+}
 async function remove(m: LibraryModel) { try { await ElMessageBox.confirm((uiText("删除“") + String(m.name) + uiText("”？已绑定或发布使用的模型会保留。")), uiText('删除模型'), { type: 'warning', confirmButtonText: uiText('删除'), cancelButtonText: uiText('取消') }) } catch { return }
   await run(async () => { if (m.kind === 'language') await client.delete('/ai/admin/model-library/' + encodeURIComponent(m.id), { data: { revision: library.value?.revision } }); else await client.delete('/ai/admin/knowledge-models/' + encodeURIComponent(m.id)); await load() })
 }
@@ -136,23 +163,67 @@ onMounted(() => run(load))
 </script>
 
 <template>
-  <section class="model-library" v-loading="busy">
-    <header>
-      <div><h2>{{ $t("模型库") }}</h2></div>
-      <el-button @click="refresh">{{ $t("刷新") }}</el-button>
-      <el-button :type="library?.suppliers ? 'default' : 'primary'" :disabled="!library?.writable" @click="add">{{ $t("添加模型") }}</el-button>
-      <el-button v-if="library?.suppliers" type="primary" :disabled="!library.writable" @click="openSupplier">{{ $t("导入供应商模型") }}</el-button>
+  <section class="model-library" aria-labelledby="model-library-heading" v-loading="busy && !testDrawer">
+    <header class="catalog-header">
+      <h2 id="model-library-heading">{{ $t("模型库") }}</h2>
+      <div class="catalog-actions">
+        <el-button @click="refresh">{{ $t("刷新") }}</el-button>
+        <el-button :type="library?.suppliers ? 'default' : 'primary'" :disabled="!library?.writable" @click="add">{{ $t("添加模型") }}</el-button>
+        <el-button v-if="library?.suppliers" type="primary" :disabled="!library.writable" @click="openSupplier">{{ $t("导入供应商模型") }}</el-button>
+      </div>
     </header>
     <el-alert v-if="error" :title="$t(error)" type="error" :closable="false" />
     <el-alert v-for="warning in library?.warnings" :key="warning" :title="$t(warning)" type="warning" :closable="false" />
     <el-tabs>
       <el-tab-pane :label='$t("已添加模型")'>
-        <div class="filters"><el-input v-model="query" clearable :placeholder='$t("搜索模型名称或供应商")' :aria-label='$t("搜索模型")' /><el-select v-model="role" clearable :placeholder='$t("全部用途")' :aria-label='$t("筛选模型用途")'><el-option v-for="use in modelRoles" :key="use.key" :value="use.key" :label="$t(use.label)" /></el-select></div>
+        <div class="filters">
+          <el-input v-model="query" clearable :placeholder='$t("搜索模型名称或 ID")' :aria-label='$t("搜索模型")' />
+          <el-select v-model="supplierFilter" clearable :value-on-clear="''" :placeholder='$t("全部供应商")' :aria-label='$t("筛选供应商")'>
+            <el-option v-for="supplier in providers" :key="supplier" :value="supplier" :label="$t(supplier)" />
+          </el-select>
+          <el-select v-model="role" clearable :value-on-clear="''" :placeholder='$t("全部用途")' :aria-label='$t("筛选模型用途")'>
+            <el-option v-for="use in modelRoles" :key="use.key" :value="use.key" :label="$t(use.label)" />
+          </el-select>
+        </div>
         <el-table :data="visible" :empty-text='$t("尚无匹配模型，请添加模型或调整筛选")'>
-          <el-table-column :label='$t("模型")' min-width="240"><template #default="{row}"><strong>{{ $t(row.name) }}</strong><small>{{ $t(row.model) }}</small><small>{{ $t(providerName(row.provider)) }}</small></template></el-table-column>
-          <el-table-column :label='$t("可用用途")' min-width="240"><template #default="{row}"><el-tag v-for="use in modelRoles.filter(use => row.bindings[use.key])" :key="use.key" size="small">{{ $t(use.label) }}</el-tag></template></el-table-column>
-          <el-table-column :label='$t("容量")' width="160"><template #default="{row}"><span v-if="row.dimension">{{ $t(row.dimension) }}{{ $t(" 维") }}</span><span v-else-if="row.contextWindow">{{ $t(row.contextWindow.toLocaleString()) }}{{ $t(" 上下文") }}</span><span v-else>{{ $t("由模型服务决定") }}</span></template></el-table-column>
-          <el-table-column :label='$t("操作")' width="180"><template #default="{row}"><el-button link @click="test(row)">{{ $t("测试连接") }}</el-button><el-button v-if="['registered','knowledge'].includes(row.source)" link type="danger" @click="remove(row)">{{ $t("删除") }}</el-button><small v-else>{{ $t((row.source === 'builtin' ? $t('部署预置') : $t('原有连接'))) }}</small></template></el-table-column>
+          <el-table-column :label='$t("模型")' min-width="180">
+            <template #default="{ row }">
+              <strong>{{ $t(row.name) }}</strong>
+              <small v-if="row.model !== row.name">{{ row.model }}</small>
+            </template>
+          </el-table-column>
+          <el-table-column :label='$t("供应商")' width="134">
+            <template #default="{ row }">
+              {{ $t(providerName(row.provider)) }}
+              <small v-if="row.source === 'builtin'">{{ $t("部署预置") }}</small>
+              <small v-else-if="row.source === 'legacy'">{{ $t("原有连接") }}</small>
+            </template>
+          </el-table-column>
+          <el-table-column :label='$t("可用用途")' min-width="228">
+            <template #default="{ row }">
+              <el-tag v-for="use in modelRoles.filter(use => row.bindings[use.key])" :key="use.key" size="small" type="info" effect="plain">{{ $t(use.label) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column :label='$t("已设默认")' min-width="135">
+            <template #default="{ row }">
+              <span class="default-uses">
+                {{ modelRoles.filter(use => row.bindings[use.key] && row.bindings[use.key] === library?.uses[use.key]).map(use => $t(use.label)).join('、') || '—' }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column :label='$t("容量")' width="116">
+            <template #default="{ row }">
+              <span v-if="row.dimension">{{ row.dimension }}{{ $t(" 维") }}</span>
+              <span v-else-if="row.contextWindow">{{ row.contextWindow.toLocaleString() }}<small>{{ $t("上下文 Token") }}</small></span>
+              <span v-else>—</span>
+            </template>
+          </el-table-column>
+          <el-table-column :label='$t("操作")' width="136" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" :disabled="busy" @click="test(row)">{{ $t("测试连接") }}</el-button>
+              <el-button v-if="['registered','knowledge'].includes(row.source)" link :disabled="busy" @click="remove(row)">{{ $t("删除") }}</el-button>
+            </template>
+          </el-table-column>
         </el-table>
       </el-tab-pane>
       <el-tab-pane :label='$t("默认用途")'>
@@ -160,14 +231,18 @@ onMounted(() => run(load))
           <el-form-item v-for="use in modelRoles" :key="use.key" :label="$t(use.label)">
             <el-select v-model="uses[use.key]" filterable clearable :value-on-clear="''" :aria-label="$t(use.label) + $t('默认模型')"
               :placeholder="$t(use.key === 'chat' ? (library?.defaultChat || '沿用原有连接') : use.key === 'catalogTranslation' ? '沿用默认文本模型' : '不指定默认模型')">
-              <el-option v-for="m in options(use.key)" :key="m.id" :value="m.id" :label="$t(m.name)" />
+              <el-option-group v-for="group in options(use.key)" :key="group.provider" :label="$t(group.provider)">
+                <el-option v-for="model in group.models" :key="model.id" :value="model.id" :label="$t(model.name)" />
+              </el-option-group>
             </el-select>
             <small>{{ $t(use.hint) }}</small>
           </el-form-item>
           <el-form-item v-if="library?.customerModelIds" :label='$t("信众可选模型")'>
             <el-select v-model="customerModelIds" multiple filterable clearable
               :aria-label='$t("信众可选模型")' :placeholder='$t("沿用原有开放规则")'>
-              <el-option v-for="model in options('chat')" :key="model.id" :value="model.id" :label="$t(model.name)" />
+              <el-option-group v-for="group in options('chat')" :key="group.provider" :label="$t(group.provider)">
+                <el-option v-for="model in group.models" :key="model.id" :value="model.id" :label="$t(model.name)" />
+              </el-option-group>
             </el-select>
             <small>{{ $t("选中后仅开放这些模型。留空时，OpenCode Go 需设为聊天或图片理解的默认模型才会显示。") }}</small>
           </el-form-item>
@@ -175,7 +250,36 @@ onMounted(() => run(load))
         <el-button type="primary" :disabled="!library?.writable || selection === savedSelection" @click="saveUses">{{ $t(library?.customerModelIds ? "保存用途配置" : "保存默认选择") }}</el-button>
       </el-tab-pane>
     </el-tabs>
-    <p class="note">{{ $t("模型需支持对应接口：聊天大模型不能代替 Embedding 或 Rerank。更换向量模型需要新建索引。") }}<router-link to="/ai/connections/legacy">{{ $t("原有连接与运行参数") }}</router-link></p>
+    <p class="note"><router-link to="/ai/connections/legacy">{{ $t("原有连接与运行参数") }}</router-link></p>
+    <el-drawer v-model="testDrawer" :title='$t("模型连接测试")' size="min(440px, 100vw)" append-to-body>
+      <template v-if="connectionCheck">
+        <h3 class="check-model">{{ connectionCheck.model.name }}</h3>
+        <p class="check-source">
+          {{ $t(providerName(connectionCheck.model.provider)) }}
+          <template v-if="connectionCheck.model.name !== connectionCheck.model.model"> · {{ connectionCheck.model.model }}</template>
+        </p>
+        <p v-if="connectionCheck.requestMs === undefined" role="status">{{ $t("正在发送测试请求…") }}</p>
+        <template v-else>
+          <el-alert :type="connectionCheck.result?.ok ? 'success' : 'error'"
+            :title="$t(connectionCheck.result?.ok ? '连接成功' : '连接失败')"
+            :description="connectionCheck.error ? $t(connectionCheck.error) : undefined" :closable="false" show-icon />
+          <dl class="check-observations">
+            <dt>{{ $t("请求耗时") }}</dt><dd>{{ connectionCheck.requestMs }} ms</dd>
+            <template v-if="connectionCheck.result?.observations?.dimension">
+              <dt>{{ $t("返回向量维度") }}</dt><dd>{{ connectionCheck.result.observations.dimension }}</dd>
+            </template>
+            <template v-if="connectionCheck.result?.observations?.result_count">
+              <dt>{{ $t("返回条数") }}</dt><dd>{{ connectionCheck.result.observations.result_count }}</dd>
+            </template>
+          </dl>
+        </template>
+        <p>{{ $t("测试会发送内置样例。") }}</p>
+      </template>
+      <template #footer>
+        <el-button @click="testDrawer = false">{{ $t("关闭") }}</el-button>
+        <el-button v-if="connectionCheck" type="primary" :loading="busy" @click="test(connectionCheck.model)">{{ $t("重新测试") }}</el-button>
+      </template>
+    </el-drawer>
     <el-dialog v-model="supplierDialog" :title='$t("导入供应商模型")' width="min(500px,94vw)" append-to-body
       :close-on-click-modal="!busy" :close-on-press-escape="!busy" :show-close="!busy" @closed="supplierForm.apiKey = ''">
       <el-form label-position="top" :disabled="busy">
@@ -250,5 +354,33 @@ onMounted(() => run(load))
   </section>
 </template>
 <style scoped>
-.model-library{min-width:0;padding:24px;border: 0;border-radius:12px;background:var(--el-bg-color)}header,.filters,.capacity{display:flex;gap:12px}header{align-items:flex-start;margin-bottom:20px}header>div{flex:1}h2{margin:0 0 8px}p,small{font-size:13px;line-height:1.7;color:var(--el-text-color-secondary)}p{margin:0 0 16px}small{display:block;overflow-wrap:anywhere}.filters{margin:8px 0 18px}.filters .el-input{max-width:440px}.filters .el-select{max-width:240px}.el-tag{margin:3px 6px 3px 0}.el-alert{margin:12px 0}.uses{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px;max-width:900px}.uses .el-form-item{display:block}.note{margin:22px 0 0}.note a{margin-left:12px}.capacity{flex-wrap:wrap}@media(max-width:680px){.model-library{padding:16px}header,.filters{flex-wrap:wrap}header>div{flex-basis:100%}.uses{grid-template-columns:1fr}.filters .el-input,.filters .el-select{max-width:none}}
+.model-library { min-width: 0; padding: 12px 20px 20px; border-radius: 12px; background: var(--el-bg-color); }
+.catalog-header, .filters, .catalog-actions, .capacity { display: flex; flex-wrap: wrap; gap: 8px; }
+.catalog-header { align-items: center; justify-content: space-between; margin: 2px 0 10px; }
+.catalog-header h2 { margin: 0; font-family: var(--font-sans, inherit); font-size: 18px; font-weight: 650; }
+.filters { margin: 4px 0 16px; min-width: 0; }
+.filters .el-input { flex: 1 1 170px; max-width: 280px; }
+.filters .el-select { flex: 0 1 140px; }
+.catalog-actions .el-button + .el-button { margin-inline-start: 0; }
+p, small { font-size: 13px; line-height: 1.7; color: var(--el-text-color-secondary); }
+p { margin: 0 0 16px; }
+small { display: block; overflow-wrap: anywhere; }
+.el-tag { margin: 3px 6px 3px 0; }
+.el-alert { margin: 12px 0; }
+.default-uses { color: var(--el-text-color-secondary); }
+.uses { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; max-width: 900px; }
+.uses .el-form-item { display: block; }
+.note { margin: 16px 0 0; }
+.check-model { margin: 0 0 3px; font-size: 18px; overflow-wrap: anywhere; }
+.check-source { overflow-wrap: anywhere; }
+.check-observations { display: grid; grid-template-columns: 1fr auto; gap: 12px; margin: 20px 0 14px; font-size: 13px; }
+.check-observations dt { color: var(--el-text-color-secondary); }
+.check-observations dd { margin: 0; font-variant-numeric: tabular-nums; }
+@media (max-width: 680px) {
+  .model-library { padding: 8px 12px 16px; }
+  .filters .el-input { flex-basis: 100%; max-width: none; }
+  .filters .el-select { flex: 1 1 110px; }
+  .uses { grid-template-columns: 1fr; }
+  .model-library :deep(.el-table .el-table__cell.el-table-fixed-column--right) { position: sticky !important; }
+}
 </style>

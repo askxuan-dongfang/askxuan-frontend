@@ -34,7 +34,11 @@ export const modelRoles: { key: ModelRole; label: string; hint: string }[] = [
 export function providerName(provider: string) {
   if (provider === 'opencode_go') return 'OpenCode Go'
   if (provider === 'deepseek') return 'DeepSeek'
-  return provider
+  if (provider === 'volcengine') return '火山方舟'
+  if (provider === 'openai_compatible' || provider === 'openai') return 'OpenAI 兼容'
+  if (provider === 'aliyun') return '阿里云'
+  if (provider === 'generic') return '通用接口'
+  return provider || '未注明供应商'
 }
 export function modelOptions(library: ModelLibrary, role: ModelRole) {
   const models = library.list.filter(m => m.bindings[role])
@@ -42,8 +46,17 @@ export function modelOptions(library: ModelLibrary, role: ModelRole) {
     const label = m.name === m.model ? m.name : `${m.name} · ${m.model}`
     const ambiguous = models.some(other => other !== m && other.model === m.model)
     const connection = m.source === 'legacy' ? `${providerName(m.provider)}（原有连接）` : providerName(m.provider)
-    return { id: m.bindings[role]!, name: ambiguous ? `${label} · ${connection}` : label, libraryId: m.id }
+    return { id: m.bindings[role]!, name: ambiguous ? `${label} · ${connection}` : label, libraryId: m.id, provider: providerName(m.provider) }
   })
+}
+export function groupModelOptions(options: ReturnType<typeof modelOptions>) {
+  const groups = new Map<string, typeof options>()
+  for (const option of options) {
+    const group = groups.get(option.provider)
+    if (group) group.push(option)
+    else groups.set(option.provider, [option])
+  }
+  return Array.from(groups, ([provider, models]) => ({ provider, models }))
 }
 export const modelLibraryApi = {
   list: () => client.get<ModelLibrary>('/ai/admin/model-library', { timeout: 35000 }),

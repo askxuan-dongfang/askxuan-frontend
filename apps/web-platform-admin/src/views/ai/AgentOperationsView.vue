@@ -3,7 +3,7 @@ import { ElMessage, ElMessageBox } from '@/i18n'
 import { t as uiText } from '../../../../../packages/localization/language'
 
 import client from '@/api/client'
-import { modelLibraryApi, modelOptions } from '@/api/modelLibrary'
+import { groupModelOptions, modelLibraryApi, modelOptions } from '@/api/modelLibrary'
 import { computed, inject, onMounted, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { agentDraftDirtyKey, agentSectionPath } from './centerNavigation'
@@ -18,10 +18,12 @@ const route = useRoute(), router = useRouter()
 const tab = computed({ get: () => String(route.meta.agentSection ?? ''), set: value => { void router.push(agentSectionPath(value)) } })
 const editing = computed(() => ['config', 'skills', 'context'].includes(tab.value))
 const form = ref<AgentConfig>(), baseline = ref(''), selectedSkill = ref('')
-const models = ref<{ id: string; name: string }[]>([])
+const models = ref<ReturnType<typeof modelOptions>>([])
 const knowledgeBases=ref<{id:string;name:string;enabled:boolean}[]>([])
 async function loadKnowledgeBases(){try{const v=await client.get<{list:typeof knowledgeBases.value}>("/ai/admin/knowledge-bases");knowledgeBases.value=v.list||[]}catch{knowledgeBases.value=[]}}
-const rerankModels = ref<{ id: string; name: string }[]>([])
+const rerankModels = ref<ReturnType<typeof modelOptions>>([])
+const chatGroups = computed(() => groupModelOptions(models.value))
+const rerankGroups = computed(() => groupModelOptions(rerankModels.value))
 async function loadModelOptions() {
   try {
     const library = await modelLibraryApi.list()
@@ -308,7 +310,9 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
                   </template>
                   <el-select v-model="form.model" filterable clearable :aria-label='$t("问事聊天模型")' :placeholder='$t("保存时采用平台聊天默认模型")'>
                     <el-option v-if="form.model && !models.some(m => m.id === form?.model)" :value="form.model" :label="$t(form.model)" />
-                    <el-option v-for="model in models" :key="model.id" :value="model.id" :label="$t(model.name)" />
+                    <el-option-group v-for="group in chatGroups" :key="group.provider" :label="$t(group.provider)">
+                      <el-option v-for="model in group.models" :key="model.id" :value="model.id" :label="$t(model.name)" />
+                    </el-option-group>
                   </el-select>
                 </el-form-item>
               </div>
@@ -357,7 +361,9 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
                     @change="!form.retrieval.rerankModel && (form.retrieval.rerankRequired = false)">
                     <el-option v-if="form.retrieval.rerankModel && !rerankModels.some(m => m.id === form?.retrieval?.rerankModel)"
                       :value="form.retrieval.rerankModel" :label="$t(form.retrieval.rerankModel)" />
-                    <el-option v-for="model in rerankModels" :key="model.id" :value="model.id" :label="$t(model.name)" />
+                    <el-option-group v-for="group in rerankGroups" :key="group.provider" :label="$t(group.provider)">
+                      <el-option v-for="model in group.models" :key="model.id" :value="model.id" :label="$t(model.name)" />
+                    </el-option-group>
                   </el-select>
                 </el-form-item>
                 <el-form-item :label='$t("重排不可用时")'>
