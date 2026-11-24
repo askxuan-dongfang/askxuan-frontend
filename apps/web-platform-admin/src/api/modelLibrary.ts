@@ -7,9 +7,17 @@ export interface LibraryModel {
   bindings: Partial<Record<ModelRole, string>>
 }
 export type ModelUses = Record<ModelRole, string>
+export type ModelSupplier = 'opencode_go' | 'deepseek'
 export interface ModelLibrary {
   list: LibraryModel[]; uses: ModelUses; revision: number; writable: boolean; defaultChat: string; warnings: string[]
   customerModelIds?: string[]
+  suppliers?: ModelSupplier[]
+}
+export interface SupplierImport {
+  provider: ModelSupplier
+  revision: number
+  apiKey?: string
+  reuseConnection?: string
 }
 export interface DiscoveredLanguageModel {
   id: string; name: string; contextWindow: number; maxOutputTokens: number; supportsVision: boolean
@@ -23,15 +31,26 @@ export const modelRoles: { key: ModelRole; label: string; hint: string }[] = [
   { key: 'rerank', label: '重排 · Rerank', hint: '用于检索验证的初始选择；智能体的重排策略需在草稿中选择并发布。' },
   { key: 'document', label: '文档理解', hint: '作为新知识库、实体抽取和 Wiki 生成的初始选择。' },
 ]
+export function providerName(provider: string) {
+  if (provider === 'opencode_go') return 'OpenCode Go'
+  if (provider === 'deepseek') return 'DeepSeek'
+  return provider
+}
 export function modelOptions(library: ModelLibrary, role: ModelRole) {
-  return library.list.filter(m => m.bindings[role]).map(m => ({
-    id: m.bindings[role]!, name: m.name === m.model ? m.name : `${m.name} · ${m.model}`, libraryId: m.id,
-  }))
+  const models = library.list.filter(m => m.bindings[role])
+  return models.map(m => {
+    const label = m.name === m.model ? m.name : `${m.name} · ${m.model}`
+    const ambiguous = models.some(other => other !== m && other.model === m.model)
+    const connection = m.source === 'legacy' ? `${providerName(m.provider)}（原有连接）` : providerName(m.provider)
+    return { id: m.bindings[role]!, name: ambiguous ? `${label} · ${connection}` : label, libraryId: m.id }
+  })
 }
 export const modelLibraryApi = {
   list: () => client.get<ModelLibrary>('/ai/admin/model-library', { timeout: 35000 }),
   discoverOpenCodeGo: (apiKey: string) =>
     client.post<{ list: DiscoveredLanguageModel[] }>('/ai/admin/model-library/language/discover', { provider: 'opencode_go', apiKey }, { timeout: 35000 }),
+  importSupplier: (input: SupplierImport) =>
+    client.post<{ added: number; existing: number }>('/ai/admin/model-library/language/import', input, { timeout: 35000 }),
   saveUses: (uses: ModelUses, revision: number, customerModelIds?: string[]) =>
     client.put('/ai/admin/model-library/uses', { uses, revision, customerModelIds }, { timeout: 90000 }),
 }
