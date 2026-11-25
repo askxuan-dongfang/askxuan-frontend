@@ -83,5 +83,5 @@ test('each leaf page retains its own title after the shell title is removed',()=
   assert.equal(title,true,route.path+' must have a page title')
   pages++
  }
- assert.equal(pages,70)
+ assert.equal(pages,71)
 })

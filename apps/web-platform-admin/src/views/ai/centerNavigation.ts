@@ -16,6 +16,7 @@ export const agentWorkflow: readonly AgentStage[] = [
     { path: '/ai/agent', title: '职责与模型', section: 'config' },
     { path: '/ai/tools', title: '技能与工具', section: 'skills' },
     { path: '/ai/context', title: '知识与上下文', section: 'context' },
+    { path: '/ai/topics', title: '专题配置', section: 'topics' },
   ] },
   { title: '调试与评测', steps: [
     { path: '/ai/debug', title: '单次调试', section: 'debug' },
