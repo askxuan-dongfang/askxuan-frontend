@@ -12,6 +12,7 @@ import { VideoPlay, Refresh, Check, Plus, Delete, Search } from '@element-plus/i
 import { agentOperationsApi as api, type AgentWorkspace, type AgentConfig, type DebugRun, type ProductionRun, type ToolTrace, type EvaluationRun, type EvaluationCase } from '@/api/agentOperations'
 
 import { addCapability, changeCapability, capabilityKind } from './agentCapabilities'
+import TopicSettings from './TopicSettings.vue'
 
 const workspace = ref<AgentWorkspace>(), loading = ref(true), busy = ref(false), loadError = ref('')
 const route = useRoute(), router = useRouter()
@@ -171,7 +172,7 @@ watch(tab, (value, previous) => {
   if (value === 'versions' || (value && !previous)) void load(true)
   if (value === 'evaluation') void loadEvaluations()
   if (['config', 'context', 'versions'].includes(value)) void loadModelOptions()
-  if (value === 'context') void loadKnowledgeBases()
+  if (value === 'context' || value === 'topics') void loadKnowledgeBases()
 })
 
 const debug = reactive({ kind: 'classic', skillCode: '', question: '请根据这份测试资料，说明可以提供哪些有依据的参考。' })
@@ -253,7 +254,7 @@ onMounted(() => {
   if (tab.value === 'evaluation') void loadEvaluations()
   if (tab.value === 'runs') void loadRecords()
   if (['config', 'context', 'versions'].includes(tab.value)) void loadModelOptions()
-  if (tab.value === 'context') void loadKnowledgeBases()
+  if (tab.value === 'context' || tab.value === 'topics') void loadKnowledgeBases()
 })
 onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer); stopPoll(); recordGeneration++; window.removeEventListener('beforeunload', beforeUnload) })
 </script>
@@ -291,6 +292,9 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
     </header>
     <el-alert v-if="loadError" :title="$t(loadError)" type="error" :closable="false" show-icon><el-button text @click="reload">{{ $t("重试") }}</el-button></el-alert>
     <template v-if="workspace && form">
+
+      <TopicSettings v-if="tab === 'topics'" :config="form" :topics="workspace.topicCatalog ?? []"
+        :catalog="workspace.catalog" :knowledge-bases="knowledgeBases" :busy="busy" />
 
       <div v-if="editing || tab === 'debug'" class="ops-workspace" :class="{ 'has-preview': editing }">
         <div v-if="editing" class="ops-editor">
@@ -584,6 +588,21 @@ onBeforeUnmount(() => { disposed = true; if (evalTimer) clearTimeout(evalTimer);
     </template>
     <el-dialog v-model="versionDialog" :title="$t(($t('版本 v') + String(versionNumber) + $t(' · 已发布配置')))" width="min(760px, 94vw)" append-to-body>
       <template v-if="versionConfig"><h3>{{ $t(versionConfig.name) }}</h3><p class="ops-hint">{{ $t(versionConfig.model) }}{{ $t(" · 最多 ") }}{{ $t(versionConfig.maxOutputTokens) }} Token</p><pre class="ops-answer">{{ $t(versionConfig.instruction) }}</pre><el-collapse><el-collapse-item v-for="skill in versionConfig.skills" :key="skill.code" :name="skill.code" :title="$t(($t('') + String(skillName(skill.code)) + $t(' · ') + String((skill.enabled ? $t('启用') : $t('停用'))) + $t(' · ') + String((skill.useTool ? $t('使用计算工具') : $t('不使用工具'))) + $t('')))"><pre class="ops-answer">{{ $t(skill.prompt) }}</pre></el-collapse-item></el-collapse></template>
+      <template v-if="versionConfig?.topics?.length">
+        <h3>{{ $t("专题配置") }}</h3>
+        <el-collapse>
+          <el-collapse-item v-for="topic in versionConfig.topics" :key="topic.code" :name="topic.code" :title="$t(skillName(topic.code))">
+            <dl>
+              <dt>{{ $t("知识库") }}</dt><dd>{{ topic.knowledgeBaseIds.map(id => knowledgeBases.find(base => base.id === id)?.name ?? id).join('、') || '—' }}</dd>
+              <dt>{{ $t("附加技能") }}</dt><dd>{{ topic.skillCodes.map(skillName).join('、') || '—' }}</dd>
+              <dt>{{ $t("MCP 与内置工具") }}</dt><dd>{{ topic.toolCodes.map(skillName).join('、') || '—' }}</dd>
+              <dt v-if="topic.additionalFields.length">{{ $t("自定义资料") }}</dt>
+              <dd v-if="topic.additionalFields.length">{{ topic.additionalFields.map(field => field.label + (field.required ? $t("（必填）") : '')).join('、') }}</dd>
+            </dl>
+            <ol><li v-for="chapter in topic.chapters" :key="chapter">{{ $t(chapter) }}</li></ol>
+          </el-collapse-item>
+        </el-collapse>
+      </template>
     </el-dialog>
     <el-drawer v-model="drawer" :title='$t("工具执行轨迹")' size="min(520px, 100vw)" append-to-body><div v-loading="toolsLoading"><p>{{ $t(detailRun?.runNo) }}</p><p class="ops-hint">{{ $t(detailRun?.skillVersion) }} · {{ $t(detailRun?.model) }}</p><el-alert v-if="toolsError" :title="$t(toolsError)" type="error" :closable="false" /><el-empty v-else-if="!toolsLoading && !tools.length" :description='$t("本次没有计算工具调用")' /><ol v-else class="ops-events"><li v-for="(tool, i) in tools" :key="i"><span class="ops-event-dot" /><div><strong>{{ $t(tool.name) }}</strong><p>{{ $t(statusText(tool.status)) }} · {{ $t(tool.latencyMs) }} ms</p><time>{{ $t(timeText(tool.createdAt)) }}</time></div></li></ol></div></el-drawer>
   </div>
